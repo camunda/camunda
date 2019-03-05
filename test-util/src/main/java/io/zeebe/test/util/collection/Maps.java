@@ -19,11 +19,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Maps {
-  public static <K, V> Map<K, V> of(Map.Entry<K, V>... entries) {
+  @SuppressWarnings("unchecked")
+  public static <K, V> Map<K, V> of(Map.Entry... entries) {
     final Map<K, V> map = new HashMap<>();
 
-    for (final Map.Entry<K, V> entry : entries) {
-      map.put(entry.getKey(), entry.getValue());
+    for (final Map.Entry entry : entries) {
+      map.put((K) entry.getKey(), (V) entry.getValue());
     }
 
     return map;

@@ -300,7 +300,6 @@ public class ExporterRecordMapper {
 
     return new WorkflowInstanceRecordValueImpl(
         objectMapper,
-        asJson(record.getPayload()),
         asString(record.getBpmnProcessId()),
         asString(record.getElementId()),
         record.getVersion(),

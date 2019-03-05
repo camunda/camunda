@@ -30,10 +30,8 @@ import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
-import io.zeebe.test.util.MsgPackUtil;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -157,29 +155,6 @@ public class ParallelGatewayTest {
             tuple("end", WorkflowInstanceIntent.ELEMENT_COMPLETED),
             tuple("end", WorkflowInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED));
-  }
-
-  @Test
-  public void shouldPropagatePayloadOnSplit() {
-    // given
-    testClient.deploy(FORK_PROCESS);
-    final DirectBuffer variables = MsgPackUtil.asMsgPack("key", "val");
-
-    // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID).setVariables(variables));
-
-    // then
-    final List<Record<WorkflowInstanceRecordValue>> taskEvents =
-        testClient
-            .receiveWorkflowInstances()
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .filter(e -> isServiceTaskInProcess(e.getValue().getElementId(), FORK_PROCESS))
-            .limit(2)
-            .collect(Collectors.toList());
-
-    assertThat(taskEvents)
-        .extracting(e -> MsgPackUtil.asMsgPackReturnArray(e.getValue().getPayload()))
-        .allSatisfy(p -> p.equals(variables));
   }
 
   @Test

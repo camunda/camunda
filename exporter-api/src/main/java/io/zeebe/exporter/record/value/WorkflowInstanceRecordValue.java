@@ -15,7 +15,7 @@
  */
 package io.zeebe.exporter.record.value;
 
-import io.zeebe.exporter.record.RecordValueWithPayload;
+import io.zeebe.exporter.record.RecordValue;
 import io.zeebe.protocol.BpmnElementType;
 
 /**
@@ -23,7 +23,7 @@ import io.zeebe.protocol.BpmnElementType;
  *
  * <p>See {@link io.zeebe.protocol.intent.WorkflowInstanceIntent} for intents.
  */
-public interface WorkflowInstanceRecordValue extends RecordValueWithPayload {
+public interface WorkflowInstanceRecordValue extends RecordValue {
   /** @return the BPMN process id this workflow instance belongs to. */
   String getBpmnProcessId();
 

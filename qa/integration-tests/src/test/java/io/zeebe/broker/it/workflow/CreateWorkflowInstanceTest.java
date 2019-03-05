@@ -28,11 +28,20 @@ import io.zeebe.client.api.commands.Workflow;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.cmd.ClientStatusException;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.test.util.Strings;
+import io.zeebe.test.util.collection.Maps;
+import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.zeebe.test.util.record.WorkflowInstances;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -144,23 +153,20 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldCreateWithVariables() {
     // when
+    final Map<String, Object> variables = Maps.of(entry("foo", "bar"));
     final WorkflowInstanceEvent event =
         clientRule
             .getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId(processId)
             .latestVersion()
-            .variables("{\"foo\":\"bar\"}")
+            .variables(variables)
             .send()
             .join();
 
     // then
-    assertWorkflowInstanceCreated(
-        event.getWorkflowInstanceKey(),
-        workflowInstance -> {
-          assertThat(workflowInstance.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-          assertThat(workflowInstance.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
-        });
+    assertWorkflowInstanceCreated(event.getWorkflowInstanceKey());
+    assertThat(getInitialVariableRecords(event)).containsOnly(entry("foo", "\"bar\""));
   }
 
   @Test
@@ -176,12 +182,8 @@ public class CreateWorkflowInstanceTest {
             .join();
 
     // then
-    assertWorkflowInstanceCreated(
-        event.getWorkflowInstanceKey(),
-        workflowInstance -> {
-          assertThat(workflowInstance.getPayload()).isEqualTo("{}");
-          assertThat(workflowInstance.getPayloadAsMap()).isEmpty();
-        });
+    assertWorkflowInstanceCreated(event.getWorkflowInstanceKey());
+    assertThat(getInitialVariableRecords(event)).isEmpty();
   }
 
   @Test
@@ -198,12 +200,8 @@ public class CreateWorkflowInstanceTest {
             .join();
 
     // then
-    assertWorkflowInstanceCreated(
-        event.getWorkflowInstanceKey(),
-        workflowInstance -> {
-          assertThat(workflowInstance.getPayload()).isEqualTo("{}");
-          assertThat(workflowInstance.getPayloadAsMap()).isEmpty();
-        });
+    assertWorkflowInstanceCreated(event.getWorkflowInstanceKey());
+    assertThat(getInitialVariableRecords(event)).isEmpty();
   }
 
   @Test
@@ -240,12 +238,8 @@ public class CreateWorkflowInstanceTest {
             .join();
 
     // then
-    assertWorkflowInstanceCreated(
-        event.getWorkflowInstanceKey(),
-        workflowInstance -> {
-          assertThat(workflowInstance.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-          assertThat(workflowInstance.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
-        });
+    assertWorkflowInstanceCreated(event.getWorkflowInstanceKey());
+    assertThat(getInitialVariableRecords(event)).containsOnly(entry("foo", "\"bar\""));
   }
 
   @Test
@@ -265,12 +259,8 @@ public class CreateWorkflowInstanceTest {
             .join();
 
     // then
-    assertWorkflowInstanceCreated(
-        event.getWorkflowInstanceKey(),
-        workflowInstance -> {
-          assertThat(workflowInstance.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-          assertThat(workflowInstance.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
-        });
+    assertWorkflowInstanceCreated(event.getWorkflowInstanceKey());
+    assertThat(getInitialVariableRecords(event)).containsOnly(entry("foo", "\"bar\""));
   }
 
   @Test
@@ -297,6 +287,18 @@ public class CreateWorkflowInstanceTest {
 
     // when
     clientRule.getClient().newCreateInstanceCommand().workflowKey(99L).send().join();
+  }
+
+  private Map<String, String> getInitialVariableRecords(WorkflowInstanceEvent event) {
+    final List<Record<WorkflowInstanceCreationRecordValue>> bounds =
+        RecordingExporter.workflowInstanceCreationRecords()
+            .withPartitionId(Protocol.decodePartitionId(event.getWorkflowInstanceKey()))
+            .limitToWorkflowInstanceCreated(event.getWorkflowInstanceKey())
+            .withBpmnProcessId(processId)
+            .collect(Collectors.toList());
+
+    return WorkflowInstances.getCurrentVariables(
+        event.getWorkflowInstanceKey(), bounds.get(0).getPosition(), bounds.get(1).getPosition());
   }
 
   public static class VariableDocument {

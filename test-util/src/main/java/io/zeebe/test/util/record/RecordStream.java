@@ -18,6 +18,7 @@ package io.zeebe.test.util.record;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordValue;
 import io.zeebe.protocol.clientapi.ValueType;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 @SuppressWarnings("unchecked")
@@ -32,18 +33,26 @@ public class RecordStream extends ExporterRecordStream<RecordValue, RecordStream
   }
 
   public RecordStream between(long lowerBoundPosition, long upperBoundPosition) {
-    return limit(r -> r.getPosition() >= upperBoundPosition)
-        .filter(r -> r.getPosition() > lowerBoundPosition);
+    return between(
+        r -> r.getPosition() > lowerBoundPosition, r -> r.getPosition() >= upperBoundPosition);
+  }
+
+  public RecordStream between(Record<?> lowerBound, Record<?> upperBound) {
+    return between(lowerBound::equals, upperBound::equals);
+  }
+
+  public RecordStream between(Predicate<Record<?>> lowerBound, Predicate<Record<?>> upperBound) {
+    return limit(upperBound::test).skipUntil(lowerBound::test);
   }
 
   public VariableDocumentRecordStream variableDocumentRecords() {
     return new VariableDocumentRecordStream(
         filter(r -> r.getMetadata().getValueType() == ValueType.VARIABLE_DOCUMENT)
-            .map(r -> (Record) r));
+            .map(Record.class::cast));
   }
 
   public VariableRecordStream variableRecords() {
     return new VariableRecordStream(
-        filter(r -> r.getMetadata().getValueType() == ValueType.VARIABLE).map(r -> (Record) r));
+        filter(r -> r.getMetadata().getValueType() == ValueType.VARIABLE).map(Record.class::cast));
   }
 }

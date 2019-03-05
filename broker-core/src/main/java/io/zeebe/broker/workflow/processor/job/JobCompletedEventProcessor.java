@@ -51,7 +51,6 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
     if (elementInstance != null) {
 
       final WorkflowInstanceRecord value = elementInstance.getValue();
-      value.setPayload(jobEvent.getPayload());
 
       streamWriter.appendFollowUpEvent(
           elementInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, value);

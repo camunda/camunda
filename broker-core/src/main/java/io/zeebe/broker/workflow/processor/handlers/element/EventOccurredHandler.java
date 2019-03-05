@@ -134,7 +134,6 @@ public class EventOccurredHandler<T extends ExecutableFlowElement> extends Abstr
     eventRecord.reset();
     eventRecord.wrap(context.getValue());
     eventRecord.setElementId(event.getElementId());
-    eventRecord.setPayload(event.getPayload());
     eventRecord.setBpmnElementType(elementType);
 
     return eventRecord;

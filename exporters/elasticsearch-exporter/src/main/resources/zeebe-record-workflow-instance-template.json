@@ -30,9 +30,6 @@
             "flowScopeKey": {
               "type": "long"
             },
-            "payload": {
-              "type": "text"
-            },
             "bpmnElementType": {
               "type": "keyword"
             }

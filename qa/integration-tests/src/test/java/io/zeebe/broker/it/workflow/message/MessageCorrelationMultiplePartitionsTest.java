@@ -26,9 +26,11 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.WorkflowInstances;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Rule;
@@ -119,17 +121,21 @@ public class MessageCorrelationMultiplePartitionsTest {
     publishMessage(CORRELATION_KEY_PARTITION_2, Collections.singletonMap("p", "p2"));
 
     // when
-    createWorkflowInstance(Collections.singletonMap("key", CORRELATION_KEY_PARTITION_0));
-    createWorkflowInstance(Collections.singletonMap("key", CORRELATION_KEY_PARTITION_1));
-    createWorkflowInstance(Collections.singletonMap("key", CORRELATION_KEY_PARTITION_2));
+    final long wfiKey1 =
+        createWorkflowInstance(Collections.singletonMap("key", CORRELATION_KEY_PARTITION_0));
+    final long wfiKey2 =
+        createWorkflowInstance(Collections.singletonMap("key", CORRELATION_KEY_PARTITION_1));
+    final long wfiKey3 =
+        createWorkflowInstance(Collections.singletonMap("key", CORRELATION_KEY_PARTITION_2));
 
     // then
-    assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .withElementId("end")
-                .limit(3))
-        .extracting(r -> r.getValue().getPayloadAsMap().get("p"))
-        .contains("p0", "p1", "p2");
+    final List<String> correlatedValues =
+        Arrays.asList(
+            WorkflowInstances.getCurrentVariables(wfiKey1).get("p"),
+            WorkflowInstances.getCurrentVariables(wfiKey2).get("p"),
+            WorkflowInstances.getCurrentVariables(wfiKey3).get("p"));
+
+    assertThat(correlatedValues).contains("\"p0\"", "\"p1\"", "\"p2\"");
   }
 
   @Test
@@ -172,15 +178,16 @@ public class MessageCorrelationMultiplePartitionsTest {
             tuple(2, CORRELATION_KEY_PARTITION_2));
   }
 
-  private void createWorkflowInstance(Object variables) {
-    clientRule
+  private long createWorkflowInstance(Object variables) {
+    return clientRule
         .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
         .variables(variables)
         .send()
-        .join();
+        .join()
+        .getWorkflowInstanceKey();
   }
 
   private void publishMessage(String correlationKey, Object payload) {
