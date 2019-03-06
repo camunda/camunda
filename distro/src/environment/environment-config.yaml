@@ -38,7 +38,7 @@ engines:
       # authentication, please be aware that you also need to adjust the values
       # of the user and password.
       # Also note, when enabled, it is required that the user has
-      # * READ_HISTORY permission on the Process/Decision Definition resources
+      # * READ & READ_HISTORY permission on the Process and Decision Definition resources
       # * READ permission on the Authorization, Group and User resources
       # to enable users to log in and Optimize to import the engine data.
       enabled: false
