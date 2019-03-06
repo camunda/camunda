@@ -104,7 +104,7 @@ public class CatchEventBehavior {
     context
         .getStateDb()
         .getEventScopeInstanceState()
-        .createInstance(context.getRecord().getKey(), supplier.getInterruptingElementIds());
+        .createIfNotExists(context.getRecord().getKey(), supplier.getInterruptingElementIds());
   }
 
   public void subscribeToTimerEvent(

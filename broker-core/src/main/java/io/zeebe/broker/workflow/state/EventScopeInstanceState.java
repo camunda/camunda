@@ -71,6 +71,25 @@ public class EventScopeInstanceState {
    *
    * @param eventScopeKey the event scope key
    * @param interruptingIds list of element IDs which should set accepting to false
+   * @return whether the scope was created or not
+   */
+  public boolean createIfNotExists(long eventScopeKey, Collection<DirectBuffer> interruptingIds) {
+    this.eventScopeKey.wrapLong(eventScopeKey);
+    boolean wasCreated = false;
+
+    if (!eventScopeInstanceColumnFamily.exists(this.eventScopeKey)) {
+      createInstance(eventScopeKey, interruptingIds);
+      wasCreated = true;
+    }
+
+    return wasCreated;
+  }
+
+  /**
+   * Creates a new event scope instance in the state
+   *
+   * @param eventScopeKey the event scope key
+   * @param interruptingIds list of element IDs which should set accepting to false
    */
   public void createInstance(long eventScopeKey, Collection<DirectBuffer> interruptingIds) {
     this.eventScopeKey.wrapLong(eventScopeKey);
@@ -148,11 +167,11 @@ public class EventScopeInstanceState {
   }
 
   /**
-   * Returns the next event trigger for the event scope or null if non exists. This will not remove
+   * Returns the next event trigger for the event scope or null if none exists. This will not remove
    * the event trigger from the state.
    *
    * @param eventScopeKey the key of the event scope
-   * @return the next event trigger or null if non exist
+   * @return the next event trigger or null if none exist
    */
   public EventTrigger peekEventTrigger(long eventScopeKey) {
     eventTriggerScopeKey.wrapLong(eventScopeKey);
@@ -168,11 +187,11 @@ public class EventScopeInstanceState {
   }
 
   /**
-   * Returns the next event trigger for the event scope or null if non exists. This will remove the
+   * Returns the next event trigger for the event scope or null if none exists. This will remove the
    * polled event trigger from the state if it exists.
    *
    * @param eventScopeKey the key of the event scope
-   * @return the next event trigger or null if non exist
+   * @return the next event trigger or null if none exist
    */
   public EventTrigger pollEventTrigger(long eventScopeKey) {
     eventTriggerScopeKey.wrapLong(eventScopeKey);

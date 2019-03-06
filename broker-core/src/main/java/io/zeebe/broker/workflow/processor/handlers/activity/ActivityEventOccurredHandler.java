@@ -23,6 +23,7 @@ import io.zeebe.broker.workflow.model.element.ExecutableBoundaryEvent;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.handlers.element.EventOccurredHandler;
 import io.zeebe.broker.workflow.state.EventTrigger;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -39,7 +40,7 @@ public class ActivityEventOccurredHandler<T extends ExecutableActivity>
 
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
-    final EventTrigger event = getTriggeredEvent(context);
+    final EventTrigger event = getTriggeredEvent(context, context.getRecord().getKey());
     final ExecutableBoundaryEvent boundaryEvent = getBoundaryEvent(context, event);
 
     if (boundaryEvent == null) {
@@ -50,11 +51,14 @@ public class ActivityEventOccurredHandler<T extends ExecutableActivity>
       return false;
     }
 
+    final WorkflowInstanceRecord eventRecord =
+        getEventRecord(context, event, boundaryEvent.getElementType());
     if (boundaryEvent.cancelActivity()) {
       transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATING);
-      deferEvent(context, event, boundaryEvent);
+      deferEvent(
+          context, context.getRecord().getKey(), context.getRecord().getKey(), eventRecord, event);
     } else {
-      publishEvent(context, event, boundaryEvent);
+      publishEvent(context, context.getRecord().getKey(), eventRecord, event);
     }
 
     return super.handleState(context);

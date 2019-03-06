@@ -28,11 +28,13 @@ import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.processor.CatchEventBehavior;
+import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
 import io.zeebe.protocol.intent.DeploymentIntent;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
@@ -89,25 +91,17 @@ public class TransformingDeploymentCreateProcessor
 
   private void createTimerIfTimerStartEvent(
       TypedRecord<DeploymentRecord> record, TypedStreamWriter streamWriter) {
-    for (Workflow workflow : record.getValue().workflows()) {
+    for (final Workflow workflow : record.getValue().workflows()) {
       final List<ExecutableCatchEventElement> startEvents =
           workflowState.getWorkflowByKey(workflow.getKey()).getWorkflow().getStartEvents();
+      boolean hasAtLeastOneTimer = false;
 
-      workflowState
-          .getTimerState()
-          .forEachTimerForElementInstance(
-              NO_ELEMENT_INSTANCE,
-              timer -> {
-                final DirectBuffer timerBpmnId =
-                    workflowState.getWorkflowByKey(timer.getWorkflowKey()).getBpmnProcessId();
+      unsubscribeFromPreviousTimers(streamWriter, workflow);
 
-                if (timerBpmnId.equals(workflow.getBpmnProcessId())) {
-                  catchEventBehavior.unsubscribeFromTimerEvent(timer, streamWriter);
-                }
-              });
-
-      for (ExecutableCatchEventElement startEvent : startEvents) {
+      for (final ExecutableCatchEventElement startEvent : startEvents) {
         if (startEvent.isTimer()) {
+          hasAtLeastOneTimer = true;
+
           catchEventBehavior.subscribeToTimerEvent(
               NO_ELEMENT_INSTANCE,
               NO_ELEMENT_INSTANCE,
@@ -117,6 +111,30 @@ public class TransformingDeploymentCreateProcessor
               streamWriter);
         }
       }
+
+      if (hasAtLeastOneTimer) {
+        workflowState
+            .getEventScopeInstanceState()
+            .createIfNotExists(workflow.getKey(), Collections.emptyList());
+      }
+    }
+  }
+
+  private void unsubscribeFromPreviousTimers(TypedStreamWriter streamWriter, Workflow workflow) {
+    workflowState
+        .getTimerState()
+        .forEachTimerForElementInstance(
+            NO_ELEMENT_INSTANCE,
+            timer -> unsubscribeFromPreviousTimer(streamWriter, workflow, timer));
+  }
+
+  private void unsubscribeFromPreviousTimer(
+      TypedStreamWriter streamWriter, Workflow workflow, TimerInstance timer) {
+    final DirectBuffer timerBpmnId =
+        workflowState.getWorkflowByKey(timer.getWorkflowKey()).getBpmnProcessId();
+
+    if (timerBpmnId.equals(workflow.getBpmnProcessId())) {
+      catchEventBehavior.unsubscribeFromTimerEvent(timer, streamWriter);
     }
   }
 }

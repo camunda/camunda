@@ -223,6 +223,7 @@ public class MessageStartEventTest {
     // check if two instances are created
     final List<Record<WorkflowInstanceRecordValue>> records =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETING)
+            .withElementType(BpmnElementType.START_EVENT)
             .limit(2)
             .asList();
 

@@ -23,16 +23,20 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.MessageStartEventSubscriptionState;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
+import java.util.Collections;
 
 public class OpenMessageStartEventSubscriptionProcessor
     implements TypedRecordProcessor<MessageStartEventSubscriptionRecord> {
 
   private final MessageStartEventSubscriptionState subscriptionState;
+  private final WorkflowState workflowState;
 
   public OpenMessageStartEventSubscriptionProcessor(
-      MessageStartEventSubscriptionState subscriptionState) {
+      MessageStartEventSubscriptionState subscriptionState, WorkflowState workflowState) {
     this.subscriptionState = subscriptionState;
+    this.workflowState = workflowState;
   }
 
   @Override
@@ -43,6 +47,10 @@ public class OpenMessageStartEventSubscriptionProcessor
 
     final MessageStartEventSubscriptionRecord subscription = record.getValue();
     subscriptionState.put(subscription);
+
+    workflowState
+        .getEventScopeInstanceState()
+        .createIfNotExists(subscription.getWorkflowKey(), Collections.emptyList());
 
     streamWriter.appendFollowUpEvent(
         record.getKey(), MessageStartEventSubscriptionIntent.OPENED, subscription);
