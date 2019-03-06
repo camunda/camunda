@@ -1,4 +1,4 @@
-FROM openjdk:8-jre-alpine
+FROM openjdk:8-jre-alpine3.9
 
 ARG DISTBALL
 
@@ -12,8 +12,8 @@ ENV JAVA_OPTS -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap
 
 COPY ${DISTBALL} ${ZB_HOME}/
 
-# libc6-compat is required to run rocksdb on alpine
-RUN apk add --no-cache bash libc6-compat tini && \
+# gcompat is required to run rocksdb on alpine
+RUN apk add --no-cache bash gcompat tini && \
     tar xfvz ${ZB_HOME}/*.tar.gz --strip 1 -C ${ZB_HOME}/ && rm ${ZB_HOME}/*.tar.gz
 
 WORKDIR ${ZB_HOME}
