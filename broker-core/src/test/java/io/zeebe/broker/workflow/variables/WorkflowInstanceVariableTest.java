@@ -292,4 +292,28 @@ public class WorkflowInstanceVariableTest {
         .hasSize(2)
         .contains(tuple(VariableIntent.UPDATED, "x", "2"), tuple(VariableIntent.CREATED, "y", "3"));
   }
+
+  @Test
+  public void shouldHaveSameKeyOnVariableUpdate() {
+    // given
+    testClient.deploy(WORKFLOW);
+
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId(PROCESS_ID).setVariables(MsgPackUtil.asMsgPack("{'x':1}")))
+            .getInstanceKey();
+
+    final Record<VariableRecordValue> variableCreated =
+        RecordingExporter.variableRecords(VariableIntent.CREATED).getFirst();
+
+    // when
+    testClient.updateVariables(workflowInstanceKey, Maps.of(entry("x", 2)));
+
+    // then
+    final Record<VariableRecordValue> variableUpdated =
+        RecordingExporter.variableRecords(VariableIntent.UPDATED).getFirst();
+
+    assertThat(variableCreated.getKey()).isEqualTo(variableUpdated.getKey());
+  }
 }

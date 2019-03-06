@@ -51,7 +51,7 @@ public class ZeebeState {
 
   public ZeebeState(int partitionId, ZeebeDb<ZbColumnFamilies> zeebeDb) {
     keyState = new KeyState(partitionId, zeebeDb);
-    workflowState = new WorkflowState(zeebeDb);
+    workflowState = new WorkflowState(zeebeDb, keyState);
     deploymentState = new DeploymentsState(zeebeDb);
     jobState = new JobState(zeebeDb);
     messageState = new MessageState(zeebeDb);

@@ -645,6 +645,20 @@ public class VariableStateTest {
     assertThat(variablesState.getPayload(child)).isEqualTo(wrapString("b"));
   }
 
+  @Test
+  public void shouldReuseVariableKeyOnUpdate() {
+    // given
+
+    // when
+    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("foo"));
+    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("bar"));
+
+    // then
+    final long variableKey = listener.created.get(0).key;
+    assertThat(variableKey).isGreaterThan(0);
+    assertThat(listener.updated.get(0).key).isEqualTo(variableKey);
+  }
+
   private byte[] stringToMsgpack(String value) {
     return MsgPackUtil.encodeMsgPack(b -> b.packString(value)).byteArray();
   }
@@ -688,12 +702,15 @@ public class VariableStateTest {
   private static class RecordingVariableListener implements VariableListener {
 
     private class VariableChange {
+      private final long key;
       private final String name;
       private final byte[] value;
       private final long variableScopeKey;
       private final long rootScopeKey;
 
-      VariableChange(String name, byte[] value, long variableScopeKey, long rootScopeKey) {
+      VariableChange(
+          long key, String name, byte[] value, long variableScopeKey, long rootScopeKey) {
+        this.key = key;
         this.name = name;
         this.value = value;
         this.variableScopeKey = variableScopeKey;
@@ -706,9 +723,10 @@ public class VariableStateTest {
 
     @Override
     public void onCreate(
-        DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
+        long key, DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
       final VariableChange change =
           new VariableChange(
+              key,
               bufferAsString(name),
               BufferUtil.bufferAsArray(value),
               variableScopeKey,
@@ -718,9 +736,10 @@ public class VariableStateTest {
 
     @Override
     public void onUpdate(
-        DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
+        long key, DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
       final VariableChange change =
           new VariableChange(
+              key,
               bufferAsString(name),
               BufferUtil.bufferAsArray(value),
               variableScopeKey,

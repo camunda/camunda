@@ -17,11 +17,11 @@
  */
 package io.zeebe.broker.workflow.state;
 
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbBuffer;
-import io.zeebe.db.impl.DbBufferView;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
@@ -57,30 +57,33 @@ public class VariablesState {
   private final DbLong childKey;
 
   // (scope key, variable name) => (variable value)
-  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbBufferView> variablesColumnFamily;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, VariableInstance>
+      variablesColumnFamily;
   private final DbCompositeKey<DbLong, DbString> scopeKeyVariableNameKey;
   private final DbLong scopeKey;
   private final DbString variableName;
-  private final DbBufferView variable;
 
   // (scope key) => (payload)
   private final ColumnFamily<DbLong, DbBuffer> payloadColumnFamily;
   private final DbLong payloadScopeKey = new DbLong();
   private final DbBuffer payload = new DbBuffer();
 
-  private final DbBufferView newVariable = new DbBufferView();
+  private final VariableInstance newVariable = new VariableInstance();
   private final DirectBuffer variableNameView = new UnsafeBuffer(0, 0);
 
   // collecting variables
   private final ObjectHashSet<DirectBuffer> collectedVariables = new ObjectHashSet<>();
-  private final ObjectHashSet<DirectBuffer> variablesToCollect = new ObjectHashSet<>();;
+  private final ObjectHashSet<DirectBuffer> variablesToCollect = new ObjectHashSet<>();
 
   // setting variables
   private final IndexedDocument indexedDocument = new IndexedDocument();
+  private final KeyGenerator keyGenerator;
 
   private VariableListener listener;
 
-  public VariablesState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public VariablesState(ZeebeDb<ZbColumnFamilies> zeebeDb, KeyGenerator keyGenerator) {
+    this.keyGenerator = keyGenerator;
+
     parentKey = new DbLong();
     childKey = new DbLong();
     childParentColumnFamily =
@@ -90,9 +93,9 @@ public class VariablesState {
     scopeKey = new DbLong();
     variableName = new DbString();
     scopeKeyVariableNameKey = new DbCompositeKey<>(scopeKey, variableName);
-    variable = new DbBufferView();
     variablesColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.VARIABLES, scopeKeyVariableNameKey, variable);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.VARIABLES, scopeKeyVariableNameKey, new VariableInstance());
 
     payloadColumnFamily =
         zeebeDb.createColumnFamily(ZbColumnFamilies.PAYLOAD, payloadScopeKey, payload);
@@ -130,25 +133,38 @@ public class VariablesState {
       int valueOffset,
       int valueLength) {
 
-    newVariable.wrapBuffer(value, valueOffset, valueLength);
-    final DirectBuffer newValue = newVariable.getValue();
+    newVariable.reset();
+    newVariable.setValue(value, valueOffset, valueLength);
 
-    final DirectBuffer currentValue = getVariableLocal(scopeKey, name, nameOffset, nameLength);
+    final VariableInstance currentVariable =
+        getVariableLocal(scopeKey, name, nameOffset, nameLength);
 
-    if (currentValue == null) {
+    if (currentVariable == null) {
+      newVariable.setKey(keyGenerator.nextKey());
       variablesColumnFamily.put(scopeKeyVariableNameKey, newVariable);
 
       if (listener != null) {
         final long rootScopeKey = getRootScopeKey(scopeKey);
-        listener.onCreate(variableName.getBuffer(), newValue, scopeKey, rootScopeKey);
+        listener.onCreate(
+            newVariable.getKey(),
+            variableName.getBuffer(),
+            newVariable.getValue(),
+            scopeKey,
+            rootScopeKey);
       }
 
-    } else if (!BufferUtil.equals(currentValue, newValue)) {
+    } else if (!BufferUtil.equals(currentVariable.getValue(), newVariable.getValue())) {
+      newVariable.setKey(currentVariable.getKey());
       variablesColumnFamily.put(scopeKeyVariableNameKey, newVariable);
 
       if (listener != null) {
         final long rootScopeKey = getRootScopeKey(scopeKey);
-        listener.onUpdate(variableName.getBuffer(), newValue, scopeKey, rootScopeKey);
+        listener.onUpdate(
+            newVariable.getKey(),
+            variableName.getBuffer(),
+            newVariable.getValue(),
+            scopeKey,
+            rootScopeKey);
       }
 
     } else {
@@ -166,17 +182,22 @@ public class VariablesState {
   }
 
   public DirectBuffer getVariableLocal(long scopeKey, DirectBuffer name) {
-    return getVariableLocal(scopeKey, name, 0, name.capacity());
+    final VariableInstance variable = getVariableLocal(scopeKey, name, 0, name.capacity());
+
+    if (variable != null) {
+      return variable.getValue();
+    } else {
+      return null;
+    }
   }
 
-  private DirectBuffer getVariableLocal(
+  private VariableInstance getVariableLocal(
       long scopeKey, DirectBuffer name, int nameOffset, int nameLength) {
     this.scopeKey.wrapLong(scopeKey);
     variableNameView.wrap(name, nameOffset, nameLength);
     this.variableName.wrapBuffer(variableNameView);
 
-    final DbBufferView variable = variablesColumnFamily.get(scopeKeyVariableNameKey);
-    return variable == null ? null : variable.getValue();
+    return variablesColumnFamily.get(scopeKeyVariableNameKey);
   }
 
   public void setVariablesFromDocument(long scopeKey, DirectBuffer document) {
@@ -288,7 +309,7 @@ public class VariablesState {
 
           variablesToCollect.remove(name.getBuffer());
         },
-        () -> variablesToCollect.isEmpty());
+        variablesToCollect::isEmpty);
 
     writer.writeReservedMapHeader(0, names.size() - variablesToCollect.size());
 
@@ -330,7 +351,7 @@ public class VariablesState {
   private void visitVariables(
       long scopeKey,
       Predicate<DbString> filter,
-      BiConsumer<DbString, DbBufferView> variableConsumer,
+      BiConsumer<DbString, VariableInstance> variableConsumer,
       BooleanSupplier completionCondition) {
     long currentScope = scopeKey;
 
@@ -356,7 +377,7 @@ public class VariablesState {
   private boolean visitVariablesLocal(
       long scopeKey,
       Predicate<DbString> variableFilter,
-      BiConsumer<DbString, DbBufferView> variableConsumer,
+      BiConsumer<DbString, VariableInstance> variableConsumer,
       BooleanSupplier completionCondition) {
     this.scopeKey.wrapLong(scopeKey);
 
@@ -545,8 +566,10 @@ public class VariablesState {
   }
 
   public interface VariableListener {
-    void onCreate(DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey);
+    void onCreate(
+        long key, DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey);
 
-    void onUpdate(DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey);
+    void onUpdate(
+        long key, DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey);
   }
 }
