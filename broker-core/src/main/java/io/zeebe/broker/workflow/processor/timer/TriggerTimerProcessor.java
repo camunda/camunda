@@ -84,17 +84,21 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
       TypedStreamWriter streamWriter,
       TimerRecord timer,
       long elementInstanceKey) {
+    final long eventScopeKey =
+        isTimerStartEvent(elementInstanceKey)
+            ? record.getValue().getWorkflowKey()
+            : elementInstanceKey;
 
-    final boolean wasActiveTimer = tryTriggerTimer(streamWriter, timer, elementInstanceKey);
-
+    final boolean wasActiveTimer = tryTriggerTimer(eventScopeKey, streamWriter, timer);
     if (wasActiveTimer) {
-      final long eventOccuredKey =
-          prepareEventOccuredEvent(streamWriter, timer, elementInstanceKey);
+      final long eventOccurredKey =
+          prepareEventOccurredEvent(streamWriter, timer, elementInstanceKey);
 
       streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
       streamWriter.appendFollowUpEvent(
-          eventOccuredKey, WorkflowInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
+          eventOccurredKey, WorkflowInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
 
+      // todo(npepinpe): migrate to bpmn step processor
       if (shouldReschedule(timer)) {
         final ExecutableCatchEventElement timerEvent = getTimerEvent(elementInstanceKey, timer);
 
@@ -111,42 +115,36 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
   }
 
   private boolean tryTriggerTimer(
-      TypedStreamWriter streamWriter, TimerRecord timer, long elementInstanceKey) {
-    boolean wasActiveTimer = true;
-
-    final boolean isNoTimerStartEvent = !isTimerStartEvent(elementInstanceKey);
-    if (isNoTimerStartEvent) {
-      final long eventKey = streamWriter.getKeyGenerator().nextKey();
-      wasActiveTimer =
-          workflowState
-              .getEventScopeInstanceState()
-              .triggerEvent(
-                  timer.getElementInstanceKey(),
-                  eventKey,
-                  timer.getHandlerNodeId(),
-                  WorkflowInstanceRecord.EMPTY_PAYLOAD);
-    }
-    return wasActiveTimer;
+      long eventScopeKey, TypedStreamWriter streamWriter, TimerRecord timer) {
+    final long eventKey = streamWriter.getKeyGenerator().nextKey();
+    return workflowState
+        .getEventScopeInstanceState()
+        .triggerEvent(
+            eventScopeKey,
+            eventKey,
+            timer.getHandlerNodeId(),
+            WorkflowInstanceRecord.EMPTY_PAYLOAD);
   }
 
-  private long prepareEventOccuredEvent(
+  private long prepareEventOccurredEvent(
       TypedStreamWriter streamWriter, TimerRecord timer, long elementInstanceKey) {
-    final long eventOccuredKey;
+    final long eventOccurredKey;
 
     eventOccurredRecord.reset();
     if (isTimerStartEvent(elementInstanceKey)) {
-      eventOccuredKey = streamWriter.getKeyGenerator().nextKey();
+
+      eventOccurredKey = streamWriter.getKeyGenerator().nextKey();
       eventOccurredRecord
           .setBpmnElementType(BpmnElementType.START_EVENT)
           .setWorkflowKey(timer.getWorkflowKey())
           .setElementId(timer.getHandlerNodeId())
           .setPayload(WorkflowInstanceRecord.EMPTY_PAYLOAD);
     } else {
-      eventOccuredKey = elementInstanceKey;
+      eventOccurredKey = elementInstanceKey;
       eventOccurredRecord.wrap(
           workflowState.getElementInstanceState().getInstance(elementInstanceKey).getValue());
     }
-    return eventOccuredKey;
+    return eventOccurredKey;
   }
 
   private boolean isTimerStartEvent(long elementInstanceKey) {

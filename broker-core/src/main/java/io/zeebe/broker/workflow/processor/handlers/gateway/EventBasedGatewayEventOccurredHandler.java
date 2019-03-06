@@ -23,6 +23,7 @@ import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.handlers.element.EventOccurredHandler;
 import io.zeebe.broker.workflow.state.EventTrigger;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -42,7 +43,7 @@ public class EventBasedGatewayEventOccurredHandler<T extends ExecutableEventBase
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
     if (super.handleState(context)) {
-      final EventTrigger event = getTriggeredEvent(context);
+      final EventTrigger event = getTriggeredEvent(context, context.getRecord().getKey());
       final ExecutableSequenceFlow flow = getSequenceFlow(context, event);
 
       if (flow == null) {
@@ -53,7 +54,10 @@ public class EventBasedGatewayEventOccurredHandler<T extends ExecutableEventBase
         return false;
       }
 
-      deferEvent(context, event, flow.getTarget());
+      final WorkflowInstanceRecord eventRecord =
+          getEventRecord(context, event, flow.getTarget().getElementType());
+      deferEvent(
+          context, context.getRecord().getKey(), context.getRecord().getKey(), eventRecord, event);
       return true;
     }
 

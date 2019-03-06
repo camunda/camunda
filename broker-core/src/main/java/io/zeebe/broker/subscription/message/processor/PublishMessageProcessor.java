@@ -19,16 +19,19 @@ package io.zeebe.broker.subscription.message.processor;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
+import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.Message;
 import io.zeebe.broker.subscription.message.state.MessageStartEventSubscriptionState;
 import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
+import io.zeebe.broker.workflow.state.EventScopeInstanceState;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -42,12 +45,16 @@ import org.agrona.collections.LongArrayList;
 
 public class PublishMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
-  public static final String ALREADY_PUBLISHED_MESSAGE =
+  private static final String ALREADY_PUBLISHED_MESSAGE =
       "Expected to publish a new message with id '%s', but a message with that id was already published";
+  public static final String ERROR_START_EVENT_NOT_TRIGGERED_MESSAGE =
+      "Expected to trigger event for workflow with key '%d', but could not (either does not exist or is not accepting)";
+
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
   private final SubscriptionCommandSender commandSender;
+  private final EventScopeInstanceState scopeEventInstanceState;
 
   private TypedResponseWriter responseWriter;
   private MessageRecord messageRecord;
@@ -59,10 +66,12 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
       final MessageStartEventSubscriptionState startEventSubscriptionState,
+      final EventScopeInstanceState scopeEventInstanceState,
       final SubscriptionCommandSender commandSender) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
     this.startEventSubscriptionState = startEventSubscriptionState;
+    this.scopeEventInstanceState = scopeEventInstanceState;
     this.commandSender = commandSender;
   }
 
@@ -171,24 +180,36 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     return responseWriter.flush();
   }
 
-  // todo: use event scope for start events
   private void correlateMessageStartEvents(
       final TypedRecord<MessageRecord> command, final TypedStreamWriter streamWriter) {
     final DirectBuffer messageName = command.getValue().getName();
     startEventSubscriptionState.visitSubscriptionsByMessageName(
         messageName,
-        subscription -> {
-          final DirectBuffer startEventId = subscription.getStartEventId();
-          final long workflowKey = subscription.getWorkflowKey();
+        subscription -> visitStartEventSubscription(command, streamWriter, subscription));
+  }
 
-          final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
-          record
-              .setWorkflowKey(workflowKey)
-              .setElementId(startEventId)
-              .setBpmnElementType(BpmnElementType.START_EVENT)
-              .setPayload(command.getValue().getPayload());
+  private void visitStartEventSubscription(
+      TypedRecord<MessageRecord> command,
+      TypedStreamWriter streamWriter,
+      MessageStartEventSubscriptionRecord subscription) {
+    final DirectBuffer startEventId = subscription.getStartEventId();
+    final long workflowKey = subscription.getWorkflowKey();
+    final WorkflowInstanceRecord record =
+        new WorkflowInstanceRecord()
+            .setWorkflowKey(workflowKey)
+            .setElementId(startEventId)
+            .setBpmnElementType(BpmnElementType.START_EVENT);
 
-          streamWriter.appendNewEvent(WorkflowInstanceIntent.EVENT_OCCURRED, record);
-        });
+    final long eventKey = streamWriter.getKeyGenerator().nextKey();
+    final boolean wasTriggered =
+        scopeEventInstanceState.triggerEvent(
+            workflowKey, eventKey, startEventId, command.getValue().getPayload());
+
+    if (wasTriggered) {
+      streamWriter.appendNewEvent(WorkflowInstanceIntent.EVENT_OCCURRED, record);
+    } else {
+      Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
+          String.format(ERROR_START_EVENT_NOT_TRIGGERED_MESSAGE, workflowKey));
+    }
   }
 }
