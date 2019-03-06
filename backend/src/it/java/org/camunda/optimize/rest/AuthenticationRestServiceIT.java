@@ -9,6 +9,9 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 
+import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
@@ -93,6 +96,34 @@ public class AuthenticationRestServiceIT {
 
     //then
     assertThat(logoutResponse.getStatus(),is(200));
+  }
+
+  @Test
+  public void cookieIsInsecureIfHttpIsEnabled() {
+    //when
+    Response authResponse = embeddedOptimizeRule
+            .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+
+    //then
+    assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isSecure(), is(false));
+  }
+
+  @Test
+  public void cookieIsSecureIfHttpIsDisabled() {
+    // given
+    Integer defaultHttpPort =
+      embeddedOptimizeRule.getConfigurationService().getContainerHttpPort().get();
+    embeddedOptimizeRule.getConfigurationService().setContainerHttpPort(null);
+
+    // when
+    Response authResponse = embeddedOptimizeRule
+            .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+
+    // then
+    assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isSecure(), is(true));
+
+    // cleanup
+    embeddedOptimizeRule.getConfigurationService().setContainerHttpPort(defaultHttpPort);
   }
 
   private String authenticateAdminUser() {

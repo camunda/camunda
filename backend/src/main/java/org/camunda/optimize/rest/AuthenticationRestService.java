@@ -55,7 +55,11 @@ public class AuthenticationRestService {
     String securityToken = authenticationService.authenticateUser(credentials);
     // Return the token on the response
     return Response.ok(securityToken)
-      .cookie(createNewOptimizeAuthCookie(securityToken, configurationService.getTokenLifeTimeMinutes()))
+      .cookie(createNewOptimizeAuthCookie(
+        securityToken,
+        configurationService.getTokenLifeTimeMinutes(),
+        configurationService.isHttpDisabled()
+      ))
       .build();
   }
 
@@ -81,6 +85,9 @@ public class AuthenticationRestService {
   @Path("logout")
   public Response logout(@Context ContainerRequestContext requestContext) {
     AuthenticationUtil.getToken(requestContext).ifPresent(sessionService::invalidateAuthToken);
-    return Response.status(200).entity("OK").cookie(createDeleteOptimizeAuthCookie()).build();
+    return Response.status(200)
+      .entity("OK")
+      .cookie(createDeleteOptimizeAuthCookie(configurationService.isHttpDisabled()))
+      .build();
   }
 }

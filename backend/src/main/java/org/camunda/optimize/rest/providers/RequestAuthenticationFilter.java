@@ -1,10 +1,8 @@
 package org.camunda.optimize.rest.providers;
 
-import org.camunda.optimize.plugin.AuthenticationExtractorProvider;
-import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
-import org.camunda.optimize.service.security.ApplicationAuthorizationService;
 import org.camunda.optimize.service.security.SessionService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,17 +32,14 @@ public class RequestAuthenticationFilter implements ContainerRequestFilter {
   private static final String LOG_IN = "/login";
   private static final String STATUS = "status";
 
-  @Autowired
   private SessionService sessionService;
+  private ConfigurationService configurationService;
 
   @Autowired
-  private AuthenticationExtractorProvider authenticationExtractorProvider;
-
-  @Autowired
-  private EngineContextFactory engineContextFactory;
-
-  @Autowired
-  private ApplicationAuthorizationService applicationAuthorizationService;
+  public RequestAuthenticationFilter(SessionService sessionService, ConfigurationService configurationService) {
+    this.sessionService = sessionService;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void filter(ContainerRequestContext requestContext) {
@@ -78,7 +73,9 @@ public class RequestAuthenticationFilter implements ContainerRequestFilter {
       redirectToLoginPage(requestContext);
     } else {
       requestContext.abortWith(
-        Response.status(Response.Status.UNAUTHORIZED).cookie(createDeleteOptimizeAuthCookie()).build()
+        Response.status(Response.Status.UNAUTHORIZED)
+          .cookie(createDeleteOptimizeAuthCookie(configurationService.isHttpDisabled()))
+          .build()
       );
     }
   }
@@ -91,7 +88,9 @@ public class RequestAuthenticationFilter implements ContainerRequestFilter {
       logger.debug("can't build URI to login", e);
     }
     requestContext.abortWith(
-      Response.temporaryRedirect(loginUri).cookie(createDeleteOptimizeAuthCookie()).build()
+      Response.temporaryRedirect(loginUri)
+        .cookie(createDeleteOptimizeAuthCookie(configurationService.isHttpDisabled()))
+        .build()
     );
   }
 

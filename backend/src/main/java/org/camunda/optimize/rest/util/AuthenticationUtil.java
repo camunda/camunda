@@ -76,14 +76,16 @@ public class AuthenticationUtil {
     return authorizationHeader.substring(AUTH_COOKIE_TOKEN_VALUE_PREFIX.length()).trim();
   }
 
-  public static NewCookie createDeleteOptimizeAuthCookie() {
+  public static NewCookie createDeleteOptimizeAuthCookie(final boolean isSecure) {
     logger.trace("Deleting Optimize authentication cookie.");
     return new NewCookie(
-      OPTIMIZE_AUTHORIZATION, "", "/", null, "delete cookie", 0, false
+      OPTIMIZE_AUTHORIZATION, "", "/", null, "delete cookie", 0, isSecure
     );
   }
 
-  public static NewCookie createNewOptimizeAuthCookie(final String securityToken, final int lifeTimeMinutes) {
+  public static NewCookie createNewOptimizeAuthCookie(final String securityToken,
+                                                      final int lifeTimeMinutes,
+                                                      final boolean isSecure) {
     logger.trace("Creating Optimize authentication cookie.");
     return new NewCookie(
       OPTIMIZE_AUTHORIZATION,
@@ -98,7 +100,7 @@ public class AuthenticationUtil {
         .map(issuedAt -> issuedAt.plus(lifeTimeMinutes, ChronoUnit.MINUTES))
         .map(Date::from)
         .orElse(null),
-      false,
+      isSecure,
       false
     );
   }

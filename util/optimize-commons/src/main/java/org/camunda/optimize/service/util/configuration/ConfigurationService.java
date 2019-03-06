@@ -123,7 +123,11 @@ public class ConfigurationService {
   private String containerKeystorePassword;
   private String containerKeystoreLocation;
   private Integer containerHttpsPort;
-  private Integer containerHttpPort;
+
+  // we use an optional here to allow to test if
+  // certain cookie flags are set when http is disabled.
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  private Optional<Integer> containerHttpPort;
 
   private Integer maxStatusConnections;
   private Boolean checkMetadata;
@@ -698,10 +702,20 @@ public class ConfigurationService {
   }
 
   public Optional<Integer> getContainerHttpPort() {
+    // containerHttpPort is optional so we can adjust
+    // it during tests. Thus it is still null initially
+    // and need to be checked therefore.
+    //noinspection OptionalAssignedToNull
     if (containerHttpPort == null) {
-      containerHttpPort = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_HTTP_PORT);
+      containerHttpPort =
+        Optional.ofNullable(configJsonContext.read(ConfigurationServiceConstants.CONTAINER_HTTP_PORT));
     }
-    return Optional.ofNullable(containerHttpPort);
+    return containerHttpPort;
+  }
+
+  @JsonIgnore
+  public boolean isHttpDisabled() {
+    return !getContainerHttpPort().isPresent();
   }
 
   public int getMaxStatusConnections() {
@@ -1087,7 +1101,7 @@ public class ConfigurationService {
   }
 
   public void setContainerHttpPort(Integer containerHttpPort) {
-    this.containerHttpPort = containerHttpPort;
+    this.containerHttpPort = Optional.ofNullable(containerHttpPort);
   }
 
   public void setCheckMetadata(Boolean checkMetadata) {
