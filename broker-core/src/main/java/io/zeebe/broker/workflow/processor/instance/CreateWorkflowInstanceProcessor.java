@@ -157,19 +157,19 @@ public class CreateWorkflowInstanceProcessor
       WorkflowInstanceCreationRecord record, CommandControl controller) {
     final DeployedWorkflow workflow;
 
-    if (record.getKey() >= 0) {
-      workflow = getWorkflow(record.getKey(), controller);
-    } else {
-      final DirectBuffer bpmnProcessId = record.getBpmnProcessId();
+    final DirectBuffer bpmnProcessId = record.getBpmnProcessId();
 
-      if (bpmnProcessId.capacity() == 0) {
-        controller.reject(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED);
-        workflow = null;
-      } else if (record.getVersion() >= 0) {
+    if (bpmnProcessId.capacity() > 0) {
+      if (record.getVersion() >= 0) {
         workflow = getWorkflow(bpmnProcessId, record.getVersion(), controller);
       } else {
         workflow = getWorkflow(bpmnProcessId, controller);
       }
+    } else if (record.getKey() >= 0) {
+      workflow = getWorkflow(record.getKey(), controller);
+    } else {
+      controller.reject(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED);
+      workflow = null;
     }
 
     return workflow;
