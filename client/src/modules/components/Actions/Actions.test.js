@@ -148,7 +148,7 @@ describe('Actions', () => {
         jest.clearAllMocks();
       });
 
-      it('should call handle the cancelation of an instance ', async () => {
+      it('should handle the cancelation of an instance ', async () => {
         //given
         const node = shallow(
           <Actions instance={mockInstance} onButtonClick={onButtonClick} />
@@ -173,41 +173,6 @@ describe('Actions', () => {
 
         // expect callback to be called
         expect(onButtonClick).toHaveBeenCalled();
-      });
-    });
-
-    describe('failing operations', () => {
-      beforeEach(() => {
-        api.applyOperation = mockResolvedAsyncFn({
-          count: 0,
-          reason: 'Operation could not be started'
-        });
-        mockInstance = createInstance({state: STATE.INCIDENT, operations: []});
-      });
-      afterEach(() => {
-        jest.clearAllMocks();
-      });
-
-      it('should not call the callback if operation fails', async () => {
-        //given
-        const node = shallow(
-          <Actions instance={mockInstance} onButtonClick={onButtonClick} />
-        );
-
-        const actionItem = node.find(ActionItems.Item).at(0);
-
-        // when
-        actionItem.simulate('click');
-
-        await flushPromises();
-        node.update();
-
-        // expect
-        expect(onButtonClick).not.toHaveBeenCalled();
-        // expect Spinner to appear
-        expect(node.find(ActionStatus).props().operationState).not.toEqual(
-          OPERATION_STATE.SCHEDULED
-        );
       });
     });
   });

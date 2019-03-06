@@ -30,7 +30,6 @@ const ActionStatus = ({
   operationType,
   selected,
   instance,
-  hasActiveOperation,
   ...props
 }) => {
   if (ACTIVE_OPERATION_STATES.includes(operationState)) {
