@@ -26,7 +26,7 @@ var (
 )
 
 var setVariablesCmd = &cobra.Command{
-	Use:     "payload <key>",
+	Use:     "variables <key>",
 	Short:   "Sets the variables of a given flow element",
 	Args:    keyArg(&setVariablesKey),
 	PreRunE: initClient,
@@ -39,7 +39,7 @@ var setVariablesCmd = &cobra.Command{
 		request.Local(setVariablesLocalFlag)
 		_, err = request.Send()
 		if err == nil {
-			log.Println("Updated the variables of element instance with key", setVariablesKey, "to", setVariablesVariablesFlag)
+			log.Println("Set the variables of element instance with key", setVariablesKey, "to", setVariablesVariablesFlag)
 		}
 
 		return err
@@ -47,10 +47,10 @@ var setVariablesCmd = &cobra.Command{
 }
 
 func init() {
-	updateCmd.AddCommand(setVariablesCmd)
+	setCmd.AddCommand(setVariablesCmd)
 
 	setVariablesCmd.Flags().StringVar(&setVariablesVariablesFlag, "variables", "{}", "Specify the variables as JSON object string")
-	_ = setVariablesCmd.MarkFlagRequired("variables")
+	setVariablesCmd.MarkFlagRequired("variables")
 
 	setVariablesCmd.Flags().BoolVar(&setVariablesLocalFlag, "local", false, "Specify local or propagating update semantics")
 }
