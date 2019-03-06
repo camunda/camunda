@@ -67,6 +67,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean variable = true;
     public boolean variableDocument = false;
     public boolean workflowInstance = true;
+    public boolean workflowInstanceCreation = false;
     public boolean workflowInstanceSubscription = false;
 
     @Override
@@ -101,6 +102,8 @@ public class ElasticsearchExporterConfiguration {
           + variableDocument
           + ", workflowInstance="
           + workflowInstance
+          + ", workflowInstanceCreation="
+          + workflowInstanceCreation
           + ", workflowInstanceSubscription="
           + workflowInstanceSubscription
           + '}';
@@ -161,6 +164,8 @@ public class ElasticsearchExporterConfiguration {
         return index.variableDocument;
       case WORKFLOW_INSTANCE:
         return index.workflowInstance;
+      case WORKFLOW_INSTANCE_CREATION:
+        return index.workflowInstanceCreation;
       case WORKFLOW_INSTANCE_SUBSCRIPTION:
         return index.workflowInstanceSubscription;
       default:

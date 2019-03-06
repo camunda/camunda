@@ -140,6 +140,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.workflowInstance) {
         createValueIndexTemplate(ValueType.WORKFLOW_INSTANCE);
       }
+      if (index.workflowInstanceCreation) {
+        createValueIndexTemplate(ValueType.WORKFLOW_INSTANCE_CREATION);
+      }
       if (index.workflowInstanceSubscription) {
         createValueIndexTemplate(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
       }

@@ -21,6 +21,7 @@ import static io.zeebe.exporter.record.Assertions.assertThat;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
@@ -30,7 +31,9 @@ import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.VariableDocumentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.VariableRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.WorkflowInstanceCreationRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
@@ -55,13 +58,16 @@ import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.MessageRecordValue;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.RaftRecordValue;
+import io.zeebe.exporter.record.value.VariableDocumentRecordValue;
 import io.zeebe.exporter.record.value.VariableRecordValue;
+import io.zeebe.exporter.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.ErrorType;
+import io.zeebe.protocol.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
@@ -69,7 +75,9 @@ import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.ExporterIntent;
@@ -80,12 +88,15 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.RaftIntent;
+import io.zeebe.protocol.intent.VariableDocumentIntent;
 import io.zeebe.protocol.intent.VariableIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.test.util.collection.Maps;
 import io.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.time.Instant;
@@ -707,6 +718,51 @@ public class ExporterStreamProcessorTest {
 
     // then
     assertRecordExported(VariableIntent.CREATED, record, recordValue);
+  }
+
+  @Test
+  public void shouldExportVariableDocumentRecord() {
+    // given
+    final long scopeKey = 1L;
+    final VariableDocumentUpdateSemantic updateSemantics = VariableDocumentUpdateSemantic.LOCAL;
+    final Map<String, Object> document = Maps.of(entry("foo", "bar"), entry("baz", "boz"));
+
+    final VariableDocumentRecord record =
+        new VariableDocumentRecord()
+            .setScopeKey(scopeKey)
+            .setUpdateSemantics(updateSemantics)
+            .setDocument(MsgPackUtil.asMsgPack(document));
+
+    final VariableDocumentRecordValue recordValue =
+        new VariableDocumentRecordValueImpl(OBJECT_MAPPER, scopeKey, updateSemantics, document);
+
+    // then
+    assertRecordExported(VariableDocumentIntent.UPDATED, record, recordValue);
+  }
+
+  @Test
+  public void shouldExportWorkflowInstanceCreationRecord() {
+    // given
+    final String processId = "process";
+    final long key = 1L;
+    final int version = 1;
+    final long instanceKey = 2L;
+    final Map<String, Object> variables = Maps.of(entry("foo", "bar"), entry("baz", "boz"));
+
+    final WorkflowInstanceCreationRecord record =
+        new WorkflowInstanceCreationRecord()
+            .setBpmnProcessId(processId)
+            .setKey(key)
+            .setVersion(version)
+            .setVariables(MsgPackUtil.asMsgPack(variables))
+            .setInstanceKey(instanceKey);
+
+    final WorkflowInstanceCreationRecordValue recordValue =
+        new WorkflowInstanceCreationRecordValueImpl(
+            OBJECT_MAPPER, processId, version, key, instanceKey, variables);
+
+    // then
+    assertRecordExported(WorkflowInstanceCreationIntent.CREATED, record, recordValue);
   }
 
   @Test

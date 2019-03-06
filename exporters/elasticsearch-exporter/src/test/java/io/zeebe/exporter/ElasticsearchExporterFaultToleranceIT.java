@@ -22,7 +22,7 @@ import org.elasticsearch.ElasticsearchStatusException;
 import org.junit.Test;
 
 public class ElasticsearchExporterFaultToleranceIT
-    extends AbstractElasticsearchExporterIntegrationTest {
+    extends AbstractElasticsearchExporterIntegrationTestCase {
 
   @Test
   public void shouldExportEvenIfElasticNotInitiallyReachable() {
