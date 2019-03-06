@@ -43,8 +43,7 @@ public class CreateWorkflowInstanceCommandImpl
     this.asyncStub = asyncStub;
     this.objectMapper = objectMapper;
 
-    // gRPC default for numerical value is 0, but in Zeebe default values are -1
-    this.builder = CreateWorkflowInstanceRequest.newBuilder().setWorkflowKey(-1);
+    this.builder = CreateWorkflowInstanceRequest.newBuilder();
   }
 
   @Override
