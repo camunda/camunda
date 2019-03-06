@@ -46,7 +46,7 @@ var _ = Describe("should send TopologyRequest to Gateway and receive TopologyRes
 
 			Expect(len(response.Brokers)).To(Equal(1))
 			Expect(len(response.Brokers[0].Partitions)).To(Equal(1))
-			Expect(response.Brokers[0].Partitions[0].PartitionId).To(Equal(int32(0)))
+			Expect(response.Brokers[0].Partitions[0].PartitionId).To(Equal(int32(1)))
 			Expect(response.Brokers[0].Partitions[0].Role).To(Equal(pb.Partition_LEADER))
 
 			Expect(err).To(BeNil())
