@@ -24,7 +24,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ElasticsearchExporterIT extends AbstractElasticsearchExporterIntegrationTest {
+public class ElasticsearchExporterIT extends AbstractElasticsearchExporterIntegrationTestCase {
   @Parameter(0)
   public String name;
 

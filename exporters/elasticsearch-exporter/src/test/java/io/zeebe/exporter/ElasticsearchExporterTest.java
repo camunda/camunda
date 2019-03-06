@@ -75,6 +75,7 @@ public class ElasticsearchExporterTest {
     config.index.variable = true;
     config.index.variableDocument = true;
     config.index.workflowInstance = true;
+    config.index.workflowInstanceCreation = true;
     config.index.workflowInstanceSubscription = true;
 
     // when
@@ -94,6 +95,7 @@ public class ElasticsearchExporterTest {
     verify(esClient).putIndexTemplate(ValueType.VARIABLE);
     verify(esClient).putIndexTemplate(ValueType.VARIABLE_DOCUMENT);
     verify(esClient).putIndexTemplate(ValueType.WORKFLOW_INSTANCE);
+    verify(esClient).putIndexTemplate(ValueType.WORKFLOW_INSTANCE_CREATION);
     verify(esClient).putIndexTemplate(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
   }
 
@@ -111,6 +113,7 @@ public class ElasticsearchExporterTest {
     config.index.variable = true;
     config.index.variableDocument = true;
     config.index.workflowInstance = true;
+    config.index.workflowInstanceCreation = true;
     config.index.workflowInstanceSubscription = true;
 
     createAndOpenExporter();
@@ -127,6 +130,7 @@ public class ElasticsearchExporterTest {
           ValueType.VARIABLE,
           ValueType.VARIABLE_DOCUMENT,
           ValueType.WORKFLOW_INSTANCE,
+          ValueType.WORKFLOW_INSTANCE_CREATION,
           ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION
         };
 
@@ -153,6 +157,7 @@ public class ElasticsearchExporterTest {
     config.index.variable = false;
     config.index.variableDocument = false;
     config.index.workflowInstance = false;
+    config.index.workflowInstanceCreation = false;
     config.index.workflowInstanceSubscription = false;
 
     createAndOpenExporter();
@@ -169,6 +174,7 @@ public class ElasticsearchExporterTest {
           ValueType.VARIABLE,
           ValueType.VARIABLE_DOCUMENT,
           ValueType.WORKFLOW_INSTANCE,
+          ValueType.WORKFLOW_INSTANCE_CREATION,
           ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION
         };
 

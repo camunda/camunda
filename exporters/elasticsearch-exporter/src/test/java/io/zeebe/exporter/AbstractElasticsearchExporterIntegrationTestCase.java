@@ -40,7 +40,7 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 
-public abstract class AbstractElasticsearchExporterIntegrationTest {
+public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();

@@ -1,0 +1,38 @@
+{
+  "index_patterns": [
+    "zeebe-record-workflow-instance-creation_*"
+  ],
+  "order": 20,
+  "aliases": {
+    "zeebe-record-workflow-instance-creation": {}
+  },
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "bpmnProcessId": {
+              "type": "keyword"
+            },
+            "version": {
+              "type": "integer"
+            },
+            "key": {
+              "type": "long"
+            },
+            "instanceKey": {
+              "type": "long"
+            },
+            "variables": {
+              "type": "object",
+              "dynamic": false,
+              "store": true,
+              "index": true
+            }
+          }
+        }
+      }
+    }
+  }
+}
