@@ -10,19 +10,19 @@ import UpdateCollectionModal from './subComponents/UpdateCollectionModal';
 
 import './Collections.scss';
 
-const HeaderIcon = entityIcons.collection.header.Component;
+const EntityIcon = entityIcons.collection.generic.Component;
 const OpenCloseIcon = entityIcons.entityOpenClose;
 
 class Collections extends React.Component {
   state = {
-    limit: true
+    showAllId: null
   };
 
-  renderReport = (itemData, idx) => {
+  renderReport = (itemData, collection) => {
     const {Icon: ReportIcon, label} = getReportIcon(itemData);
 
     return (
-      <li className="item" key={idx}>
+      <li className="item" key={itemData.id}>
         <Link className="info" to={`/report/${itemData.id}`}>
           <span className="icon" title={label}>
             <ReportIcon />
@@ -39,11 +39,15 @@ class Collections extends React.Component {
             </div>
           </div>
         </Link>
+        {this.props.renderCollectionsDropdown(itemData, collection)}
         <div className="operations">
           <Link title="Edit Report" to={`/report/${itemData.id}/edit`}>
             <Icon title="Edit Report" type="edit" className="editLink" />
           </Link>
-          <Button title="Duplicate Report" onClick={this.props.duplicateReport(itemData)}>
+          <Button
+            title="Duplicate Report"
+            onClick={this.props.duplicateReport(itemData, collection)}
+          >
             <Icon type="copy-document" title="Duplicate Report" className="duplicateIcon" />
           </Button>
           <Button
@@ -57,35 +61,34 @@ class Collections extends React.Component {
     );
   };
 
-  renderCollection = ({id, name, created, owner, data}, idx) => {
+  renderCollection = collection => {
+    const {id, name, created, owner, data} = collection;
     const reports = data ? data.entities : [];
 
     return (
-      <li key={idx} className="collection">
+      <li key={id} className="collection">
         <div className="item">
-          <div className="info">
+          <Button
+            className="info ToggleCollapse"
+            onClick={() => this.setState({[id]: !this.state[id]})}
+          >
+            <OpenCloseIcon className={classnames('collapseIcon', {right: !this.state[id]})} />
             <span className="icon">
-              <HeaderIcon />
+              <EntityIcon />
             </span>
-            <Button
-              className="ToggleCollapse"
-              onClick={() => this.setState({[id]: !this.state[id]})}
-            >
-              <OpenCloseIcon className={classnames('collapseIcon', {right: !this.state[id]})} />
-
-              <div className="textInfo">
-                <div className="dataTitle">
-                  <h2>{name}</h2>
-                </div>
-                <div className="extraInfo">
-                  <div className="custom">
-                    <span>{reports.length} Items</span>
-                  </div>
-                  <LastModified label="Created" date={created} author={owner} />
-                </div>
+            <div className="textInfo">
+              <div className="dataTitle">
+                <h2>{name}</h2>
               </div>
-            </Button>
-          </div>
+              <div className="extraInfo">
+                <div className="custom">
+                  <span>{reports.length} Items</span>
+                </div>
+                <LastModified label="Created" date={created} author={owner} />
+              </div>
+            </div>
+          </Button>
+          <div className="entityCollections" />
           <div className="operations">
             <Button
               title="Edit Collection"
@@ -105,25 +108,29 @@ class Collections extends React.Component {
           <>
             {reports.length > 0 ? (
               <ul className="entityList">
-                {reports.slice(0, this.state.limit ? 5 : undefined).map(this.renderReport)}
+                {reports
+                  .slice(0, this.state.showAllId === id ? undefined : 5)
+                  .map(report => this.renderReport(report, collection))}
               </ul>
             ) : (
               <p className="emptyCollection">There are no items in this Collection.</p>
             )}
-            {!this.state.loading &&
-              reports.length > 5 &&
-              (this.state.limit ? (
-                <>
-                  {reports.length} Reports.{' '}
-                  <Button type="link" onClick={() => this.setState({limit: false})}>
-                    Show all...
+            <div className="showAll">
+              {!this.state.loading &&
+                reports.length > 5 &&
+                (this.state.showAllId !== id ? (
+                  <>
+                    {reports.length} Reports.{' '}
+                    <Button type="link" onClick={() => this.setState({showAllId: id})}>
+                      Show all...
+                    </Button>
+                  </>
+                ) : (
+                  <Button type="link" onClick={() => this.setState({showAllId: null})}>
+                    Show less...
                   </Button>
-                </>
-              ) : (
-                <Button type="link" onClick={() => this.setState({limit: true})}>
-                  Show less...
-                </Button>
-              ))}
+                ))}
+            </div>
           </>
         )}
       </li>

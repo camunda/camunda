@@ -6,7 +6,8 @@ import {
   loadReports,
   loadDashboards,
   createReport,
-  createDashboard
+  createDashboard,
+  updateCollection
 } from './service';
 import {checkDeleteConflict} from 'services';
 
@@ -111,6 +112,17 @@ it('should reload the list after duplication', async () => {
   expect(loadReports).toHaveBeenCalled();
 });
 
+it('should add the entity to the collection that was duplicated from', async () => {
+  createReport.mockReturnValueOnce('newReport');
+  const node = shallow(<Overview {...props} />);
+
+  await node.instance().duplicateReport(processReport, collection)({target: {blur: jest.fn()}});
+
+  expect(updateCollection).toHaveBeenCalledWith('aCollectionId', {
+    data: {entities: ['reportID', 'newReport']}
+  });
+});
+
 it('should check for deletion conflicts', async () => {
   checkDeleteConflict.mockClear();
   const node = shallow(<Overview {...props} />);
@@ -176,4 +188,18 @@ it('should duplicate dashboards', () => {
     ...dashboard,
     name: dashboard.name + ' - Copy'
   });
+});
+
+it('should correctly add report to a collection', async () => {
+  const node = shallow(<Overview {...props} />);
+  await node.instance().toggleReportCollection(processReport, collection, false)();
+  expect(updateCollection).toHaveBeenCalledWith('aCollectionId', {
+    data: {entities: ['reportID', 'reportID']}
+  });
+});
+
+it('should correctly remove report to a collection', async () => {
+  const node = shallow(<Overview {...props} />);
+  await node.instance().toggleReportCollection(processReport, collection, true)();
+  expect(updateCollection).toHaveBeenCalledWith('aCollectionId', {data: {entities: []}});
 });

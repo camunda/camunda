@@ -140,3 +140,19 @@ export async function loadAlerts() {
 export async function deleteAlert(id) {
   return await del('api/alert/' + id);
 }
+
+export function getEntitiesCollections(collections) {
+  const entitiesCollections = {};
+
+  collections.forEach(collection => {
+    (collection.data ? collection.data.entities : []).forEach(entity => {
+      if (entitiesCollections[entity.id]) {
+        entitiesCollections[entity.id].push(collection);
+      } else {
+        entitiesCollections[entity.id] = [collection];
+      }
+    });
+  });
+
+  return entitiesCollections;
+}

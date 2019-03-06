@@ -44,7 +44,7 @@ const icons = {
     generic: {Component: dashboard}
   },
   collection: {
-    header: {Component: collection}
+    generic: {Component: collection}
   },
   entityOpenClose
 };

@@ -6,7 +6,9 @@ import Reports from './Reports';
 import Dashboards from './Dashboards';
 import Collections from './Collections';
 import {Redirect} from 'react-router-dom';
+import CollectionsDropdown from './subComponents/CollectionsDropdown';
 import {checkDeleteConflict} from 'services';
+import {getEntitiesCollections} from './service';
 
 import {ConfirmationModal, Button, Dropdown, Icon, Message, LoadingIndicator} from 'components';
 
@@ -96,15 +98,19 @@ class Overview extends Component {
     this.loadData();
   };
 
-  duplicateReport = report => async evt => {
+  duplicateReport = (report, collection) => async evt => {
     evt.target.blur();
 
     const copy = {
       ...report,
       name: report.name + ' - Copy'
     };
-    await createReport(copy);
-    this.loadData();
+    const id = await createReport(copy);
+    if (collection) {
+      this.toggleReportCollection({id}, collection, false)();
+    } else {
+      this.loadData();
+    }
   };
 
   duplicateDashboard = dashboard => async evt => {
@@ -132,6 +138,34 @@ class Overview extends Component {
 
   hideDeleteModal = () => this.setState({deleting: false, conflicts: []});
 
+  toggleReportCollection = (report, collection, isRemove) => async evt => {
+    const collectionReportsIds = (collection.data ? collection.data.entities : []).map(
+      report => report.id
+    );
+
+    const change = {data: {}};
+    if (isRemove) {
+      change.data.entities = collectionReportsIds.filter(id => id !== report.id);
+    } else {
+      change.data.entities = [...collectionReportsIds, report.id];
+    }
+
+    await updateCollection(collection.id, change);
+    await this.loadData();
+  };
+
+  renderCollectionsDropdown = entitiesCollections => (currentEntity, currentCollection) => {
+    return (
+      <CollectionsDropdown
+        currentCollection={currentCollection}
+        report={currentEntity}
+        entityCollections={entitiesCollections[currentEntity.id]}
+        collections={this.state.collections}
+        toggleReportCollection={this.toggleReportCollection}
+      />
+    );
+  };
+
   render() {
     const {
       loading,
@@ -143,6 +177,8 @@ class Overview extends Component {
       deleting,
       conflicts
     } = this.state;
+
+    const entitiesCollections = getEntitiesCollections(collections);
 
     if (redirect) {
       return <Redirect to={`${redirect}/edit?new`} />;
@@ -193,6 +229,7 @@ class Overview extends Component {
           updateOrCreateCollection={this.updateOrCreateCollection}
           setCollectionToUpdate={this.setEntityToUpdate}
           showDeleteModalFor={this.showDeleteModalFor}
+          renderCollectionsDropdown={this.renderCollectionsDropdown(entitiesCollections)}
         />
         <Button color="green" className="createButton" onClick={this.createDashboard}>
           Create New Dashboard
@@ -224,6 +261,7 @@ class Overview extends Component {
           createProcessReport={this.createProcessReport}
           duplicateReport={this.duplicateReport}
           showDeleteModalFor={this.showDeleteModalFor}
+          renderCollectionsDropdown={this.renderCollectionsDropdown(entitiesCollections)}
         />
         <ConfirmationModal
           open={deleting !== false}

@@ -14,9 +14,13 @@
     width: 100%;
   }
 
-  .collection {
+  ul.entityList .collection {
     .collapseIcon {
-      margin-top: 25px;
+      margin-top: 0;
+    }
+
+    > .item .info .icon {
+      border-right: none;
     }
 
     .emptyCollection {
@@ -29,9 +33,9 @@
       font-size: 1.3em;
       font-weight: bold;
     }
-  }
-}
 
-.Overview ul.entityList .collection > .item .info .icon {
-  border-right: none;
+    .showAll {
+      margin-bottom: 10px;
+    }
+  }
 }

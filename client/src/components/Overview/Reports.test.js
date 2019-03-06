@@ -21,6 +21,17 @@ const processReport = {
   combined: false
 };
 
+const collection = {
+  id: 'aCollectionId',
+  name: 'aCollectionName',
+  created: '2017-11-11T11:11:11.1111+0200',
+  owner: 'user_id',
+  data: {
+    configuration: {},
+    entities: [processReport]
+  }
+};
+
 const combinedProcessReport = {
   id: 'reportID',
   name: 'Multiple reports',
@@ -49,9 +60,12 @@ const reports = [
 
 const props = {
   reports: [processReport],
+  collections: [collection],
   duplicateReport: jest.fn(),
   createProcessReport: jest.fn(),
-  showDeleteModalFor: jest.fn()
+  showDeleteModalFor: jest.fn(),
+  entitiesCollections: {reportID: [collection]},
+  renderCollectionsDropdown: jest.fn()
 };
 
 it('should show information about reports', () => {

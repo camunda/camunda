@@ -18,10 +18,11 @@
     box-shadow: none;
     padding: 0;
     text-align: left;
+    color: inherit;
 
     .collapseIcon {
       position: absolute;
-      left: -35px;
+      left: -25px;
       margin-top: 10px;
       &.right {
         transform: rotate(-90deg);
@@ -82,7 +83,7 @@
   ul.entityList {
     list-style: none;
     padding: 0;
-    margin: 0 0 16px 0;
+    margin: 0 0 10px 0;
     width: 100%;
 
     .item {
@@ -91,6 +92,12 @@
 
       &:not(.NoEntities):hover {
         background: #f7f7f7;
+
+        .entityCollections .Icon,
+        .entityCollections .noCollection {
+          visibility: visible;
+        }
+
         .operations {
           visibility: visible;
         }
@@ -108,6 +115,7 @@
           padding: 10px;
           border-right: 1px solid #ededed;
           margin-right: 10px;
+          max-width: 50px;
         }
 
         .textInfo {
@@ -160,7 +168,38 @@
               font-size: 14px;
               flex-grow: 0;
               flex-shrink: 0;
-              flex-basis: 60%;
+              flex-basis: 50%;
+            }
+          }
+        }
+      }
+
+      .entityCollections {
+        align-self: center;
+        margin: 0 10px;
+        min-width: 100px;
+
+        .Button {
+          border-radius: 15px;
+          height: 30px;
+          border: none;
+          background: none;
+          position: relative;
+
+          .Icon,
+          .noCollection {
+            visibility: hidden;
+          }
+
+          &:hover {
+            background: #eceef1;
+          }
+
+          &:focus {
+            background: #dadee3;
+            .Icon,
+            .noCollection {
+              visibility: visible;
             }
           }
         }
@@ -172,6 +211,8 @@
         flex-shrink: 0;
         align-self: center;
         visibility: hidden;
+        min-width: 130px;
+        justify-content: flex-end;
 
         > * {
           width: 32px;
@@ -206,10 +247,6 @@
         .editLink {
           font-size: 0.875em;
         }
-      }
-
-      .data {
-        padding: 0 4px;
       }
     }
   }

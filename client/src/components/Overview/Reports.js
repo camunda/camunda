@@ -75,6 +75,7 @@ class Reports extends React.Component {
                           </div>
                         </div>
                       </Link>
+                      {this.props.renderCollectionsDropdown(itemData)}
                       <div className="operations">
                         <Link title="Edit Report" to={`/report/${itemData.id}/edit`}>
                           <Icon title="Edit Report" type="edit" className="editLink" />

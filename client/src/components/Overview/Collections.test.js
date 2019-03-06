@@ -45,10 +45,12 @@ beforeAll(() => {
 const props = {
   updating: null,
   collections: [collection],
+  entitiesCollections: {reportID: [collection]},
   updateOrCreateCollection: jest.fn(),
   setCollectionToUpdate: jest.fn(),
   showDeleteModalFor: jest.fn(),
-  duplicateReport: jest.fn()
+  duplicateReport: jest.fn(),
+  renderCollectionsDropdown: jest.fn()
 };
 
 it('should show information about collections', () => {
@@ -99,7 +101,7 @@ it('should not show a button to show all reports if the number of reports is les
   expect(node).not.toIncludeText('Show all');
 });
 
-it('should show a button to show all report if the number of reports is greater than 5', () => {
+it('should show a button to show all reports if the number of reports is greater than 5', () => {
   const node = shallow(<Collections {...props} collections={[collectionWithManyReports]} />);
 
   node.find('.ToggleCollapse').simulate('click');
@@ -125,7 +127,7 @@ it('should show a link for reports inside collection', () => {
   expect(node.find('li > Link').prop('to')).toBe('/report/reportID');
 });
 
-it('should invok duplicate report when clicking duplicate report button', () => {
+it('should invok duplicate report when clicking duplicate report button with the report and the parent collection', () => {
   const node = shallow(<Collections {...props} />);
   node.find('.ToggleCollapse').simulate('click');
 
@@ -136,5 +138,5 @@ it('should invok duplicate report when clicking duplicate report button', () => 
     .first()
     .simulate('click', {target: {blur: jest.fn()}});
 
-  expect(props.duplicateReport).toHaveBeenCalledWith(processReport);
+  expect(props.duplicateReport).toHaveBeenCalledWith(processReport, collection);
 });

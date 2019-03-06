@@ -78,6 +78,7 @@ class Dashboards extends React.Component {
                         </div>
                       </div>
                     </Link>
+                    <div className="entityCollections" />
                     <div className="operations">
                       <Link title="Edit Dashboard" to={`/dashboard/${itemData.id}/edit`}>
                         <Icon title="Edit Dashboard" type="edit" className="editLink" />
