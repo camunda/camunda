@@ -64,10 +64,10 @@ it('should render content in DmnJsPortals', () => {
   node.setState({
     entryPoints: {
       rules: {
-        a: 'htmlA',
-        b: 'htmlB'
+        a: document.createElement('td'),
+        b: document.createElement('td')
       },
-      summary: 'htmlSum'
+      summary: document.createElement('td')
     }
   });
 
@@ -82,10 +82,10 @@ it('should display meaningful data if there are no evaluations', () => {
   node.setState({
     entryPoints: {
       rules: {
-        a: 'htmlA',
-        b: 'htmlB'
+        a: document.createElement('td'),
+        b: document.createElement('td')
       },
-      summary: 'htmlSum'
+      summary: document.createElement('td')
     }
   });
 

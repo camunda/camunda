@@ -14,13 +14,39 @@ export default class DecisionTable extends React.Component {
 
   container = React.createRef();
 
-  async componentDidMount() {
+  componentDidMount() {
     const {
       configuration: {xml},
       decisionDefinitionKey
     } = this.props.report.data;
 
+    this.loadXML(xml, decisionDefinitionKey);
+  }
+
+  componentDidUpdate({
+    report: {
+      data: {
+        decisionDefinitionKey: prevKey,
+        configuration: {xml: prevXml}
+      }
+    }
+  }) {
+    const {
+      configuration: {xml},
+      decisionDefinitionKey
+    } = this.props.report.data;
+
+    if (prevXml !== xml || prevKey !== decisionDefinitionKey) {
+      this.loadXML(xml, decisionDefinitionKey);
+    }
+  }
+
+  loadXML = (xml, decisionDefinitionKey) => {
     const {entryPoints, Addon: HitsColumn} = createHitsColumnAddon();
+
+    if (this.viewer) {
+      this.viewer.destroy();
+    }
 
     this.viewer = new Viewer({
       container: this.container.current,
@@ -37,19 +63,29 @@ export default class DecisionTable extends React.Component {
         () => this.setState({entryPoints})
       )
     );
-  }
+  };
 
   renderRuleCell = ruleId => {
     const {
       result,
       decisionInstanceCount,
       data: {
-        configuration: {hideAbsoluteValue, hideRelativeValue}
+        configuration: {hideAbsoluteValue, hideRelativeValue, showGradientBars}
       }
     } = this.props.report;
 
     const resultNumber = result[ruleId] || 0;
     const percentage = Math.round((resultNumber / decisionInstanceCount) * 1000) / 10 || 0;
+
+    const node = this.state.entryPoints.rules[ruleId];
+    if (showGradientBars) {
+      const progress = resultNumber / decisionInstanceCount;
+      const color = `hsl(223, 100%, ${90 - progress * 30}%)`;
+
+      node.style.background = `linear-gradient(to right, hsl(223, 100%, 90%) 0%, ${color} ${percentage}%, white ${percentage}%)`;
+    } else {
+      node.style.background = '';
+    }
 
     let outputString = `${resultNumber} (${percentage}%)`;
     if (hideAbsoluteValue && hideRelativeValue) {

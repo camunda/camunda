@@ -52,6 +52,7 @@ export default class Configuration extends React.Component {
         alwaysShowAbsolute: false,
         alwaysShowRelative: false,
         showInstanceCount: false,
+        showGradientBars: true,
         excludedColumns: [],
         pointMarkers: true,
         xLabel: '',

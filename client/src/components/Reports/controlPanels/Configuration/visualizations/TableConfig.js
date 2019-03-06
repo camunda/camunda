@@ -1,6 +1,7 @@
 import React from 'react';
 import ColumnSelection from './subComponents/ColumnSelection';
 import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
+import GradientBarsSwitch from './subComponents/GradientBarsSwitch';
 
 import {isDurationReport} from 'services';
 
@@ -10,23 +11,30 @@ export default function TableConfig({report, onChange}) {
     ? report.data.view.operation
     : Object.values(report.result)[0].data.view.operation;
 
+  const groupBy = !report.combined && report.data.groupBy.type;
+
   switch (viewType) {
     case 'rawData':
       typeSpecificComponent = <ColumnSelection report={report} onChange={onChange} />;
       break;
     case 'count':
       typeSpecificComponent = (
-        <RelativeAbsoluteSelection
-          absolute={!report.data.configuration.hideAbsoluteValue}
-          relative={!report.data.configuration.hideRelativeValue}
-          onChange={(type, value) => {
-            if (type === 'absolute') {
-              onChange({hideAbsoluteValue: {$set: !value}});
-            } else {
-              onChange({hideRelativeValue: {$set: !value}});
-            }
-          }}
-        />
+        <>
+          <RelativeAbsoluteSelection
+            absolute={!report.data.configuration.hideAbsoluteValue}
+            relative={!report.data.configuration.hideRelativeValue}
+            onChange={(type, value) => {
+              if (type === 'absolute') {
+                onChange({hideAbsoluteValue: {$set: !value}});
+              } else {
+                onChange({hideRelativeValue: {$set: !value}});
+              }
+            }}
+          />
+          {groupBy === 'matchedRule' && (
+            <GradientBarsSwitch configuration={report.data.configuration} onChange={onChange} />
+          )}
+        </>
       );
       break;
     default:
@@ -36,7 +44,7 @@ export default function TableConfig({report, onChange}) {
   return typeSpecificComponent;
 }
 
-// // disable popover for duration tables since they currently have no configuration
+// disable popover for duration tables since they currently have no configuration
 TableConfig.isDisabled = report => {
   return (
     report.combined &&

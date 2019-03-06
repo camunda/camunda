@@ -6,7 +6,10 @@ import TableConfig from './TableConfig';
 it('should render ColumnSelection for raw data views', () => {
   const node = shallow(
     <TableConfig
-      report={{combined: false, data: {view: {operation: 'rawData'}, configuration: {}}}}
+      report={{
+        combined: false,
+        data: {view: {operation: 'rawData'}, groupBy: {type: 'none'}, configuration: {}}
+      }}
     />
   );
 
@@ -16,11 +19,27 @@ it('should render ColumnSelection for raw data views', () => {
 it('should render relative abolute selection for count views', () => {
   const node = shallow(
     <TableConfig
-      report={{combined: false, data: {view: {operation: 'count'}, configuration: {}}}}
+      report={{
+        combined: false,
+        data: {view: {operation: 'count'}, groupBy: {type: 'startDate'}, configuration: {}}
+      }}
     />
   );
 
   expect(node.find('RelativeAbsoluteSelection')).toBePresent();
+});
+
+it('should render GradientBarsSwitch for group by rules', () => {
+  const node = shallow(
+    <TableConfig
+      report={{
+        combined: false,
+        data: {view: {operation: 'count'}, groupBy: {type: 'matchedRule'}, configuration: {}}
+      }}
+    />
+  );
+
+  expect(node.find('GradientBarsSwitch')).toBePresent();
 });
 
 it('should not display show instance count for combined reports', () => {
