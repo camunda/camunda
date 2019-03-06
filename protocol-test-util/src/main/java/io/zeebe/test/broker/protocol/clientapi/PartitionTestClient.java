@@ -40,6 +40,7 @@ import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.IncidentIntent;
@@ -415,6 +416,19 @@ public class PartitionTestClient {
         .put("retries", retries)
         .done()
         .sendAndAwait();
+  }
+
+  public MessageRecord publishMessage(Function<MessageRecord, MessageRecord> transformer) {
+    return publishMessage(transformer.apply(new MessageRecord()));
+  }
+
+  public MessageRecord publishMessage(MessageRecord request) {
+    final ExecuteCommandResponse response =
+        executeCommandRequest(ValueType.MESSAGE, MessageIntent.PUBLISH, request);
+
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(MessageIntent.PUBLISHED);
+    return response.readInto(new MessageRecord());
   }
 
   public ExecuteCommandResponse publishMessage(

@@ -18,12 +18,12 @@
 package io.zeebe.broker.exporter.record.value;
 
 import io.zeebe.broker.exporter.ExporterObjectMapper;
-import io.zeebe.broker.exporter.record.RecordValueWithPayloadImpl;
+import io.zeebe.broker.exporter.record.RecordValueImpl;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.BpmnElementType;
 import java.util.Objects;
 
-public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
+public class WorkflowInstanceRecordValueImpl extends RecordValueImpl
     implements WorkflowInstanceRecordValue {
   private final String bpmnProcessId;
   private final String elementId;
@@ -35,7 +35,6 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
 
   public WorkflowInstanceRecordValueImpl(
       final ExporterObjectMapper objectMapper,
-      final String payload,
       final String bpmnProcessId,
       final String elementId,
       final int version,
@@ -43,7 +42,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
       final long workflowInstanceKey,
       final long flowScopeKey,
       final BpmnElementType bpmnElementType) {
-    super(objectMapper, payload);
+    super(objectMapper);
     this.bpmnProcessId = bpmnProcessId;
     this.elementId = elementId;
     this.version = version;
@@ -96,9 +95,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
+
     final WorkflowInstanceRecordValueImpl that = (WorkflowInstanceRecordValueImpl) o;
     return version == that.version
         && workflowKey == that.workflowKey
@@ -141,9 +138,6 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
         + flowScopeKey
         + ", bpmnElementType="
         + bpmnElementType
-        + ", payload='"
-        + payload
-        + '\''
         + '}';
   }
 }

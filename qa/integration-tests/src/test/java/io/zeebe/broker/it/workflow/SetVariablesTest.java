@@ -32,6 +32,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.zeebe.test.util.record.WorkflowInstances;
 import java.util.Collections;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -158,13 +159,9 @@ public class SetVariablesTest {
         .open();
 
     // then
-    assertWorkflowInstanceCompleted(
-        workflowInstanceKey,
-        record ->
-            assertThat(record.getPayloadAsMap())
-                .hasSize(2)
-                .contains(entry("foo", "bar"))
-                .contains(entry("result", "ok")));
+    assertWorkflowInstanceCompleted(workflowInstanceKey);
+    assertThat(WorkflowInstances.getCurrentVariables(workflowInstanceKey))
+        .containsOnly(entry("foo", "\"bar\""), entry("result", "\"ok\""));
   }
 
   @Test

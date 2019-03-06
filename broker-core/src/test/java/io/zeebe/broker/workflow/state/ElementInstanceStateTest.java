@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -76,7 +75,6 @@ public class ElementInstanceStateTest {
     // when
     final WorkflowInstanceRecord otherRecord = createWorkflowInstanceRecord();
     otherRecord.setElementId("subProcess");
-    otherRecord.setPayload(asMsgPack("foo", "bar"));
     final ElementInstance childInstance =
         elementInstanceState.newInstance(
             parentInstance, 101, otherRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
@@ -307,48 +305,6 @@ public class ElementInstanceStateTest {
     final ElementInstance oldInstance = elementInstanceState.getInstance(100);
 
     assertElementInstance(oldInstance, 0);
-  }
-
-  @Test
-  public void shouldUpdateValueOfElementInstance() {
-    // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
-    final ElementInstance instance =
-        elementInstanceState.newInstance(
-            100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    // when
-    final DirectBuffer payload = asMsgPack("foo", "bar");
-    instance.getValue().setPayload(payload);
-    elementInstanceState.flushDirtyState();
-
-    // then
-    final ElementInstance updatedInstance = elementInstanceState.getInstance(100);
-
-    final WorkflowInstanceRecord value = updatedInstance.getValue();
-    assertThat(value.getPayload()).isEqualTo(payload);
-  }
-
-  @Test
-  public void shouldReplaceValueOfElementInstance() {
-    // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
-    final ElementInstance instance =
-        elementInstanceState.newInstance(
-            100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    // when
-    final WorkflowInstanceRecord otherRecord = createWorkflowInstanceRecord();
-    final DirectBuffer payload = asMsgPack("foo", "bar");
-    otherRecord.setPayload(payload);
-    instance.setValue(otherRecord);
-    elementInstanceState.flushDirtyState();
-
-    // then
-    final ElementInstance updatedInstance = elementInstanceState.getInstance(100);
-
-    final WorkflowInstanceRecord value = updatedInstance.getValue();
-    assertThat(value.getPayload()).isEqualTo(payload);
   }
 
   @Test

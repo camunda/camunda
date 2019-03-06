@@ -209,7 +209,7 @@ public class CreateWorkflowInstanceProcessorTest
     final long instanceKey = acceptedRecord.getInstanceKey();
     final ElementInstance instance = elementInstanceState.getInstance(instanceKey);
     final WorkflowInstanceRecord expectedElementActivatingRecord =
-        newExpectedElementActivatingRecord(workflow, instanceKey, payload);
+        newExpectedElementActivatingRecord(workflow, instanceKey);
     assertThat(instance.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     assertThat(instance.getValue()).isEqualTo(expectedElementActivatingRecord);
     verifyElementActivatingPublished(instanceKey, instance);
@@ -292,10 +292,9 @@ public class CreateWorkflowInstanceProcessorTest
   }
 
   private WorkflowInstanceRecord newExpectedElementActivatingRecord(
-      DeployedWorkflow workflow, long instanceKey, DirectBuffer payload) {
+      DeployedWorkflow workflow, long instanceKey) {
     return new WorkflowInstanceRecord()
         .setElementId(workflow.getBpmnProcessId())
-        .setPayload(payload)
         .setBpmnElementType(BpmnElementType.PROCESS)
         .setWorkflowKey(workflow.getKey())
         .setFlowScopeKey(-1L)

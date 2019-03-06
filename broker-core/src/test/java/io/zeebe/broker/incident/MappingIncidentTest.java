@@ -21,7 +21,6 @@ import static io.zeebe.broker.incident.IncidentAssert.assertIOMappingIncidentWit
 import static io.zeebe.broker.incident.IncidentAssert.assertIncidentContainErrorDetails;
 import static io.zeebe.broker.incident.IncidentAssert.assertIncidentRecordValue;
 import static io.zeebe.broker.test.MsgPackConstants.NODE_STRING_PATH;
-import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstancePayload;
 import static io.zeebe.protocol.intent.IncidentIntent.CREATED;
 import static io.zeebe.protocol.intent.IncidentIntent.RESOLVE;
 import static io.zeebe.protocol.intent.IncidentIntent.RESOLVED;
@@ -194,7 +193,6 @@ public class MappingIncidentTest {
     // then
     final Record<WorkflowInstanceRecordValue> followUpEvent =
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    assertWorkflowInstancePayload(followUpEvent, "{'foo':'bar'}");
 
     final Record incidentResolveCommand = testClient.receiveFirstIncidentCommand(RESOLVE);
     final Record incidentResolvedEvent = testClient.receiveFirstIncidentEvent(RESOLVED);
@@ -230,7 +228,6 @@ public class MappingIncidentTest {
     final Record<WorkflowInstanceRecordValue> followUpEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
             ELEMENT_COMPLETED, BpmnElementType.SERVICE_TASK);
-    assertWorkflowInstancePayload(followUpEvent, "{'foo':'bar'}");
 
     final Record incidentResolveCommand = testClient.receiveFirstIncidentCommand(RESOLVE);
     final Record incidentResolvedEvent = testClient.receiveFirstIncidentEvent(RESOLVED);
@@ -296,7 +293,6 @@ public class MappingIncidentTest {
     // then
     final Record<WorkflowInstanceRecordValue> followUpEvent =
         testClient.receiveElementInState("service", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    assertWorkflowInstancePayload(followUpEvent, "{'obj':'test'}");
 
     final Record<IncidentRecordValue> incidentResolvedEvent =
         testClient.receiveFirstIncidentEvent(RESOLVED);

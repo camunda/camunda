@@ -22,8 +22,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.stream.Stream;
 
 public class WorkflowInstanceRecordStream
-    extends ExporterRecordWithPayloadStream<
-        WorkflowInstanceRecordValue, WorkflowInstanceRecordStream> {
+    extends ExporterRecordStream<WorkflowInstanceRecordValue, WorkflowInstanceRecordStream> {
 
   public WorkflowInstanceRecordStream(final Stream<Record<WorkflowInstanceRecordValue>> stream) {
     super(stream);

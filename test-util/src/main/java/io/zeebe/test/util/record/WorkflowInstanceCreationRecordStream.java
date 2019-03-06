@@ -17,6 +17,7 @@ package io.zeebe.test.util.record;
 
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.WorkflowInstanceCreationRecordValue;
+import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.test.util.collection.Maps;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -64,5 +65,13 @@ public class WorkflowInstanceCreationRecordStream
   public WorkflowInstanceCreationRecordStream withVariables(
       Predicate<Map<String, Object>> matcher) {
     return valueFilter(v -> matcher.test(v.getVariables()));
+  }
+
+  public WorkflowInstanceCreationRecordStream limitToWorkflowInstanceCreated(
+      long workflowInstanceKey) {
+    return limit(
+        r ->
+            r.getMetadata().getIntent() == WorkflowInstanceCreationIntent.CREATED
+                && r.getValue().getInstanceKey() == workflowInstanceKey);
   }
 }

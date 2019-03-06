@@ -120,8 +120,6 @@ public class MessageStartEventTest {
     assertThat(records).allMatch(r -> r.getValue().getWorkflowKey() == workflowKey);
 
     assertThat(records.get(3).getValue()).hasElementId(EVENT_ID1);
-    final WorkflowInstanceRecordValue eventTriggeredRecord = records.get(4).getValue();
-    assertThat(eventTriggeredRecord.getPayloadAsMap()).containsEntry("foo", "bar");
   }
 
   @Test

@@ -62,11 +62,6 @@ public class IOMappingHelper {
 
       variablesState.setVariablesFromDocument(flowScopeKey, mergedPayload);
     }
-
-    // TODO (saig0) #1852: temporary way to calculate the right payload
-    if (flowScopeKey >= 0) {
-      record.setPayload(variablesState.getVariablesAsDocument(flowScopeKey));
-    }
   }
 
   public <T extends ExecutableFlowNode> void applyInputMappings(BpmnStepContext<T> context) {
@@ -89,8 +84,6 @@ public class IOMappingHelper {
           .getElementInstanceState()
           .getVariablesState()
           .setVariablesLocalFromDocument(context.getRecord().getKey(), mappedPayload);
-
-      context.getValue().setPayload(mappedPayload);
     }
   }
 

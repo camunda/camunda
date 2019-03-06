@@ -33,6 +33,7 @@ import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
+import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -120,10 +121,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     return workflowState
         .getEventScopeInstanceState()
         .triggerEvent(
-            eventScopeKey,
-            eventKey,
-            timer.getHandlerNodeId(),
-            WorkflowInstanceRecord.EMPTY_PAYLOAD);
+            eventScopeKey, eventKey, timer.getHandlerNodeId(), DocumentValue.EMPTY_DOCUMENT);
   }
 
   private long prepareEventOccurredEvent(
@@ -137,8 +135,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
       eventOccurredRecord
           .setBpmnElementType(BpmnElementType.START_EVENT)
           .setWorkflowKey(timer.getWorkflowKey())
-          .setElementId(timer.getHandlerNodeId())
-          .setPayload(WorkflowInstanceRecord.EMPTY_PAYLOAD);
+          .setElementId(timer.getHandlerNodeId());
     } else {
       eventOccurredKey = elementInstanceKey;
       eventOccurredRecord.wrap(

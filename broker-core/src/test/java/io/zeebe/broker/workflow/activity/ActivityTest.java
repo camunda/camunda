@@ -34,8 +34,10 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.record.WorkflowInstances;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -86,27 +88,35 @@ public class ActivityTest {
   public void shouldApplyInputMappingOnReady() {
     // given
     testClient.deploy(WITHOUT_BOUNDARY_EVENTS);
-    testClient.createWorkflowInstance(
-        r ->
-            r.setBpmnProcessId(PROCESS_ID)
-                .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"boo\": 2 }")));
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(PROCESS_ID)
+                        .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"boo\": 2 }")))
+            .getInstanceKey();
 
     // when
     final Record<WorkflowInstanceRecordValue> record =
         testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // then
-    assertThat(record.getValue().getPayloadAsMap()).containsOnly(entry("bar", 1));
+    final Map<String, String> variables =
+        WorkflowInstances.getCurrentVariables(workflowInstanceKey, record.getPosition());
+    assertThat(variables).contains(entry("bar", "1"));
   }
 
   @Test
   public void shouldApplyOutputMappingOnCompleting() {
     // given
     testClient.deploy(WITHOUT_BOUNDARY_EVENTS);
-    testClient.createWorkflowInstance(
-        r ->
-            r.setBpmnProcessId(PROCESS_ID)
-                .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"boo\": 2 }")));
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(PROCESS_ID)
+                        .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"boo\": 2 }")))
+            .getInstanceKey();
 
     // when
     final Record<JobRecordValue> jobRecord = testClient.receiveFirstJobEvent(JobIntent.CREATED);
@@ -115,7 +125,9 @@ public class ActivityTest {
     // then
     final Record<WorkflowInstanceRecordValue> record =
         testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    assertThat(record.getValue().getPayloadAsMap()).contains(entry("oof", 1));
+    final Map<String, String> variables =
+        WorkflowInstances.getCurrentVariables(workflowInstanceKey, record.getPosition());
+    assertThat(variables).contains(entry("bar", "1"));
   }
 
   @Test

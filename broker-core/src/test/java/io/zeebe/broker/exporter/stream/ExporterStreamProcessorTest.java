@@ -34,6 +34,7 @@ import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.VariableDocumentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.VariableRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceCreationRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
@@ -575,7 +576,6 @@ public class ExporterStreamProcessorTest {
         new WorkflowInstanceRecord()
             .setElementId(elementId)
             .setBpmnElementType(bpmnElementType)
-            .setPayload(PAYLOAD_MSGPACK)
             .setBpmnProcessId(wrapString(bpmnProcessId))
             .setVersion(version)
             .setWorkflowKey(workflowKey)
@@ -583,9 +583,8 @@ public class ExporterStreamProcessorTest {
             .setFlowScopeKey(flowScopeKey);
 
     final WorkflowInstanceRecordValue recordValue =
-        new io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl(
+        new WorkflowInstanceRecordValueImpl(
             OBJECT_MAPPER,
-            PAYLOAD_JSON,
             bpmnProcessId,
             elementId,
             version,

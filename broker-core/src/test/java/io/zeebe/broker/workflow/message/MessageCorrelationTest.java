@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.workflow.message;
 
-import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstancePayload;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -36,7 +36,10 @@ import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.WorkflowInstances;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
@@ -104,25 +107,34 @@ public class MessageCorrelationTest {
   @Test
   public void shouldCorrelateMessageIfEnteredBefore() {
     // given
+    final String messageId = UUID.randomUUID().toString();
     testClient.deploy(SINGLE_MESSAGE_WORKFLOW);
-
-    testClient
-        .createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")))
-        .getInstanceKey();
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")))
+            .getInstanceKey();
 
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED).exists())
         .isTrue();
 
     // when
-    testClient.publishMessage("message", "order-123", asMsgPack("foo", "bar"));
+    testClient.publishMessage(
+        r ->
+            r.setName("message")
+                .setTimeToLive(1000)
+                .setCorrelationKey("order-123")
+                .setPayload(asMsgPack("foo", "bar"))
+                .setMessageId(messageId));
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
         testClient.receiveElementInState(
             "receive-message", WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    assertWorkflowInstancePayload(event, "{'key':'order-123', 'foo':'bar'}");
+    final Map<String, String> variables =
+        WorkflowInstances.getCurrentVariables(workflowInstanceKey, event.getPosition());
+    assertThat(variables).containsOnly(entry("key", "\"order-123\""), entry("foo", "\"bar\""));
   }
 
   @Test
@@ -133,16 +145,19 @@ public class MessageCorrelationTest {
     testClient.publishMessage("message", "order-123", asMsgPack("foo", "bar"));
 
     // when
-    testClient
-        .createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")))
-        .getInstanceKey();
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")))
+            .getInstanceKey();
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
         testClient.receiveElementInState(
             "receive-message", WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    assertWorkflowInstancePayload(event, "{'key':'order-123', 'foo':'bar'}");
+    final Map<String, String> variables =
+        WorkflowInstances.getCurrentVariables(workflowInstanceKey, event.getPosition());
+    assertThat(variables).containsOnly(entry("key", "\"order-123\""), entry("foo", "\"bar\""));
   }
 
   @Test
@@ -153,16 +168,19 @@ public class MessageCorrelationTest {
     testClient.publishMessage("message", "123", asMsgPack("foo", "bar"));
 
     // when
-    testClient
-        .createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", 123)))
-        .getInstanceKey();
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", 123)))
+            .getInstanceKey();
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
         testClient.receiveFirstWorkflowInstanceEvent(
             WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.PROCESS);
-    assertWorkflowInstancePayload(event, "{'key':123, 'foo':'bar'}");
+    final Map<String, String> variables =
+        WorkflowInstances.getCurrentVariables(workflowInstanceKey, event.getPosition());
+    assertThat(variables).containsOnly(entry("key", "123"), entry("foo", "\"bar\""));
   }
 
   @Test
@@ -174,17 +192,19 @@ public class MessageCorrelationTest {
     testClient.publishMessage("message", "order-123", asMsgPack("nr", 2));
 
     // when
-    testClient
-        .createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")))
-        .getInstanceKey();
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")))
+            .getInstanceKey();
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
         testClient.receiveFirstWorkflowInstanceEvent(
             WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.PROCESS);
-
-    assertWorkflowInstancePayload(event, "{'key':'order-123', 'nr':1}");
+    final Map<String, String> variables =
+        WorkflowInstances.getCurrentVariables(workflowInstanceKey, event.getPosition());
+    assertThat(variables).containsOnly(entry("key", "\"order-123\""), entry("nr", "1"));
   }
 
   @Test
@@ -222,17 +242,19 @@ public class MessageCorrelationTest {
     testClient.publishMessage("message", "order-123", asMsgPack("nr", 2), 10_000);
 
     // when
-    testClient
-        .createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")))
-        .getInstanceKey();
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")))
+            .getInstanceKey();
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
         testClient.receiveElementInState(
             "receive-message", WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    assertWorkflowInstancePayload(event, "{'key':'order-123', 'nr':2}");
+    final Map<String, String> variables =
+        WorkflowInstances.getCurrentVariables(workflowInstanceKey, event.getPosition());
+    assertThat(variables).containsOnly(entry("key", "\"order-123\""), entry("nr", "2"));
   }
 
   @Test
@@ -261,14 +283,20 @@ public class MessageCorrelationTest {
             workflowInstanceKey1,
             WorkflowInstanceIntent.ELEMENT_COMPLETED,
             BpmnElementType.INTERMEDIATE_CATCH_EVENT);
-    assertWorkflowInstancePayload(catchEventOccurred1, "{'key':'order-123', 'nr':1}");
+    final Map<String, String> variables1 =
+        WorkflowInstances.getCurrentVariables(
+            workflowInstanceKey1, catchEventOccurred1.getPosition());
+    assertThat(variables1).containsOnly(entry("key", "\"order-123\""), entry("nr", "1"));
 
     final Record<WorkflowInstanceRecordValue> catchEventOccurred2 =
         testClient.receiveFirstWorkflowInstanceEvent(
             workflowInstanceKey2,
             WorkflowInstanceIntent.ELEMENT_COMPLETED,
             BpmnElementType.INTERMEDIATE_CATCH_EVENT);
-    assertWorkflowInstancePayload(catchEventOccurred2, "{'key':'order-456', 'nr':2}");
+    final Map<String, String> variables2 =
+        WorkflowInstances.getCurrentVariables(
+            workflowInstanceKey2, catchEventOccurred2.getPosition());
+    assertThat(variables2).containsOnly(entry("key", "\"order-456\""), entry("nr", "2"));
   }
 
   @Test
@@ -319,14 +347,19 @@ public class MessageCorrelationTest {
         .getInstanceKey();
 
     // then
-    assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .filter(r -> r.getValue().getElementId().startsWith("message"))
-                .limit(2)
-                .asList())
-        .extracting(
-            r -> tuple(r.getValue().getElementId(), r.getValue().getPayloadAsMap().get("nr")))
-        .contains(tuple("message1", 1), tuple("message2", 2));
+    final List<Object> correlatedValues =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .filter(r -> r.getValue().getElementId().startsWith("message"))
+            .limit(2)
+            .map(
+                event ->
+                    tuple(
+                        event.getValue().getElementId(),
+                        WorkflowInstances.getCurrentVariables(
+                                event.getValue().getWorkflowInstanceKey(), event.getPosition())
+                            .get("nr")))
+            .collect(Collectors.toList());
+    assertThat(correlatedValues).contains(tuple("message1", "1"), tuple("message2", "2"));
   }
 
   @Test
@@ -358,14 +391,19 @@ public class MessageCorrelationTest {
     testClient.publishMessage("ping", "123", asMsgPack("nr", 2));
 
     // then
-    assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .filter(r -> r.getValue().getElementId().startsWith("message"))
-                .limit(2)
-                .asList())
-        .extracting(
-            r -> tuple(r.getValue().getElementId(), r.getValue().getPayloadAsMap().get("nr")))
-        .contains(tuple("message1", 1), tuple("message2", 2));
+    final List<Object> correlatedValues =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .filter(r -> r.getValue().getElementId().startsWith("message"))
+            .limit(2)
+            .map(
+                event ->
+                    tuple(
+                        event.getValue().getElementId(),
+                        WorkflowInstances.getCurrentVariables(
+                                event.getValue().getWorkflowInstanceKey(), event.getPosition())
+                            .get("nr")))
+            .collect(Collectors.toList());
+    assertThat(correlatedValues).contains(tuple("message1", "1"), tuple("message2", "2"));
   }
 
   @Test
@@ -399,13 +437,17 @@ public class MessageCorrelationTest {
     testClient.publishMessage("ping", "123", asMsgPack("nr", 2));
 
     // then
-    assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .filter(r -> r.getValue().getElementId().startsWith("message"))
-                .limit(2)
-                .asList())
-        .extracting(r -> r.getValue().getPayloadAsMap().get("nr"))
-        .contains(1, 2);
+    final List<Object> correlatedValues =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .filter(r -> r.getValue().getElementId().startsWith("message"))
+            .limit(2)
+            .map(
+                event ->
+                    WorkflowInstances.getCurrentVariables(
+                            event.getValue().getWorkflowInstanceKey(), event.getPosition())
+                        .get("nr"))
+            .collect(Collectors.toList());
+    assertThat(correlatedValues).contains("1", "2");
   }
 
   @Test
@@ -429,14 +471,19 @@ public class MessageCorrelationTest {
     testClient.publishMessage("ping", "123", asMsgPack("nr", 2));
 
     // then
-    assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .filter(r -> r.getValue().getElementId().startsWith("message"))
-                .limit(2)
-                .asList())
-        .extracting(
-            r -> tuple(r.getValue().getElementId(), r.getValue().getPayloadAsMap().get("nr")))
-        .contains(tuple("message1", 1), tuple("message2", 2));
+    final List<Object> correlatedValues =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .filter(r -> r.getValue().getElementId().startsWith("message"))
+            .limit(2)
+            .map(
+                event ->
+                    tuple(
+                        event.getValue().getElementId(),
+                        WorkflowInstances.getCurrentVariables(
+                                event.getValue().getWorkflowInstanceKey(), event.getPosition())
+                            .get("nr")))
+            .collect(Collectors.toList());
+    assertThat(correlatedValues).contains(tuple("message1", "1"), tuple("message2", "2"));
   }
 
   @Test
@@ -612,21 +659,23 @@ public class MessageCorrelationTest {
         .getInstanceKey();
 
     // when
-    testClient.publishMessage("msg1", "123", asMsgPack("foo", "0"));
-    testClient.publishMessage("msg1", "123", asMsgPack("foo", "1"));
-    testClient.publishMessage("msg1", "123", asMsgPack("foo", "2"));
+    testClient.publishMessage("msg1", "123", asMsgPack("foo", 0));
+    testClient.publishMessage("msg1", "123", asMsgPack("foo", 1));
+    testClient.publishMessage("msg1", "123", asMsgPack("foo", 2));
     assertThat(awaitMessagesCorrelated(3)).hasSize(3);
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> msgEndEvents =
+    final List<Object> correlatedValues =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
             .withElementId("msg1")
             .limit(3)
-            .asList();
-
-    assertThat(msgEndEvents)
-        .extracting(e -> e.getValue().getPayloadAsMap().get("foo"))
-        .contains("0", "1", "2");
+            .map(
+                event ->
+                    WorkflowInstances.getCurrentVariables(
+                            event.getValue().getWorkflowInstanceKey(), event.getPosition())
+                        .get("foo"))
+            .collect(Collectors.toList());
+    assertThat(correlatedValues).containsOnly("0", "1", "2");
   }
 
   private List<Record<WorkflowInstanceSubscriptionRecordValue>> awaitMessagesCorrelated(

@@ -42,10 +42,12 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.WorkflowInstances;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
@@ -176,7 +178,7 @@ public class BoundaryEventTest {
   }
 
   @Test
-  public void shouldUseScopePayloadWhenApplyingOutputMappings() {
+  public void shouldUseScopeVariablesWhenApplyingOutputMappings() {
     // given
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(PROCESS_ID)
@@ -190,10 +192,13 @@ public class BoundaryEventTest {
             .endEvent()
             .done();
     testClient.deploy(workflow);
-    testClient.createWorkflowInstance(
-        r ->
-            r.setBpmnProcessId(PROCESS_ID)
-                .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"oof\": 2 }")));
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(PROCESS_ID)
+                        .setVariables(asMsgPack("{ \"foo\": 1, \"oof\": 2 }")))
+            .getInstanceKey();
 
     // when
     testClient.receiveTimerRecord("timer", TimerIntent.CREATED);
@@ -203,8 +208,9 @@ public class BoundaryEventTest {
     // then
     final Record<WorkflowInstanceRecordValue> boundaryTriggered =
         testClient.receiveElementInState("timer", WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    assertThat(boundaryTriggered.getValue().getPayloadAsMap())
-        .contains(entry("foo", 1), entry("oof", 2));
+    final Map<String, String> variables =
+        WorkflowInstances.getCurrentVariables(workflowInstanceKey, boundaryTriggered.getPosition());
+    assertThat(variables).contains(entry("foo", "1"), entry("oof", "2"));
   }
 
   @Test

@@ -143,7 +143,6 @@ public class CreateWorkflowInstanceProcessor
     newWorkflowInstance.setBpmnElementType(BpmnElementType.PROCESS);
     newWorkflowInstance.setElementId(workflow.getWorkflow().getId());
     newWorkflowInstance.setFlowScopeKey(-1);
-    newWorkflowInstance.setPayload(variables); // todo: to be removed in follow up issues (#1858)
 
     final ElementInstance instance =
         elementInstanceState.newInstance(

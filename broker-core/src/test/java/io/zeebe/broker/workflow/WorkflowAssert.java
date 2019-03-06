@@ -24,9 +24,6 @@ import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.test.util.record.RecordingExporter;
 
 public class WorkflowAssert {
 
@@ -73,19 +70,6 @@ public class WorkflowAssert {
         .hasVersion(version)
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId(elementId);
-  }
-
-  public static void assertWorkflowInstancePayload(
-      WorkflowInstanceIntent instanceIntent, String expectedPayload) {
-    final Record<WorkflowInstanceRecordValue> record =
-        RecordingExporter.workflowInstanceRecords(instanceIntent).getFirst();
-    assertWorkflowInstancePayload(record, expectedPayload);
-  }
-
-  public static void assertWorkflowInstancePayload(
-      Record<WorkflowInstanceRecordValue> event, String expectedPayload) {
-    final byte[] payload = MsgPackUtil.asMsgPackReturnArray(event.getValue().getPayload());
-    MsgPackUtil.assertEquality(payload, expectedPayload);
   }
 
   public static void assertMessageSubscription(
