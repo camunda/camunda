@@ -30,6 +30,7 @@ import io.atomix.core.election.LeadershipEvent;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.RaftState;
 import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.distributedlog.impl.DistributedLogstreamName;
 import io.zeebe.protocol.impl.data.cluster.BrokerInfo;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.LogUtil;
@@ -88,9 +89,10 @@ public class TopologyManagerImpl extends Actor
   public void onLeaderElectionStarted(LeaderElection<String> election) {
     actor.run(
         () -> {
-          LOG.debug("Topology manager : Adding leader election listener");
+          LOG.debug("Topology manager adding leader election listener");
           election.addListener(this::onLeadershipEvent);
-          updateLeader(election.getLeadership(), Integer.parseInt(election.name()));
+          updateLeader(
+              election.getLeadership(), DistributedLogstreamName.getPartitionId(election.name()));
         });
   }
 
@@ -107,9 +109,8 @@ public class TopologyManagerImpl extends Actor
       newState = RaftState.FOLLOWER;
     }
 
-    final int replicationFactor = leadership.candidates().size() + 1; // TODO: check
+    final int replicationFactor = leadership.candidates().size() + 1;
 
-    LOG.debug("Initialize state partition {} {}", partitionId, newState);
     updatePartition(partitionId, replicationFactor, memberInfo, newState);
     publishTopologyChanges();
   }
@@ -142,11 +143,11 @@ public class TopologyManagerImpl extends Actor
               newState = RaftState.LEADER;
             }
 
-            final int partitionId = Integer.parseInt(leadershipEvent.topic());
-            final int replicationFactor =
-                leadershipEvent.newLeadership().candidates().size() + 1; // TODO: check
+            final int partitionId =
+                DistributedLogstreamName.getPartitionId(leadershipEvent.topic());
+            final int replicationFactor = leadershipEvent.newLeadership().candidates().size() + 1;
 
-            LOG.info("On leadershipchange {} {}", partitionId, newState);
+            LOG.debug("Become {} for partition {}", newState, partitionId);
             updatePartition(partitionId, replicationFactor, memberInfo, newState);
 
             publishTopologyChanges();

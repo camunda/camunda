@@ -21,6 +21,7 @@ import io.atomix.core.Atomix;
 import io.atomix.core.election.LeaderElection;
 import io.atomix.protocols.raft.MultiRaftProtocol;
 import io.zeebe.broker.Loggers;
+import io.zeebe.distributedlog.impl.DistributedLogstreamName;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -36,6 +37,9 @@ public class PartitionLeaderElection implements Service<LeaderElection> {
 
   // TODO: Check if we should use memberId instead of string
   private LeaderElection<String> election;
+
+  private static final MultiRaftProtocol PROTOCOL =
+      MultiRaftProtocol.builder().withPartitioner(DistributedLogstreamName.getInstance()).build();
 
   private final int partitionId;
   private String memberId;
@@ -53,8 +57,8 @@ public class PartitionLeaderElection implements Service<LeaderElection> {
 
     election =
         atomix
-            .<String>leaderElectionBuilder(String.valueOf(partitionId))
-            .withProtocol(MultiRaftProtocol.builder().build())
+            .<String>leaderElectionBuilder(DistributedLogstreamName.getPartitionKey(partitionId))
+            .withProtocol(PROTOCOL)
             .build();
 
     election.run(memberId);

@@ -31,16 +31,22 @@ import org.slf4j.LoggerFactory;
 public class DistributedLogstreamPartition implements Service<DistributedLogstreamPartition> {
   private static final Logger LOG = LoggerFactory.getLogger(DistributedLogstreamPartition.class);
 
-  private final int partitionId;
   private DistributedLogstream distributedLog;
 
   private final String partitionName;
+  private final String primitiveName;
   private Atomix atomix;
   private final Injector<Atomix> atomixInjector = new Injector<>();
 
+  private static final MultiRaftProtocol PROTOCOL =
+      MultiRaftProtocol.builder()
+          // Maps partitionName to partitionId
+          .withPartitioner(DistributedLogstreamName.getInstance())
+          .build();
+
   public DistributedLogstreamPartition(int partitionId) {
-    this.partitionId = partitionId;
-    partitionName = String.format("log-partition-%d", partitionId);
+    primitiveName = String.format("log-partition-%d", partitionId);
+    partitionName = DistributedLogstreamName.getPartitionKey(partitionId);
   }
 
   public void append(ByteBuffer blockBuffer, long commitPosition) {
@@ -62,11 +68,8 @@ public class DistributedLogstreamPartition implements Service<DistributedLogstre
     distributedLog =
         atomix
             .<DistributedLogstreamBuilder, DistributedLogstreamConfig, DistributedLogstream>
-                primitiveBuilder(partitionName, DistributedLogstreamType.instance())
-            .withProtocol(
-                MultiRaftProtocol.builder()
-                    // TODO: Use a custom partitioner https://github.com/zeebe-io/zeebe/issues/2055
-                    .build())
+                primitiveBuilder(primitiveName, DistributedLogstreamType.instance())
+            .withProtocol(PROTOCOL)
             .build();
   }
 

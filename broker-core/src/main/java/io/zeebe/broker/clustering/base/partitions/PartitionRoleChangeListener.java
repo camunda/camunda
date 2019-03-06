@@ -125,7 +125,6 @@ public class PartitionRoleChangeListener implements Service<Void>, LeadershipEve
     final Leader<String> oldLeader = leadershipEvent.oldLeadership().leader();
     final Leader<String> newLeader = leadershipEvent.newLeadership().leader();
     if (newLeader == null) {
-      // TODO: check if leader can be null during transition
       return;
     }
 
