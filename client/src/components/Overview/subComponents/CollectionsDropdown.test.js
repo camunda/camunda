@@ -1,6 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import CollectionsDropdown from './CollectionsDropdown';
+import {Dropdown} from 'components';
 
 const processReport = {
   id: 'reportID',
@@ -38,12 +39,12 @@ it('should show for each report the collection count', () => {
 it('should show for each report a dropdown with all collections', () => {
   const node = shallow(<CollectionsDropdown {...props} />);
 
-  expect(node.find('ForwardRef(DropdownOption)')).toIncludeText('aCollectionName');
+  expect(node.find(Dropdown.Option)).toIncludeText('aCollectionName');
 });
 
 it('should invok toggleReportCollection to remove report from collection when clicking on an option', () => {
   const node = shallow(<CollectionsDropdown {...props} />);
-  node.find('ForwardRef(DropdownOption)').simulate('click');
+  node.find(Dropdown.Option).simulate('click');
 
   expect(props.toggleReportCollection).toHaveBeenCalledWith(processReport, collection, true);
 });
@@ -51,7 +52,7 @@ it('should invok toggleReportCollection to remove report from collection when cl
 it('should invok toggleReportCollection on collections dropdown click to add a report to collection ', () => {
   const node = shallow(<CollectionsDropdown {...props} entityCollections={[]} />);
 
-  node.find('ForwardRef(DropdownOption)').simulate('click');
+  node.find(Dropdown.Option).simulate('click');
 
   expect(props.toggleReportCollection).toHaveBeenCalledWith(processReport, collection, false);
 });
@@ -66,5 +67,5 @@ it('should show the current collection on the top of the dropdown list', () => {
     />
   );
 
-  expect(node.find('ForwardRef(DropdownOption)').first()).toIncludeText('test');
+  expect(node.find(Dropdown.Option).first()).toIncludeText('test');
 });
