@@ -5,6 +5,7 @@ import Fullscreen from 'react-full-screen';
 import {default as updateState} from 'immutability-helper';
 import {Link, Redirect} from 'react-router-dom';
 import {withErrorHandling} from 'HOC';
+import {checkDeleteConflict} from 'services';
 
 import {
   Button,
@@ -69,7 +70,8 @@ export default themed(
           fullScreenActive: false,
           serverError: null,
           isAuthorizedToShare: false,
-          sharingEnabled: false
+          sharingEnabled: false,
+          conflicts: []
         };
       }
 
@@ -186,11 +188,15 @@ export default themed(
         });
       };
 
-      showDeleteModal = () => {
+      showDeleteModal = async () => {
+        const {conflictedItems} = await checkDeleteConflict(this.id, 'dashboard');
+        this.setState({conflicts: conflictedItems});
+
         this.setState({
           confirmModalVisible: true
         });
       };
+
       closeConfirmModal = () => {
         this.setState({
           confirmModalVisible: false
@@ -304,7 +310,8 @@ export default themed(
           lastModified,
           confirmModalVisible,
           isAuthorizedToShare,
-          sharingEnabled
+          sharingEnabled,
+          conflicts
         } = state;
         return (
           <Fullscreen enabled={this.state.fullScreenActive} onChange={this.changeFullScreen}>
@@ -388,6 +395,7 @@ export default themed(
                 open={confirmModalVisible}
                 onClose={this.closeConfirmModal}
                 onConfirm={this.deleteDashboard}
+                conflict={{type: 'Delete', items: conflicts}}
                 entityName={name}
               />
               <DashboardView

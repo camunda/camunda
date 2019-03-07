@@ -123,14 +123,14 @@ it('should add the entity to the collection that was duplicated from', async () 
   });
 });
 
-it('should check for deletion conflicts', async () => {
+it('should check for deletion conflicts for reports and dashboards', async () => {
   checkDeleteConflict.mockClear();
   const node = shallow(<Overview {...props} />);
   await node.instance().componentDidMount();
 
-  await node.instance().showDeleteModalFor({type: 'reports', entity: processReport})();
+  await node.instance().showDeleteModalFor({type: 'entityType', entity: processReport})();
 
-  expect(checkDeleteConflict).toHaveBeenCalledWith(processReport.id);
+  expect(checkDeleteConflict).toHaveBeenCalledWith(processReport.id, 'entityType');
 });
 
 it('should have a Dropdown with more creation options', async () => {
@@ -147,7 +147,7 @@ it('should reload the reports after deleting a report', async () => {
   loadReports.mockClear();
 
   node.setState({
-    deleting: {type: 'reports', entity: processReport}
+    deleting: {type: 'report', entity: processReport}
   });
 
   await node.instance().deleteEntity();

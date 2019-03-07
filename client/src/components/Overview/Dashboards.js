@@ -96,7 +96,7 @@ class Dashboards extends React.Component {
                       <Button
                         title="Delete Dashboard"
                         onClick={this.props.showDeleteModalFor({
-                          type: 'dashboards',
+                          type: 'dashboard',
                           entity: itemData
                         })}
                       >

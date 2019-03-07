@@ -3,6 +3,7 @@ import {mount, shallow} from 'enzyme';
 
 import ThemedDashboard from './Dashboard';
 import {loadDashboard, remove, isAuthorizedToShareDashboard} from './service';
+import {checkDeleteConflict} from 'services';
 
 const {WrappedComponent: Dashboard} = ThemedDashboard;
 
@@ -91,6 +92,8 @@ jest.mock('moment', () => () => {
     format: () => 'some date'
   };
 });
+
+jest.mock('services', () => ({checkDeleteConflict: jest.fn()}));
 
 jest.mock('react-full-screen', () => ({children}) => <div>{children}</div>);
 
@@ -343,6 +346,21 @@ it('should return to light mode when the component is unmounted', async () => {
   node.unmount();
 
   expect(spy).toHaveBeenCalled();
+});
+
+it('should set conflict state when conflict happens on delete button click', async () => {
+  const conflictedItems = [{id: '1', name: 'collection', type: 'Collection'}];
+  checkDeleteConflict.mockReturnValue({
+    conflictedItems
+  });
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
+  node.setState({loaded: true});
+
+  await node
+    .find('.delete-button')
+    .first()
+    .prop('onClick')();
+  expect(node.state().conflicts).toEqual(conflictedItems);
 });
 
 describe('edit mode', async () => {

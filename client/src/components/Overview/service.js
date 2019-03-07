@@ -145,7 +145,7 @@ export function getEntitiesCollections(collections) {
   const entitiesCollections = {};
 
   collections.forEach(collection => {
-    (collection.data ? collection.data.entities : []).forEach(entity => {
+    collection.data.entities.forEach(entity => {
       if (entitiesCollections[entity.id]) {
         entitiesCollections[entity.id].push(collection);
       } else {

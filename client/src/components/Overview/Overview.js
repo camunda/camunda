@@ -82,10 +82,10 @@ class Overview extends Component {
     const {type, entity} = this.state.deleting;
 
     switch (type) {
-      case 'reports':
+      case 'report':
         await deleteReport(entity.id);
         break;
-      case 'dashboards':
+      case 'dashboard':
         await deleteDashboard(entity.id);
         break;
       default:
@@ -126,22 +126,19 @@ class Overview extends Component {
 
   setEntityToUpdate = updating => this.setState({updating});
 
-  showReportDeleteModal = async deleting => {
-    const {conflictedItems} = await checkDeleteConflict(deleting.entity.id);
-    this.setState({deleting: deleting, conflicts: conflictedItems});
-  };
-
   showDeleteModalFor = deleting => async () => {
-    if (deleting.type === 'reports') return await this.showReportDeleteModal(deleting);
-    this.setState({deleting});
+    const deleteState = {deleting};
+    if (deleting.type !== 'collection') {
+      const {conflictedItems} = await checkDeleteConflict(deleting.entity.id, deleting.type);
+      deleteState.conflicts = conflictedItems;
+    }
+    this.setState(deleteState);
   };
 
   hideDeleteModal = () => this.setState({deleting: false, conflicts: []});
 
   toggleReportCollection = (report, collection, isRemove) => async evt => {
-    const collectionReportsIds = (collection.data ? collection.data.entities : []).map(
-      report => report.id
-    );
+    const collectionReportsIds = collection.data.entities.map(report => report.id);
 
     const change = {data: {}};
     if (isRemove) {

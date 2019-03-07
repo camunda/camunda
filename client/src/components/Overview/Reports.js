@@ -93,7 +93,7 @@ class Reports extends React.Component {
                         <Button
                           title="Delete Report"
                           onClick={this.props.showDeleteModalFor({
-                            type: 'reports',
+                            type: 'report',
                             entity: itemData
                           })}
                         >

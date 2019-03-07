@@ -52,7 +52,7 @@ class Collections extends React.Component {
           </Button>
           <Button
             title="Delete Report"
-            onClick={this.props.showDeleteModalFor({type: 'reports', entity: itemData})}
+            onClick={this.props.showDeleteModalFor({type: 'report', entity: itemData})}
           >
             <Icon type="delete" title="Delete Report" className="deleteIcon" />
           </Button>
@@ -62,8 +62,13 @@ class Collections extends React.Component {
   };
 
   renderCollection = collection => {
-    const {id, name, created, owner, data} = collection;
-    const reports = data ? data.entities : [];
+    const {
+      id,
+      name,
+      created,
+      owner,
+      data: {entities}
+    } = collection;
 
     return (
       <li key={id} className="collection">
@@ -82,7 +87,7 @@ class Collections extends React.Component {
               </div>
               <div className="extraInfo">
                 <div className="custom">
-                  <span>{reports.length} Items</span>
+                  <span>{entities.length} Items</span>
                 </div>
                 <LastModified label="Created" date={created} author={owner} />
               </div>
@@ -98,7 +103,7 @@ class Collections extends React.Component {
             </Button>
             <Button
               title="Delete Report"
-              onClick={this.props.showDeleteModalFor({type: 'collections', entity: {id, name}})}
+              onClick={this.props.showDeleteModalFor({type: 'collection', entity: {id, name}})}
             >
               <Icon type="delete" title="Delete Report" className="deleteIcon" />
             </Button>
@@ -106,21 +111,21 @@ class Collections extends React.Component {
         </div>
         {this.state[id] && (
           <>
-            {reports.length > 0 ? (
+            {entities.length > 0 ? (
               <ul className="entityList">
-                {reports
+                {entities
                   .slice(0, this.state.showAllId === id ? undefined : 5)
-                  .map(report => this.renderReport(report, collection))}
+                  .map(entity => this.renderReport(entity, collection))}
               </ul>
             ) : (
               <p className="emptyCollection">There are no items in this Collection.</p>
             )}
             <div className="showAll">
               {!this.state.loading &&
-                reports.length > 5 &&
+                entities.length > 5 &&
                 (this.state.showAllId !== id ? (
                   <>
-                    {reports.length} Reports.{' '}
+                    {entities.length} Reports.{' '}
                     <Button type="link" onClick={() => this.setState({showAllId: id})}>
                       Show all...
                     </Button>

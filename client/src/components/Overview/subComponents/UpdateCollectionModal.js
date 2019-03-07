@@ -4,9 +4,8 @@ import {Button, Input, Modal} from 'components';
 export default class UpdateCollectionModal extends Component {
   constructor(props) {
     super(props);
-    const collection = props.collection && props.collection.name;
     this.state = {
-      name: collection || 'New Collection'
+      name: props.collection.name || 'New Collection'
     };
   }
 
@@ -28,9 +27,12 @@ export default class UpdateCollectionModal extends Component {
   };
 
   render() {
+    const {collection, onClose, onConfirm} = this.props;
     return (
-      <Modal open={true} onClose={this.props.onClose}>
-        <Modal.Header>Create New Collection</Modal.Header>
+      <Modal open={true} onClose={onClose}>
+        <Modal.Header>
+          {collection.name ? 'Edit Collection name' : 'Create new Collection'}
+        </Modal.Header>
         <Modal.Content>
           <Input
             type="text"
@@ -43,7 +45,7 @@ export default class UpdateCollectionModal extends Component {
           />
         </Modal.Content>
         <Modal.Actions>
-          <Button className="cancel" type="primary" onClick={this.props.onClose}>
+          <Button className="cancel" type="primary" onClick={onClose}>
             Cancel
           </Button>
           <Button
@@ -51,9 +53,9 @@ export default class UpdateCollectionModal extends Component {
             color="blue"
             className="confirm"
             disabled={!this.state.name}
-            onClick={() => this.props.onConfirm({name: this.state.name})}
+            onClick={() => onConfirm({name: this.state.name})}
           >
-            {this.props.collection.name ? 'Save' : 'Create Collection'}
+            {collection.name ? 'Save' : 'Create Collection'}
           </Button>
         </Modal.Actions>
       </Modal>
