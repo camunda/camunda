@@ -17,8 +17,9 @@ export const IncidentsBar = styled.button`
   z-index: 5;
 
   height: ${INCIDENTS_BAR_HEIGHT}px;
-  padding: 0 20px;
+  padding: 0 20px 0 17px;
   font-size: 14px;
+  font-weight: bold;
   opacity: 1;
 
   background-color: ${Colors.incidentsAndErrors};
@@ -28,7 +29,9 @@ export const IncidentsBar = styled.button`
 `;
 
 export const Arrow = styled(withStrippedProps(['isFlipped'])(Down))`
-  margin-right: 16px;
+  margin-right: 11px;
+  position: relative;
 
   transform: ${props => (props.isFlipped ? 'none' : 'rotate(-90deg)')};
+  left: ${props => (props.isFlipped ? '2px' : '0')};
 `;

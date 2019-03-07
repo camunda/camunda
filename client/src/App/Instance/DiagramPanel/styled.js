@@ -6,6 +6,7 @@
 
 import styled from 'styled-components';
 import SplitPane from 'modules/components/SplitPane';
+import StateIconDefault from 'modules/components/StateIcon';
 
 export const SplitPaneHeader = styled(SplitPane.Pane.Header)`
   display: flex;
@@ -14,6 +15,9 @@ export const SplitPaneHeader = styled(SplitPane.Pane.Header)`
 
 export const Table = styled.table`
   width: 100%;
+  border-spacing: 0;
+  position: relative;
+  left: -2px;
 `;
 
 export const Tr = styled.tr`
@@ -32,4 +36,8 @@ export const ActionsWrapper = styled.div`
 
 export const SplitPaneBody = styled(SplitPane.Pane.Body)`
   position: relative;
+`;
+
+export const StateIcon = styled(StateIconDefault)`
+  margin-right: 8px;
 `;

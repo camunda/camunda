@@ -40,7 +40,7 @@ export default class DiagramPanel extends React.PureComponent {
             <tbody>
               <Styled.Tr>
                 <Styled.Td>
-                  <StateIcon state={instance.state} />
+                  <Styled.StateIcon state={instance.state} />
                   {getWorkflowName(instance)}
                 </Styled.Td>
                 <Styled.Td>{instance.id}</Styled.Td>
