@@ -19,8 +19,14 @@
       margin-top: 0;
     }
 
-    > .item .info .icon {
-      border-right: none;
+    > .item {
+      &:hover {
+        background: none;
+      }
+
+      .info .icon {
+        border-right: none;
+      }
     }
 
     .emptyCollection {
@@ -30,7 +36,7 @@
     }
 
     h2 {
-      font-size: 1.3em;
+      font-size: 18px;
       font-weight: bold;
     }
 

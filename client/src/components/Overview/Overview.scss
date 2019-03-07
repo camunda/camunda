@@ -2,7 +2,7 @@
 
 .Dashboards,
 .Collections {
-  margin-bottom: 50px;
+  margin-bottom: 80px;
 }
 
 .Overview {
@@ -35,7 +35,12 @@
     min-height: 50px;
 
     h1 {
-      display: inline-block;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      svg {
+        margin: 0px 10px;
+      }
     }
 
     .searchInput {
@@ -177,7 +182,7 @@
       .entityCollections {
         align-self: center;
         margin: 0 10px;
-        min-width: 100px;
+        min-width: 150px;
 
         .Button {
           border-radius: 15px;
@@ -192,15 +197,19 @@
           }
 
           &:hover {
-            background: #eceef1;
+            background: rgba(#d8dce3, 0.5);
           }
 
           &:focus {
-            background: #dadee3;
+            background: rgba(#d8dce3, 0.8);
             .Icon,
             .noCollection {
               visibility: visible;
             }
+          }
+
+          &:active {
+            background: rgba(#d8dce3, 0.8);
           }
         }
       }
@@ -228,10 +237,10 @@
           color: #6a727e;
           background: transparent;
           &:hover {
-            background: #eceef1;
+            background: rgba(#d8dce3, 0.5);
           }
           &:active {
-            background: #dadee3;
+            background: rgba(#d8dce3, 0.8);
           }
         }
 
