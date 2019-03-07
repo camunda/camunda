@@ -8,18 +8,20 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
-import {createIncidents} from 'modules/testUtils';
+import {createIncidents, createInstance} from 'modules/testUtils';
 
 import IncidentsWrapper from './IncidentsWrapper';
-import IncidentsOverlay from '../IncidentsOverlay';
-import IncidentsTable from '../IncidentsTable';
-import IncidentsBar from '../IncidentsBar';
+import IncidentsOverlay from './IncidentsOverlay';
+import IncidentsTable from './IncidentsTable';
+import IncidentsBar from './IncidentsBar';
 
 const incidentsMock = createIncidents();
 const mockProps = {
-  instanceId: '3',
+  instance: createInstance(),
   incidents: incidentsMock.incidents,
-  incidentsCount: incidentsMock.count
+  incidentsCount: incidentsMock.count,
+  onIncidentOperation: jest.fn(),
+  forceSpinner: false
 };
 
 describe('IncidentsWrapper', () => {
@@ -30,6 +32,19 @@ describe('IncidentsWrapper', () => {
       </ThemeProvider>
     );
     expect(node.find(IncidentsOverlay)).not.toExist();
+  });
+
+  it('should render the IncidentsBar', () => {
+    const node = mount(
+      <ThemeProvider>
+        <IncidentsWrapper {...mockProps} />
+      </ThemeProvider>
+    );
+    const bar = node.find(IncidentsBar);
+
+    expect(bar).toExist();
+    expect(bar.props().id).toEqual(mockProps.instance.id);
+    expect(bar.props().count).toEqual(mockProps.incidentsCount);
   });
 
   it('should toggle the IncidentsOverlay when clicking on the IncidentsBar', () => {
@@ -63,6 +78,15 @@ describe('IncidentsWrapper', () => {
     expect(node.find(IncidentsTable)).toExist();
     expect(node.find(IncidentsTable).prop('incidents')).toEqual(
       mockProps.incidents
+    );
+    expect(node.find(IncidentsTable).props().instanceId).toEqual(
+      mockProps.instance.id
+    );
+    expect(node.find(IncidentsTable).props().onIncidentOperation).toEqual(
+      mockProps.onIncidentOperation
+    );
+    expect(node.find(IncidentsTable).props().forceSpinner).toEqual(
+      mockProps.forceSpinner
     );
   });
 });

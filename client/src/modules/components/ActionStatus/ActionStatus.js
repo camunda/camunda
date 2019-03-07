@@ -30,9 +30,10 @@ const ActionStatus = ({
   operationType,
   selected,
   instance,
+  forceSpinner,
   ...props
 }) => {
-  if (ACTIVE_OPERATION_STATES.includes(operationState)) {
+  if (forceSpinner || ACTIVE_OPERATION_STATES.includes(operationState)) {
     return (
       <Styled.ActionSpinner
         selected={selected}
@@ -56,6 +57,7 @@ const ActionStatus = ({
   return null;
 };
 
+ActionStatus.Spinner = Styled.ActionSpinner;
 export default ActionStatus;
 
 ActionStatus.propTypes = {

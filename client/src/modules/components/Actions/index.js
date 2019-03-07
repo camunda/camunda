@@ -4,4 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import IncidentAction from './IncidentAction';
+
 export {default} from './Actions';
+export {IncidentAction};

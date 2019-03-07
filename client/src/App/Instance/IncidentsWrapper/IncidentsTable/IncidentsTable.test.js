@@ -8,6 +8,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import Table from 'modules/components/Table';
+import {IncidentAction} from 'modules/components/Actions';
 import Button from 'modules/components/Button';
 import ColumnHeader from '../../../Instances/ListView/List/ColumnHeader';
 import Modal from 'modules/components/Modal';
@@ -27,17 +28,19 @@ const mockProps = {
   incidents: [
     createIncident({errorMessage: shortError, flowNodeName: 'Task A'}),
     createIncident({errorMessage: longError, flowNodeName: 'Task B'})
-  ]
+  ],
+  instanceId: '1',
+  onIncidentOperation: jest.fn()
 };
 
 describe('IncidentsTable', () => {
   it('should render the right column headers', () => {
     const node = mount(
       <ThemeProvider>
-        <IncidentsTable incidents={mockProps.incidents} />
+        <IncidentsTable {...mockProps} />
       </ThemeProvider>
     );
-    expect(node.find(ColumnHeader).length).toEqual(5);
+    expect(node.find(ColumnHeader).length).toEqual(6);
     expect(
       node
         .find(ColumnHeader)
@@ -68,11 +71,17 @@ describe('IncidentsTable', () => {
         .at(4)
         .text()
     ).toContain('Error Message');
+    expect(
+      node
+        .find(ColumnHeader)
+        .at(5)
+        .text()
+    ).toContain('Action');
   });
   it('should render the right number of rows', () => {
     const node = mount(
       <ThemeProvider>
-        <IncidentsTable incidents={mockProps.incidents} />
+        <IncidentsTable {...mockProps} />
       </ThemeProvider>
     );
     expect(node.find(TBody).find(TR).length).toEqual(
@@ -83,7 +92,7 @@ describe('IncidentsTable', () => {
   it('should render the right data in a row', () => {
     const node = mount(
       <ThemeProvider>
-        <IncidentsTable incidents={mockProps.incidents} />
+        <IncidentsTable {...mockProps} />
       </ThemeProvider>
     );
     expect(
@@ -91,7 +100,7 @@ describe('IncidentsTable', () => {
         .find(TBody)
         .find(TR)
         .find(TD).length
-    ).toEqual(5 * mockProps.incidents.length);
+    ).toEqual(6 * mockProps.incidents.length);
 
     const firstRowCells = node
       .find(TBody)
@@ -114,12 +123,13 @@ describe('IncidentsTable', () => {
     expect(firstRowCells.at(4).text()).toContain(
       mockProps.incidents[0].errorMessage
     );
+    expect(firstRowCells.at(5).find(IncidentAction)).toExist();
   });
 
   it('should show a more button for long error messages', () => {
     const node = mount(
       <ThemeProvider>
-        <IncidentsTable incidents={mockProps.incidents} />
+        <IncidentsTable {...mockProps} />
       </ThemeProvider>
     );
     const firstRowCells = node
@@ -154,7 +164,7 @@ describe('IncidentsTable', () => {
   it('should open an modal when clicking on the more button', () => {
     const node = mount(
       <ThemeProvider>
-        <IncidentsTable incidents={mockProps.incidents} />
+        <IncidentsTable {...mockProps} />
       </ThemeProvider>
     );
 
@@ -179,5 +189,21 @@ describe('IncidentsTable', () => {
     expect(modalNode.find(Modal.Body).text()).toContain(
       mockProps.incidents[1].errorMessage
     );
+  });
+  it('should start operations on incidents', async () => {
+    const node = mount(
+      <ThemeProvider>
+        <IncidentsTable {...mockProps} />
+      </ThemeProvider>
+    );
+    const IncidentActionNode = node
+      .find(TBody)
+      .find(TR)
+      .at(0)
+      .find(IncidentAction);
+
+    IncidentActionNode.simulate('click');
+
+    node.update();
   });
 });

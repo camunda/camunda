@@ -12,7 +12,6 @@ import {
   mockResolvedAsyncFn,
   flushPromises,
   createInstance,
-  createIncident,
   createActivities,
   createDiagramNodes,
   createRawTree,
@@ -33,6 +32,7 @@ import {getWorkflowName} from 'modules/utils/instance';
 import * as diagramUtils from 'modules/utils/bpmn';
 import {ThemeProvider} from 'modules/theme';
 
+import DiagramPanel from './DiagramPanel';
 import FlowNodeInstancesTree from './FlowNodeInstancesTree';
 import InstanceHistory from './InstanceHistory';
 import Diagram from 'modules/components/Diagram';
@@ -43,12 +43,6 @@ import Instance from './Instance';
 const xmlMock = '<foo />';
 
 const diagramNodes = createDiagramNodes();
-
-const INCIDENT = createIncident({
-  id: '4295763008',
-  activityId: 'taskA',
-  activityInstanceId: '4294983744'
-});
 
 const INSTANCE = createInstance({
   id: '4294980768',
@@ -165,7 +159,18 @@ describe('Instance', () => {
     expect(node.find(FlowNodeInstancesTree)).toHaveLength(1);
   });
 
-  it('should pass the right incidents data to DiagramPanel', async () => {
+  it('should not display IncidentsWrapper if there is no incident', async () => {
+    // when
+    const node = mountRenderComponent();
+    await flushPromises();
+    node.update();
+
+    const IncidentsWrapper = node.find('IncidentsWrapper');
+
+    expect(IncidentsWrapper).not.toExist();
+  });
+
+  it('should pass the right incidents data to IncidentsWrapper', async () => {
     // given
     instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
       INSTANCE_WITH_INCIDENTS
@@ -176,17 +181,16 @@ describe('Instance', () => {
     await flushPromises();
     node.update();
 
-    const DiagramPanel = node.find('DiagramPanel');
-
+    const IncidentsWrapper = node.find('IncidentsWrapper');
     // then
-    expect(DiagramPanel.props().incidents.length).toEqual(
+    expect(IncidentsWrapper.props().incidents.length).toEqual(
       INCIDENTS.incidents.length
     );
-    DiagramPanel.props().incidents.forEach((item, index) => {
+    IncidentsWrapper.props().incidents.forEach((item, index) => {
       expect(item.id).toEqual(INCIDENTS.incidents[index].id);
       expect(item.flowNodeName).not.toBe(undefined);
     });
-    expect(DiagramPanel.props().incidentsCount).toEqual(INCIDENTS.count);
+    expect(IncidentsWrapper.props().incidentsCount).toEqual(INCIDENTS.count);
   });
 
   it('should fetch data from APIs', async () => {
@@ -219,16 +223,6 @@ describe('Instance', () => {
     expect(eventsApi.fetchEvents.mock.calls[0][0]).toBe(INSTANCE.id);
 
     expect(instancesApi.fetchWorkflowInstanceIncidents).not.toBeCalled();
-  });
-
-  it('should fetch the incidents for an instance with state===INCIDENT', async () => {
-    instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-      INSTANCE_WITH_INCIDENTS
-    );
-
-    const node = mountRenderComponent();
-    await flushPromises();
-    node.update();
   });
 
   describe('check for updates poll', () => {
@@ -325,6 +319,13 @@ describe('Instance', () => {
       // expect setTimeout's executed function to fetch the instance
       // 1st time on render, 2nd on first setTimeout
       expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(2);
+      expect(instancesApi.fetchWorkflowInstanceIncidents).toHaveBeenCalledTimes(
+        1
+      );
+      expect(
+        activityInstanceApi.fetchActivityInstancesTree
+      ).toHaveBeenCalledTimes(2);
+      expect(eventsApi.fetchEvents).toHaveBeenCalledTimes(2);
 
       // when 2nd setTimeout is ran
       jest.runOnlyPendingTimers();
@@ -337,6 +338,13 @@ describe('Instance', () => {
       // expect setTimeout's executed function to fetch the instance
       // 1st time on render, 2nd on first setTimeout, 3rd on 2nd setTimeout
       expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(3);
+      expect(instancesApi.fetchWorkflowInstanceIncidents).toHaveBeenCalledTimes(
+        2
+      );
+      expect(
+        activityInstanceApi.fetchActivityInstancesTree
+      ).toHaveBeenCalledTimes(3);
+      expect(eventsApi.fetchEvents).toHaveBeenCalledTimes(3);
     });
 
     it('should start a polling for changes if instance.state is INCIDENT', async () => {
@@ -371,6 +379,13 @@ describe('Instance', () => {
       // expect setTimeout's executed function to fetch the instance
       // 1st time on render, 2nd on first setTimeout, 3rd on 2nd setTimeout
       expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(3);
+      expect(instancesApi.fetchWorkflowInstanceIncidents).toHaveBeenCalledTimes(
+        3
+      );
+      expect(
+        activityInstanceApi.fetchActivityInstancesTree
+      ).toHaveBeenCalledTimes(3);
+      expect(eventsApi.fetchEvents).toHaveBeenCalledTimes(3);
     });
 
     it('should stop the polling once the component has completed', async () => {
@@ -745,6 +760,51 @@ describe('Instance', () => {
         // then
         expect(nodeWithName.name).toBe(expectedName);
       });
+    });
+  });
+
+  describe('Operations', () => {
+    it('should show a spinner on the Instance on incident operation', async () => {
+      // given
+      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
+        INSTANCE_WITH_INCIDENTS
+      );
+
+      // when
+      const node = mountRenderComponent();
+      await flushPromises();
+      node.update();
+
+      const IncidentsWrapper = node.find('IncidentsWrapper');
+      const onIncidentOperation = IncidentsWrapper.props().onIncidentOperation;
+
+      onIncidentOperation();
+
+      await flushPromises();
+      node.update();
+
+      expect(node.find(DiagramPanel).props().forceInstanceSpinner).toBe(true);
+    });
+    it('should force spinners for incidents on Instance operation', async () => {
+      // given
+      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
+        INSTANCE_WITH_INCIDENTS
+      );
+
+      // when
+      const node = mountRenderComponent();
+      await flushPromises();
+      node.update();
+
+      const DiagramPanelNode = node.find(DiagramPanel);
+      const onInstanceOperation = DiagramPanelNode.props().onInstanceOperation;
+
+      onInstanceOperation();
+
+      await flushPromises();
+      node.update();
+
+      expect(node.find('IncidentsWrapper').props().forceSpinner).toEqual(true);
     });
   });
 });

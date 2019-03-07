@@ -10,6 +10,7 @@ import PropTypes from 'prop-types';
 import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import Diagram from 'modules/components/Diagram';
+import IncidentsWrapper from './IncidentsWrapper';
 import {PAGE_TITLE, UNNAMED_ACTIVITY} from 'modules/constants';
 import {compactObject} from 'modules/utils';
 import {getWorkflowName} from 'modules/utils/instance';
@@ -62,7 +63,9 @@ export default class Instance extends Component {
       incidents: {
         count: 0,
         incidents: []
-      }
+      },
+      forceInstanceSpinner: false,
+      forceIncidentsSpinner: false
     };
 
     this.pollingTimer = null;
@@ -121,6 +124,29 @@ export default class Instance extends Component {
         this.initializePolling();
       }
     );
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (this.state.instance !== prevState.instance) {
+      if (
+        Boolean(this.state.incidents.incidents) &&
+        !this.state.incidents.incidents.find(item => item.hasActiveOperation) &&
+        this.state.forceInstanceSpinner
+      ) {
+        this.setState({
+          forceInstanceSpinner: false
+        });
+      }
+
+      if (
+        !this.state.instance.hasActiveOperation &&
+        this.state.forceIncidentsSpinner
+      ) {
+        this.setState({
+          forceIncidentsSpinner: false
+        });
+      }
+    }
   }
 
   componentWillUnmount() {
@@ -184,8 +210,14 @@ export default class Instance extends Component {
 
   detectChangesPoll = async () => {
     const {id} = this.state.instance;
-    const [instance, activitiesInstancesTree, events] = await Promise.all([
+    const [
+      instance,
+      incidents,
+      activitiesInstancesTree,
+      events
+    ] = await Promise.all([
       api.fetchWorkflowInstance(id),
+      api.fetchWorkflowInstanceIncidents(id),
       fetchActivityInstancesTree(id),
       fetchEvents(id)
     ]);
@@ -204,7 +236,8 @@ export default class Instance extends Component {
           type: 'WORKFLOW',
           state: instance.state
         },
-        activityIdToActivityInstanceMap
+        activityIdToActivityInstanceMap,
+        incidents
       },
       () => {
         this.initializePolling();
@@ -296,6 +329,14 @@ export default class Instance extends Component {
     });
   };
 
+  handleIncidentOperation = () => {
+    this.setState({forceInstanceSpinner: true});
+  };
+
+  handleInstanceOperation = () => {
+    this.setState({forceIncidentsSpinner: true});
+  };
+
   render() {
     const {
       loaded,
@@ -335,9 +376,20 @@ export default class Instance extends Component {
           <SplitPane titles={{top: 'Workflow', bottom: 'Instance Details'}}>
             <DiagramPanel
               instance={instance}
-              incidents={this.formatIncidents(this.state.incidents.incidents)}
-              incidentsCount={this.state.incidents.count}
+              forceInstanceSpinner={this.state.forceInstanceSpinner}
+              onInstanceOperation={this.handleInstanceOperation}
             >
+              {this.state.instance.state === 'INCIDENT' && (
+                <IncidentsWrapper
+                  incidents={this.formatIncidents(
+                    this.state.incidents.incidents
+                  )}
+                  incidentsCount={this.state.incidents.count}
+                  instance={this.state.instance}
+                  onIncidentOperation={this.handleIncidentOperation}
+                  forceSpinner={this.state.forceIncidentsSpinner}
+                />
+              )}
               {diagramDefinitions && (
                 <Diagram
                   onFlowNodeSelection={this.handleFlowNodeSelection}

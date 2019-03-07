@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
 
 import Table from 'modules/components/Table';
 import Button from 'modules/components/Button';
-
+import {IncidentAction} from 'modules/components/Actions';
 import ColumnHeader from '../../../Instances/ListView/List/ColumnHeader';
 import Modal from 'modules/components/Modal';
 import {formatDate} from 'modules/utils/date';
@@ -18,7 +18,14 @@ const {THead, TBody, TH, TR, TD} = Table;
 
 export default class IncidentsTable extends React.Component {
   static propTypes = {
-    incidents: PropTypes.array
+    incidents: PropTypes.array.isRequired,
+    onIncidentOperation: PropTypes.func.isRequired,
+    instanceId: PropTypes.string.isRequired,
+    forceSpinner: PropTypes.bool
+  };
+
+  static defaultProps = {
+    forceSpinner: false
   };
 
   state = {isModalVisibile: false};
@@ -45,6 +52,10 @@ export default class IncidentsTable extends React.Component {
         </Modal.Footer>
       </Modal>
     );
+  };
+
+  handleActionButtonClick = () => {
+    this.props.onIncidentOperation();
   };
 
   render() {
@@ -89,6 +100,9 @@ export default class IncidentsTable extends React.Component {
               <TH>
                 <ColumnHeader label="Error Message" />
               </TH>
+              <TH>
+                <ColumnHeader label="Actions" />
+              </TH>
             </TR>
           </THead>
           <TBody>
@@ -122,6 +136,16 @@ export default class IncidentsTable extends React.Component {
                       )}
                     </Styled.Flex>
                   </TD>
+                  <TD>
+                    <IncidentAction
+                      instanceId={this.props.instanceId}
+                      onButtonClick={this.handleActionButtonClick}
+                      incident={incident}
+                      showSpinner={
+                        this.props.forceSpinner || incident.hasActiveOperation
+                      }
+                    />
+                  </TD>
                 </TR>
               );
             })}
@@ -132,7 +156,3 @@ export default class IncidentsTable extends React.Component {
     );
   }
 }
-
-IncidentsTable.propTypes = {
-  incidents: PropTypes.array.isRequired
-};

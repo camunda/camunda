@@ -23,7 +23,12 @@ export default class Actions extends React.Component {
   static propTypes = {
     instance: PropTypes.object.isRequired,
     selected: PropTypes.bool,
-    onButtonClick: PropTypes.func
+    onButtonClick: PropTypes.func,
+    forceSpinner: PropTypes.bool
+  };
+
+  static defaultProps = {
+    forceSpinner: false
   };
 
   state = {operationState: '', operationType: ''};
@@ -61,7 +66,6 @@ export default class Actions extends React.Component {
   handleOnClick = async operationType => {
     this.setState({operationState: OPERATION_STATE.SCHEDULED});
     await applyOperation(this.props.instance.id, operationType);
-
     this.props.onButtonClick && this.props.onButtonClick(this.props.instance);
   };
 
@@ -95,6 +99,7 @@ export default class Actions extends React.Component {
     return (
       <Styled.Actions>
         <ActionStatus
+          forceSpinner={this.props.forceSpinner}
           operationState={this.state.operationState}
           operationType={this.state.operationType}
           selected={this.props.selected}

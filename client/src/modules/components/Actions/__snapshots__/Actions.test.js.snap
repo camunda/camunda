@@ -3,6 +3,7 @@
 exports[`Actions should match snapshots 1`] = `
 <styled.div>
   <ActionStatus
+    forceSpinner={false}
     instance={
       Object {
         "activities": Array [
@@ -50,6 +51,7 @@ exports[`Actions should match snapshots 1`] = `
 exports[`Actions should match snapshots 2`] = `
 <styled.div>
   <ActionStatus
+    forceSpinner={false}
     instance={
       Object {
         "activities": Array [

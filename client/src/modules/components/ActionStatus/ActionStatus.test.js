@@ -49,6 +49,29 @@ describe('ActionStatus', () => {
       //then
       expect(node.find(Styled.ActionSpinner)).toExist();
     });
+    it('should render a spinner if forceSpinner prop is true', () => {
+      // when
+      node = shallow(
+        <ActionStatus
+          operationState={OPERATION_STATE.CANCELED}
+          instance={{id: 'foo'}}
+          forceSpinner
+        />
+      );
+      //then
+      expect(node.find(Styled.ActionSpinner)).toExist();
+    });
+    it('should not render a spinner', () => {
+      // when
+      node = shallow(
+        <ActionStatus
+          operationState={OPERATION_STATE.CANCELED}
+          instance={{id: 'foo'}}
+        />
+      );
+      //then
+      expect(node.find(Styled.ActionSpinner)).not.toExist();
+    });
   });
 
   describe('FailedActionItems', () => {

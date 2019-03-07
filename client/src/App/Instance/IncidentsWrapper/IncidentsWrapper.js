@@ -7,12 +7,12 @@
 import React, {useState} from 'react';
 
 import PropTypes from 'prop-types';
-import IncidentsBar from './../IncidentsBar';
-import IncidentsOverlay from './../IncidentsOverlay';
-import IncidentsTable from './../IncidentsTable';
+import IncidentsBar from './IncidentsBar';
+import IncidentsOverlay from './IncidentsOverlay';
+import IncidentsTable from './IncidentsTable';
 
 function IncidentsWrapper(props) {
-  const {incidents, incidentsCount, instanceId} = props;
+  const {incidents, incidentsCount, instance, onIncidentOperation} = props;
   const [isOpen, setIsOpen] = useState(false);
   function handleToggle() {
     setIsOpen(!isOpen);
@@ -21,14 +21,19 @@ function IncidentsWrapper(props) {
   return (
     <>
       <IncidentsBar
-        id={instanceId}
+        id={instance.id}
         count={incidentsCount}
         onClick={handleToggle}
         isArrowFlipped={isOpen}
       />
       {isOpen && (
         <IncidentsOverlay>
-          <IncidentsTable incidents={incidents} />
+          <IncidentsTable
+            incidents={incidents}
+            instanceId={instance.id}
+            onIncidentOperation={onIncidentOperation}
+            forceSpinner={props.forceSpinner}
+          />
         </IncidentsOverlay>
       )}
     </>
@@ -37,8 +42,10 @@ function IncidentsWrapper(props) {
 
 IncidentsWrapper.defaultProps = {
   incidents: PropTypes.array,
-  incidentsCount: PropTypes.number,
-  instanceId: PropTypes.string
+  incidentsCount: PropTypes.number.isRequired,
+  instance: PropTypes.object.isRequired,
+  onIncidentOperation: PropTypes.func.isRequired,
+  forceSpinner: PropTypes.bool
 };
 
 export default IncidentsWrapper;

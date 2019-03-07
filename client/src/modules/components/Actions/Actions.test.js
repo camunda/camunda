@@ -52,8 +52,12 @@ describe('Actions', () => {
       type: OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
     });
     mockInstance = createInstance({operations: [mockOperation]});
+    const mockProps = {
+      forceSpinner: true,
+      onButtonClick: jest.fn()
+    };
 
-    const node = shallow(<Actions instance={mockInstance} />);
+    const node = shallow(<Actions instance={mockInstance} {...mockProps} />);
 
     //then
     expect(node.find(ActionStatus).props().operationState).toBe(
@@ -62,6 +66,9 @@ describe('Actions', () => {
 
     expect(node.find(ActionStatus).props().operationType).toBe(
       OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
+    );
+    expect(node.find(ActionStatus).props().forceSpinner).toEqual(
+      mockProps.forceSpinner
     );
   });
 

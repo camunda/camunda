@@ -13,9 +13,6 @@ import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
 import Actions from 'modules/components/Actions';
 
-import {STATE} from 'modules/constants';
-
-import IncidentsWrapper from './IncidentsWrapper';
 import * as Styled from './styled';
 
 export default class DiagramPanel extends React.PureComponent {
@@ -28,12 +25,13 @@ export default class DiagramPanel extends React.PureComponent {
       errorMessage: PropTypes.string,
       workflowVersion: PropTypes.number
     }).isRequired,
-    children: PropTypes.node
+    children: PropTypes.node,
+    forceInstanceSpinner: PropTypes.bool,
+    onInstanceOperation: PropTypes.func
   };
 
   render() {
-    const {instance, ...props} = this.props;
-    const hasActiveIncidents = this.props.instance.state === STATE.INCIDENT;
+    const {instance, onInstanceOperation, ...props} = this.props;
 
     return (
       <SplitPane.Pane {...props}>
@@ -51,7 +49,11 @@ export default class DiagramPanel extends React.PureComponent {
                 <Styled.Td>{formatDate(instance.endDate)}</Styled.Td>
                 <Styled.Td>
                   <Styled.ActionsWrapper>
-                    <Actions instance={instance} />
+                    <Actions
+                      instance={instance}
+                      forceSpinner={this.props.forceInstanceSpinner}
+                      onButtonClick={onInstanceOperation}
+                    />
                   </Styled.ActionsWrapper>
                 </Styled.Td>
               </Styled.Tr>
@@ -59,13 +61,6 @@ export default class DiagramPanel extends React.PureComponent {
           </Styled.Table>
         </Styled.SplitPaneHeader>
         <Styled.SplitPaneBody data-test="diagram-panel-body">
-          {hasActiveIncidents && (
-            <IncidentsWrapper
-              incidents={this.props.incidents}
-              incidentsCount={this.props.incidentsCount}
-              instanceId={instance.id}
-            />
-          )}
           {this.props.children}
         </Styled.SplitPaneBody>
       </SplitPane.Pane>
