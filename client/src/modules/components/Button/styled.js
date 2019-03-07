@@ -54,6 +54,7 @@ const colorStyle = ({color}) => {
   const primaryStyle = css`
     box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.35);
     background-color: ${Colors.selections};
+    border: 1px solid ${Colors.primaryButton01};
     color: ${Colors.uiLight02};
 
     &:hover {
@@ -63,11 +64,17 @@ const colorStyle = ({color}) => {
 
     &:active {
       background-color: ${Colors.primaryButton02};
+      border-color: ${Colors.primaryButton02};
       color: ${Colors.uiLight02};
     }
 
     &:disabled {
       color: rgba(247, 248, 250, 0.6);
+      border-color: ${Colors.primaryButton03};
+    }
+    &:focus {
+      color: rgba(247, 248, 250, 0.6);
+      border-color: ${Colors.primaryButton01};
     }
   `;
 
@@ -82,13 +89,19 @@ const colorStyle = ({color}) => {
       light: Colors.uiLight05
     })};
 
+    border: 1px solid
+      ${themeStyle({
+        dark: Colors.uiDark06,
+        light: Colors.uiLight03
+      })};
+
     &:hover {
       background-color: ${themeStyle({
         dark: '#6b6f74',
         light: '#cdd4df'
       })};
       border-color: ${themeStyle({
-        dark: '#7f8289',
+        dark: Colors.darkButton02,
         light: '#9ea9b7'
       })};
     }
@@ -120,6 +133,17 @@ const colorStyle = ({color}) => {
         light: 'rgba(69, 70, 78, 0.5)'
       })};
       box-shadow: none;
+    }
+
+    &:focus {
+      background-color: ${themeStyle({
+        dark: Colors.uiDark05,
+        light: '#f1f2f5'
+      })};
+      border-color: ${themeStyle({
+        dark: Colors.uiDark06,
+        light: Colors.uiLight03
+      })};
     }
   `;
 
