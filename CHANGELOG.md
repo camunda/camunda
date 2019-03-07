@@ -1,3 +1,28 @@
+<a name="0.16.1"></a>
+## 0.16.1 (2019-03-07)
+
+
+#### Features
+
+* **broker:**  condition expression is part of incident message ([447091aa](https://github.com/zeebe-io/zeebe/commit/447091aa3df1c91a17c6f4fd3ef9800f894a7078))
+* **clients/go:**  replace update payload with set variables ([49ae37ab](https://github.com/zeebe-io/zeebe/commit/49ae37abc1f54eb6f68e9a5b8621b818802b2dc1))
+* **exporters/elasticsearch-exporter:**  adds basic HTTP auth to exporter ([791ea802](https://github.com/zeebe-io/zeebe/commit/791ea802d682fcc15678340d29163043028038fc))
+
+#### Bug Fixes
+
+* **broker:**
+  *  set correct license information in pom file ([a6bd1ec8](https://github.com/zeebe-io/zeebe/commit/a6bd1ec8b81c7dae24c805b44f87ceb135dc6edd))
+  *  send close message subscription command to correct partition ([b5600170](https://github.com/zeebe-io/zeebe/commit/b56001709b4693acd037f92e4724119a991cf2ce))
+  *  set correct BPMN element type for sequence flows ([74f93a3e](https://github.com/zeebe-io/zeebe/commit/74f93a3e9654c89309a79c6ccf47e6a23081859d))
+* **broker-core:**
+  *  set repetitions and reset timer record ([418eedc9](https://github.com/zeebe-io/zeebe/commit/418eedc9be1a8f3a827d4f9cf81880ca0ef145d3))
+  *  only distribute deployments from first partition ([a2a069c9](https://github.com/zeebe-io/zeebe/commit/a2a069c9e70430892c2418710bf1c58ee75b9b76))
+  *  fix timer start events key ([833f3246](https://github.com/zeebe-io/zeebe/commit/833f3246f668537044587fc3cb255c9789d9bfae))
+* **msgpack-core:**  fix overflows ([5833ee56](https://github.com/zeebe-io/zeebe/commit/5833ee563aa30300bd34daf6b38bad225bf8968d))
+* **zb-db:**  stop iterating after prefix was exceeded ([c5c38ba9](https://github.com/zeebe-io/zeebe/commit/c5c38ba9a3cb840ea7c7105376c2d7b9a263e23d))
+
+
+
 <a name="0.15.1"></a>
 ## 0.15.1 (2019-02-26)
 
