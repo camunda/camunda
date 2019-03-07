@@ -9149,9 +9149,10 @@ react-scripts@2.0.5:
   optionalDependencies:
     fsevents "1.2.4"
 
-react-table@^6.8.0:
-  version "6.8.0"
-  resolved "https://registry.yarnpkg.com/react-table/-/react-table-6.8.0.tgz#5ce402eb735df68534c03dabb3faa031478b6a58"
+react-table@^6.8.6:
+  version "6.8.6"
+  resolved "https://registry.yarnpkg.com/react-table/-/react-table-6.8.6.tgz#a0ad8b4839319052d5befc012603fb161e52ede3"
+  integrity sha1-oK2LSDkxkFLVvvwBJgP7Fh5S7eM=
   dependencies:
     classnames "^2.2.5"
 

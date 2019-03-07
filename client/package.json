@@ -24,7 +24,7 @@
     "react-full-screen": "^0.2.2",
     "react-router": "^4.2.0",
     "react-router-dom": "^4.2.2",
-    "react-table": "^6.8.0",
+    "react-table": "^6.8.6",
     "spinkit": "^1.2.5",
     "string.prototype.includes": "^1.0.0",
     "table-js": "^5.1.0"
