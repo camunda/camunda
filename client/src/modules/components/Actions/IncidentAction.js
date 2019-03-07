@@ -50,7 +50,7 @@ export default class Actions extends React.Component {
           <ActionItems.Item
             type={OPERATION_TYPE.RESOLVE_INCIDENT}
             onClick={this.handleOnClick}
-            title="Retry incident"
+            title="Retry Incident"
           />
         </ActionItems>
       </Styled.Actions>

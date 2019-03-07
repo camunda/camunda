@@ -11,12 +11,15 @@ import * as Styled from './styled';
 
 export default function IncidentsBar({id, count, onClick, isArrowFlipped}) {
   const isOnlyOne = count === 1;
-  const errorMessage = `There ${isOnlyOne ? 'is' : 'are'} ${count} incident${
+  const errorMessage = `There ${isOnlyOne ? 'is' : 'are'} ${count} Incident${
+    isOnlyOne ? '' : 's'
+  } in Instance ${id}. `;
+  const title = `View ${count} Incident${
     isOnlyOne ? '' : 's'
   } in Instance ${id}. `;
 
   return (
-    <Styled.IncidentsBar onClick={onClick}>
+    <Styled.IncidentsBar onClick={onClick} title={title}>
       <Styled.Arrow isFlipped={isArrowFlipped} />
       {errorMessage}
     </Styled.IncidentsBar>

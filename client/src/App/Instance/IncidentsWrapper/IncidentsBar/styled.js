@@ -30,5 +30,5 @@ export const IncidentsBar = styled.button`
 export const Arrow = styled(withStrippedProps(['isFlipped'])(Down))`
   margin-right: 16px;
 
-  transform: ${props => (props.isFlipped ? 'rotate(180deg)' : 'none')};
+  transform: ${props => (props.isFlipped ? 'none' : 'rotate(-90deg)')};
 `;
