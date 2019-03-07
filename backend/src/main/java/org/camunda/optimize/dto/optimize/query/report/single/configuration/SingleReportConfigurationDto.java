@@ -20,6 +20,7 @@ public class SingleReportConfigurationDto {
   private String xLabel = "";
   private Boolean alwaysShowRelative = false;
   private Boolean alwaysShowAbsolute = false;
+  private Boolean showGradientBars = true;
   private String xml = null;
   private List<String> excludedColumns = new ArrayList<>();
   private ColumnOrderDto columnOrder = new ColumnOrderDto();
@@ -106,6 +107,14 @@ public class SingleReportConfigurationDto {
     this.alwaysShowAbsolute = alwaysShowAbsolute;
   }
 
+  public Boolean getShowGradientBars() {
+    return showGradientBars;
+  }
+
+  public void setShowGradientBars(Boolean showGradientBars) {
+    this.showGradientBars = showGradientBars;
+  }
+
   public String getXml() {
     return xml;
   }
@@ -165,6 +174,7 @@ public class SingleReportConfigurationDto {
       Objects.equals(xLabel, that.xLabel) &&
       Objects.equals(alwaysShowRelative, that.alwaysShowRelative) &&
       Objects.equals(alwaysShowAbsolute, that.alwaysShowAbsolute) &&
+      Objects.equals(showGradientBars, that.showGradientBars) &&
       Objects.equals(xml, that.xml) &&
       Objects.equals(excludedColumns, that.excludedColumns) &&
       Objects.equals(columnOrder, that.columnOrder) &&
@@ -185,6 +195,7 @@ public class SingleReportConfigurationDto {
       xLabel,
       alwaysShowRelative,
       alwaysShowAbsolute,
+      showGradientBars,
       xml,
       excludedColumns,
       columnOrder,
