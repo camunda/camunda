@@ -28,4 +28,5 @@ public class EnvironmentConstants {
   public static final String ENV_REPLICATION_FACTOR = "ZEEBE_REPLICATION_FACTOR";
   public static final String ENV_CLUSTER_SIZE = "ZEEBE_CLUSTER_SIZE";
   public static final String ENV_EMBED_GATEWAY = "ZEEBE_EMBED_GATEWAY";
+  public static final String ENV_METRICS_HTTP_SERVER = "ZEEBE_METRICS_HTTP_SERVER";
 }

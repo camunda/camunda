@@ -17,17 +17,33 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_METRICS_HTTP_SERVER;
+
 import io.zeebe.util.DurationUtil;
 import io.zeebe.util.Environment;
 import java.time.Duration;
 
 public class MetricsCfg implements ConfigurationEntry {
+
+  public static final int DEFAULT_PORT = 9600;
+
   private String reportingInterval = "5s";
   private String file = "metrics/zeebe.prom";
+  private boolean enableHttpServer = false;
+  private String host;
+  private int port = DEFAULT_PORT;
 
   @Override
   public void init(BrokerCfg brokerCfg, String brokerBase, Environment environment) {
     file = ConfigurationUtil.toAbsolutePath(file, brokerBase);
+
+    environment.getBool(ENV_METRICS_HTTP_SERVER).ifPresent(this::setEnableHttpServer);
+
+    final NetworkCfg networkCfg = brokerCfg.getNetwork();
+    if (host == null) {
+      host = networkCfg.getHost();
+    }
+    port += networkCfg.getPortOffset() * 10;
   }
 
   public Duration getReportingIntervalDuration() {
@@ -50,6 +66,33 @@ public class MetricsCfg implements ConfigurationEntry {
     this.file = metricsFile;
   }
 
+  public boolean isEnableHttpServer() {
+    return enableHttpServer;
+  }
+
+  public MetricsCfg setEnableHttpServer(boolean enableHttpServer) {
+    this.enableHttpServer = enableHttpServer;
+    return this;
+  }
+
+  public String getHost() {
+    return host;
+  }
+
+  public MetricsCfg setHost(String host) {
+    this.host = host;
+    return this;
+  }
+
+  public int getPort() {
+    return port;
+  }
+
+  public MetricsCfg setPort(int port) {
+    this.port = port;
+    return this;
+  }
+
   @Override
   public String toString() {
     return "MetricsCfg{"
@@ -59,6 +102,13 @@ public class MetricsCfg implements ConfigurationEntry {
         + ", file='"
         + file
         + '\''
+        + ", enableHttpServer="
+        + enableHttpServer
+        + ", host='"
+        + host
+        + '\''
+        + ", port="
+        + port
         + '}';
   }
 }

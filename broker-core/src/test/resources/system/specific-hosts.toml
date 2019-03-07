@@ -12,3 +12,6 @@ host = "replicationHost"
 
 [network.subscription]
 host = "subscriptionHost"
+
+[metrics]
+host = "metricsHost"
