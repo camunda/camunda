@@ -21,17 +21,18 @@ import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCr
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.response.JobHeaders;
 import io.zeebe.client.api.subscription.JobHandler;
 import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.VariableRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -43,6 +44,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -197,7 +199,7 @@ public class ServiceTaskTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
-        .payload("{\"foo\":1}")
+        .variables("{\"foo\":1}")
         .send()
         .join();
 
@@ -224,13 +226,14 @@ public class ServiceTaskTest {
             .done();
     deploy(modelInstance);
 
-    clientRule
-        .getClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("process")
-        .latestVersion()
-        .send()
-        .join();
+    final WorkflowInstanceEvent event =
+        clientRule
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .send()
+            .join();
 
     // when
     clientRule
@@ -242,9 +245,13 @@ public class ServiceTaskTest {
         .open();
 
     // then
-    assertWorkflowInstanceCompleted(
-        "process",
-        (workflowEvent) -> assertThat(workflowEvent.getPayload()).isEqualTo("{\"bar\":2}"));
+    final List<Record<VariableRecordValue>> variableRecords = getFinalVariableRecords(event);
+
+    assertWorkflowInstanceCompleted(event.getWorkflowInstanceKey());
+    assertThat(variableRecords).hasSize(1);
+    assertThat(variableRecords)
+        .extracting(r -> r.getValue().getName(), r -> r.getValue().getValue())
+        .containsExactly(tuple("bar", "2"));
   }
 
   @Test
@@ -263,14 +270,15 @@ public class ServiceTaskTest {
             .done();
     deploy(modelInstance);
 
-    clientRule
-        .getClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("process")
-        .latestVersion()
-        .payload("{\"foo\":1}")
-        .send()
-        .join();
+    final WorkflowInstanceEvent event =
+        clientRule
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .variables("{\"foo\":1}")
+            .send()
+            .join();
 
     // when
     clientRule
@@ -285,9 +293,13 @@ public class ServiceTaskTest {
         .open();
 
     // then
-    assertWorkflowInstanceCompleted(
-        "process",
-        (workflowEvent) -> assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":2}"));
+    final List<Record<VariableRecordValue>> variableRecords = getFinalVariableRecords(event);
+
+    assertWorkflowInstanceCompleted(event.getWorkflowInstanceKey());
+    assertThat(variableRecords).hasSize(2);
+    assertThat(variableRecords)
+        .extracting(r -> r.getValue().getName(), r -> r.getValue().getValue())
+        .containsExactly(tuple("foo", "1"), tuple("foo", "2"));
   }
 
   @Test
@@ -301,23 +313,19 @@ public class ServiceTaskTest {
         .send()
         .join();
 
-    clientRule
-        .getClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("order-process")
-        .latestVersion()
-        .payload("{\"foo\":1}")
-        .send()
-        .join();
+    final WorkflowInstanceEvent event =
+        clientRule
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("order-process")
+            .latestVersion()
+            .variables("{\"foo\":1}")
+            .send()
+            .join();
 
     // when
     final JobHandler defaultHandler =
-        new JobHandler() {
-          @Override
-          public void handle(JobClient client, ActivatedJob job) {
-            client.newCompleteCommand(job.getKey()).payload("{}").send().join();
-          }
-        };
+        (client, job) -> client.newCompleteCommand(job.getKey()).payload("{}").send().join();
     clientRule.getClient().newWorker().jobType("collect-money").handler(defaultHandler).open();
 
     clientRule
@@ -332,10 +340,13 @@ public class ServiceTaskTest {
     clientRule.getClient().newWorker().jobType("ship-parcel").handler(defaultHandler).open();
 
     // then
+    final List<Record<VariableRecordValue>> variableRecords = getFinalVariableRecords(event);
 
-    assertWorkflowInstanceCompleted(
-        "order-process",
-        (workflowEvent) -> assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":\"bar\"}"));
+    assertWorkflowInstanceCompleted(event.getWorkflowInstanceKey());
+    assertThat(variableRecords).hasSize(2);
+    assertThat(variableRecords)
+        .extracting(r -> r.getValue().getName(), r -> r.getValue().getValue())
+        .containsExactly(tuple("foo", "1"), tuple("foo", "\"bar\""));
   }
 
   @Test
@@ -364,7 +375,7 @@ public class ServiceTaskTest {
               .newCreateInstanceCommand()
               .bpmnProcessId("process")
               .latestVersion()
-              .payload("{\"foo\":1}")
+              .variables("{\"foo\":1}")
               .send()
               .join();
       instanceKeys.add(instanceEvent.getWorkflowInstanceKey());
@@ -388,6 +399,22 @@ public class ServiceTaskTest {
     // any completed job events
     assertThat(RecordingExporter.jobRecords(JobIntent.COMPLETED).limit(instances).count())
         .isEqualTo(instances);
+  }
+
+  private List<Record<VariableRecordValue>> getFinalVariableRecords(WorkflowInstanceEvent event) {
+    final Record<WorkflowInstanceRecordValue> finalRecord =
+        RecordingExporter.workflowInstanceRecords()
+            .withElementId(event.getBpmnProcessId())
+            .withWorkflowInstanceKey(event.getWorkflowInstanceKey())
+            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withFlowScopeKey(-1)
+            .getFirst();
+
+    return RecordingExporter.records()
+        .limit(finalRecord::equals)
+        .variableRecords()
+        .withScopeKey(event.getWorkflowInstanceKey())
+        .collect(Collectors.toList());
   }
 
   private DeploymentEvent deploy(BpmnModelInstance modelInstance) {

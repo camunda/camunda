@@ -26,7 +26,9 @@ import io.zeebe.exporter.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.RaftRecordValue;
 import io.zeebe.exporter.record.value.TimerRecordValue;
+import io.zeebe.exporter.record.value.VariableDocumentRecordValue;
 import io.zeebe.exporter.record.value.VariableRecordValue;
+import io.zeebe.exporter.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.exporter.spi.Exporter;
@@ -40,6 +42,7 @@ import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.RaftIntent;
 import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.intent.VariableDocumentIntent;
 import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
@@ -83,6 +86,13 @@ public class RecordingExporter implements Exporter {
     return StreamSupport.stream(spliterator, false)
         .filter(r -> r.getMetadata().getValueType() == valueType)
         .map(r -> (Record<T>) r);
+  }
+
+  public static RecordStream records() {
+    final Spliterator<Record<? extends RecordValue>> spliterator =
+        Spliterators.spliteratorUnknownSize(new RecordIterator(), Spliterator.ORDERED);
+    return new RecordStream(
+        StreamSupport.stream(spliterator, false).map(r -> (Record<RecordValue>) r));
   }
 
   public static RaftRecordStream raftRecords() {
@@ -191,6 +201,21 @@ public class RecordingExporter implements Exporter {
 
   public static VariableRecordStream variableRecords(final VariableIntent intent) {
     return variableRecords().withIntent(intent);
+  }
+
+  public static VariableDocumentRecordStream variableDocumentRecords() {
+    return new VariableDocumentRecordStream(
+        records(ValueType.VARIABLE_DOCUMENT, VariableDocumentRecordValue.class));
+  }
+
+  public static VariableDocumentRecordStream variableDocumentRecords(
+      final VariableDocumentIntent intent) {
+    return variableDocumentRecords().withIntent(intent);
+  }
+
+  public static WorkflowInstanceCreationRecordStream workflowInstanceCreationRecords() {
+    return new WorkflowInstanceCreationRecordStream(
+        records(ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationRecordValue.class));
   }
 
   public static class RecordIterator implements Iterator<Record<?>> {

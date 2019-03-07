@@ -43,6 +43,10 @@ public class IncidentRecordStream
     return valueFilter(v -> bpmnProcessId.equals(v.getBpmnProcessId()));
   }
 
+  public IncidentRecordStream withElementId(final String elementId) {
+    return valueFilter(v -> elementId.equals(v.getElementId()));
+  }
+
   public IncidentRecordStream withWorkflowInstanceKey(final long workflowInstanceKey) {
     return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
   }

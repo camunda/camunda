@@ -90,7 +90,7 @@ public class ParallelGatewayStreamProcessorTest {
 
     streamProcessorRule.deploy(process);
 
-    streamProcessorRule.createWorkflowInstance(PROCESS_ID);
+    streamProcessorRule.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
     streamProcessorRule.awaitElementInState(
         "flowToJoin", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
 

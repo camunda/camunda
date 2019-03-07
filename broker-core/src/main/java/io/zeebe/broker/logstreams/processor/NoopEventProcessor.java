@@ -34,7 +34,4 @@ public class NoopEventProcessor implements EventProcessor {
   public long writeEvent(LogStreamRecordWriter writer) {
     return 0;
   }
-
-  @Override
-  public void updateState() {}
 }

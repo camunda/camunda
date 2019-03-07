@@ -87,8 +87,7 @@ public class LogStreamUtil {
     }
 
     private boolean findStartAddress(long position) {
-      final int indexSize = blockIndex.size();
-      if (indexSize > 0) {
+      if (!blockIndex.isEmpty()) {
         nextReadAddress = blockIndex.lookupBlockAddress(position);
       } else {
         // fallback: get first block address

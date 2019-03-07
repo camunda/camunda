@@ -27,15 +27,21 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.impl.record.value.incident.ErrorType;
+import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -47,127 +53,170 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class EventSubscriptionIncidentTest {
 
-  private static final String PROCESS_ID = "process";
+  private static final String MESSAGE_NAME_1 = "msg-1";
+  private static final String MESSAGE_NAME_2 = "msg-2";
+  private static final String CORRELATION_VARIABLE_1 = "key-1";
+  private static final String CORRELATION_VARIABLE_2 = "key-2";
+  private static final String CORRELATION_VARIABLE_PATH_1 = "$." + CORRELATION_VARIABLE_1;
+  private static final String CORRELATION_VARIABLE_PATH_2 = "$." + CORRELATION_VARIABLE_2;
 
+  private static final String WF_RECEIVE_TASK_ID = "wf-receive-task";
   private static final BpmnModelInstance WF_RECEIVE_TASK =
-      Bpmn.createExecutableProcess(PROCESS_ID)
+      Bpmn.createExecutableProcess(WF_RECEIVE_TASK_ID)
           .startEvent()
           .receiveTask("task")
-          .message(m -> m.name("msg-1").zeebeCorrelationKey("$.key-1"))
+          .message(m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_1))
           .boundaryEvent(
-              "msg-2", c -> c.message(m -> m.name("msg-2").zeebeCorrelationKey("$.key-2")))
+              MESSAGE_NAME_2,
+              c ->
+                  c.message(
+                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_2)))
           .endEvent()
           .done();
 
+  private static final String WF_RECEIVE_TASK_2_ID = "wf-receive-task-2";
   private static final BpmnModelInstance WF_RECEIVE_TASK_2 =
-      Bpmn.createExecutableProcess(PROCESS_ID)
+      Bpmn.createExecutableProcess(WF_RECEIVE_TASK_2_ID)
           .startEvent()
           .receiveTask("task")
-          .message(m -> m.name("msg-2").zeebeCorrelationKey("$.key-2"))
+          .message(m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_2))
           .boundaryEvent(
-              "msg-1", c -> c.message(m -> m.name("msg-1").zeebeCorrelationKey("$.key-1")))
+              MESSAGE_NAME_1,
+              c ->
+                  c.message(
+                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_1)))
           .endEvent()
           .done();
 
+  private static final String WF_EVENT_BASED_GATEWAY_ID = "wf-event-based-gateway";
   private static final BpmnModelInstance WF_EVENT_BASED_GATEWAY =
-      Bpmn.createExecutableProcess(PROCESS_ID)
+      Bpmn.createExecutableProcess(WF_EVENT_BASED_GATEWAY_ID)
           .startEvent()
           .eventBasedGateway("gateway")
           .intermediateCatchEvent(
-              "msg-1", i -> i.message(m -> m.name("msg-1").zeebeCorrelationKey("$.key-1")))
+              MESSAGE_NAME_1,
+              i ->
+                  i.message(
+                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_1)))
           .endEvent()
           .moveToLastGateway()
           .intermediateCatchEvent(
-              "msg-2", i -> i.message(m -> m.name("msg-2").zeebeCorrelationKey("$.key-2")))
+              MESSAGE_NAME_2,
+              i ->
+                  i.message(
+                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_2)))
           .endEvent()
           .done();
 
+  private static final String WF_EVENT_BASED_GATEWAY_2_ID = "wf-event-based-gateway-2";
   private static final BpmnModelInstance WF_EVENT_BASED_GATEWAY_2 =
-      Bpmn.createExecutableProcess(PROCESS_ID)
+      Bpmn.createExecutableProcess(WF_EVENT_BASED_GATEWAY_2_ID)
           .startEvent()
           .eventBasedGateway("gateway")
           .intermediateCatchEvent(
-              "msg-2", i -> i.message(m -> m.name("msg-2").zeebeCorrelationKey("$.key-2")))
+              MESSAGE_NAME_2,
+              i ->
+                  i.message(
+                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_2)))
           .endEvent()
           .moveToLastGateway()
           .intermediateCatchEvent(
-              "msg-1", i -> i.message(m -> m.name("msg-1").zeebeCorrelationKey("$.key-1")))
+              MESSAGE_NAME_1,
+              i ->
+                  i.message(
+                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_1)))
           .endEvent()
           .done();
 
+  private static final String WF_BOUNDARY_EVENT_ID = "wf-boundary-event";
   private static final BpmnModelInstance WF_BOUNDARY_EVENT =
-      Bpmn.createExecutableProcess(PROCESS_ID)
+      Bpmn.createExecutableProcess(WF_BOUNDARY_EVENT_ID)
           .startEvent()
           .serviceTask("task", t -> t.zeebeTaskType("test"))
           .boundaryEvent(
-              "msg-1", c -> c.message(m -> m.name("msg-1").zeebeCorrelationKey("$.key-1")))
+              MESSAGE_NAME_1,
+              c ->
+                  c.message(
+                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_1)))
           .endEvent()
           .moveToActivity("task")
           .boundaryEvent(
-              "msg-2", c -> c.message(m -> m.name("msg-2").zeebeCorrelationKey("$.key-2")))
+              MESSAGE_NAME_2,
+              c ->
+                  c.message(
+                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_2)))
           .endEvent()
           .done();
 
+  private static final String WF_BOUNDARY_EVENT_2_ID = "wf-boundary-event-2";
   private static final BpmnModelInstance WF_BOUNDARY_EVENT_2 =
-      Bpmn.createExecutableProcess(PROCESS_ID)
+      Bpmn.createExecutableProcess(WF_BOUNDARY_EVENT_2_ID)
           .startEvent()
           .serviceTask("task", t -> t.zeebeTaskType("test"))
           .boundaryEvent(
-              "msg-2", c -> c.message(m -> m.name("msg-2").zeebeCorrelationKey("$.key-2")))
+              MESSAGE_NAME_2,
+              c ->
+                  c.message(
+                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_2)))
           .endEvent()
           .moveToActivity("task")
           .boundaryEvent(
-              "msg-1", c -> c.message(m -> m.name("msg-1").zeebeCorrelationKey("$.key-1")))
+              MESSAGE_NAME_1,
+              c ->
+                  c.message(
+                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_1)))
           .endEvent()
           .done();
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private PartitionTestClient testClient;
+  @Rule
+  public RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
     return new Object[][] {
       {
         "boundary catch event (first event)",
-        WF_BOUNDARY_EVENT,
+        WF_BOUNDARY_EVENT_ID,
         "task",
         WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         WorkflowInstanceIntent.ELEMENT_ACTIVATED
       },
       {
         "boundary catch event (second event)",
-        WF_BOUNDARY_EVENT_2,
+        WF_BOUNDARY_EVENT_2_ID,
         "task",
         WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         WorkflowInstanceIntent.ELEMENT_ACTIVATED
       },
       {
         "receive task (boundary event)",
-        WF_RECEIVE_TASK,
+        WF_RECEIVE_TASK_ID,
         "task",
         WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         WorkflowInstanceIntent.ELEMENT_ACTIVATED
       },
       {
         "receive task (task)",
-        WF_RECEIVE_TASK_2,
+        WF_RECEIVE_TASK_2_ID,
         "task",
         WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         WorkflowInstanceIntent.ELEMENT_ACTIVATED
       },
       {
         "event-based gateway (first event)",
-        WF_EVENT_BASED_GATEWAY,
+        WF_EVENT_BASED_GATEWAY_ID,
         "gateway",
         WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         null
       },
       {
         "event-based gateway (second event)",
-        WF_EVENT_BASED_GATEWAY_2,
+        WF_EVENT_BASED_GATEWAY_2_ID,
         "gateway",
         WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         null
@@ -179,7 +228,7 @@ public class EventSubscriptionIncidentTest {
   public String elementType;
 
   @Parameter(1)
-  public BpmnModelInstance workflow;
+  public String processId;
 
   @Parameter(2)
   public String elementId;
@@ -190,32 +239,61 @@ public class EventSubscriptionIncidentTest {
   @Parameter(4)
   public WorkflowInstanceIntent resolvedEventIntent;
 
+  @BeforeClass
+  public static void deployWorkflows() {
+    for (BpmnModelInstance modelInstance :
+        Arrays.asList(
+            WF_RECEIVE_TASK,
+            WF_RECEIVE_TASK_2,
+            WF_BOUNDARY_EVENT,
+            WF_BOUNDARY_EVENT_2,
+            WF_EVENT_BASED_GATEWAY,
+            WF_EVENT_BASED_GATEWAY_2)) {
+      apiRule.deployWorkflow(modelInstance);
+    }
+  }
+
+  private String correlationKey1;
+  private String correlationKey2;
+
   @Before
   public void init() {
-    testClient = apiRule.partitionClient();
-
-    testClient.deploy(workflow);
+    correlationKey1 = UUID.randomUUID().toString();
+    correlationKey2 = UUID.randomUUID().toString();
   }
 
   @Test
   public void shouldCreateIncidentIfMessageCorrelationKeyNotFound() {
     // when
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(PROCESS_ID, MsgPackUtil.asMsgPack("key-1", "k1"));
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(processId)
+                        .setVariables(
+                            MsgPackUtil.asMsgPack(CORRELATION_VARIABLE_1, correlationKey1)))
+            .getInstanceKey();
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(failureEventIntent)
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .withElementId(elementId)
             .getFirst();
 
     // then
     final Record<IncidentRecordValue> incidentRecord =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR.name())
-        .hasErrorMessage("Failed to extract the correlation-key by '$.key-2': no value found")
-        .hasBpmnProcessId(PROCESS_ID)
+        .hasErrorMessage(
+            "Failed to extract the correlation-key by '"
+                + CORRELATION_VARIABLE_PATH_2
+                + "': no value found")
+        .hasBpmnProcessId(processId)
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId(failureEvent.getValue().getElementId())
         .hasElementInstanceKey(failureEvent.getKey())
@@ -225,24 +303,36 @@ public class EventSubscriptionIncidentTest {
   @Test
   public void shouldCreateIncidentIfMessageCorrelationKeyHasInvalidType() {
     // when
+    final Map<String, Object> payload = new HashMap<>();
+    payload.put(CORRELATION_VARIABLE_1, correlationKey1);
+    payload.put(CORRELATION_VARIABLE_2, Arrays.asList(1, 2, 3));
+
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(
-            PROCESS_ID, MsgPackUtil.asMsgPack("{'key-1':'k1', 'key-2':[1,2,3]}"));
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId(processId).setVariables(MsgPackUtil.asMsgPack(payload)))
+            .getInstanceKey();
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(failureEventIntent)
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .withElementId(elementId)
             .getFirst();
 
     // then
     final Record<IncidentRecordValue> incidentRecord =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR.name())
         .hasErrorMessage(
-            "Failed to extract the correlation-key by '$.key-2': the value must be either a string or a number")
-        .hasBpmnProcessId(PROCESS_ID)
+            "Failed to extract the correlation-key by '"
+                + CORRELATION_VARIABLE_PATH_2
+                + "': the value must be either a string or a number")
+        .hasBpmnProcessId(processId)
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId(failureEvent.getValue().getElementId())
         .hasElementInstanceKey(failureEvent.getKey())
@@ -252,32 +342,50 @@ public class EventSubscriptionIncidentTest {
   @Test
   public void shouldOpenSubscriptionsWhenIncidentIsResolved() {
     // given
-    testClient.createWorkflowInstance(PROCESS_ID, MsgPackUtil.asMsgPack("key-1", "k1"));
+    final String correlationKey1 = UUID.randomUUID().toString();
+    final String correlationKey2 = UUID.randomUUID().toString();
+    final long workflowInstanceKey =
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(processId)
+                        .setVariables(
+                            MsgPackUtil.asMsgPack(CORRELATION_VARIABLE_1, correlationKey1)))
+            .getInstanceKey();
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
 
     // when
-    testClient.updatePayload(
-        incidentCreatedRecord.getValue().getElementInstanceKey(), "{'key-1':'k1', 'key-2':'k2'}");
+    final Map<String, Object> document = new HashMap<>();
+    document.put(CORRELATION_VARIABLE_1, correlationKey1);
+    document.put(CORRELATION_VARIABLE_2, correlationKey2);
+    apiRule
+        .partitionClient()
+        .updateVariables(incidentCreatedRecord.getValue().getElementInstanceKey(), document);
 
-    testClient.resolveIncident(incidentCreatedRecord.getKey());
+    apiRule.resolveIncident(incidentCreatedRecord.getKey());
 
     // then
     assertThat(
             RecordingExporter.workflowInstanceSubscriptionRecords(
                     WorkflowInstanceSubscriptionIntent.OPENED)
+                .withWorkflowInstanceKey(workflowInstanceKey)
                 .limit(2))
         .extracting(Record::getValue)
         .extracting(WorkflowInstanceSubscriptionRecordValue::getMessageName)
-        .containsExactlyInAnyOrder("msg-1", "msg-2");
+        .containsExactlyInAnyOrder(MESSAGE_NAME_1, MESSAGE_NAME_2);
 
     // and
-    testClient.publishMessage("msg-2", "k2");
+    apiRule.publishMessage(MESSAGE_NAME_2, correlationKey2);
 
     assertThat(
             RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .withElementId(PROCESS_ID)
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withElementId(processId)
                 .exists())
         .isTrue();
   }
@@ -285,24 +393,42 @@ public class EventSubscriptionIncidentTest {
   @Test
   public void shouldNotOpenSubscriptionsWhenIncidentIsCreated() {
     // given
-    testClient.createWorkflowInstance(PROCESS_ID, MsgPackUtil.asMsgPack("key-1", "k1"));
+    final long workflowInstanceKey =
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(processId)
+                        .setVariables(
+                            MsgPackUtil.asMsgPack(CORRELATION_VARIABLE_1, correlationKey1)))
+            .getInstanceKey();
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
 
     // when
-    testClient.updatePayload(
-        incidentCreatedRecord.getValue().getElementInstanceKey(), "{'key-1':'k1', 'key-2':'k2'}");
+    final Map<String, Object> document = new HashMap<>();
+    document.put(CORRELATION_VARIABLE_1, correlationKey1);
+    document.put(CORRELATION_VARIABLE_2, correlationKey2);
 
-    testClient.resolveIncident(incidentCreatedRecord.getKey());
+    apiRule
+        .partitionClient()
+        .updateVariables(incidentCreatedRecord.getValue().getElementInstanceKey(), document);
+
+    apiRule.resolveIncident(incidentCreatedRecord.getKey());
 
     // then
     final Record<IncidentRecordValue> incidentResolvedRecord =
-        RecordingExporter.incidentRecords(IncidentIntent.RESOLVED).getFirst();
+        RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
 
     assertThat(
             RecordingExporter.workflowInstanceSubscriptionRecords(
                     WorkflowInstanceSubscriptionIntent.OPENED)
+                .withWorkflowInstanceKey(workflowInstanceKey)
                 .limit(2))
         .allMatch(r -> r.getPosition() > incidentResolvedRecord.getPosition());
 
@@ -310,6 +436,7 @@ public class EventSubscriptionIncidentTest {
     if (resolvedEventIntent != null) {
       assertThat(
               RecordingExporter.workflowInstanceRecords(resolvedEventIntent)
+                  .withWorkflowInstanceKey(workflowInstanceKey)
                   .withElementId(elementId)
                   .getFirst()
                   .getPosition())

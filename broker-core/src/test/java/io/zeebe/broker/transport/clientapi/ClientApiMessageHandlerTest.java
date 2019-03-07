@@ -35,6 +35,7 @@ import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
 import io.zeebe.protocol.clientapi.ControlMessageRequestEncoder;
@@ -55,6 +56,8 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.RemoteAddressImpl;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -124,12 +127,24 @@ public class ClientApiMessageHandlerTest {
     MockitoAnnotations.initMocks(this);
 
     serverOutput = new BufferingServerOutput();
+    File runtime = null;
+    File snapshots = null;
+
+    try {
+      runtime = tempFolder.newFolder("index", "runtime");
+      snapshots = tempFolder.newFolder("index", "snapshots");
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    final StateStorage stateStorage = new StateStorage(runtime, snapshots);
 
     logStream =
         LogStreams.createFsLogStream(LOG_STREAM_PARTITION_ID)
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
             .serviceContainer(serviceContainerRule.get())
             .logName("Test")
+            .indexStateStorage(stateStorage)
             .build()
             .join();
 

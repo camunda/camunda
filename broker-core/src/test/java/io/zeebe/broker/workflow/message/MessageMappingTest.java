@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.workflow.message;
 
+import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
+
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Assertions;
 import io.zeebe.exporter.record.Record;
@@ -28,13 +30,15 @@ import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
+import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -47,19 +51,22 @@ import org.junit.runners.Parameterized.Parameters;
 public class MessageMappingTest {
 
   private static final String PROCESS_ID = "process";
+  private static final String MESSAGE_NAME = "message";
+  private static final String CORRELATION_VARIABLE = "key";
+  private static final String CORRELATION_VARIABLE_PATH = "$." + CORRELATION_VARIABLE;
 
   private static final BpmnModelInstance CATCH_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("catch")
-          .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH))
           .done();
 
   private static final BpmnModelInstance RECEIVE_TASK_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .receiveTask("catch")
-          .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH))
           .done();
 
   private static final BpmnModelInstance INTERRUPTING_BOUNDARY_EVENT_WORKFLOW =
@@ -67,7 +74,7 @@ public class MessageMappingTest {
           .startEvent()
           .serviceTask("task", b -> b.zeebeTaskType("type"))
           .boundaryEvent("catch")
-          .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH))
           .endEvent()
           .done();
 
@@ -76,7 +83,7 @@ public class MessageMappingTest {
           .startEvent()
           .serviceTask("task", b -> b.zeebeTaskType("type"))
           .boundaryEvent("catch", b -> b.cancelActivity(false))
-          .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH))
           .endEvent()
           .done();
 
@@ -86,7 +93,10 @@ public class MessageMappingTest {
           .eventBasedGateway()
           .id("gateway")
           .intermediateCatchEvent(
-              "catch", c -> c.message(m -> m.name("message").zeebeCorrelationKey("$.key")))
+              "catch",
+              c ->
+                  c.message(
+                      m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH)))
           .sequenceFlowId("to-end1")
           .endEvent("end1")
           .moveToLastGateway()
@@ -112,33 +122,46 @@ public class MessageMappingTest {
     };
   }
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private PartitionTestClient testClient;
+  @Rule
+  public RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
+
+  private String correlationKey;
 
   @Before
-  public void init() {
-    testClient = apiRule.partitionClient();
+  public void setUp() {
+    correlationKey = UUID.randomUUID().toString();
   }
 
   @Test
   public void shouldMergeMessagePayloadByDefault() {
     // given
-    deployWorkflowWithMapping(e -> {});
+    final long workflowKey = deployWorkflowWithMapping(e -> {});
 
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(PROCESS_ID, "{'key': 'order-66'}");
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r ->
+                    r.setKey(workflowKey)
+                        .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)))
+            .getInstanceKey();
 
     // when
-    testClient.publishMessage("message", "order-66", "{'foo': 'bar'}");
+    apiRule.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
 
     // then
     final Record<VariableRecordValue> variableEvent =
-        RecordingExporter.variableRecords().withName("foo").getFirst();
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withName("foo")
+            .getFirst();
 
     Assertions.assertThat(variableEvent.getValue())
         .hasValue("\"bar\"")
@@ -148,17 +171,26 @@ public class MessageMappingTest {
   @Test
   public void shouldMergeMessagePayload() {
     // given
-    deployWorkflowWithMapping(e -> e.zeebeOutputBehavior(ZeebeOutputBehavior.merge));
+    final long workflowKey = deployWorkflowWithMapping(e -> {});
 
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(PROCESS_ID, "{'key': 'order-66'}");
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r ->
+                    r.setKey(workflowKey)
+                        .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)))
+            .getInstanceKey();
 
     // when
-    testClient.publishMessage("message", "order-66", "{'foo': 'bar'}");
+    apiRule.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
 
     // then
     final Record<VariableRecordValue> variableEvent =
-        RecordingExporter.variableRecords().withName("foo").getFirst();
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withName("foo")
+            .getFirst();
 
     Assertions.assertThat(variableEvent.getValue())
         .hasValue("\"bar\"")
@@ -168,24 +200,33 @@ public class MessageMappingTest {
   @Test
   public void shouldMapMessagePayloadIntoInstancePayload() {
     // given
-    deployWorkflowWithMapping(e -> e.zeebeOutput("$.foo", "$.message"));
-
+    final long workflowKey =
+        deployWorkflowWithMapping(e -> e.zeebeOutput("$.foo", "$." + MESSAGE_NAME));
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(PROCESS_ID, "{'key': 'order-66'}");
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r ->
+                    r.setKey(workflowKey)
+                        .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)))
+            .getInstanceKey();
 
     // when
-    testClient.publishMessage("message", "order-66", "{'foo': 'bar'}");
+    apiRule.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
 
     // then
     final Record<VariableRecordValue> variableEvent =
-        RecordingExporter.variableRecords().withName("message").getFirst();
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withName(MESSAGE_NAME)
+            .getFirst();
 
     Assertions.assertThat(variableEvent.getValue())
         .hasValue("\"bar\"")
         .hasScopeKey(workflowInstanceKey);
   }
 
-  private void deployWorkflowWithMapping(Consumer<ZeebePayloadMappingBuilder<?>> c) {
+  private long deployWorkflowWithMapping(Consumer<ZeebePayloadMappingBuilder<?>> c) {
     final BpmnModelInstance modifiedWorkflow = workflow.clone();
     final ModelElementInstance element = modifiedWorkflow.getModelElementById("catch");
     if (element instanceof IntermediateCatchEvent) {
@@ -197,6 +238,11 @@ public class MessageMappingTest {
     } else {
       c.accept(((ReceiveTask) element).builder());
     }
-    testClient.deploy(modifiedWorkflow);
+    return apiRule
+        .deployWorkflow(modifiedWorkflow)
+        .getValue()
+        .getDeployedWorkflows()
+        .get(0)
+        .getWorkflowKey();
   }
 }

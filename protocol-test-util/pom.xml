@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zb-parent</artifactId>
-    <version>0.16.0-SNAPSHOT</version>
+    <version>0.17.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -16,6 +16,11 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-protocol</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-protocol-impl</artifactId>
     </dependency>
 
     <dependency>
@@ -31,6 +36,11 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-msgpack-value</artifactId>
     </dependency>
 
     <dependency>

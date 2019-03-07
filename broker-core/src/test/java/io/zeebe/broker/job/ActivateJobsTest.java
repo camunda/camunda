@@ -19,8 +19,6 @@ package io.zeebe.broker.job;
 
 import static io.zeebe.exporter.record.Assertions.assertThat;
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
-import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD;
-import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
@@ -61,6 +59,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import one.util.streamex.StreamEx;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.internal.bytebuddy.utility.RandomString;
 import org.junit.Rule;
 import org.junit.Test;
@@ -175,7 +174,6 @@ public class ActivateJobsTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void shouldActivateSingleJob() {
     // given
     final ControlledActorClock clock = brokerRule.getClock();
@@ -360,7 +358,7 @@ public class ActivateJobsTest {
             .done();
 
     apiRule.partitionClient().deployWithResponse(Bpmn.convertToString(modelInstance).getBytes());
-    apiRule.partitionClient().createWorkflowInstance("processId");
+    apiRule.partitionClient().createWorkflowInstance(r -> r.setBpmnProcessId("processId"));
 
     // when
     apiRule.partitionClient().completeJobOfType("taskType");
@@ -372,7 +370,6 @@ public class ActivateJobsTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void shouldFetchFullJobRecordFromWorkflow() {
     // given
     final ControlledActorClock clock = brokerRule.getClock();
@@ -385,7 +382,7 @@ public class ActivateJobsTest {
     final Instant deadline = clock.getCurrentTime().plusMillis(timeout.toMillis());
 
     deployWorkflow(JOB_TYPE);
-    createWorkflowInstance();
+    createWorkflowInstance(PROCESS_ID);
     final Record<JobRecordValue> jobRecord =
         jobRecords(JobIntent.CREATED).withType(JOB_TYPE).getFirst();
 
@@ -463,7 +460,6 @@ public class ActivateJobsTest {
     return activateJobs(type, "testWorker", Duration.ofMinutes(5), amount);
   }
 
-  @SuppressWarnings("unchecked")
   private List<Job> activateJobs(String jobType, String worker, Duration timeout, int amount) {
     final Map<String, Object> response =
         apiRule
@@ -544,20 +540,12 @@ public class ActivateJobsTest {
         .collect(Collectors.toList());
   }
 
-  private long createWorkflowInstance() {
-    return createWorkflowInstance(PROCESS_ID);
-  }
-
   private long createWorkflowInstance(String processId) {
     return apiRule
-        .createCmdRequest()
-        .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
-        .command()
-        .put(PROP_WORKFLOW_BPMN_PROCESS_ID, processId)
-        .put(PROP_WORKFLOW_PAYLOAD, PAYLOAD_MSG_PACK)
-        .done()
-        .sendAndAwait()
-        .getKey();
+        .partitionClient()
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId(processId).setVariables(new UnsafeBuffer(PAYLOAD_MSG_PACK)))
+        .getInstanceKey();
   }
 
   static class Job {

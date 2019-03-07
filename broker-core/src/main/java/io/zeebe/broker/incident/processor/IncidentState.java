@@ -70,7 +70,7 @@ public class IncidentState {
   }
 
   public void createIncident(long incidentKey, IncidentRecord incident) {
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           this.incidentKey.wrapLong(incidentKey);
           this.incidentRecordToWrite.wrapObject(incident);
@@ -100,7 +100,7 @@ public class IncidentState {
     final IncidentRecord incidentRecord = getIncidentRecord(key);
 
     if (incidentRecord != null) {
-      zeebeDb.batch(
+      zeebeDb.transaction(
           () -> {
             incidentColumnFamily.delete(incidentKey);
 

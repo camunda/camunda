@@ -9,10 +9,14 @@
   <parent>
     <artifactId>zb-parent</artifactId>
     <groupId>io.zeebe</groupId>
-    <version>0.16.0-SNAPSHOT</version>
+    <version>0.17.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
+
+  <properties>
+    <paths.certificates>${project.build.testResources[0].directory}/certs/</paths.certificates>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -52,6 +56,11 @@
 
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore-nio</artifactId>
     </dependency>
 
@@ -73,6 +82,12 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-test-util</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -105,6 +120,13 @@
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>pl.allegro.tech</groupId>
+      <artifactId>embedded-elasticsearch</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -112,13 +134,14 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-      </plugin>
-
-      <plugin>
-        <groupId>com.github.alexcojocaru</groupId>
-        <artifactId>elasticsearch-maven-plugin</artifactId>
         <configuration>
-          <version>${version.elasticsearch}</version>
+          <systemPropertyVariables>
+            <javax.net.ssl.trustStore>
+              ${paths.certificates}/elastic-stack-ca.p12
+            </javax.net.ssl.trustStore>
+            <javax.net.ssl.trustStorePassword>changeit</javax.net.ssl.trustStorePassword>
+            <javax.net.ssl.trustStoreType>pkcs12</javax.net.ssl.trustStoreType>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
     </plugins>

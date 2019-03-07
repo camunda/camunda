@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
   <artifactId>zb-parent</artifactId>
-  <version>0.16.0-SNAPSHOT</version>
+  <version>0.17.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <inceptionYear>2017</inceptionYear>
   <url>http://zeebe.io/</url>
@@ -11,7 +11,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zb-bom</artifactId>
-    <version>0.16.0-SNAPSHOT</version>
+    <version>0.17.0-SNAPSHOT</version>
     <relativePath>../bom</relativePath>
   </parent>
 
@@ -21,18 +21,21 @@
     <!-- disable jdk8 javadoc checks on release build -->
     <additionalparam>-Xdoclint:none</additionalparam>
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
+    <spotbugs.include>spotbugs/spotbugs-include.xml</spotbugs.include>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>0.9.32</version.agrona>
+    <version.agrona>0.9.33</version.agrona>
     <version.animal-sniffer>1.17</version.animal-sniffer>
-    <version.assertj>3.11.1</version.assertj>
+    <version.assertj>3.12.1</version.assertj>
     <version.atomix>3.1.5</version.atomix>
     <version.camunda>7.10.0</version.camunda>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
-    <version.elasticsearch>6.6.0</version.elasticsearch>
-    <version.error-prone>2.3.2</version.error-prone>
-    <version.grpc>1.18.0</version.grpc>
+    <version.commons-codec>1.12</version.commons-codec>
+    <version.elasticsearch>6.6.1</version.elasticsearch>
+    <version.embedded-elasticsearch>2.10.0</version.embedded-elasticsearch>
+    <version.error-prone>2.3.3</version.error-prone>
+    <version.grpc>1.19.0</version.grpc>
     <version.gson>2.8.5</version.gson>
     <version.guava>27.0.1-jre</version.guava>
     <version.hamcrest>2.1</version.hamcrest>
@@ -44,7 +47,7 @@
     <version.jmh>1.21</version.jmh>
     <version.junit>4.12</version.junit>
     <version.log4j>2.11.2</version.log4j>
-    <version.mockito>2.24.0</version.mockito>
+    <version.mockito>2.25.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.16</version.msgpack>
     <version.netty>4.1.33.Final</version.netty>
@@ -52,11 +55,11 @@
     <version.protobuf>3.6.1</version.protobuf>
     <version.protoc>3.6.0</version.protoc>
     <version.rocksdbjni>5.17.2</version.rocksdbjni>
-    <version.sbe>1.12.1</version.sbe>
+    <version.sbe>1.12.2</version.sbe>
     <version.scala-parser>1.0.6</version.scala-parser>
     <version.scala>2.12.8</version.scala>
-    <version.slf4j>1.7.25</version.slf4j>
-    <version.snakeyaml>1.23</version.snakeyaml>
+    <version.slf4j>1.7.26</version.slf4j>
+    <version.snakeyaml>1.24</version.snakeyaml>
     <version.streamex>0.6.8</version.streamex>
     <version.toml>0.7.2</version.toml>
 
@@ -66,7 +69,6 @@
     <plugin.version.build-helper>3.0.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.0.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.8.0</plugin.version.compiler>
-    <plugin.version.elasticsearch>6.9</plugin.version.elasticsearch>
     <plugin.version.exec>1.6.0</plugin.version.exec>
     <plugin.version.failsafe>2.22.1</plugin.version.failsafe>
     <plugin.version.fmt>2.8</plugin.version.fmt>
@@ -80,9 +82,10 @@
     <plugin.version.versions>2.7</plugin.version.versions>
     <plugin.version.enforcer>3.0.0-M2</plugin.version.enforcer>
     <plugin.version.dependency>3.1.1</plugin.version.dependency>
+    <plugin.version.spotbugs>3.1.11</plugin.version.spotbugs>
 
     <!-- maven extensions -->
-    <extension.version.os-maven-plugin>1.6.1</extension.version.os-maven-plugin>
+    <extension.version.os-maven-plugin>1.6.2</extension.version.os-maven-plugin>
   </properties>
 
   <dependencyManagement>
@@ -400,9 +403,21 @@
       </dependency>
 
       <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>${version.commons-codec}</version>
+      </dependency>
+
+      <dependency>
         <groupId>com.carrotsearch</groupId>
         <artifactId>hppc</artifactId>
         <version>${version.hppc}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>pl.allegro.tech</groupId>
+        <artifactId>embedded-elasticsearch</artifactId>
+        <version>${version.embedded-elasticsearch}</version>
       </dependency>
 
     </dependencies>
@@ -721,32 +736,6 @@
         </plugin>
 
         <plugin>
-          <groupId>com.github.alexcojocaru</groupId>
-          <artifactId>elasticsearch-maven-plugin</artifactId>
-          <version>${plugin.version.elasticsearch}</version>
-          <configuration>
-            <version>${version.elasticsearch}</version>
-            <skip>${skipTests}</skip>
-          </configuration>
-          <executions>
-            <execution>
-              <id>start-elasticsearch</id>
-              <phase>pre-integration-test</phase>
-              <goals>
-                <goal>runforked</goal>
-              </goals>
-            </execution>
-            <execution>
-              <id>stop-elasticsearch</id>
-              <phase>post-integration-test</phase>
-              <goals>
-                <goal>stop</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-
-        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
           <version>${plugin.version.enforcer}</version>
@@ -883,6 +872,7 @@
         </plugins>
       </build>
     </profile>
+
     <profile>
       <id>skip-unstable-ci</id>
       <build>
@@ -897,6 +887,7 @@
         </plugins>
       </build>
     </profile>
+
     <profile>
       <id>retry-tests</id>
       <build>
@@ -911,6 +902,7 @@
         </plugins>
       </build>
     </profile>
+
     <profile>
       <id>parallel-tests</id>
       <build>
@@ -930,6 +922,42 @@
             </configuration>
           </plugin>
         </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>spotbugs</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs-maven-plugin</artifactId>
+            <version>${plugin.version.spotbugs}</version>
+            <configuration>
+              <effort>Max</effort>
+              <threshold>Low</threshold>
+              <xmlOutput>true</xmlOutput>
+              <includeFilterFile>${spotbugs.include}</includeFilterFile>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+              </execution>
+            </executions>
+
+            <!-- dependency on build tool to reference the spotbugs filter-->
+            <dependencies>
+              <dependency>
+                <groupId>io.zeebe</groupId>
+                <artifactId>zb-build-tools</artifactId>
+                <version>${project.version}</version>
+              </dependency>
+            </dependencies>
+          </plugin>
+        </plugins>
+
       </build>
     </profile>
   </profiles>

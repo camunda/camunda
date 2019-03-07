@@ -36,9 +36,9 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.PartitionDto;
@@ -47,6 +47,8 @@ import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -140,12 +142,12 @@ public class ResponseMapper {
   }
 
   public static CreateWorkflowInstanceResponse toCreateWorkflowInstanceResponse(
-      long key, WorkflowInstanceRecord brokerResponse) {
+      long key, WorkflowInstanceCreationRecord brokerResponse) {
     return CreateWorkflowInstanceResponse.newBuilder()
-        .setWorkflowKey(brokerResponse.getWorkflowKey())
+        .setWorkflowKey(brokerResponse.getKey())
         .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessId()))
         .setVersion(brokerResponse.getVersion())
-        .setWorkflowInstanceKey(brokerResponse.getWorkflowInstanceKey())
+        .setWorkflowInstanceKey(brokerResponse.getInstanceKey())
         .build();
   }
 
@@ -154,9 +156,9 @@ public class ResponseMapper {
     return CancelWorkflowInstanceResponse.getDefaultInstance();
   }
 
-  public static UpdateWorkflowInstancePayloadResponse toUpdateWorkflowInstancePayloadResponse(
-      long key, WorkflowInstanceRecord brokerResponse) {
-    return UpdateWorkflowInstancePayloadResponse.getDefaultInstance();
+  public static SetVariablesResponse toSetVariablesResponse(
+      long key, VariableDocumentRecord brokerResponse) {
+    return SetVariablesResponse.getDefaultInstance();
   }
 
   public static ListWorkflowsResponse toListWorkflowsResponse(

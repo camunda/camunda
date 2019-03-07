@@ -16,13 +16,16 @@
 package io.zeebe.test;
 
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.WorkflowInstanceRecordStream;
+import io.zeebe.test.util.record.WorkflowInstances;
 import io.zeebe.test.util.stream.StreamWrapperException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +37,7 @@ import org.assertj.core.api.AbstractAssert;
 
 public class WorkflowInstanceAssert
     extends AbstractAssert<WorkflowInstanceAssert, WorkflowInstanceEvent> {
+  private static final ZeebeObjectMapper OBJECT_MAPPER = new ZeebeObjectMapper();
 
   private static final List<WorkflowInstanceIntent> ELEMENT_PASSED_INTENTS =
       Arrays.asList(
@@ -61,7 +65,7 @@ public class WorkflowInstanceAssert
         exists(
             RecordingExporter.workflowInstanceRecords()
                 .withWorkflowInstanceKey(workflowInstanceKey)
-                .withKey(workflowInstanceKey)
+                .withRecordKey(workflowInstanceKey)
                 .filter(intent(INSTANCE_ENDED_INTENTS)));
 
     if (!isEnded) {
@@ -138,38 +142,16 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  public WorkflowInstanceAssert hasElementPayload(
-      String elementId, String key, Object expectedValue) {
-
+  public WorkflowInstanceAssert hasVariables(String key, Object expectedValue) {
     final Optional<Record<WorkflowInstanceRecordValue>> record =
         RecordingExporter.workflowInstanceRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
-            .withElementId(elementId)
-            .filter(r -> ELEMENT_PASSED_INTENTS.contains(r.getMetadata().getIntent()))
-            .findFirst();
-
-    if (record.isPresent()) {
-      hasPayload(record.get(), key, expectedValue);
-
-    } else {
-      failWithMessage("Expected <%s> to contain payload but element was not passed", elementId);
-    }
-
-    return this;
-  }
-
-  public WorkflowInstanceAssert hasPayload(String key, Object expectedValue) {
-
-    final Optional<Record<WorkflowInstanceRecordValue>> record =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withKey(workflowInstanceKey)
+            .withRecordKey(workflowInstanceKey)
             .filter(intent(INSTANCE_ENDED_INTENTS))
             .findFirst();
 
     if (record.isPresent()) {
-      hasPayload(record.get(), key, expectedValue);
-
+      hasVariables(record.get(), key, expectedValue);
     } else {
       failWithMessage("Expected workflow instance to contain payload but instance is not ended");
     }
@@ -177,21 +159,27 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  private WorkflowInstanceAssert hasPayload(
+  private WorkflowInstanceAssert hasVariables(
       final Record<WorkflowInstanceRecordValue> record, String key, Object expectedValue) {
-    final Map<String, Object> payload = record.getValue().getPayloadAsMap();
+    final Map<String, String> variables =
+        WorkflowInstances.getCurrentVariables(workflowInstanceKey, record.getPosition());
 
-    if (payload.containsKey(key)) {
-      final Object value = payload.get(key);
+    if (variables.containsKey(key)) {
+      final Object value;
+      try {
+        value = OBJECT_MAPPER.readValue(variables.get(key), Object.class);
+      } catch (IOException e) {
+        failWithMessage("Expected variable values to be JSON, but got <%s>", e.getMessage());
+        return this;
+      }
 
       if (!expectedValue.equals(value)) {
         failWithMessage(
-            "Expected payload value of <%s> to be <%s> but was <%s>", key, expectedValue, value);
+            "Expected variables value of <%s> to be <%s> but was <%s>", key, expectedValue, value);
       }
-
     } else {
       failWithMessage(
-          "Expected payload <%s> to contain <%s> but could not find entry", payload, key);
+          "Expected variables <%s> to contain <%s> but could not find entry", variables, key);
     }
 
     return this;

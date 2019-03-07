@@ -125,7 +125,10 @@ public class EventbasedGatewayTest {
   public void testLifecycle() {
     // given
     testClient.deploy(WORKFLOW_WITH_TIMERS);
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
+    testClient
+        .createWorkflowInstance(
+            r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")))
+        .getInstanceKey();
 
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists()).isTrue();
 
@@ -166,7 +169,7 @@ public class EventbasedGatewayTest {
     testClient.deploy(WORKFLOW_WITH_TIMERS);
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final Record<WorkflowInstanceRecordValue> gatewayEvent =
@@ -190,7 +193,10 @@ public class EventbasedGatewayTest {
     testClient.deploy(WORKFLOW_WITH_MESSAGES);
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
+    testClient
+        .createWorkflowInstance(
+            r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")))
+        .getInstanceKey();
 
     // then
     final Record<WorkflowInstanceRecordValue> gatewayEvent =
@@ -214,7 +220,10 @@ public class EventbasedGatewayTest {
   public void shouldContinueWhenTimerIsTriggered() {
     // given
     testClient.deploy(WORKFLOW_WITH_TIMERS);
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")))
+        .getInstanceKey();
 
     final Record<WorkflowInstanceRecordValue> gatewayEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
@@ -250,7 +259,7 @@ public class EventbasedGatewayTest {
   public void shouldOnlyExecuteOneBranchWithEqualTimers() {
     // given
     testClient.deploy(WORKFLOW_WITH_EQUAL_TIMERS);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).count()).isEqualTo(2);
@@ -289,7 +298,10 @@ public class EventbasedGatewayTest {
   public void shouldContinueWhenMessageIsCorrelated() {
     // given
     testClient.deploy(WORKFLOW_WITH_MESSAGES);
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")))
+        .getInstanceKey();
 
     final Record<WorkflowInstanceRecordValue> gatewayEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
@@ -325,7 +337,10 @@ public class EventbasedGatewayTest {
   public void shouldCancelTimer() {
     // given
     testClient.deploy(WORKFLOW_WITH_TIMERS);
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
+    testClient
+        .createWorkflowInstance(
+            r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")))
+        .getInstanceKey();
 
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists()).isTrue();
 
@@ -343,7 +358,10 @@ public class EventbasedGatewayTest {
   public void shouldCloseWorkflowInstanceSubscription() {
     // given
     testClient.deploy(WORKFLOW_WITH_MESSAGES);
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
+    testClient
+        .createWorkflowInstance(
+            r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")))
+        .getInstanceKey();
 
     assertThat(
             RecordingExporter.workflowInstanceSubscriptionRecords(
@@ -371,7 +389,10 @@ public class EventbasedGatewayTest {
     testClient.deploy(WORKFLOW_WITH_TIMER_AND_MESSAGE);
 
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
+        testClient
+            .createWorkflowInstance(
+                r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")))
+            .getInstanceKey();
 
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(1).exists()).isTrue();
     assertThat(
@@ -407,7 +428,10 @@ public class EventbasedGatewayTest {
     // when
     testClient.publishMessage("msg-1", "123");
     testClient.publishMessage("msg-2", "123");
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")))
+        .getInstanceKey();
 
     final List<String> messageNames =
         RecordingExporter.workflowInstanceSubscriptionRecords(

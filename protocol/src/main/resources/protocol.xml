@@ -22,13 +22,12 @@
       description="The error code of an error">
       <validValue name="INTERNAL_ERROR">0</validValue>
       <validValue name="PARTITION_LEADER_MISMATCH">1</validValue>
-      <validValue name="UNSUPPORTED_MESSAGE">3</validValue>
-      <validValue name="INVALID_CLIENT_VERSION">4</validValue>
-      <validValue name="MALFORMED_REQUEST">5</validValue>
-      <validValue name="INVALID_MESSAGE_TEMPLATE">6</validValue>
-      <validValue name="UNSUPPORTED_MESSAGE">7</validValue>
-      <validValue name="INVALID_DEPLOYMENT_PARTITION">8</validValue>
-      <validValue name="WORKFLOW_NOT_FOUND">9</validValue>
+      <validValue name="UNSUPPORTED_MESSAGE">2</validValue>
+      <validValue name="INVALID_CLIENT_VERSION">3</validValue>
+      <validValue name="MALFORMED_REQUEST">4</validValue>
+      <validValue name="INVALID_MESSAGE_TEMPLATE">5</validValue>
+      <validValue name="INVALID_DEPLOYMENT_PARTITION">6</validValue>
+      <validValue name="WORKFLOW_NOT_FOUND">7</validValue>
     </enum>
 
     <enum name="ValueType" encodingType="uint8" description="The type of a record value">
@@ -46,6 +45,8 @@
       <validValue name="TIMER">15</validValue>
       <validValue name="MESSAGE_START_EVENT_SUBSCRIPTION">16</validValue>
       <validValue name="VARIABLE">17</validValue>
+      <validValue name="VARIABLE_DOCUMENT">18</validValue>
+      <validValue name="WORKFLOW_INSTANCE_CREATION">19</validValue>
     </enum>
 
     <enum name="ControlMessageType" encodingType="uint8"
@@ -66,6 +67,7 @@
       <validValue name="NOT_FOUND">1</validValue>
       <validValue name="ALREADY_EXISTS">2</validValue>
       <validValue name="INVALID_STATE">3</validValue>
+      <validValue name="PROCESSING_ERROR">4</validValue>
     </enum>
   </types>
 

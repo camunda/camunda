@@ -39,6 +39,14 @@ public interface SnapshotController extends AutoCloseable {
   StateSnapshotMetadata recover(
       long commitPosition, int term, Predicate<StateSnapshotMetadata> filter) throws Exception;
 
+  /**
+   * Recovers the state from the latest snapshot.
+   *
+   * @return recovered state metadata
+   * @throws Exception
+   */
+  StateSnapshotMetadata recoverFromLatestSnapshot() throws Exception;
+
   ZeebeDb openDb();
 
   /**

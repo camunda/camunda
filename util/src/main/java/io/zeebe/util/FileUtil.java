@@ -16,6 +16,7 @@
 package io.zeebe.util;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
+import static java.nio.file.FileVisitResult.SKIP_SUBTREE;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.file.CopyOption;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -106,18 +108,6 @@ public class FileUtil {
     return fileChannel;
   }
 
-  public static File createTempDirectory(String prefix) {
-    Path path = null;
-
-    try {
-      path = Files.createTempDirectory(prefix);
-    } catch (IOException e) {
-      LangUtil.rethrowUnchecked(e);
-    }
-
-    return path.toFile();
-  }
-
   public static void moveFile(String source, String target, CopyOption... options) {
     final Path sourcePath = Paths.get(source);
     final Path targetPath = Paths.get(target);
@@ -146,27 +136,64 @@ public class FileUtil {
     }
   }
 
-  public static String getCanonicalPath(String directory) {
-    final File file = new File(directory);
-    String path = null;
-
-    try {
-      path = file.getCanonicalPath();
-
-      if (!path.endsWith(File.separator)) {
-        path += File.separator;
-      }
-
-    } catch (Exception e) {
-      LangUtil.rethrowUnchecked(e);
-    }
-
-    return path;
-  }
-
   public static void deleteFile(File file) {
     if (file.exists() && !file.delete()) {
       LOG.warn("Failed to delete file '{}'", file);
+    }
+  }
+
+  public static void copySnapshot(File runtimeDirectory, File snapshotDirectory) throws Exception {
+    final Path targetPath = runtimeDirectory.toPath();
+    final Path sourcePath = snapshotDirectory.toPath();
+    Files.walkFileTree(sourcePath, new SnapshotCopier(sourcePath, targetPath));
+  }
+
+  public static final class SnapshotCopier extends SimpleFileVisitor<Path> {
+
+    private final Path targetPath;
+    private final Path sourcePath;
+
+    SnapshotCopier(Path sourcePath, Path targetPath) {
+      this.sourcePath = sourcePath;
+      this.targetPath = targetPath;
+    }
+
+    @Override
+    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+        throws IOException {
+      final Path newDirectory = targetPath.resolve(sourcePath.relativize(dir));
+      try {
+        Files.copy(dir, newDirectory);
+      } catch (FileAlreadyExistsException ioException) {
+        LOG.error("Problem on copying snapshot to runtime.", ioException);
+        return SKIP_SUBTREE; // skip processing
+      }
+
+      return CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+      final Path newFile = targetPath.resolve(sourcePath.relativize(file));
+
+      try {
+        Files.copy(file, newFile);
+      } catch (IOException ioException) {
+        LOG.error("Problem on copying {} to {}.", file, newFile, ioException);
+      }
+
+      return CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+      return CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult visitFileFailed(Path file, IOException exc) {
+      LOG.error("Problem on copying snapshot to runtime.", exc);
+      return CONTINUE;
     }
   }
 }

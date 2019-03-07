@@ -329,6 +329,10 @@
 #  delay = 5
 #  size = 1_000
 #
+#  [exporters.args.authentication]
+#  username = elastic
+#  password = changeme
+#
 #  [exporters.args.index]
 #  prefix = "zeebe-record"
 #  createTemplate = true

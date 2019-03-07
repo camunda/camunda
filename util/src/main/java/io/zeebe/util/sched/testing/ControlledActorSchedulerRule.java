@@ -58,7 +58,7 @@ public class ControlledActorSchedulerRule extends ExternalResource {
   }
 
   @Override
-  protected void before() throws Throwable {
+  protected void before() {
     actorScheduler.start();
   }
 
@@ -92,30 +92,32 @@ public class ControlledActorSchedulerRule extends ExternalResource {
     controlledActorTaskRunner.workUntilDone();
   }
 
-  public void waitForTimer(final Duration timeToWait) {
-    clock.addTime(timeToWait);
-    workUntilDone();
-  }
-
   public <T> ActorFuture<T> call(Callable<T> callable) {
     final ActorFuture<T> future = new CompletableActorFuture<>();
-
-    submitActor(
-        new Actor() {
-          @Override
-          protected void onActorStarted() {
-            actor.run(
-                () -> {
-                  try {
-                    future.complete(callable.call());
-                  } catch (Exception e) {
-                    future.completeExceptionally(e);
-                  }
-                });
-          }
-        });
-
+    submitActor(new CallingActor(future, callable));
     return future;
+  }
+
+  static class CallingActor<T> extends Actor {
+    private final ActorFuture<T> future;
+    private final Callable<T> callable;
+
+    CallingActor(ActorFuture<T> future, Callable<T> callable) {
+      this.future = future;
+      this.callable = callable;
+    }
+
+    @Override
+    protected void onActorStarted() {
+      actor.run(
+          () -> {
+            try {
+              future.complete(callable.call());
+            } catch (Exception e) {
+              future.completeExceptionally(e);
+            }
+          });
+    }
   }
 
   static class ControlledActorThreadFactory implements ActorThreadFactory {

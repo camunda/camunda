@@ -38,6 +38,7 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -96,6 +97,25 @@ public class CreateDeploymentMultiplePartitionsTest {
     assertCreatedDeploymentEventOnPartition(0, resp.getKey());
     assertCreatedDeploymentEventOnPartition(1, resp.getKey());
     assertCreatedDeploymentEventOnPartition(2, resp.getKey());
+  }
+
+  @Test
+  public void shouldOnlyDistributeFromDeploymentPartition() {
+    // when
+    final long deploymentKey1 = apiRule.deployWorkflow(WORKFLOW).getKey();
+    final long deploymentKey2 = apiRule.deployWorkflow(WORKFLOW).getKey();
+
+    // then
+    for (int partitionId = 0; partitionId < PARTITION_COUNT; partitionId++) {
+      assertThat(
+              RecordingExporter.deploymentRecords()
+                  .withPartitionId(partitionId)
+                  .limit(r -> r.getKey() == deploymentKey2)
+                  .withIntent(DeploymentIntent.DISTRIBUTE)
+                  .withRecordKey(deploymentKey1)
+                  .exists())
+          .isEqualTo(partitionId == DEPLOYMENT_PARTITION);
+    }
   }
 
   @Test
@@ -324,7 +344,7 @@ public class CreateDeploymentMultiplePartitionsTest {
             .partitionClient(expectedPartition)
             .receiveDeployments()
             .withIntent(DeploymentIntent.CREATED)
-            .withKey(expectedKey)
+            .withRecordKey(expectedKey)
             .getFirst();
 
     assertThat(deploymentCreatedEvent.getKey()).isEqualTo(expectedKey);

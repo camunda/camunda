@@ -26,8 +26,6 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_SOURCE = "source";
   public static final String ATTRIBUTE_TARGET = "target";
 
-  public static final String ATTRIBUTE_OUTPUT_BEHAVIOR = "outputBehavior";
-
   public static final String ATTRIBUTE_CORRELATION_KEY = "correlationKey";
 
   public static final String ELEMENT_HEADER = "header";

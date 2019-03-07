@@ -28,7 +28,7 @@ type ZBClient interface {
 
 	NewCreateInstanceCommand() commands.CreateInstanceCommandStep1
 	NewCancelInstanceCommand() commands.CancelInstanceStep1
-	NewUpdatePayloadCommand() commands.UpdatePayloadCommandStep1
+	NewSetVariablesCommand() commands.SetVariablesCommandStep1
 	NewResolveIncidentCommand() commands.ResolveIncidentCommandStep1
 
 	NewPublishMessageCommand() commands.PublishMessageCommandStep1

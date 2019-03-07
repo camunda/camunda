@@ -36,8 +36,10 @@ import java.util.List;
 public class RaftPersistentConfigurationManager extends Actor {
   private static final String PARTITION_METAFILE_NAME = "partition.json";
   private static final String PARTITION_LOG_DIR = "segments";
-  private static final String PARTITION_SNAPSHOTS_DIR = "snapshots";
   private static final String PARTITION_STATES_DIR = "state";
+  private static final String PARTITION_INDEX_ROOT_DIR = "index";
+  private static final String PARTITION_INDEX_RUNTIME_DIR = "runtime";
+  private static final String PARTITION_INDEX_SNAPSHOTS_DIR = "snapshots";
 
   private final List<RaftPersistentConfiguration> configurations = new ArrayList<>();
   private final DataCfg dataConfiguration;
@@ -69,12 +71,19 @@ public class RaftPersistentConfigurationManager extends Actor {
 
       if (configFile.exists()) {
         final File logDirectory = new File(partitionDirectory, PARTITION_LOG_DIR);
-        final File snapshotsDirectory = new File(partitionDirectory, PARTITION_SNAPSHOTS_DIR);
         final File statesDirectory = new File(partitionDirectory, PARTITION_STATES_DIR);
+        final File indexDirectory = new File(partitionDirectory, PARTITION_INDEX_ROOT_DIR);
+        final File indexRuntimeDirectory = new File(indexDirectory, PARTITION_INDEX_RUNTIME_DIR);
+        final File indexSnapshotsDirectory =
+            new File(indexDirectory, PARTITION_INDEX_SNAPSHOTS_DIR);
 
         configurations.add(
             new RaftPersistentConfiguration(
-                configFile, logDirectory, snapshotsDirectory, statesDirectory));
+                configFile,
+                logDirectory,
+                indexSnapshotsDirectory,
+                statesDirectory,
+                indexRuntimeDirectory));
         partitionCountPerDataDirectory[offset]++;
       }
     }
@@ -111,15 +120,27 @@ public class RaftPersistentConfigurationManager extends Actor {
               final File logDirectory = new File(partitionDirectory, PARTITION_LOG_DIR);
               logDirectory.mkdir();
 
-              final File snapshotDirectory = new File(partitionDirectory, PARTITION_SNAPSHOTS_DIR);
-              snapshotDirectory.mkdir();
-
               final File statesDirectory = new File(partitionDirectory, PARTITION_STATES_DIR);
               statesDirectory.mkdir();
 
+              final File indexDirectory = new File(partitionDirectory, PARTITION_INDEX_ROOT_DIR);
+              indexDirectory.mkdir();
+
+              final File indexRuntimeDirectory =
+                  new File(indexDirectory, PARTITION_INDEX_RUNTIME_DIR);
+              indexRuntimeDirectory.mkdir();
+
+              final File indexSnapshotsDirectory =
+                  new File(indexDirectory, PARTITION_INDEX_SNAPSHOTS_DIR);
+              indexSnapshotsDirectory.mkdir();
+
               final RaftPersistentConfiguration storage =
                   new RaftPersistentConfiguration(
-                      metafile, logDirectory, snapshotDirectory, statesDirectory);
+                      metafile,
+                      logDirectory,
+                      indexSnapshotsDirectory,
+                      statesDirectory,
+                      indexRuntimeDirectory);
 
               storage
                   .setPartitionId(partitionId)

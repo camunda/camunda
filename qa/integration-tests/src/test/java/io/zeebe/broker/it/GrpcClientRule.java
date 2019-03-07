@@ -83,7 +83,7 @@ public class GrpcClientRule extends ExternalResource {
     waitUntil(
         () ->
             RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
-                .withKey(key)
+                .withRecordKey(key)
                 .exists());
   }
 
@@ -105,7 +105,8 @@ public class GrpcClientRule extends ExternalResource {
     return createSingleJob(type, consumer, "{}");
   }
 
-  public long createSingleJob(String type, Consumer<ServiceTaskBuilder> consumer, String payload) {
+  public long createSingleJob(
+      String type, Consumer<ServiceTaskBuilder> consumer, String variables) {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
@@ -132,13 +133,13 @@ public class GrpcClientRule extends ExternalResource {
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
-            .payload(payload)
+            .variables(variables)
             .send()
             .join()
             .getWorkflowInstanceKey();
 
     return RecordingExporter.jobRecords(JobIntent.CREATED)
-        .filter(j -> j.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstanceKey)
+        .withWorkflowInstanceKey(workflowInstanceKey)
         .withType(type)
         .getFirst()
         .getKey();

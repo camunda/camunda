@@ -20,16 +20,13 @@ package io.zeebe.broker.subscription.command;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
-import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.collections.IntArrayList;
 
 /**
  * Send commands via the subscription endpoint. The commands are send as single messages (instead of request-response).
@@ -74,15 +71,12 @@ public class SubscriptionCommandSender {
       new CloseWorkflowInstanceSubscriptionCommand();
 
   private final ClientTransport subscriptionClient;
-  private final IntArrayList partitionIds = new IntArrayList();
 
   private int partitionId;
   private TopologyPartitionListenerImpl partitionListener;
 
-  public SubscriptionCommandSender(
-      final ClusterCfg clusterCfg, final ClientTransport subscriptionClient) {
+  public SubscriptionCommandSender(final ClientTransport subscriptionClient) {
     this.subscriptionClient = subscriptionClient;
-    partitionIds.addAll(clusterCfg.getPartitionIds());
   }
 
   public void init(
@@ -94,15 +88,12 @@ public class SubscriptionCommandSender {
   }
 
   public boolean openMessageSubscription(
+      final int subscriptionPartitionId,
       final long workflowInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       final boolean closeOnCorrelate) {
-
-    final int subscriptionPartitionId =
-        SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionIds.size());
-
     openMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
     openMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
     openMessageSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
@@ -204,9 +195,5 @@ public class SubscriptionCommandSender {
     }
 
     return subscriptionClient.getOutput().sendMessage(partitionLeader.getNodeId(), command);
-  }
-
-  public boolean hasPartitionIds() {
-    return partitionIds != null;
   }
 }

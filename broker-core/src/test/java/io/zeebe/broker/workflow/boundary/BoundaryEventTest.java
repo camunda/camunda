@@ -31,9 +31,8 @@ import io.zeebe.exporter.record.value.VariableRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.impl.record.value.incident.ErrorType;
+import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;
@@ -43,10 +42,12 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.WorkflowInstances;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
@@ -96,7 +97,7 @@ public class BoundaryEventTest {
   public void shouldTakeAllOutgoingSequenceFlowsIfTriggered() {
     // given
     testClient.deploy(MULTIPLE_SEQUENCE_FLOWS);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     testClient.receiveTimerRecord("timer", TimerIntent.CREATED);
@@ -117,7 +118,7 @@ public class BoundaryEventTest {
   public void shouldActivateBoundaryEventWhenEventTriggered() {
     // given
     testClient.deploy(MULTIPLE_SEQUENCE_FLOWS);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     testClient.receiveTimerRecord("timer", TimerIntent.CREATED);
@@ -149,13 +150,15 @@ public class BoundaryEventTest {
             .boundaryEvent("event")
             .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
             .zeebeOutput("$.foo", "$.bar")
-            .zeebeOutputBehavior(ZeebeOutputBehavior.merge)
             .endEvent("endTimer")
             .moveToActivity("task")
             .endEvent()
             .done();
     testClient.deploy(workflow);
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")))
+        .getInstanceKey();
 
     // when
     assertThat(
@@ -175,7 +178,7 @@ public class BoundaryEventTest {
   }
 
   @Test
-  public void shouldUseScopePayloadWhenApplyingOutputMappings() {
+  public void shouldUseScopeVariablesWhenApplyingOutputMappings() {
     // given
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(PROCESS_ID)
@@ -184,13 +187,18 @@ public class BoundaryEventTest {
             .boundaryEvent("timer")
             .cancelActivity(true)
             .timerWithDuration("PT1S")
-            .zeebeOutputBehavior(ZeebeOutputBehavior.merge)
             .endEvent("endTimer")
             .moveToActivity("task")
             .endEvent()
             .done();
     testClient.deploy(workflow);
-    testClient.createWorkflowInstance(PROCESS_ID, "{\"foo\": 1, \"oof\": 2}");
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(PROCESS_ID)
+                        .setVariables(asMsgPack("{ \"foo\": 1, \"oof\": 2 }")))
+            .getInstanceKey();
 
     // when
     testClient.receiveTimerRecord("timer", TimerIntent.CREATED);
@@ -200,8 +208,9 @@ public class BoundaryEventTest {
     // then
     final Record<WorkflowInstanceRecordValue> boundaryTriggered =
         testClient.receiveElementInState("timer", WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    assertThat(boundaryTriggered.getValue().getPayloadAsMap())
-        .contains(entry("foo", 1), entry("oof", 2));
+    final Map<String, String> variables =
+        WorkflowInstances.getCurrentVariables(workflowInstanceKey, boundaryTriggered.getPosition());
+    assertThat(variables).contains(entry("foo", "1"), entry("oof", "2"));
   }
 
   @Test
@@ -224,7 +233,7 @@ public class BoundaryEventTest {
             .endEvent()
             .done();
     testClient.deploy(workflow);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     testClient.receiveTimerRecord("timer", TimerIntent.CREATED);
@@ -257,7 +266,7 @@ public class BoundaryEventTest {
     // given
     testClient.deploy(NON_INTERRUPTING_WORKFLOW);
     brokerRule.getClock().pinCurrentTime();
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     testClient.receiveTimerRecord("event", TimerIntent.CREATED);
@@ -293,8 +302,12 @@ public class BoundaryEventTest {
     testClient.deploy(workflow);
 
     // when
-    testClient.createWorkflowInstance(
-        processId, MsgPackUtil.asMsgPack(m -> m.put("foo", 1).put("bar", 2)));
+    testClient
+        .createWorkflowInstance(
+            r ->
+                r.setBpmnProcessId(processId)
+                    .setVariables(MsgPackUtil.asMsgPack(m -> m.put("foo", 1).put("bar", 2))))
+        .getInstanceKey();
     testClient.publishMessage("message", "1");
 
     // then
@@ -322,7 +335,12 @@ public class BoundaryEventTest {
 
     // when
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(processId, MsgPackUtil.asMsgPack("orderId", true));
+        testClient
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(processId)
+                        .setVariables(MsgPackUtil.asMsgPack("orderId", true)))
+            .getInstanceKey();
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("task")

@@ -20,33 +20,53 @@ import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep2;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep3;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.impl.CommandWithPayload;
+import io.zeebe.client.impl.ArgumentUtil;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
 import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest.Builder;
+import java.io.InputStream;
+import java.util.Map;
 
 public class CreateWorkflowInstanceCommandImpl
-    extends CommandWithPayload<CreateWorkflowInstanceCommandStep3>
     implements CreateWorkflowInstanceCommandStep1,
         CreateWorkflowInstanceCommandStep2,
         CreateWorkflowInstanceCommandStep3 {
 
+  private final ZeebeObjectMapper objectMapper;
   private final GatewayStub asyncStub;
   private final Builder builder;
 
   public CreateWorkflowInstanceCommandImpl(GatewayStub asyncStub, ZeebeObjectMapper objectMapper) {
-    super(objectMapper);
     this.asyncStub = asyncStub;
+    this.objectMapper = objectMapper;
+
     this.builder = CreateWorkflowInstanceRequest.newBuilder();
   }
 
   @Override
-  protected CreateWorkflowInstanceCommandStep3 setPayloadInternal(String payload) {
-    builder.setPayload(payload);
-    return this;
+  public CreateWorkflowInstanceCommandStep3 variables(InputStream variables) {
+    ArgumentUtil.ensureNotNull("variables", variables);
+    return setVariables(objectMapper.validateJson("variables", variables));
+  }
+
+  @Override
+  public CreateWorkflowInstanceCommandStep3 variables(String variables) {
+    ArgumentUtil.ensureNotNull("variables", variables);
+    return setVariables(objectMapper.validateJson("variables", variables));
+  }
+
+  @Override
+  public CreateWorkflowInstanceCommandStep3 variables(Map<String, Object> variables) {
+    return variables((Object) variables);
+  }
+
+  @Override
+  public CreateWorkflowInstanceCommandStep3 variables(Object variables) {
+    ArgumentUtil.ensureNotNull("variables", variables);
+    return setVariables(objectMapper.toJson(variables));
   }
 
   @Override
@@ -82,5 +102,10 @@ public class CreateWorkflowInstanceCommandImpl
 
     asyncStub.createWorkflowInstance(request, future);
     return future;
+  }
+
+  private CreateWorkflowInstanceCommandStep3 setVariables(String jsonDocument) {
+    builder.setVariables(jsonDocument);
+    return this;
   }
 }

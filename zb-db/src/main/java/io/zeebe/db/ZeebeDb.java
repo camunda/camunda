@@ -31,12 +31,15 @@ import java.io.File;
 public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extends AutoCloseable {
 
   /**
-   * Runs the commands like delete, put etc. in a batch operation. Access of different column
-   * families inside this batch are possible.
+   * Runs the commands like delete, put etc. in a transaction. Access of different column families
+   * inside this transaction are possible.
+   *
+   * <p>Reading key-value pairs via get or an iterator is also possible and will reflect changes,
+   * which are made during the transaction.
    *
    * @param operations the operations
    */
-  void batch(Runnable operations);
+  void transaction(TransactionOperation operations);
 
   /**
    * Creates an instance of a specific column family to access and store key-value pairs in that

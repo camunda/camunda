@@ -49,51 +49,55 @@ public class ContainerElementActivatedHandler<T extends ExecutableFlowElementCon
     }
 
     final ExecutableFlowElementContainer element = context.getElement();
-    final long flowScopeKey = context.getRecord().getKey();
-    final WorkflowInstanceRecord value = context.getValue();
     final ExecutableCatchEventElement firstStartEvent = element.getStartEvents().get(0);
-    final long eventInstanceKey;
 
+    // workflows with none start event only have a single none start event and no other types of
+    // start events
     if (firstStartEvent.isNone()) {
-      value.setElementId(firstStartEvent.getId());
-      value.setBpmnElementType(firstStartEvent.getElementType());
+      activateNoneStartEvent(context, firstStartEvent);
     } else {
-      populateRecordFromDeferredRecord(context, value);
+      publishDeferredRecord(context);
     }
-    value.setFlowScopeKey(flowScopeKey);
+
     context.getElementInstance().spawnToken();
-
-    eventInstanceKey =
-        context.getOutput().appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, value);
-    context
-        .getElementInstanceState()
-        .getVariablesState()
-        .setPayload(eventInstanceKey, value.getPayload());
-
     return true;
   }
 
-  private void populateRecordFromDeferredRecord(
-      BpmnStepContext<T> context, WorkflowInstanceRecord value) {
+  private void publishDeferredRecord(BpmnStepContext<T> context) {
+    final IndexedRecord deferredRecord = getDeferredRecord(context);
+    context
+        .getOutput()
+        .appendFollowUpEvent(
+            deferredRecord.getKey(), deferredRecord.getState(), deferredRecord.getValue());
+  }
+
+  private void activateNoneStartEvent(
+      BpmnStepContext<T> context, ExecutableCatchEventElement firstStartEvent) {
+    final WorkflowInstanceRecord value = context.getValue();
+
+    value.setElementId(firstStartEvent.getId());
+    value.setBpmnElementType(firstStartEvent.getElementType());
+    value.setFlowScopeKey(context.getRecord().getKey());
+    context.getOutput().appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, value);
+  }
+
+  private IndexedRecord getDeferredRecord(BpmnStepContext<T> context) {
     final long wfInstanceKey = context.getRecord().getValue().getWorkflowInstanceKey();
     final List<IndexedRecord> deferredRecords =
-        workflowState.getElementInstanceState().getDeferredRecords(wfInstanceKey);
+        context.getElementInstanceState().getDeferredRecords(wfInstanceKey);
 
     if (deferredRecords.isEmpty()) {
       throw new IllegalStateException(
-          "Expected workflow with multiple start events to have a deferred record, but no such token was found");
+          "Expected process with no none start events to have a deferred record, but nothing was found");
     }
 
     assert deferredRecords.size() == 1
         : "should only have one deferred start event per workflow instance";
 
     final IndexedRecord deferredRecord = deferredRecords.get(0);
-    final WorkflowInstanceRecord workflowInstanceRecord = deferredRecord.getValue();
-    value.setElementId(workflowInstanceRecord.getElementId());
-    value.setBpmnElementType(workflowInstanceRecord.getBpmnElementType());
-    value.setPayload(workflowInstanceRecord.getPayload());
     workflowState
         .getElementInstanceState()
         .removeStoredRecord(wfInstanceKey, deferredRecord.getKey(), Purpose.DEFERRED);
+    return deferredRecord;
   }
 }

@@ -16,7 +16,7 @@
 package io.zeebe.test.broker.protocol.clientapi;
 
 import static io.zeebe.protocol.intent.JobIntent.ACTIVATED;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -32,14 +32,25 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
+import io.zeebe.protocol.impl.record.value.deployment.Workflow;
+import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.intent.VariableDocumentIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.DeploymentRecordStream;
@@ -53,13 +64,18 @@ import io.zeebe.test.util.record.TimerRecordStream;
 import io.zeebe.test.util.record.WorkflowInstanceRecordStream;
 import io.zeebe.test.util.record.WorkflowInstanceSubscriptionRecordStream;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.collection.Tuple;
 import java.io.ByteArrayOutputStream;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -67,7 +83,6 @@ import org.agrona.DirectBuffer;
 public class PartitionTestClient {
   // workflow related properties
 
-  public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String PROP_WORKFLOW_RESOURCES = "resources";
   public static final String PROP_WORKFLOW_VERSION = "version";
   public static final String PROP_WORKFLOW_PAYLOAD = "payload";
@@ -130,50 +145,70 @@ public class PartitionTestClient {
     return commandResponse;
   }
 
-  public ExecuteCommandResponse createWorkflowInstanceWithResponse(final String bpmnProcessId) {
+  public Workflow deployWorkflow(BpmnModelInstance workflow) {
+    final DeploymentRecord request = new DeploymentRecord();
+    final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+    Bpmn.writeModelToStream(outStream, workflow);
+
+    request
+        .resources()
+        .add()
+        .setResource(outStream.toByteArray())
+        .setResourceName("process.bpmn")
+        .setResourceType(ResourceType.BPMN_XML);
+
+    final DeploymentRecord response = deploy(request);
+    final Iterator<Workflow> iterator = response.workflows().iterator();
+    assertThat(iterator).as("Expected at least one deployed workflow, but none returned").hasNext();
+
+    return iterator.next();
+  }
+
+  public DeploymentRecord deploy(Function<DeploymentRecord, DeploymentRecord> transformer) {
+    return deploy(transformer.apply(new DeploymentRecord()));
+  }
+
+  public DeploymentRecord deploy(DeploymentRecord request) {
+    final ExecuteCommandResponse response =
+        executeCommandRequest(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, request);
+
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+
+    return response.readInto(new DeploymentRecord());
+  }
+
+  public WorkflowInstanceCreationRecord createWorkflowInstance(
+      Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> mapper) {
+    return createWorkflowInstance(mapper.apply(new WorkflowInstanceCreationRecord()));
+  }
+
+  public WorkflowInstanceCreationRecord createWorkflowInstance(
+      WorkflowInstanceCreationRecord record) {
+    final ExecuteCommandResponse response =
+        executeCommandRequest(
+            ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE, record);
+
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceCreationIntent.CREATED);
+
+    return response.readInto(new WorkflowInstanceCreationRecord());
+  }
+
+  public ExecuteCommandResponse executeCommandRequest(
+      ValueType valueType, Intent intent, BufferWriter command) {
+    return executeCommandRequest(valueType, intent, command, -1);
+  }
+
+  public ExecuteCommandResponse executeCommandRequest(
+      ValueType valueType, Intent intent, BufferWriter command, long key) {
     return apiRule
         .createCmdRequest()
         .partitionId(partitionId)
-        .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
-        .command()
-        .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
-        .done()
+        .key(key)
+        .type(valueType, intent)
+        .command(command)
         .sendAndAwait();
-  }
-
-  public long createWorkflowInstance(final String bpmnProcessId) {
-    final ExecuteCommandResponse response = createWorkflowInstanceWithResponse(bpmnProcessId);
-
-    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-
-    return response.getKey();
-  }
-
-  public long createWorkflowInstance(final String bpmnProcessId, final String jsonPayload) {
-    return createWorkflowInstance(bpmnProcessId, MsgPackUtil.asMsgPackReturnArray(jsonPayload));
-  }
-
-  public long createWorkflowInstance(final String bpmnProcessId, final DirectBuffer payload) {
-    return createWorkflowInstance(bpmnProcessId, bufferAsArray(payload));
-  }
-
-  public long createWorkflowInstance(final String bpmnProcessId, final byte[] payload) {
-    final ExecuteCommandResponse response =
-        apiRule
-            .createCmdRequest()
-            .partitionId(partitionId)
-            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
-            .command()
-            .put(PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
-            .put(PROP_WORKFLOW_PAYLOAD, payload)
-            .done()
-            .sendAndAwait();
-
-    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-
-    return response.getKey();
   }
 
   public ExecuteCommandResponse cancelWorkflowInstance(final long key) {
@@ -187,23 +222,25 @@ public class PartitionTestClient {
         .sendAndAwait();
   }
 
-  public void updatePayload(final long elementInstanceKey, final String jsonPayload) {
-    updatePayload(elementInstanceKey, MsgPackUtil.asMsgPackReturnArray(jsonPayload));
+  public void updateVariables(long scopeKey, Map<String, Object> document) {
+    updateVariables(scopeKey, VariableDocumentUpdateSemantic.PROPAGATE, document);
   }
 
-  public void updatePayload(final long elementInstanceKey, final byte[] payload) {
+  public void updateVariables(
+      long scopeKey, VariableDocumentUpdateSemantic updateSemantics, Map<String, Object> document) {
     final ExecuteCommandResponse response =
         apiRule
             .createCmdRequest()
-            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD)
-            .key(elementInstanceKey)
+            .type(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATE)
             .command()
-            .put("payload", payload)
+            .put("scopeKey", scopeKey)
+            .put("updateSemantics", updateSemantics)
+            .put("document", MsgPackUtil.asMsgPack(document).byteArray())
             .done()
             .sendAndAwait();
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
+    assertThat(response.getIntent()).isEqualTo(VariableDocumentIntent.UPDATED);
   }
 
   public long createJob(final String type) {
@@ -222,13 +259,77 @@ public class PartitionTestClient {
                 })
             .done());
 
-    final long workflowInstance = createWorkflowInstance("process", payload);
+    final long workflowInstance =
+        createWorkflowInstance(
+                r -> r.setBpmnProcessId("process").setVariables(MsgPackUtil.asMsgPack(payload)))
+            .getInstanceKey();
 
     return RecordingExporter.jobRecords(JobIntent.CREATED)
         .withType(type)
         .filter(j -> j.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstance)
         .getFirst()
         .getKey();
+  }
+
+  public JobRecord activateAndCompleteFirstJob(String jobType, Predicate<JobRecord> filter) {
+    final Tuple<Long, JobRecord> pair = activateJob(jobType, filter);
+    return completeJob(pair.getLeft(), pair.getRight());
+  }
+
+  public Tuple<Long, JobRecord> activateJob(String jobType, Predicate<JobRecord> filter) {
+    final JobBatchRecord request =
+        new JobBatchRecord()
+            .setType(jobType)
+            .setAmount(1)
+            .setTimeout(1000)
+            .setWorker("partition-" + partitionId + "-" + jobType);
+
+    return doRepeatedly(
+            () -> {
+              final JobBatchRecord response = activateJobBatch(request);
+              if (response.getAmount() > 0) {
+                final JobRecord job = response.jobs().iterator().next();
+                if (filter.test(job)) {
+                  return new Tuple<>(response.jobKeys().iterator().next().getValue(), job);
+                }
+              }
+
+              return null;
+            })
+        .until(Objects::nonNull);
+  }
+
+  public JobRecord completeJob(long jobKey, Function<JobRecord, JobRecord> transformer) {
+    return completeJob(jobKey, transformer.apply(new JobRecord()));
+  }
+
+  public JobRecord completeJob(long jobKey, JobRecord request) {
+    final ExecuteCommandResponse response =
+        executeCommandRequest(ValueType.JOB, JobIntent.COMPLETE, request, jobKey);
+
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
+    return response.readInto(new JobRecord());
+  }
+
+  public JobBatchRecord activateJobBatch(Function<JobBatchRecord, JobBatchRecord> transformer) {
+    return activateJobBatch(transformer.apply(new JobBatchRecord()));
+  }
+
+  public JobBatchRecord activateJobBatch(JobBatchRecord request) {
+    final ExecuteCommandResponse response =
+        executeCommandRequest(ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE, request);
+
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(JobBatchIntent.ACTIVATED);
+    return response.readInto(new JobBatchRecord());
+  }
+
+  public void completeJobOfType(long workflowInstanceKey, String jobType) {
+    completeJob(
+        jobType,
+        MsgPackUtil.asMsgPackReturnArray("{}"),
+        r -> r.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
   }
 
   public void completeJobOfType(final String jobType) {
@@ -241,14 +342,6 @@ public class PartitionTestClient {
 
   public void completeJobOfType(final String jobType, final String jsonPayload) {
     completeJob(jobType, MsgPackUtil.asMsgPackReturnArray(jsonPayload), e -> true);
-  }
-
-  public void completeJobOfWorkflowInstance(
-      final String jobType, final long workflowInstanceKey, final byte[] payload) {
-    completeJob(
-        jobType,
-        payload,
-        e -> e.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
   }
 
   public ExecuteCommandResponse completeJob(long key, String payload) {
@@ -323,6 +416,19 @@ public class PartitionTestClient {
         .put("retries", retries)
         .done()
         .sendAndAwait();
+  }
+
+  public MessageRecord publishMessage(Function<MessageRecord, MessageRecord> transformer) {
+    return publishMessage(transformer.apply(new MessageRecord()));
+  }
+
+  public MessageRecord publishMessage(MessageRecord request) {
+    final ExecuteCommandResponse response =
+        executeCommandRequest(ValueType.MESSAGE, MessageIntent.PUBLISH, request);
+
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(MessageIntent.PUBLISHED);
+    return response.readInto(new MessageRecord());
   }
 
   public ExecuteCommandResponse publishMessage(
@@ -411,7 +517,7 @@ public class PartitionTestClient {
 
   public Record<DeploymentRecordValue> receiveFirstDeploymentEvent(
       final DeploymentIntent intent, final long deploymentKey) {
-    return receiveDeployments().withIntent(intent).withKey(deploymentKey).getFirst();
+    return receiveDeployments().withIntent(intent).withRecordKey(deploymentKey).getFirst();
   }
 
   /////////////////////////////////////////////

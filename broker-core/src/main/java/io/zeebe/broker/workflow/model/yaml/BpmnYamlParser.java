@@ -25,10 +25,8 @@ import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.model.bpmn.builder.StartEventBuilder;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -153,18 +151,6 @@ public class BpmnYamlParser {
   }
 
   private void addInputOutputMappingToTask(YamlTask task, ServiceTaskBuilder serviceTaskBuilder) {
-    final String outputBehaviorString = task.getOutputBehavior();
-    final ZeebeOutputBehavior outputBehavior;
-    try {
-      outputBehavior = ZeebeOutputBehavior.valueOf(outputBehaviorString.toLowerCase());
-    } catch (IllegalArgumentException e) {
-      throw new RuntimeException(
-          String.format(
-              "Expected output behavior to be one of %s, but actual output behavior was '%s'",
-              outputBehaviorString, Arrays.toString(ZeebeOutputBehavior.values())));
-    }
-    serviceTaskBuilder.zeebeOutputBehavior(outputBehavior);
-
     for (YamlMapping inputMapping : task.getInputs()) {
       serviceTaskBuilder.zeebeInput(inputMapping.getSource(), inputMapping.getTarget());
     }

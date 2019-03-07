@@ -30,17 +30,18 @@ import io.zeebe.exporter.record.value.job.Headers;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.SubProcessBuilder;
+import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -82,15 +83,16 @@ public class EmbeddedSubProcessTest {
   public void shouldCreateJobForServiceTaskInEmbeddedSubprocess() {
     // given
     testClient.deploy(ONE_TASK_SUBPROCESS);
-    final byte[] payload = BufferUtil.bufferAsArray(MsgPackUtil.asMsgPack("key", "val"));
+    final DirectBuffer variables = MsgPackUtil.asMsgPack("key", "val");
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID, payload);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID).setVariables(variables));
 
     // then
     final Record<JobRecordValue> jobCreatedEvent =
         testClient.receiveFirstJobEvent(JobIntent.CREATED);
-    MsgPackUtil.assertEquality(payload, jobCreatedEvent.getValue().getPayload());
+    MsgPackUtil.assertEquality(
+        DocumentValue.EMPTY_DOCUMENT, jobCreatedEvent.getValue().getPayload());
 
     final Headers headers = jobCreatedEvent.getValue().getHeaders();
     Assertions.assertThat(headers).hasElementId("subProcessTask");
@@ -100,10 +102,13 @@ public class EmbeddedSubProcessTest {
   public void shouldGenerateEventStream() {
     // given
     testClient.deploy(ONE_TASK_SUBPROCESS);
-    final byte[] payload = BufferUtil.bufferAsArray(MsgPackUtil.asMsgPack("key", "val"));
+    final DirectBuffer variables = MsgPackUtil.asMsgPack("key", "val");
 
     // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID, payload);
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID).setVariables(variables))
+            .getInstanceKey();
 
     // then
     testClient.receiveJobs().getFirst();
@@ -120,7 +125,6 @@ public class EmbeddedSubProcessTest {
     assertThat(workflowInstanceEvents)
         .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
         .containsExactly(
-            tuple(WorkflowInstanceIntent.CREATE, ""),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "start"),
@@ -160,7 +164,7 @@ public class EmbeddedSubProcessTest {
   public void shouldCompleteEmbeddedSubProcess() {
     // given
     testClient.deploy(ONE_TASK_SUBPROCESS);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     testClient.completeJobOfType("type");
@@ -175,7 +179,6 @@ public class EmbeddedSubProcessTest {
     assertThat(workflowInstanceEvents)
         .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
         .containsExactly(
-            tuple(WorkflowInstanceIntent.CREATE, ""),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "start"),
@@ -228,7 +231,7 @@ public class EmbeddedSubProcessTest {
     testClient.deploy(model);
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final Record<JobRecordValue> jobCreatedEvent =
@@ -258,7 +261,7 @@ public class EmbeddedSubProcessTest {
             .endEvent()
             .done();
     testClient.deploy(model);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     testClient.completeJobOfType("type");
@@ -320,7 +323,10 @@ public class EmbeddedSubProcessTest {
             .endEvent()
             .done();
     testClient.deploy(model);
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")))
+        .getInstanceKey();
 
     // when
     assertThat(

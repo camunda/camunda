@@ -17,11 +17,14 @@
  */
 package io.zeebe.broker.workflow.processor.handlers.catchevent;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.handlers.element.EventOccurredHandler;
 import io.zeebe.broker.workflow.state.DeployedWorkflow;
+import io.zeebe.broker.workflow.state.EventTrigger;
 import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
@@ -29,6 +32,7 @@ public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElemen
     extends EventOccurredHandler<T> {
   private static final String NO_WORKFLOW_FOUND_MESSAGE =
       "Expected to create an instance of workflow with key '%d', but no such workflow was found";
+  private static final String NO_TRIGGERED_EVENT_MESSAGE = "No triggered event for workflow '%d'";
 
   private final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
   private final WorkflowState state;
@@ -56,12 +60,27 @@ public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElemen
 
     // this should never happen because workflows are never deleted.
     if (workflow == null) {
-      throw new IllegalStateException(String.format(NO_WORKFLOW_FOUND_MESSAGE, workflowKey));
+      Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
+          String.format(NO_WORKFLOW_FOUND_MESSAGE, workflowKey));
+      return false;
+    }
+
+    final EventTrigger triggeredEvent = getTriggeredEvent(context, workflowKey);
+    if (triggeredEvent == null) {
+      Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
+          String.format(NO_TRIGGERED_EVENT_MESSAGE, workflowKey));
+      return false;
     }
 
     createWorkflowInstance(context, workflow, workflowInstanceKey);
-    deferStartEventRecord(context, workflowInstanceKey, event);
+    final WorkflowInstanceRecord record =
+        getEventRecord(context, triggeredEvent, BpmnElementType.START_EVENT)
+            .setWorkflowInstanceKey(workflowInstanceKey)
+            .setVersion(workflow.getVersion())
+            .setBpmnProcessId(workflow.getBpmnProcessId())
+            .setFlowScopeKey(workflowInstanceKey);
 
+    deferEvent(context, workflowKey, workflowInstanceKey, record, triggeredEvent);
     return true;
   }
 

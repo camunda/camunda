@@ -24,11 +24,13 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.JsonUtil;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.function.Consumer;
-import org.junit.Before;
+import org.agrona.DirectBuffer;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -42,10 +44,14 @@ public class JobInputMappingTest {
 
   private static final String PROCESS_ID = "process";
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+
+  @Rule
+  public RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Parameter(0)
   public String initialPayload;
@@ -62,44 +68,52 @@ public class JobInputMappingTest {
       {"{}", mapping(b -> {}), "{}"},
       {"{'x': 1, 'y': 2}", mapping(b -> {}), "{'x': 1, 'y': 2}"},
       {"{'x': {'y': 2}}", mapping(b -> {}), "{'x': {'y': 2}}"},
-      {"{'x': 1}", mapping(b -> b.zeebeInput("$.x", "$.y")), "{'y': 1}"},
+      {"{'x': 1}", mapping(b -> b.zeebeInput("$.x", "$.y")), "{'x': 1, 'y': 1}"},
       {
         "{'x': 1}",
         mapping(b -> b.zeebeInput("$.x", "$.y").zeebeInput("$.x", "$.z")),
-        "{'y': 1, 'z': 1}"
+        "{'x': 1, 'y': 1, 'z': 1}"
       },
-      {"{'x': {'y': 2}}", mapping(b -> b.zeebeInput("$.x.y", "$.y")), "{'y': 2}"},
+      {"{'x': {'y': 2}}", mapping(b -> b.zeebeInput("$.x.y", "$.y")), "{'x': {'y': 2}, 'y': 2}"},
     };
-  }
-
-  private PartitionTestClient testClient;
-
-  @Before
-  public void init() {
-    testClient = apiRule.partitionClient();
   }
 
   @Test
   public void shouldApplyInputMappings() {
     // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .serviceTask(
-                "service",
-                builder -> {
-                  builder.zeebeTaskType("test");
-                  mappings.accept(builder);
-                })
-            .endEvent()
-            .done());
+    final long workflowKey =
+        apiRule
+            .deployWorkflow(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask(
+                        "service",
+                        builder -> {
+                          builder.zeebeTaskType("test");
+                          mappings.accept(builder);
+                        })
+                    .endEvent()
+                    .done())
+            .getValue()
+            .getDeployedWorkflows()
+            .get(0)
+            .getWorkflowKey();
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID, initialPayload);
+    final DirectBuffer variables = MsgPackUtil.asMsgPack(initialPayload);
+    final long workflowInstanceKey =
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(r -> r.setKey(workflowKey).setVariables(variables))
+            .getInstanceKey();
+    RecordingExporter.jobRecords(JobIntent.CREATED).await();
+    apiRule.activateJobs("test");
 
     // then
     final Record<JobRecordValue> jobCreated =
-        RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+        RecordingExporter.jobRecords(JobIntent.ACTIVATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
 
     JsonUtil.assertEquality(jobCreated.getValue().getPayload(), expectedPayload);
   }

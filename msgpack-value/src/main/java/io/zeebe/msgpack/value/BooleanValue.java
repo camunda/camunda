@@ -17,6 +17,7 @@ package io.zeebe.msgpack.value;
 
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
+import java.util.Objects;
 
 public class BooleanValue extends BaseValue {
   protected boolean val = false;
@@ -60,5 +61,24 @@ public class BooleanValue extends BaseValue {
   @Override
   public int getEncodedLength() {
     return MsgPackWriter.getEncodedBooleanValueLength();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (!(o instanceof BooleanValue)) {
+      return false;
+    }
+
+    final BooleanValue that = (BooleanValue) o;
+    return val == that.val;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(val);
   }
 }

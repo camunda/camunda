@@ -51,10 +51,10 @@ public class OpenWorkflowInstanceSubscriptionProcessor
       final TypedStreamWriter streamWriter) {
 
     final WorkflowInstanceSubscriptionRecord subscriptionRecord = record.getValue();
-
     final WorkflowInstanceSubscription subscription =
         subscriptionState.getSubscription(
             subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName());
+
     if (subscription != null && subscription.isOpening()) {
 
       subscriptionState.updateToOpenedState(

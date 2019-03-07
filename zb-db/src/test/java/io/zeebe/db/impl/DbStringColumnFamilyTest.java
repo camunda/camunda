@@ -194,7 +194,23 @@ public class DbStringColumnFamilyTest {
   }
 
   @Test
-  public void shouldThrowExceptionOnNestedWhileEqualPrefix() {
+  public void shouldAllowSingleNestedWhileEqualPrefix() {
+    // given
+    putKeyValuePair("and", "be good");
+    key.wrapString("and");
+
+    // when
+    columnFamily.whileEqualPrefix(
+        key,
+        (key, value) -> {
+          columnFamily.whileEqualPrefix(key, (k, v) -> {});
+        });
+
+    // then no exception is thrown
+  }
+
+  @Test
+  public void shouldThrowExceptionOnMultipleNestedWhileEqualPrefix() {
     // given
     putKeyValuePair("and", "be good");
     key.wrapString("and");
@@ -205,10 +221,15 @@ public class DbStringColumnFamilyTest {
                 columnFamily.whileEqualPrefix(
                     key,
                     (key, value) -> {
-                      columnFamily.whileEqualPrefix(key, (k, v) -> {});
+                      columnFamily.whileEqualPrefix(
+                          key,
+                          (k, v) -> {
+                            columnFamily.whileEqualPrefix(key, (k2, v2) -> {});
+                          });
                     }))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessage(
+        .hasRootCauseInstanceOf(IllegalStateException.class)
+        .hasMessage("Unexpected error occurred during RocksDB transaction.")
+        .hasStackTraceContaining(
             "Currently nested prefix iterations are not supported! This will cause unexpected behavior.");
   }
 

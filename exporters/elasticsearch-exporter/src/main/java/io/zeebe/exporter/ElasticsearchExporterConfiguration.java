@@ -27,6 +27,7 @@ public class ElasticsearchExporterConfiguration {
 
   public IndexConfiguration index = new IndexConfiguration();
   public BulkConfiguration bulk = new BulkConfiguration();
+  public AuthenticationConfiguration authentication = new AuthenticationConfiguration();
 
   @Override
   public String toString() {
@@ -38,6 +39,8 @@ public class ElasticsearchExporterConfiguration {
         + index
         + ", bulk="
         + bulk
+        + ", authentication="
+        + authentication
         + '}';
   }
 
@@ -62,7 +65,9 @@ public class ElasticsearchExporterConfiguration {
     public boolean messageSubscription = false;
     public boolean raft = false;
     public boolean variable = true;
+    public boolean variableDocument = false;
     public boolean workflowInstance = true;
+    public boolean workflowInstanceCreation = false;
     public boolean workflowInstanceSubscription = false;
 
     @Override
@@ -93,8 +98,12 @@ public class ElasticsearchExporterConfiguration {
           + raft
           + ", variable="
           + variable
+          + ", variableDocument="
+          + variableDocument
           + ", workflowInstance="
           + workflowInstance
+          + ", workflowInstanceCreation="
+          + workflowInstanceCreation
           + ", workflowInstanceSubscription="
           + workflowInstanceSubscription
           + '}';
@@ -110,6 +119,20 @@ public class ElasticsearchExporterConfiguration {
     @Override
     public String toString() {
       return "BulkConfiguration{" + "delay=" + delay + ", size=" + size + '}';
+    }
+  }
+
+  public static class AuthenticationConfiguration {
+    public String username;
+    public String password;
+
+    public boolean isPresent() {
+      return (username != null && !username.isEmpty()) && (password != null && !password.isEmpty());
+    }
+
+    @Override
+    public String toString() {
+      return "AuthenticationConfiguration{" + "username='" + username + '\'' + '}';
     }
   }
 
@@ -137,8 +160,12 @@ public class ElasticsearchExporterConfiguration {
         return index.raft;
       case VARIABLE:
         return index.variable;
+      case VARIABLE_DOCUMENT:
+        return index.variableDocument;
       case WORKFLOW_INSTANCE:
         return index.workflowInstance;
+      case WORKFLOW_INSTANCE_CREATION:
+        return index.workflowInstanceCreation;
       case WORKFLOW_INSTANCE_SUBSCRIPTION:
         return index.workflowInstanceSubscription;
       default:

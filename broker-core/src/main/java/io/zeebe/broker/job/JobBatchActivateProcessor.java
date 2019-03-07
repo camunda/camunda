@@ -24,13 +24,13 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import java.util.Collection;
@@ -118,6 +118,15 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
           final long deadline = currentTimeMillis() + value.getTimeout();
           jobRecord.setDeadline(deadline).setWorker(value.getWorker());
 
+          // fetch and set payload, required here to already have the full size of the job record
+          final long elementInstanceKey = jobRecord.getHeaders().getElementInstanceKey();
+          if (elementInstanceKey >= 0) {
+            final DirectBuffer payload = collectPayload(variableNames, elementInstanceKey);
+            jobRecord.setPayload(payload);
+          } else {
+            jobRecord.setPayload(DocumentValue.EMPTY_DOCUMENT);
+          }
+
           if (remainingAmount >= 0
               && value.getLength() + Long.BYTES + jobRecord.getLength()
                   <= record.getMaxValueLength()) {
@@ -146,15 +155,6 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
       final long key = next1.getValue();
 
       // update state and write follow up event for job record
-      final long elementInstanceKey = jobRecord.getHeaders().getElementInstanceKey();
-
-      if (elementInstanceKey >= 0) {
-        final DirectBuffer payload = collectPayload(variableNames, elementInstanceKey);
-        jobRecord.setPayload(payload);
-      } else {
-        jobRecord.setPayload(WorkflowInstanceRecord.EMPTY_PAYLOAD);
-      }
-
       // we have to copy the job record because #write will reset the iterator state
       final ExpandableArrayBuffer copy = new ExpandableArrayBuffer();
       jobRecord.write(copy, 0);

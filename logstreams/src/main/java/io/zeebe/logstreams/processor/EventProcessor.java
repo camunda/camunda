@@ -24,6 +24,12 @@ public interface EventProcessor {
    * state.
    */
   default void processEvent() {}
+  /**
+   * Is called when processing failed due to an unexpected exception. Do clean up work.
+   *
+   * @param exception the exception which was catched during processing
+   */
+  default void processingFailed(Exception exception) {}
 
   /**
    * (Optional) Execute the side effects which are caused by the processed event. A side effect can
@@ -49,10 +55,5 @@ public interface EventProcessor {
    */
   default long writeEvent(LogStreamRecordWriter writer) {
     return 0;
-  }
-
-  /** (Optional) Update the internal state of the processor based on the processed event. */
-  default void updateState() {
-    // do nothing
   }
 }

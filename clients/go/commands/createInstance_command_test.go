@@ -126,17 +126,17 @@ func TestCreateWorkflowInstanceCommandByBpmnProcessIdAndVersion(t *testing.T) {
 	}
 }
 
-func TestCreateWorkflowInstanceCommandWithPayloadFromString(t *testing.T) {
+func TestCreateWorkflowInstanceCommandWithVariablesFromString(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{\"foo\":\"bar\"}"
+	variables := "{\"foo\":\"bar\"}"
 
 	request := &pb.CreateWorkflowInstanceRequest{
 		WorkflowKey: 123,
-		Payload:     payload,
+		Variables:     variables,
 	}
 	stub := &pb.CreateWorkflowInstanceResponse{
 		WorkflowKey:         123,
@@ -149,12 +149,12 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromString(t *testing.T) {
 
 	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.WorkflowKey(123).PayloadFromString(payload)
+	variablesCommand, err := command.WorkflowKey(123).VariablesFromString(variables)
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -165,17 +165,17 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromString(t *testing.T) {
 	}
 }
 
-func TestCreateWorkflowInstanceCommandWithPayloadFromStringer(t *testing.T) {
+func TestCreateWorkflowInstanceCommandWithVariablesFromStringer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{\"foo\":\"bar\"}"
+	variables := "{\"foo\":\"bar\"}"
 
 	request := &pb.CreateWorkflowInstanceRequest{
 		WorkflowKey: 123,
-		Payload:     payload,
+		Variables:     variables,
 	}
 	stub := &pb.CreateWorkflowInstanceResponse{
 		WorkflowKey:         123,
@@ -188,12 +188,12 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromStringer(t *testing.T) {
 
 	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.WorkflowKey(123).PayloadFromStringer(DataType{Foo: "bar"})
+	variablesCommand, err := command.WorkflowKey(123).VariablesFromStringer(DataType{Foo: "bar"})
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -204,17 +204,17 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromStringer(t *testing.T) {
 	}
 }
 
-func TestCreateWorkflowInstanceCommandWithPayloadFromObject(t *testing.T) {
+func TestCreateWorkflowInstanceCommandWithVariablesFromObject(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{\"foo\":\"bar\"}"
+	variables := "{\"foo\":\"bar\"}"
 
 	request := &pb.CreateWorkflowInstanceRequest{
 		WorkflowKey: 123,
-		Payload:     payload,
+		Variables:     variables,
 	}
 	stub := &pb.CreateWorkflowInstanceResponse{
 		WorkflowKey:         123,
@@ -227,12 +227,12 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromObject(t *testing.T) {
 
 	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.WorkflowKey(123).PayloadFromObject(DataType{Foo: "bar"})
+	variablesCommand, err := command.WorkflowKey(123).VariablesFromObject(DataType{Foo: "bar"})
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -243,17 +243,17 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromObject(t *testing.T) {
 	}
 }
 
-func TestCreateWorkflowInstanceCommandWithPayloadFromObjectOmitempty(t *testing.T) {
+func TestCreateWorkflowInstanceCommandWithVariablesFromObjectOmitempty(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{}"
+	variables := "{}"
 
 	request := &pb.CreateWorkflowInstanceRequest{
 		WorkflowKey: 123,
-		Payload:     payload,
+		Variables:     variables,
 	}
 	stub := &pb.CreateWorkflowInstanceResponse{
 		WorkflowKey:         123,
@@ -266,12 +266,12 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromObjectOmitempty(t *testing.
 
 	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.WorkflowKey(123).PayloadFromObject(DataType{Foo: ""})
+	variablesCommand, err := command.WorkflowKey(123).VariablesFromObject(DataType{Foo: ""})
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -282,17 +282,17 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromObjectOmitempty(t *testing.
 	}
 }
 
-func TestCreateWorkflowInstanceCommandWithPayloadFromObjectIgnoreOmitempty(t *testing.T) {
+func TestCreateWorkflowInstanceCommandWithVariablesFromObjectIgnoreOmitempty(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{\"foo\":\"\"}"
+	variables := "{\"foo\":\"\"}"
 
 	request := &pb.CreateWorkflowInstanceRequest{
 		WorkflowKey: 123,
-		Payload:     payload,
+		Variables:     variables,
 	}
 	stub := &pb.CreateWorkflowInstanceResponse{
 		WorkflowKey:         123,
@@ -305,12 +305,12 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromObjectIgnoreOmitempty(t *te
 
 	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.WorkflowKey(123).PayloadFromObjectIgnoreOmitempty(DataType{Foo: ""})
+	variablesCommand, err := command.WorkflowKey(123).VariablesFromObjectIgnoreOmitempty(DataType{Foo: ""})
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -321,19 +321,19 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromObjectIgnoreOmitempty(t *te
 	}
 }
 
-func TestCreateWorkflowInstanceCommandWithPayloadFromMap(t *testing.T) {
+func TestCreateWorkflowInstanceCommandWithVariablesFromMap(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{\"foo\":\"bar\"}"
-	payloadMap := make(map[string]interface{})
-	payloadMap["foo"] = "bar"
+	variables := "{\"foo\":\"bar\"}"
+	variablesMap := make(map[string]interface{})
+	variablesMap["foo"] = "bar"
 
 	request := &pb.CreateWorkflowInstanceRequest{
 		WorkflowKey: 123,
-		Payload:     payload,
+		Variables:     variables,
 	}
 	stub := &pb.CreateWorkflowInstanceResponse{
 		WorkflowKey:         123,
@@ -346,12 +346,12 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromMap(t *testing.T) {
 
 	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.WorkflowKey(123).PayloadFromMap(payloadMap)
+	variablesCommand, err := command.WorkflowKey(123).VariablesFromMap(variablesMap)
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")

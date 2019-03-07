@@ -30,10 +30,12 @@ public class JsonPathQueryValidationTest {
   public static Iterable<Object[]> data() {
     return Arrays.asList(
         new Object[][] {
-          {"$..", 1, "Unexpected json-path token RECURSION_OPERATOR"}, // currently not supported
-          {"foo", 0, "Unexpected json-path token LITERAL"},
-          {"$.foo.$", 6, "Unexpected json-path token ROOT_OBJECT"},
-          {"$.[foo", 2, "Unexpected json-path token SUBSCRIPT_OPERATOR_BEGIN"}
+          {
+            "$..", 1, "Unexpected json-path token RECURSION_OPERATOR", false
+          }, // currently not supported
+          {"foo", 0, "Unexpected json-path token LITERAL", false},
+          {"$.foo.$", 6, "Unexpected json-path token ROOT_OBJECT", true},
+          {"$.[foo", 2, "Unexpected json-path token SUBSCRIPT_OPERATOR_BEGIN", false}
         });
   }
 
@@ -45,6 +47,9 @@ public class JsonPathQueryValidationTest {
 
   @Parameter(2)
   public String expectedErrorMessage;
+
+  @Parameter(3)
+  public boolean expectedHasVariable;
 
   @Test
   public void testCompileInvalidQuery() {
@@ -58,5 +63,6 @@ public class JsonPathQueryValidationTest {
     assertThat(jsonPathQuery.isValid()).isFalse(); // as recursion is not yet supported
     assertThat(jsonPathQuery.getInvalidPosition()).isEqualTo(expectedInvalidPosition);
     assertThat(jsonPathQuery.getErrorReason()).isEqualTo(expectedErrorMessage);
+    assertThat(jsonPathQuery.hasTopLevelVariable()).isEqualTo(expectedHasVariable);
   }
 }

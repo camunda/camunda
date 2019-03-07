@@ -37,6 +37,8 @@ import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.RemoteAddress;
@@ -87,6 +89,8 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     recordsByType.put(ValueType.MESSAGE, new MessageRecord());
     recordsByType.put(ValueType.JOB_BATCH, new JobBatchRecord());
     recordsByType.put(ValueType.INCIDENT, new IncidentRecord());
+    recordsByType.put(ValueType.VARIABLE_DOCUMENT, new VariableDocumentRecord());
+    recordsByType.put(ValueType.WORKFLOW_INSTANCE_CREATION, new WorkflowInstanceCreationRecord());
   }
 
   private boolean handleExecuteCommandRequest(

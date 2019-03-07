@@ -36,6 +36,7 @@ import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
 import io.zeebe.protocol.BpmnElementType;
+import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -48,15 +49,18 @@ public class CatchEventBehavior {
 
   private final ZeebeState state;
   private final SubscriptionCommandSender subscriptionCommandSender;
+  private final int partitionsCount;
 
   private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
   private final WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
   private final TimerRecord timerRecord = new TimerRecord();
   private final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys = new HashMap<>();
 
-  public CatchEventBehavior(ZeebeState state, SubscriptionCommandSender subscriptionCommandSender) {
+  public CatchEventBehavior(
+      ZeebeState state, SubscriptionCommandSender subscriptionCommandSender, int partitionsCount) {
     this.state = state;
     this.subscriptionCommandSender = subscriptionCommandSender;
+    this.partitionsCount = partitionsCount;
   }
 
   public void unsubscribeFromEvents(long elementInstanceKey, BpmnStepContext<?> context) {
@@ -87,6 +91,7 @@ public class CatchEventBehavior {
       if (event.isTimer()) {
         subscribeToTimerEvent(
             context.getRecord().getKey(),
+            context.getRecord().getValue().getWorkflowInstanceKey(),
             context.getRecord().getValue().getWorkflowKey(),
             event.getId(),
             event.getTimer(),
@@ -99,20 +104,22 @@ public class CatchEventBehavior {
     context
         .getStateDb()
         .getEventScopeInstanceState()
-        .createInstance(context.getRecord().getKey(), supplier.getInterruptingElementIds());
+        .createIfNotExists(context.getRecord().getKey(), supplier.getInterruptingElementIds());
   }
 
   public void subscribeToTimerEvent(
       long elementInstanceKey,
+      long workflowInstanceKey,
       long workflowKey,
       DirectBuffer handlerNodeId,
       Timer timer,
       TypedStreamWriter writer) {
-
+    timerRecord.reset();
     timerRecord
         .setRepetitions(timer.getRepetitions())
         .setDueDate(timer.getDueDate(ActorClock.currentTimeMillis()))
         .setElementInstanceKey(elementInstanceKey)
+        .setWorkflowInstanceKey(workflowInstanceKey)
         .setHandlerNodeId(handlerNodeId)
         .setWorkflowKey(workflowKey);
     writer.appendNewCommand(TimerIntent.CREATE, timerRecord);
@@ -127,9 +134,12 @@ public class CatchEventBehavior {
   }
 
   public void unsubscribeFromTimerEvent(TimerInstance timer, TypedStreamWriter writer) {
+    timerRecord.reset();
     timerRecord
         .setElementInstanceKey(timer.getElementInstanceKey())
+        .setWorkflowInstanceKey(timer.getWorkflowInstanceKey())
         .setDueDate(timer.getDueDate())
+        .setRepetitions(timer.getRepetitions())
         .setHandlerNodeId(timer.getHandlerNodeId())
         .setWorkflowKey(timer.getWorkflowKey());
 
@@ -145,7 +155,10 @@ public class CatchEventBehavior {
     final DirectBuffer messageName = cloneBuffer(message.getMessageName());
     final DirectBuffer correlationKey = extractedKey;
     final boolean closeOnCorrelate = handler.shouldCloseMessageSubscriptionOnCorrelate();
+    final int subscriptionPartitionId =
+        SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionsCount);
 
+    subscription.setSubscriptionPartitionId(subscriptionPartitionId);
     subscription.setMessageName(messageName);
     subscription.setElementInstanceKey(elementInstanceKey);
     subscription.setCommandSentTime(ActorClock.currentTimeMillis());
@@ -160,6 +173,7 @@ public class CatchEventBehavior {
         .add(
             () ->
                 sendOpenMessageSubscription(
+                    subscriptionPartitionId,
                     workflowInstanceKey,
                     elementInstanceKey,
                     messageName,
@@ -236,13 +250,19 @@ public class CatchEventBehavior {
   }
 
   private boolean sendOpenMessageSubscription(
+      int subscriptionPartitionId,
       long workflowInstanceKey,
       long elementInstanceKey,
       DirectBuffer messageName,
       DirectBuffer correlationKey,
       boolean closeOnCorrelate) {
     return subscriptionCommandSender.openMessageSubscription(
-        workflowInstanceKey, elementInstanceKey, messageName, correlationKey, closeOnCorrelate);
+        subscriptionPartitionId,
+        workflowInstanceKey,
+        elementInstanceKey,
+        messageName,
+        correlationKey,
+        closeOnCorrelate);
   }
 
   private Map<DirectBuffer, DirectBuffer> extractMessageCorrelationKeys(

@@ -36,39 +36,68 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 public class VariableStateTest {
 
-  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
+  private static final AtomicLong PARENT_KEY = new AtomicLong(0);
+  private static final AtomicLong CHILD_KEY = new AtomicLong(1);
+  private static final AtomicLong SECOND_CHILD_KEY = new AtomicLong(2);
 
-  private ElementInstanceState elementInstanceState;
-  private VariablesState variablesState;
+  @ClassRule public static ZeebeStateRule stateRule = new ZeebeStateRule();
 
-  @Before
-  public void setUp() {
+  private static ElementInstanceState elementInstanceState;
+  private static VariablesState variablesState;
+  private static RecordingVariableListener listener;
+
+  @BeforeClass
+  public static void setUp() {
     final ZeebeState zeebeState = stateRule.getZeebeState();
     elementInstanceState = zeebeState.getWorkflowState().getElementInstanceState();
     variablesState = elementInstanceState.getVariablesState();
+
+    listener = new RecordingVariableListener();
+    variablesState.setListener(listener);
+  }
+
+  private long parent;
+  private long child;
+  private long child2;
+
+  @Before
+  public void beforeTest() {
+    parent = PARENT_KEY.getAndIncrement();
+    child = CHILD_KEY.getAndIncrement();
+    child2 = SECOND_CHILD_KEY.getAndIncrement();
+  }
+
+  @After
+  public void cleanUp() {
+    elementInstanceState.removeInstance(child2);
+    elementInstanceState.removeInstance(child);
+    elementInstanceState.removeInstance(parent);
+    listener.reset();
   }
 
   @Test
   public void shouldCollectVariablesAsDocument() {
     // given
-    final long scopeKey = 1;
-    declareScope(scopeKey);
+    declareScope(parent);
 
     final DirectBuffer var1Value = MsgPackUtil.asMsgPack("a", 1);
-    variablesState.setVariableLocal(scopeKey, BufferUtil.wrapString("var1"), var1Value);
+    variablesState.setVariableLocal(parent, BufferUtil.wrapString("var1"), var1Value);
 
     final DirectBuffer var2Value = MsgPackUtil.asMsgPack("x", 10);
-    variablesState.setVariableLocal(scopeKey, BufferUtil.wrapString("var2"), var2Value);
+    variablesState.setVariableLocal(parent, BufferUtil.wrapString("var2"), var2Value);
 
     // when
-    final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(scopeKey);
+    final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(parent);
 
     // then
     MsgPackUtil.assertEquality(variablesDocument, "{'var1': {'a': 1}, 'var2': {'x': 10}}");
@@ -77,11 +106,10 @@ public class VariableStateTest {
   @Test
   public void shouldCollectNoVariablesAsEmptyDocument() {
     // given
-    final long scopeKey = 1;
-    declareScope(scopeKey);
+    declareScope(parent);
 
     // when
-    final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(scopeKey);
+    final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(parent);
 
     // then
     MsgPackUtil.assertEquality(variablesDocument, "{}");
@@ -90,9 +118,9 @@ public class VariableStateTest {
   @Test
   public void shouldCollectVariablesFromMultipleScopes() {
     // given
-    final long grandparent = 1;
-    final long parent = 2;
-    final long child = 3;
+    final long grandparent = parent;
+    final long parent = child;
+    final long child = child2;
     declareScope(grandparent);
     declareScope(grandparent, parent);
     declareScope(parent, child);
@@ -112,8 +140,6 @@ public class VariableStateTest {
   @Test
   public void shouldNotCollectHiddenVariables() {
     // given
-    final long parent = 1;
-    final long child = 2;
     declareScope(parent);
     declareScope(parent, child);
 
@@ -131,8 +157,6 @@ public class VariableStateTest {
   @Test
   public void shouldNotCollectVariablesFromChildScope() {
     // given
-    final long parent = 1;
-    final long child = 2;
     declareScope(parent);
     declareScope(parent, child);
 
@@ -149,19 +173,16 @@ public class VariableStateTest {
   @Test
   public void shouldNotCollectVariablesInSiblingScope() {
     // given
-    final long parent = 1;
-    final long child1 = 2;
-    final long child2 = 3;
     declareScope(parent);
-    declareScope(parent, child1);
+    declareScope(parent, child);
     declareScope(parent, child2);
 
     variablesState.setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
-    variablesState.setVariableLocal(child1, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
+    variablesState.setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
     variablesState.setVariableLocal(child2, BufferUtil.wrapString("c"), MsgPackUtil.asMsgPack("3"));
 
     // when
-    final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(child1);
+    final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(child);
 
     // then
     MsgPackUtil.assertEquality(variablesDocument, "{'a': 1, 'b': 2}");
@@ -170,8 +191,6 @@ public class VariableStateTest {
   @Test
   public void shouldCollectLocalVariables() {
     // given
-    final long parent = 1;
-    final long child = 2;
     declareScope(parent);
     declareScope(parent, child);
 
@@ -186,17 +205,16 @@ public class VariableStateTest {
   @Test
   public void shouldCollectVariablesByName() {
     // given
-    final long scope = 1;
-    declareScope(scope);
+    declareScope(parent);
 
-    variablesState.setVariableLocal(scope, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
-    variablesState.setVariableLocal(scope, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
-    variablesState.setVariableLocal(scope, BufferUtil.wrapString("c"), MsgPackUtil.asMsgPack("3"));
+    variablesState.setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    variablesState.setVariableLocal(parent, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
+    variablesState.setVariableLocal(parent, BufferUtil.wrapString("c"), MsgPackUtil.asMsgPack("3"));
 
     // when
     final DirectBuffer variablesDocument =
         variablesState.getVariablesAsDocument(
-            scope, Arrays.asList(BufferUtil.wrapString("a"), BufferUtil.wrapString("c")));
+            parent, Arrays.asList(BufferUtil.wrapString("a"), BufferUtil.wrapString("c")));
 
     // then
     MsgPackUtil.assertEquality(variablesDocument, "{'a': 1, 'c': 3}");
@@ -205,23 +223,18 @@ public class VariableStateTest {
   @Test
   public void shouldCollectVariablesByNameFromMultipleScopes() {
     // given
-    final long grandparent = 1;
-    final long parent = 2;
-    final long child = 3;
-
-    declareScope(grandparent);
-    declareScope(grandparent, parent);
+    declareScope(parent);
     declareScope(parent, child);
+    declareScope(child, child2);
 
-    variablesState.setVariableLocal(
-        grandparent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
-    variablesState.setVariableLocal(parent, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
-    variablesState.setVariableLocal(child, BufferUtil.wrapString("c"), MsgPackUtil.asMsgPack("3"));
+    variablesState.setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    variablesState.setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
+    variablesState.setVariableLocal(child2, BufferUtil.wrapString("c"), MsgPackUtil.asMsgPack("3"));
 
     // when
     final DirectBuffer variablesDocument =
         variablesState.getVariablesAsDocument(
-            child, Arrays.asList(BufferUtil.wrapString("a"), BufferUtil.wrapString("c")));
+            child2, Arrays.asList(BufferUtil.wrapString("a"), BufferUtil.wrapString("c")));
 
     // then
     MsgPackUtil.assertEquality(variablesDocument, "{'a': 1, 'c': 3}");
@@ -230,15 +243,14 @@ public class VariableStateTest {
   @Test
   public void shouldCollectOnlyExistingVariablesByName() {
     // given
-    final long scope = 1;
-    declareScope(scope);
+    declareScope(parent);
 
-    variablesState.setVariableLocal(scope, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    variablesState.setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
 
     // when
     final DirectBuffer variablesDocument =
         variablesState.getVariablesAsDocument(
-            scope, Arrays.asList(BufferUtil.wrapString("a"), BufferUtil.wrapString("c")));
+            parent, Arrays.asList(BufferUtil.wrapString("a"), BufferUtil.wrapString("c")));
 
     // then
     MsgPackUtil.assertEquality(variablesDocument, "{'a': 1}");
@@ -247,27 +259,24 @@ public class VariableStateTest {
   @Test
   public void shouldSetLocalVariablesFromDocument() {
     // given
-    final long scope = 1;
-    declareScope(scope);
+    declareScope(parent);
 
     final DirectBuffer document = MsgPackUtil.asMsgPack(b -> b.put("a", 1).put("b", 2));
 
     // when
-    variablesState.setVariablesLocalFromDocument(scope, document);
+    variablesState.setVariablesLocalFromDocument(parent, document);
 
     // then
-    final DirectBuffer varA = variablesState.getVariableLocal(scope, BufferUtil.wrapString("a"));
+    final DirectBuffer varA = variablesState.getVariableLocal(parent, BufferUtil.wrapString("a"));
     MsgPackUtil.assertEquality(varA, "1");
 
-    final DirectBuffer varB = variablesState.getVariableLocal(scope, BufferUtil.wrapString("b"));
+    final DirectBuffer varB = variablesState.getVariableLocal(parent, BufferUtil.wrapString("b"));
     MsgPackUtil.assertEquality(varB, "2");
   }
 
   @Test
   public void shouldSetLocalVariablesFromDocumentInHierarchy() {
     // given
-    final long parent = 1;
-    final long child = 2;
     declareScope(parent);
     declareScope(parent, child);
 
@@ -289,47 +298,44 @@ public class VariableStateTest {
   @Test
   public void shouldSetLocalVariableFromDocumentAsObject() {
     // given
-    final long scope = 1;
-    declareScope(scope);
+    declareScope(parent);
 
     final DirectBuffer document =
         MsgPackUtil.asMsgPack(b -> b.put("var", Collections.singletonMap("a", 1)));
 
     // when
-    variablesState.setVariablesLocalFromDocument(scope, document);
+    variablesState.setVariablesLocalFromDocument(parent, document);
 
     // then
-    final DirectBuffer varA = variablesState.getVariableLocal(scope, BufferUtil.wrapString("var"));
+    final DirectBuffer varA = variablesState.getVariableLocal(parent, BufferUtil.wrapString("var"));
     MsgPackUtil.assertEquality(varA, "{'a': 1}");
   }
 
   @Test
   public void shouldOverwriteLocalVariableFromDocument() {
     // given
-    final long scope = 1;
-    declareScope(scope);
+    declareScope(parent);
 
-    variablesState.setVariableLocal(scope, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    variablesState.setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
 
     final DirectBuffer document = MsgPackUtil.asMsgPack("a", 2);
 
     // when
-    variablesState.setVariablesLocalFromDocument(scope, document);
+    variablesState.setVariablesLocalFromDocument(parent, document);
 
     // then
-    final DirectBuffer varA = variablesState.getVariableLocal(scope, BufferUtil.wrapString("a"));
+    final DirectBuffer varA = variablesState.getVariableLocal(parent, BufferUtil.wrapString("a"));
     MsgPackUtil.assertEquality(varA, "2");
   }
 
   @Test
   public void shouldGetNullForNonExistingVariable() {
     // given
-    final long scope = 1;
-    declareScope(scope);
+    declareScope(parent);
 
     // when
     final DirectBuffer variableValue =
-        variablesState.getVariableLocal(scope, BufferUtil.wrapString("a"));
+        variablesState.getVariableLocal(parent, BufferUtil.wrapString("a"));
 
     // then
     assertThat(variableValue).isNull();
@@ -338,8 +344,6 @@ public class VariableStateTest {
   @Test
   public void shouldRemoveAllVariablesForScope() {
     // given
-    final long parent = 1;
-    final long child = 2;
     declareScope(parent);
     declareScope(parent, child);
 
@@ -362,8 +366,6 @@ public class VariableStateTest {
   @Test
   public void shouldRemoveScope() {
     // given
-    final long parent = 1;
-    final long child = 2;
     declareScope(parent);
     declareScope(parent, child);
 
@@ -386,9 +388,9 @@ public class VariableStateTest {
   @Test
   public void shouldSetVariablesFromDocument() {
     // given
-    final long grandparent = 1;
-    final long parent = 2;
-    final long child = 3;
+    final long grandparent = parent;
+    final long parent = child;
+    final long child = child2;
     declareScope(grandparent);
     declareScope(grandparent, parent);
     declareScope(parent, child);
@@ -425,8 +427,6 @@ public class VariableStateTest {
   @Test
   public void shouldSetVariablesFromDocumentNotInChildScopes() {
     // given
-    final long parent = 1;
-    final long child = 2;
     declareScope(parent);
     declareScope(parent, child);
 
@@ -454,25 +454,22 @@ public class VariableStateTest {
   @Test
   public void shouldSetVariablesFromDocumentAsObject() {
     // given
-    final long scope = 1;
-    declareScope(scope);
+    declareScope(parent);
 
     final DirectBuffer document =
         MsgPackUtil.asMsgPack(b -> b.put("a", Collections.singletonMap("x", 1)));
 
     // when
-    variablesState.setVariablesFromDocument(scope, document);
+    variablesState.setVariablesFromDocument(parent, document);
 
     // then
-    final DirectBuffer varA = variablesState.getVariableLocal(scope, BufferUtil.wrapString("a"));
+    final DirectBuffer varA = variablesState.getVariableLocal(parent, BufferUtil.wrapString("a"));
     MsgPackUtil.assertEquality(varA, "{'x': 1}");
   }
 
   @Test
   public void shouldSetVariablesFromDocumentNotInParentScope() {
     // given
-    final long parent = 1;
-    final long child = 2;
     declareScope(parent);
     declareScope(parent, child);
 
@@ -504,39 +501,37 @@ public class VariableStateTest {
   @Test
   public void shouldSetVariablesFromDocumentRepeatedly() {
     // given
-    final long scope1 = 1;
-    final long scope2 = 2;
-    declareScope(scope1);
-    declareScope(scope2);
+    final long parent1 = parent;
+    final long parent2 = child;
+    declareScope(parent1);
+    declareScope(parent2);
 
-    variablesState.setVariablesFromDocument(scope1, MsgPackUtil.asMsgPack("{'a': 1, 'b': 2}"));
+    variablesState.setVariablesFromDocument(parent1, MsgPackUtil.asMsgPack("{'a': 1, 'b': 2}"));
 
     // when
-    variablesState.setVariablesFromDocument(scope2, MsgPackUtil.asMsgPack("{'x': 3}"));
+    variablesState.setVariablesFromDocument(parent2, MsgPackUtil.asMsgPack("{'x': 3}"));
 
     // then
-    final DirectBuffer scope1Doc = variablesState.getVariablesAsDocument(scope1);
-    MsgPackUtil.assertEquality(scope1Doc, "{'a': 1, 'b': 2}");
+    final DirectBuffer parent1Doc = variablesState.getVariablesAsDocument(parent1);
+    MsgPackUtil.assertEquality(parent1Doc, "{'a': 1, 'b': 2}");
 
-    final DirectBuffer scope2Doc = variablesState.getVariablesAsDocument(scope2);
-    MsgPackUtil.assertEquality(scope2Doc, "{'x': 3}");
+    final DirectBuffer parent2Doc = variablesState.getVariablesAsDocument(parent2);
+    MsgPackUtil.assertEquality(parent2Doc, "{'x': 3}");
   }
 
   @Test
   public void shouldInvokeListenerOnCreate() {
     // given
-    final RecordingVariableListener listener = new RecordingVariableListener();
-    variablesState.setListener(listener);
 
     // when
-    variablesState.setVariableLocal(1L, wrapString("x"), wrapString("foo"));
+    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("foo"));
 
     // then
     assertThat(listener.created).hasSize(1);
     assertThat(listener.created.get(0).name).isEqualTo("x");
     assertThat(listener.created.get(0).value).isEqualTo("foo".getBytes());
-    assertThat(listener.created.get(0).variableScopeKey).isEqualTo(1L);
-    assertThat(listener.created.get(0).rootScopeKey).isEqualTo(1L);
+    assertThat(listener.created.get(0).variableScopeKey).isEqualTo(parent);
+    assertThat(listener.created.get(0).rootScopeKey).isEqualTo(parent);
 
     assertThat(listener.updated).isEmpty();
   }
@@ -544,12 +539,10 @@ public class VariableStateTest {
   @Test
   public void shouldInvokeListenerOnUpdate() {
     // given
-    final RecordingVariableListener listener = new RecordingVariableListener();
-    variablesState.setListener(listener);
 
     // when
-    variablesState.setVariableLocal(1L, wrapString("x"), wrapString("foo"));
-    variablesState.setVariableLocal(1L, wrapString("x"), wrapString("bar"));
+    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("foo"));
+    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("bar"));
 
     // then
     assertThat(listener.created).hasSize(1);
@@ -557,19 +550,17 @@ public class VariableStateTest {
     assertThat(listener.updated).hasSize(1);
     assertThat(listener.updated.get(0).name).isEqualTo("x");
     assertThat(listener.updated.get(0).value).isEqualTo("bar".getBytes());
-    assertThat(listener.updated.get(0).variableScopeKey).isEqualTo(1L);
-    assertThat(listener.updated.get(0).rootScopeKey).isEqualTo(1L);
+    assertThat(listener.updated.get(0).variableScopeKey).isEqualTo(parent);
+    assertThat(listener.updated.get(0).rootScopeKey).isEqualTo(parent);
   }
 
   @Test
   public void shouldNotInvokeListenerIfNotChanged() {
     // given
-    final RecordingVariableListener listener = new RecordingVariableListener();
-    variablesState.setListener(listener);
 
     // when
-    variablesState.setVariableLocal(1L, wrapString("x"), wrapString("foo"));
-    variablesState.setVariableLocal(1L, wrapString("x"), wrapString("foo"));
+    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("foo"));
+    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("foo"));
 
     // then
     assertThat(listener.created).hasSize(1);
@@ -580,24 +571,22 @@ public class VariableStateTest {
   @Test
   public void shouldInvokeListenerIfSetVariablesLocalFromDocument() {
     // given
-    final RecordingVariableListener listener = new RecordingVariableListener();
-    variablesState.setListener(listener);
 
     // when
     variablesState.setVariablesLocalFromDocument(
-        1L, MsgPackUtil.asMsgPack("{'x':'foo', 'y':'bar'}"));
+        parent, MsgPackUtil.asMsgPack("{'x':'foo', 'y':'bar'}"));
 
     // then
     assertThat(listener.created).hasSize(2);
     assertThat(listener.created.get(0).name).isEqualTo("x");
     assertThat(listener.created.get(0).value).isEqualTo(stringToMsgpack("foo"));
-    assertThat(listener.created.get(0).variableScopeKey).isEqualTo(1L);
-    assertThat(listener.created.get(0).rootScopeKey).isEqualTo(1L);
+    assertThat(listener.created.get(0).variableScopeKey).isEqualTo(parent);
+    assertThat(listener.created.get(0).rootScopeKey).isEqualTo(parent);
 
     assertThat(listener.created.get(1).name).isEqualTo("y");
     assertThat(listener.created.get(1).value).isEqualTo(stringToMsgpack("bar"));
-    assertThat(listener.created.get(1).variableScopeKey).isEqualTo(1L);
-    assertThat(listener.created.get(0).rootScopeKey).isEqualTo(1L);
+    assertThat(listener.created.get(1).variableScopeKey).isEqualTo(parent);
+    assertThat(listener.created.get(0).rootScopeKey).isEqualTo(parent);
 
     assertThat(listener.updated).isEmpty();
   }
@@ -605,11 +594,8 @@ public class VariableStateTest {
   @Test
   public void shouldInvokeListenerIfSetVariablesFromDocument() {
     // given
-    final RecordingVariableListener listener = new RecordingVariableListener();
-    variablesState.setListener(listener);
-
-    final long parentScope = 1L;
-    final long childScope = 2L;
+    final long parentScope = parent;
+    final long childScope = child;
 
     declareScope(parentScope);
     declareScope(parentScope, childScope);
@@ -637,26 +623,40 @@ public class VariableStateTest {
   @Test
   public void shouldSetPayload() {
     // when
-    variablesState.setPayload(1L, wrapString("a"));
-    variablesState.setPayload(2L, wrapString("b"));
+    variablesState.setPayload(parent, wrapString("a"));
+    variablesState.setPayload(child, wrapString("b"));
 
     // then
-    assertThat(variablesState.getPayload(1L)).isEqualTo(wrapString("a"));
-    assertThat(variablesState.getPayload(2L)).isEqualTo(wrapString("b"));
+    assertThat(variablesState.getPayload(parent)).isEqualTo(wrapString("a"));
+    assertThat(variablesState.getPayload(child)).isEqualTo(wrapString("b"));
   }
 
   @Test
   public void shouldRemovePayload() {
     // given
-    variablesState.setPayload(1L, wrapString("a"));
-    variablesState.setPayload(2L, wrapString("b"));
+    variablesState.setPayload(parent, wrapString("a"));
+    variablesState.setPayload(child, wrapString("b"));
 
     // when
-    variablesState.removePayload(1L);
+    variablesState.removePayload(parent);
 
     // then
-    assertThat(variablesState.getPayload(1L)).isNull();
-    assertThat(variablesState.getPayload(2L)).isEqualTo(wrapString("b"));
+    assertThat(variablesState.getPayload(parent)).isNull();
+    assertThat(variablesState.getPayload(child)).isEqualTo(wrapString("b"));
+  }
+
+  @Test
+  public void shouldReuseVariableKeyOnUpdate() {
+    // given
+
+    // when
+    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("foo"));
+    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("bar"));
+
+    // then
+    final long variableKey = listener.created.get(0).key;
+    assertThat(variableKey).isGreaterThan(0);
+    assertThat(listener.updated.get(0).key).isEqualTo(variableKey);
   }
 
   private byte[] stringToMsgpack(String value) {
@@ -699,15 +699,18 @@ public class VariableStateTest {
     return workflowInstanceRecord;
   }
 
-  private class RecordingVariableListener implements VariableListener {
+  private static class RecordingVariableListener implements VariableListener {
 
     private class VariableChange {
+      private final long key;
       private final String name;
       private final byte[] value;
       private final long variableScopeKey;
       private final long rootScopeKey;
 
-      VariableChange(String name, byte[] value, long variableScopeKey, long rootScopeKey) {
+      VariableChange(
+          long key, String name, byte[] value, long variableScopeKey, long rootScopeKey) {
+        this.key = key;
         this.name = name;
         this.value = value;
         this.variableScopeKey = variableScopeKey;
@@ -720,9 +723,10 @@ public class VariableStateTest {
 
     @Override
     public void onCreate(
-        DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
+        long key, DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
       final VariableChange change =
           new VariableChange(
+              key,
               bufferAsString(name),
               BufferUtil.bufferAsArray(value),
               variableScopeKey,
@@ -732,14 +736,20 @@ public class VariableStateTest {
 
     @Override
     public void onUpdate(
-        DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
+        long key, DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
       final VariableChange change =
           new VariableChange(
+              key,
               bufferAsString(name),
               BufferUtil.bufferAsArray(value),
               variableScopeKey,
               rootScopeKey);
       updated.add(change);
+    }
+
+    public void reset() {
+      updated.clear();
+      created.clear();
     }
   }
 }

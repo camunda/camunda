@@ -17,24 +17,45 @@ package io.zeebe.test.broker.protocol.clientapi;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.DeploymentRecordValue;
+import io.zeebe.exporter.record.value.JobRecordValue;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.SubscriptionUtil;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
+import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
+import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import java.io.ByteArrayOutputStream;
+import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.junit.rules.ExternalResource;
 
@@ -47,6 +68,8 @@ public class ClientApiRule extends ExternalResource {
 
   protected final int nodeId;
   protected final Supplier<SocketAddress> brokerAddressSupplier;
+  protected final int partitionCount;
+  protected int nextPartitionId = 0;
 
   protected MsgPackHelper msgPackHelper;
 
@@ -58,12 +81,17 @@ public class ClientApiRule extends ExternalResource {
   protected int defaultPartitionId = -1;
 
   public ClientApiRule(final Supplier<SocketAddress> brokerAddressSupplier) {
-    this.nodeId = 0;
-    this.brokerAddressSupplier = brokerAddressSupplier;
+    this(0, brokerAddressSupplier);
   }
 
   public ClientApiRule(final int nodeId, final Supplier<SocketAddress> brokerAddressSupplier) {
+    this(nodeId, 1, brokerAddressSupplier);
+  }
+
+  public ClientApiRule(
+      int nodeId, int partitionCount, Supplier<SocketAddress> brokerAddressSupplier) {
     this.nodeId = nodeId;
+    this.partitionCount = partitionCount;
     this.brokerAddressSupplier = brokerAddressSupplier;
   }
 
@@ -102,7 +130,6 @@ public class ClientApiRule extends ExternalResource {
         .partitionId(defaultPartitionId);
   }
 
-  /** targets the default partition by default */
   public ExecuteCommandRequestBuilder createCmdRequest(int partition) {
     return new ExecuteCommandRequestBuilder(transport.getOutput(), nodeId, msgPackHelper)
         .partitionId(partition);
@@ -190,5 +217,113 @@ public class ClientApiRule extends ExternalResource {
 
   public ControlledActorClock getClock() {
     return controlledActorClock;
+  }
+
+  /** @return the workflow key */
+  public Record<DeploymentRecordValue> deployWorkflow(BpmnModelInstance modelInstance) {
+    final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+    Bpmn.writeModelToStream(outStream, modelInstance);
+    final byte[] resource = outStream.toByteArray();
+
+    final Map<String, Object> deploymentResource = new HashMap<>();
+    deploymentResource.put("resource", resource);
+    deploymentResource.put("resourceType", ResourceType.BPMN_XML.name());
+    deploymentResource.put("resourceName", "testProcess.bpmn");
+
+    final ExecuteCommandResponse commandResponse =
+        createCmdRequest()
+            .partitionId(Protocol.DEPLOYMENT_PARTITION)
+            .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
+            .command()
+            .put(DeploymentRecord.RESOURCES, Collections.singletonList(deploymentResource))
+            .done()
+            .sendAndAwait();
+
+    assertThat(commandResponse.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+
+    return RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+        .withRecordKey(commandResponse.getKey())
+        .getFirst();
+  }
+
+  public void publishMessage(String messageName, String correlationKey) {
+    publishMessage(messageName, correlationKey, MsgPackUtil.asMsgPack("{}"));
+  }
+
+  public void publishMessage(String messageName, String correlationKey, DirectBuffer payload) {
+    publishMessage(messageName, correlationKey, payload, Duration.ofHours(1).toMillis());
+  }
+
+  public void publishMessage(
+      String messageName, String correlationKey, DirectBuffer payload, long ttl) {
+    final ExecuteCommandResponse response =
+        createCmdRequest()
+            .partitionId(partitionForCorrelationKey(correlationKey))
+            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .command()
+            .put("name", messageName)
+            .put("correlationKey", correlationKey)
+            .put("timeToLive", ttl)
+            .put("payload", BufferUtil.bufferAsArray(payload))
+            .done()
+            .sendAndAwait();
+
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(MessageIntent.PUBLISHED);
+  }
+
+  public void cancelWorkflowInstance(long workflowInstanceKey) {
+    final ExecuteCommandResponse response =
+        createCmdRequest()
+            .partitionId(Protocol.decodePartitionId(workflowInstanceKey))
+            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CANCEL)
+            .key(workflowInstanceKey)
+            .command()
+            .done()
+            .sendAndAwait();
+
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_TERMINATING);
+  }
+
+  public void completeJob(String jobType) {
+    completeJob(jobType, MsgPackUtil.asMsgPack("{}"));
+  }
+
+  public void completeJob(String jobType, DirectBuffer payload) {
+    activateJobs(jobType).await();
+
+    final Record<JobRecordValue> jobRecord =
+        RecordingExporter.jobRecords(JobIntent.ACTIVATED).withType(jobType).getFirst();
+
+    final ExecuteCommandResponse response =
+        createCmdRequest()
+            .type(ValueType.JOB, JobIntent.COMPLETE)
+            .key(jobRecord.getKey())
+            .command()
+            .put("payload", BufferUtil.bufferAsArray(payload))
+            .done()
+            .sendAndAwait();
+
+    assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
+  }
+
+  public ExecuteCommandResponse resolveIncident(long incidentKey) {
+    return createCmdRequest()
+        .partitionId(Protocol.decodePartitionId(incidentKey))
+        .type(ValueType.INCIDENT, IncidentIntent.RESOLVE)
+        .key(incidentKey)
+        .command()
+        .done()
+        .sendAndAwait();
+  }
+
+  protected int nextPartitionId() {
+    return nextPartitionId++ % partitionCount;
+  }
+
+  protected int partitionForCorrelationKey(String correlationKey) {
+    return SubscriptionUtil.getSubscriptionPartitionId(
+        BufferUtil.wrapString(correlationKey), partitionCount);
   }
 }

@@ -45,7 +45,6 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -114,6 +113,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
   @Before
   public void setUp() {
+
     streamProcessor = streamProcessorRule.getStreamProcessor();
   }
 
@@ -125,7 +125,7 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessor.blockAfterJobEvent(r -> r.getMetadata().getIntent() == JobIntent.CREATE);
 
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
-        streamProcessorRule.createWorkflowInstance(PROCESS_ID);
+        streamProcessorRule.createAndReceiveWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
     waitUntil(() -> streamProcessor.isBlocked());
 
     envRule.writeCommand(
@@ -167,7 +167,7 @@ public class WorkflowInstanceStreamProcessorTest {
                 .ELEMENT_COMPLETED)); // blocks before handling sequence flow taken
 
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
-        streamProcessorRule.createWorkflowInstance(PROCESS_ID);
+        streamProcessorRule.createAndReceiveWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
     waitUntil(() -> streamProcessor.isBlocked());
 
     // when
@@ -208,7 +208,7 @@ public class WorkflowInstanceStreamProcessorTest {
                 && r.getValue().getBpmnElementType() == BpmnElementType.SERVICE_TASK);
 
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
-        streamProcessorRule.createWorkflowInstance(PROCESS_ID);
+        streamProcessorRule.createAndReceiveWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     streamProcessorRule.completeFirstJob();
 
@@ -249,7 +249,7 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessor.blockAfterJobEvent(r -> r.getMetadata().getIntent() == JobIntent.COMPLETED);
 
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
-        streamProcessorRule.createWorkflowInstance(PROCESS_ID);
+        streamProcessorRule.createAndReceiveWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     streamProcessorRule.completeFirstJob();
 
@@ -289,7 +289,7 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessor.blockAfterJobEvent(r -> r.getMetadata().getIntent() == JobIntent.CREATE);
 
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
-        streamProcessorRule.createWorkflowInstance(PROCESS_ID);
+        streamProcessorRule.createAndReceiveWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
     waitUntil(() -> streamProcessor.isBlocked());
 
     envRule.writeCommand(
@@ -318,37 +318,6 @@ public class WorkflowInstanceStreamProcessorTest {
     LifecycleAssert.assertThat(taskLifecycle).compliesWithCompleteLifecycle();
   }
 
-  /** https://github.com/zeebe-io/zeebe/issues/1411 */
-  @Test
-  public void shouldUpdateStateOnCommands() {
-    // given
-    streamProcessorRule.deploy(SERVICE_TASK_WORKFLOW);
-    final TypedRecord<WorkflowInstanceRecord> createdEvent =
-        streamProcessorRule.createWorkflowInstance(PROCESS_ID);
-
-    streamProcessorRule.awaitElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    streamProcessor.blockAfterWorkflowInstanceRecord(
-        r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.UPDATE_PAYLOAD);
-
-    final WorkflowInstanceRecord payloadUpdate = createdEvent.getValue();
-    payloadUpdate.setPayload(MsgPackUtil.asMsgPack("key", "val"));
-
-    envRule.writeCommand(
-        createdEvent.getKey(), WorkflowInstanceIntent.UPDATE_PAYLOAD, payloadUpdate);
-    waitUntil(() -> streamProcessor.isBlocked());
-
-    // when
-    streamProcessor.restart();
-    streamProcessorRule.completeFirstJob();
-
-    // then
-    final TypedRecord<WorkflowInstanceRecord> completedEvent =
-        streamProcessorRule.awaitElementInState(
-            PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    MsgPackUtil.assertEquality(completedEvent.getValue().getPayload(), "{'key': 'val'}");
-  }
-
   @Test
   public void shouldRetryToOpenMessageSubscription() {
     // given
@@ -357,7 +326,8 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessor.blockAfterWorkflowInstanceRecord(
         isForElement("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED));
 
-    streamProcessorRule.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
+    streamProcessorRule.createWorkflowInstance(
+        r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("orderId", "order-123")));
 
     waitUntil(() -> streamProcessor.isBlocked());
 
@@ -373,6 +343,7 @@ public class WorkflowInstanceStreamProcessorTest {
     // then
     verify(streamProcessorRule.getMockSubscriptionCommandSender(), timeout(5_000).times(2))
         .openMessageSubscription(
+            0,
             catchEvent.getValue().getWorkflowInstanceKey(),
             catchEvent.getKey(),
             wrapString("order canceled"),
@@ -388,7 +359,8 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessor.blockAfterWorkflowInstanceRecord(
         isForElement("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED));
 
-    streamProcessorRule.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
+    streamProcessorRule.createWorkflowInstance(
+        r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("orderId", "order-123")));
 
     waitUntil(() -> streamProcessor.isBlocked());
 
@@ -418,7 +390,8 @@ public class WorkflowInstanceStreamProcessorTest {
     // given
     streamProcessorRule.deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
 
-    streamProcessorRule.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
+    streamProcessorRule.createWorkflowInstance(
+        r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("orderId", "order-123")));
 
     final TypedRecord<WorkflowInstanceRecord> catchEvent =
         streamProcessorRule.awaitElementInState(
@@ -461,7 +434,8 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessorRule.deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
 
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
-        streamProcessorRule.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
+        streamProcessorRule.createAndReceiveWorkflowInstance(
+            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("orderId", "order-123")));
 
     final TypedRecord<WorkflowInstanceRecord> catchEvent =
         streamProcessorRule.awaitElementInState(
@@ -503,7 +477,8 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessorRule.deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
 
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
-        streamProcessorRule.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
+        streamProcessorRule.createAndReceiveWorkflowInstance(
+            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("orderId", "order-123")));
 
     final TypedRecord<WorkflowInstanceRecord> catchEvent =
         streamProcessorRule.awaitElementInState(
@@ -534,8 +509,8 @@ public class WorkflowInstanceStreamProcessorTest {
   public void shouldRejectDuplicatedCloseWorkflowInstanceSubscription() {
     // given
     streamProcessorRule.deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
-
-    streamProcessorRule.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
+    streamProcessorRule.createWorkflowInstance(
+        r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("orderId", "order-123")));
 
     final TypedRecord<WorkflowInstanceRecord> catchEvent =
         streamProcessorRule.awaitElementInState(
@@ -570,7 +545,7 @@ public class WorkflowInstanceStreamProcessorTest {
     // given
     streamProcessorRule.deploy(TIMER_BOUNDARY_EVENT_WORKFLOW);
     streamProcessor.blockAfterJobEvent(r -> r.getMetadata().getIntent() == JobIntent.CREATED);
-    streamProcessorRule.createWorkflowInstance(PROCESS_ID);
+    streamProcessorRule.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     waitUntil(() -> streamProcessor.isBlocked());
 
@@ -626,7 +601,7 @@ public class WorkflowInstanceStreamProcessorTest {
         r ->
             r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
                 && r.getValue().getElementId().equals(wrapString("task")));
-    streamProcessorRule.createWorkflowInstance(PROCESS_ID);
+    streamProcessorRule.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     waitUntil(() -> streamProcessor.isBlocked());
 

@@ -25,18 +25,33 @@ import java.util.Objects;
 public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecordValue {
 
   private final long elementInstanceKey;
+  private final long workflowInstanceKey;
   private final long dueDate;
   private final String handlerFlowNodeId;
+  private final int repetitions;
+  private final long workflowKey;
 
   public TimerRecordValueImpl(
       ExporterObjectMapper objectMapper,
       long elementInstanceKey,
+      long workflowInstanceKey,
       long dueDate,
-      String handlerFlowNodeId) {
+      String handlerFlowNodeId,
+      int repetitions,
+      long workflowKey) {
     super(objectMapper);
     this.elementInstanceKey = elementInstanceKey;
     this.dueDate = dueDate;
     this.handlerFlowNodeId = handlerFlowNodeId;
+    this.workflowInstanceKey = workflowInstanceKey;
+
+    this.repetitions = repetitions;
+    this.workflowKey = workflowKey;
+  }
+
+  @Override
+  public long getWorkflowKey() {
+    return workflowKey;
   }
 
   @Override
@@ -55,41 +70,62 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(dueDate, elementInstanceKey, handlerFlowNodeId);
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKey;
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
+  public int getRepetitions() {
+    return repetitions;
+  }
+
+  @Override
+  public int hashCode() {
+
+    return Objects.hash(
+        elementInstanceKey,
+        workflowInstanceKey,
+        dueDate,
+        handlerFlowNodeId,
+        workflowKey,
+        repetitions);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
       return true;
     }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    final TimerRecordValueImpl other = (TimerRecordValueImpl) obj;
-    if (elementInstanceKey != other.elementInstanceKey) {
+    if (o == null || getClass() != o.getClass()) {
       return false;
     }
 
-    if (dueDate != other.dueDate) {
-      return false;
-    }
+    final TimerRecordValueImpl other = (TimerRecordValueImpl) o;
 
-    return handlerFlowNodeId.equals(other.handlerFlowNodeId);
+    return elementInstanceKey == other.elementInstanceKey
+        && workflowInstanceKey == other.workflowInstanceKey
+        && dueDate == other.dueDate
+        && repetitions == other.repetitions
+        && workflowKey == other.workflowKey
+        && Objects.equals(handlerFlowNodeId, other.handlerFlowNodeId);
   }
 
   @Override
   public String toString() {
-    return "TimerRecordValueImpl [elementInstanceKey="
+    return "TimerRecordValueImpl{"
+        + "elementInstanceKey="
         + elementInstanceKey
+        + ", workflowInstanceKey="
+        + workflowInstanceKey
+        + ", workflowKey="
+        + workflowKey
         + ", dueDate="
         + dueDate
-        + ", handlerFlowNodeId"
+        + ", repetitions="
+        + repetitions
+        + ", handlerFlowNodeId='"
         + handlerFlowNodeId
-        + "]";
+        + '\''
+        + '}';
   }
 }

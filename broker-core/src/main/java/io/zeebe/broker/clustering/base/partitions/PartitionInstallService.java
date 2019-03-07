@@ -35,6 +35,7 @@ import io.zeebe.broker.logstreams.state.StateStorageFactoryService;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftStateListener;
 import io.zeebe.raft.controller.MemberReplicateLogController;
@@ -100,14 +101,17 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     final CompositeServiceBuilder partitionInstall =
         startContext.createComposite(raftInstallServiceName);
 
-    final String snapshotPath = configuration.getSnapshotsDirectory().getAbsolutePath();
+    final String logDirectoryPath = configuration.getLogDirectory().getAbsolutePath();
+    final StateStorage stateStorage =
+        new StateStorage(
+            configuration.getBlockIndexDirectory(), configuration.getSnapshotsDirectory());
 
     logStreamServiceName =
         LogStreams.createFsLogStream(partitionId)
-            .logDirectory(configuration.getLogDirectory().getAbsolutePath())
             .logSegmentSize((int) configuration.getLogSegmentSize())
+            .logDirectory(logDirectoryPath)
             .logName(logName)
-            .snapshotStorage(LogStreams.createFsSnapshotStore(snapshotPath).build())
+            .indexStateStorage(stateStorage)
             .buildWith(partitionInstall);
 
     final StateStorageFactoryService stateStorageFactoryService =

@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.state;
 
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
@@ -61,7 +62,7 @@ public class ElementInstanceState {
 
   private final VariablesState variablesState;
 
-  public ElementInstanceState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public ElementInstanceState(ZeebeDb<ZbColumnFamilies> zeebeDb, KeyGenerator keyGenerator) {
 
     elementInstanceKey = new DbLong();
     parentKey = new DbLong();
@@ -91,7 +92,7 @@ public class ElementInstanceState {
             recordParentStateRecordKey,
             DbNil.INSTANCE);
 
-    variablesState = new VariablesState(zeebeDb);
+    variablesState = new VariablesState(zeebeDb, keyGenerator);
   }
 
   public ElementInstance newInstance(

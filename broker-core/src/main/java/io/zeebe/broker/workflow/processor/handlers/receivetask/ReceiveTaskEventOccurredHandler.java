@@ -41,10 +41,9 @@ public class ReceiveTaskEventOccurredHandler<T extends ExecutableReceiveTask>
 
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
-    final EventTrigger event = getTriggeredEvent(context);
+    final EventTrigger event = getTriggeredEvent(context, context.getRecord().getKey());
     if (event.getElementId().equals(context.getElement().getId())) {
-      context.getValue().setPayload(event.getPayload());
-      handleEvent(context, context.getRecord().getKey(), event);
+      handleEvent(context, context.getRecord().getKey(), context.getRecord().getKey(), event);
       transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
 
       return true;

@@ -59,4 +59,9 @@ public class TypedEventImpl implements TypedRecord {
   public UnpackedObject getValue() {
     return value;
   }
+
+  @Override
+  public String toString() {
+    return "TypedEventImpl{" + "metadata=" + metadata + ", value=" + value + '}';
+  }
 }

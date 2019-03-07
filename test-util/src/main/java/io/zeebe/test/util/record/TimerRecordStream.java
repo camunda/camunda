@@ -48,4 +48,12 @@ public class TimerRecordStream extends ExporterRecordStream<TimerRecordValue, Ti
   public TimerRecordStream withHandlerNodeId(final DirectBuffer handlerNodeId) {
     return withHandlerNodeId(bufferAsString(handlerNodeId));
   }
+
+  public TimerRecordStream withRepetitions(final int repetitions) {
+    return valueFilter(v -> v.getRepetitions() == repetitions);
+  }
+
+  public TimerRecordStream withWorkflowKey(final long workflowKey) {
+    return valueFilter(v -> v.getWorkflowKey() == workflowKey);
+  }
 }

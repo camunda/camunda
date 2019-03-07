@@ -29,9 +29,9 @@ import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -62,18 +62,16 @@ public class JobFailIncidentTest {
           .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("$.foo", "$.foo"))
           .done();
 
-  private static final byte[] PAYLOAD;
+  private static final DirectBuffer PAYLOAD;
 
   static {
-    final DirectBuffer buffer =
+    PAYLOAD =
         MsgPackUtil.encodeMsgPack(
             p -> {
               p.packMapHeader(1);
               p.packString("foo");
               p.packString("bar");
             });
-    PAYLOAD = new byte[buffer.capacity()];
-    buffer.getBytes(0, PAYLOAD);
   }
 
   @Before
@@ -87,7 +85,10 @@ public class JobFailIncidentTest {
     // given
     testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process", PAYLOAD);
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(PAYLOAD))
+            .getInstanceKey();
 
     // when
     failJobWithNoRetriesLeft();
@@ -118,7 +119,10 @@ public class JobFailIncidentTest {
     // given
     testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process", PAYLOAD);
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(PAYLOAD))
+            .getInstanceKey();
 
     // when
     createIncidentWithJobWitMessage("failed job");
@@ -149,7 +153,10 @@ public class JobFailIncidentTest {
     // given
     testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process", PAYLOAD);
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(PAYLOAD))
+            .getInstanceKey();
 
     // when
     failJobWithMessage(1, "first message");
@@ -176,7 +183,10 @@ public class JobFailIncidentTest {
     // given
     testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process", PAYLOAD);
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(PAYLOAD))
+            .getInstanceKey();
 
     failJobWithNoRetriesLeft();
     final Record<IncidentRecordValue> incidentCreatedEvent =
@@ -242,7 +252,10 @@ public class JobFailIncidentTest {
     // given
     testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process", PAYLOAD);
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(PAYLOAD))
+            .getInstanceKey();
 
     failJobWithNoRetriesLeft();
 

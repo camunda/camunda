@@ -42,8 +42,10 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayOutputStream;
@@ -75,9 +77,8 @@ public class IncidentStreamProcessorRule extends ExternalResource {
     mockTopologyManager = mock(TopologyManager.class);
     mockTimerEventScheduler = mock(DueDateTimerChecker.class);
 
-    when(mockSubscriptionCommandSender.hasPartitionIds()).thenReturn(true);
     when(mockSubscriptionCommandSender.openMessageSubscription(
-            anyLong(), anyLong(), any(), any(), anyBoolean()))
+            anyInt(), anyLong(), anyLong(), any(), any(), anyBoolean()))
         .thenReturn(true);
     when(mockSubscriptionCommandSender.correlateMessageSubscription(
             anyInt(), anyLong(), anyLong(), any()))
@@ -96,7 +97,8 @@ public class IncidentStreamProcessorRule extends ExternalResource {
                   zeebeState,
                   mockSubscriptionCommandSender,
                   mockTopologyManager,
-                  mockTimerEventScheduler);
+                  mockTimerEventScheduler,
+                  1);
 
           IncidentEventProcessors.addProcessors(
               typedEventStreamProcessorBuilder, zeebeState, stepProcessor);
@@ -145,20 +147,20 @@ public class IncidentStreamProcessorRule extends ExternalResource {
   public TypedRecord<WorkflowInstanceRecord> createWorkflowInstance(
       final String processId, final DirectBuffer payload) {
     environmentRule.writeCommand(
-        WorkflowInstanceIntent.CREATE,
-        workflowInstanceRecord(BufferUtil.wrapString(processId), payload));
+        WorkflowInstanceCreationIntent.CREATE,
+        workflowInstanceCreationRecord(BufferUtil.wrapString(processId), payload));
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
         awaitAndGetFirstRecordInState(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     return createdEvent;
   }
 
-  private static WorkflowInstanceRecord workflowInstanceRecord(
+  private static WorkflowInstanceCreationRecord workflowInstanceCreationRecord(
       final DirectBuffer processId, final DirectBuffer payload) {
-    final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
+    final WorkflowInstanceCreationRecord record = new WorkflowInstanceCreationRecord();
 
-    record.setWorkflowKey(1);
+    record.setKey(1);
     record.setBpmnProcessId(processId);
-    record.setPayload(payload);
+    record.setVariables(payload);
 
     return record;
   }

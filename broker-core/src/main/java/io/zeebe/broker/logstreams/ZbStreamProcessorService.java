@@ -133,7 +133,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
       TypedStreamEnvironment streamEnvironment,
       ZeebeState zeebeState) {
     final TypedEventStreamProcessorBuilder typedProcessorBuilder =
-        streamEnvironment.newStreamProcessor().keyGenerator(zeebeState.getKeyGenerator());
+        streamEnvironment.newStreamProcessor().zeebeState(zeebeState);
 
     addDistributeDeploymentProcessors(zeebeState, streamEnvironment, typedProcessorBuilder);
     final BpmnStepProcessor stepProcessor =
@@ -169,14 +169,15 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
   private BpmnStepProcessor addWorkflowProcessors(
       ZeebeState zeebeState, TypedEventStreamProcessorBuilder typedProcessorBuilder) {
     final SubscriptionCommandSender subscriptionCommandSender =
-        new SubscriptionCommandSender(clusterCfg, subscriptionApiClientInjector.getValue());
+        new SubscriptionCommandSender(subscriptionApiClientInjector.getValue());
     final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getWorkflowState());
     return WorkflowEventProcessors.addWorkflowProcessors(
         typedProcessorBuilder,
         zeebeState,
         subscriptionCommandSender,
         topologyManager,
-        timerChecker);
+        timerChecker,
+        clusterCfg.getPartitionsCount());
   }
 
   public void addDeploymentRelatedProcessorAndServices(
@@ -185,7 +186,8 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
       ZeebeState zeebeState,
       TypedEventStreamProcessorBuilder typedProcessorBuilder) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
-    if (partitionId == Protocol.DEPLOYMENT_PARTITION) {
+    final boolean isDepoymentPartition = partitionId == Protocol.DEPLOYMENT_PARTITION;
+    if (isDepoymentPartition) {
       typedProcessorBuilder.withListener(
           new WorkflowRepository(
               clientApiTransport,
@@ -197,7 +199,9 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
           typedProcessorBuilder,
           zeebeState,
           new CatchEventBehavior(
-              zeebeState, new SubscriptionCommandSender(clusterCfg, managementApi)));
+              zeebeState,
+              new SubscriptionCommandSender(managementApi),
+              clusterCfg.getPartitionsCount()));
     } else {
       DeploymentEventProcessors.addDeploymentCreateProcessor(typedProcessorBuilder, workflowState);
     }
@@ -205,7 +209,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
     typedProcessorBuilder.onEvent(
         ValueType.DEPLOYMENT,
         DeploymentIntent.CREATED,
-        new DeploymentCreatedProcessor(workflowState));
+        new DeploymentCreatedProcessor(workflowState, isDepoymentPartition));
   }
 
   private void addIncidentProcessors(
@@ -223,7 +227,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
   private void addMessageProcessors(
       ZeebeState zeebeState, TypedEventStreamProcessorBuilder typedProcessorBuilder) {
     final SubscriptionCommandSender subscriptionCommandSender =
-        new SubscriptionCommandSender(clusterCfg, getSubscriptionApiClientInjector().getValue());
+        new SubscriptionCommandSender(getSubscriptionApiClientInjector().getValue());
     MessageEventProcessors.addMessageProcessors(
         typedProcessorBuilder, zeebeState, subscriptionCommandSender, topologyManager);
   }

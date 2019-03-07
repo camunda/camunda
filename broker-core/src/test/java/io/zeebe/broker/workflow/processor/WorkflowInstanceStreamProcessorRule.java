@@ -29,10 +29,14 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.job.JobEventProcessors;
+import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.broker.util.CopiedTypedEvent;
+import io.zeebe.broker.util.Records;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.util.TypedRecordStream;
@@ -41,17 +45,26 @@ import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.ActorControl;
 import java.io.ByteArrayOutputStream;
+import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -59,7 +72,9 @@ import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
-public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
+@SuppressWarnings("unchecked")
+public class WorkflowInstanceStreamProcessorRule extends ExternalResource
+    implements StreamProcessorLifecycleAware {
 
   public static final int VERSION = 1;
   public static final int WORKFLOW_KEY = 123;
@@ -74,6 +89,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
   private StreamProcessorControl streamProcessor;
   private WorkflowState workflowState;
   private ZeebeState zeebeState;
+  private ActorControl actor;
 
   public WorkflowInstanceStreamProcessorRule(StreamProcessorRule streamProcessorRule) {
     this.environmentRule = streamProcessorRule;
@@ -84,13 +100,12 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
   }
 
   @Override
-  protected void before() {
+  protected void before() throws Exception {
     mockSubscriptionCommandSender = mock(SubscriptionCommandSender.class);
     mockTopologyManager = mock(TopologyManager.class);
 
-    when(mockSubscriptionCommandSender.hasPartitionIds()).thenReturn(true);
     when(mockSubscriptionCommandSender.openMessageSubscription(
-            anyLong(), anyLong(), any(), any(), anyBoolean()))
+            anyInt(), anyLong(), anyLong(), any(), any(), anyBoolean()))
         .thenReturn(true);
     when(mockSubscriptionCommandSender.correlateMessageSubscription(
             anyInt(), anyLong(), anyLong(), any()))
@@ -109,10 +124,11 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
                   zeebeState,
                   mockSubscriptionCommandSender,
                   mockTopologyManager,
-                  new DueDateTimerChecker(workflowState));
+                  new DueDateTimerChecker(workflowState),
+                  1);
 
               JobEventProcessors.addJobProcessors(typedEventStreamProcessorBuilder, zeebeState);
-
+              typedEventStreamProcessorBuilder.withListener(this);
               return typedEventStreamProcessorBuilder.build();
             });
   }
@@ -146,25 +162,37 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
         .setBpmnProcessId(BufferUtil.wrapString(process.getId()))
         .setVersion(version);
 
-    workflowState.putDeployment(deploymentKey, record);
+    actor.call(() -> workflowState.putDeployment(deploymentKey, record)).join();
   }
 
   public void deploy(final BpmnModelInstance modelInstance) {
     deploy(modelInstance, DEPLOYMENT_KEY, VERSION);
   }
 
-  public TypedRecord<WorkflowInstanceRecord> createWorkflowInstance(final String processId) {
-    return createWorkflowInstance(processId, wrapString(""));
+  public TypedRecord<WorkflowInstanceRecord> createAndReceiveWorkflowInstance(
+      Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> transformer) {
+    final TypedRecord<WorkflowInstanceCreationRecord> createdRecord =
+        createWorkflowInstance(transformer);
+
+    return awaitAndGetFirstWorkflowInstanceRecord(
+        r ->
+            r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATING
+                && r.getKey() == createdRecord.getValue().getInstanceKey());
   }
 
-  public TypedRecord<WorkflowInstanceRecord> createWorkflowInstance(
-      final String processId, final DirectBuffer payload) {
-    environmentRule.writeCommand(
-        WorkflowInstanceIntent.CREATE,
-        workflowInstanceRecord(BufferUtil.wrapString(processId), payload));
-    final TypedRecord<WorkflowInstanceRecord> createdEvent =
-        awaitAndGetFirstRecordInState(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    return createdEvent;
+  public TypedRecord<WorkflowInstanceCreationRecord> createWorkflowInstance(
+      Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> transformer) {
+    final long position =
+        environmentRule.writeCommand(
+            WorkflowInstanceCreationIntent.CREATE,
+            transformer.apply(new WorkflowInstanceCreationRecord()));
+
+    return awaitAndGetFirstRecord(
+        ValueType.WORKFLOW_INSTANCE_CREATION,
+        (e, r) ->
+            e.getSourceEventPosition() == position
+                && r.getMetadata().getIntent() == WorkflowInstanceCreationIntent.CREATED,
+        new WorkflowInstanceCreationRecord());
   }
 
   public void completeFirstJob() {
@@ -174,14 +202,39 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
     environmentRule.writeEvent(jobKey, JobIntent.COMPLETED, createCommand.getValue());
   }
 
-  private static WorkflowInstanceRecord workflowInstanceRecord(
-      final DirectBuffer processId, final DirectBuffer payload) {
-    final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
+  public TypedRecord<WorkflowInstanceRecord> awaitAndGetFirstWorkflowInstanceRecord(
+      Predicate<TypedRecord<WorkflowInstanceRecord>> matcher) {
+    return awaitAndGetFirstRecord(
+        ValueType.WORKFLOW_INSTANCE, matcher, WorkflowInstanceRecord.class);
+  }
 
-    record.setBpmnProcessId(processId);
-    record.setPayload(payload);
+  public <T extends UnpackedObject> TypedRecord<T> awaitAndGetFirstRecord(
+      ValueType valueType, Predicate<TypedRecord<T>> matcher, Class<T> valueClass) {
+    return doRepeatedly(
+            () ->
+                environmentRule
+                    .events()
+                    .filter(r -> Records.isRecordOfType(r, valueType))
+                    .map(e -> CopiedTypedEvent.toTypedEvent(e, valueClass))
+                    .filter(matcher)
+                    .findFirst())
+        .until(Optional::isPresent)
+        .orElse(null);
+  }
 
-    return record;
+  public <T extends UnpackedObject> TypedRecord<T> awaitAndGetFirstRecord(
+      ValueType valueType, BiFunction<CopiedTypedEvent, TypedRecord<T>, Boolean> matcher, T value) {
+    return (TypedRecord)
+        doRepeatedly(
+                () ->
+                    environmentRule
+                        .events()
+                        .filter(r -> Records.isRecordOfType(r, valueType))
+                        .map(e -> new CopiedTypedEvent(e, value))
+                        .filter(e -> matcher.apply(e, e))
+                        .findFirst())
+            .until(Optional::isPresent)
+            .orElse(null);
   }
 
   private TypedRecord<WorkflowInstanceRecord> awaitAndGetFirstRecordInState(
@@ -264,5 +317,20 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
     waitUntil(() -> lookupStream.get().findFirst().isPresent());
     return lookupStream.get().findFirst().get();
+  }
+
+  @Override
+  public void onOpen(TypedStreamProcessor streamProcessor) {
+    actor = streamProcessor.getActor();
+  }
+
+  @Override
+  public void onRecovered(TypedStreamProcessor streamProcessor) {
+    // recovered
+  }
+
+  @Override
+  public void onClose() {
+    actor = null;
   }
 }

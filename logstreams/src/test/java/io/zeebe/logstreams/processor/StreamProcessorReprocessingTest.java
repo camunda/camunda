@@ -19,6 +19,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -43,6 +44,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
@@ -156,7 +158,6 @@ public class StreamProcessorReprocessingTest {
     verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
-    verify(eventProcessor, times(2)).updateState();
   }
 
   @Test
@@ -179,7 +180,43 @@ public class StreamProcessorReprocessingTest {
     verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(2)).executeSideEffects();
     verify(eventProcessor, times(2)).writeEvent(any());
-    verify(eventProcessor, times(2)).updateState();
+  }
+
+  @Test
+  public void shouldCallProcessingFailedOnReprocessingError() {
+    // given
+    final long eventPosition1 = writeEvent();
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 =
+        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition2));
+
+    // when
+    openStreamProcessorController(
+        () -> {
+          final EventProcessor eventProcessorSpy = streamProcessor.getEventProcessorSpy();
+          final AtomicLong count = new AtomicLong(0);
+          doAnswer(
+                  (invocationOnMock) -> {
+                    if (count.getAndIncrement() == 0) {
+                      throw new RuntimeException("expected");
+                    } else {
+                      return invocationOnMock.callRealMethod();
+                    }
+                  })
+              .when(eventProcessorSpy)
+              .processEvent();
+        });
+    waitUntilProcessedAndFailedCountReached(2, 1);
+
+    // then
+    assertThat(streamProcessor.getEvents())
+        .extracting(LoggedEvent::getPosition)
+        .containsExactly(eventPosition1, eventPosition2, eventPosition3);
+
+    verify(eventProcessor, times(3)).processEvent();
+    verify(eventProcessor, times(1)).processingFailed(any());
+    verify(eventProcessor, times(1)).executeSideEffects();
+    verify(eventProcessor, times(1)).writeEvent(any());
   }
 
   @Test
@@ -204,7 +241,6 @@ public class StreamProcessorReprocessingTest {
     verify(eventProcessor, times(3)).processEvent();
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
-    verify(eventProcessor, times(3)).updateState();
   }
 
   @Test
@@ -228,7 +264,6 @@ public class StreamProcessorReprocessingTest {
     verify(eventProcessor, times(3)).processEvent();
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
-    verify(eventProcessor, times(3)).updateState();
   }
 
   @Test
@@ -253,7 +288,6 @@ public class StreamProcessorReprocessingTest {
     verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
-    verify(eventProcessor, times(2)).updateState();
   }
 
   @Test
@@ -279,28 +313,51 @@ public class StreamProcessorReprocessingTest {
     verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
-    verify(eventProcessor, times(2)).updateState();
   }
 
   @Test
-  public void shouldFailOnReprocessing() {
+  public void shouldSkipEventOnEventError() {
     // given [1|S:-] --> [2|S:1]
     final long eventPosition1 = writeEvent();
     writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
+
     final ActorFuture<StreamProcessorService> future =
         openStreamProcessorControllerAsync(
             () -> {
-              doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent();
+              doThrow(new RuntimeException("expected")).when(streamProcessor).onEvent(any());
             });
 
     // when
     waitUntil(() -> future.isDone());
 
     // then
-    verify(streamProcessor, times(0)).onRecovered();
+    verify(streamProcessor, times(1)).onRecovered();
+  }
+
+  @Test
+  public void shouldSkipEventOnReprocessingError() {
+    // given [1|S:-] --> [2|S:1]
+    final long eventPosition1 = writeEvent();
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 =
+        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition2));
+
+    openStreamProcessorController(
+        () -> {
+          doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent();
+        });
+
+    // when
+    waitUntilProcessedAndFailedCountReached(0, 3);
+
+    // then
     assertThat(streamProcessor.getEvents())
         .extracting(LoggedEvent::getPosition)
-        .containsExactly(eventPosition1);
+        .containsExactly(eventPosition1, eventPosition2, eventPosition3);
+
+    verify(streamProcessor, times(1)).onRecovered();
+    verify(eventProcessor, times(3)).processEvent();
+    verify(eventProcessor, times(3)).processingFailed(any());
   }
 
   @Test
@@ -332,7 +389,6 @@ public class StreamProcessorReprocessingTest {
     verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(2)).executeSideEffects();
     verify(eventProcessor, times(2)).writeEvent(any());
-    verify(eventProcessor, times(2)).updateState();
   }
 
   @Test
@@ -456,5 +512,12 @@ public class StreamProcessorReprocessingTest {
           wr.accept(w);
         },
         true);
+  }
+
+  private void waitUntilProcessedAndFailedCountReached(int processCount, int failedCount) {
+    waitUntil(
+        () ->
+            streamProcessor.getProcessedEventCount() == processCount
+                && streamProcessor.getProcessingFailedCount() == failedCount);
   }
 }

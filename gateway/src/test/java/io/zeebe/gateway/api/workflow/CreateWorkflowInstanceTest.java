@@ -22,8 +22,8 @@ import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
+import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import org.junit.Test;
 
 public class CreateWorkflowInstanceTest extends GatewayTest {
@@ -47,10 +47,10 @@ public class CreateWorkflowInstanceTest extends GatewayTest {
     assertThat(response.getWorkflowInstanceKey()).isEqualTo(stub.getWorkflowInstanceKey());
 
     final BrokerCreateWorkflowInstanceRequest brokerRequest = gateway.getSingleBrokerRequest();
-    assertThat(brokerRequest.getIntent()).isEqualTo(WorkflowInstanceIntent.CREATE);
-    assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE);
+    assertThat(brokerRequest.getIntent()).isEqualTo(WorkflowInstanceCreationIntent.CREATE);
+    assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE_CREATION);
 
-    final WorkflowInstanceRecord brokerRequestValue = brokerRequest.getRequestWriter();
-    assertThat(brokerRequestValue.getWorkflowKey()).isEqualTo(stub.getWorkflowKey());
+    final WorkflowInstanceCreationRecord brokerRequestValue = brokerRequest.getRequestWriter();
+    assertThat(brokerRequestValue.getKey()).isEqualTo(stub.getWorkflowKey());
   }
 }

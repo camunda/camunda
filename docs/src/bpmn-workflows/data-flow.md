@@ -52,26 +52,6 @@ XML representation:
 ```
 
 When no output mapping is defined, the job payload is by default merged into the workflow instance payload.
-This default output behavior is configurable via the `outputBehavior` attribute on the `<ioMapping>` tag.
-It accepts three differents values:
-
- * **MERGE** merges the job payload into the workflow instance payload, if no output mapping is specified.  If output mappings are specified, then the payloads are merged according to those.
- *This is the default output behavior.*
- * **OVERWRITE** overwrites the workflow instance payload with the job payload. If output mappings are specified, then the content is extracted from the job payload, which then overwrites the workflow instance payload.
- * **NONE** indicates that the worker does not produce any output. Output mappings cannot be used in combination with this behavior. The Job payload is simply ignored on job completion and the workflow instance payload remains unchanged.
-
-Example:
-
-```xml
-<serviceTask id="collectMoney">
-    <extensionElements>
-      <zeebe:ioMapping outputBehavior="overwrite">
-        <zeebe:input source="$.price" target="$.total"/>
-        <zeebe:output source="$.paymentMethod" target="$.paymentMethod"/>
-       </zeebe:ioMapping>
-    </extensionElements>
-</serviceTask>
-```
 
 ## Additional Resources
 

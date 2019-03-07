@@ -22,8 +22,8 @@ import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.DeployWorkflowCommandStep1;
 import io.zeebe.client.api.commands.PublishMessageCommandStep1;
 import io.zeebe.client.api.commands.ResolveIncidentCommandStep1;
+import io.zeebe.client.api.commands.SetVariablesCommandStep1;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
-import io.zeebe.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.UpdateRetriesJobCommandStep1;
 import io.zeebe.client.api.commands.WorkflowRequestStep1;
 import io.zeebe.client.api.commands.WorkflowResourceRequestStep1;
@@ -103,7 +103,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .newCreateInstanceCommand()
    *  .bpmnProcessId("my-process")
    *  .latestVersion()
-   *  .payload(json)
+   *  .variables(json)
    *  .send();
    * </pre>
    *
@@ -126,19 +126,20 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   CancelWorkflowInstanceCommandStep1 newCancelInstanceCommand(long workflowInstanceKey);
 
   /**
-   * Command to update the payload of a workflow instance.
+   * Command to set and/or update the variables of a given flow element (e.g. workflow instance,
+   * task, etc.)
    *
    * <pre>
    * zeebeClient
-   *  .newUpdatePayloadCommand(elementInstanceKey)
-   *  .payload(json)
+   *  .newSetVariablesCommand(elementInstanceKey)
+   *  .variables(json)
    *  .send();
    * </pre>
    *
-   * @param elementInstanceKey the key of the element instance to update the payload for
+   * @param elementInstanceKey the key of the element instance to set/update the variables for
    * @return a builder for the command
    */
-  UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(long elementInstanceKey);
+  SetVariablesCommandStep1 newSetVariablesCommand(long elementInstanceKey);
 
   /**
    * Command to publish a message which can be correlated to a workflow instance.

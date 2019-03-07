@@ -125,7 +125,7 @@ public class StreamProcessorRule implements TestRule {
         (db) -> {
           zeebeState = new ZeebeState(db);
           final TypedEventStreamProcessorBuilder processorBuilder =
-              streamEnvironment.newStreamProcessor().keyGenerator(zeebeState.getKeyGenerator());
+              streamEnvironment.newStreamProcessor().zeebeState(zeebeState);
 
           return factory.apply(processorBuilder, db);
         });
@@ -204,10 +204,7 @@ public class StreamProcessorRule implements TestRule {
 
       streams =
           new TestStreams(
-              tempFolder.getRoot(),
-              closeables,
-              serviceContainerRule.get(),
-              actorSchedulerRule.get());
+              tempFolder, closeables, serviceContainerRule.get(), actorSchedulerRule.get());
       streams.createLogStream(STREAM_NAME, partitionId);
 
       streams

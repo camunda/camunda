@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import io.zeebe.broker.Loggers;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -24,22 +26,29 @@ import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.WorkflowInstanceRelatedIntent;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.sched.ActorControl;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
+import org.slf4j.Logger;
 
 @SuppressWarnings({"unchecked"})
 public class TypedStreamProcessor implements StreamProcessor {
 
+  private static final Logger LOG = Loggers.WORKFLOW_PROCESSOR_LOGGER;
+
   protected final ServerOutput output;
   protected final RecordProcessorMap recordProcessors;
   protected final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
-  private final KeyGenerator keyGenerator;
+  protected final ZeebeState zeebeState;
 
   protected final RecordMetadata metadata = new RecordMetadata();
   protected final EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry;
@@ -58,11 +67,11 @@ public class TypedStreamProcessor implements StreamProcessor {
       final RecordProcessorMap recordProcessors,
       final List<StreamProcessorLifecycleAware> lifecycleListeners,
       final EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry,
-      final KeyGenerator keyGenerator,
+      final ZeebeState zeebeState,
       final TypedStreamEnvironment environment) {
     this.output = output;
     this.recordProcessors = recordProcessors;
-    this.keyGenerator = keyGenerator;
+    this.zeebeState = zeebeState;
     recordProcessors.values().forEachRemaining(p -> this.lifecycleListeners.add(p));
 
     this.lifecycleListeners.addAll(lifecycleListeners);
@@ -77,10 +86,10 @@ public class TypedStreamProcessor implements StreamProcessor {
   @Override
   public void onOpen(final StreamProcessorContext context) {
     final LogStream logStream = context.getLogStream();
-    this.streamWriter = new TypedStreamWriterImpl(logStream, eventRegistry, keyGenerator);
+    this.streamWriter = new TypedStreamWriterImpl(logStream, eventRegistry, getKeyGenerator());
 
     this.eventProcessorWrapper =
-        new DelegatingEventProcessor(context.getId(), output, logStream, streamWriter);
+        new DelegatingEventProcessor(context.getId(), output, logStream, streamWriter, zeebeState);
 
     this.actor = context.getActorControl();
     this.streamProcessorContext = context;
@@ -120,17 +129,16 @@ public class TypedStreamProcessor implements StreamProcessor {
     }
   }
 
-  public MetadataFilter buildTypeFilter() {
-    return m ->
-        recordProcessors.containsKey(m.getRecordType(), m.getValueType(), m.getIntent().value());
-  }
-
   protected static class DelegatingEventProcessor implements EventProcessor {
+
+    public static final String PROCESSING_ERROR_MESSAGE =
+        "Expected to process event %s without errors, but exception occurred with message %s .";
 
     protected final int streamProcessorId;
     protected final LogStream logStream;
     protected final TypedStreamWriterImpl writer;
     protected final TypedResponseWriterImpl responseWriter;
+    private final ZeebeState zeebeState;
 
     protected TypedRecordProcessor<?> eventProcessor;
     protected TypedEventImpl event;
@@ -141,11 +149,13 @@ public class TypedStreamProcessor implements StreamProcessor {
         final int streamProcessorId,
         final ServerOutput output,
         final LogStream logStream,
-        final TypedStreamWriterImpl writer) {
+        final TypedStreamWriterImpl writer,
+        final ZeebeState zeebeState) {
       this.streamProcessorId = streamProcessorId;
       this.logStream = logStream;
       this.writer = writer;
       this.responseWriter = new TypedResponseWriterImpl(output, logStream.getPartitionId());
+      this.zeebeState = zeebeState;
     }
 
     public void wrap(
@@ -159,16 +169,65 @@ public class TypedStreamProcessor implements StreamProcessor {
 
     @Override
     public void processEvent() {
-      writer.reset();
-      responseWriter.reset();
-
-      this.writer.configureSourceContext(streamProcessorId, position);
+      resetOutput();
 
       // default side effect is responses; can be changed by processor
       sideEffectProducer = responseWriter;
 
-      eventProcessor.processRecord(
-          position, event, responseWriter, writer, this::setSideEffectProducer);
+      final boolean isNotOnBlacklist = !zeebeState.isOnBlacklist(event);
+      if (isNotOnBlacklist) {
+        eventProcessor.processRecord(
+            position, event, responseWriter, writer, this::setSideEffectProducer);
+      }
+    }
+
+    @Override
+    public void processingFailed(Exception exception) {
+      resetOutput();
+
+      final String errorMessage =
+          String.format(PROCESSING_ERROR_MESSAGE, event, exception.getMessage());
+      LOG.error(errorMessage, exception);
+
+      if (event.metadata.getRecordType() == RecordType.COMMAND) {
+        sendCommandRejectionOnException(errorMessage);
+        writeCommandRejectionOnException(errorMessage);
+      }
+
+      final Intent intent = event.getMetadata().getIntent();
+      if (shouldBeBlacklisted(intent)) {
+        zeebeState.blacklist(event);
+      }
+    }
+
+    private boolean shouldBeBlacklisted(Intent intent) {
+
+      if (isWorkflowInstanceRelated(intent)) {
+        final WorkflowInstanceRelatedIntent workflowInstanceRelatedIntent =
+            (WorkflowInstanceRelatedIntent) intent;
+
+        return workflowInstanceRelatedIntent.shouldBlacklistInstanceOnError();
+      }
+
+      return false;
+    }
+
+    private boolean isWorkflowInstanceRelated(Intent intent) {
+      return intent instanceof WorkflowInstanceRelatedIntent;
+    }
+
+    private void resetOutput() {
+      responseWriter.reset();
+      writer.reset();
+      this.writer.configureSourceContext(streamProcessorId, position);
+    }
+
+    private void writeCommandRejectionOnException(String errorMessage) {
+      writer.appendRejection(event, RejectionType.PROCESSING_ERROR, errorMessage);
+    }
+
+    private void sendCommandRejectionOnException(String errorMessage) {
+      responseWriter.writeRejectionOnCommand(event, RejectionType.PROCESSING_ERROR, errorMessage);
     }
 
     public void setSideEffectProducer(final SideEffectProducer sideEffectProducer) {
@@ -199,7 +258,7 @@ public class TypedStreamProcessor implements StreamProcessor {
   }
 
   public KeyGenerator getKeyGenerator() {
-    return keyGenerator;
+    return zeebeState.getKeyGenerator();
   }
 
   public TypedStreamWriterImpl getStreamWriter() {

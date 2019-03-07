@@ -35,6 +35,7 @@ import org.agrona.io.DirectBufferInputStream;
 public class ExecuteCommandResponse implements BufferReader {
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ExecuteCommandResponseDecoder responseDecoder = new ExecuteCommandResponseDecoder();
+  private final DirectBuffer responseBuffer = new UnsafeBuffer();
   protected final ErrorResponse errorResponse;
 
   protected final MsgPackHelper msgPackHelper;
@@ -116,6 +117,7 @@ public class ExecuteCommandResponse implements BufferReader {
     valueLengthOffset = responseDecoder.limit();
     final int valueLength = responseDecoder.valueLength();
     final int valueOffset = valueLengthOffset + ExecuteCommandResponseDecoder.valueHeaderLength();
+    this.responseBuffer.wrap(responseBuffer, valueOffset, valueLength);
 
     try (InputStream is = new DirectBufferInputStream(responseBuffer, valueOffset, valueLength)) {
       value = msgPackHelper.readMsgPack(is);
@@ -125,5 +127,10 @@ public class ExecuteCommandResponse implements BufferReader {
 
     responseDecoder.limit(valueOffset + valueLength);
     rejectionReason = responseDecoder.rejectionReason();
+  }
+
+  public <T extends BufferReader> T readInto(T record) {
+    record.wrap(responseBuffer, 0, responseBuffer.capacity());
+    return record;
   }
 }

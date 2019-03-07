@@ -55,6 +55,7 @@ import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.WorkflowInstances;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.util.Map;
@@ -417,8 +418,8 @@ public class BrokerReprocessingTest {
 
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(instanceEvent.getWorkflowInstanceKey())
-        .payload("{\"foo\":\"bar\"}")
+        .newSetVariablesCommand(instanceEvent.getWorkflowInstanceKey())
+        .variables("{\"foo\":\"bar\"}")
         .send()
         .join();
 
@@ -451,8 +452,8 @@ public class BrokerReprocessingTest {
 
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(instanceEvent.getWorkflowInstanceKey())
-        .payload("{\"x\":\"y\"}")
+        .newSetVariablesCommand(instanceEvent.getWorkflowInstanceKey())
+        .variables("{\"x\":\"y\"}")
         .send()
         .join();
 
@@ -467,8 +468,8 @@ public class BrokerReprocessingTest {
 
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(instanceEvent.getWorkflowInstanceKey())
-        .payload("{\"foo\":\"bar\"}")
+        .newSetVariablesCommand(instanceEvent.getWorkflowInstanceKey())
+        .variables("{\"foo\":\"bar\"}")
         .send()
         .join();
 
@@ -624,13 +625,9 @@ public class BrokerReprocessingTest {
                 .exists())
         .isTrue();
 
-    assertWorkflowInstanceCompleted(
-        PROCESS_ID,
-        (workflowInstance) -> {
-          assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
-          assertThat(workflowInstance.getPayloadAsMap())
-              .containsOnly(entry("orderId", "order-123"), entry("foo", "bar"));
-        });
+    assertWorkflowInstanceCompleted(workflowInstanceKey);
+    assertThat(WorkflowInstances.getCurrentVariables(workflowInstanceKey))
+        .containsOnly(entry("foo", "\"bar\""), entry("orderId", "\"order-123\""));
   }
 
   @Test
@@ -652,13 +649,9 @@ public class BrokerReprocessingTest {
         .isTrue();
 
     // then
-    assertWorkflowInstanceCompleted(
-        PROCESS_ID,
-        (workflowInstance) -> {
-          assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
-          assertThat(workflowInstance.getPayloadAsMap())
-              .containsOnly(entry("orderId", "order-123"), entry("foo", "bar"));
-        });
+    assertWorkflowInstanceCompleted(workflowInstanceKey);
+    assertThat(WorkflowInstances.getCurrentVariables(workflowInstanceKey))
+        .containsOnly(entry("foo", "\"bar\""), entry("orderId", "\"order-123\""));
   }
 
   @Test
@@ -693,13 +686,13 @@ public class BrokerReprocessingTest {
   }
 
   protected WorkflowInstanceEvent startWorkflowInstance(
-      final String bpmnProcessId, final Map<String, Object> payload) {
+      final String bpmnProcessId, final Map<String, Object> variables) {
     return clientRule
         .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(bpmnProcessId)
         .latestVersion()
-        .payload(payload)
+        .variables(variables)
         .send()
         .join();
   }

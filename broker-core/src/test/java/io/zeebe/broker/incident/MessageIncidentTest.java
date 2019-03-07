@@ -19,6 +19,7 @@ package io.zeebe.broker.incident;
 
 import static io.zeebe.protocol.intent.IncidentIntent.RESOLVED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Assertions;
@@ -27,13 +28,14 @@ import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.impl.record.value.incident.ErrorType;
+import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.Before;
 import org.junit.Rule;
@@ -70,7 +72,8 @@ public class MessageIncidentTest {
   @Test
   public void shouldCreateIncidentIfCorrelationKeyNotFound() {
     // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
@@ -96,7 +99,12 @@ public class MessageIncidentTest {
   public void shouldCreateIncidentIfCorrelationKeyOfInvalidType() {
     // when
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(PROCESS_ID, MsgPackUtil.asMsgPack("orderId", true));
+        testClient
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(PROCESS_ID)
+                        .setVariables(MsgPackUtil.asMsgPack("orderId", true)))
+            .getInstanceKey();
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
@@ -122,13 +130,15 @@ public class MessageIncidentTest {
   @Test
   public void shouldResolveIncidentIfCorrelationKeyNotFound() {
     // given
-    final long workflowInstance = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstance =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
 
-    testClient.updatePayload(
-        incidentCreatedRecord.getValue().getElementInstanceKey(), "{\"orderId\":\"order123\"}");
+    testClient.updateVariables(
+        incidentCreatedRecord.getValue().getElementInstanceKey(),
+        Maps.of(entry("orderId", "order123")));
 
     // when
     testClient.resolveIncident(incidentCreatedRecord.getKey());

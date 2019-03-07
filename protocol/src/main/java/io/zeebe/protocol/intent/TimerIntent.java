@@ -15,7 +15,7 @@
  */
 package io.zeebe.protocol.intent;
 
-public enum TimerIntent implements Intent {
+public enum TimerIntent implements WorkflowInstanceRelatedIntent {
   CREATE((short) 0),
   CREATED((short) 1),
 
@@ -25,10 +25,16 @@ public enum TimerIntent implements Intent {
   CANCEL((short) 4),
   CANCELED((short) 5);
 
-  private short value;
+  private final short value;
+  private final boolean shouldBlacklist;
 
   TimerIntent(short value) {
+    this(value, true);
+  }
+
+  TimerIntent(short value, boolean shouldBlacklist) {
     this.value = value;
+    this.shouldBlacklist = shouldBlacklist;
   }
 
   @Override
@@ -53,5 +59,10 @@ public enum TimerIntent implements Intent {
       default:
         return Intent.UNKNOWN;
     }
+  }
+
+  @Override
+  public boolean shouldBlacklistInstanceOnError() {
+    return shouldBlacklist;
   }
 }

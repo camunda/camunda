@@ -74,9 +74,6 @@ public class WorkflowTest {
         .name("test")
         .open();
 
-    ZeebeTestRule.assertThat(workflowInstance)
-        .isEnded()
-        .hasPayload("result", 123)
-        .hasElementPayload("task", "result", 123);
+    ZeebeTestRule.assertThat(workflowInstance).isEnded().hasVariables("result", 123);
   }
 }

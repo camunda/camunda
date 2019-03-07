@@ -279,7 +279,10 @@ public class ExporterIntegrationRule extends ExternalResource {
 
     // wait for incident and resolve it
     final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withElementId("task")
+            .getFirst();
     clientRule
         .getClient()
         .newUpdateRetriesCommand(incident.getValue().getJobKey())
@@ -326,7 +329,7 @@ public class ExporterIntegrationRule extends ExternalResource {
         .newCreateInstanceCommand()
         .bpmnProcessId(processId)
         .latestVersion()
-        .payload(payload)
+        .variables(payload)
         .send()
         .join()
         .getWorkflowInstanceKey();

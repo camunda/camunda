@@ -21,6 +21,7 @@ import static io.zeebe.broker.incident.IncidentAssert.assertIncidentRecordValue;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -30,13 +31,14 @@ import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.BpmnElementType;
+import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.collection.Maps;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -92,7 +94,10 @@ public class ExpressionIncidentTest {
     // given
 
     // when
-    testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 12)))
+        .getInstanceKey();
 
     // then incident is created
     final Record<WorkflowInstanceRecordValue> failingEvent =
@@ -117,7 +122,10 @@ public class ExpressionIncidentTest {
     // given
 
     // when
-    testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", "bar")))
+        .getInstanceKey();
 
     // then incident is created
     final Record<IncidentRecordValue> incidentEvent =
@@ -126,7 +134,7 @@ public class ExpressionIncidentTest {
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertIncidentRecordValue(
         ErrorType.CONDITION_ERROR.name(),
-        "Cannot compare values of different types: STRING and INTEGER",
+        "Expected to evaluate condition '$.foo >= 5 && $.foo < 10' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER",
         "xor",
         incidentEvent);
   }
@@ -136,7 +144,10 @@ public class ExpressionIncidentTest {
     // given
 
     // when
-    testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", "bar")))
+        .getInstanceKey();
 
     // then incident is created
     final Record<IncidentRecordValue> incidentEvent =
@@ -146,7 +157,7 @@ public class ExpressionIncidentTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     // when correct payload is used
-    testClient.updatePayload(failureEvent.getKey(), asMsgPack("foo", 7).byteArray());
+    testClient.updateVariables(failureEvent.getKey(), Maps.of(entry("foo", 7)));
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -188,7 +199,10 @@ public class ExpressionIncidentTest {
   @Test
   public void shouldResolveIncidentForFailedConditionAfterUploadingWrongPayload() {
     // given
-    testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", "bar")))
+        .getInstanceKey();
 
     final long incidentKey = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED).getKey();
     final long failedEventKey =
@@ -196,7 +210,7 @@ public class ExpressionIncidentTest {
             .receiveFirstWorkflowInstanceEvent(
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnElementType.EXCLUSIVE_GATEWAY)
             .getKey();
-    testClient.updatePayload(failedEventKey, asMsgPack("foo", 10).byteArray());
+    testClient.updateVariables(failedEventKey, Maps.of(entry("foo", 10)));
     testClient.resolveIncident(incidentKey);
 
     final Record<IncidentRecordValue> secondIncident =
@@ -207,7 +221,7 @@ public class ExpressionIncidentTest {
             .getFirst();
 
     // when correct payload is used
-    testClient.updatePayload(failedEventKey, asMsgPack("foo", 7).byteArray());
+    testClient.updateVariables(failedEventKey, Maps.of(entry("foo", 7)));
     testClient.resolveIncident(secondIncident.getKey());
 
     // then
@@ -254,7 +268,10 @@ public class ExpressionIncidentTest {
     // given
 
     // when
-    testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 12)))
+        .getInstanceKey();
 
     // then incident is created
     final Record<IncidentRecordValue> incidentEvent =
@@ -265,7 +282,7 @@ public class ExpressionIncidentTest {
             WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnElementType.EXCLUSIVE_GATEWAY);
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), asMsgPack("foo", 7).byteArray());
+    testClient.updateVariables(failureEvent.getKey(), Maps.of(entry("foo", 7)));
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -278,7 +295,10 @@ public class ExpressionIncidentTest {
     // given
 
     final long workflowInstance =
-        testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", "bar")))
+            .getInstanceKey();
 
     // when
     testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
@@ -291,7 +311,7 @@ public class ExpressionIncidentTest {
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertIncidentRecordValue(
         ErrorType.CONDITION_ERROR.name(),
-        "Cannot compare values of different types: STRING and INTEGER",
+        "Expected to evaluate condition '$.foo >= 5 && $.foo < 10' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER",
         "xor",
         incidentEvent);
   }

@@ -101,11 +101,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
       long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
     final ElementInstance scopeInstance = elementInstanceState.getInstance(key);
 
-    // payload update does not change state
-    if (state != WorkflowInstanceIntent.PAYLOAD_UPDATED) {
-      scopeInstance.setState(state);
-    }
-
+    scopeInstance.setState(state);
     scopeInstance.setValue(value);
   }
 

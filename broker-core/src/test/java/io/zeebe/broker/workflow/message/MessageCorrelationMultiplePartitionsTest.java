@@ -23,19 +23,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.WorkflowInstances;
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Rule;
@@ -83,12 +81,24 @@ public class MessageCorrelationMultiplePartitionsTest {
     IntStream.range(0, 10)
         .forEach(
             i -> {
-              testClient.createWorkflowInstance(
-                  PROCESS_ID, asMsgPack("key", CORRELATION_KEY_PARTITION_0));
-              testClient.createWorkflowInstance(
-                  PROCESS_ID, asMsgPack("key", CORRELATION_KEY_PARTITION_1));
-              testClient.createWorkflowInstance(
-                  PROCESS_ID, asMsgPack("key", CORRELATION_KEY_PARTITION_2));
+              testClient
+                  .createWorkflowInstance(
+                      r ->
+                          r.setBpmnProcessId(PROCESS_ID)
+                              .setVariables(asMsgPack("key", CORRELATION_KEY_PARTITION_0)))
+                  .getInstanceKey();
+              testClient
+                  .createWorkflowInstance(
+                      r ->
+                          r.setBpmnProcessId(PROCESS_ID)
+                              .setVariables(asMsgPack("key", CORRELATION_KEY_PARTITION_1)))
+                  .getInstanceKey();
+              testClient
+                  .createWorkflowInstance(
+                      r ->
+                          r.setBpmnProcessId(PROCESS_ID)
+                              .setVariables(asMsgPack("key", CORRELATION_KEY_PARTITION_2)))
+                  .getInstanceKey();
             });
 
     // then
@@ -116,20 +126,36 @@ public class MessageCorrelationMultiplePartitionsTest {
         .publishMessage("message", CORRELATION_KEY_PARTITION_2, asMsgPack("p", "p2"));
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", CORRELATION_KEY_PARTITION_0));
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", CORRELATION_KEY_PARTITION_1));
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", CORRELATION_KEY_PARTITION_2));
+    final long wfiKey1 =
+        testClient
+            .createWorkflowInstance(
+                r3 ->
+                    r3.setBpmnProcessId(PROCESS_ID)
+                        .setVariables(asMsgPack("key", CORRELATION_KEY_PARTITION_0)))
+            .getInstanceKey();
+    final long wfiKey2 =
+        testClient
+            .createWorkflowInstance(
+                r2 ->
+                    r2.setBpmnProcessId(PROCESS_ID)
+                        .setVariables(asMsgPack("key", CORRELATION_KEY_PARTITION_1)))
+            .getInstanceKey();
+    final long wfiKey3 =
+        testClient
+            .createWorkflowInstance(
+                r1 ->
+                    r1.setBpmnProcessId(PROCESS_ID)
+                        .setVariables(asMsgPack("key", CORRELATION_KEY_PARTITION_2)))
+            .getInstanceKey();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> events =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withElementId("receive-message")
-            .limit(3)
-            .collect(Collectors.toList());
+    final List<String> correlatedValues =
+        Arrays.asList(
+            WorkflowInstances.getCurrentVariables(wfiKey1).get("p"),
+            WorkflowInstances.getCurrentVariables(wfiKey2).get("p"),
+            WorkflowInstances.getCurrentVariables(wfiKey3).get("p"));
 
-    assertThat(events)
-        .extracting(r -> r.getValue().getPayloadAsMap().get("p"))
-        .contains("p0", "p1", "p2");
+    assertThat(correlatedValues).contains("\"p0\"", "\"p1\"", "\"p2\"");
   }
 
   private int getPartitionId(final String correlationKey) {

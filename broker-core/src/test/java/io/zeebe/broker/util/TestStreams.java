@@ -53,7 +53,9 @@ import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.raft.event.RaftConfigurationEvent;
@@ -64,12 +66,14 @@ import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.junit.rules.TemporaryFolder;
 
 public class TestStreams {
   protected static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
@@ -90,11 +94,13 @@ public class TestStreams {
     VALUE_TYPES.put(JobBatchRecord.class, ValueType.JOB_BATCH);
     VALUE_TYPES.put(TimerRecord.class, ValueType.TIMER);
     VALUE_TYPES.put(VariableRecord.class, ValueType.VARIABLE);
+    VALUE_TYPES.put(VariableDocumentRecord.class, ValueType.VARIABLE_DOCUMENT);
+    VALUE_TYPES.put(WorkflowInstanceCreationRecord.class, ValueType.WORKFLOW_INSTANCE_CREATION);
 
     VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
   }
 
-  protected final File storageDirectory;
+  protected final TemporaryFolder storageDirectory;
   protected final AutoCloseableRule closeables;
   private final ServiceContainer serviceContainer;
 
@@ -105,7 +111,7 @@ public class TestStreams {
   protected StateStorageFactory stateStorageFactory;
 
   public TestStreams(
-      final File storageDirectory,
+      final TemporaryFolder storageDirectory,
       final AutoCloseableRule closeables,
       final ServiceContainer serviceContainer,
       final ActorScheduler actorScheduler) {
@@ -120,13 +126,25 @@ public class TestStreams {
   }
 
   public LogStream createLogStream(final String name, final int partitionId) {
-    final String rootPath = storageDirectory.getAbsolutePath();
+    File segments = null, index = null, snapshots = null;
+
+    try {
+      segments = storageDirectory.newFolder("segments");
+      index = storageDirectory.newFolder("index", "runtime");
+      snapshots = storageDirectory.newFolder("index", "snapshots");
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    final StateStorage stateStorage = new StateStorage(index, snapshots);
+
     final LogStream logStream =
         LogStreams.createFsLogStream(partitionId)
-            .logRootPath(rootPath)
+            .logRootPath(segments.getAbsolutePath())
             .serviceContainer(serviceContainer)
             .logName(name)
             .deleteOnClose(true)
+            .indexStateStorage(stateStorage)
             .build()
             .join();
 
@@ -200,7 +218,7 @@ public class TestStreams {
 
   protected StateStorageFactory getStateStorageFactory() {
     if (stateStorageFactory == null) {
-      final File rocksDBDirectory = new File(storageDirectory, "state");
+      final File rocksDBDirectory = new File(storageDirectory.getRoot(), "state");
       if (!rocksDBDirectory.exists()) {
         rocksDBDirectory.mkdir();
       }
@@ -298,6 +316,16 @@ public class TestStreams {
           e ->
               Records.isWorkflowInstanceRecord(e)
                   && test.test(CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceRecord.class)));
+    }
+
+    @Override
+    public void blockAfterWorkflowInstanceCreationRecord(
+        final Predicate<TypedRecord<WorkflowInstanceCreationRecord>> test) {
+      blockAfterEvent(
+          e ->
+              Records.isWorkflowInstanceCreationRecord(e)
+                  && test.test(
+                      CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceCreationRecord.class)));
     }
 
     @Override
@@ -430,25 +458,26 @@ public class TestStreams {
         }
 
         @Override
+        public void processingFailed(Exception exception) {
+          if (actualProcessor != null) {
+            actualProcessor.processingFailed(exception);
+          }
+        }
+
+        @Override
         public boolean executeSideEffects() {
           return actualProcessor == null || actualProcessor.executeSideEffects();
         }
 
         @Override
         public long writeEvent(final LogStreamRecordWriter writer) {
-          return actualProcessor != null ? actualProcessor.writeEvent(writer) : 0;
-        }
-
-        @Override
-        public void updateState() {
-          if (actualProcessor != null) {
-            actualProcessor.updateState();
-          }
+          final long result = actualProcessor != null ? actualProcessor.writeEvent(writer) : 0;
 
           if (blockAfterCurrentEvent) {
             blockAfterCurrentEvent = false;
             context.suspendController();
           }
+          return result;
         }
       };
     }
@@ -485,6 +514,16 @@ public class TestStreams {
 
     public FluentLogWriter intent(final Intent intent) {
       this.metadata.intent(intent);
+      return this;
+    }
+
+    public FluentLogWriter requestId(final long requestId) {
+      this.metadata.requestId(requestId);
+      return this;
+    }
+
+    public FluentLogWriter requestStreamId(final int requestStreamId) {
+      this.metadata.requestStreamId(requestStreamId);
       return this;
     }
 

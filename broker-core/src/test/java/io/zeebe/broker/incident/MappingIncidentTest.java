@@ -20,14 +20,13 @@ package io.zeebe.broker.incident;
 import static io.zeebe.broker.incident.IncidentAssert.assertIOMappingIncidentWithNoData;
 import static io.zeebe.broker.incident.IncidentAssert.assertIncidentContainErrorDetails;
 import static io.zeebe.broker.incident.IncidentAssert.assertIncidentRecordValue;
-import static io.zeebe.broker.test.MsgPackConstants.MSGPACK_PAYLOAD;
 import static io.zeebe.broker.test.MsgPackConstants.NODE_STRING_PATH;
-import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstancePayload;
 import static io.zeebe.protocol.intent.IncidentIntent.CREATED;
 import static io.zeebe.protocol.intent.IncidentIntent.RESOLVE;
 import static io.zeebe.protocol.intent.IncidentIntent.RESOLVED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.UnstableTest;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -37,14 +36,17 @@ import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.impl.record.value.incident.ErrorType;
+import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.collection.Maps;
+import io.zeebe.util.buffer.BufferUtil;
+import java.util.HashMap;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -73,19 +75,10 @@ public class MappingIncidentTest {
           .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeOutput("$.foo", "$.foo"))
           .done();
 
-  private static final byte[] PAYLOAD;
+  private static final Map<String, Object> PAYLOAD = Maps.of(entry("foo", "bar"));
 
-  static {
-    final DirectBuffer buffer =
-        MsgPackUtil.encodeMsgPack(
-            p -> {
-              p.packMapHeader(1);
-              p.packString("foo");
-              p.packString("bar");
-            });
-    PAYLOAD = new byte[buffer.capacity()];
-    buffer.getBytes(0, PAYLOAD);
-  }
+  private static final DirectBuffer MSGPACK_PAYLOAD =
+      MsgPackUtil.asMsgPack("{'string':'value', 'jsonObject':{'testAttr':'test'}}");
 
   @Before
   public void init() {
@@ -99,7 +92,8 @@ public class MappingIncidentTest {
     testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
     // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
 
     // then
     final Record failureEvent =
@@ -134,7 +128,8 @@ public class MappingIncidentTest {
             .done());
 
     // when
-    testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+    testClient.createWorkflowInstance(
+        r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD));
     final Record<WorkflowInstanceRecordValue> failureEvent =
         testClient.receiveElementInState("service", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<IncidentRecordValue> incidentEvent =
@@ -156,9 +151,10 @@ public class MappingIncidentTest {
     testClient.deploy(WORKFLOW_OUTPUT_MAPPING);
 
     // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
 
-    testClient.completeJobOfType("test", MSGPACK_PAYLOAD);
+    testClient.completeJobOfType("test", BufferUtil.bufferAsArray(MSGPACK_PAYLOAD));
 
     // then
     final Record failureEvent =
@@ -182,7 +178,8 @@ public class MappingIncidentTest {
     // given
     testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
@@ -190,13 +187,12 @@ public class MappingIncidentTest {
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(failureEvent.getValue().getFlowScopeKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getValue().getFlowScopeKey(), PAYLOAD);
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
     final Record<WorkflowInstanceRecordValue> followUpEvent =
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    assertWorkflowInstancePayload(followUpEvent, "{'foo':'bar'}");
 
     final Record incidentResolveCommand = testClient.receiveFirstIncidentCommand(RESOLVE);
     final Record incidentResolvedEvent = testClient.receiveFirstIncidentEvent(RESOLVED);
@@ -214,9 +210,10 @@ public class MappingIncidentTest {
     // given
     testClient.deploy(WORKFLOW_OUTPUT_MAPPING);
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
 
-    testClient.completeJobOfType("test", MSGPACK_PAYLOAD);
+    testClient.completeJobOfType("test", BufferUtil.bufferAsArray(MSGPACK_PAYLOAD));
 
     final Record failureEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
@@ -224,14 +221,13 @@ public class MappingIncidentTest {
     final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getKey(), PAYLOAD);
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
     final Record<WorkflowInstanceRecordValue> followUpEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
             ELEMENT_COMPLETED, BpmnElementType.SERVICE_TASK);
-    assertWorkflowInstancePayload(followUpEvent, "{'foo':'bar'}");
 
     final Record incidentResolveCommand = testClient.receiveFirstIncidentCommand(RESOLVE);
     final Record incidentResolvedEvent = testClient.receiveFirstIncidentEvent(RESOLVED);
@@ -255,7 +251,8 @@ public class MappingIncidentTest {
             .done());
 
     // when
-    testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+    testClient.createWorkflowInstance(
+        r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD));
 
     // then incident is created
     final Record<IncidentRecordValue> incidentEvent =
@@ -275,7 +272,11 @@ public class MappingIncidentTest {
             .done());
 
     // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD))
+            .getInstanceKey();
 
     // then incident is created
     final Record<WorkflowInstanceRecordValue> failureEvent =
@@ -284,14 +285,14 @@ public class MappingIncidentTest {
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(
-        failureEvent.getValue().getFlowScopeKey(), "{'string':{'obj':'test'}}");
+    testClient.updateVariables(
+        failureEvent.getValue().getFlowScopeKey(),
+        Maps.of(entry("string", Maps.of(entry("obj", "test")))));
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
     final Record<WorkflowInstanceRecordValue> followUpEvent =
         testClient.receiveElementInState("service", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    assertWorkflowInstancePayload(followUpEvent, "{'obj':'test'}");
 
     final Record<IncidentRecordValue> incidentResolvedEvent =
         testClient.receiveFirstIncidentEvent(RESOLVED);
@@ -319,7 +320,8 @@ public class MappingIncidentTest {
                         .zeebeOutput("$.testAttr", "$"))
             .done());
 
-    testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+    testClient.createWorkflowInstance(
+        r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD));
 
     // when
     testClient.completeJobOfType(
@@ -347,7 +349,11 @@ public class MappingIncidentTest {
                         .zeebeOutput("$.testAttr", "$"))
             .done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD))
+            .getInstanceKey();
 
     // when
     testClient.receiveFirstWorkflowInstanceEvent(
@@ -362,7 +368,8 @@ public class MappingIncidentTest {
     final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), "{'testAttr':{'obj':'test'}}");
+    testClient.updateVariables(
+        failureEvent.getKey(), Maps.of(entry("testAttr", Maps.of(entry("obj", "test")))));
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -395,7 +402,8 @@ public class MappingIncidentTest {
                         .zeebeOutput("$.foo", "$"))
             .done());
 
-    testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+    testClient.createWorkflowInstance(
+        r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD));
 
     // when
     testClient.completeJobOfType("external");
@@ -421,7 +429,11 @@ public class MappingIncidentTest {
                         .zeebeOutput("$.foo", "$"))
             .done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD))
+            .getInstanceKey();
 
     // when
     testClient.completeJobOfType("external");
@@ -433,7 +445,8 @@ public class MappingIncidentTest {
     final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), "{'foo':{'obj':'test'}}");
+    testClient.updateVariables(
+        failureEvent.getKey(), Maps.of(entry("foo", Maps.of(entry("obj", "test")))));
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -458,7 +471,8 @@ public class MappingIncidentTest {
                 "failingTask", t -> t.zeebeTaskType("external").zeebeOutput("$.testAttr", "$"))
             .done());
 
-    testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+    testClient.createWorkflowInstance(
+        r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD));
 
     // when
     testClient.completeJobOfType("external");
@@ -478,7 +492,11 @@ public class MappingIncidentTest {
             .serviceTask("service", t -> t.zeebeTaskType("external").zeebeOutput("$.testAttr", "$"))
             .done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD))
+            .getInstanceKey();
 
     // when
     testClient.completeJobOfType("external");
@@ -490,7 +508,8 @@ public class MappingIncidentTest {
     final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), "{'testAttr':{'obj':'test'}}");
+    testClient.updateVariables(
+        failureEvent.getKey(), Maps.of(entry("testAttr", Maps.of(entry("obj", "test")))));
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -526,7 +545,8 @@ public class MappingIncidentTest {
 
     testClient.deploy(modelInstance);
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
 
     final Record failureEvent =
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
@@ -537,7 +557,7 @@ public class MappingIncidentTest {
         .hasErrorMessage("No data found for query $.foo.");
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getKey(), PAYLOAD);
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -565,12 +585,13 @@ public class MappingIncidentTest {
     // given
     testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
 
     final Record failureEvent =
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record firstIncident = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-    testClient.updatePayload(failureEvent.getKey(), MsgPackHelper.EMTPY_OBJECT);
+    testClient.updateVariables(failureEvent.getKey(), new HashMap<>());
     testClient.resolveIncident(firstIncident.getKey());
     testClient.receiveFirstIncidentEvent(RESOLVED);
     final Record<IncidentRecordValue> secondIncident =
@@ -581,7 +602,7 @@ public class MappingIncidentTest {
             .getFirst();
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getKey(), PAYLOAD);
     testClient.resolveIncident(secondIncident.getKey());
 
     // then
@@ -609,15 +630,16 @@ public class MappingIncidentTest {
     testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
     // create and resolve an first incident
-    long workflowInstanceKey = testClient.createWorkflowInstance("process");
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process"));
     Record failureEvent =
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<IncidentRecordValue> firstIncident = testClient.receiveFirstIncidentEvent(CREATED);
-    testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getKey(), PAYLOAD);
     testClient.resolveIncident(firstIncident.getKey());
 
     // create a second incident
-    workflowInstanceKey = testClient.createWorkflowInstance("process");
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
     failureEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
             workflowInstanceKey, "failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
@@ -625,7 +647,7 @@ public class MappingIncidentTest {
         testClient.receiveFirstIncidentEvent(workflowInstanceKey, IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getKey(), PAYLOAD);
     testClient.resolveIncident(secondIncidentEvent.getKey());
 
     // then
@@ -639,7 +661,8 @@ public class MappingIncidentTest {
     // given
     testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
 
     final Record incidentCreatedEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
@@ -674,15 +697,21 @@ public class MappingIncidentTest {
     testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
     // create and cancel instance with incident
-    long workflowInstanceKey = testClient.createWorkflowInstance("process");
+    long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
     testClient.cancelWorkflowInstance(workflowInstanceKey);
 
     // create and cancel instance without incident
-    workflowInstanceKey = testClient.createWorkflowInstance("process", PAYLOAD);
+    workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId("process").setVariables(MsgPackUtil.asMsgPack(PAYLOAD)))
+            .getInstanceKey();
     testClient.cancelWorkflowInstance(workflowInstanceKey);
 
     // create another instance which creates an incident
-    workflowInstanceKey = testClient.createWorkflowInstance("process");
+    workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
     final Record incidentCreatedEvent =
         testClient.receiveFirstIncidentEvent(workflowInstanceKey, IncidentIntent.CREATED);
 

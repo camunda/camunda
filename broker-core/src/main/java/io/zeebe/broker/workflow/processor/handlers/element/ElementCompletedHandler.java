@@ -59,7 +59,6 @@ public class ElementCompletedHandler<T extends ExecutableFlowNode>
   protected void completeFlowScope(BpmnStepContext<T> context) {
     final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
     final WorkflowInstanceRecord flowScopeInstanceValue = flowScopeInstance.getValue();
-    flowScopeInstanceValue.setPayload(context.getValue().getPayload());
 
     context
         .getOutput()

@@ -85,6 +85,10 @@ public class Records {
     return isRecordOfType(event, ValueType.TIMER);
   }
 
+  public static boolean isWorkflowInstanceCreationRecord(final LoggedEvent event) {
+    return isRecordOfType(event, ValueType.WORKFLOW_INSTANCE_CREATION);
+  }
+
   public static boolean hasIntent(final LoggedEvent event, final Intent intent) {
     if (event == null) {
       return false;
@@ -132,7 +136,7 @@ public class Records {
     return isCommand(event) && isRecordOfType(event, valueType) && hasIntent(event, intent);
   }
 
-  protected static boolean isRecordOfType(final LoggedEvent event, final ValueType type) {
+  public static boolean isRecordOfType(final LoggedEvent event, final ValueType type) {
     if (event == null) {
       return false;
     }

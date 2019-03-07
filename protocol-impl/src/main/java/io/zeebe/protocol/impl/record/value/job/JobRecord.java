@@ -24,10 +24,11 @@ import io.zeebe.msgpack.property.PackedProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.WorkflowInstanceRelated;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class JobRecord extends UnpackedObject {
+public class JobRecord extends UnpackedObject implements WorkflowInstanceRelated {
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
   public static final String RETRIES = "retries";
@@ -155,5 +156,10 @@ public class JobRecord extends UnpackedObject {
   public JobRecord setErrorMessage(DirectBuffer buf, int offset, int length) {
     errorMessageProp.setValue(buf, offset, length);
     return this;
+  }
+
+  @Override
+  public long getWorkflowInstanceKey() {
+    return headersProp.getValue().getWorkflowInstanceKey();
   }
 }

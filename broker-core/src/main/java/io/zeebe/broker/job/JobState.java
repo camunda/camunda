@@ -85,7 +85,7 @@ public class JobState {
 
   public void create(final long key, final JobRecord record) {
     final DirectBuffer type = record.getType();
-    zeebeDb.batch(() -> createJob(key, record, type));
+    zeebeDb.transaction(() -> createJob(key, record, type));
   }
 
   private void createJob(long key, JobRecord record, DirectBuffer type) {
@@ -100,7 +100,7 @@ public class JobState {
 
     validateParameters(type, deadline);
 
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           updateJobRecord(key, record);
 
@@ -118,7 +118,7 @@ public class JobState {
     final long deadline = record.getDeadline();
     validateParameters(type, deadline);
 
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           createJob(key, record, type);
 
@@ -130,7 +130,7 @@ public class JobState {
     final DirectBuffer type = record.getType();
     final long deadline = record.getDeadline();
 
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           jobKey.wrapLong(key);
           jobsColumnFamily.delete(jobKey);
@@ -149,7 +149,7 @@ public class JobState {
 
     validateParameters(type, deadline);
 
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           updateJobRecord(key, updatedValue);
 
@@ -172,7 +172,7 @@ public class JobState {
   public void resolve(long key, final JobRecord updatedValue) {
     final DirectBuffer type = updatedValue.getType();
 
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           updateJobRecord(key, updatedValue);
           updateJobState(State.ACTIVATABLE);

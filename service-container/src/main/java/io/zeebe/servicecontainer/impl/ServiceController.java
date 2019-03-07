@@ -165,9 +165,10 @@ public class ServiceController extends Actor {
       // inject dependencies
 
       for (ServiceController serviceController : resolvedDependencies) {
-        final Collection<Injector<?>> injectos =
-            injectors.getOrDefault(serviceController.name, Collections.emptyList());
-        for (Injector injector : injectos) {
+        final Collection<Injector<?>> injectors =
+            ServiceController.this.injectors.getOrDefault(
+                serviceController.name, Collections.emptyList());
+        for (Injector injector : injectors) {
           injector.inject(serviceController.service.get());
           injector.setInjectedServiceName(serviceController.name);
         }

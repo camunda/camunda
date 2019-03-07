@@ -21,6 +21,7 @@ import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class ObjectValue extends BaseValue {
   private final List<BaseProperty<? extends BaseValue>> declaredProperties = new ArrayList<>();
@@ -160,6 +161,27 @@ public class ObjectValue extends BaseValue {
     length += getEncodedLength(undeclaredProperties);
 
     return length;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (!(o instanceof ObjectValue)) {
+      return false;
+    }
+
+    final ObjectValue that = (ObjectValue) o;
+    return Objects.equals(declaredProperties, that.declaredProperties)
+        && Objects.equals(undeclaredProperties, that.undeclaredProperties)
+        && Objects.equals(recycledProperties, that.recycledProperties);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(declaredProperties, undeclaredProperties, recycledProperties);
   }
 
   protected <T extends BaseProperty<?>> int getEncodedLength(List<T> properties) {

@@ -27,6 +27,7 @@ import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.raft.Loggers;
@@ -50,6 +51,7 @@ import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
+import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,7 +65,9 @@ import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import org.junit.Rule;
 import org.junit.rules.ExternalResource;
+import org.junit.rules.TemporaryFolder;
 
 public class RaftRule extends ExternalResource implements RaftStateListener {
 
@@ -91,6 +95,8 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
 
   protected final List<RaftState> raftStateChanges = new ArrayList<>();
   private ServiceName<Raft> raftServiceName;
+
+  @Rule TemporaryFolder tempFolder = new TemporaryFolder();
 
   public RaftRule(
       final ServiceContainerRule serviceContainerRule,
@@ -122,12 +128,19 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
     clientTransport =
         Transports.newClientTransport("raft-" + nodeId).scheduler(actorScheduler).build();
 
+    tempFolder.create();
+    final File snapshotDir = tempFolder.newFolder("snapshots");
+    final File indexDir = tempFolder.newFolder("runtime");
+
+    final StateStorage stateStorage = new StateStorage(indexDir, snapshotDir);
+
     logStream =
         LogStreams.createFsLogStream(partition)
             .logName(logName)
             .deleteOnClose(true)
             .logDirectory(Files.createTempDirectory("raft-test-" + nodeId + "-").toString())
             .serviceContainer(serviceContainer)
+            .indexStateStorage(stateStorage)
             .build()
             .join();
 
@@ -181,6 +194,8 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
 
     uncommittedReader.close();
     committedReader.close();
+
+    tempFolder.delete();
   }
 
   public void closeRaft() {

@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.processor.handlers.servicetask;
 import io.zeebe.broker.workflow.model.element.ExecutableServiceTask;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementActivatedHandler;
+import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.JobIntent;
@@ -62,7 +63,7 @@ public class ServiceTaskElementActivatedHandler<T extends ExecutableServiceTask>
     jobCommand
         .setType(serviceTask.getType())
         .setRetries(serviceTask.getRetries())
-        .setPayload(value.getPayload())
+        .setPayload(DocumentValue.EMPTY_DOCUMENT)
         .setCustomHeaders(headers)
         .getHeaders()
         .setBpmnProcessId(value.getBpmnProcessId())

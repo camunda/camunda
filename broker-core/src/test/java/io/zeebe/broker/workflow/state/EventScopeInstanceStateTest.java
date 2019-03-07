@@ -46,7 +46,7 @@ public class EventScopeInstanceStateTest {
     final long key = 123;
 
     // when
-    state.createInstance(key, Collections.singleton(wrapString("foo")));
+    state.createIfNotExists(key, Collections.singleton(wrapString("foo")));
 
     // then
     final EventScopeInstance instance = state.getInstance(key);
@@ -60,7 +60,7 @@ public class EventScopeInstanceStateTest {
     final long key = 123;
 
     // when
-    state.createInstance(key, Collections.singleton(wrapString("foo")));
+    state.createIfNotExists(key, Collections.singleton(wrapString("foo")));
 
     // then
     final EventScopeInstance instance = state.getInstance(key);
@@ -75,7 +75,7 @@ public class EventScopeInstanceStateTest {
     final long eventKey = 456;
     final EventTrigger eventTrigger = createEventTrigger();
 
-    state.createInstance(key, Collections.singleton(eventTrigger.getElementId()));
+    state.createIfNotExists(key, Collections.singleton(eventTrigger.getElementId()));
 
     // when
     final boolean triggered = triggerEvent(key, eventKey, eventTrigger);
@@ -98,7 +98,7 @@ public class EventScopeInstanceStateTest {
     final long eventKey2 = 789;
     final EventTrigger eventTrigger2 = createEventTrigger();
 
-    state.createInstance(key, Collections.singleton(eventTrigger1.getElementId()));
+    state.createIfNotExists(key, Collections.singleton(eventTrigger1.getElementId()));
 
     // when
     final boolean triggered1 = triggerEvent(key, eventKey1, eventTrigger1);
@@ -124,7 +124,7 @@ public class EventScopeInstanceStateTest {
     final long eventKey2 = 789;
     final EventTrigger eventTrigger2 = createEventTrigger();
 
-    state.createInstance(key, Collections.emptyList());
+    state.createIfNotExists(key, Collections.emptyList());
 
     // when
     final boolean triggered1 = triggerEvent(key, eventKey1, eventTrigger1);
@@ -161,7 +161,7 @@ public class EventScopeInstanceStateTest {
     final EventTrigger eventTrigger = createEventTrigger();
 
     // when
-    state.createInstance(key, Collections.emptyList());
+    state.createIfNotExists(key, Collections.emptyList());
     triggerEvent(key, 1, eventTrigger);
 
     // then
@@ -177,7 +177,7 @@ public class EventScopeInstanceStateTest {
     final EventTrigger eventTrigger2 = createEventTrigger();
 
     // when
-    state.createInstance(key, Collections.emptyList());
+    state.createIfNotExists(key, Collections.emptyList());
     triggerEvent(key, 1, eventTrigger1);
     triggerEvent(key, 2, eventTrigger2);
 
@@ -193,7 +193,7 @@ public class EventScopeInstanceStateTest {
     final long key = 123;
     final long eventKey = 456;
 
-    state.createInstance(key, Collections.emptyList());
+    state.createIfNotExists(key, Collections.emptyList());
     triggerEvent(key, eventKey, createEventTrigger());
 
     // when
@@ -208,7 +208,7 @@ public class EventScopeInstanceStateTest {
     // given
     final long key = 123;
 
-    state.createInstance(key, Collections.emptyList());
+    state.createIfNotExists(key, Collections.emptyList());
     triggerEvent(123, 1, createEventTrigger());
     triggerEvent(123, 2, createEventTrigger());
     triggerEvent(123, 3, createEventTrigger());
@@ -227,7 +227,7 @@ public class EventScopeInstanceStateTest {
     final long key = 123;
     final EventTrigger eventTrigger = createEventTrigger();
 
-    state.createInstance(key, Collections.singleton(eventTrigger.getElementId()));
+    state.createIfNotExists(key, Collections.singleton(eventTrigger.getElementId()));
     state.deleteInstance(key);
 
     // when
@@ -241,7 +241,7 @@ public class EventScopeInstanceStateTest {
   public void shouldShutdownInstance() {
     // given
     final long key = 123;
-    state.createInstance(key, Collections.singleton(wrapString("foo")));
+    state.createIfNotExists(key, Collections.singleton(wrapString("foo")));
 
     // when
     state.shutdownInstance(key);

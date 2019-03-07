@@ -15,22 +15,12 @@
  */
 package io.zeebe.logstreams.state;
 
-import static java.nio.file.FileVisitResult.CONTINUE;
-import static java.nio.file.FileVisitResult.SKIP_SUBTREE;
-
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.util.FileUtil;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
@@ -66,8 +56,19 @@ public class StateSnapshotController implements SnapshotController {
   @Override
   public StateSnapshotMetadata recover(
       long commitPosition, int term, Predicate<StateSnapshotMetadata> filter) throws Exception {
-    final File runtimeDirectory = storage.getRuntimeDirectory();
     final List<StateSnapshotMetadata> snapshots = storage.listRecoverable(commitPosition);
+    return extractMostRecentSnapshot(snapshots, term, filter);
+  }
+
+  @Override
+  public StateSnapshotMetadata recoverFromLatestSnapshot() throws Exception {
+    return extractMostRecentSnapshot(storage.list(), 0, m -> true);
+  }
+
+  private StateSnapshotMetadata extractMostRecentSnapshot(
+      List<StateSnapshotMetadata> snapshots, int term, Predicate<StateSnapshotMetadata> filter)
+      throws Exception {
+    final File runtimeDirectory = storage.getRuntimeDirectory();
     StateSnapshotMetadata recoveredMetadata = null;
 
     if (!snapshots.isEmpty()) {
@@ -85,7 +86,7 @@ public class StateSnapshotController implements SnapshotController {
 
     if (recoveredMetadata != null) {
       final File snapshotPath = storage.getSnapshotDirectoryFor(recoveredMetadata);
-      copySnapshot(runtimeDirectory, snapshotPath);
+      FileUtil.copySnapshot(runtimeDirectory, snapshotPath);
     } else {
       recoveredMetadata = StateSnapshotMetadata.createInitial(term);
     }
@@ -113,12 +114,6 @@ public class StateSnapshotController implements SnapshotController {
     return storage.getSnapshotDirectoryFor(metadata).exists();
   }
 
-  private void copySnapshot(File runtimeDirectory, File snapshotPath) throws Exception {
-    final Path targetPath = runtimeDirectory.toPath();
-    final Path sourcePath = snapshotPath.toPath();
-    Files.walkFileTree(sourcePath, new SnapshotCopier(sourcePath, targetPath));
-  }
-
   @Override
   public void close() throws Exception {
     if (db != null) {
@@ -129,54 +124,5 @@ public class StateSnapshotController implements SnapshotController {
 
   public boolean isDbOpened() {
     return db != null;
-  }
-
-  private static final class SnapshotCopier extends SimpleFileVisitor<Path> {
-
-    private final Path targetPath;
-    private final Path sourcePath;
-
-    SnapshotCopier(Path sourcePath, Path targetPath) {
-      this.sourcePath = sourcePath;
-      this.targetPath = targetPath;
-    }
-
-    @Override
-    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-        throws IOException {
-      final Path newDirectory = targetPath.resolve(sourcePath.relativize(dir));
-      try {
-        Files.copy(dir, newDirectory);
-      } catch (FileAlreadyExistsException ioException) {
-        LOG.error("Problem on copying snapshot to runtime.", ioException);
-        return SKIP_SUBTREE; // skip processing
-      }
-
-      return CONTINUE;
-    }
-
-    @Override
-    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-      final Path newFile = targetPath.resolve(sourcePath.relativize(file));
-
-      try {
-        Files.copy(file, newFile);
-      } catch (IOException ioException) {
-        LOG.error("Problem on copying snapshot to runtime.", ioException);
-      }
-
-      return CONTINUE;
-    }
-
-    @Override
-    public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
-      return CONTINUE;
-    }
-
-    @Override
-    public FileVisitResult visitFileFailed(Path file, IOException exc) {
-      LOG.error("Problem on copying snapshot to runtime.", exc);
-      return CONTINUE;
-    }
   }
 }

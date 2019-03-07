@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Assertions;
+import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
 import io.zeebe.exporter.record.value.TimerRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
@@ -111,6 +112,7 @@ public class TimerStartEventTest {
 
     Assertions.assertThat(timerRecord)
         .hasDueDate(brokerRule.getClock().getCurrentTimeInMillis() + 1000)
+        .hasWorkflowInstanceKey(NO_ELEMENT_INSTANCE)
         .hasHandlerFlowNodeId("start_1")
         .hasElementInstanceKey(NO_ELEMENT_INSTANCE);
   }
@@ -130,27 +132,38 @@ public class TimerStartEventTest {
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).exists()).isTrue();
     brokerRule.getClock().addTime(Duration.ofSeconds(2));
 
-    Assertions.assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-                .withElementType(BpmnElementType.START_EVENT)
-                .getFirst()
-                .getValue())
+    final WorkflowInstanceRecordValue startEventActivating =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.START_EVENT)
+            .getFirst()
+            .getValue();
+    Assertions.assertThat(startEventActivating)
         .hasElementId("start_1")
         .hasBpmnProcessId("process")
         .hasVersion(workflow.getVersion())
         .hasWorkflowKey(workflow.getWorkflowKey());
 
+    final Record<WorkflowInstanceRecordValue> startEventOccurred =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_OCCURRED).getFirst();
+    assertThat(startEventOccurred.getKey())
+        .isLessThan(startEventActivating.getWorkflowInstanceKey());
+
     final long triggerRecordPosition =
         RecordingExporter.timerRecords(TimerIntent.TRIGGER).getFirst().getPosition();
 
     assertThat(
-            RecordingExporter.getRecords().stream()
-                .filter(r -> r.getPosition() >= triggerRecordPosition)
-                .limit(6)
-                .map(r -> r.getMetadata().getIntent()))
+            RecordingExporter.timerRecords()
+                .skipUntil(r -> r.getPosition() >= triggerRecordPosition)
+                .limit(2))
+        .extracting(r -> r.getMetadata().getIntent())
+        .containsExactly(TimerIntent.TRIGGER, TimerIntent.TRIGGERED);
+
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .skipUntil(r -> r.getPosition() >= triggerRecordPosition)
+                .limit(4))
+        .extracting(r -> r.getMetadata().getIntent())
         .containsExactly(
-            TimerIntent.TRIGGER,
-            TimerIntent.TRIGGERED,
             WorkflowInstanceIntent.EVENT_OCCURRED, // causes the instance creation
             WorkflowInstanceIntent.ELEMENT_ACTIVATING, // causes the flow node activation
             WorkflowInstanceIntent.ELEMENT_ACTIVATED, // input mappings applied
@@ -261,7 +274,8 @@ public class TimerStartEventTest {
     assertThat(RecordingExporter.timerRecords(TimerIntent.CANCELED).exists()).isTrue();
     assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).exists()).isTrue();
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
 
     final WorkflowInstanceRecordValue lastRecord =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)

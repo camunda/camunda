@@ -34,6 +34,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.WorkflowInstances;
 import java.time.Duration;
 import java.util.Collections;
 import org.junit.Before;
@@ -79,7 +80,7 @@ public class MessageCorrelationTest {
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
-        .payload(Collections.singletonMap("orderId", "order-123"))
+        .variables(Collections.singletonMap("orderId", "order-123"))
         .send()
         .join();
 
@@ -116,7 +117,7 @@ public class MessageCorrelationTest {
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
-        .payload(Collections.singletonMap("orderId", "order-123"))
+        .variables(Collections.singletonMap("orderId", "order-123"))
         .send()
         .join();
 
@@ -174,7 +175,7 @@ public class MessageCorrelationTest {
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
-        .payload(Collections.singletonMap("orderId", "order-123"))
+        .variables(Collections.singletonMap("orderId", "order-123"))
         .send()
         .join();
 
@@ -183,8 +184,10 @@ public class MessageCorrelationTest {
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
             .withElementId("catch-event")
             .getFirst();
-
-    assertThat(record.getValue().getPayloadAsMap()).contains(entry("msg", "expected"));
+    assertThat(
+            WorkflowInstances.getCurrentVariables(
+                record.getValue().getWorkflowInstanceKey(), record.getPosition()))
+        .contains(entry("msg", "\"expected\""));
   }
 
   @Test

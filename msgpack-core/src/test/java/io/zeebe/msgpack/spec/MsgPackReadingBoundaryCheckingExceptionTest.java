@@ -38,7 +38,7 @@ import org.junit.runners.Parameterized.Parameters;
 public class MsgPackReadingBoundaryCheckingExceptionTest {
 
   protected static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG =
-      "Negative value should not be accepted by size value and unsiged 64bit integer";
+      "Negative value should not be accepted by size value and unsigned 64bit integer";
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
@@ -99,7 +99,7 @@ public class MsgPackReadingBoundaryCheckingExceptionTest {
     reader.wrap(negativeTestingBuf, 0, negativeTestingBuf.capacity());
 
     // then
-    exception.expect(RuntimeException.class);
+    exception.expect(MsgpackReaderException.class);
     exception.expectMessage(NEGATIVE_BUF_SIZE_EXCEPTION_MSG);
 
     // when

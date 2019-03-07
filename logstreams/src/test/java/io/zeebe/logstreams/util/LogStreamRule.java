@@ -15,15 +15,19 @@
  */
 package io.zeebe.logstreams.util;
 
+import static io.zeebe.logstreams.impl.LogBlockIndexWriter.LOG;
+
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -36,17 +40,19 @@ public class LogStreamRule extends ExternalResource {
 
   private final String name;
   private final TemporaryFolder temporaryFolder;
+  private File blockIndexDirectory;
+  private File snapshotDirectory;
 
   private ActorScheduler actorScheduler;
   private ServiceContainer serviceContainer;
   private LogStream logStream;
 
   private final ControlledActorClock clock = new ControlledActorClock();
-  private SnapshotStorage snapshotStorage;
 
   private final Consumer<LogStreamBuilder> streamBuilder;
 
   private LogStreamBuilder builder;
+  private StateStorage stateStorage;
 
   public LogStreamRule(final TemporaryFolder temporaryFolder) {
     this(DEFAULT_NAME, temporaryFolder);
@@ -78,10 +84,19 @@ public class LogStreamRule extends ExternalResource {
     serviceContainer = new ServiceContainerImpl(actorScheduler);
     serviceContainer.start();
 
+    try {
+      this.blockIndexDirectory = temporaryFolder.newFolder("index", "runtime");
+      this.snapshotDirectory = temporaryFolder.newFolder("index", "snapshots");
+    } catch (IOException e) {
+      LOG.error("Couldn't create blockIndex/snapshots directory", e);
+    }
+
+    stateStorage = new StateStorage(blockIndexDirectory, snapshotDirectory);
     builder =
         LogStreams.createFsLogStream(0)
             .logDirectory(temporaryFolder.getRoot().getAbsolutePath())
-            .serviceContainer(serviceContainer);
+            .serviceContainer(serviceContainer)
+            .indexStateStorage(stateStorage);
 
     // apply additional configs
     streamBuilder.accept(builder);
@@ -107,21 +122,15 @@ public class LogStreamRule extends ExternalResource {
   public void closeLogStream() {
     logStream.close();
     logStream = null;
-    snapshotStorage = null;
   }
 
   public void openLogStream() {
     logStream = builder.build().join();
-    snapshotStorage = builder.getSnapshotStorage();
     logStream.openAppender().join();
   }
 
   public LogStream getLogStream() {
     return logStream;
-  }
-
-  public SnapshotStorage getSnapshotStorage() {
-    return snapshotStorage;
   }
 
   public void setCommitPosition(final long position) {
@@ -142,5 +151,13 @@ public class LogStreamRule extends ExternalResource {
 
   public ServiceContainer getServiceContainer() {
     return serviceContainer;
+  }
+
+  public File getSnapshotDirectory() {
+    return snapshotDirectory;
+  }
+
+  public StateStorage getStateStorage() {
+    return stateStorage;
   }
 }

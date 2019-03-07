@@ -22,7 +22,7 @@ import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.handlers.AbstractHandler;
 import io.zeebe.broker.workflow.processor.handlers.IOMappingHelper;
 import io.zeebe.msgpack.mapping.MappingException;
-import io.zeebe.protocol.impl.record.value.incident.ErrorType;
+import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 /**

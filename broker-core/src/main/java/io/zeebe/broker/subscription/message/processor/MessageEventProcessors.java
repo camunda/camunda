@@ -24,6 +24,7 @@ import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.state.MessageStartEventSubscriptionState;
 import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
+import io.zeebe.broker.workflow.state.EventScopeInstanceState;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
@@ -41,6 +42,8 @@ public class MessageEventProcessors {
     final MessageSubscriptionState subscriptionState = zeebeState.getMessageSubscriptionState();
     final MessageStartEventSubscriptionState startEventSubscriptionState =
         zeebeState.getMessageStartEventSubscriptionState();
+    final EventScopeInstanceState eventScopeInstanceState =
+        zeebeState.getWorkflowState().getEventScopeInstanceState();
 
     typedProcessorBuilder
         .onCommand(
@@ -50,6 +53,7 @@ public class MessageEventProcessors {
                 messageState,
                 subscriptionState,
                 startEventSubscriptionState,
+                eventScopeInstanceState,
                 subscriptionCommandSender))
         .onCommand(
             ValueType.MESSAGE, MessageIntent.DELETE, new DeleteMessageProcessor(messageState))
@@ -70,7 +74,8 @@ public class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
             MessageStartEventSubscriptionIntent.OPEN,
-            new OpenMessageStartEventSubscriptionProcessor(startEventSubscriptionState))
+            new OpenMessageStartEventSubscriptionProcessor(
+                startEventSubscriptionState, zeebeState.getWorkflowState()))
         .onCommand(
             ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
             MessageStartEventSubscriptionIntent.CLOSE,
