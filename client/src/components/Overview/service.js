@@ -3,78 +3,33 @@ import {extractDefinitionName} from 'services';
 
 import entityIcons from './entityIcons';
 
-// COLLECTIONS
+// COMMON
 
-export async function createCollection(collection) {
-  const response = await post('api/collection');
-  const json = await response.json();
-
-  if (collection) {
-    await updateCollection(json.id, collection);
-  }
-
-  return json.id;
-}
-
-export async function updateCollection(id, data) {
-  return await put(`api/collection/${id}`, data);
-}
-
-export async function loadCollections(numResults) {
-  const response = await get('api/collection', {orderBy: 'lastModified', numResults});
+export async function load(type, numResults) {
+  const response = await get(`api/${type}`, {orderBy: 'lastModified', numResults});
   return await response.json();
 }
 
-export async function deleteCollection(id) {
-  return await del('api/collection/' + id);
+export async function remove(type, id) {
+  return await del(`api/${type}/${id}`, {force: true});
 }
 
-// DASHBOARDS
-
-export async function createDashboard(initialValues) {
-  const response = await post('api/dashboard');
+export async function create(type, initialValues, options = {}) {
+  const response = await post(`api/${type}/`, options);
   const json = await response.json();
 
   if (initialValues) {
-    await put('api/dashboard/' + json.id, initialValues);
+    await update(type, json.id, initialValues);
   }
 
   return json.id;
 }
 
-export async function loadDashboards(numResults) {
-  const response = await get('api/dashboard', {orderBy: 'lastModified', numResults});
-  return await response.json();
-}
-
-export async function deleteDashboard(id) {
-  return await del('api/dashboard/' + id);
+export async function update(type, id, data) {
+  return await put(`api/${type}/${id}`, data);
 }
 
 // REPORTS
-
-export async function createReport(initialValues) {
-  const response = await post(`api/report/`, {
-    combined: initialValues.combined,
-    reportType: initialValues.reportType
-  });
-  const json = await response.json();
-
-  if (initialValues) {
-    await put('api/report/' + json.id, initialValues);
-  }
-
-  return json.id;
-}
-
-export async function loadReports(numResults) {
-  const response = await get('api/report', {orderBy: 'lastModified', numResults});
-  return await response.json();
-}
-
-export async function deleteReport(id) {
-  return await del('api/report/' + id, {force: true});
-}
 
 export function getReportInfo(report) {
   if (report.data) {

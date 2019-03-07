@@ -12,18 +12,7 @@ import {getEntitiesCollections} from './service';
 
 import {ConfirmationModal, Button, Dropdown, Icon, Message, LoadingIndicator} from 'components';
 
-import {
-  loadCollections,
-  loadReports,
-  loadDashboards,
-  createCollection,
-  deleteCollection,
-  updateCollection,
-  createReport,
-  deleteReport,
-  createDashboard,
-  deleteDashboard
-} from './service';
+import {load, remove, create, update} from './service';
 
 class Overview extends Component {
   state = {
@@ -43,7 +32,7 @@ class Overview extends Component {
 
   loadData = async () => {
     this.props.mightFail(
-      await Promise.all([loadCollections(), loadReports(), loadDashboards()]),
+      await Promise.all([load('collection'), load('report'), load('dashboard')]),
       ([collections, reports, dashboards]) => {
         this.setState({collections, reports, dashboards, loading: false});
       }
@@ -52,45 +41,39 @@ class Overview extends Component {
 
   createCombinedReport = async () =>
     this.setState({
-      redirect: '/report/' + (await createReport({combined: true, reportType: 'process'}))
+      redirect: '/report/' + (await create('report', null, {combined: true, reportType: 'process'}))
     });
   createProcessReport = async () =>
     this.setState({
-      redirect: '/report/' + (await createReport({combined: false, reportType: 'process'}))
+      redirect:
+        '/report/' + (await create('report', null, {combined: false, reportType: 'process'}))
     });
   createDecisionReport = async () =>
     this.setState({
-      redirect: '/report/' + (await createReport({combined: false, reportType: 'decision'}))
+      redirect:
+        '/report/' + (await create('report', null, {combined: false, reportType: 'decision'}))
     });
 
   createDashboard = async () =>
-    this.setState({redirect: '/dashboard/' + (await createDashboard())});
+    this.setState({redirect: '/dashboard/' + (await create('dashboard'))});
 
   updateOrCreateCollection = async collection => {
     const editCollection = this.state.updating;
     if (editCollection.id) {
-      await updateCollection(editCollection.id, collection);
+      await update('collection', editCollection.id, collection);
     } else {
-      await createCollection(collection);
+      await create('collection', collection);
     }
     this.setState({updating: null});
 
-    this.loadData([loadCollections()]);
+    this.loadData();
   };
 
   deleteEntity = async () => {
     const {type, entity} = this.state.deleting;
 
-    switch (type) {
-      case 'report':
-        await deleteReport(entity.id);
-        break;
-      case 'dashboard':
-        await deleteDashboard(entity.id);
-        break;
-      default:
-        await deleteCollection(entity.id);
-    }
+    await remove(type, entity.id);
+
     this.setState({
       deleting: false,
       conflicts: []
@@ -98,30 +81,26 @@ class Overview extends Component {
     this.loadData();
   };
 
-  duplicateReport = (report, collection) => async evt => {
+  duplicateEntity = (type, entity, collection) => async evt => {
     evt.target.blur();
 
     const copy = {
-      ...report,
-      name: report.name + ' - Copy'
+      ...entity,
+      name: entity.name + ' - Copy'
     };
-    const id = await createReport(copy);
+
+    let id;
+    if (type === 'report') {
+      id = await create(type, copy, {combined: copy.combined, reportType: copy.reportType});
+    } else {
+      id = await create(type, copy);
+    }
+
     if (collection) {
       this.toggleReportCollection({id}, collection, false)();
     } else {
       this.loadData();
     }
-  };
-
-  duplicateDashboard = dashboard => async evt => {
-    evt.target.blur();
-
-    const copy = {
-      ...dashboard,
-      name: dashboard.name + ' - Copy'
-    };
-    await createDashboard(copy);
-    this.loadData();
   };
 
   setEntityToUpdate = updating => this.setState({updating});
@@ -147,7 +126,7 @@ class Overview extends Component {
       change.data.entities = [...collectionReportsIds, report.id];
     }
 
-    await updateCollection(collection.id, change);
+    await update('collection', collection.id, change);
     await this.loadData();
   };
 
@@ -222,7 +201,7 @@ class Overview extends Component {
         <Collections
           collections={collections}
           updating={updating}
-          duplicateReport={this.duplicateReport}
+          duplicateEntity={this.duplicateEntity}
           updateOrCreateCollection={this.updateOrCreateCollection}
           setCollectionToUpdate={this.setEntityToUpdate}
           showDeleteModalFor={this.showDeleteModalFor}
@@ -233,7 +212,7 @@ class Overview extends Component {
         </Button>
         <Dashboards
           dashboards={dashboards}
-          duplicateDashboard={this.duplicateDashboard}
+          duplicateEntity={this.duplicateEntity}
           createDashboard={this.createDashboard}
           showDeleteModalFor={this.showDeleteModalFor}
         />
@@ -256,7 +235,7 @@ class Overview extends Component {
         <Reports
           reports={reports}
           createProcessReport={this.createProcessReport}
-          duplicateReport={this.duplicateReport}
+          duplicateEntity={this.duplicateEntity}
           showDeleteModalFor={this.showDeleteModalFor}
           renderCollectionsDropdown={this.renderCollectionsDropdown(entitiesCollections)}
         />

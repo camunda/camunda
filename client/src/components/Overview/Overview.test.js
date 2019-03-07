@@ -1,14 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import OverviewWithErrorHandling from './Overview';
-import {
-  loadCollections,
-  loadReports,
-  loadDashboards,
-  createReport,
-  createDashboard,
-  updateCollection
-} from './service';
+import {load, create, update} from './service';
 import {checkDeleteConflict} from 'services';
 
 import {Button, Dropdown} from 'components';
@@ -59,9 +52,9 @@ const collection = {
 };
 
 beforeAll(() => {
-  loadReports.mockReturnValue([processReport]);
-  loadDashboards.mockReturnValue([dashboard]);
-  loadCollections.mockReturnValue([collection]);
+  load.mockReturnValueOnce([collection]);
+  load.mockReturnValueOnce([processReport]);
+  load.mockReturnValueOnce([dashboard]);
 });
 
 it('should show a loading indicator', () => {
@@ -75,9 +68,9 @@ it('should show a loading indicator', () => {
 it('should load data', () => {
   shallow(<Overview {...props} />);
 
-  expect(loadReports).toHaveBeenCalled();
-  expect(loadDashboards).toHaveBeenCalled();
-  expect(loadCollections).toHaveBeenCalled();
+  expect(load).toHaveBeenCalledWith('report');
+  expect(load).toHaveBeenCalledWith('dashboard');
+  expect(load).toHaveBeenCalledWith('collection');
 });
 
 it('should show create Report buttons', async () => {
@@ -89,7 +82,7 @@ it('should show create Report buttons', async () => {
 });
 
 it('should redirect to new report edit page when creating new report', async () => {
-  createReport.mockReturnValueOnce('newReport');
+  create.mockReturnValueOnce('newReport');
   const node = shallow(<Overview {...props} />);
   await node.instance().componentDidMount();
 
@@ -104,21 +97,23 @@ it('should redirect to new report edit page when creating new report', async () 
 });
 
 it('should reload the list after duplication', async () => {
-  createReport.mockReturnValueOnce('newReport');
+  create.mockReturnValueOnce('newReport');
   const node = shallow(<Overview {...props} />);
 
-  await node.instance().duplicateReport(processReport)({target: {blur: jest.fn()}});
+  await node.instance().duplicateEntity('Report', processReport)({target: {blur: jest.fn()}});
 
-  expect(loadReports).toHaveBeenCalled();
+  expect(load).toHaveBeenCalledWith('report');
 });
 
 it('should add the entity to the collection that was duplicated from', async () => {
-  createReport.mockReturnValueOnce('newReport');
+  create.mockReturnValueOnce('newReport');
   const node = shallow(<Overview {...props} />);
 
-  await node.instance().duplicateReport(processReport, collection)({target: {blur: jest.fn()}});
+  await node.instance().duplicateEntity('report', processReport, collection)({
+    target: {blur: jest.fn()}
+  });
 
-  expect(updateCollection).toHaveBeenCalledWith('aCollectionId', {
+  expect(update).toHaveBeenCalledWith('collection', 'aCollectionId', {
     data: {entities: ['reportID', 'newReport']}
   });
 });
@@ -144,7 +139,7 @@ it('should have a Dropdown with more creation options', async () => {
 it('should reload the reports after deleting a report', async () => {
   const node = shallow(<Overview {...props} />);
 
-  loadReports.mockClear();
+  load.mockClear();
 
   node.setState({
     deleting: {type: 'report', entity: processReport}
@@ -152,7 +147,7 @@ it('should reload the reports after deleting a report', async () => {
 
   await node.instance().deleteEntity();
 
-  expect(loadReports).toHaveBeenCalled();
+  expect(load).toHaveBeenCalledWith('report');
 });
 
 it('should display error messages', async () => {
@@ -163,7 +158,7 @@ it('should display error messages', async () => {
 });
 
 it('should redirect to new dashboard edit page', async () => {
-  createDashboard.mockReturnValueOnce('newDashboard');
+  create.mockReturnValueOnce('newDashboard');
   const node = shallow(<Overview {...props} />);
   await node.instance().componentDidMount();
 
@@ -178,13 +173,13 @@ it('should redirect to new dashboard edit page', async () => {
 });
 
 it('should duplicate dashboards', () => {
-  createDashboard.mockClear();
+  create.mockClear();
 
   const node = shallow(<Overview {...props} />);
 
-  node.instance().duplicateDashboard(dashboard)({target: {blur: jest.fn()}});
+  node.instance().duplicateEntity('dashboard', dashboard)({target: {blur: jest.fn()}});
 
-  expect(createDashboard).toHaveBeenCalledWith({
+  expect(create).toHaveBeenCalledWith('dashboard', {
     ...dashboard,
     name: dashboard.name + ' - Copy'
   });
@@ -193,7 +188,7 @@ it('should duplicate dashboards', () => {
 it('should correctly add report to a collection', async () => {
   const node = shallow(<Overview {...props} />);
   await node.instance().toggleReportCollection(processReport, collection, false)();
-  expect(updateCollection).toHaveBeenCalledWith('aCollectionId', {
+  expect(update).toHaveBeenCalledWith('collection', 'aCollectionId', {
     data: {entities: ['reportID', 'reportID']}
   });
 });
@@ -201,5 +196,5 @@ it('should correctly add report to a collection', async () => {
 it('should correctly remove report to a collection', async () => {
   const node = shallow(<Overview {...props} />);
   await node.instance().toggleReportCollection(processReport, collection, true)();
-  expect(updateCollection).toHaveBeenCalledWith('aCollectionId', {data: {entities: []}});
+  expect(update).toHaveBeenCalledWith('collection', 'aCollectionId', {data: {entities: []}});
 });

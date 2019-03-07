@@ -61,71 +61,17 @@ const reports = [
 const props = {
   reports: [processReport],
   collections: [collection],
-  duplicateReport: jest.fn(),
+  duplicateEntity: jest.fn(),
   createProcessReport: jest.fn(),
   showDeleteModalFor: jest.fn(),
   entitiesCollections: {reportID: [collection]},
   renderCollectionsDropdown: jest.fn()
 };
 
-it('should show information about reports', () => {
-  const node = shallow(<Reports {...props} />);
-
-  expect(node.find('.dataTitle')).toIncludeText('Some Report');
-});
-
-it('should show a link that goes to the report', () => {
-  const node = shallow(<Reports {...props} />);
-
-  expect(node.find('li > Link').prop('to')).toBe('/report/reportID');
-});
-
 it('should show no data indicator', () => {
   const node = shallow(<Reports {...props} reports={[]} />);
 
   expect(node.find('NoEntities')).toBePresent();
-});
-
-it('should contain a link to the edit mode of the report', () => {
-  const node = shallow(<Reports {...props} />);
-
-  expect(node.find('.operations Link').prop('to')).toBe('/report/reportID/edit');
-});
-
-it('should show invok showDeleteModal when deleting Report', async () => {
-  const node = shallow(<Reports {...props} />);
-
-  await node
-    .find('.operations')
-    .find(Button)
-    .last()
-    .simulate('click');
-
-  expect(props.showDeleteModalFor).toHaveBeenCalled();
-});
-
-it('should invok duplicate reports when duplicating reports', () => {
-  const node = shallow(<Reports {...props} />);
-
-  node
-    .find('.operations')
-    .find(Button)
-    .first()
-    .simulate('click', {target: {blur: jest.fn()}});
-
-  expect(props.duplicateReport).toHaveBeenCalledWith(processReport);
-});
-
-it('should display combined tag for combined reports', () => {
-  const node = shallow(<Reports {...props} reports={[combinedProcessReport]} />);
-
-  expect(node.find('.dataTitle')).toIncludeText('Combined');
-});
-
-it('should display decision tag for decision reports', () => {
-  const node = shallow(<Reports {...props} reports={[decisionReport]} />);
-
-  expect(node.find('.dataTitle')).toIncludeText('Decision');
 });
 
 it('should contain a button to collapse the entities list', () => {

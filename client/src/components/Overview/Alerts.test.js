@@ -4,7 +4,7 @@ import {shallow} from 'enzyme';
 import {Button} from 'components';
 
 import AlertsWithErrorHandling from './Alerts';
-import {loadReports, loadAlerts} from './service';
+import {load, loadAlerts} from './service';
 
 const Alerts = AlertsWithErrorHandling.WrappedComponent;
 
@@ -28,14 +28,14 @@ const alert = {
 };
 
 beforeAll(() => {
-  loadReports.mockReturnValue(reports);
+  load.mockReturnValue(reports);
   loadAlerts.mockReturnValue([alert]);
 });
 
 it('should load existing reports', () => {
   shallow(<Alerts {...props} />);
 
-  expect(loadReports).toHaveBeenCalled();
+  expect(load).toHaveBeenCalled();
 });
 
 it('should only save single number reports', async () => {

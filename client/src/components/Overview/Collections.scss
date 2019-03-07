@@ -14,12 +14,12 @@
     width: 100%;
   }
 
-  ul.entityList .collection {
+  ul.entityList .CollectionItem {
     .collapseIcon {
       margin-top: 0;
     }
 
-    > .item {
+    > .listItem {
       &:hover {
         background: none;
       }

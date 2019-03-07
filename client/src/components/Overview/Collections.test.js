@@ -4,7 +4,6 @@ import {shallow} from 'enzyme';
 import {Button} from 'components';
 
 import Collections from './Collections';
-import {getReportIcon} from './service';
 jest.mock('./service');
 
 const processReport = {
@@ -38,26 +37,10 @@ const collectionWithManyReports = {
   }
 };
 
-beforeAll(() => {
-  getReportIcon.mockReturnValue({Icon: () => {}, label: 'Icon'});
-});
-
 const props = {
   updating: null,
-  collections: [collection],
-  entitiesCollections: {reportID: [collection]},
-  updateOrCreateCollection: jest.fn(),
-  setCollectionToUpdate: jest.fn(),
-  showDeleteModalFor: jest.fn(),
-  duplicateReport: jest.fn(),
-  renderCollectionsDropdown: jest.fn()
+  collections: [collection]
 };
-
-it('should show information about collections', () => {
-  const node = shallow(<Collections {...props} />);
-
-  expect(node.find('.dataTitle')).toIncludeText('aCollectionName');
-});
 
 it('should show no data indicator', () => {
   const node = shallow(<Collections {...props} collections={[]} />);
@@ -65,30 +48,9 @@ it('should show no data indicator', () => {
   expect(node.find('.collectionBlankSlate')).toBePresent();
 });
 
-it('should invok setCollectionToUpdate on updating a collection', () => {
+it('should show the list of entities when entity has open state', () => {
   const node = shallow(<Collections {...props} />);
-  node
-    .find('.operations')
-    .find(Button)
-    .first()
-    .simulate('click');
-
-  expect(props.setCollectionToUpdate).toHaveBeenCalledWith({
-    id: 'aCollectionId',
-    name: 'aCollectionName'
-  });
-});
-
-it('should contain a button to collapse the entities list', () => {
-  const node = shallow(<Collections {...props} />);
-
-  expect(node.find('.ToggleCollapse')).toBePresent();
-});
-
-it('should show the list of entities when clicking the collapse buttons', () => {
-  const node = shallow(<Collections {...props} />);
-
-  node.find('.ToggleCollapse').simulate('click');
+  node.setState({[collection.id]: true});
 
   expect(node.find('.entityList')).toBePresent();
 });
@@ -96,7 +58,7 @@ it('should show the list of entities when clicking the collapse buttons', () => 
 it('should not show a button to show all reports if the number of reports is less than 5', () => {
   const node = shallow(<Collections {...props} />);
 
-  node.find('.ToggleCollapse').simulate('click');
+  node.setState({[collection.id]: true});
 
   expect(node).not.toIncludeText('Show all');
 });
@@ -104,39 +66,16 @@ it('should not show a button to show all reports if the number of reports is les
 it('should show a button to show all reports if the number of reports is greater than 5', () => {
   const node = shallow(<Collections {...props} collections={[collectionWithManyReports]} />);
 
-  node.find('.ToggleCollapse').simulate('click');
+  node.setState({[collection.id]: true});
 
-  expect(node).toIncludeText('Show all');
+  expect(node.find(Button)).toIncludeText('Show all');
 });
 
 it('should show a button to show less reports if the number of reports is greater than 5', () => {
   const node = shallow(<Collections {...props} collections={[collectionWithManyReports]} />);
-  node.find('.ToggleCollapse').simulate('click');
+  node.setState({[collection.id]: true});
 
-  const button = node.find(Button).filter('[type="link"]');
+  node.find(Button).simulate('click');
 
-  button.simulate('click');
-
-  expect(node).toIncludeText('Show less...');
-});
-
-it('should show a link for reports inside collection', () => {
-  const node = shallow(<Collections {...props} />);
-  node.find('.ToggleCollapse').simulate('click');
-
-  expect(node.find('li > Link').prop('to')).toBe('/report/reportID');
-});
-
-it('should invok duplicate report when clicking duplicate report button with the report and the parent collection', () => {
-  const node = shallow(<Collections {...props} />);
-  node.find('.ToggleCollapse').simulate('click');
-
-  node
-    .find('.operations')
-    .at(1)
-    .find(Button)
-    .first()
-    .simulate('click', {target: {blur: jest.fn()}});
-
-  expect(props.duplicateReport).toHaveBeenCalledWith(processReport, collection);
+  expect(node.find(Button)).toIncludeText('Show less...');
 });

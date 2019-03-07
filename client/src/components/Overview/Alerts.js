@@ -10,7 +10,7 @@ import {addNotification} from 'notifications';
 import './Alerts.scss';
 import entityIcons from './entityIcons';
 
-import {loadAlerts, loadReports, updateAlert, createAlert, deleteAlert} from './service';
+import {loadAlerts, load, updateAlert, createAlert, deleteAlert} from './service';
 import LastModified from './subComponents/LastModified';
 import NoEntities from './subComponents/NoEntities';
 
@@ -39,7 +39,7 @@ class Alerts extends React.Component {
 
   componentDidMount = async () => {
     this.loadAlerts();
-    const reports = (await loadReports()).filter(
+    const reports = (await load('report')).filter(
       ({data: {visualization}}) => visualization === 'number'
     );
     this.setState({

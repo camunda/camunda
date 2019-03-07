@@ -1,15 +1,12 @@
 import React from 'react';
-import {Button, Icon, Message} from 'components';
-
-import {Link} from 'react-router-dom';
+import {Button, Message} from 'components';
 
 import entityIcons from './entityIcons';
-import LastModified from './subComponents/LastModified';
+import DashboardItem from './subComponents/DashboardItem';
 import NoEntities from './subComponents/NoEntities';
 import classnames from 'classnames';
 
 const HeaderIcon = entityIcons.dashboard.header.Component;
-const EntityIcon = entityIcons.dashboard.generic.Component;
 const OpenCloseIcon = entityIcons.entityOpenClose;
 
 class Dashboards extends React.Component {
@@ -53,58 +50,14 @@ class Dashboards extends React.Component {
             {error}
             <ul className="entityList">
               {empty}
-              {this.props.dashboards
-                .slice(0, this.state.limit ? 5 : undefined)
-                .map((itemData, idx) => (
-                  <li className="item" key={idx}>
-                    <Link className="info" to={`/dashboard/${itemData.id}`}>
-                      <span className="icon">
-                        <EntityIcon />
-                      </span>
-                      <div className="textInfo">
-                        <div className="data dataTitle">
-                          <h3>{itemData.name}</h3>
-                        </div>
-                        <div className="extraInfo">
-                          <span className="data custom">
-                            {itemData.reports.length} Report
-                            {itemData.reports.length !== 1 ? 's' : ''}
-                          </span>
-                          <LastModified
-                            label="Last modified"
-                            date={itemData.lastModified}
-                            author={itemData.lastModifier}
-                          />
-                        </div>
-                      </div>
-                    </Link>
-                    <div className="entityCollections" />
-                    <div className="operations">
-                      <Link title="Edit Dashboard" to={`/dashboard/${itemData.id}/edit`}>
-                        <Icon title="Edit Dashboard" type="edit" className="editLink" />
-                      </Link>
-                      <Button
-                        title="Duplicate Dashboard"
-                        onClick={this.props.duplicateDashboard(itemData)}
-                      >
-                        <Icon
-                          type="copy-document"
-                          title="Duplicate Dashboard"
-                          className="duplicateIcon"
-                        />
-                      </Button>
-                      <Button
-                        title="Delete Dashboard"
-                        onClick={this.props.showDeleteModalFor({
-                          type: 'dashboard',
-                          entity: itemData
-                        })}
-                      >
-                        <Icon type="delete" title="Delete Dashboard" className="deleteIcon" />
-                      </Button>
-                    </div>
-                  </li>
-                ))}
+              {this.props.dashboards.slice(0, this.state.limit ? 5 : undefined).map(dashboard => (
+                <DashboardItem
+                  key={dashboard.id}
+                  dashboard={dashboard}
+                  duplicateEntity={this.props.duplicateEntity}
+                  showDeleteModalFor={this.props.showDeleteModalFor}
+                />
+              ))}
             </ul>
             {this.props.dashboards.length > 5 &&
               (this.state.limit ? (

@@ -18,45 +18,13 @@ const dashboards = new Array(7).fill(dashboard);
 
 const props = {
   dashboards: [dashboard],
-  duplicateDashboard: jest.fn(),
-  createDashboard: jest.fn(),
-  showDeleteModalFor: jest.fn()
+  createDashboard: jest.fn()
 };
-
-it('should show information about dashboards', () => {
-  const node = shallow(<Dashboards {...props} />);
-
-  expect(node.find('.dataTitle')).toIncludeText('Some Dashboard');
-});
-
-it('should show a link that goes to the dashboard', () => {
-  const node = shallow(<Dashboards {...props} />);
-
-  expect(node.find('li > Link').prop('to')).toBe('/dashboard/dashboardID');
-});
 
 it('should show no data indicator', () => {
   const node = shallow(<Dashboards {...props} dashboards={[]} />);
 
   expect(node.find('NoEntities')).toBePresent();
-});
-
-it('should contain a link to the edit mode of the dashboard', () => {
-  const node = shallow(<Dashboards {...props} />);
-
-  expect(node.find('.operations Link').prop('to')).toBe('/dashboard/dashboardID/edit');
-});
-
-it('should invok duplicate dashboards when clicking duplicate icon', () => {
-  const node = shallow(<Dashboards {...props} />);
-
-  node
-    .find('.operations')
-    .find(Button)
-    .first()
-    .simulate('click', {target: {blur: jest.fn()}});
-
-  expect(props.duplicateDashboard).toHaveBeenCalledWith(dashboard);
 });
 
 it('should contain a button to collapse the entities list', () => {
