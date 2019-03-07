@@ -19,7 +19,7 @@ const mockProps = {
 describe('IncidentsBar', () => {
   it('should show the right text for 1 incident', () => {
     const node = mount(<IncidentsBar {...mockProps} />);
-    expect(node.text()).toContain('There is 1 incident in Instance 1.');
+    expect(node.text()).toContain('There is 1 Incident in Instance 1.');
   });
 
   it('should show the right text for more than 1 incident', () => {
@@ -29,7 +29,7 @@ describe('IncidentsBar', () => {
     };
     const node = mount(<IncidentsBar {...mockProps2} />);
 
-    expect(node.text()).toContain('There are 2 incidents in Instance 1.');
+    expect(node.text()).toContain('There are 2 Incidents in Instance 1.');
   });
 
   it('should call the onClick handler', () => {

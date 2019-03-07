@@ -9,13 +9,11 @@ import {mount} from 'enzyme';
 
 import {
   mockResolvedAsyncFn,
-  createInstance,
   createIncident,
-  createOperation,
   flushPromises
 } from 'modules/testUtils';
 
-import {STATE, OPERATION_STATE, OPERATION_TYPE} from 'modules/constants';
+import {OPERATION_TYPE} from 'modules/constants';
 
 import IncidentAction from './IncidentAction';
 import ActionStatus from 'modules/components/ActionStatus';
@@ -63,7 +61,7 @@ describe('IncidentAction', () => {
       const ItemNode = node.find(ActionItems.Item);
       expect(ItemNode).toExist();
       expect(ItemNode.props().type).toEqual(OPERATION_TYPE.RESOLVE_INCIDENT);
-      expect(ItemNode.props().title).toEqual('Retry incident');
+      expect(ItemNode.props().title).toEqual('Retry Incident');
     });
 
     it('should render show a spinner after retry button is clicked', async () => {
