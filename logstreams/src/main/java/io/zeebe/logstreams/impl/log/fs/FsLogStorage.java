@@ -391,7 +391,7 @@ public class FsLogStorage implements LogStorage {
 
     if (existingSegments == 0) {
       shouldApply = truncatedSegmentId == config.initialSegmentId;
-    } else if (existingSegments > 0) {
+    } else {
       final File lastSegment =
           segments.stream()
               .max((s1, s2) -> Integer.compare(getSegmentId(s1), getSegmentId(s2)))
