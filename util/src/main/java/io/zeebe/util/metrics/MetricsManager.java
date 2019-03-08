@@ -79,6 +79,7 @@ public class MetricsManager {
   }
 
   public class MetricBuilder {
+
     private final String name;
     private String type;
     private String description;
@@ -87,7 +88,6 @@ public class MetricsManager {
     public MetricBuilder(String name) {
       this.name = name;
       this.type = "counter";
-      this.description = "No description provided";
     }
 
     public MetricBuilder type(String type) {

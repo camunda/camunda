@@ -36,10 +36,13 @@ public class MetricsTests {
   public void shouldCreateMetric() {
     final MetricsManager metricsManager = new MetricsManager();
 
-    metricsManager.newMetric("metric1").create();
+    metricsManager.newMetric("metric1").description("example metric description").create();
 
     final String dump = dumpAsString(metricsManager, 100);
-    assertThat(dump).isEqualTo("zb_metric1{} 0 100\n");
+    assertThat(dump)
+        .isEqualTo(
+            metricComment("example metric description", "counter", "zb_metric1")
+                + "zb_metric1{} 0 100\n");
   }
 
   @Test
@@ -49,7 +52,7 @@ public class MetricsTests {
     final Metric metric = metricsManager.newMetric("metric1").create();
 
     String dump = dumpAsString(metricsManager, 100);
-    assertThat(dump).isEqualTo("zb_metric1{} 0 100\n");
+    assertThat(dump).isEqualTo(metricComment() + "zb_metric1{} 0 100\n");
 
     metric.close();
     dump = dumpAsString(metricsManager, 100);
@@ -65,7 +68,12 @@ public class MetricsTests {
     metricsManager.newMetric("metric2").create();
 
     final String dump = dumpAsString(metricsManager, 100);
-    assertThat(dump).isEqualTo("zb_metric1{} 0 100\n" + "zb_metric2{} 0 100\n");
+    assertThat(dump)
+        .isEqualTo(
+            metricComment("zb_metric1")
+                + "zb_metric1{} 0 100\n"
+                + metricComment("zb_metric2")
+                + "zb_metric2{} 0 100\n");
   }
 
   @Test
@@ -77,7 +85,7 @@ public class MetricsTests {
     metric.incrementOrdered();
 
     final String dump = dumpAsString(metricsManager, 100);
-    assertThat(dump).isEqualTo("zb_metric1{} 1 100\n");
+    assertThat(dump).isEqualTo(metricComment() + "zb_metric1{} 1 100\n");
   }
 
   @Test
@@ -89,7 +97,7 @@ public class MetricsTests {
     metric.getAndAddOrdered(215);
 
     final String dump = dumpAsString(metricsManager, 100);
-    assertThat(dump).isEqualTo("zb_metric1{} 215 100\n");
+    assertThat(dump).isEqualTo(metricComment() + "zb_metric1{} 215 100\n");
   }
 
   @Test
@@ -101,7 +109,7 @@ public class MetricsTests {
     metric.incrementOrdered();
 
     final String dump = dumpAsString(metricsManager, 100);
-    assertThat(dump).isEqualTo("zb_metric1{label1=\"value1\"} 1 100\n");
+    assertThat(dump).isEqualTo(metricComment() + "zb_metric1{label1=\"value1\"} 1 100\n");
   }
 
   @Test
@@ -118,7 +126,8 @@ public class MetricsTests {
     metric.incrementOrdered();
 
     final String dump = dumpAsString(metricsManager, 100);
-    assertThat(dump).isEqualTo("zb_metric1{label1=\"value1\",label2=\"value2\"} 1 100\n");
+    assertThat(dump)
+        .isEqualTo(metricComment() + "zb_metric1{label1=\"value1\",label2=\"value2\"} 1 100\n");
   }
 
   @Test
@@ -130,7 +139,9 @@ public class MetricsTests {
     metricsManager.newMetric("metric1").label("label1", "value1").create();
 
     final String dump = dumpAsString(metricsManager, 100);
-    assertThat(dump).isEqualTo("bz_metric1{broker=\"node1\",label1=\"value1\"} 0 100\n");
+    assertThat(dump)
+        .isEqualTo(
+            metricComment("bz_metric1") + "bz_metric1{broker=\"node1\",label1=\"value1\"} 0 100\n");
   }
 
   private static String dumpAsString(MetricsManager metricsManager, long now) {
@@ -138,5 +149,26 @@ public class MetricsTests {
     final int length = metricsManager.dump(buffer, 0, now);
 
     return BufferUtil.bufferAsString(buffer, 0, length);
+  }
+
+  private String metricComment() {
+    return metricComment("zb_metric1");
+  }
+
+  private String metricComment(String name) {
+    return metricComment("counter", name);
+  }
+
+  private String metricComment(String type, String name) {
+    return metricComment(null, type, name);
+  }
+
+  private String metricComment(String description, String type, String name) {
+    final StringBuilder builder = new StringBuilder();
+    if (description != null) {
+      builder.append("# HELP ").append(name).append(" ").append(description).append("\n");
+    }
+    builder.append("# TYPE ").append(name).append(" ").append(type).append("\n");
+    return builder.toString();
   }
 }
