@@ -125,7 +125,7 @@ public class WorkflowPersistenceCache {
     copiedWorkflow.wrap(buffer, 0, persistedWorkflow.getLength());
 
     final BpmnModelInstance modelInstance =
-        Bpmn.readModelFromStream(new DirectBufferInputStream(copiedWorkflow.getResource()));
+        readModelInstanceFromBuffer(copiedWorkflow.getResource());
     final List<ExecutableWorkflow> definitions = transformer.transformDefinitions(modelInstance);
 
     final ExecutableWorkflow executableWorkflow =
@@ -140,6 +140,12 @@ public class WorkflowPersistenceCache {
     addWorkflowToInMemoryState(deployedWorkflow);
 
     return deployedWorkflow;
+  }
+
+  private BpmnModelInstance readModelInstanceFromBuffer(DirectBuffer buffer) {
+    try (DirectBufferInputStream stream = new DirectBufferInputStream(buffer)) {
+      return Bpmn.readModelFromStream(stream);
+    }
   }
 
   private void addWorkflowToInMemoryState(final DeployedWorkflow deployedWorkflow) {
@@ -268,7 +274,7 @@ public class WorkflowPersistenceCache {
     if (workflowsByVersions != null) {
       return workflowsByVersions.values();
     }
-    return Collections.EMPTY_LIST;
+    return Collections.emptyList();
   }
 
   private void updateCompleteInMemoryState() {
