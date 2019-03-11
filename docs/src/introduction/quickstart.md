@@ -187,15 +187,15 @@ our case the ID is `order-process` as defined in the `order-process.bpmn`:
 ```
 
 Every instance of a workflow normally processes some kind of data. We can
-specify the initial data of the instance as payload when we start the instance.
+specify the initial data of the instance as variables when we start the instance.
 
 > **Note:** Windows users who want to execute this command using cmd or Powershell
-> have to escape the payload differently.
+> have to escape the variables differently.
 > - cmd: `"{\"orderId\": 1234}"`
 > - Powershell: `'{"\"orderId"\": 1234}'`
 
 ```
-./bin/zbctl create instance order-process --payload '{"orderId": 1234}'
+./bin/zbctl create instance order-process --variables '{"orderId": 1234}'
 ```
 ```
 {
@@ -248,7 +248,7 @@ After the job workers are running in the background we can create more instances
 of our workflow to observe how the workers will complete them.
 
 ```
-./bin/zbctl create instance order-process --payload '{"orderId": 12345}'
+./bin/zbctl create instance order-process --variables '{"orderId": 12345}'
 ```
 
 To close all job workers use the `kill` command to stop the background processes.
