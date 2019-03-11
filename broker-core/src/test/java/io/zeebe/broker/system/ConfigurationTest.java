@@ -28,6 +28,7 @@ import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DIRE
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_EMBED_GATEWAY;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_INITIAL_CONTACT_POINTS;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_METRICS_HTTP_SERVER;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_NODE_ID;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PARTITIONS_COUNT;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
@@ -40,6 +41,7 @@ import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.EmbeddedGatewayCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
+import io.zeebe.broker.system.configuration.MetricsCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingClientApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingManagementCfg;
@@ -71,6 +73,7 @@ public class ConfigurationTest {
   public static final int MANAGEMENT_PORT = SocketBindingManagementCfg.DEFAULT_PORT;
   public static final int REPLICATION_PORT = SocketBindingReplicationCfg.DEFAULT_PORT;
   public static final int SUBSCRIPTION_PORT = SocketBindingSubscriptionCfg.DEFAULT_PORT;
+  public static final int METRICS_PORT = MetricsCfg.DEFAULT_PORT;
 
   @Test
   public void shouldUseSpecifiedNodeId() {
@@ -97,12 +100,13 @@ public class ConfigurationTest {
 
   @Test
   public void shouldUseDefaultPorts() {
-    assertPorts("default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT, SUBSCRIPTION_PORT);
+    assertPorts(
+        "default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT, SUBSCRIPTION_PORT, METRICS_PORT);
   }
 
   @Test
   public void shouldUseSpecifiedPorts() {
-    assertPorts("specific-ports", 1, 2, 3, 4);
+    assertPorts("specific-ports", 1, 2, 3, 4, 5);
   }
 
   @Test
@@ -113,13 +117,15 @@ public class ConfigurationTest {
         CLIENT_PORT + offset,
         MANAGEMENT_PORT + offset,
         REPLICATION_PORT + offset,
-        SUBSCRIPTION_PORT + offset);
+        SUBSCRIPTION_PORT + offset,
+        METRICS_PORT + offset);
   }
 
   @Test
   public void shouldUsePortOffsetWithSpecifiedPorts() {
     final int offset = 30;
-    assertPorts("specific-ports-offset", 1 + offset, 2 + offset, 3 + offset, 4 + offset);
+    assertPorts(
+        "specific-ports-offset", 1 + offset, 2 + offset, 3 + offset, 4 + offset, 5 + offset);
   }
 
   @Test
@@ -131,20 +137,22 @@ public class ConfigurationTest {
         CLIENT_PORT + offset,
         MANAGEMENT_PORT + offset,
         REPLICATION_PORT + offset,
-        SUBSCRIPTION_PORT + offset);
+        SUBSCRIPTION_PORT + offset,
+        METRICS_PORT + offset);
   }
 
   @Test
   public void shouldUsePortOffsetFromEnvironmentWithSpecifiedPorts() {
     environment.put(ENV_PORT_OFFSET, "3");
     final int offset = 30;
-    assertPorts("specific-ports", 1 + offset, 2 + offset, 3 + offset, 4 + offset);
+    assertPorts("specific-ports", 1 + offset, 2 + offset, 3 + offset, 4 + offset, 5 + offset);
   }
 
   @Test
   public void shouldIgnoreInvalidPortOffsetFromEnvironment() {
     environment.put(ENV_PORT_OFFSET, "a");
-    assertPorts("default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT, SUBSCRIPTION_PORT);
+    assertPorts(
+        "default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT, SUBSCRIPTION_PORT, METRICS_PORT);
   }
 
   @Test
@@ -156,7 +164,8 @@ public class ConfigurationTest {
         CLIENT_PORT + offset,
         MANAGEMENT_PORT + offset,
         REPLICATION_PORT + offset,
-        SUBSCRIPTION_PORT + offset);
+        SUBSCRIPTION_PORT + offset,
+        METRICS_PORT + offset);
   }
 
   @Test
@@ -203,7 +212,8 @@ public class ConfigurationTest {
         "clientHost",
         "managementHost",
         "replicationHost",
-        "subscriptionHost");
+        "subscriptionHost",
+        "metricsHost");
   }
 
   @Test
@@ -233,7 +243,8 @@ public class ConfigurationTest {
         "clientHost",
         "managementHost",
         "replicationHost",
-        "subscriptionHost");
+        "subscriptionHost",
+        "metricsHost");
   }
 
   @Test
@@ -438,6 +449,36 @@ public class ConfigurationTest {
     assertThat(gatewayCfg.isEnable()).isTrue();
   }
 
+  @Test
+  public void shouldReadDefaultEnableMetricsHttpServer() {
+    // when
+    final MetricsCfg metricsCfg = readConfig("default").getMetrics();
+
+    // then
+    assertThat(metricsCfg.isEnableHttpServer()).isFalse();
+  }
+
+  @Test
+  public void shouldReadEnableMetricsHttpServer() {
+    // when
+    final MetricsCfg metricsCfg = readConfig("enabled-metrics-http-server").getMetrics();
+
+    // then
+    assertThat(metricsCfg.isEnableHttpServer()).isTrue();
+  }
+
+  @Test
+  public void shouldEnableMetricsHttpServerViaEnvironment() {
+    // given
+    environment.put(ENV_METRICS_HTTP_SERVER, "true");
+
+    // when
+    final MetricsCfg metricsCfg = readConfig("default").getMetrics();
+
+    // then
+    assertThat(metricsCfg.isEnableHttpServer()).isTrue();
+  }
+
   private BrokerCfg readConfig(final String name) {
     final String configPath = "/system/" + name + ".toml";
     final InputStream resourceAsStream = ConfigurationTest.class.getResourceAsStream(configPath);
@@ -460,16 +501,19 @@ public class ConfigurationTest {
       final int client,
       final int management,
       final int replication,
-      final int subscription) {
-    final NetworkCfg network = readConfig(configFileName).getNetwork();
+      final int subscription,
+      final int metrics) {
+    final BrokerCfg brokerCfg = readConfig(configFileName);
+    final NetworkCfg network = brokerCfg.getNetwork();
     assertThat(network.getClient().getPort()).isEqualTo(client);
     assertThat(network.getManagement().getPort()).isEqualTo(management);
     assertThat(network.getReplication().getPort()).isEqualTo(replication);
     assertThat(network.getSubscription().getPort()).isEqualTo(subscription);
+    assertThat(brokerCfg.getMetrics().getPort()).isEqualTo(metrics);
   }
 
   private void assertHost(final String configFileName, final String host) {
-    assertHost(configFileName, host, host, host, host, host, host);
+    assertHost(configFileName, host, host, host, host, host, host, host);
   }
 
   private void assertHost(
@@ -479,7 +523,8 @@ public class ConfigurationTest {
       final String client,
       final String management,
       final String replication,
-      final String subscription) {
+      final String subscription,
+      final String metrics) {
     final BrokerCfg brokerCfg = readConfig(configFileName);
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     assertThat(networkCfg.getHost()).isEqualTo(host);
@@ -488,6 +533,7 @@ public class ConfigurationTest {
     assertThat(networkCfg.getManagement().getHost()).isEqualTo(management);
     assertThat(networkCfg.getReplication().getHost()).isEqualTo(replication);
     assertThat(networkCfg.getSubscription().getHost()).isEqualTo(subscription);
+    assertThat(brokerCfg.getMetrics().getHost()).isEqualTo(metrics);
   }
 
   private void assertContactPoints(final String configFileName, final String... contactPoints) {

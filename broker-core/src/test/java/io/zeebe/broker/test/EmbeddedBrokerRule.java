@@ -23,6 +23,7 @@ import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setClientApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setManagementApiPort;
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setMetricsPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setReplicationApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setSubscriptionApiPort;
 import static io.zeebe.broker.workflow.WorkflowServiceNames.WORKFLOW_REPOSITORY_SERVICE;
@@ -343,6 +344,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
     setManagementApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
     setReplicationApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
     setSubscriptionApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
+    setMetricsPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
   }
 
   public void interruptClientConnections() {
