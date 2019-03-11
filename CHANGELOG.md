@@ -1,3 +1,19 @@
+<a name="0.16.2"></a>
+## 0.16.2 (2019-03-11)
+
+
+#### Bug Fixes
+
+* **broker:**
+  * update workflow instance created metric correctly ([a627ea78](https://github.com/zeebe-io/zeebe/commit/a627ea78d09dec22cdc0474165e8a7e37055a2e1))
+  * time out trigger respects dispatcher backpressure ([41037895](https://github.com/zeebe-io/zeebe/commit/4103789534bcc75a97a795a102580ba8ec2665ed))
+
+#### Features
+
+* **broker:**  add HTTP metrics endpoint ([131a57fc](https://github.com/zeebe-io/zeebe/commit/131a57fc27cff00417a677d6e4ddfa8cffd9940a))
+
+
+
 <a name="0.16.1"></a>
 ## 0.16.1 (2019-03-07)
 
@@ -14,12 +30,11 @@
   *  set correct license information in pom file ([a6bd1ec8](https://github.com/zeebe-io/zeebe/commit/a6bd1ec8b81c7dae24c805b44f87ceb135dc6edd))
   *  send close message subscription command to correct partition ([b5600170](https://github.com/zeebe-io/zeebe/commit/b56001709b4693acd037f92e4724119a991cf2ce))
   *  set correct BPMN element type for sequence flows ([74f93a3e](https://github.com/zeebe-io/zeebe/commit/74f93a3e9654c89309a79c6ccf47e6a23081859d))
-* **broker-core:**
   *  set repetitions and reset timer record ([418eedc9](https://github.com/zeebe-io/zeebe/commit/418eedc9be1a8f3a827d4f9cf81880ca0ef145d3))
   *  only distribute deployments from first partition ([a2a069c9](https://github.com/zeebe-io/zeebe/commit/a2a069c9e70430892c2418710bf1c58ee75b9b76))
   *  fix timer start events key ([833f3246](https://github.com/zeebe-io/zeebe/commit/833f3246f668537044587fc3cb255c9789d9bfae))
-* **msgpack-core:**  fix overflows ([5833ee56](https://github.com/zeebe-io/zeebe/commit/5833ee563aa30300bd34daf6b38bad225bf8968d))
-* **zb-db:**  stop iterating after prefix was exceeded ([c5c38ba9](https://github.com/zeebe-io/zeebe/commit/c5c38ba9a3cb840ea7c7105376c2d7b9a263e23d))
+  *  fix overflows ([5833ee56](https://github.com/zeebe-io/zeebe/commit/5833ee563aa30300bd34daf6b38bad225bf8968d))
+  *  stop iterating after prefix was exceeded ([c5c38ba9](https://github.com/zeebe-io/zeebe/commit/c5c38ba9a3cb840ea7c7105376c2d7b9a263e23d))
 
 
 

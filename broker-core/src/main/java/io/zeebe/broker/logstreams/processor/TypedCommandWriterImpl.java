@@ -134,6 +134,7 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
     appendRecord(key, RecordType.COMMAND, intent, value, metadata);
   }
 
+  @Override
   public void reset() {
     batchWriter.reset();
   }

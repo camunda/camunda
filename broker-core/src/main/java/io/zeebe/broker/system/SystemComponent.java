@@ -20,11 +20,14 @@ package io.zeebe.broker.system;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.system.SystemServiceNames.LEADER_MANAGEMENT_REQUEST_HANDLER;
 import static io.zeebe.broker.system.SystemServiceNames.METRICS_FILE_WRITER;
+import static io.zeebe.broker.system.SystemServiceNames.METRICS_HTTP_SERVER;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.bufferingServerTransport;
 
+import io.zeebe.broker.system.configuration.MetricsCfg;
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.zeebe.broker.system.metrics.MetricsFileWriterService;
+import io.zeebe.broker.system.metrics.MetricsHttpServerService;
 import io.zeebe.servicecontainer.ServiceContainer;
 
 public class SystemComponent implements Component {
@@ -33,9 +36,16 @@ public class SystemComponent implements Component {
   public void init(final SystemContext context) {
     final ServiceContainer serviceContainer = context.getServiceContainer();
 
-    final MetricsFileWriterService metricsFileWriterService =
-        new MetricsFileWriterService(context.getBrokerConfiguration().getMetrics());
-    serviceContainer.createService(METRICS_FILE_WRITER, metricsFileWriterService).install();
+    final MetricsCfg metricsCfg = context.getBrokerConfiguration().getMetrics();
+    serviceContainer
+        .createService(METRICS_FILE_WRITER, new MetricsFileWriterService(metricsCfg))
+        .install();
+
+    if (metricsCfg.isEnableHttpServer()) {
+      serviceContainer
+          .createService(METRICS_HTTP_SERVER, new MetricsHttpServerService(metricsCfg))
+          .install();
+    }
 
     final LeaderManagementRequestHandler requestHandlerService =
         new LeaderManagementRequestHandler();

@@ -15,25 +15,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.logstreams.processor;
+package io.zeebe.broker.system.metrics;
 
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.intent.Intent;
-import java.util.function.Consumer;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.codec.http.HttpServerCodec;
+import io.zeebe.util.metrics.MetricsManager;
 
-/** Things that any actor can write to a partition. */
-public interface TypedCommandWriter {
+public class MetricsHttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
-  void appendNewCommand(Intent intent, UnpackedObject value);
+  private final MetricsManager metricsManager;
 
-  void appendFollowUpCommand(long key, Intent intent, UnpackedObject value);
+  public MetricsHttpServerInitializer(MetricsManager metricsManager) {
+    this.metricsManager = metricsManager;
+  }
 
-  void appendFollowUpCommand(
-      long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
-
-  void reset();
-
-  /** @return position of new record, negative value on failure */
-  long flush();
+  @Override
+  protected void initChannel(SocketChannel ch) throws Exception {
+    ch.pipeline()
+        .addLast("codec", new HttpServerCodec())
+        .addLast("request", new MetricsHttpServerHandler(metricsManager));
+  }
 }

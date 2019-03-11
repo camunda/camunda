@@ -128,7 +128,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
         metrics.countInstanceCanceled();
       } else if (state == WorkflowInstanceIntent.ELEMENT_COMPLETED) {
         metrics.countInstanceCompleted();
-      } else if (state == WorkflowInstanceIntent.ELEMENT_ACTIVATING) {
+      } else if (state == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
         metrics.countInstanceCreated();
       }
     }

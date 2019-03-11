@@ -9,3 +9,6 @@ port = 3
 
 [network.subscription]
 port = 4
+
+[metrics]
+port = 5

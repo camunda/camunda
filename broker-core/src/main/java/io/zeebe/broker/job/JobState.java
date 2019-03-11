@@ -28,7 +28,6 @@ import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.util.EnsureUtil;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import org.agrona.DirectBuffer;
 
@@ -181,7 +180,7 @@ public class JobState {
   }
 
   public void forEachTimedOutEntry(
-      final long upperBound, final BiConsumer<Long, JobRecord> callback) {
+      final long upperBound, final BiFunction<Long, JobRecord, Boolean> callback) {
 
     deadlinesColumnFamily.whileTrue(
         (compositeKey, zbNil) -> {
@@ -189,15 +188,9 @@ public class JobState {
           final boolean isDue = deadline < upperBound;
           if (isDue) {
             final long jobKey = compositeKey.getSecond().getValue();
-            final JobRecord job = getJob(jobKey);
-
-            if (job == null) {
-              throw new IllegalStateException(
-                  String.format("Expected to find job with key %d, but no job found", jobKey));
-            }
-            callback.accept(jobKey, job);
+            return visitJob(jobKey, callback);
           }
-          return isDue;
+          return false;
         });
   }
 
@@ -230,14 +223,17 @@ public class JobState {
         jobTypeKey,
         ((compositeKey, zbNil) -> {
           final long jobKey = compositeKey.getSecond().getValue();
-
-          final JobRecord job = getJob(jobKey);
-          if (job == null) {
-            throw new IllegalStateException(
-                String.format("Expected to find job with key %d, but no job found", jobKey));
-          }
-          return callback.apply(jobKey, job);
+          return visitJob(jobKey, callback);
         }));
+  }
+
+  private boolean visitJob(long jobKey, BiFunction<Long, JobRecord, Boolean> callback) {
+    final JobRecord job = getJob(jobKey);
+    if (job == null) {
+      throw new IllegalStateException(
+          String.format("Expected to find job with key %d, but no job found", jobKey));
+    }
+    return callback.apply(jobKey, job);
   }
 
   public JobRecord updateJobRetries(final long jobKey, final int retries) {

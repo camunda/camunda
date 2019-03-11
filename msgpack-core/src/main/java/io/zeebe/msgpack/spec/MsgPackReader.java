@@ -373,7 +373,7 @@ public class MsgPackReader {
         case FIXMAP:
           {
             final int mapLen = b & 0x0f;
-            count += mapLen * 2;
+            count += mapLen * 2L;
             break;
           }
         case FIXARRAY:
@@ -416,8 +416,7 @@ public class MsgPackReader {
           break;
         case BIN32:
         case STR32:
-          final int length = (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
-          offset += 4 + length;
+          offset += 4 + (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
           break;
         case FIXEXT1:
           offset += 2;
@@ -448,15 +447,15 @@ public class MsgPackReader {
           offset += 2;
           break;
         case ARRAY32:
-          count += (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
+          count += ensurePositive(buffer.getInt(offset, BYTE_ORDER));
           offset += 4;
           break;
         case MAP16:
-          count += Short.toUnsignedInt(buffer.getShort(offset, BYTE_ORDER)) * 2;
+          count += Short.toUnsignedInt(buffer.getShort(offset, BYTE_ORDER)) * 2L;
           offset += 2;
           break;
         case MAP32:
-          count += (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER)) * 2;
+          count += ensurePositive(buffer.getInt(offset, BYTE_ORDER)) * 2L;
           offset += 4;
           break;
         case NEVER_USED:
