@@ -32,6 +32,8 @@ public interface TypedCommandWriter {
   void appendFollowUpCommand(
       long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
 
+  void reset();
+
   /** @return position of new record, negative value on failure */
   long flush();
 }
