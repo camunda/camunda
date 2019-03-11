@@ -17,11 +17,17 @@
  */
 package io.zeebe.broker.system;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
 
 import io.zeebe.broker.system.configuration.MetricsCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import java.net.Socket;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -36,10 +42,15 @@ public class MetricsHttpServerTest {
       new EmbeddedBrokerRule(cfg -> cfg.getMetrics().setEnableHttpServer(false));
 
   @Test
-  public void shouldConfigureGateway() {
+  public void shouldConfigureMetricsHttpServer() {
     MetricsCfg metricsCfg = brokerWithEnabledMetricsHttpServer.getBrokerCfg().getMetrics();
-    try (Socket socket = new Socket(metricsCfg.getHost(), metricsCfg.getPort())) {
-      // expect no error
+    try (CloseableHttpClient client = HttpClients.createDefault()) {
+      final HttpGet request =
+          new HttpGet("http://" + metricsCfg.getHost() + ":" + metricsCfg.getPort());
+      try (CloseableHttpResponse response = client.execute(request)) {
+        assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
+        assertThat(EntityUtils.toString(response.getEntity())).contains("zb_broker_info");
+      }
     } catch (Exception e) {
       fail("Failed to connect to metrics http server with config: " + metricsCfg, e);
     }
