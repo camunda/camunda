@@ -219,7 +219,7 @@ public class BufferedLogStreamReader implements LogStreamReader {
 
   private void allocateBuffer(final int capacity) {
     if (!isClosed()
-        && this.allocatedBuffer.capacity() == MAX_BUFFER_CAPACITY
+        && (allocatedBuffer != null && allocatedBuffer.capacity() == MAX_BUFFER_CAPACITY)
         && capacity >= MAX_BUFFER_CAPACITY) {
       throw new RuntimeException(
           "Next fragment requires more space then the maximal buffer capacity of "

@@ -136,7 +136,7 @@ public class BpmnYamlParser {
       final AbstractFlowNodeBuilder<?, ?> builder, YamlTask task) {
     final String id = task.getId();
     final String taskType = task.getType();
-    final Integer taskRetries = task.getRetries();
+    final int taskRetries = task.getRetries();
 
     final ServiceTaskBuilder serviceTaskBuilder =
         builder.serviceTask(id).zeebeTaskType(taskType).zeebeTaskRetries(taskRetries);

@@ -32,18 +32,19 @@ public class DebugHttpExporter implements Exporter {
   @Override
   public void configure(Context context) {
     log = context.getLogger();
-    final DebugHttpExporterConfiguration configuration =
-        context.getConfiguration().instantiate(DebugHttpExporterConfiguration.class);
+    initHttpServer(context);
+  }
+
+  private synchronized void initHttpServer(Context context) {
     if (httpServer == null) {
-      synchronized (this) {
-        if (httpServer == null) {
-          httpServer = new DebugHttpServer(configuration.port, configuration.limit);
-          log.info(
-              "Debug http server started, inspect the last {} records on http://localhost:{}",
-              configuration.limit,
-              configuration.port);
-        }
-      }
+      final DebugHttpExporterConfiguration configuration =
+          context.getConfiguration().instantiate(DebugHttpExporterConfiguration.class);
+
+      httpServer = new DebugHttpServer(configuration.port, configuration.limit);
+      log.info(
+          "Debug http server started, inspect the last {} records on http://localhost:{}",
+          configuration.limit,
+          configuration.port);
     }
   }
 
@@ -58,13 +59,13 @@ public class DebugHttpExporter implements Exporter {
 
   @Override
   public void close() {
+    stopHttpServer();
+  }
+
+  public synchronized void stopHttpServer() {
     if (httpServer != null) {
-      synchronized (this) {
-        if (httpServer != null) {
-          httpServer.close();
-          httpServer = null;
-        }
-      }
+      httpServer.close();
+      httpServer = null;
     }
   }
 

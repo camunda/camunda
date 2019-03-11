@@ -87,8 +87,8 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
       }
     }
 
-    final Double ycoord = lowestheight + 50.0;
-    final Double xcoord = 100.0;
+    final double ycoord = lowestheight + 50.0;
+    final double xcoord = 100.0;
 
     // move target
     targetBounds.setY(ycoord);

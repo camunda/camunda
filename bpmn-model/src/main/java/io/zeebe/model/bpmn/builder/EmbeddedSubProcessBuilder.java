@@ -93,9 +93,9 @@ public class EmbeddedSubProcessBuilder
     final Bounds parentBounds = parentBpmnShape.getBounds();
 
     // these should just be offsets maybe
-    final Double ycoord = parentBounds.getHeight() + parentBounds.getY();
+    final double ycoord = parentBounds.getHeight() + parentBounds.getY();
 
-    Double xcoord =
+    double xcoord =
         (parentBounds.getWidth() / 2) - (targetBounds.getWidth() / 2) + parentBounds.getX();
     if (xcoord - parentBounds.getX() < 50.0) {
       xcoord = 50.0 + parentBounds.getX();
