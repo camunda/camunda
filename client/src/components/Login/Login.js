@@ -1,6 +1,5 @@
 import React from 'react';
 import {Redirect} from 'react-router-dom';
-import {isLoggedIn} from 'credentials';
 
 import {login} from './service';
 
@@ -47,7 +46,7 @@ export default class Login extends React.Component {
     const {username, password, redirect, error} = this.state;
     const locationState = this.props.location && this.props.location.state;
 
-    if (redirect || isLoggedIn()) {
+    if (redirect) {
       return <Redirect to={(locationState && locationState.from) || '/'} />;
     }
 

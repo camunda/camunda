@@ -1,6 +1,5 @@
 import React from 'react';
 import {Route, Redirect} from 'react-router-dom';
-import {isLoggedIn} from 'credentials';
 import {addHandler, removeHandler} from 'request';
 import {addNotification} from 'notifications';
 import debounce from 'debounce';
@@ -34,7 +33,7 @@ export default class PrivateRoute extends React.Component {
       <Route
         {...rest}
         render={props => {
-          return isLoggedIn() && !this.state.forceRedirect ? (
+          return !this.state.forceRedirect ? (
             <Component {...props} />
           ) : (
             <Redirect
@@ -49,7 +48,7 @@ export default class PrivateRoute extends React.Component {
     );
   }
 
-  componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate() {
     if (this.state.forceRedirect) {
       this.setState({
         forceRedirect: false
