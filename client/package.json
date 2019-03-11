@@ -13,7 +13,7 @@
     "dmn-js": "^6.3.2",
     "element-closest": "^2.0.2",
     "heatmap.js": "^2.0.5",
-    "immutability-helper": "^2.6.0",
+    "immutability-helper": "^3.0.0",
     "inferno": "~5.0.5",
     "moment": "^2.24.0",
     "object.values": "^1.0.4",
