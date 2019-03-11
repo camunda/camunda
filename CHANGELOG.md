@@ -1,3 +1,19 @@
+<a name="0.16.2"></a>
+## 0.16.2 (2019-03-11)
+
+
+#### Bug Fixes
+
+* **broker:**
+  * update workflow instance created metric correctly ([a627ea78](https://github.com/zeebe-io/zeebe/commit/a627ea78d09dec22cdc0474165e8a7e37055a2e1))
+  * time out trigger respects dispatcher backpressure ([41037895](https://github.com/zeebe-io/zeebe/commit/4103789534bcc75a97a795a102580ba8ec2665ed))
+
+#### Features
+
+* **broker:**  add HTTP metrics endpoint ([131a57fc](https://github.com/zeebe-io/zeebe/commit/131a57fc27cff00417a677d6e4ddfa8cffd9940a))
+
+
+
 <a name="0.16.1"></a>
 ## 0.16.1 (2019-03-07)
 
