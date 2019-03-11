@@ -35,9 +35,9 @@ public class IncidentState {
 
   // we need two separate wrapper to not interfere with get and put
   // see https://github.com/zeebe-io/zeebe/issues/1916
-  private final UnpackedObjectValue incidenRecordToRead;
-  private final UnpackedObjectValue incidentRecordToWrite;
-  private final ColumnFamily<DbLong, UnpackedObjectValue> incidentColumnFamily;
+  private final UnpackedObjectValue<IncidentRecord> incidentRecordToRead;
+  private final UnpackedObjectValue<IncidentRecord> incidentRecordToWrite;
+  private final ColumnFamily<DbLong, UnpackedObjectValue<IncidentRecord>> incidentColumnFamily;
 
   /** element instance key -> incident key */
   private final DbLong elementInstanceKey;
@@ -53,11 +53,11 @@ public class IncidentState {
     this.zeebeDb = zeebeDb;
 
     incidentKey = new DbLong();
-    incidenRecordToRead = new UnpackedObjectValue();
-    incidenRecordToRead.wrapObject(new IncidentRecord());
-    incidentRecordToWrite = new UnpackedObjectValue();
+    incidentRecordToRead = new UnpackedObjectValue<>();
+    incidentRecordToRead.wrapObject(new IncidentRecord());
+    incidentRecordToWrite = new UnpackedObjectValue<>();
     incidentColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.INCIDENTS, incidentKey, incidenRecordToRead);
+        zeebeDb.createColumnFamily(ZbColumnFamilies.INCIDENTS, incidentKey, incidentRecordToRead);
 
     elementInstanceKey = new DbLong();
     workflowInstanceIncidentColumnFamily =

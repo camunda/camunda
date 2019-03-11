@@ -22,11 +22,11 @@ import io.zeebe.msgpack.UnpackedObject;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class UnpackedObjectValue implements DbValue {
+public class UnpackedObjectValue<T extends UnpackedObject> implements DbValue {
 
-  private UnpackedObject value;
+  private T value;
 
-  public void wrapObject(UnpackedObject value) {
+  public void wrapObject(T value) {
     this.value = value;
   }
 
@@ -45,7 +45,7 @@ public class UnpackedObjectValue implements DbValue {
     value.write(buffer, offset);
   }
 
-  public UnpackedObject getObject() {
+  public T getObject() {
     return value;
   }
 }

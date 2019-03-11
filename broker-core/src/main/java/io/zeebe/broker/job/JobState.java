@@ -36,11 +36,11 @@ public class JobState {
   // key => job record value
   // we need two separate wrapper to not interfere with get and put
   // see https://github.com/zeebe-io/zeebe/issues/1914
-  private final UnpackedObjectValue jobRecordToRead;
-  private final UnpackedObjectValue jobRecordToWrite;
+  private final UnpackedObjectValue<JobRecord> jobRecordToRead;
+  private final UnpackedObjectValue<JobRecord> jobRecordToWrite;
 
   private final DbLong jobKey;
-  private final ColumnFamily<DbLong, UnpackedObjectValue> jobsColumnFamily;
+  private final ColumnFamily<DbLong, UnpackedObjectValue<JobRecord>> jobsColumnFamily;
 
   // key => job state
   private final DbByte jobState;
@@ -58,10 +58,10 @@ public class JobState {
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
 
   public JobState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
-    jobRecordToRead = new UnpackedObjectValue();
+    jobRecordToRead = new UnpackedObjectValue<>();
     jobRecordToRead.wrapObject(new JobRecord());
 
-    jobRecordToWrite = new UnpackedObjectValue();
+    jobRecordToWrite = new UnpackedObjectValue<>();
     jobKey = new DbLong();
     jobsColumnFamily = zeebeDb.createColumnFamily(ZbColumnFamilies.JOBS, jobKey, jobRecordToRead);
 
