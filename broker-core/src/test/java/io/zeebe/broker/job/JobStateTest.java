@@ -235,6 +235,30 @@ public class JobStateTest {
   }
 
   @Test
+  public void shouldOnlyIterateOverTimedoutWhileTrue() {
+    // given
+    createAndActivateJobRecord(1, newJobRecord().setDeadline(1L));
+    createAndActivateJobRecord(2, newJobRecord().setDeadline(256L));
+    createAndActivateJobRecord(3, newJobRecord().setDeadline(512L));
+    createAndActivateJobRecord(4, newJobRecord().setDeadline(65536L));
+    createAndActivateJobRecord(5, newJobRecord().setDeadline(4294967296L));
+
+    // when
+    final List<Long> timedOutKeys = new ArrayList<>();
+    final long since = 65536L;
+    jobState.forEachTimedOutEntry(
+        since,
+        (k, e) -> {
+          timedOutKeys.add(k);
+          return k.longValue() < 3;
+        });
+
+    // then
+    assertThat(timedOutKeys).hasSize(3);
+    assertThat(timedOutKeys).containsExactly(1L, 2L, 3L);
+  }
+
+  @Test
   public void shouldDoNothingIfNotTimedOutJobs() {
     // given
     jobState.create(5, newJobRecord().setDeadline(512L));

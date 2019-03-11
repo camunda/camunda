@@ -43,7 +43,4 @@ public interface TypedStreamWriter extends TypedCommandWriter {
       long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
 
   KeyGenerator getKeyGenerator();
-
-  /** @return position of new event, negative value on failure */
-  long flush();
 }
