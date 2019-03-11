@@ -284,7 +284,7 @@ Add the input mapping `$.orderId : $.orderId` and the output mapping `$.totalPri
 
 Save the BPMN diagram and go back to the main class.
 
-Modify the create command and pass the data as payload.
+Modify the create command and pass the data as variables.
 Also, modify the job worker to read the jobs payload and complete the job with payload.
 
 ```java
@@ -303,7 +303,7 @@ public class Application
         final WorkflowInstanceEvent wfInstance = client.newCreateInstanceCommand()
             .bpmnProcessId("order-process")
             .latestVersion()
-            .payload(data)
+            .variables(data)
             .send()
             .join();
 

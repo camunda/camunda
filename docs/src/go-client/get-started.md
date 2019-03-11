@@ -177,7 +177,7 @@ func main() {
 	payload := make(map[string]interface{})
 	payload["orderId"] = "31243"
 
-	request, err := client.NewCreateInstanceCommand().BPMNProcessId("order-process").LatestVersion().PayloadFromMap(payload)
+	request, err := client.NewCreateInstanceCommand().BPMNProcessId("order-process").LatestVersion().VariablesFromMap(payload)
 	if err != nil {
 		panic(err)
 	}
@@ -258,7 +258,7 @@ func main() {
 	payload := make(map[string]interface{})
 	payload["orderId"] = "31243"
 
-	request, err := client.NewCreateInstanceCommand().BPMNProcessId("order-process").LatestVersion().PayloadFromMap(payload)
+	request, err := client.NewCreateInstanceCommand().BPMNProcessId("order-process").LatestVersion().VariablesFromMap(payload)
 	if err != nil {
 		panic(err)
 	}
