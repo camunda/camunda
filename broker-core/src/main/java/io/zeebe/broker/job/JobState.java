@@ -280,6 +280,8 @@ public class JobState {
   private void updateJobRecord(long key, JobRecord updatedValue) {
     jobKey.wrapLong(key);
     jobRecordToWrite.wrapObject(updatedValue);
+    // do not persist the payload as it will be recalculated on activation
+    jobRecordToWrite.getObject().resetPayload();
     jobsColumnFamily.put(jobKey, jobRecordToWrite);
   }
 

@@ -123,6 +123,11 @@ public class JobRecord extends UnpackedObject implements WorkflowInstanceRelated
     return this;
   }
 
+  public JobRecord resetPayload() {
+    payloadProp.reset();
+    return this;
+  }
+
   public JobHeaders getHeaders() {
     return headersProp.getValue();
   }
