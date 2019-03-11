@@ -228,7 +228,7 @@ public class DbStringColumnFamilyTest {
                           });
                     }))
         .hasRootCauseInstanceOf(IllegalStateException.class)
-        .hasMessage("Unexpected error occurred during RocksDB transaction.")
+        .hasMessage("Unexpected error occurred during zeebe db transaction operation.")
         .hasStackTraceContaining(
             "Currently nested prefix iterations are not supported! This will cause unexpected behavior.");
   }
