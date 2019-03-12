@@ -197,7 +197,7 @@ code-of-conduct@zeebe.io.
 
 [issues]: https://github.com/zeebe-io/zeebe/issues
 [forum]: https://forum.zeebe.io/
-[slack]: https://zeebe-slackin.herokuapp.com/
+[slack]: https://zeebe-slack-invite.herokuapp.com/
 [sample]: https://github.com/zeebe-io/zeebe-test-template-java
 
 [status]: https://github.com/zeebe-io/zeebe/labels?q=Type
