@@ -87,6 +87,39 @@ public class ZeebeRocksDbTest {
   }
 
   @Test
+  public void shouldIdempotentOpenDb() throws Exception {
+    // given
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
+        ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class);
+    final File pathName = temporaryFolder.newFolder();
+    final ZeebeDb<DefaultColumnFamily> firstDB = dbFactory.createDb(pathName);
+
+    final DbString key = new DbString();
+    key.wrapString("foo");
+    final DbString value = new DbString();
+    value.wrapString("bar");
+
+    // when
+    final ZeebeDb<DefaultColumnFamily> secondDB = dbFactory.createDb(pathName);
+    final ColumnFamily<DbString, DbString> columnFamily =
+        firstDB.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+    columnFamily.put(key, value);
+
+    // then
+    assertThat(firstDB).isNotEqualTo(secondDB);
+
+    final ColumnFamily<DbString, DbString> secondColumnFamily =
+        secondDB.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+
+    final DbString zbString = secondColumnFamily.get(key);
+    assertThat(zbString).isNotNull();
+    assertThat(zbString.toString()).isEqualTo("bar");
+
+    firstDB.close();
+    secondDB.close();
+  }
+
+  @Test
   public void shouldRecoverFromSnapshot() throws Exception {
     // given
     final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
