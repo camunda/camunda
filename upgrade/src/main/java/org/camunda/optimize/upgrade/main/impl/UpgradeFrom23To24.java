@@ -1,12 +1,8 @@
 package org.camunda.optimize.upgrade.main.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.report.CombinedReportType;
-import org.camunda.optimize.service.es.schema.type.report.SingleDecisionReportType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.main.Upgrade;
@@ -77,7 +73,8 @@ public class UpgradeFrom23To24 implements Upgrade {
             DecisionInstanceType.VERSION,
             createMappingStringFromMapping(new DecisionInstanceType())
           ))
-          .addUpgradeStep(buildMatchedRules());
+          .addUpgradeStep(buildMatchedRules())
+          .addUpgradeStep(migrateConfigurationInSimpleDecisionReport());
       }
 
       if (isCombinedReportIndexPresent()) {
@@ -104,12 +101,9 @@ public class UpgradeFrom23To24 implements Upgrade {
           ));
       }
 
-      ensureSingleDecisionReportIndexIsInitialized();
-
       upgradePlanBuilder
         .addUpgradeStep(migrateConfigurationInCombinedProcessReport())
-        .addUpgradeStep(migrateConfigurationInSimpleProcessReport())
-        .addUpgradeStep(migrateConfigurationInSimpleDecisionReport());
+        .addUpgradeStep(migrateConfigurationInSimpleProcessReport());
 
       final UpgradePlan upgradePlan = upgradePlanBuilder.build();
       upgradePlan.execute();
@@ -117,17 +111,6 @@ public class UpgradeFrom23To24 implements Upgrade {
       logger.error("Error while executing upgrade", e);
       System.exit(2);
     }
-  }
-
-
-
-  private void ensureSingleDecisionReportIndexIsInitialized() {
-    ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
-      configurationService,
-      Lists.newArrayList(new SingleDecisionReportType()),
-      new ObjectMapper()
-    );
-    elasticSearchSchemaManager.createOptimizeIndices(client);
   }
 
   private UpdateDataStep migrateConfigurationInSimpleProcessReport() {

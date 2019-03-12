@@ -36,47 +36,49 @@ public class UpgradeCombinedReportSettingsStep extends AbstractReportConfigurati
         "def newConfig = deepCopyMap(params.defaultConfiguration);\n" +
         getMigrateCompatibleFieldsScript() +
         // incompatible field migration
-        "if (reportData.configuration?.targetValue != null\n" +
-        "    && reportData.reports != null\n" +
+        "if (reportData.reports != null\n" +
         "    && singleReports != null\n" +
         "    && reportData.reports.length > 0) {\n" +
         "  def firstReportId = reportData.reports[0].id;\n" +
         "  def singleReportData = singleReports.get(firstReportId);\n" +
         "  if (singleReportData != null) {\n" +
-        //   #1 IF visualization is line OR bar OR number
-        "    if (singleReportData.visualization == \"line\" " +
-        "        || singleReportData.visualization == \"bar\"\n" +
-        "        || singleReportData.visualization == \"number\") {\n" +
-        //     #1.1 AND view property is frequency
-        "      if (singleReportData.view?.property == \"frequency\") {\n" +
-        //       store target as value and isBelow in countChart
-        "        if (reportData.configuration.targetValue.active != null) \n" +
-        "          newConfig.targetValue.active = reportData.configuration.targetValue.active;\n" +
-        "        if (reportData.configuration.targetValue.values != null) {\n" +
-        "          newConfig.targetValue.countChart.value = reportData.configuration.targetValue.values.target;\n" +
-        "          if (!(newConfig.targetValue.countChart.value instanceof String)) {\n" +
-        "            newConfig.targetValue.countChart.value = \n" +
-        "                String.valueOf(newConfig.targetValue.countChart.value);\n" +
+        "    reportData.visualization = singleReportData.visualization;" +
+        "    if (reportData.configuration?.targetValue != null) {\n" +
+        //     #1 IF visualization is line OR bar OR number
+        "      if (singleReportData.visualization == \"line\" " +
+        "          || singleReportData.visualization == \"bar\"\n" +
+        "          || singleReportData.visualization == \"number\") {\n" +
+        //       #1.1 AND view property is frequency
+        "        if (singleReportData.view?.property == \"frequency\") {\n" +
+        //         store target as value and isBelow in countChart
+        "          if (reportData.configuration.targetValue.active != null) \n" +
+        "            newConfig.targetValue.active = reportData.configuration.targetValue.active;\n" +
+        "          if (reportData.configuration.targetValue.values != null) {\n" +
+        "            newConfig.targetValue.countChart.value = reportData.configuration.targetValue.values.target;\n" +
+        "            if (!(newConfig.targetValue.countChart.value instanceof String)) {\n" +
+        "              newConfig.targetValue.countChart.value = \n" +
+        "                  String.valueOf(newConfig.targetValue.countChart.value);\n" +
+        "            }\n" +
+        "            newConfig.targetValue.countChart.isBelow = reportData.configuration.targetValue.values.isBelow;\n" +
         "          }\n" +
-        "          newConfig.targetValue.countChart.isBelow = reportData.configuration.targetValue.values.isBelow;\n" +
         "        }\n" +
-        "      }\n" +
-        //     #1.2 AND view property is duration
-        "      else if (singleReportData.view?.property == \"duration\") {\n" +
-        //       store target as value, dateFormat as unit and isBelow as durationChart
-        "        if (reportData.configuration.targetValue.active != null) \n" +
-        "          newConfig.targetValue.active = reportData.configuration.targetValue.active;\n" +
-        "        if (reportData.configuration.targetValue.values != null) {\n" +
-        "          newConfig.targetValue.durationChart.value = reportData.configuration.targetValue.values.target;\n" +
-        "          if (!(newConfig.targetValue.durationChart.value instanceof String)) {\n" +
-        "            newConfig.targetValue.durationChart.value = \n" +
-        "                String.valueOf(newConfig.targetValue.durationChart.value);\n" +
+        //       #1.2 AND view property is duration
+        "        else if (singleReportData.view?.property == \"duration\") {\n" +
+        //         store target as value, dateFormat as unit and isBelow as durationChart
+        "          if (reportData.configuration.targetValue.active != null) \n" +
+        "            newConfig.targetValue.active = reportData.configuration.targetValue.active;\n" +
+        "          if (reportData.configuration.targetValue.values != null) {\n" +
+        "            newConfig.targetValue.durationChart.value = reportData.configuration.targetValue.values.target;\n" +
+        "            if (!(newConfig.targetValue.durationChart.value instanceof String)) {\n" +
+        "              newConfig.targetValue.durationChart.value = \n" +
+        "                  String.valueOf(newConfig.targetValue.durationChart.value);\n" +
+        "            }\n" +
+        "            if (reportData.configuration.targetValue.values.dateFormat != null\n" +
+        "                && reportData.configuration.targetValue.values.dateFormat != \"\") {\n" +
+        "              newConfig.targetValue.durationChart.unit = reportData.configuration.targetValue.values.dateFormat;\n" +
+        "            }\n" +
+        "            newConfig.targetValue.durationChart.isBelow = reportData.configuration.targetValue.values.isBelow;\n" +
         "          }\n" +
-        "          if (reportData.configuration.targetValue.values.dateFormat != null\n" +
-        "              && reportData.configuration.targetValue.values.dateFormat != \"\") {\n" +
-        "            newConfig.targetValue.durationChart.unit = reportData.configuration.targetValue.values.dateFormat;\n" +
-        "          }\n" +
-        "          newConfig.targetValue.durationChart.isBelow = reportData.configuration.targetValue.values.isBelow;\n" +
         "        }\n" +
         "      }\n" +
         "    }\n" +

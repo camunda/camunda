@@ -66,6 +66,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
   private static final String REPORT_230_222_ID_NUMBER_DURATION_TARGETVALUE = "e762ea28-2f90-4038-8884-c4780170bd49";
   private static final String REPORT_230_ID_MULTIPLE_COLORS = "e762ea28-2f90-4038-8884-c4780170bd49";
   private static final String REPORT_230_ID_MULTIPLE_INCONSISTENT_COLORS = "c75d977a-d70c-43ba-96d0-a909415a944a";
+  private static final String REPORT_230_MISSING_VISUALIZATION = "b5ad7c59-0d34-4db2-a002-01e0275264bc";
 
   @Before
   @Override
@@ -94,6 +95,19 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
 
     // then
     assertThat(getDynamicMappingValue(), is("strict"));
+  }
+
+  @Test
+  public void combinedReportMissingVisualizationSet() throws Exception {
+    //given
+    UpgradePlan upgradePlan = getReportConfigurationUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    final CombinedReportDataDto numberDataDto = getCombinedReportDataDto(REPORT_230_MISSING_VISUALIZATION);
+    assertThat(numberDataDto.getVisualization(), is(ProcessVisualization.NUMBER));
   }
 
   @Test
@@ -316,7 +330,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
 
     // then
     final SearchResponse search = restClient.search(new SearchRequest(getReportIndexAlias()), RequestOptions.DEFAULT);
-    assertThat(search.getHits().getTotalHits(), is(8L));
+    assertThat(search.getHits().getTotalHits(), is(9L));
   }
 
   private String getDynamicMappingValue() throws IOException {
