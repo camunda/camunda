@@ -24,11 +24,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.zeebe.broker.job.JobState.State;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.util.ZeebeStateRule;
+import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.test.util.BufferAssert;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -100,6 +104,29 @@ public class JobStateTest {
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     assertListedAsActivatable(key, jobRecord.getType());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+  }
+
+  @Test
+  public void shouldNeverPersistJobPayload() {
+    // given
+    final long key = 1L;
+    final JobRecord jobRecord = newJobRecord();
+
+    final List<BiConsumer<Long, JobRecord>> stateUpdates =
+        Arrays.asList(
+            jobState::create,
+            jobState::activate,
+            jobState::timeout,
+            jobState::activate,
+            jobState::fail);
+
+    // when job state is updated then the payload is not persisted
+    for (BiConsumer<Long, JobRecord> stateUpdate : stateUpdates) {
+      jobRecord.setPayload(MsgPackUtil.asMsgPack("foo", "bar"));
+      stateUpdate.accept(key, jobRecord);
+      final DirectBuffer payload = jobState.getJob(key).getPayload();
+      BufferAssert.assertThatBuffer(payload).isEqualTo(DocumentValue.EMPTY_DOCUMENT);
+    }
   }
 
   @Test
