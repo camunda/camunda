@@ -22,7 +22,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriterImpl;
 import io.zeebe.broker.workflow.state.TimerInstance;
-import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.broker.workflow.state.TimerInstanceState;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.util.sched.ActorControl;
@@ -36,15 +36,15 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
 
   private final TimerRecord timerRecord = new TimerRecord();
 
-  private final WorkflowState workflowState;
+  private final TimerInstanceState timerState;
   private ActorControl actor;
   private TypedStreamWriterImpl streamWriter;
 
   private ScheduledTimer scheduledTimer;
   private long nextDueDate = -1L;
 
-  public DueDateTimerChecker(final WorkflowState workflowState) {
-    this.workflowState = workflowState;
+  public DueDateTimerChecker(final TimerInstanceState timerState) {
+    this.timerState = timerState;
   }
 
   public void scheduleTimer(final TimerInstance timer) {
@@ -72,13 +72,13 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
   }
 
   private void triggerTimers() {
-    nextDueDate =
-        workflowState
-            .getTimerState()
-            .findTimersWithDueDateBefore(ActorClock.currentTimeMillis(), this::triggerTimer);
+    timerState.transaction(
+        () ->
+            nextDueDate =
+                timerState.findTimersWithDueDateBefore(
+                    ActorClock.currentTimeMillis(), this::triggerTimer));
 
     // reschedule the runnable if there are timers left
-
     if (nextDueDate > 0) {
       final Duration duration = Duration.ofMillis(nextDueDate - ActorClock.currentTimeMillis());
       scheduledTimer = actor.runDelayed(duration, this::triggerTimers);

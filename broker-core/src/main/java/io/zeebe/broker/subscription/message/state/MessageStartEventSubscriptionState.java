@@ -45,7 +45,7 @@ public class MessageStartEventSubscriptionState {
   // (workflowKey, messageName) => \0  : to find existing subscriptions of a workflow
   private final DbCompositeKey<DbLong, DbString> workflowKeyAndMessageName;
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil>
-      subscriptionsOfWorkflowKeyColumnfamily;
+      subscriptionsOfWorkflowKeyColumnFamily;
 
   public MessageStartEventSubscriptionState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
     this.zeebeDb = zeebeDb;
@@ -63,7 +63,7 @@ public class MessageStartEventSubscriptionState {
             subscriptionValue);
 
     workflowKeyAndMessageName = new DbCompositeKey<>(workflowKey, messageName);
-    subscriptionsOfWorkflowKeyColumnfamily =
+    subscriptionsOfWorkflowKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME,
             workflowKeyAndMessageName,
@@ -78,17 +78,17 @@ public class MessageStartEventSubscriptionState {
     messageName.wrapBuffer(subscription.getMessageName());
     workflowKey.wrapLong(subscription.getWorkflowKey());
     subscriptionsColumnFamily.put(messageNameAndWorkflowKey, subscriptionValue);
-    subscriptionsOfWorkflowKeyColumnfamily.put(workflowKeyAndMessageName, DbNil.INSTANCE);
+    subscriptionsOfWorkflowKeyColumnFamily.put(workflowKeyAndMessageName, DbNil.INSTANCE);
   }
 
   public void removeSubscriptionsOfWorkflow(long workflowKey) {
     this.workflowKey.wrapLong(workflowKey);
 
-    subscriptionsOfWorkflowKeyColumnfamily.whileEqualPrefix(
+    subscriptionsOfWorkflowKeyColumnFamily.whileEqualPrefix(
         this.workflowKey,
         (key, value) -> {
           subscriptionsColumnFamily.delete(messageNameAndWorkflowKey);
-          subscriptionsOfWorkflowKeyColumnfamily.delete(key);
+          subscriptionsOfWorkflowKeyColumnFamily.delete(key);
         });
   }
 

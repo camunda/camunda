@@ -57,17 +57,18 @@ public class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
 
   void deactivateTimedOutJobs() {
     final long now = currentTimeMillis();
-    state.forEachTimedOutEntry(
-        now,
-        (key, record) -> {
-          writer.appendFollowUpCommand(
-              key, JobIntent.TIME_OUT, record, (m) -> m.valueType(ValueType.JOB));
-
-          final boolean flushed = writer.flush() >= 0;
-          if (!flushed) {
-            writer.reset();
-          }
-          return flushed;
-        });
+    state.transaction(
+        () ->
+            state.forEachTimedOutEntry(
+                now,
+                (key, record) -> {
+                  writer.appendFollowUpCommand(
+                      key, JobIntent.TIME_OUT, record, (m) -> m.valueType(ValueType.JOB));
+                  final boolean flushed = writer.flush() >= 0;
+                  if (!flushed) {
+                    writer.reset();
+                  }
+                  return flushed;
+                }));
   }
 }

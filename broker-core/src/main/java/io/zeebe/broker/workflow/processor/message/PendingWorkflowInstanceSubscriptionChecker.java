@@ -56,7 +56,8 @@ public class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
     }
 
     if (success) {
-      subscriptionState.updateSentTime(subscription, ActorClock.currentTimeMillis());
+      subscriptionState.transaction(
+          () -> subscriptionState.updateSentTime(subscription, ActorClock.currentTimeMillis()));
     }
 
     return success;

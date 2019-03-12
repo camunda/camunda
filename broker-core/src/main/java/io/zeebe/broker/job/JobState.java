@@ -20,6 +20,7 @@ package io.zeebe.broker.job;
 import io.zeebe.broker.logstreams.state.UnpackedObjectValue;
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.TransactionOperation;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbByte;
 import io.zeebe.db.impl.DbCompositeKey;
@@ -234,6 +235,10 @@ public class JobState {
     jobKey.wrapLong(key);
     final UnpackedObjectValue unpackedObjectValue = jobsColumnFamily.get(jobKey);
     return unpackedObjectValue == null ? null : (JobRecord) unpackedObjectValue.getObject();
+  }
+
+  public void transaction(TransactionOperation operation) {
+    zeebeDb.transaction(operation);
   }
 
   public enum State {

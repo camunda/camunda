@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.state;
 
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.TransactionOperation;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -121,6 +122,10 @@ public class TimerInstanceState {
 
     dueDateKey.wrapLong(timer.getDueDate());
     dueDateColumnFamily.delete(dueDateCompositeKey);
+  }
+
+  public void transaction(TransactionOperation operation) {
+    zeebeDb.transaction(operation);
   }
 
   @FunctionalInterface

@@ -124,7 +124,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
                   zeebeState,
                   mockSubscriptionCommandSender,
                   mockTopologyManager,
-                  new DueDateTimerChecker(workflowState),
+                  new DueDateTimerChecker(workflowState.getTimerState()),
                   1);
 
               JobEventProcessors.addJobProcessors(typedEventStreamProcessorBuilder, zeebeState);
