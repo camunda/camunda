@@ -6,7 +6,13 @@ import entityIcons from '../entityIcons';
 
 const EntityIcon = entityIcons.dashboard.generic.Component;
 
-export default function DashboardItem({dashboard, duplicateEntity, showDeleteModalFor}) {
+export default function DashboardItem({
+  dashboard,
+  duplicateEntity,
+  showDeleteModalFor,
+  collection,
+  renderCollectionsDropdown
+}) {
   return (
     <li className="DashboardItem listItem">
       <Link className="info" to={`/dashboard/${dashboard.id}`}>
@@ -30,12 +36,15 @@ export default function DashboardItem({dashboard, duplicateEntity, showDeleteMod
           </div>
         </div>
       </Link>
-      <div className="entityCollections" />
+      {renderCollectionsDropdown(dashboard, collection)}
       <div className="operations">
         <Link title="Edit Dashboard" to={`/dashboard/${dashboard.id}/edit`}>
           <Icon title="Edit Dashboard" type="edit" className="editLink" />
         </Link>
-        <Button title="Duplicate Dashboard" onClick={duplicateEntity('dashboard', dashboard)}>
+        <Button
+          title="Duplicate Dashboard"
+          onClick={duplicateEntity('dashboard', dashboard, collection)}
+        >
           <Icon type="copy-document" title="Duplicate Dashboard" className="duplicateIcon" />
         </Button>
         <Button

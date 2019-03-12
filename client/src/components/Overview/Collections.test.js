@@ -15,6 +15,14 @@ const processReport = {
   combined: false
 };
 
+const dashboard = {
+  id: 'dashboardID',
+  name: 'Some Dashboard',
+  lastModifier: 'Admin',
+  lastModified: '2017-11-11T11:11:11.1111+0200',
+  reports: []
+};
+
 const collection = {
   id: 'aCollectionId',
   name: 'aCollectionName',
@@ -22,7 +30,7 @@ const collection = {
   owner: 'user_id',
   data: {
     configuration: {},
-    entities: [processReport]
+    entities: [processReport, dashboard]
   }
 };
 
@@ -78,4 +86,12 @@ it('should show a button to show less reports if the number of reports is greate
   node.find(Button).simulate('click');
 
   expect(node.find(Button)).toIncludeText('Show less...');
+});
+
+it('should render dashboard and report list items', () => {
+  const node = shallow(<Collections {...props} />);
+  node.setState({[collection.id]: true});
+
+  expect(node.find('ReportItem')).toBePresent();
+  expect(node.find('DashboardItem')).toBePresent();
 });

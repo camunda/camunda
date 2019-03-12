@@ -17,7 +17,8 @@ const dashboard = {
 const props = {
   dashboard,
   duplicateEntity: jest.fn(),
-  showDeleteModalFor: jest.fn()
+  showDeleteModalFor: jest.fn(),
+  renderCollectionsDropdown: jest.fn()
 };
 
 it('should show information about dashboards', () => {
@@ -47,5 +48,5 @@ it('should invok duplicate dashboards when clicking duplicate icon', () => {
     .first()
     .simulate('click', {target: {blur: jest.fn()}});
 
-  expect(props.duplicateEntity).toHaveBeenCalledWith('dashboard', dashboard);
+  expect(props.duplicateEntity).toHaveBeenCalledWith('dashboard', dashboard, undefined);
 });

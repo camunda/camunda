@@ -3,8 +3,8 @@ import {Dropdown} from 'components';
 
 export default function CollectionsDropdown({
   collections,
-  report,
-  toggleReportCollection,
+  entity,
+  toggleEntityCollection,
   currentCollection,
   entityCollections = []
 }) {
@@ -24,14 +24,14 @@ export default function CollectionsDropdown({
     <Dropdown className="entityCollections" label={label}>
       {collections.length > 0 ? (
         reorderedCollections.map(collection => {
-          const isReportInCollection = entityCollections.some(
-            reportCollection => reportCollection.id === collection.id
+          const isEntityInCollection = entityCollections.some(
+            entityCollection => entityCollection.id === collection.id
           );
           return (
             <Dropdown.Option
               key={collection.id}
-              checked={isReportInCollection}
-              onClick={toggleReportCollection(report, collection, isReportInCollection)}
+              checked={isEntityInCollection}
+              onClick={toggleEntityCollection(entity, collection, isEntityInCollection)}
             >
               {collection.name}
             </Dropdown.Option>

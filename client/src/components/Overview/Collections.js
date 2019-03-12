@@ -6,10 +6,15 @@ import CollectionItem from './subComponents/CollectionItem';
 import ReportItem from './subComponents/ReportItem';
 
 import './Collections.scss';
+import DashboardItem from './subComponents/DashboardItem';
 
 class Collections extends React.Component {
   state = {
     showAllId: null
+  };
+
+  isDashboard = entity => {
+    return entity.reports;
   };
 
   render() {
@@ -42,16 +47,27 @@ class Collections extends React.Component {
                   <ul className="entityList">
                     {collection.data.entities
                       .slice(0, this.state.showAllId === collection.id ? undefined : 5)
-                      .map(entity => (
-                        <ReportItem
-                          key={entity.id}
-                          report={entity}
-                          collection={collection}
-                          showDeleteModalFor={this.props.showDeleteModalFor}
-                          duplicateEntity={this.props.duplicateEntity}
-                          renderCollectionsDropdown={this.props.renderCollectionsDropdown}
-                        />
-                      ))}
+                      .map(entity =>
+                        this.isDashboard(entity) ? (
+                          <DashboardItem
+                            key={entity.id}
+                            dashboard={entity}
+                            collection={collection}
+                            duplicateEntity={this.props.duplicateEntity}
+                            showDeleteModalFor={this.props.showDeleteModalFor}
+                            renderCollectionsDropdown={this.props.renderCollectionsDropdown}
+                          />
+                        ) : (
+                          <ReportItem
+                            key={entity.id}
+                            report={entity}
+                            collection={collection}
+                            showDeleteModalFor={this.props.showDeleteModalFor}
+                            duplicateEntity={this.props.duplicateEntity}
+                            renderCollectionsDropdown={this.props.renderCollectionsDropdown}
+                          />
+                        )
+                      )}
                   </ul>
                 ) : (
                   <p className="emptyCollection">There are no items in this Collection.</p>

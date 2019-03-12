@@ -187,7 +187,7 @@ it('should duplicate dashboards', () => {
 
 it('should correctly add report to a collection', async () => {
   const node = shallow(<Overview {...props} />);
-  await node.instance().toggleReportCollection(processReport, collection, false)();
+  await node.instance().toggleEntityCollection(processReport, collection, false)();
   expect(update).toHaveBeenCalledWith('collection', 'aCollectionId', {
     data: {entities: ['reportID', 'reportID']}
   });
@@ -195,6 +195,6 @@ it('should correctly add report to a collection', async () => {
 
 it('should correctly remove report to a collection', async () => {
   const node = shallow(<Overview {...props} />);
-  await node.instance().toggleReportCollection(processReport, collection, true)();
+  await node.instance().toggleEntityCollection(processReport, collection, true)();
   expect(update).toHaveBeenCalledWith('collection', 'aCollectionId', {data: {entities: []}});
 });

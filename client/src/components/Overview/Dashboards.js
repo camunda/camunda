@@ -56,6 +56,7 @@ class Dashboards extends React.Component {
                   dashboard={dashboard}
                   duplicateEntity={this.props.duplicateEntity}
                   showDeleteModalFor={this.props.showDeleteModalFor}
+                  renderCollectionsDropdown={this.props.renderCollectionsDropdown}
                 />
               ))}
             </ul>

@@ -26,11 +26,11 @@ const collection = {
 const props = {
   collections: [collection],
   entityCollections: [collection],
-  report: processReport,
-  toggleReportCollection: jest.fn()
+  entity: processReport,
+  toggleEntityCollection: jest.fn()
 };
 
-it('should show for each report the collection count', () => {
+it('should show for each entity the collection count', () => {
   const node = shallow(<CollectionsDropdown {...props} />);
 
   expect(node.find('.entityCollections').props().label).toBe('1 Collection');
@@ -42,19 +42,19 @@ it('should show for each report a dropdown with all collections', () => {
   expect(node.find(Dropdown.Option)).toIncludeText('aCollectionName');
 });
 
-it('should invok toggleReportCollection to remove report from collection when clicking on an option', () => {
+it('should invok toggleEntityCollection to remove entity from collection when clicking on an option', () => {
   const node = shallow(<CollectionsDropdown {...props} />);
   node.find(Dropdown.Option).simulate('click');
 
-  expect(props.toggleReportCollection).toHaveBeenCalledWith(processReport, collection, true);
+  expect(props.toggleEntityCollection).toHaveBeenCalledWith(processReport, collection, true);
 });
 
-it('should invok toggleReportCollection on collections dropdown click to add a report to collection ', () => {
+it('should invok toggleEntityCollection on collections dropdown click to add an entity to collection ', () => {
   const node = shallow(<CollectionsDropdown {...props} entityCollections={[]} />);
 
   node.find(Dropdown.Option).simulate('click');
 
-  expect(props.toggleReportCollection).toHaveBeenCalledWith(processReport, collection, false);
+  expect(props.toggleEntityCollection).toHaveBeenCalledWith(processReport, collection, false);
 });
 
 it('should show the current collection on the top of the dropdown list', () => {

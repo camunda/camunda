@@ -97,7 +97,7 @@ class Overview extends Component {
     }
 
     if (collection) {
-      this.toggleReportCollection({id}, collection, false)();
+      this.toggleEntityCollection({id}, collection, false)();
     } else {
       this.loadData();
     }
@@ -116,14 +116,14 @@ class Overview extends Component {
 
   hideDeleteModal = () => this.setState({deleting: false, conflicts: []});
 
-  toggleReportCollection = (report, collection, isRemove) => async evt => {
-    const collectionReportsIds = collection.data.entities.map(report => report.id);
+  toggleEntityCollection = (entity, collection, isRemove) => async evt => {
+    const collectionEntitiesIds = collection.data.entities.map(entity => entity.id);
 
     const change = {data: {}};
     if (isRemove) {
-      change.data.entities = collectionReportsIds.filter(id => id !== report.id);
+      change.data.entities = collectionEntitiesIds.filter(id => id !== entity.id);
     } else {
-      change.data.entities = [...collectionReportsIds, report.id];
+      change.data.entities = [...collectionEntitiesIds, entity.id];
     }
 
     await update('collection', collection.id, change);
@@ -134,10 +134,10 @@ class Overview extends Component {
     return (
       <CollectionsDropdown
         currentCollection={currentCollection}
-        report={currentEntity}
+        entity={currentEntity}
         entityCollections={entitiesCollections[currentEntity.id]}
         collections={this.state.collections}
-        toggleReportCollection={this.toggleReportCollection}
+        toggleEntityCollection={this.toggleEntityCollection}
       />
     );
   };
@@ -215,6 +215,7 @@ class Overview extends Component {
           duplicateEntity={this.duplicateEntity}
           createDashboard={this.createDashboard}
           showDeleteModalFor={this.showDeleteModalFor}
+          renderCollectionsDropdown={this.renderCollectionsDropdown(entitiesCollections)}
         />
         <div className="createButton">
           <Button color="green" onClick={this.createProcessReport}>
