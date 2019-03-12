@@ -21,12 +21,12 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.Transaction;
 
-public class ZeebeTransaction {
+class ZeebeTransaction {
 
   private final Transaction transaction;
   private final long nativeHandle;
 
-  public ZeebeTransaction(Transaction transaction) {
+  ZeebeTransaction(Transaction transaction) {
     this.transaction = transaction;
     try {
       nativeHandle = RocksDbInternal.nativeHandle.getLong(transaction);

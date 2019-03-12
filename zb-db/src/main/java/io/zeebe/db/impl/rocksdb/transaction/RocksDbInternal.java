@@ -23,7 +23,7 @@ import org.rocksdb.RocksIterator;
 import org.rocksdb.RocksObject;
 import org.rocksdb.Transaction;
 
-public class RocksDbInternal {
+class RocksDbInternal {
 
   static Field nativeHandle;
 

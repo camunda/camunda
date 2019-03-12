@@ -38,7 +38,6 @@ import org.rocksdb.Checkpoint;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.DBOptions;
-import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
@@ -56,13 +55,12 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
           final String path,
           final List<ColumnFamilyDescriptor> columnFamilyDescriptors,
           final List<AutoCloseable> closables,
-          Class<ColumnFamilyNames> columnFamilyTypeClass)
-          throws RocksDBException {
+          Class<ColumnFamilyNames> columnFamilyTypeClass) {
     final EnumMap<ColumnFamilyNames, Long> columnFamilyMap = new EnumMap<>(columnFamilyTypeClass);
 
     final List<ColumnFamilyHandle> handles = new ArrayList<>();
-    final OptimisticTransactionDB optimisticTransactionDB =
-        OptimisticTransactionDB.open(options, path, columnFamilyDescriptors, handles);
+    final DbReference optimisticTransactionDB =
+        RocksDbRegistry.open(options, path, columnFamilyDescriptors, handles);
 
     final ColumnFamilyNames[] enumConstants = columnFamilyTypeClass.getEnumConstants();
     final Long2ObjectHashMap<ColumnFamilyHandle> handleToEnumMap = new Long2ObjectHashMap();
@@ -91,7 +89,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
     }
   }
 
-  private final OptimisticTransactionDB optimisticTransactionDB;
+  private final DbReference reference;
   private ZeebeTransaction currentTransaction;
   private final List<AutoCloseable> closables;
   private final Class<ColumnFamilyNames> columnFamilyNamesClass;
@@ -111,12 +109,12 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   private final Long2ObjectHashMap<ColumnFamilyHandle> handelToEnumMap;
 
   protected ZeebeTransactionDb(
-      OptimisticTransactionDB optimisticTransactionDB,
+      DbReference reference,
       EnumMap<ColumnFamilyNames, Long> columnFamilyMap,
       Long2ObjectHashMap<ColumnFamilyHandle> handelToEnumMap,
       List<AutoCloseable> closables,
       Class<ColumnFamilyNames> columnFamilyNamesClass) {
-    this.optimisticTransactionDB = optimisticTransactionDB;
+    this.reference = reference;
     this.columnFamilyMap = columnFamilyMap;
     this.handelToEnumMap = handelToEnumMap;
     this.closables = closables;
@@ -172,7 +170,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
 
   private void runInNewTransaction(TransactionOperation operations) throws Exception {
     try (WriteOptions options = new WriteOptions()) {
-      currentTransaction = new ZeebeTransaction(optimisticTransactionDB.beginTransaction(options));
+      currentTransaction = new ZeebeTransaction(reference.beginTransaction(options));
 
       operations.run();
 
@@ -402,7 +400,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
 
   @Override
   public void createSnapshot(File snapshotDir) {
-    try (Checkpoint checkpoint = Checkpoint.create(optimisticTransactionDB)) {
+    try (Checkpoint checkpoint = Checkpoint.create(reference.getTransactionDB())) {
       try {
         checkpoint.createCheckpoint(snapshotDir.getAbsolutePath());
       } catch (RocksDBException rocksException) {
@@ -422,6 +420,6 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
           }
         });
 
-    optimisticTransactionDB.close();
+    reference.close();
   }
 }

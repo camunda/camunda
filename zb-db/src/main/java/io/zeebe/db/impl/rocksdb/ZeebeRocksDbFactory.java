@@ -26,7 +26,6 @@ import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.DBOptions;
 import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
 
 public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamilyType>>
     implements ZeebeDbFactory<ColumnFamilyType> {
@@ -59,31 +58,27 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
       final File dbDirectory, List<byte[]> columnFamilyNames) {
 
     final ZeebeTransactionDb<ColumnFamilyType> db;
-    try {
-      final List<AutoCloseable> closeables = new ArrayList<>();
-      final ColumnFamilyOptions columnFamilyOptions = createColumnFamilyOptions();
-      closeables.add(columnFamilyOptions);
+    final List<AutoCloseable> closeables = new ArrayList<>();
+    final ColumnFamilyOptions columnFamilyOptions = createColumnFamilyOptions();
+    closeables.add(columnFamilyOptions);
 
-      final List<ColumnFamilyDescriptor> columnFamilyDescriptors =
-          createFamilyDescriptors(columnFamilyNames, columnFamilyOptions);
+    final List<ColumnFamilyDescriptor> columnFamilyDescriptors =
+        createFamilyDescriptors(columnFamilyNames, columnFamilyOptions);
 
-      final DBOptions dbOptions =
-          new DBOptions()
-              .setCreateMissingColumnFamilies(true)
-              .setErrorIfExists(false)
-              .setCreateIfMissing(true);
-      closeables.add(dbOptions);
+    final DBOptions dbOptions =
+        new DBOptions()
+            .setCreateMissingColumnFamilies(true)
+            .setErrorIfExists(false)
+            .setCreateIfMissing(true);
+    closeables.add(dbOptions);
 
-      db =
-          ZeebeTransactionDb.openTransactionalDb(
-              dbOptions,
-              dbDirectory.getAbsolutePath(),
-              columnFamilyDescriptors,
-              closeables,
-              columnFamilyTypeClass);
-    } catch (final RocksDBException e) {
-      throw new RuntimeException("Unexpected error occurred trying to open the database", e);
-    }
+    db =
+        ZeebeTransactionDb.openTransactionalDb(
+            dbOptions,
+            dbDirectory.getAbsolutePath(),
+            columnFamilyDescriptors,
+            closeables,
+            columnFamilyTypeClass);
     return db;
   }
 
