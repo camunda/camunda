@@ -42,17 +42,16 @@ public class JsonConditionVariableNamesTest {
   public static Iterable<Object[]> data() {
     return Arrays.asList(
         new Object[][] {
-          {"$.foo == $.bar || $.foo > 2 || $.bar <= 2", fromStrings("foo", "bar")},
-          {"$.foo == true", fromStrings("foo")},
-          {"$.foo == 21", fromStrings("foo")},
-          {"$.foo == 2.5", fromStrings("foo")},
-          {"$.foo == $.bar", fromStrings("foo", "bar")},
-          {"$.foo.bar == true", fromStrings("foo")},
-          {"$.foo[1] == true", fromStrings("foo")},
-          {"$.foo != 'bar'", fromStrings("foo")},
+          {"foo == bar || foo > 2 || bar <= 2", fromStrings("foo", "bar")},
+          {"foo == true", fromStrings("foo")},
+          {"foo == 21", fromStrings("foo")},
+          {"foo == 2.5", fromStrings("foo")},
+          {"foo == bar", fromStrings("foo", "bar")},
+          {"foo.bar == true", fromStrings("foo")},
+          {"foo != 'bar'", fromStrings("foo")},
           {"2 < 4", fromStrings()},
-          {"$.foo.bar > 2 || $.bar.foo < 4 || $.foobar == 21", fromStrings("foo", "bar", "foobar")},
-          {"$.foo > 2 && ($.foo < 4 || $.bar == 6)", fromStrings("foo", "bar")}
+          {"foo.bar > 2 || bar.foo < 4 || foobar == 21", fromStrings("foo", "bar", "foobar")},
+          {"foo > 2 && (foo < 4 || bar == 6)", fromStrings("foo", "bar")}
         });
   }
 

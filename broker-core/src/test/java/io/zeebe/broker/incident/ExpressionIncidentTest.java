@@ -80,11 +80,11 @@ public class ExpressionIncidentTest {
             .startEvent()
             .exclusiveGateway("xor")
             .sequenceFlowId("s1")
-            .condition("$.foo < 5")
+            .condition("foo < 5")
             .endEvent()
             .moveToLastGateway()
             .sequenceFlowId("s2")
-            .condition("$.foo >= 5 && $.foo < 10")
+            .condition("foo >= 5 && foo < 10")
             .endEvent()
             .done());
   }
@@ -134,7 +134,7 @@ public class ExpressionIncidentTest {
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertIncidentRecordValue(
         ErrorType.CONDITION_ERROR.name(),
-        "Expected to evaluate condition '$.foo >= 5 && $.foo < 10' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER",
+        "Expected to evaluate condition 'foo >= 5 && foo < 10' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER",
         "xor",
         incidentEvent);
   }
@@ -176,7 +176,7 @@ public class ExpressionIncidentTest {
     // RESOLVE triggers RESOLVED
     assertThat(incidentRecords)
         .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getRecordType, RecordMetadata::getIntent)
+        .extracting(m -> tuple(m.getRecordType(), m.getIntent()))
         .containsSubsequence(
             tuple(RecordType.COMMAND, IncidentIntent.RESOLVE),
             tuple(RecordType.EVENT, IncidentIntent.RESOLVED));
@@ -246,7 +246,7 @@ public class ExpressionIncidentTest {
     // RESOLVE triggers RESOLVED
     assertThat(incidentRecords)
         .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getRecordType, RecordMetadata::getIntent)
+        .extracting(m -> tuple(m.getRecordType(), m.getIntent()))
         .containsSubsequence(
             tuple(RecordType.COMMAND, IncidentIntent.RESOLVE),
             tuple(RecordType.EVENT, IncidentIntent.RESOLVED));
@@ -311,7 +311,7 @@ public class ExpressionIncidentTest {
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertIncidentRecordValue(
         ErrorType.CONDITION_ERROR.name(),
-        "Expected to evaluate condition '$.foo >= 5 && $.foo < 10' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER",
+        "Expected to evaluate condition 'foo >= 5 && foo < 10' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER",
         "xor",
         incidentEvent);
   }

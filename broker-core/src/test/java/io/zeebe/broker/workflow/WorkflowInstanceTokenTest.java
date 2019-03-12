@@ -423,7 +423,7 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .moveToNode("gateway")
             .sequenceFlowId("to-end-3")
-            .condition("$.x < 21")
+            .condition("x < 21")
             .endEvent("end-3")
             .done());
 
