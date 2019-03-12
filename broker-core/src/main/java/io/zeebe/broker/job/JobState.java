@@ -84,7 +84,7 @@ public class JobState {
 
   public void create(final long key, final JobRecord record) {
     final DirectBuffer type = record.getType();
-    zeebeDb.transaction(() -> createJob(key, record, type));
+    createJob(key, record, type);
   }
 
   private void createJob(long key, JobRecord record, DirectBuffer type) {
@@ -99,17 +99,14 @@ public class JobState {
 
     validateParameters(type, deadline);
 
-    zeebeDb.transaction(
-        () -> {
-          updateJobRecord(key, record);
+    updateJobRecord(key, record);
 
-          updateJobState(State.ACTIVATED);
+    updateJobState(State.ACTIVATED);
 
-          makeJobNotActivatable(type);
+    makeJobNotActivatable(type);
 
-          deadlineKey.wrapLong(deadline);
-          deadlinesColumnFamily.put(deadlineJobKey, DbNil.INSTANCE);
-        });
+    deadlineKey.wrapLong(deadline);
+    deadlinesColumnFamily.put(deadlineJobKey, DbNil.INSTANCE);
   }
 
   public void timeout(final long key, final JobRecord record) {
@@ -117,29 +114,23 @@ public class JobState {
     final long deadline = record.getDeadline();
     validateParameters(type, deadline);
 
-    zeebeDb.transaction(
-        () -> {
-          createJob(key, record, type);
+    createJob(key, record, type);
 
-          removeJobDeadline(deadline);
-        });
+    removeJobDeadline(deadline);
   }
 
   public void delete(long key, JobRecord record) {
     final DirectBuffer type = record.getType();
     final long deadline = record.getDeadline();
 
-    zeebeDb.transaction(
-        () -> {
-          jobKey.wrapLong(key);
-          jobsColumnFamily.delete(jobKey);
+    jobKey.wrapLong(key);
+    jobsColumnFamily.delete(jobKey);
 
-          statesJobColumnFamily.delete(jobKey);
+    statesJobColumnFamily.delete(jobKey);
 
-          makeJobNotActivatable(type);
+    makeJobNotActivatable(type);
 
-          removeJobDeadline(deadline);
-        });
+    removeJobDeadline(deadline);
   }
 
   public void fail(long key, JobRecord updatedValue) {
@@ -148,19 +139,16 @@ public class JobState {
 
     validateParameters(type, deadline);
 
-    zeebeDb.transaction(
-        () -> {
-          updateJobRecord(key, updatedValue);
+    updateJobRecord(key, updatedValue);
 
-          final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
-          updateJobState(newState);
+    final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
+    updateJobState(newState);
 
-          if (newState == State.ACTIVATABLE) {
-            makeJobActivatable(type);
-          }
+    if (newState == State.ACTIVATABLE) {
+      makeJobActivatable(type);
+    }
 
-          removeJobDeadline(deadline);
-        });
+    removeJobDeadline(deadline);
   }
 
   private void validateParameters(DirectBuffer type, long deadline) {
@@ -171,12 +159,9 @@ public class JobState {
   public void resolve(long key, final JobRecord updatedValue) {
     final DirectBuffer type = updatedValue.getType();
 
-    zeebeDb.transaction(
-        () -> {
-          updateJobRecord(key, updatedValue);
-          updateJobState(State.ACTIVATABLE);
-          makeJobActivatable(type);
-        });
+    updateJobRecord(key, updatedValue);
+    updateJobState(State.ACTIVATABLE);
+    makeJobActivatable(type);
   }
 
   public void forEachTimedOutEntry(

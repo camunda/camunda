@@ -60,16 +60,13 @@ public class TimerInstanceState {
   }
 
   public void put(TimerInstance timer) {
-    zeebeDb.transaction(
-        () -> {
-          timerKey.wrapLong(timer.getKey());
-          elementInstanceKey.wrapLong(timer.getElementInstanceKey());
+    timerKey.wrapLong(timer.getKey());
+    elementInstanceKey.wrapLong(timer.getElementInstanceKey());
 
-          timerInstanceColumnFamily.put(elementAndTimerKey, timer);
+    timerInstanceColumnFamily.put(elementAndTimerKey, timer);
 
-          dueDateKey.wrapLong(timer.getDueDate());
-          dueDateColumnFamily.put(dueDateCompositeKey, DbNil.INSTANCE);
-        });
+    dueDateKey.wrapLong(timer.getDueDate());
+    dueDateColumnFamily.put(dueDateCompositeKey, DbNil.INSTANCE);
   }
 
   public long findTimersWithDueDateBefore(final long timestamp, TimerVisitor consumer) {
@@ -118,16 +115,12 @@ public class TimerInstanceState {
   }
 
   public void remove(TimerInstance timer) {
+    elementInstanceKey.wrapLong(timer.getElementInstanceKey());
+    timerKey.wrapLong(timer.getKey());
+    timerInstanceColumnFamily.delete(elementAndTimerKey);
 
-    zeebeDb.transaction(
-        () -> {
-          elementInstanceKey.wrapLong(timer.getElementInstanceKey());
-          timerKey.wrapLong(timer.getKey());
-          timerInstanceColumnFamily.delete(elementAndTimerKey);
-
-          dueDateKey.wrapLong(timer.getDueDate());
-          dueDateColumnFamily.delete(dueDateCompositeKey);
-        });
+    dueDateKey.wrapLong(timer.getDueDate());
+    dueDateColumnFamily.delete(dueDateCompositeKey);
   }
 
   @FunctionalInterface

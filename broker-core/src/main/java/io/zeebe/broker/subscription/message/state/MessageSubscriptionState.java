@@ -91,16 +91,13 @@ public class MessageSubscriptionState {
   }
 
   public void put(final MessageSubscription subscription) {
-    zeebeDb.transaction(
-        () -> {
-          elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
-          messageName.wrapBuffer(subscription.getMessageName());
-          subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
+    elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
+    messageName.wrapBuffer(subscription.getMessageName());
+    subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
 
-          correlationKey.wrapBuffer(subscription.getCorrelationKey());
-          messageNameAndCorrelationKeyColumnFamily.put(
-              nameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
-        });
+    correlationKey.wrapBuffer(subscription.getCorrelationKey());
+    messageNameAndCorrelationKeyColumnFamily.put(
+        nameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
   }
 
   public void visitSubscriptions(
@@ -145,21 +142,18 @@ public class MessageSubscriptionState {
   }
 
   public void updateSentTime(final MessageSubscription subscription, long sentTime) {
-    zeebeDb.transaction(
-        () -> {
-          elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
-          messageName.wrapBuffer(subscription.getMessageName());
+    elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
+    messageName.wrapBuffer(subscription.getMessageName());
 
-          removeSubscriptionFromSentTimeColumnFamily(subscription);
+    removeSubscriptionFromSentTimeColumnFamily(subscription);
 
-          subscription.setCommandSentTime(sentTime);
-          subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
+    subscription.setCommandSentTime(sentTime);
+    subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
 
-          if (sentTime > 0) {
-            this.sentTime.wrapLong(subscription.getCommandSentTime());
-            sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
-          }
-        });
+    if (sentTime > 0) {
+      this.sentTime.wrapLong(subscription.getCommandSentTime());
+      sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
+    }
   }
 
   public void visitSubscriptionBefore(final long deadline, MessageSubscriptionVisitor visitor) {
@@ -196,16 +190,13 @@ public class MessageSubscriptionState {
   }
 
   public void remove(final MessageSubscription subscription) {
-    zeebeDb.transaction(
-        () -> {
-          subscriptionColumnFamily.delete(elementKeyAndMessageName);
+    subscriptionColumnFamily.delete(elementKeyAndMessageName);
 
-          messageName.wrapBuffer(subscription.getMessageName());
-          correlationKey.wrapBuffer(subscription.getCorrelationKey());
-          messageNameAndCorrelationKeyColumnFamily.delete(nameCorrelationAndElementInstanceKey);
+    messageName.wrapBuffer(subscription.getMessageName());
+    correlationKey.wrapBuffer(subscription.getCorrelationKey());
+    messageNameAndCorrelationKeyColumnFamily.delete(nameCorrelationAndElementInstanceKey);
 
-          removeSubscriptionFromSentTimeColumnFamily(subscription);
-        });
+    removeSubscriptionFromSentTimeColumnFamily(subscription);
   }
 
   private void removeSubscriptionFromSentTimeColumnFamily(MessageSubscription subscription) {

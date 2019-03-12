@@ -69,15 +69,12 @@ public class WorkflowInstanceSubscriptionState {
   }
 
   public void put(final WorkflowInstanceSubscription subscription) {
-    zeebeDb.transaction(
-        () -> {
-          wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
+    wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
-          subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
+    subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
 
-          sentTime.wrapLong(subscription.getCommandSentTime());
-          sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
-        });
+    sentTime.wrapLong(subscription.getCommandSentTime());
+    sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
   }
 
   public WorkflowInstanceSubscription getSubscription(
@@ -130,23 +127,20 @@ public class WorkflowInstanceSubscriptionState {
   }
 
   public void updateSentTime(final WorkflowInstanceSubscription subscription, long sentTime) {
-    zeebeDb.transaction(
-        () -> {
-          wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
+    wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
-          if (subscription.getCommandSentTime() > 0) {
-            this.sentTime.wrapLong(subscription.getCommandSentTime());
-            sentTimeColumnFamily.delete(sentTimeCompositeKey);
-          }
+    if (subscription.getCommandSentTime() > 0) {
+      this.sentTime.wrapLong(subscription.getCommandSentTime());
+      sentTimeColumnFamily.delete(sentTimeCompositeKey);
+    }
 
-          subscription.setCommandSentTime(sentTime);
-          subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
+    subscription.setCommandSentTime(sentTime);
+    subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
 
-          if (sentTime > 0) {
-            this.sentTime.wrapLong(sentTime);
-            sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
-          }
-        });
+    if (sentTime > 0) {
+      this.sentTime.wrapLong(sentTime);
+      sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
+    }
   }
 
   public boolean existSubscriptionForElementInstance(
@@ -167,15 +161,12 @@ public class WorkflowInstanceSubscriptionState {
   }
 
   public void remove(final WorkflowInstanceSubscription subscription) {
-    zeebeDb.transaction(
-        () -> {
-          wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
+    wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
-          subscriptionColumnFamily.delete(elementKeyAndMessageName);
+    subscriptionColumnFamily.delete(elementKeyAndMessageName);
 
-          sentTime.wrapLong(subscription.getCommandSentTime());
-          sentTimeColumnFamily.delete(sentTimeCompositeKey);
-        });
+    sentTime.wrapLong(subscription.getCommandSentTime());
+    sentTimeColumnFamily.delete(sentTimeCompositeKey);
   }
 
   @FunctionalInterface

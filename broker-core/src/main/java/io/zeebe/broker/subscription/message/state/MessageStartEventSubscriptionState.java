@@ -75,13 +75,10 @@ public class MessageStartEventSubscriptionState {
     subscriptionRecord.setMessageName(subscription.getMessageName());
     subscriptionRecord.setWorkflowKey(subscription.getWorkflowKey());
 
-    zeebeDb.transaction(
-        () -> {
-          messageName.wrapBuffer(subscription.getMessageName());
-          workflowKey.wrapLong(subscription.getWorkflowKey());
-          subscriptionsColumnFamily.put(messageNameAndWorkflowKey, subscriptionValue);
-          subscriptionsOfWorkflowKeyColumnfamily.put(workflowKeyAndMessageName, DbNil.INSTANCE);
-        });
+    messageName.wrapBuffer(subscription.getMessageName());
+    workflowKey.wrapLong(subscription.getWorkflowKey());
+    subscriptionsColumnFamily.put(messageNameAndWorkflowKey, subscriptionValue);
+    subscriptionsOfWorkflowKeyColumnfamily.put(workflowKeyAndMessageName, DbNil.INSTANCE);
   }
 
   public void removeSubscriptionsOfWorkflow(long workflowKey) {

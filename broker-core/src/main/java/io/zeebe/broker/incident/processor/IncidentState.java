@@ -70,20 +70,17 @@ public class IncidentState {
   }
 
   public void createIncident(long incidentKey, IncidentRecord incident) {
-    zeebeDb.transaction(
-        () -> {
-          this.incidentKey.wrapLong(incidentKey);
-          this.incidentRecordToWrite.wrapObject(incident);
-          incidentColumnFamily.put(this.incidentKey, this.incidentRecordToWrite);
+    this.incidentKey.wrapLong(incidentKey);
+    this.incidentRecordToWrite.wrapObject(incident);
+    incidentColumnFamily.put(this.incidentKey, this.incidentRecordToWrite);
 
-          if (isJobIncident(incident)) {
-            jobKey.wrapLong(incident.getJobKey());
-            jobIncidentColumnFamily.put(jobKey, this.incidentKey);
-          } else {
-            elementInstanceKey.wrapLong(incident.getElementInstanceKey());
-            workflowInstanceIncidentColumnFamily.put(elementInstanceKey, this.incidentKey);
-          }
-        });
+    if (isJobIncident(incident)) {
+      jobKey.wrapLong(incident.getJobKey());
+      jobIncidentColumnFamily.put(jobKey, this.incidentKey);
+    } else {
+      elementInstanceKey.wrapLong(incident.getElementInstanceKey());
+      workflowInstanceIncidentColumnFamily.put(elementInstanceKey, this.incidentKey);
+    }
   }
 
   public IncidentRecord getIncidentRecord(long incidentKey) {
@@ -100,18 +97,15 @@ public class IncidentState {
     final IncidentRecord incidentRecord = getIncidentRecord(key);
 
     if (incidentRecord != null) {
-      zeebeDb.transaction(
-          () -> {
-            incidentColumnFamily.delete(incidentKey);
+      incidentColumnFamily.delete(incidentKey);
 
-            if (isJobIncident(incidentRecord)) {
-              jobKey.wrapLong(incidentRecord.getJobKey());
-              jobIncidentColumnFamily.delete(jobKey);
-            } else {
-              elementInstanceKey.wrapLong(incidentRecord.getElementInstanceKey());
-              workflowInstanceIncidentColumnFamily.delete(elementInstanceKey);
-            }
-          });
+      if (isJobIncident(incidentRecord)) {
+        jobKey.wrapLong(incidentRecord.getJobKey());
+        jobIncidentColumnFamily.delete(jobKey);
+      } else {
+        elementInstanceKey.wrapLong(incidentRecord.getElementInstanceKey());
+        workflowInstanceIncidentColumnFamily.delete(elementInstanceKey);
+      }
     }
   }
 
