@@ -77,9 +77,7 @@ Available environment variables:
  - `BOOTSTRAP`: Sets the replication factor of the `internal-system` partition.
  - `ZEEBE_CONTACT_POINTS`: Sets the contact points of other brokers in a cluster setup.
  - `DEPLOY_ON_KUBERNETES`: If set to `true`, it applies some configuration changes in order to run Zeebe
- in a Kubernetes environment. Please note that the recommended method to
- run Zeebe on Kubernetes is by using the
- [zeebe-operator](https://github.com/zeebe-io/zeebe-operator).
+ in a Kubernetes environment.
 
 ### Mac and Windows users
 
