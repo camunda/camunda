@@ -18,7 +18,7 @@ export const IncidentsBar = styled.button`
 
   height: ${INCIDENTS_BAR_HEIGHT}px;
   padding: 0 20px 0 17px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: bold;
   opacity: 1;
 
