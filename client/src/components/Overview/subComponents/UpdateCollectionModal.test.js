@@ -15,13 +15,7 @@ const processReport = {
 
 const collection = {
   id: 'aCollectionId',
-  name: 'aCollectionName',
-  created: '2017-11-11T11:11:11.1111+0200',
-  owner: 'user_id',
-  data: {
-    configuration: {},
-    entities: [processReport]
-  }
+  name: 'aCollectionName'
 };
 
 const props = {
@@ -60,7 +54,7 @@ it('should invoke onConfirm on save button click', async () => {
 
   node.find('.confirm').simulate('click');
 
-  expect(props.onConfirm).toHaveBeenCalledWith({name: 'aCollectionName'});
+  expect(props.onConfirm).toHaveBeenCalledWith({id: 'aCollectionId', name: 'aCollectionName'});
 });
 
 it('should disable save button if report name is empty', async () => {

@@ -27,7 +27,8 @@ const props = {
   collections: [collection],
   entityCollections: [collection],
   entity: processReport,
-  toggleEntityCollection: jest.fn()
+  toggleEntityCollection: jest.fn(),
+  createCollectionWithEntity: jest.fn()
 };
 
 it('should show for each entity the collection count', () => {
@@ -39,12 +40,15 @@ it('should show for each entity the collection count', () => {
 it('should show for each report a dropdown with all collections', () => {
   const node = shallow(<CollectionsDropdown {...props} />);
 
-  expect(node.find(Dropdown.Option)).toIncludeText('aCollectionName');
+  expect(node.find(Dropdown.Option).first()).toIncludeText('aCollectionName');
 });
 
 it('should invok toggleEntityCollection to remove entity from collection when clicking on an option', () => {
   const node = shallow(<CollectionsDropdown {...props} />);
-  node.find(Dropdown.Option).simulate('click');
+  node
+    .find(Dropdown.Option)
+    .first()
+    .simulate('click');
 
   expect(props.toggleEntityCollection).toHaveBeenCalledWith(processReport, collection, true);
 });
@@ -52,7 +56,10 @@ it('should invok toggleEntityCollection to remove entity from collection when cl
 it('should invok toggleEntityCollection on collections dropdown click to add an entity to collection ', () => {
   const node = shallow(<CollectionsDropdown {...props} entityCollections={[]} />);
 
-  node.find(Dropdown.Option).simulate('click');
+  node
+    .find(Dropdown.Option)
+    .first()
+    .simulate('click');
 
   expect(props.toggleEntityCollection).toHaveBeenCalledWith(processReport, collection, false);
 });
@@ -68,4 +75,15 @@ it('should show the current collection on the top of the dropdown list', () => {
   );
 
   expect(node.find(Dropdown.Option).first()).toIncludeText('test');
+});
+
+it('should invok createCollectionWithEntity when clicking Add to new collection', () => {
+  const node = shallow(<CollectionsDropdown {...props} />);
+
+  node
+    .find(Dropdown.Option)
+    .at(1)
+    .simulate('click');
+
+  expect(props.createCollectionWithEntity).toHaveBeenCalledWith({data: {entities: ['reportID']}});
 });

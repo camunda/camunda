@@ -138,6 +138,7 @@ class Overview extends Component {
         entityCollections={entitiesCollections[currentEntity.id]}
         collections={this.state.collections}
         toggleEntityCollection={this.toggleEntityCollection}
+        createCollectionWithEntity={entity => this.setEntityToUpdate(entity)}
       />
     );
   };

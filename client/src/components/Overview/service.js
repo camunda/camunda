@@ -5,8 +5,9 @@ import entityIcons from './entityIcons';
 
 // COMMON
 
-export async function load(type, numResults) {
-  const response = await get(`api/${type}`, {orderBy: 'lastModified', numResults});
+export async function load(type) {
+  const orderBy = type === 'collection' ? 'created' : 'lastModified';
+  const response = await get(`api/${type}`, {orderBy});
   return await response.json();
 }
 

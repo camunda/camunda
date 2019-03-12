@@ -20,14 +20,18 @@ export default class UpdateCollectionModal extends Component {
     }
   }
 
+  onConfirm = () => {
+    this.props.onConfirm({...this.props.collection, name: this.state.name});
+  };
+
   handleKeyPress = evt => {
     if (evt.key === 'Enter') {
-      this.props.onConfirm({name: this.state.name});
+      this.onConfirm();
     }
   };
 
   render() {
-    const {collection, onClose, onConfirm} = this.props;
+    const {collection, onClose} = this.props;
     return (
       <Modal open={true} onClose={onClose}>
         <Modal.Header>
@@ -53,7 +57,7 @@ export default class UpdateCollectionModal extends Component {
             color="blue"
             className="confirm"
             disabled={!this.state.name}
-            onClick={() => onConfirm({name: this.state.name})}
+            onClick={this.onConfirm}
           >
             {collection.name ? 'Save' : 'Create Collection'}
           </Button>

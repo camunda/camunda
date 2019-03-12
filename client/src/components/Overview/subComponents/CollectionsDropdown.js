@@ -6,6 +6,7 @@ export default function CollectionsDropdown({
   entity,
   toggleEntityCollection,
   currentCollection,
+  createCollectionWithEntity,
   entityCollections = []
 }) {
   const collectionsCount = entityCollections.length;
@@ -22,24 +23,23 @@ export default function CollectionsDropdown({
 
   return (
     <Dropdown className="entityCollections" label={label}>
-      {collections.length > 0 ? (
-        reorderedCollections.map(collection => {
-          const isEntityInCollection = entityCollections.some(
-            entityCollection => entityCollection.id === collection.id
-          );
-          return (
-            <Dropdown.Option
-              key={collection.id}
-              checked={isEntityInCollection}
-              onClick={toggleEntityCollection(entity, collection, isEntityInCollection)}
-            >
-              {collection.name}
-            </Dropdown.Option>
-          );
-        })
-      ) : (
-        <Dropdown.Option disabled>No collections found</Dropdown.Option>
-      )}
+      {reorderedCollections.map(collection => {
+        const isEntityInCollection = entityCollections.some(
+          entityCollections => entityCollections.id === collection.id
+        );
+        return (
+          <Dropdown.Option
+            key={collection.id}
+            checked={isEntityInCollection}
+            onClick={toggleEntityCollection(entity, collection, isEntityInCollection)}
+          >
+            {collection.name}
+          </Dropdown.Option>
+        );
+      })}
+      <Dropdown.Option onClick={() => createCollectionWithEntity({data: {entities: [entity.id]}})}>
+        Add to new Collection...
+      </Dropdown.Option>
     </Dropdown>
   );
 }
