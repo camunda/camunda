@@ -8,7 +8,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
-import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
 import Actions from 'modules/components/Actions';
