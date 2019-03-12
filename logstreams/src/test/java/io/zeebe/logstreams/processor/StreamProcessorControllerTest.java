@@ -35,6 +35,7 @@ import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.db.impl.DefaultColumnFamily;
+import io.zeebe.db.impl.rocksdb.DbContext;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
@@ -97,6 +98,7 @@ public class StreamProcessorControllerTest {
   private DbString key;
   private ColumnFamily<DbString, DbString> columnFamily;
   private ZeebeDb zeebeDb;
+  private DbContext dbContext;
 
   @Before
   public void setup() throws Exception {
@@ -146,11 +148,12 @@ public class StreamProcessorControllerTest {
         .onEvent(any());
 
     doThrow(new RecoverableException("expected", new RuntimeException("expected")))
-        .when(zeebeDb)
-        .transaction(any());
+        .when(dbContext)
+        .runInTransaction(any());
 
     // when
     writer.writeEvent(EVENT_1, true);
+
     latch.await();
     streamProcessorController.closeAsync().join();
 
@@ -637,14 +640,13 @@ public class StreamProcessorControllerTest {
             .actorScheduler(logStreamRule.getActorScheduler())
             .serviceContainer(logStreamRule.getServiceContainer())
             .snapshotController(snapshotController)
-            .streamProcessorFactory((zeebeDb -> streamProcessor))
+            .streamProcessorFactory(((zeebeDb, dbContext) -> streamProcessor))
             .readOnly(true)
             .build()
             .join()
             .getController();
 
     // given
-
     changeMockInActorContext(
         () ->
             when(eventProcessor.writeEvent(any()))
@@ -696,6 +698,8 @@ public class StreamProcessorControllerTest {
   }
 
   private void installStreamProcessorService() throws IOException {
+    dbContext = spy(new DbContext());
+
     snapshotController =
         spy(
             new StateSnapshotController(
@@ -715,12 +719,14 @@ public class StreamProcessorControllerTest {
             .serviceContainer(logStreamRule.getServiceContainer())
             .snapshotController(snapshotController)
             .streamProcessorFactory(
-                (db) -> {
+                (db, dbCtx) -> {
                   streamProcessor = RecordingStreamProcessor.createSpy(db);
                   eventProcessor = streamProcessor.getEventProcessorSpy();
-                  columnFamily = db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+                  columnFamily =
+                      db.createColumnFamily(dbCtx, DefaultColumnFamily.DEFAULT, key, value);
                   return streamProcessor;
                 })
+            .dbContext(dbContext)
             .snapshotPeriod(SNAPSHOT_INTERVAL)
             .build()
             .join();

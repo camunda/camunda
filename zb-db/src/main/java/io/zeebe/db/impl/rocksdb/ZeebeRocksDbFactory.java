@@ -72,14 +72,12 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
             .setCreateIfMissing(true);
     closeables.add(dbOptions);
 
-    db =
-        ZeebeTransactionDb.openTransactionalDb(
-            dbOptions,
-            dbDirectory.getAbsolutePath(),
-            columnFamilyDescriptors,
-            closeables,
-            columnFamilyTypeClass);
-    return db;
+    return ZeebeTransactionDb.openTransactionalDb(
+        dbOptions,
+        dbDirectory.getAbsolutePath(),
+        columnFamilyDescriptors,
+        closeables,
+        columnFamilyTypeClass);
   }
 
   private List<ColumnFamilyDescriptor> createFamilyDescriptors(

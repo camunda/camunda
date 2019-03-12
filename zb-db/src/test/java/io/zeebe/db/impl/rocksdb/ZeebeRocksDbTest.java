@@ -23,6 +23,8 @@ import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.db.impl.DefaultColumnFamily;
 import java.io.File;
+import java.io.IOException;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -30,22 +32,31 @@ import org.junit.rules.TemporaryFolder;
 public class ZeebeRocksDbTest {
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private DbContext dbContext;
+  private ZeebeDbFactory<DefaultColumnFamily> dbFactory;
+  private File pathName;
+  private ZeebeDb<DefaultColumnFamily> db;
+
+  @Before
+  public void setup() throws IOException {
+    dbFactory = ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class);
+    pathName = temporaryFolder.newFolder();
+    db = dbFactory.createDb(pathName);
+
+    dbContext = new DbContext();
+    dbContext.setTransactionProvider(db::getTransaction);
+  }
 
   @Test
   public void shouldCreateSnapshot() throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-        ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class);
-
-    final File pathName = temporaryFolder.newFolder();
-    final ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
-
     final DbString key = new DbString();
     key.wrapString("foo");
     final DbString value = new DbString();
     value.wrapString("bar");
+
     final ColumnFamily<DbString, DbString> columnFamily =
-        db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+        db.createColumnFamily(dbContext, DefaultColumnFamily.DEFAULT, key, value);
     columnFamily.put(key, value);
 
     // when
@@ -60,25 +71,21 @@ public class ZeebeRocksDbTest {
   @Test
   public void shouldReopenDb() throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-        ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class);
-    final File pathName = temporaryFolder.newFolder();
-    ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
-
     final DbString key = new DbString();
     key.wrapString("foo");
     final DbString value = new DbString();
     value.wrapString("bar");
     ColumnFamily<DbString, DbString> columnFamily =
-        db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+        db.createColumnFamily(dbContext, DefaultColumnFamily.DEFAULT, key, value);
     columnFamily.put(key, value);
     db.close();
 
     // when
     db = dbFactory.createDb(pathName);
+    dbContext.setTransactionProvider(db::getTransaction);
 
     // then
-    columnFamily = db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+    columnFamily = db.createColumnFamily(dbContext, DefaultColumnFamily.DEFAULT, key, value);
     final DbString zbString = columnFamily.get(key);
     assertThat(zbString).isNotNull();
     assertThat(zbString.toString()).isEqualTo("bar");
@@ -89,11 +96,6 @@ public class ZeebeRocksDbTest {
   @Test
   public void shouldIdempotentOpenDb() throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-        ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class);
-    final File pathName = temporaryFolder.newFolder();
-    final ZeebeDb<DefaultColumnFamily> firstDB = dbFactory.createDb(pathName);
-
     final DbString key = new DbString();
     key.wrapString("foo");
     final DbString value = new DbString();
@@ -101,38 +103,36 @@ public class ZeebeRocksDbTest {
 
     // when
     final ZeebeDb<DefaultColumnFamily> secondDB = dbFactory.createDb(pathName);
+    final DbContext secondDbContext = new DbContext();
+    secondDbContext.setTransactionProvider(secondDB::getTransaction);
+
     final ColumnFamily<DbString, DbString> columnFamily =
-        firstDB.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+        db.createColumnFamily(dbContext, DefaultColumnFamily.DEFAULT, key, value);
     columnFamily.put(key, value);
 
     // then
-    assertThat(firstDB).isNotEqualTo(secondDB);
+    assertThat(db).isNotEqualTo(secondDB);
 
     final ColumnFamily<DbString, DbString> secondColumnFamily =
-        secondDB.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+        secondDB.createColumnFamily(secondDbContext, DefaultColumnFamily.DEFAULT, key, value);
 
     final DbString zbString = secondColumnFamily.get(key);
     assertThat(zbString).isNotNull();
     assertThat(zbString.toString()).isEqualTo("bar");
 
-    firstDB.close();
+    db.close();
     secondDB.close();
   }
 
   @Test
   public void shouldRecoverFromSnapshot() throws Exception {
     // given
-    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
-        ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class);
-    final File pathName = temporaryFolder.newFolder();
-    ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
-
     final DbString key = new DbString();
     key.wrapString("foo");
     final DbString value = new DbString();
     value.wrapString("bar");
     ColumnFamily<DbString, DbString> columnFamily =
-        db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+        db.createColumnFamily(dbContext, DefaultColumnFamily.DEFAULT, key, value);
     columnFamily.put(key, value);
 
     final File snapshotDir = new File(temporaryFolder.newFolder(), "snapshot");
@@ -144,7 +144,8 @@ public class ZeebeRocksDbTest {
     assertThat(pathName.listFiles()).isNotEmpty();
     db.close();
     db = dbFactory.createDb(snapshotDir);
-    columnFamily = db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+    dbContext.setTransactionProvider(db::getTransaction);
+    columnFamily = db.createColumnFamily(dbContext, DefaultColumnFamily.DEFAULT, key, value);
 
     // then
     final DbString dbString = columnFamily.get(key);

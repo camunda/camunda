@@ -48,7 +48,6 @@ public interface SnapshotController extends AutoCloseable {
   StateSnapshotMetadata recoverFromLatestSnapshot() throws Exception;
 
   ZeebeDb openDb();
-
   /**
    * Purges all snapshots which return true for the given matcher.
    *

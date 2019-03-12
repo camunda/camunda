@@ -21,16 +21,18 @@ import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
+import io.zeebe.db.impl.rocksdb.DbContext;
 
 public class BlackList {
 
   private final ColumnFamily<DbLong, DbNil> blackListColumnFamily;
   private final DbLong workflowInstanceKey;
 
-  public BlackList(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public BlackList(final DbContext dbContext, ZeebeDb<ZbColumnFamilies> zeebeDb) {
     workflowInstanceKey = new DbLong();
     blackListColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.BLACKLIST, workflowInstanceKey, DbNil.INSTANCE);
+        zeebeDb.createColumnFamily(
+            dbContext, ZbColumnFamilies.BLACKLIST, workflowInstanceKey, DbNil.INSTANCE);
   }
 
   public void blacklist(long key) {

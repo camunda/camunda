@@ -16,8 +16,9 @@
 package io.zeebe.logstreams.processor;
 
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.rocksdb.DbContext;
 
 public interface StreamProcessorFactory {
 
-  StreamProcessor createProcessor(ZeebeDb zeebeDb);
+  StreamProcessor createProcessor(ZeebeDb zeebeDb, DbContext dbContext);
 }

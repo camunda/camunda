@@ -30,9 +30,9 @@ import io.zeebe.dispatcher.Subscription;
 import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
-import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
@@ -50,7 +50,6 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   private static final String APPENDER_SUBSCRIPTION_NAME = "appender";
 
   private final Injector<LogStorage> logStorageInjector = new Injector<>();
-  private final Injector<LogBlockIndex> logBlockIndexInjector = new Injector<>();
   private final Injector<LogBlockIndexWriter> logBockIndexWriterInjector = new Injector<>();
 
   private final ServiceContainer serviceContainer;
@@ -65,12 +64,12 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   private final int maxAppendBlockSize;
 
   private final Position commitPosition;
+  private final StateStorage stateStorage;
   private volatile int term = 0;
 
   private ServiceStartContext serviceContext;
 
   private LogStorage logStorage;
-  private LogBlockIndex logBlockIndex;
   private LogBlockIndexWriter logBlockIndexWriter;
 
   private ActorFuture<Dispatcher> writeBufferFuture;
@@ -86,6 +85,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     this.commitPosition = builder.getCommitPosition();
     this.writeBufferSize = ByteValue.ofBytes(builder.getWriteBufferSize());
     this.maxAppendBlockSize = builder.getMaxAppendBlockSize();
+    this.stateStorage = builder.getStateStorage();
   }
 
   @Override
@@ -94,7 +94,6 @@ public class LogStreamService implements LogStream, Service<LogStream> {
 
     serviceContext = startContext;
     logStorage = logStorageInjector.getValue();
-    logBlockIndex = logBlockIndexInjector.getValue();
     logBlockIndexWriter = logBockIndexWriterInjector.getValue();
   }
 
@@ -113,16 +112,14 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     final CompositeServiceBuilder installOperation =
         serviceContext.createComposite(logStorageAppenderRootService);
 
-    final LogWriteBufferService writeBufferService = new LogWriteBufferService(writeBufferBuilder);
+    final LogWriteBufferService writeBufferService =
+        new LogWriteBufferService(writeBufferBuilder, stateStorage);
     writeBufferFuture =
         installOperation
             .createService(logWriteBufferServiceName, writeBufferService)
             .dependency(
                 logStorageInjector.getInjectedServiceName(),
                 writeBufferService.getLogStorageInjector())
-            .dependency(
-                logBlockIndexInjector.getInjectedServiceName(),
-                writeBufferService.getLogBlockIndexInjector())
             .install();
 
     final LogWriteBufferSubscriptionService subscriptionService =
@@ -190,11 +187,6 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   @Override
   public LogStorage getLogStorage() {
     return logStorage;
-  }
-
-  @Override
-  public LogBlockIndex getLogBlockIndex() {
-    return logBlockIndex;
   }
 
   @Override
@@ -266,6 +258,11 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   }
 
   @Override
+  public StateStorage getStateStorage() {
+    return stateStorage;
+  }
+
+  @Override
   public int getTerm() {
     return term;
   }
@@ -273,10 +270,6 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   @Override
   public void setTerm(final int term) {
     this.term = term;
-  }
-
-  public Injector<LogBlockIndex> getLogBlockIndexInjector() {
-    return logBlockIndexInjector;
   }
 
   public Injector<LogBlockIndexWriter> getLogBockIndexWriterInjector() {

@@ -18,8 +18,8 @@ package io.zeebe.logstreams.log;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogStorageAppender;
-import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.future.ActorFuture;
 
@@ -79,13 +79,6 @@ public interface LogStream extends AutoCloseable {
   LogStorage getLogStorage();
 
   /**
-   * Returns the LogBlockIndex object, which is used for indexing the LogStorage.
-   *
-   * @return the log block index
-   */
-  LogBlockIndex getLogBlockIndex();
-
-  /**
    * Returns the writeBuffer, which is used by the LogStreamController to stream the content into
    * the log storage.
    *
@@ -140,4 +133,12 @@ public interface LogStream extends AutoCloseable {
   void registerOnAppendCondition(ActorCondition condition);
 
   void removeOnAppendCondition(ActorCondition condition);
+
+  /**
+   * Returns the stateStorage configured with the root path where the runtime and snapshot
+   * directories of the LogBlockIndex database will be created
+   *
+   * @return stateStorage with the runtime and snapshot directories for the LogBlockIndex Db
+   */
+  StateStorage getStateStorage();
 }

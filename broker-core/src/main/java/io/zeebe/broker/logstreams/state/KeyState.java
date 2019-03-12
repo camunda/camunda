@@ -20,6 +20,7 @@ package io.zeebe.broker.logstreams.state;
 import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.workflow.state.NextValueManager;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.rocksdb.DbContext;
 import io.zeebe.protocol.Protocol;
 
 public class KeyState implements KeyGenerator {
@@ -35,11 +36,13 @@ public class KeyState implements KeyGenerator {
    * Initializes the key state with the corresponding partition id, so that unique keys are
    * generated over all partitions.
    *
+   * @param dbContext
    * @param partitionId the partition to determine the key start value
    */
-  public KeyState(int partitionId, ZeebeDb zeebeDb) {
+  public KeyState(final DbContext dbContext, int partitionId, ZeebeDb zeebeDb) {
     keyStartValue = Protocol.encodePartitionId(partitionId, INITIAL_VALUE);
-    nextValueManager = new NextValueManager(keyStartValue, zeebeDb, ZbColumnFamilies.KEY);
+    nextValueManager =
+        new NextValueManager(dbContext, keyStartValue, zeebeDb, ZbColumnFamilies.KEY);
   }
 
   @Override

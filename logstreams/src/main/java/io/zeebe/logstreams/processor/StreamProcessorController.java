@@ -16,6 +16,7 @@
 package io.zeebe.logstreams.processor;
 
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.rocksdb.DbContext;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
@@ -67,6 +68,7 @@ public class StreamProcessorController extends Actor {
   public static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
 
   private final StreamProcessorFactory streamProcessorFactory;
+  private final DbContext dbContext;
   private StreamProcessor streamProcessor;
   private final StreamProcessorContext streamProcessorContext;
   private final SnapshotController snapshotController;
@@ -98,7 +100,6 @@ public class StreamProcessorController extends Actor {
   private boolean suspended = false;
 
   private StreamProcessorMetrics metrics;
-  private ZeebeDb zeebeDb;
 
   public StreamProcessorController(final StreamProcessorContext context) {
     this.streamProcessorContext = context;
@@ -117,6 +118,7 @@ public class StreamProcessorController extends Actor {
     this.snapshotPeriod = context.getSnapshotPeriod();
     this.eventFilter = context.getEventFilter();
     this.isReadOnlyProcessor = context.isReadOnlyProcessor();
+    this.dbContext = context.getDbContext();
   }
 
   @Override
@@ -146,12 +148,13 @@ public class StreamProcessorController extends Actor {
     logStreamWriter.wrap(logStream);
 
     try {
-
       snapshotPosition = recoverFromSnapshot(logStream.getCommitPosition(), logStream.getTerm());
       lastSourceEventPosition = seekFromSnapshotPositionToLastSourceEvent();
 
-      zeebeDb = snapshotController.openDb();
-      streamProcessor = streamProcessorFactory.createProcessor(zeebeDb);
+      final ZeebeDb zeebeDb = snapshotController.openDb();
+      dbContext.setTransactionProvider(zeebeDb::getTransaction);
+
+      streamProcessor = streamProcessorFactory.createProcessor(zeebeDb, dbContext);
       streamProcessor.onOpen(streamProcessorContext);
     } catch (final Exception e) {
       onFailure();
@@ -262,7 +265,7 @@ public class StreamProcessorController extends Actor {
         if (eventProcessor != null) {
           try {
             // don't execute side effects or write events
-            zeebeDb.transaction(eventProcessor::processEvent);
+            dbContext.runInTransaction(eventProcessor::processEvent);
           } catch (final RecoverableException recoverableException) {
             // recoverable
             LOG.error(
@@ -274,7 +277,7 @@ public class StreamProcessorController extends Actor {
             return;
           } catch (final Exception e) {
             LOG.error(ERROR_MESSAGE_REPROCESSING_FAILED_SKIP_EVENT, currentEvent, getName(), e);
-            zeebeDb.transaction(() -> eventProcessor.processingFailed(e));
+            dbContext.runInTransaction(() -> eventProcessor.processingFailed(e));
           }
         }
       } catch (final Exception e) {
@@ -326,7 +329,7 @@ public class StreamProcessorController extends Actor {
 
       if (eventProcessor != null) {
         try {
-          zeebeDb.transaction(eventProcessor::processEvent);
+          dbContext.runInTransaction(eventProcessor::processEvent);
           metrics.incrementEventsProcessedCount();
           actor.runUntilDone(this::executeSideEffects);
         } catch (final RecoverableException recoverableException) {
@@ -339,7 +342,7 @@ public class StreamProcessorController extends Actor {
           actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processEvent(currentEvent));
         } catch (final Exception e) {
           LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, event, getName(), e);
-          zeebeDb.transaction(() -> eventProcessor.processingFailed(e));
+          dbContext.runInTransaction(() -> eventProcessor.processingFailed(e));
           // send rejection etc
           actor.runUntilDone(this::executeSideEffects);
         }

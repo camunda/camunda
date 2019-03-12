@@ -15,6 +15,7 @@
  */
 package io.zeebe.logstreams.processor;
 
+import io.zeebe.db.impl.rocksdb.DbContext;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -44,6 +45,7 @@ public class StreamProcessorContext {
 
   private Runnable suspendRunnable;
   private Runnable resumeRunnable;
+  private DbContext dbContext;
 
   public LogStream getLogStream() {
     return logStream;
@@ -165,5 +167,13 @@ public class StreamProcessorContext {
 
   public StreamProcessorFactory getStreamProcessorFactory() {
     return streamProcessorFactory;
+  }
+
+  public void setDbContext(final DbContext dbContext) {
+    this.dbContext = dbContext;
+  }
+
+  public DbContext getDbContext() {
+    return this.dbContext;
   }
 }

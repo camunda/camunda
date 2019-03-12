@@ -22,6 +22,7 @@ import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
+import io.zeebe.db.impl.rocksdb.DbContext;
 
 public class NextValueManager {
 
@@ -33,17 +34,22 @@ public class NextValueManager {
   private final DbString nextValueKey;
   private final DbLong nextValue;
 
-  public NextValueManager(ZeebeDb<ZbColumnFamilies> zeebeDb, ZbColumnFamilies columnFamily) {
-    this(INITIAL_VALUE, zeebeDb, columnFamily);
+  public NextValueManager(
+      DbContext dbContext, ZeebeDb<ZbColumnFamilies> zeebeDb, ZbColumnFamilies columnFamily) {
+    this(dbContext, INITIAL_VALUE, zeebeDb, columnFamily);
   }
 
   public NextValueManager(
-      long initialValue, ZeebeDb<ZbColumnFamilies> zeebeDb, ZbColumnFamilies columnFamily) {
+      DbContext dbContext,
+      long initialValue,
+      ZeebeDb<ZbColumnFamilies> zeebeDb,
+      ZbColumnFamilies columnFamily) {
     this.initialValue = initialValue;
 
     nextValueKey = new DbString();
     nextValue = new DbLong();
-    nextValueColumnFamily = zeebeDb.createColumnFamily(columnFamily, nextValueKey, nextValue);
+    nextValueColumnFamily =
+        zeebeDb.createColumnFamily(dbContext, columnFamily, nextValueKey, nextValue);
   }
 
   public long getNextValue(String key) {

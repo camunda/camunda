@@ -15,6 +15,7 @@
  */
 package io.zeebe.logstreams.processor;
 
+import io.zeebe.db.impl.rocksdb.DbContext;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -54,6 +55,7 @@ public class StreamProcessorBuilder {
   protected ServiceContainer serviceContainer;
   private List<ServiceName<?>> additionalDependencies;
   private StreamProcessorFactory streamProcessorFactory;
+  private DbContext dbContext;
 
   public StreamProcessorBuilder(int id, String name) {
     this.id = id;
@@ -108,6 +110,11 @@ public class StreamProcessorBuilder {
     return this;
   }
 
+  public StreamProcessorBuilder dbContext(final DbContext dbContext) {
+    this.dbContext = dbContext;
+    return this;
+  }
+
   public ActorFuture<StreamProcessorService> build() {
     validate();
 
@@ -125,8 +132,7 @@ public class StreamProcessorBuilder {
             .createService(serviceName, service)
             .dependency(LogStreamServiceNames.logStreamServiceName(logName))
             .dependency(LogStreamServiceNames.logWriteBufferServiceName(logName))
-            .dependency(LogStreamServiceNames.logStorageServiceName(logName))
-            .dependency(LogStreamServiceNames.logBlockIndexServiceName(logName));
+            .dependency(LogStreamServiceNames.logStorageServiceName(logName));
 
     if (additionalDependencies != null) {
       additionalDependencies.forEach((d) -> serviceBuilder.dependency(d));
@@ -173,6 +179,10 @@ public class StreamProcessorBuilder {
     }
     ctx.setLogStreamWriter(logStreamWriter);
 
+    if (dbContext == null) {
+      dbContext = new DbContext();
+    }
+    ctx.setDbContext(dbContext);
     return ctx;
   }
 }

@@ -15,7 +15,6 @@
  */
 package io.zeebe.logstreams.impl;
 
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logBlockIndexServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logBlockIndexWriterService;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamRootServiceName;
@@ -25,9 +24,7 @@ import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
 
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorageConfiguration;
-import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.impl.service.FsLogStorageService;
-import io.zeebe.logstreams.impl.service.LogBlockIndexService;
 import io.zeebe.logstreams.impl.service.LogBlockIndexWriterService;
 import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.log.LogStream;
@@ -226,7 +223,6 @@ public class LogStreamBuilder {
 
   private ServiceName<LogStream> addServices(final CompositeServiceBuilder installOperation) {
     final ServiceName<LogStorage> logStorageServiceName = logStorageServiceName(logName);
-    final ServiceName<LogBlockIndex> logBlockIndexServiceName = logBlockIndexServiceName(logName);
     final ServiceName<LogBlockIndexWriter> logBlockIndexWriterServiceName =
         logBlockIndexWriterService(logName);
     final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logName);
@@ -239,22 +235,17 @@ public class LogStreamBuilder {
         new FsLogStorageService(storageConfig, partitionId, logStorageStubber);
     installOperation.createService(logStorageServiceName, logStorageService).install();
 
-    final LogBlockIndexService logBlockIndexService = new LogBlockIndexService(stateStorage);
-    installOperation.createService(logBlockIndexServiceName, logBlockIndexService).install();
-
     final LogBlockIndexWriterService logBlockIndexWriterService =
         new LogBlockIndexWriterService(this);
     installOperation
         .createService(logBlockIndexWriterServiceName, logBlockIndexWriterService)
         .dependency(logStorageServiceName, logBlockIndexWriterService.getLogStorageInjector())
-        .dependency(logBlockIndexServiceName, logBlockIndexWriterService.getLogBlockIndexInjector())
         .install();
 
     final LogStreamService logStreamService = new LogStreamService(this);
     installOperation
         .createService(logStreamServiceName, logStreamService)
         .dependency(logStorageServiceName, logStreamService.getLogStorageInjector())
-        .dependency(logBlockIndexServiceName, logStreamService.getLogBlockIndexInjector())
         .dependency(
             logBlockIndexWriterServiceName, logStreamService.getLogBockIndexWriterInjector())
         .install();

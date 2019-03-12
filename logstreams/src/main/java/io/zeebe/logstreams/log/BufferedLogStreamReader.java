@@ -15,9 +15,12 @@
  */
 package io.zeebe.logstreams.log;
 
+import io.zeebe.db.impl.rocksdb.DbContext;
+import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.impl.CompleteEventsInBlockProcessor;
 import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import io.zeebe.logstreams.impl.LoggedEventImpl;
+import io.zeebe.logstreams.impl.log.index.LogBlockColumnFamilies;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.ReadResultProcessor;
@@ -88,7 +91,13 @@ public class BufferedLogStreamReader implements LogStreamReader {
   @Override
   public void wrap(final LogStream log, final long position) {
     logStream = log;
-    wrap(log.getLogStorage(), log.getLogBlockIndex(), position);
+    logBlockIndex =
+        new LogBlockIndex(
+            new DbContext(),
+            ZeebeRocksDbFactory.newFactory(LogBlockColumnFamilies.class),
+            log.getStateStorage());
+    logBlockIndex.openDb();
+    wrap(log.getLogStorage(), logBlockIndex, position);
   }
 
   public void wrap(final LogStorage logStorage, final LogBlockIndex logBlockIndex) {

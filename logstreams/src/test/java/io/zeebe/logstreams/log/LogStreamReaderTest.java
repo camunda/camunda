@@ -22,6 +22,10 @@ import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.db.impl.rocksdb.DbContext;
+import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.zeebe.logstreams.impl.log.index.LogBlockColumnFamilies;
+import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
 import io.zeebe.logstreams.util.LogStreamRule;
@@ -421,6 +425,12 @@ public class LogStreamReaderTest {
             + BufferedLogStreamReader.MAX_BUFFER_CAPACITY);
 
     // when
-    ((BufferedLogStreamReader) reader).wrap(logStorage, logStream.getLogBlockIndex());
+    final LogBlockIndex logBlockIndex =
+        new LogBlockIndex(
+            new DbContext(),
+            ZeebeRocksDbFactory.newFactory(LogBlockColumnFamilies.class),
+            logStream.getStateStorage());
+    logBlockIndex.openDb();
+    ((BufferedLogStreamReader) reader).wrap(logStorage, logBlockIndex);
   }
 }

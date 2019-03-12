@@ -100,7 +100,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
   }
 
   @Override
-  protected void before() throws Exception {
+  protected void before() {
     mockSubscriptionCommandSender = mock(SubscriptionCommandSender.class);
     mockTopologyManager = mock(TopologyManager.class);
 
@@ -116,8 +116,8 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
 
     streamProcessor =
         environmentRule.runStreamProcessor(
-            (typedEventStreamProcessorBuilder, zeebeDb) -> {
-              zeebeState = new ZeebeState(zeebeDb);
+            (typedEventStreamProcessorBuilder, zeebeDb, dbContext) -> {
+              zeebeState = new ZeebeState(zeebeDb, dbContext);
               workflowState = zeebeState.getWorkflowState();
               WorkflowEventProcessors.addWorkflowProcessors(
                   typedEventStreamProcessorBuilder,

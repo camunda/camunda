@@ -15,8 +15,11 @@
  */
 package io.zeebe.logstreams.impl.service;
 
+import io.zeebe.db.impl.rocksdb.DbContext;
+import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
+import io.zeebe.logstreams.impl.log.index.LogBlockColumnFamilies;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.Injector;
@@ -27,11 +30,10 @@ import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.SchedulingHints;
 
 public class LogBlockIndexWriterService implements Service<LogBlockIndexWriter> {
-  private final Injector<LogBlockIndex> logBlockIndexInjector = new Injector<>();
   private final Injector<LogStorage> logStorageInjector = new Injector<>();
 
   private LogBlockIndexWriter logBlockIndexWriter;
-  private LogStreamBuilder logStreamBuilder;
+  private final LogStreamBuilder logStreamBuilder;
 
   public LogBlockIndexWriterService(LogStreamBuilder logStreamBuilder) {
     this.logStreamBuilder = logStreamBuilder;
@@ -39,8 +41,14 @@ public class LogBlockIndexWriterService implements Service<LogBlockIndexWriter> 
 
   @Override
   public void start(ServiceStartContext startContext) {
-    final LogBlockIndex logBlockIndex = logBlockIndexInjector.getValue();
     final LogStorage logStorage = logStorageInjector.getValue();
+    final DbContext dbContext = new DbContext();
+
+    final LogBlockIndex logBlockIndex =
+        new LogBlockIndex(
+            dbContext,
+            ZeebeRocksDbFactory.newFactory(LogBlockColumnFamilies.class),
+            logStreamBuilder.getStateStorage());
     final ActorScheduler scheduler = startContext.getScheduler();
 
     logBlockIndexWriter =
@@ -49,6 +57,7 @@ public class LogBlockIndexWriterService implements Service<LogBlockIndexWriter> 
             logStreamBuilder,
             logStorage,
             logBlockIndex,
+            dbContext,
             scheduler.getMetricsManager());
 
     startContext.async(scheduler.submitActor(logBlockIndexWriter, true, SchedulingHints.ioBound()));
@@ -62,10 +71,6 @@ public class LogBlockIndexWriterService implements Service<LogBlockIndexWriter> 
   @Override
   public LogBlockIndexWriter get() {
     return logBlockIndexWriter;
-  }
-
-  public Injector<LogBlockIndex> getLogBlockIndexInjector() {
-    return logBlockIndexInjector;
   }
 
   public Injector<LogStorage> getLogStorageInjector() {

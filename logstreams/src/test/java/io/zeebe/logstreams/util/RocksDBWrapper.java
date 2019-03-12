@@ -20,6 +20,7 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.db.impl.DefaultColumnFamily;
+import io.zeebe.db.impl.rocksdb.DbContext;
 
 public class RocksDBWrapper {
 
@@ -30,7 +31,10 @@ public class RocksDBWrapper {
   public void wrap(ZeebeDb<DefaultColumnFamily> db) {
     key = new DbString();
     value = new DbLong();
-    defaultColumnFamily = db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+
+    final DbContext dbContext = new DbContext();
+    dbContext.setTransactionProvider(db::getTransaction);
+    defaultColumnFamily = db.createColumnFamily(dbContext, DefaultColumnFamily.DEFAULT, key, value);
   }
 
   public int getInt(String key) {

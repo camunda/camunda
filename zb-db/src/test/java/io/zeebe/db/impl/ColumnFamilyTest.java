@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
+import io.zeebe.db.impl.rocksdb.DbContext;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +48,10 @@ public class ColumnFamilyTest {
 
     key = new DbLong();
     value = new DbLong();
-    columnFamily = zeebeDb.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+
+    final DbContext dbContext = new DbContext();
+    dbContext.setTransactionProvider(zeebeDb::getTransaction);
+    columnFamily = zeebeDb.createColumnFamily(dbContext, DefaultColumnFamily.DEFAULT, key, value);
   }
 
   @Test

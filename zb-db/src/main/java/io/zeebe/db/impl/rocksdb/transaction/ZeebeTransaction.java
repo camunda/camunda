@@ -21,12 +21,12 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.Transaction;
 
-class ZeebeTransaction {
+public class ZeebeTransaction implements AutoCloseable {
 
   private final Transaction transaction;
   private final long nativeHandle;
 
-  ZeebeTransaction(Transaction transaction) {
+  public ZeebeTransaction(Transaction transaction) {
     this.transaction = transaction;
     try {
       nativeHandle = RocksDbInternal.nativeHandle.getLong(transaction);
@@ -60,6 +60,10 @@ class ZeebeTransaction {
 
   public void commit() throws RocksDBException {
     transaction.commit();
+  }
+
+  public void rollback() throws RocksDBException {
+    transaction.rollback();
   }
 
   public void close() {

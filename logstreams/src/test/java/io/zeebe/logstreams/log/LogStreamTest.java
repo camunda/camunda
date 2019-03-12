@@ -93,7 +93,7 @@ public class LogStreamTest {
     assertThat(logStream.getLogName()).isEqualTo("test-log-name");
 
     assertThat(logStream.getLogBlockIndexWriter()).isNotNull();
-    assertThat(logStream.getLogBlockIndex()).isNotNull();
+    assertThat(logStream.getStateStorage()).isNotNull();
     assertThat(logStream.getLogStorage()).isNotNull();
     assertThat(logStream.getLogStorage().isOpen()).isTrue();
 

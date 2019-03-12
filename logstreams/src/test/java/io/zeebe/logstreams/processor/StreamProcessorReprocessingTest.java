@@ -31,6 +31,7 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DefaultColumnFamily;
+import io.zeebe.db.impl.rocksdb.DbContext;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
@@ -66,6 +67,8 @@ public class StreamProcessorReprocessingTest {
 
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
+  private DbContext dbContext;
+
   private final LogStreamRule logStreamRule =
       new LogStreamRule(
           temporaryFolder,
@@ -95,9 +98,9 @@ public class StreamProcessorReprocessingTest {
 
   @Before
   public void init() {
-
     eventFilter = mock(EventFilter.class);
     when(eventFilter.applies(any())).thenReturn(true);
+    dbContext = spy(new DbContext());
   }
 
   private StreamProcessorService openStreamProcessorController() {
@@ -111,14 +114,15 @@ public class StreamProcessorReprocessingTest {
   private ActorFuture<StreamProcessorService> openStreamProcessorControllerAsync(
       Runnable runnable) {
     return openStreamProcessorControllerAsync(
-        zeebeDb -> {
-          createStreamProcessor(zeebeDb);
+        (zeebeDb, dbContext) -> {
+          createStreamProcessor(zeebeDb, dbContext);
           runnable.run();
           return streamProcessor;
         });
   }
 
-  private StreamProcessor createStreamProcessor(ZeebeDb zeebeDb) {
+  private StreamProcessor createStreamProcessor(ZeebeDb zeebeDb, DbContext dbContext) {
+    dbContext.setTransactionProvider(zeebeDb::getTransaction);
     final RecordingStreamProcessor recordingProcessor = RecordingStreamProcessor.createSpy(zeebeDb);
     this.streamProcessor = recordingProcessor;
     eventProcessor = recordingProcessor.getEventProcessorSpy();
@@ -140,6 +144,7 @@ public class StreamProcessorReprocessingTest {
         .serviceContainer(logStreamRule.getServiceContainer())
         .streamProcessorFactory(streamProcessorFactory)
         .eventFilter(eventFilter)
+        .dbContext(dbContext)
         .build();
   }
 
@@ -250,8 +255,8 @@ public class StreamProcessorReprocessingTest {
               .onEvent(any());
 
           doThrow(new RecoverableException("expected", new RuntimeException("expected")))
-              .when(zeebeDb)
-              .transaction(any());
+              .when(dbContext)
+              .runInTransaction(any());
         });
     latch.await();
 
@@ -469,7 +474,7 @@ public class StreamProcessorReprocessingTest {
             });
 
     // when
-    openStreamProcessorController(zeebeDb -> processor);
+    openStreamProcessorController((zeebeDb, dbContext) -> processor);
 
     // then
     waitUntil(() -> processedRecords.get() == numberOfRecords + 2);
@@ -502,7 +507,7 @@ public class StreamProcessorReprocessingTest {
                 }
               }
             });
-    openStreamProcessorController(zeebeDb -> processor);
+    openStreamProcessorController((zeebeDb, dbContext) -> processor);
 
     // when
     waitUntil(() -> barrier.getNumberWaiting() == 1);

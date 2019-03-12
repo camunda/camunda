@@ -101,9 +101,9 @@ public class TypedStreamProcessorTest {
             STREAM_NAME,
             STREAM_PROCESSOR_ID,
             DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-            (db) ->
+            (db, dbContext) ->
                 env.newStreamProcessor()
-                    .zeebeState(new ZeebeState(db))
+                    .zeebeState(new ZeebeState(db, dbContext))
                     .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new BatchProcessor())
                     .build());
     streamProcessorControl.start();
@@ -143,12 +143,14 @@ public class TypedStreamProcessorTest {
             STREAM_NAME,
             STREAM_PROCESSOR_ID,
             DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-            (db) ->
-                env.newStreamProcessor()
-                    .zeebeState(new ZeebeState(db))
-                    .onCommand(
-                        ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new ErrorProneProcessor())
-                    .build());
+            (db, dbContext) -> {
+              dbContext.setTransactionProvider(db::getTransaction);
+              return env.newStreamProcessor()
+                  .zeebeState(new ZeebeState(db, dbContext))
+                  .onCommand(
+                      ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new ErrorProneProcessor())
+                  .build();
+            });
     streamProcessorControl.start();
     final AtomicLong requestId = new AtomicLong(0);
     final AtomicInteger requestStreamId = new AtomicInteger(0);

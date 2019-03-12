@@ -22,6 +22,7 @@ import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
+import io.zeebe.db.impl.rocksdb.DbContext;
 import java.util.Collection;
 import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
@@ -38,18 +39,20 @@ public class EventScopeInstanceState {
   private final EventTrigger eventTrigger;
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, EventTrigger> eventTriggerColumnFamily;
 
-  public EventScopeInstanceState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public EventScopeInstanceState(final DbContext dbContext, ZeebeDb<ZbColumnFamilies> zeebeDb) {
     eventScopeKey = new DbLong();
     eventScopeInstance = new EventScopeInstance();
     eventScopeInstanceColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.EVENT_SCOPE, eventScopeKey, eventScopeInstance);
+        zeebeDb.createColumnFamily(
+            dbContext, ZbColumnFamilies.EVENT_SCOPE, eventScopeKey, eventScopeInstance);
 
     eventTriggerScopeKey = new DbLong();
     eventTriggerEventKey = new DbLong();
     eventTriggerKey = new DbCompositeKey<>(eventTriggerScopeKey, eventTriggerEventKey);
     eventTrigger = new EventTrigger();
     eventTriggerColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.EVENT_TRIGGER, eventTriggerKey, eventTrigger);
+        zeebeDb.createColumnFamily(
+            dbContext, ZbColumnFamilies.EVENT_TRIGGER, eventTriggerKey, eventTrigger);
   }
 
   /**

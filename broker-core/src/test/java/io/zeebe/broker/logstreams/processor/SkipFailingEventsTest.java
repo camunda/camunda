@@ -110,8 +110,8 @@ public class SkipFailingEventsTest {
             STREAM_NAME,
             STREAM_PROCESSOR_ID,
             DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-            (db) -> {
-              zeebeState = new ZeebeState(db);
+            (db, dbContext) -> {
+              zeebeState = new ZeebeState(db, dbContext);
               return env.newStreamProcessor()
                   .zeebeState(zeebeState)
                   .onEvent(
@@ -213,8 +213,8 @@ public class SkipFailingEventsTest {
             STREAM_NAME,
             STREAM_PROCESSOR_ID,
             DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-            (db) -> {
-              zeebeState = new ZeebeState(db);
+            (db, dbContext) -> {
+              zeebeState = new ZeebeState(db, dbContext);
               return env.newStreamProcessor()
                   .zeebeState(zeebeState)
                   .onCommand(ValueType.JOB, JobIntent.CREATE, errorProneProcessor)
@@ -300,8 +300,8 @@ public class SkipFailingEventsTest {
             STREAM_NAME,
             STREAM_PROCESSOR_ID,
             DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-            (db) -> {
-              zeebeState = new ZeebeState(db);
+            (db, dbContext) -> {
+              zeebeState = new ZeebeState(db, dbContext);
               return env.newStreamProcessor()
                   .zeebeState(zeebeState)
                   .onCommand(ValueType.TIMER, TimerIntent.CREATE, errorProneProcessor)

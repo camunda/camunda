@@ -21,6 +21,7 @@ import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.rocksdb.DbContext;
 import io.zeebe.protocol.Protocol;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
@@ -44,8 +45,10 @@ public class ZeebeStateRule extends ExternalResource {
   protected void before() throws Throwable {
     tempFolder.create();
     db = createNewDb();
+    final DbContext dbContext = new DbContext();
+    dbContext.setTransactionProvider(db::getTransaction);
 
-    zeebeState = new ZeebeState(partition, db);
+    zeebeState = new ZeebeState(partition, db, dbContext);
   }
 
   @Override

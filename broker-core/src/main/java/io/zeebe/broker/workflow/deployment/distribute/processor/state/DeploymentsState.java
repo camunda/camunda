@@ -22,6 +22,7 @@ import io.zeebe.broker.workflow.deployment.distribute.processor.PendingDeploymen
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
+import io.zeebe.db.impl.rocksdb.DbContext;
 import java.util.function.ObjLongConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -31,13 +32,16 @@ public class DeploymentsState {
   private final DbLong deploymentKey;
   private final ColumnFamily<DbLong, PendingDeploymentDistribution> pendingDeploymentColumnFamily;
 
-  public DeploymentsState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public DeploymentsState(final DbContext dbContext, ZeebeDb<ZbColumnFamilies> zeebeDb) {
 
     deploymentKey = new DbLong();
     pendingDeploymentDistribution = new PendingDeploymentDistribution(new UnsafeBuffer(0, 0), -1);
     pendingDeploymentColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PENDING_DEPLOYMENT, deploymentKey, pendingDeploymentDistribution);
+            dbContext,
+            ZbColumnFamilies.PENDING_DEPLOYMENT,
+            deploymentKey,
+            pendingDeploymentDistribution);
   }
 
   public void putPendingDeployment(

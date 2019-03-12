@@ -15,13 +15,17 @@
  */
 package io.zeebe.logstreams.impl.service;
 
+import io.zeebe.db.impl.rocksdb.DbContext;
+import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.DispatcherBuilder;
 import io.zeebe.dispatcher.impl.PositionUtil;
+import io.zeebe.logstreams.impl.log.index.LogBlockColumnFamilies;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -29,13 +33,14 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 
 public class LogWriteBufferService implements Service<Dispatcher> {
   private final Injector<LogStorage> logStorageInjector = new Injector<>();
-  private final Injector<LogBlockIndex> logBlockIndexInjector = new Injector<>();
 
-  protected DispatcherBuilder dispatcherBuilder;
+  private final DispatcherBuilder dispatcherBuilder;
+  private final StateStorage stateStorage;
   protected Dispatcher dispatcher;
 
-  public LogWriteBufferService(DispatcherBuilder builder) {
+  public LogWriteBufferService(DispatcherBuilder builder, final StateStorage stateStorage) {
     this.dispatcherBuilder = builder;
+    this.stateStorage = stateStorage;
   }
 
   @Override
@@ -60,9 +65,14 @@ public class LogWriteBufferService implements Service<Dispatcher> {
 
   private int determineInitialPartitionId() {
     final LogStorage logStorage = logStorageInjector.getValue();
-    final LogBlockIndex logBlockIndex = logBlockIndexInjector.getValue();
 
     try (BufferedLogStreamReader logReader = new BufferedLogStreamReader(true)) {
+      final LogBlockIndex logBlockIndex =
+          new LogBlockIndex(
+              new DbContext(),
+              ZeebeRocksDbFactory.newFactory(LogBlockColumnFamilies.class),
+              stateStorage);
+      logBlockIndex.openDb();
       logReader.wrap(logStorage, logBlockIndex);
 
       long lastPosition = 0;
@@ -88,10 +98,6 @@ public class LogWriteBufferService implements Service<Dispatcher> {
   @Override
   public Dispatcher get() {
     return dispatcher;
-  }
-
-  public Injector<LogBlockIndex> getLogBlockIndexInjector() {
-    return logBlockIndexInjector;
   }
 
   public Injector<LogStorage> getLogStorageInjector() {

@@ -24,6 +24,7 @@ import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.DbString;
+import io.zeebe.db.impl.rocksdb.DbContext;
 import org.agrona.DirectBuffer;
 
 public class MessageState {
@@ -80,12 +81,14 @@ public class MessageState {
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> correlatedMessageColumnFamily;
 
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
+  private final DbContext dbContext;
 
-  public MessageState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public MessageState(final DbContext dbContext, ZeebeDb<ZbColumnFamilies> zeebeDb) {
+    this.dbContext = dbContext;
     messageKey = new DbLong();
     message = new Message();
     messageColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.MESSAGE_KEY, messageKey, message);
+        zeebeDb.createColumnFamily(dbContext, ZbColumnFamilies.MESSAGE_KEY, messageKey, message);
 
     messageName = new DbString();
     correlationKey = new DbString();
@@ -93,31 +96,31 @@ public class MessageState {
     nameCorrelationMessageKey = new DbCompositeKey<>(nameAndCorrelationKey, messageKey);
     nameCorrelationMessageColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGES, nameCorrelationMessageKey, DbNil.INSTANCE);
+            dbContext, ZbColumnFamilies.MESSAGES, nameCorrelationMessageKey, DbNil.INSTANCE);
 
     deadline = new DbLong();
     deadlineMessageKey = new DbCompositeKey<>(deadline, messageKey);
     deadlineColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGE_DEADLINES, deadlineMessageKey, DbNil.INSTANCE);
+            dbContext, ZbColumnFamilies.MESSAGE_DEADLINES, deadlineMessageKey, DbNil.INSTANCE);
 
     messageId = new DbString();
     nameCorrelationMessageIdKey = new DbCompositeKey<>(nameAndCorrelationKey, messageId);
     messageIdColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGE_IDS, nameCorrelationMessageIdKey, DbNil.INSTANCE);
+            dbContext, ZbColumnFamilies.MESSAGE_IDS, nameCorrelationMessageIdKey, DbNil.INSTANCE);
 
     workflowInstanceKey = new DbLong();
     messageWorkflowKey = new DbCompositeKey<>(messageKey, workflowInstanceKey);
     correlatedMessageColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGE_CORRELATED, messageWorkflowKey, DbNil.INSTANCE);
+            dbContext, ZbColumnFamilies.MESSAGE_CORRELATED, messageWorkflowKey, DbNil.INSTANCE);
 
     this.zeebeDb = zeebeDb;
   }
 
   public void put(final Message message) {
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           messageKey.wrapLong(message.getKey());
           messageColumnFamily.put(messageKey, message);
@@ -198,7 +201,7 @@ public class MessageState {
       return;
     }
 
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           messageKey.wrapLong(message.getKey());
           messageColumnFamily.delete(messageKey);

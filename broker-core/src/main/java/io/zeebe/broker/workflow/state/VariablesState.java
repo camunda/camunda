@@ -25,6 +25,7 @@ import io.zeebe.db.impl.DbBuffer;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
+import io.zeebe.db.impl.rocksdb.DbContext;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackToken;
 import io.zeebe.msgpack.spec.MsgPackWriter;
@@ -81,24 +82,25 @@ public class VariablesState {
 
   private VariableListener listener;
 
-  public VariablesState(ZeebeDb<ZbColumnFamilies> zeebeDb, KeyGenerator keyGenerator) {
+  public VariablesState(
+      final DbContext dbContext, ZeebeDb<ZbColumnFamilies> zeebeDb, KeyGenerator keyGenerator) {
     this.keyGenerator = keyGenerator;
 
     parentKey = new DbLong();
     childKey = new DbLong();
     childParentColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.ELEMENT_INSTANCE_CHILD_PARENT, childKey, parentKey);
+            dbContext, ZbColumnFamilies.ELEMENT_INSTANCE_CHILD_PARENT, childKey, parentKey);
 
     scopeKey = new DbLong();
     variableName = new DbString();
     scopeKeyVariableNameKey = new DbCompositeKey<>(scopeKey, variableName);
     variablesColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.VARIABLES, scopeKeyVariableNameKey, new VariableInstance());
+            dbContext, ZbColumnFamilies.VARIABLES, scopeKeyVariableNameKey, new VariableInstance());
 
     payloadColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.PAYLOAD, payloadScopeKey, payload);
+        zeebeDb.createColumnFamily(dbContext, ZbColumnFamilies.PAYLOAD, payloadScopeKey, payload);
   }
 
   public void setVariablesLocalFromDocument(long scopeKey, DirectBuffer document) {

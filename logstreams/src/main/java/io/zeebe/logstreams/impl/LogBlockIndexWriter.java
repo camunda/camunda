@@ -20,6 +20,7 @@ import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
 import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
 
+import io.zeebe.db.impl.rocksdb.DbContext;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.allocation.AllocatedBuffer;
@@ -56,6 +57,7 @@ public class LogBlockIndexWriter extends Actor {
   private final String name;
   private final LogStorage logStorage;
   private final LogBlockIndex blockIndex;
+  private final DbContext dbContext;
   private final MetricsManager metricsManager;
 
   /** Defines the block size for which an index will be created. */
@@ -99,10 +101,13 @@ public class LogBlockIndexWriter extends Actor {
       LogStreamBuilder builder,
       LogStorage logStorage,
       LogBlockIndex blockIndex,
+      final DbContext dbContext,
       MetricsManager metricsManager) {
     this.name = name;
     this.logStorage = logStorage;
     this.blockIndex = blockIndex;
+    this.dbContext = dbContext;
+
     this.metricsManager = metricsManager;
     this.commitPosition = builder.getCommitPosition();
     this.onCommitPositionUpdatedConditions = builder.getOnCommitPositionUpdatedConditions();
@@ -245,7 +250,6 @@ public class LogBlockIndexWriter extends Actor {
       }
 
       resetCurrentBlock();
-
       currentRunnable = readLogStorage;
     } else {
       // try again when commit position is updated

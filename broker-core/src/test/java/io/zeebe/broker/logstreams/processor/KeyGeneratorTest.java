@@ -23,6 +23,7 @@ import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.util.ZeebeStateRule;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.rocksdb.DbContext;
 import io.zeebe.protocol.Protocol;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,7 +67,10 @@ public class KeyGeneratorTest {
   public void shouldGetUniqueValuesOverPartitions() throws Exception {
     // given
     final ZeebeDb<ZbColumnFamilies> newDb = stateRule.createNewDb();
-    final ZeebeState otherZeebeState = new ZeebeState(1, newDb);
+    final DbContext dbContext = new DbContext();
+    dbContext.setTransactionProvider(newDb::getTransaction);
+
+    final ZeebeState otherZeebeState = new ZeebeState(1, newDb, dbContext);
     final KeyGenerator keyGenerator2 = otherZeebeState.getKeyGenerator();
 
     final long keyOfFirstPartition = keyGenerator.nextKey();

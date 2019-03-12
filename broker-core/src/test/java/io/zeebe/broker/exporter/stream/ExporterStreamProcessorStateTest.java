@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
 import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.rocksdb.DbContext;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
 import java.util.HashMap;
@@ -52,7 +53,10 @@ public class ExporterStreamProcessorStateTest {
   public void setup() throws Exception {
     final File dbDirectory = temporaryFolder.newFolder();
     db = DefaultZeebeDbFactory.defaultFactory(ExporterColumnFamilies.class).createDb(dbDirectory);
-    state = new ExporterStreamProcessorState(db);
+    final DbContext dbContext = new DbContext();
+    dbContext.setTransactionProvider(db::getTransaction);
+
+    state = new ExporterStreamProcessorState(db, dbContext);
   }
 
   @After

@@ -18,8 +18,11 @@ package io.zeebe.logstreams.log;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.getFragmentLength;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.getPosition;
 
+import io.zeebe.db.impl.rocksdb.DbContext;
+import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.logstreams.impl.LogEntryDescriptor;
+import io.zeebe.logstreams.impl.log.index.LogBlockColumnFamilies;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import java.nio.ByteBuffer;
@@ -66,7 +69,12 @@ public class LogStreamUtil {
 
     public void wrap(LogStream logStream) {
       this.logStream = logStream;
-      this.blockIndex = logStream.getLogBlockIndex();
+      this.blockIndex =
+          new LogBlockIndex(
+              new DbContext(),
+              ZeebeRocksDbFactory.newFactory(LogBlockColumnFamilies.class),
+              logStream.getStateStorage());
+      this.blockIndex.openDb();
       this.logStorage = logStream.getLogStorage();
       clear();
     }
