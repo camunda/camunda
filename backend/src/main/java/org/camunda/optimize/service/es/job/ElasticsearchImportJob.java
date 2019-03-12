@@ -1,7 +1,6 @@
 package org.camunda.optimize.service.es.job;
 
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-import org.camunda.optimize.service.es.job.importing.RunningProcessInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,10 +46,13 @@ public abstract class ElasticsearchImportJob<OPT extends OptimizeDto> implements
     boolean success = false;
     while (!success) {
       try {
+        final long persistStart = System.currentTimeMillis();
         persistEntities(newOptimizeEntities);
+        final long persistEnd = System.currentTimeMillis();
+        logger.debug("Executing import to elasticsearch took {}ms", persistEnd - persistStart);
         success = true;
       } catch (Exception e) {
-        logger.error("error while writing instances to elasticsearch", e);
+        logger.error("Error while executing import to elasticsearch", e);
         long sleepTime = backoffCalculator.calculateSleepTime();
         try {
           Thread.sleep(sleepTime);
