@@ -49,7 +49,7 @@ public abstract class ElasticsearchImportJob<OPT extends OptimizeDto> implements
         final long persistStart = System.currentTimeMillis();
         persistEntities(newOptimizeEntities);
         final long persistEnd = System.currentTimeMillis();
-        logger.debug("Executing import to elasticsearch took {}ms", persistEnd - persistStart);
+        logger.debug("Executing import to elasticsearch took [{}] ms", persistEnd - persistStart);
         success = true;
       } catch (Exception e) {
         logger.error("Error while executing import to elasticsearch", e);
