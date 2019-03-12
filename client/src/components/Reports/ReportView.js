@@ -62,7 +62,7 @@ export default class ReportView extends Component {
     await remove(this.props.report.id);
 
     this.setState({
-      redirect: '/reports'
+      redirect: '/'
     });
   };
 

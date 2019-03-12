@@ -119,7 +119,7 @@ export default themed(
         await remove(this.id);
 
         this.setState({
-          redirect: '/dashboards'
+          redirect: '/'
         });
       };
 

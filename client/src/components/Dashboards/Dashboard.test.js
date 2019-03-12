@@ -221,7 +221,7 @@ it('should redirect to the dashboard list on dashboard deletion', async () => {
 
   await node.instance().deleteDashboard();
 
-  expect(node).toIncludeText('REDIRECT to /dashboards');
+  expect(node).toIncludeText('REDIRECT to /');
 });
 
 it('should render a sharing popover', () => {

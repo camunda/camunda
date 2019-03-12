@@ -86,7 +86,7 @@ it('should redirect to the report list on report deletion', async () => {
   await node.instance().deleteReport();
 
   expect(node.find('Redirect')).toBePresent();
-  expect(node.props().to).toEqual('/reports');
+  expect(node.props().to).toEqual('/');
 });
 
 it('should contain a ReportRenderer with the report evaluation result', () => {
