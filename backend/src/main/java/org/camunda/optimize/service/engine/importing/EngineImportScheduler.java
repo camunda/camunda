@@ -7,6 +7,7 @@ import org.camunda.optimize.service.engine.importing.service.mediator.ProcessDef
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.PreDestroy;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -45,6 +46,12 @@ public class EngineImportScheduler extends Thread {
   public void enable() {
     logger.debug("Scheduler for engine {} was enabled and will soon start scheduling the import", engineAlias);
     isEnabled = true;
+  }
+
+  @PreDestroy
+  public void shutdown() {
+    logger.debug("Scheduler for engine {} will shutdown.", engineAlias);
+    getImportMediators().forEach(mediator -> mediator.getImportJobExecutor().stopExecutingImportJobs());
   }
 
   @Override

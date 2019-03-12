@@ -1,6 +1,6 @@
 package org.camunda.optimize.test.performance;
 
-import org.camunda.optimize.service.util.NamedThreadFactory;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -82,8 +82,9 @@ public abstract class AbstractImportTest {
   }
 
   protected ScheduledExecutorService reportImportProgress() {
-    ScheduledExecutorService exec =
-      Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory(this.getClass().getSimpleName()));
+    final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor(
+        new ThreadFactoryBuilder().setNameFormat(getClass().getSimpleName()).build()
+    );
     exec.scheduleAtFixedRate(
       () -> logger.info("Progress of engine import: {}%", computeImportProgress()),
       0,

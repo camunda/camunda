@@ -1,9 +1,11 @@
 package org.camunda.optimize.service.util;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
@@ -19,26 +21,32 @@ public abstract class ImportJobExecutor {
     startExecutingImportJobs();
   }
 
+  @PreDestroy
+  public void shutdown() {
+    stopExecutingImportJobs();
+  }
+
   private ThreadPoolExecutor importExecutor;
 
   public boolean isActive() {
     return importExecutor.getActiveCount() > 0;
   }
 
-  public void executeImportJob(Runnable elasticsearchImportJob) throws InterruptedException {
+  public void executeImportJob(final Runnable elasticsearchImportJob) {
     logger.debug(
-        "{}: Currently active [{}] jobs and [{}] in queue",
+        "{}: Currently active [{}] jobs and [{}] in queue of job type [{}]",
         getClass().getSimpleName(),
         importExecutor.getActiveCount(),
-        importExecutor.getQueue().size()
+        importExecutor.getQueue().size(),
+        elasticsearchImportJob.getClass().getSimpleName()
     );
     importExecutor.execute(elasticsearchImportJob);
   }
 
   public void startExecutingImportJobs() {
     if (importExecutor == null || importExecutor.isShutdown()) {
-      BlockingQueue<Runnable> importJobsQueue = new ArrayBlockingQueue<>(getMaxQueueSize());
-      String poolName = this.getClass().getSimpleName() + "-pool";
+      final BlockingQueue<Runnable> importJobsQueue = new ArrayBlockingQueue<>(getMaxQueueSize());
+      final String poolName = this.getClass().getSimpleName() + "-pool-%d";
       importExecutor =
         new ThreadPoolExecutor(
           getExecutorThreadCount(),
@@ -46,7 +54,7 @@ public abstract class ImportJobExecutor {
           Long.MAX_VALUE,
           TimeUnit.DAYS,
           importJobsQueue,
-          new NamedThreadFactory(poolName),
+          new ThreadFactoryBuilder().setNameFormat(poolName).build(),
           new BlockCallerUntilExecutorHasCapacity()
         );
     }
@@ -83,15 +91,21 @@ public abstract class ImportJobExecutor {
   }
 
   private class BlockCallerUntilExecutorHasCapacity implements RejectedExecutionHandler {
-    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+    public void rejectedExecution(Runnable runnable, ThreadPoolExecutor executor) {
       // this will block if the queue is full
       if (!executor.isShutdown()) {
         try {
-          logger.debug("{}: Max queue capacity is reached and, thus, can't schedule any new jobs." +
-            "Caller needs to wait until there is new free spot. Job class [{}].", super.getClass().getSimpleName(), r.getClass().getSimpleName());
-          executor.getQueue().put(r);
-          logger.debug("{}: Added job to queue. Caller can continue working on his tasks.",
-            super.getClass().getSimpleName());
+          logger.debug(
+            "{}: Max queue capacity is reached and, thus, can't schedule any new jobs." +
+            "Caller needs to wait until there is new free spot. Job class [{}].",
+            super.getClass().getSimpleName(),
+            runnable.getClass().getSimpleName()
+          );
+          executor.getQueue().put(runnable);
+          logger.debug(
+            "{}: Added job to queue. Caller can continue working on his tasks.",
+            super.getClass().getSimpleName()
+          );
         } catch (InterruptedException e) {
           logger.error("{}: Interrupted while waiting to submit a new job to the job executor!",
             getClass().getSimpleName(),

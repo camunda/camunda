@@ -10,6 +10,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.TimestampBase
 import org.camunda.optimize.service.engine.importing.service.StoreIndexesEngineImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
+import org.camunda.optimize.service.util.ImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,6 +81,11 @@ public class StoreIndexesEngineImportMediator implements EngineImportMediator {
   @Override
   public boolean canImport() {
     return OffsetDateTime.now().isAfter(dateUntilJobCreationIsBlocked);
+  }
+
+  @Override
+  public ImportJobExecutor getImportJobExecutor() {
+    return elasticsearchImportJobExecutor;
   }
 
   private OffsetDateTime calculateDateUntilJobCreationIsBlocked() {

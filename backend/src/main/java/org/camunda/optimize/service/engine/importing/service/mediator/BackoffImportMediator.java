@@ -6,6 +6,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHa
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.BeanHelper;
+import org.camunda.optimize.service.util.ImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,14 +45,10 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
     init();
   }
 
-  protected abstract void init();
-
-  protected abstract boolean importNextEnginePage();
-
   @Override
   public void importNextPage() {
     if (backoffCalculator.isReadyForNextRetry()) {
-      boolean pageIsPresent = getNextPageWithErrorCheck();
+      boolean pageIsPresent = importNextPageWithErrorCheck();
       if (pageIsPresent) {
         backoffCalculator.resetBackoff();
       } else {
@@ -60,15 +57,42 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
     }
   }
 
-  private boolean getNextPageWithErrorCheck() {
+  /**
+   * Method is invoked by scheduler once no more jobs are created by factories
+   * associated with import process from specific engine
+   *
+   * @return time to sleep for import process of an engine in general
+   */
+  public long getBackoffTimeInMs() {
+    return backoffCalculator.getTimeUntilNextRetry();
+  }
+
+  @Override
+  public void resetBackoff() {
+    backoffCalculator.resetBackoff();
+  }
+
+  @Override
+  public boolean canImport() {
+    boolean canImportNewPage = backoffCalculator.isReadyForNextRetry();
+    logger.debug("can import next page [{}]", canImportNewPage);
+    return canImportNewPage;
+  }
+
+  @Override
+  public ImportJobExecutor getImportJobExecutor() {
+    return elasticsearchImportJobExecutor;
+  }
+
+  protected abstract void init();
+
+  protected abstract boolean importNextEnginePage();
+
+  private boolean importNextPageWithErrorCheck() {
     try {
       return importNextEnginePage();
     } catch (Exception e) {
-      logger.error(
-          "Was not able to produce next page. Maybe a problem with the connection to the engine [{}]?",
-          this.engineContext.getEngineAlias(),
-          e
-      );
+      logger.error("Was not able to import next page.", e);
       return false;
     }
   }
@@ -89,28 +113,6 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
       "Was not able to produce a new job, sleeping for [{}] ms",
       sleepTime
     );
-  }
-
-  @Override
-  public boolean canImport() {
-    boolean canImportNewPage = backoffCalculator.isReadyForNextRetry();
-    logger.debug("can import next page [{}]", canImportNewPage);
-    return canImportNewPage;
-  }
-
-  /**
-   * Method is invoked by scheduler once no more jobs are created by factories
-   * associated with import process from specific engine
-   *
-   * @return time to sleep for import process of an engine in general
-   */
-  public long getBackoffTimeInMs() {
-    return backoffCalculator.getTimeUntilNextRetry();
-  }
-
-  @Override
-  public void resetBackoff() {
-    backoffCalculator.resetBackoff();
   }
 
 }

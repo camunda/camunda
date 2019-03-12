@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.es;
 
-import org.camunda.optimize.service.util.NamedThreadFactory;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -26,8 +26,9 @@ public class EsBulkByScrollTaskActionProgressReporter {
     this.logger = LoggerFactory.getLogger(loggerName);
     this.esClient = esClient;
     this.action = action;
-    this.executorService =
-      Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory(loggerName + "-progress"));
+    this.executorService = Executors.newSingleThreadScheduledExecutor(
+      new ThreadFactoryBuilder().setNameFormat(loggerName + "-progress-%d").build()
+    );
   }
 
   public void start() {

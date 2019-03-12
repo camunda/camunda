@@ -43,11 +43,7 @@ public class DecisionDefinitionImportService {
   }
 
   private void addElasticsearchImportJobToQueue(final ElasticsearchImportJob elasticsearchImportJob) {
-    try {
-      elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
-    } catch (InterruptedException e) {
-      logger.error("Was interrupted while trying to add new job to Elasticsearch import queue.", e);
-    }
+    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 
   private List<DecisionDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(

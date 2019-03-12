@@ -126,11 +126,11 @@ import:
       # Determines if the DMN/decision data, such as decision definitions and instances
       # should be imported.
       enabled: true
-  # Number of threads being used to process the import jobs that are writing data to elasticsearch.
-  elasticsearchJobExecutorThreadCount: 2
-  #Adjust the queue size of the import jobs that store data to elasticsearch.
-  #A too large value might cause memory problems.
-  elasticsearchJobExecutorQueueSize: 50
+  # Number of threads being used to process the import jobs per data type that are writing data to elasticsearch.
+  elasticsearchJobExecutorThreadCount: 1
+  # Adjust the queue size of the import jobs per data type that store data to elasticsearch.
+  # A too large value might cause memory problems.
+  elasticsearchJobExecutorQueueSize: 5
   handler:
     backoff:
       # Interval which is used for the backoff time calculation.

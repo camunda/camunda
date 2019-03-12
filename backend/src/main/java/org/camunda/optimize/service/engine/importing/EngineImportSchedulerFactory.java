@@ -143,6 +143,7 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
     if (schedulers != null) {
       for (EngineImportScheduler oldScheduler : schedulers) {
         oldScheduler.disable();
+        oldScheduler.shutdown();
       }
     }
     engineContextFactory.init();

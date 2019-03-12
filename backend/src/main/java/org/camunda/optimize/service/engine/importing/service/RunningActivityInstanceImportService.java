@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class RunningActivityInstanceImportService {
@@ -44,11 +43,7 @@ public class RunningActivityInstanceImportService {
   }
 
   private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
-    try {
-      elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
-    } catch (InterruptedException e) {
-      logger.error("Was interrupted while trying to add new job to Elasticsearch import queue.", e);
-    }
+    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 
   private List<FlowNodeEventDto> mapEngineEntitiesToOptimizeEntities(List<HistoricActivityInstanceEngineDto> engineEntities) {

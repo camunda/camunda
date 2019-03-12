@@ -40,9 +40,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Helper rule to start embedded jetty with Camunda Optimize on bord.
@@ -111,7 +112,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     for (EngineContext configuredEngine : getConfiguredEngines()) {
       RunningActivityInstanceImportService service =
         new RunningActivityInstanceImportService(writer, getElasticsearchImportJobExecutor(), configuredEngine);
-      service.executeImport(activities, () -> {});
+      service.executeImport(activities, () -> {
+      });
     }
     makeSureAllScheduledJobsAreFinished();
   }
@@ -153,22 +155,19 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public void makeSureAllScheduledJobsAreFinished() {
-
-    CountDownLatch synchronizationObject = new CountDownLatch(2);
-    SynchronizationElasticsearchImportJob importJob =
-      new SynchronizationElasticsearchImportJob(synchronizationObject);
-    try {
-      getElasticsearchImportJobExecutor().executeImportJob(importJob);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
+    final List<CompletableFuture<Void>> synchronizationCompletables = new ArrayList<>();
+    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+      scheduler.getImportMediators()
+        .stream()
+        .map(EngineImportMediator::getImportJobExecutor)
+        .forEach(importJobExecutor -> {
+          final CompletableFuture<Void> toComplete = new CompletableFuture<>();
+          synchronizationCompletables.add(toComplete);
+          importJobExecutor.executeImportJob(new SynchronizationElasticsearchImportJob(toComplete));
+        });
     }
 
-    try {
-      synchronizationObject.countDown();
-      synchronizationObject.await();
-    } catch (InterruptedException e) {
-      logger.error("interrupted while synchronizing", e);
-    }
+    CompletableFuture.allOf(synchronizationCompletables.toArray(new CompletableFuture[0])).join();
   }
 
   public EngineImportSchedulerFactory getImportSchedulerFactory() {

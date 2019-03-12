@@ -52,11 +52,7 @@ public class ProcessDefinitionXmlImportService {
   }
 
   private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
-    try {
-      elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
-    } catch (InterruptedException e) {
-      logger.error("Was interrupted while trying to add new job to Elasticsearch import queue.", e);
-    }
+    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 
   private List<ProcessDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(List<ProcessDefinitionXmlEngineDto>

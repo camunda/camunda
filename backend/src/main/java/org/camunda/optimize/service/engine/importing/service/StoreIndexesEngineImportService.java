@@ -2,8 +2,8 @@ package org.camunda.optimize.service.engine.importing.service;
 
 import org.camunda.optimize.dto.optimize.importing.index.CombinedImportIndexesDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 import org.camunda.optimize.service.es.job.importing.StoreIndexesElasticsearchImportJob;
+import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,13 +25,10 @@ public class StoreIndexesEngineImportService {
   }
 
   public void executeImport(CombinedImportIndexesDto importIndexesToStore) {
-    StoreIndexesElasticsearchImportJob storeIndexesImportJob =
-      new StoreIndexesElasticsearchImportJob(importIndexWriter, importIndexesToStore);
-    try {
-      elasticsearchImportJobExecutor.executeImportJob(storeIndexesImportJob);
-    } catch (InterruptedException e) {
-      logger.error("Was interrupted while trying to add new job to Elasticsearch import queue.", e);
-    }
+    final StoreIndexesElasticsearchImportJob storeIndexesImportJob = new StoreIndexesElasticsearchImportJob(
+      importIndexWriter, importIndexesToStore
+    );
+    elasticsearchImportJobExecutor.executeImportJob(storeIndexesImportJob);
   }
 
 }

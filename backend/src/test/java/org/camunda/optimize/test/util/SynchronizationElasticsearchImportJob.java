@@ -3,21 +3,21 @@ package org.camunda.optimize.test.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
 
 public class SynchronizationElasticsearchImportJob implements Runnable {
 
-  private final CountDownLatch countDownLatch;
+  private static final Logger logger = LoggerFactory.getLogger(SynchronizationElasticsearchImportJob.class);
 
-  private Logger logger = LoggerFactory.getLogger(getClass());
+  private final CompletableFuture<Void> toComplete;
 
-  public SynchronizationElasticsearchImportJob(CountDownLatch countDownLatch) {
-    this.countDownLatch = countDownLatch;
+  public SynchronizationElasticsearchImportJob(CompletableFuture<Void> toComplete) {
+    this.toComplete = toComplete;
   }
 
   @Override
   public void run() {
-    logger.debug("Synchronization job was successfully executed. Counting down latch.");
-    countDownLatch.countDown();
+    logger.debug("Synchronization job was successfully executed.");
+    toComplete.complete(null);
   }
 }
