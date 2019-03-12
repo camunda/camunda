@@ -19,6 +19,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -31,6 +32,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
@@ -46,11 +48,13 @@ import io.zeebe.logstreams.util.LogStreamReaderRule;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.logstreams.util.MutableStateSnapshotMetadata;
+import io.zeebe.util.exception.RecoverableException;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
@@ -92,6 +96,7 @@ public class StreamProcessorControllerTest {
   private DbString value;
   private DbString key;
   private ColumnFamily<DbString, DbString> columnFamily;
+  private ZeebeDb zeebeDb;
 
   @Before
   public void setup() throws Exception {
@@ -120,6 +125,39 @@ public class StreamProcessorControllerTest {
     inOrder.verify(eventProcessor, times(1)).processEvent();
     inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
+
+    inOrder.verify(streamProcessor, times(1)).onClose();
+    inOrder.verify(snapshotController, times(1)).takeSnapshot(any());
+    inOrder.verify(snapshotController, times(1)).close();
+
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void testStreamProcessorLifecycleOnRecoverableException() throws Exception {
+    // given
+    final CountDownLatch latch = new CountDownLatch(2);
+    doAnswer(
+            (invocationOnMock -> {
+              latch.countDown();
+              return invocationOnMock.callRealMethod();
+            }))
+        .when(streamProcessor)
+        .onEvent(any());
+
+    doThrow(new RecoverableException("expected", new RuntimeException("expected")))
+        .when(zeebeDb)
+        .transaction(any());
+
+    // when
+    writer.writeEvent(EVENT_1, true);
+    latch.await();
+    streamProcessorController.closeAsync().join();
+
+    // then
+    final InOrder inOrder = inOrder(streamProcessor, eventProcessor, snapshotController);
+    inOrder.verify(streamProcessor, times(1)).onOpen(any());
+    inOrder.verify(streamProcessor, atLeast(2)).onEvent(any());
 
     inOrder.verify(streamProcessor, times(1)).onClose();
     inOrder.verify(snapshotController, times(1)).takeSnapshot(any());
@@ -661,7 +699,13 @@ public class StreamProcessorControllerTest {
     snapshotController =
         spy(
             new StateSnapshotController(
-                ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), createStateStorage()));
+                (path) -> {
+                  final ZeebeDb<DefaultColumnFamily> db =
+                      ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class).createDb(path);
+                  zeebeDb = spy(db);
+                  return zeebeDb;
+                },
+                createStateStorage()));
 
     streamProcessorService =
         LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID)
@@ -701,11 +745,15 @@ public class StreamProcessorControllerTest {
 
     final long eventPosition = writer.writeEvent(event, true);
 
+    waitUntilProcessedOrFailed(beforeProcessed, beforeFailed);
+    return eventPosition;
+  }
+
+  private void waitUntilProcessedOrFailed(int beforeProcessed, int beforeFailed) {
     waitUntil(
         () ->
             streamProcessor.getProcessedEventCount() == beforeProcessed + 1
                 || streamProcessor.getProcessingFailedCount() == beforeFailed + 1);
-    return eventPosition;
   }
 
   private long writeEventAndWaitUntilProcessed(DirectBuffer event) {

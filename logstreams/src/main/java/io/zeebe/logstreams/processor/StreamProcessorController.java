@@ -24,6 +24,7 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.logstreams.state.StateSnapshotMetadata;
 import io.zeebe.util.LangUtil;
+import io.zeebe.util.exception.RecoverableException;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
@@ -38,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 
 public class StreamProcessorController extends Actor {
+
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
@@ -51,6 +53,7 @@ public class StreamProcessorController extends Actor {
       "Stream processor '{}' failed to process event. Skip this event {}.";
   private static final String ERROR_MESSAGE_REPROCESSING_FAILED_SKIP_EVENT =
       "Stream processor '{}' failed to reprocess event. Skip this event {}.";
+  public static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
 
   private final StreamProcessorFactory streamProcessorFactory;
   private StreamProcessor streamProcessor;
@@ -246,6 +249,10 @@ public class StreamProcessorController extends Actor {
           try {
             // don't execute side effects or write events
             zeebeDb.transaction(eventProcessor::processEvent);
+          } catch (final RecoverableException recoverableException) {
+            // recoverable
+            actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processEvent(currentEvent));
+            return;
           } catch (final Exception e) {
             LOG.error(ERROR_MESSAGE_REPROCESSING_FAILED_SKIP_EVENT, getName(), currentEvent, e);
             zeebeDb.transaction(() -> eventProcessor.processingFailed(e));
@@ -303,6 +310,9 @@ public class StreamProcessorController extends Actor {
           zeebeDb.transaction(eventProcessor::processEvent);
           metrics.incrementEventsProcessedCount();
           actor.runUntilDone(this::executeSideEffects);
+        } catch (final RecoverableException recoverableException) {
+          // recoverable
+          actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processEvent(currentEvent));
         } catch (final Exception e) {
           LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, getName(), event, e);
           zeebeDb.transaction(() -> eventProcessor.processingFailed(e));
