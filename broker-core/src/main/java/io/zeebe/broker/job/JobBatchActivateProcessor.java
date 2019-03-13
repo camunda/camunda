@@ -140,6 +140,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
             arrayValueJob.wrap(buffer);
           } else {
             value.setTruncated(true);
+            return false;
           }
 
           return remainingAmount > 0;

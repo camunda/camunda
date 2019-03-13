@@ -233,7 +233,7 @@ public class JobState {
         }));
   }
 
-  private boolean visitJob(long jobKey, BiFunction<Long, JobRecord, Boolean> callback) {
+  boolean visitJob(long jobKey, BiFunction<Long, JobRecord, Boolean> callback) {
     final JobRecord job = getJob(jobKey);
     if (job == null) {
       throw new IllegalStateException(
