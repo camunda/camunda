@@ -43,16 +43,27 @@ public class StreamProcessorController extends Actor {
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
-      "Stream processor '%s' failed to recover. Cannot find event with the snapshot position in target log stream.";
+      "Expected to find event with the snapshot position in log stream, but nothing was found. Failed to recover with processor '%s'.";
   private static final String ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT =
-      "Stream processor '%s' failed to reprocess. Cannot find source event position: %d";
-
-  private static final String ERROR_MESSAGE_PROCESSING_FAILED =
-      "Stream processor '{}' failed to process event. It stop processing further events.";
-  private static final String ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT =
-      "Stream processor '{}' failed to process event. Skip this event {}.";
+      "Expected to find last source event position '%d', but last position was '%d'. Failed to reprocess on processor '%s'";
+  private static final String ERROR_MESSAGE_REPROCESSING_NO_NEXT_EVENT =
+      "Expected to find last source event position '%d', but found no next event. Failed to reprocess on processor '%s'";
   private static final String ERROR_MESSAGE_REPROCESSING_FAILED_SKIP_EVENT =
-      "Stream processor '{}' failed to reprocess event. Skip this event {}.";
+      "Expected to successfully reprocess event '{}' on processor '{}', but caught an exception.";
+  private static final String ERROR_MESSAGE_REPROCESSING_FAILED_RETRY_REPROCESSING =
+      "Expected to reprocess event '{}' successfully on stream processor '{}', but caught recoverable exception. Retry reprocessing.";
+
+  private static final String ERROR_MESSAGE_WRITE_FAILED =
+      "Expected to successfully write event with processor '{}', but caught an exception. Stop processing further events.";
+  private static final String ERROR_MESSAGE_EXECUTE_SITE_EFFECTS_FAILED =
+      "Expected to successfully execute side effects with processor '{}', but caught an exception. Stop processing further events.";
+  private static final String ERROR_MESSAGE_UPDATE_STATE_FAILED =
+      "Expected to successfully update state with processor '{}', but caught an exception. Stop processing further events.";
+  private static final String ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT =
+      "Expected to successfully process event '{}' with processor '{}', but caught an exception. Skip this event.";
+  private static final String ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING =
+      "Expected to process event '{}' successfully on stream processor '{}', but caught recoverable exception. Retry processing.";
+
   public static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
 
   private final StreamProcessorFactory streamProcessorFactory;
@@ -226,14 +237,17 @@ public class StreamProcessorController extends Actor {
         if (currentEvent.getPosition() > lastSourceEventPosition) {
           throw new IllegalStateException(
               String.format(
-                  ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT, getName(), lastSourceEventPosition));
+                  ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT,
+                  lastSourceEventPosition,
+                  currentEvent.getPosition(),
+                  getName()));
         }
 
         reprocessEvent(currentEvent);
       } else {
         throw new IllegalStateException(
             String.format(
-                ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT, getName(), lastSourceEventPosition));
+                ERROR_MESSAGE_REPROCESSING_NO_NEXT_EVENT, lastSourceEventPosition, getName()));
       }
     } catch (final RuntimeException e) {
       onFailure();
@@ -251,15 +265,20 @@ public class StreamProcessorController extends Actor {
             zeebeDb.transaction(eventProcessor::processEvent);
           } catch (final RecoverableException recoverableException) {
             // recoverable
+            LOG.error(
+                ERROR_MESSAGE_REPROCESSING_FAILED_RETRY_REPROCESSING,
+                currentEvent,
+                getName(),
+                recoverableException);
             actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processEvent(currentEvent));
             return;
           } catch (final Exception e) {
-            LOG.error(ERROR_MESSAGE_REPROCESSING_FAILED_SKIP_EVENT, getName(), currentEvent, e);
+            LOG.error(ERROR_MESSAGE_REPROCESSING_FAILED_SKIP_EVENT, currentEvent, getName(), e);
             zeebeDb.transaction(() -> eventProcessor.processingFailed(e));
           }
         }
       } catch (final Exception e) {
-        LOG.error(ERROR_MESSAGE_REPROCESSING_FAILED_SKIP_EVENT, getName(), currentEvent, e);
+        LOG.error(ERROR_MESSAGE_REPROCESSING_FAILED_SKIP_EVENT, currentEvent, getName(), e);
       }
     }
 
@@ -312,9 +331,14 @@ public class StreamProcessorController extends Actor {
           actor.runUntilDone(this::executeSideEffects);
         } catch (final RecoverableException recoverableException) {
           // recoverable
+          LOG.error(
+              ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING,
+              event,
+              getName(),
+              recoverableException);
           actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processEvent(currentEvent));
         } catch (final Exception e) {
-          LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, getName(), event, e);
+          LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, event, getName(), e);
           zeebeDb.transaction(() -> eventProcessor.processingFailed(e));
           // send rejection etc
           actor.runUntilDone(this::executeSideEffects);
@@ -323,7 +347,7 @@ public class StreamProcessorController extends Actor {
         skipRecord();
       }
     } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, getName(), event, e);
+      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, event, getName(), e);
       eventProcessor = null;
       skipRecord();
     }
@@ -349,8 +373,7 @@ public class StreamProcessorController extends Actor {
       }
     } catch (final Exception e) {
       actor.done();
-
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
+      LOG.error(ERROR_MESSAGE_EXECUTE_SITE_EFFECTS_FAILED, getName(), e);
       onFailure();
     }
   }
@@ -377,8 +400,7 @@ public class StreamProcessorController extends Actor {
       }
     } catch (final Exception e) {
       actor.done();
-
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
+      LOG.error(ERROR_MESSAGE_WRITE_FAILED, getName(), e);
       onFailure();
     }
   }
@@ -396,7 +418,7 @@ public class StreamProcessorController extends Actor {
       eventProcessor = null;
       actor.submit(readNextEvent);
     } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
+      LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, getName(), e);
       onFailure();
     }
   }
