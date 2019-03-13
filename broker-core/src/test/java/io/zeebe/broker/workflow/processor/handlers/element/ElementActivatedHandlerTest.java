@@ -42,7 +42,6 @@ public class ElementActivatedHandlerTest extends ElementHandlerTestCase<Executab
   @Test
   public void shouldNotHandleStateIfNoElementGiven() {
     // given
-    context.setElementInstance(null);
 
     // when - then
     assertThat(handler.shouldHandleState(context)).isFalse();
@@ -54,6 +53,7 @@ public class ElementActivatedHandlerTest extends ElementHandlerTestCase<Executab
     final ElementInstance instance =
         createAndSetContextElementInstance(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     instance.setState(WorkflowInstanceIntent.ELEMENT_TERMINATED);
+    elementInstanceState.updateInstance(instance);
 
     // when - then
     assertThat(handler.shouldHandleState(context)).isFalse();

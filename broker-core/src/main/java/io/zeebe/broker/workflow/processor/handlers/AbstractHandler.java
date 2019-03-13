@@ -104,12 +104,13 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
   }
 
   protected void transitionTo(BpmnStepContext<T> context, WorkflowInstanceIntent nextState) {
-    final WorkflowInstanceIntent state = context.getElementInstance().getState();
+    final ElementInstance elementInstance = context.getElementInstance();
+    final WorkflowInstanceIntent state = elementInstance.getState();
 
     assert WorkflowInstanceLifecycle.canTransition(state, nextState)
         : String.format("cannot transition from '%s' to '%s'", state, nextState);
 
-    context.getElementInstance().setState(nextState);
+    elementInstance.setState(nextState);
     context
         .getOutput()
         .appendFollowUpEvent(context.getRecord().getKey(), nextState, context.getValue());
@@ -125,5 +126,6 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
           .getEventScopeInstanceState()
           .shutdownInstance(context.getRecord().getKey());
     }
+    context.getElementInstanceState().updateInstance(elementInstance);
   }
 }

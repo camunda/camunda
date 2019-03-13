@@ -46,7 +46,6 @@ public class EventOccurredHandlerTest extends ElementHandlerTestCase<ExecutableF
     final ElementInstance instance =
         createAndSetContextElementInstance(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     instance.getValue().setWorkflowInstanceKey(zeebeStateRule.getKeyGenerator().nextKey());
-    context.setElementInstance(null);
     zeebeStateRule
         .getZeebeState()
         .getWorkflowState()

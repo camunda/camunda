@@ -21,6 +21,7 @@ import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementCompletedHandler;
+import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.List;
 
@@ -51,6 +52,8 @@ public class FlowOutElementCompletedHandler<T extends ExecutableFlowNode>
     context
         .getOutput()
         .appendNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, context.getValue(), flow);
-    context.getFlowScopeInstance().spawnToken();
+    final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
+    flowScopeInstance.spawnToken();
+    context.getStateDb().getElementInstanceState().updateInstance(flowScopeInstance);
   }
 }

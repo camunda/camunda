@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.processor.handlers.element;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.handlers.AbstractHandler;
+import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.EventTrigger;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -102,7 +103,9 @@ public class EventOccurredHandler<T extends ExecutableFlowElement> extends Abstr
     final long eventInstanceKey =
         context.getOutput().appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, record);
     processEventTrigger(context, eventScopeKey, eventInstanceKey, event);
-    context.getFlowScopeInstance().spawnToken();
+    final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
+    flowScopeInstance.spawnToken();
+    context.getStateDb().getElementInstanceState().updateInstance(flowScopeInstance);
 
     return eventInstanceKey;
   }

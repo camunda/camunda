@@ -29,6 +29,7 @@ import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.ElementInstanceState;
 import io.zeebe.broker.workflow.state.IndexedRecord;
 import io.zeebe.broker.workflow.state.StoredRecord;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
@@ -53,10 +54,13 @@ public abstract class ElementHandlerTestCase<T extends ExecutableFlowNode> {
   @Captor public ArgumentCaptor<IncidentRecord> incidentCaptor;
 
   protected BpmnStepContext<T> context;
+  protected ElementInstanceState elementInstanceState;
 
   @Before
   public void setUp() {
     context = new BpmnStepContext<>(zeebeStateRule.getZeebeState().getWorkflowState(), eventOutput);
+    elementInstanceState =
+        zeebeStateRule.getZeebeState().getWorkflowState().getElementInstanceState();
     context.setStreamWriter(streamWriter);
   }
 
@@ -91,13 +95,11 @@ public abstract class ElementHandlerTestCase<T extends ExecutableFlowNode> {
       WorkflowInstanceIntent state, ElementInstance flowScope) {
     final ElementInstance instance = newElementInstance(state, flowScope);
     setContextElementInstance(instance);
-    context.setFlowScopeInstance(flowScope);
 
     return instance;
   }
 
   protected void setContextElementInstance(ElementInstance instance) {
-    context.setElementInstance(instance);
     context.setRecord(newRecordFor(instance));
   }
 
