@@ -161,8 +161,9 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
       final JobRecord copiedJob = new JobRecord();
       copiedJob.wrap(copy, 0, jobRecord.getLength());
 
-      state.activate(key, copiedJob);
+      // first write follow up event as state.activate will clear the payload
       streamWriter.appendFollowUpEvent(key, JobIntent.ACTIVATED, copiedJob);
+      state.activate(key, copiedJob);
     }
   }
 
