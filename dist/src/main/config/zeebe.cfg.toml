@@ -166,8 +166,13 @@
 # ├── segments                      (the actual data as segment files)
 # │   ├── 00.data
 # │   └── 01.data
-# └── snapshots                     (snapshot data)
-#
+# ├── index                      	(log block index state and snapshots)
+# │   ├── runtime
+# │   └── snapshots
+# └── state                     	(stream processor state and snapshots)
+#     └── stream-processor
+#		  ├── runtime
+#		  └── snapshots
 
 # Specify a list of directories in which data is stored. Using multiple
 # directories makes sense in case the machine which is running Zeebe has
