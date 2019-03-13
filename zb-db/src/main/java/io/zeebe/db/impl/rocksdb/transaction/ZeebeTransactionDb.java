@@ -23,6 +23,7 @@ import io.zeebe.db.DbValue;
 import io.zeebe.db.KeyValuePairVisitor;
 import io.zeebe.db.TransactionOperation;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.ZeebeDbException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -165,8 +166,11 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
       } else {
         runInNewTransaction(operations);
       }
+    } catch (RocksDBException rdbex) {
+      throw new ZeebeDbException("Unexpected error occurred during RocksDB transaction.", rdbex);
     } catch (Exception ex) {
-      throw new RuntimeException("Unexpected error occurred during RocksDB transaction.", ex);
+      throw new RuntimeException(
+          "Unexpected error occurred during zeebe db transaction operation.", ex);
     }
   }
 
@@ -406,7 +410,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
       try {
         checkpoint.createCheckpoint(snapshotDir.getAbsolutePath());
       } catch (RocksDBException rocksException) {
-        throw new RuntimeException(rocksException);
+        throw new ZeebeDbException(rocksException);
       }
     }
   }
