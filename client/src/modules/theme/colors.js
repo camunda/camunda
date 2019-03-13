@@ -33,8 +33,8 @@ const Colors = {
   // Selection Colors
   darkInstanceOdd: '#3a527d',
   darkInstanceEven: '#3e5681',
-  lightInstanceOdd: '#bdd4fd',
-  lightInstanceEven: '#bfd6fe',
+  lightInstanceEven: '#bdd4fd',
+  lightInstanceOdd: '#bfd6fe',
 
   // Menu Colors
   darkActive: '#393a42',

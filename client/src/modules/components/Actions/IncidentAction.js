@@ -27,7 +27,8 @@ export default class Actions extends React.Component {
     isSpinnerVisible: false
   };
 
-  handleOnClick = async () => {
+  handleOnClick = async e => {
+    e.stopPropagation();
     this.setState({isSpinnerVisible: true});
     await applyOperation(
       this.props.instanceId,

@@ -19,9 +19,11 @@ const {THead, TBody, TH, TR, TD} = Table;
 export default class IncidentsTable extends React.Component {
   static propTypes = {
     incidents: PropTypes.array.isRequired,
-    onIncidentOperation: PropTypes.func.isRequired,
     instanceId: PropTypes.string.isRequired,
-    forceSpinner: PropTypes.bool
+    forceSpinner: PropTypes.bool,
+    selectedIncidents: PropTypes.array,
+    onIncidentOperation: PropTypes.func.isRequired,
+    onIncidentSelection: PropTypes.func.isRequired
   };
 
   static defaultProps = {
@@ -54,12 +56,17 @@ export default class IncidentsTable extends React.Component {
     );
   };
 
-  handleActionButtonClick = () => {
-    this.props.onIncidentOperation();
+  handleMoreButtonClick = (e, incident) => {
+    e.stopPropagation();
+    this.toggleModal({
+      content: incident.errorMessage,
+      title: `Flow Node ${incident.flowNodeName} Error`
+    });
   };
 
   render() {
     const {incidents} = this.props;
+
     return (
       <>
         <Table>
@@ -108,7 +115,19 @@ export default class IncidentsTable extends React.Component {
           <TBody>
             {incidents.map((incident, index) => {
               return (
-                <TR key={incident.id}>
+                <Styled.IncidentTR
+                  key={incident.id}
+                  isSelected={
+                    this.props.selectedIncidents &&
+                    this.props.selectedIncidents.includes(
+                      incident.flowNodeInstanceId
+                    )
+                  }
+                  onClick={this.props.onIncidentSelection.bind(this, {
+                    flowNodeInstanceId: incident.flowNodeInstanceId,
+                    flowNodeId: incident.flowNodeId
+                  })}
+                >
                   <TD>
                     <Styled.FirstCell>
                       <Styled.Index>{index + 1}</Styled.Index>
@@ -126,10 +145,9 @@ export default class IncidentsTable extends React.Component {
                       {incident.errorMessage.length >= 58 && (
                         <Button
                           size="small"
-                          onClick={this.toggleModal.bind(this, {
-                            content: incident.errorMessage,
-                            title: `Flow Node ${incident.flowNodeName} Error`
-                          })}
+                          onClick={e => {
+                            this.handleMoreButtonClick(e, incident);
+                          }}
                         >
                           More...
                         </Button>
@@ -139,14 +157,14 @@ export default class IncidentsTable extends React.Component {
                   <TD>
                     <IncidentAction
                       instanceId={this.props.instanceId}
-                      onButtonClick={this.handleActionButtonClick}
+                      onButtonClick={this.props.onIncidentOperation}
                       incident={incident}
                       showSpinner={
                         this.props.forceSpinner || incident.hasActiveOperation
                       }
                     />
                   </TD>
-                </TR>
+                </Styled.IncidentTR>
               );
             })}
           </TBody>

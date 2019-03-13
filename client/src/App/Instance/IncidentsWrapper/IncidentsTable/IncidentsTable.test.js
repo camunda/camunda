@@ -21,16 +21,27 @@ import IncidentsTable from '../IncidentsTable';
 
 const {TBody, TR, TD} = Table;
 
+const id = 'flowNodeInstanceIdB';
 const shortError = 'No data found for query $.orderId.';
 const longError =
   'Cannot compare values of different types: INTEGER and BOOLEAN';
 const mockProps = {
   incidents: [
-    createIncident({errorMessage: shortError, flowNodeName: 'Task A'}),
-    createIncident({errorMessage: longError, flowNodeName: 'Task B'})
+    createIncident({
+      errorMessage: shortError,
+      flowNodeName: 'Task A',
+      flowNodeInstanceId: 'flowNodeInstanceIdA'
+    }),
+    createIncident({
+      errorMessage: longError,
+      flowNodeName: 'Task B',
+      flowNodeInstanceId: id
+    })
   ],
   instanceId: '1',
-  onIncidentOperation: jest.fn()
+  onIncidentOperation: jest.fn(),
+  onIncidentSelection: jest.fn(),
+  selectedIncidents: [id]
 };
 
 describe('IncidentsTable', () => {
@@ -78,6 +89,7 @@ describe('IncidentsTable', () => {
         .text()
     ).toContain('Action');
   });
+
   it('should render the right number of rows', () => {
     const node = mount(
       <ThemeProvider>
@@ -190,7 +202,8 @@ describe('IncidentsTable', () => {
       mockProps.incidents[1].errorMessage
     );
   });
-  it('should start operations on incidents', async () => {
+
+  it('should call onIncidentOperation', async () => {
     const node = mount(
       <ThemeProvider>
         <IncidentsTable {...mockProps} />
@@ -202,8 +215,59 @@ describe('IncidentsTable', () => {
       .at(0)
       .find(IncidentAction);
 
-    IncidentActionNode.simulate('click');
+    const onButtonClick = IncidentActionNode.props().onButtonClick;
+    onButtonClick();
 
     node.update();
+
+    expect(mockProps.onIncidentOperation).toHaveBeenCalled();
+  });
+  describe('Selection', () => {
+    it('should call onIncidentSelection when clicking on a row', () => {
+      const node = mount(
+        <ThemeProvider>
+          <IncidentsTable {...mockProps} />
+        </ThemeProvider>
+      );
+      const RowNode = node
+        .find(TBody)
+        .find(TR)
+        .at(0);
+
+      RowNode.simulate('click');
+      node.update();
+
+      expect(mockProps.onIncidentSelection).toHaveBeenCalled();
+      expect(
+        mockProps.onIncidentSelection.mock.calls[0][0].flowNodeInstanceId
+      ).toEqual(mockProps.incidents[0].flowNodeInstanceId);
+      expect(mockProps.onIncidentSelection.mock.calls[0][0].flowNodeId).toEqual(
+        mockProps.incidents[0].flowNodeId
+      );
+    });
+
+    it('shoud mark the selected incidents row', () => {
+      const node = mount(
+        <ThemeProvider>
+          <IncidentsTable {...mockProps} />
+        </ThemeProvider>
+      );
+
+      expect(
+        node
+          .find(TBody)
+          .find(TR)
+          .at(0)
+          .props().isSelected
+      ).toBe(false);
+
+      expect(
+        node
+          .find(TBody)
+          .find(TR)
+          .at(1)
+          .props().isSelected
+      ).toBe(true);
+    });
   });
 });

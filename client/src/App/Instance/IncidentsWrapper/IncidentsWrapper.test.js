@@ -20,8 +20,10 @@ const mockProps = {
   instance: createInstance(),
   incidents: incidentsMock.incidents,
   incidentsCount: incidentsMock.count,
+  forceSpinner: false,
+  selectedIncidents: ['1', '2', '3'],
   onIncidentOperation: jest.fn(),
-  forceSpinner: false
+  onIncidentSelection: jest.fn()
 };
 
 describe('IncidentsWrapper', () => {
@@ -85,8 +87,11 @@ describe('IncidentsWrapper', () => {
     expect(node.find(IncidentsTable).props().onIncidentOperation).toEqual(
       mockProps.onIncidentOperation
     );
-    expect(node.find(IncidentsTable).props().forceSpinner).toEqual(
-      mockProps.forceSpinner
+    expect(node.find(IncidentsTable).props().selectedIncidents).toEqual(
+      mockProps.selectedIncidents
+    );
+    expect(node.find(IncidentsTable).props().onIncidentSelection).toEqual(
+      mockProps.onIncidentSelection
     );
   });
 });

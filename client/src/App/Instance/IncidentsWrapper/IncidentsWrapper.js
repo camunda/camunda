@@ -12,7 +12,14 @@ import IncidentsOverlay from './IncidentsOverlay';
 import IncidentsTable from './IncidentsTable';
 
 function IncidentsWrapper(props) {
-  const {incidents, incidentsCount, instance, onIncidentOperation} = props;
+  const {
+    incidents,
+    incidentsCount,
+    instance,
+    selectedIncidents,
+    onIncidentOperation,
+    onIncidentSelection
+  } = props;
   const [isOpen, setIsOpen] = useState(false);
   function handleToggle() {
     setIsOpen(!isOpen);
@@ -31,8 +38,10 @@ function IncidentsWrapper(props) {
           <IncidentsTable
             incidents={incidents}
             instanceId={instance.id}
-            onIncidentOperation={onIncidentOperation}
             forceSpinner={props.forceSpinner}
+            selectedIncidents={selectedIncidents}
+            onIncidentOperation={onIncidentOperation}
+            onIncidentSelection={onIncidentSelection}
           />
         </IncidentsOverlay>
       )}
@@ -45,7 +54,9 @@ IncidentsWrapper.defaultProps = {
   incidentsCount: PropTypes.number.isRequired,
   instance: PropTypes.object.isRequired,
   onIncidentOperation: PropTypes.func.isRequired,
-  forceSpinner: PropTypes.bool
+  forceSpinner: PropTypes.bool,
+  selectedIncidents: PropTypes.array,
+  onIncidentSelection: PropTypes.func.isRequired
 };
 
 export default IncidentsWrapper;

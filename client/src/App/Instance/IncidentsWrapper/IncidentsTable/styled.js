@@ -8,7 +8,7 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 import Table from 'modules/components/Table';
-const {TH} = Table;
+const {TH, TR} = Table;
 
 export const FirstCell = styled.div`
   position: relative;
@@ -87,6 +87,38 @@ export const FirstTH = themed(styled(TH)`
     background: ${themeStyle({
       dark: Colors.uiDark04,
       light: Colors.uiLight05
+    })};
+  }
+`);
+
+export const IncidentTR = themed(styled(TR)`
+  cursor: pointer;
+
+  &:nth-child(odd) {
+    background-color: ${themeStyle({
+      dark: ({isSelected}) => {
+        return isSelected ? Colors.darkInstanceOdd : Colors.darkItemOd;
+      },
+      light: ({isSelected}) => {
+        return isSelected ? Colors.lightInstanceOdd : Colors.lightItemOdd;
+      }
+    })};
+  }
+  &:nth-child(even) {
+    background-color: ${themeStyle({
+      dark: ({isSelected}) => {
+        return isSelected ? Colors.darkInstanceEven : Colors.darkItemEven;
+      },
+      light: ({isSelected}) => {
+        return isSelected ? Colors.lightInstanceEven : Colors.lightItemEven;
+      }
+    })};
+  }
+
+  &:hover {
+    background-color: ${themeStyle({
+      dark: Colors.darkTreeHover,
+      light: Colors.lightButton05
     })};
   }
 `);

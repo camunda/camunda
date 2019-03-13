@@ -199,7 +199,6 @@ export default class Instance extends Component {
    */
   handleFlowNodeSelection = async flowNodeId => {
     const {instance, activityIdToActivityInstanceMap} = this.state;
-
     // get the first activity instance corresponding to the flowNodeId
     const treeRowIds = !flowNodeId
       ? [instance.id]
@@ -219,6 +218,12 @@ export default class Instance extends Component {
       const variables = await api.fetchVariables(instance.id, scopeId);
       this.setState({variables});
     }
+  };
+
+  handleIncidentSelection = ({flowNodeInstanceId, flowNodeId}) => {
+    this.setState({
+      selection: {flowNodeId, treeRowIds: [flowNodeInstanceId]}
+    });
   };
 
   initializePolling = () => {
@@ -424,8 +429,10 @@ export default class Instance extends Component {
                   )}
                   incidentsCount={this.state.incidents.count}
                   instance={this.state.instance}
-                  onIncidentOperation={this.handleIncidentOperation}
                   forceSpinner={this.state.forceIncidentsSpinner}
+                  selectedIncidents={this.state.selection.treeRowIds}
+                  onIncidentOperation={this.handleIncidentOperation}
+                  onIncidentSelection={this.handleIncidentSelection}
                 />
               )}
               {diagramDefinitions && (

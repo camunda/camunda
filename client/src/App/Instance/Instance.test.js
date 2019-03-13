@@ -818,6 +818,160 @@ describe('Instance', () => {
     });
   });
 
+  describe('Incidents selection', async () => {
+    let mockTree;
+    let mockEvents;
+    let activityId;
+
+    it('should handle selection of incident', async () => {
+      // given
+      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
+        INSTANCE_WITH_INCIDENTS
+      );
+
+      // Demo Data
+      activityId = 'taskD';
+      const matchingTreeRowIds = [
+        'firstActivityInstanceOfTaskD',
+        'secondActivityInstanceOfTaskD'
+      ];
+
+      mockEvents = [
+        createEvent({activityId, activityInstanceId: matchingTreeRowIds[0]}),
+        createEvent({activityId, activityInstanceId: matchingTreeRowIds[1]})
+      ];
+
+      mockTree = {
+        children: [
+          createRawTreeNode({
+            id: matchingTreeRowIds[0],
+            activityId
+          }),
+          createRawTreeNode({
+            id: matchingTreeRowIds[1],
+            activityId
+          })
+        ]
+      };
+
+      // given api response
+      eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
+      activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+        mockTree
+      );
+
+      // given
+      const node = mountRenderComponent();
+      await flushPromises();
+      node.update();
+
+      const onIncidentSelection = node.find('IncidentsWrapper').props()
+        .onIncidentSelection;
+
+      onIncidentSelection({
+        flowNodeInstanceId: 'firstActivityInstanceOfTaskD',
+        flowNodeId: activityId
+      });
+      node.update();
+
+      expect(node.find('IncidentsWrapper').props().selectedIncidents).toEqual([
+        'firstActivityInstanceOfTaskD'
+      ]);
+      expect(
+        node.find(FlowNodeInstancesTree).props().selectedTreeRowIds
+      ).toEqual(['firstActivityInstanceOfTaskD']);
+      expect(node.find(Diagram).props().selectedFlowNodeId).toEqual(activityId);
+    });
+
+    it('should select incidents when making a selection in tree', async () => {
+      // given
+      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
+        INSTANCE_WITH_INCIDENTS
+      );
+      const activityId = 'taskD';
+      const treeRowIds = [
+        'firstActivityInstanceOfTaskD',
+        'secondActivityInstanceOfTaskD'
+      ];
+
+      const rawTreeData = {
+        children: [
+          createRawTreeNode({
+            id: treeRowIds[0],
+            activityId
+          }),
+          createRawTreeNode({
+            id: treeRowIds[1],
+            activityId
+          })
+        ]
+      };
+
+      activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+        rawTreeData
+      );
+      const node = mountRenderComponent();
+      await flushPromises();
+      node.update();
+
+      // when
+      node
+        .find(Instance)
+        .instance()
+        .handleFlowNodeSelection(activityId);
+      node.update();
+
+      // then
+      expect(node.find('IncidentsWrapper').prop('selectedIncidents')).toEqual(
+        treeRowIds
+      );
+    });
+
+    it('should select incidents when selecting a flow node in the diagra', async () => {
+      // given
+      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
+        INSTANCE_WITH_INCIDENTS
+      );
+      const activityId = 'taskD';
+      const treeRowIds = [
+        'firstActivityInstanceOfTaskD',
+        'secondActivityInstanceOfTaskD'
+      ];
+
+      const rawTreeData = {
+        children: [
+          createRawTreeNode({
+            id: treeRowIds[0],
+            activityId
+          }),
+          createRawTreeNode({
+            id: treeRowIds[1],
+            activityId
+          })
+        ]
+      };
+
+      activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+        rawTreeData
+      );
+      const node = mountRenderComponent();
+      await flushPromises();
+      node.update();
+
+      // when
+      node
+        .find(Instance)
+        .instance()
+        .handleFlowNodeSelection(activityId);
+      node.update();
+
+      // then
+      expect(node.find('IncidentsWrapper').prop('selectedIncidents')).toEqual(
+        treeRowIds
+      );
+    });
+  });
+
   describe('Variables', () => {
     it('it should fetch variables when single row is selected', async () => {
       // given
