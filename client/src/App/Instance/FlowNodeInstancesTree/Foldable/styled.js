@@ -118,7 +118,7 @@ export const FocusButton = themed(styled.button`
     background: ${({showHoverState}) =>
       showHoverState &&
       themeStyle({
-        dark: Colors.uiDark04,
+        dark: Colors.darkTreeHover,
         light: Colors.lightButton05
       })};
   }
