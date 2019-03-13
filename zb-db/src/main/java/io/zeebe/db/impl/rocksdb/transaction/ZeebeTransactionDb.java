@@ -24,7 +24,6 @@ import io.zeebe.db.KeyValuePairVisitor;
 import io.zeebe.db.TransactionOperation;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbException;
-import io.zeebe.db.ZeebeDbOperationException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -170,7 +169,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
     } catch (RocksDBException rdbex) {
       throw new ZeebeDbException("Unexpected error occurred during RocksDB transaction.", rdbex);
     } catch (Exception ex) {
-      throw new ZeebeDbOperationException(
+      throw new RuntimeException(
           "Unexpected error occurred during zeebe db transaction operation.", ex);
     }
   }
