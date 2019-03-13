@@ -34,9 +34,63 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
   public static RestHighLevelClient build(ConfigurationService configurationService) {
     if (configurationService.getElasticsearchSecuritySSLEnabled()) {
-      return buildSecuredRestClient(configurationService);
+      return buildHttpsRestClient(configurationService);
     }
-    return new RestHighLevelClient(buildDefaultRestClient(configurationService, HTTP));
+    return buildHttpRestClient(configurationService);
+  }
+
+  private static RestHighLevelClient buildHttpRestClient(ConfigurationService configurationService) {
+    final RestClientBuilder builder = buildDefaultRestClient(configurationService, HTTP);
+    return new RestHighLevelClient(builder);
+  }
+
+  private static RestHighLevelClient buildHttpsRestClient(ConfigurationService configurationService) {
+    try {
+      final RestClientBuilder builder = buildDefaultRestClient(configurationService, HTTPS);
+
+      final SSLContext sslContext;
+      final KeyStore truststore = loadCustomTrustStore(configurationService);
+      if (truststore.size() > 0) {
+        sslContext = SSLContexts.custom().loadTrustMaterial(truststore, null).build();
+      } else {
+        // default if custom truststore is empty
+        sslContext = SSLContext.getDefault();
+      }
+
+      builder.setHttpClientConfigCallback(createHttpClientConfigCallback(configurationService, sslContext));
+
+      return new RestHighLevelClient(builder);
+    } catch (Exception e) {
+      String message = "Could not build secured Elasticsearch client.";
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  private static RestClientBuilder.HttpClientConfigCallback createHttpClientConfigCallback(
+    final ConfigurationService configurationService) {
+    return createHttpClientConfigCallback(configurationService, null);
+  }
+
+  /**
+   * The clientConfigCallback can be set only once per builder.
+   * This method cares about all aspects that need to be considered in it's setup.
+   *
+   * @param configurationService configuration source for the client callback
+   * @param sslContext ssl setup to apply, might be <code>null</code> if there is no ssl setup
+   *
+   * @return singleton config callback for the elasticsearch rest client
+   */
+  private static RestClientBuilder.HttpClientConfigCallback createHttpClientConfigCallback(
+    final ConfigurationService configurationService,
+    final SSLContext sslContext) {
+    return httpClientBuilder -> {
+      buildCredentialsProviderIfConfigured(configurationService)
+        .ifPresent(httpClientBuilder::setDefaultCredentialsProvider);
+
+      httpClientBuilder.setSSLContext(sslContext);
+
+      return httpClientBuilder;
+    };
   }
 
   private static RestClientBuilder buildDefaultRestClient(ConfigurationService configurationService, String protocol) {
@@ -49,13 +103,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
       )
       .setMaxRetryTimeoutMillis(Integer.MAX_VALUE);
 
-    buildCredentialsProviderIfConfigured(configurationService)
-      .ifPresent(
-        credentialsProvider ->
-          restClientBuilder.setHttpClientConfigCallback(
-            httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)
-          )
-      );
+    restClientBuilder.setHttpClientConfigCallback(createHttpClientConfigCallback(configurationService));
 
     return restClientBuilder;
   }
@@ -71,28 +119,6 @@ public class ElasticsearchHighLevelRestClientBuilder {
            )
       )
       .toArray(HttpHost[]::new);
-  }
-
-  private static RestHighLevelClient buildSecuredRestClient(ConfigurationService configurationService) {
-    try {
-      final RestClientBuilder builder = buildDefaultRestClient(configurationService, HTTPS);
-
-      final SSLContext sslContext;
-      final KeyStore truststore = loadCustomTrustStore(configurationService);
-      if (truststore.size() > 0) {
-        sslContext = SSLContexts.custom().loadTrustMaterial(truststore, null).build();
-      } else {
-        // default if custom truststore is empty
-        sslContext = SSLContext.getDefault();
-      }
-
-      builder.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setSSLContext(sslContext));
-
-      return new RestHighLevelClient(builder);
-    } catch (Exception e) {
-      String message = "Could not build secured Elasticsearch client.";
-      throw new OptimizeRuntimeException(message, e);
-    }
   }
 
   private static Optional<CredentialsProvider> buildCredentialsProviderIfConfigured(

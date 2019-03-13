@@ -119,6 +119,7 @@ String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false
       - name: ELASTIC_PASSWORD
         value: optimize
         """ : ""
+  String imageName = (basicAuth) ? "elasticsearch-platinum" : "elasticsearch"
   String sslConfig = (ssl) ? """
       - name: xpack.security.http.ssl.enabled
         value: true
@@ -141,7 +142,7 @@ String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false
     """ : ""
   return """
   - name: elasticsearch-${httpPort}
-    image: docker.elastic.co/elasticsearch/elasticsearch:6.2.0
+    image: docker.elastic.co/elasticsearch/${imageName}:6.2.0
     securityContext:
       privileged: true
       capabilities:
