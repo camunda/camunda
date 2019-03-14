@@ -245,7 +245,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //then
     final OperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<OperationResponseDto>() {});
     assertThat(operationResponse.getCount()).isEqualTo(0);
-    assertThat(operationResponse.getReason()).isEqualTo("No workflow instances found.");
+    assertThat(operationResponse.getReason()).isEqualTo("No operations were scheduled.");
 
   }
 
