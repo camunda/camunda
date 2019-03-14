@@ -56,7 +56,7 @@
 
 # Sets size of the transport buffer to send and received messages between gateway and broker cluster.
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_TRANSPORT_BUFFER.
-# transportBuffer = "2M"
+# transportBuffer = "128M"
 
 # Sets the timeout of requests send to the broker cluster
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_REQUEST_TIMEOUT.
