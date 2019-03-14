@@ -23,7 +23,7 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.broker.workflow.state.VariablesState;
 import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.msgpack.value.StringValue;
@@ -45,12 +45,12 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
 
   private final JobState state;
-  private final WorkflowState workflowState;
+  private final VariablesState variablesState;
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
 
-  public JobBatchActivateProcessor(JobState state, WorkflowState workflowState) {
+  public JobBatchActivateProcessor(JobState state, VariablesState variablesState) {
     this.state = state;
-    this.workflowState = workflowState;
+    this.variablesState = variablesState;
   }
 
   @Override
@@ -140,6 +140,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
             arrayValueJob.wrap(buffer);
           } else {
             value.setTruncated(true);
+            return false;
           }
 
           return remainingAmount > 0;
@@ -171,17 +172,9 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
       Collection<DirectBuffer> variableNames, long elementInstanceKey) {
     final DirectBuffer payload;
     if (variableNames.isEmpty()) {
-      payload =
-          workflowState
-              .getElementInstanceState()
-              .getVariablesState()
-              .getVariablesAsDocument(elementInstanceKey);
+      payload = variablesState.getVariablesAsDocument(elementInstanceKey);
     } else {
-      payload =
-          workflowState
-              .getElementInstanceState()
-              .getVariablesState()
-              .getVariablesAsDocument(elementInstanceKey, variableNames);
+      payload = variablesState.getVariablesAsDocument(elementInstanceKey, variableNames);
     }
     return payload;
   }

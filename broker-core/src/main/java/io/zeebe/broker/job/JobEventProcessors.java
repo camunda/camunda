@@ -45,7 +45,8 @@ public class JobEventProcessors {
         .onCommand(
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
-            new JobBatchActivateProcessor(jobState, workflowState))
+            new JobBatchActivateProcessor(
+                jobState, workflowState.getElementInstanceState().getVariablesState()))
         .withListener(new JobTimeoutTrigger(jobState));
   }
 }
