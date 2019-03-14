@@ -428,7 +428,7 @@ public class BrokerClientTest {
 
     // then
     exception.expect(ExecutionException.class);
-    exception.expectMessage("Request timed out after PT1S");
+    exception.expectMessage("Request timed out after PT5S");
 
     // when
     client.sendRequest(new BrokerCompleteJobRequest(0, DocumentValue.EMPTY_DOCUMENT)).join();
