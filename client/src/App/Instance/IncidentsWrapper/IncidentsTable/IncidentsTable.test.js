@@ -238,10 +238,10 @@ describe('IncidentsTable', () => {
       node.update();
 
       expect(mockProps.onIncidentSelection).toHaveBeenCalled();
-      expect(
-        mockProps.onIncidentSelection.mock.calls[0][0].flowNodeInstanceId
-      ).toEqual(mockProps.incidents[0].flowNodeInstanceId);
-      expect(mockProps.onIncidentSelection.mock.calls[0][0].flowNodeId).toEqual(
+      expect(mockProps.onIncidentSelection.mock.calls[0][0].id).toEqual(
+        mockProps.incidents[0].flowNodeInstanceId
+      );
+      expect(mockProps.onIncidentSelection.mock.calls[0][0].activityId).toEqual(
         mockProps.incidents[0].flowNodeId
       );
     });

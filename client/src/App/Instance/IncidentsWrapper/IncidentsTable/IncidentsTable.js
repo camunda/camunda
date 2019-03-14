@@ -124,8 +124,8 @@ export default class IncidentsTable extends React.Component {
                     )
                   }
                   onClick={this.props.onIncidentSelection.bind(this, {
-                    flowNodeInstanceId: incident.flowNodeInstanceId,
-                    flowNodeId: incident.flowNodeId
+                    id: incident.flowNodeInstanceId,
+                    activityId: incident.flowNodeId
                   })}
                 >
                   <TD>

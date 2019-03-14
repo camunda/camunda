@@ -169,6 +169,7 @@ export default class Instance extends Component {
   handleTreeRowSelection = async node => {
     const {selection, instance} = this.state;
     const isRootNode = node.id === instance.id;
+
     // get the first flow node id (i.e. activity id) corresponding to the flowNodeId
     const flowNodeId = isRootNode ? null : node.activityId;
     const hasSelectedSiblings = selection.treeRowIds.length > 1;
@@ -218,12 +219,6 @@ export default class Instance extends Component {
       const variables = await api.fetchVariables(instance.id, scopeId);
       this.setState({variables});
     }
-  };
-
-  handleIncidentSelection = ({flowNodeInstanceId, flowNodeId}) => {
-    this.setState({
-      selection: {flowNodeId, treeRowIds: [flowNodeInstanceId]}
-    });
   };
 
   initializePolling = () => {
@@ -432,7 +427,7 @@ export default class Instance extends Component {
                   forceSpinner={this.state.forceIncidentsSpinner}
                   selectedIncidents={this.state.selection.treeRowIds}
                   onIncidentOperation={this.handleIncidentOperation}
-                  onIncidentSelection={this.handleIncidentSelection}
+                  onIncidentSelection={this.handleTreeRowSelection}
                 />
               )}
               {diagramDefinitions && (
