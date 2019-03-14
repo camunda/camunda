@@ -135,29 +135,6 @@ export default class Instance extends Component {
     );
   }
 
-  componentDidUpdate(prevProps, prevState) {
-    if (this.state.instance !== prevState.instance) {
-      if (
-        Boolean(this.state.incidents.incidents) &&
-        !this.state.incidents.incidents.find(item => item.hasActiveOperation) &&
-        this.state.forceInstanceSpinner
-      ) {
-        this.setState({
-          forceInstanceSpinner: false
-        });
-      }
-
-      if (
-        !this.state.instance.hasActiveOperation &&
-        this.state.forceIncidentsSpinner
-      ) {
-        this.setState({
-          forceIncidentsSpinner: false
-        });
-      }
-    }
-  }
-
   componentWillUnmount() {
     this.clearPolling();
   }
@@ -274,7 +251,9 @@ export default class Instance extends Component {
           state: instance.state
         },
         activityIdToActivityInstanceMap,
-        ...(shouldFetchVariables && variables)
+        ...(shouldFetchVariables && variables),
+        forceInstanceSpinner: false,
+        forceIncidentsSpinner: false
       },
       () => {
         this.initializePolling();
