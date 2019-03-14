@@ -576,14 +576,14 @@ exports[`Selection should contain Instances 1`] = `
                       className="sc-Rmtcm bmkPaq"
                     >
                       <Themed(StateIcon)
-                        state="INCIDENT"
+                        state="ACTIVE"
                       >
                         <Themed
                           forwardedRef={null}
-                          state="INCIDENT"
+                          state="ACTIVE"
                         >
                           <StateIcon
-                            state="INCIDENT"
+                            state="ACTIVE"
                             theme="dark"
                           >
                             <Styled(ReactComponent)
@@ -595,9 +595,9 @@ exports[`Selection should contain Instances 1`] = `
                                     "$$typeof": Symbol(react.forward_ref),
                                     "attrs": undefined,
                                     "componentStyle": ComponentStyle {
-                                      "componentId": "sc-bdVaJa",
+                                      "componentId": "sc-bwzfXH",
                                       "isStatic": true,
-                                      "lastClassName": "gRHdRX",
+                                      "lastClassName": "cjPJyG",
                                       "rules": Array [
                                         "
   ",
@@ -608,14 +608,14 @@ exports[`Selection should contain Instances 1`] = `
 ",
                                         ";
   color: ",
-                                        "#ff3d3d",
+                                        "#10d070",
                                         ";
 ",
                                       ],
                                     },
                                     "displayName": "Styled(ReactComponent)",
                                     "render": [Function],
-                                    "styledComponentId": "sc-bdVaJa",
+                                    "styledComponentId": "sc-bwzfXH",
                                     "target": [Function],
                                     "toString": [Function],
                                     "warnTooManyClasses": [Function],
@@ -627,14 +627,14 @@ exports[`Selection should contain Instances 1`] = `
                                 theme="dark"
                               >
                                 <ReactComponent
-                                  className="sc-bdVaJa gRHdRX"
+                                  className="sc-bwzfXH cjPJyG"
                                   theme="dark"
                                 >
                                   <svg
-                                    className="sc-bdVaJa gRHdRX"
+                                    className="sc-bwzfXH cjPJyG"
                                     theme="dark"
                                   >
-                                    state-icon-incident.svg
+                                    state-ok.svg
                                   </svg>
                                 </ReactComponent>
                               </StyledComponent>
@@ -758,23 +758,12 @@ exports[`Selection should contain Instances 1`] = `
                             "bpmnProcessId": "someKey",
                             "endDate": null,
                             "id": "id_1",
-                            "incidents": Array [
-                              Object {
-                                "activityId": Object {},
-                                "activityInstanceId": Object {},
-                                "errorMessage": "",
-                                "errorType": "",
-                                "id": "id_2",
-                                "jobId": "jobId_0",
-                                "state": "ACTIVE",
-                              },
-                            ],
                             "operations": Array [
                               Object {
                                 "endDate": "2018-10-10T09:20:38.661Z",
                                 "errorMessage": "string",
                                 "startDate": "2018-10-10T09:20:38.661Z",
-                                "state": "SCHEDULED",
+                                "state": "SENT",
                                 "type": "RESOLVE_INCIDENT",
                               },
                             ],
@@ -786,13 +775,45 @@ exports[`Selection should contain Instances 1`] = `
                             "workflowVersion": 1,
                           }
                         }
-                        operationState="SCHEDULED"
+                        operationState="SENT"
                         operationType="RESOLVE_INCIDENT"
                       >
                         <StyledComponent
                           forwardedClass={
                             Object {
                               "$$typeof": Symbol(react.forward_ref),
+                              "Spinner": Object {
+                                "$$typeof": Symbol(react.forward_ref),
+                                "WrappedComponent": Object {
+                                  "$$typeof": Symbol(react.forward_ref),
+                                  "attrs": undefined,
+                                  "componentStyle": ComponentStyle {
+                                    "componentId": "sc-dxgOiQ",
+                                    "isStatic": false,
+                                    "lastClassName": "fnVsKo",
+                                    "rules": Array [
+                                      "
+  margin: 0 5px;
+ border: 3px solid ",
+                                      [Function],
+                                      ";
+    border-right-color: transparent;
+  }
+",
+                                    ],
+                                  },
+                                  "displayName": "Styled(Spinner)",
+                                  "render": [Function],
+                                  "styledComponentId": "sc-dxgOiQ",
+                                  "target": [Function],
+                                  "toString": [Function],
+                                  "warnTooManyClasses": [Function],
+                                  "withComponent": [Function],
+                                  Symbol(Symbol.hasInstance): [Function],
+                                },
+                                "displayName": "Themed(Styled(Spinner))",
+                                "render": [Function],
+                              },
                               "attrs": undefined,
                               "componentStyle": ComponentStyle {
                                 "componentId": "sc-fBuWsC",
@@ -829,23 +850,12 @@ exports[`Selection should contain Instances 1`] = `
                               "bpmnProcessId": "someKey",
                               "endDate": null,
                               "id": "id_1",
-                              "incidents": Array [
-                                Object {
-                                  "activityId": Object {},
-                                  "activityInstanceId": Object {},
-                                  "errorMessage": "",
-                                  "errorType": "",
-                                  "id": "id_2",
-                                  "jobId": "jobId_0",
-                                  "state": "ACTIVE",
-                                },
-                              ],
                               "operations": Array [
                                 Object {
                                   "endDate": "2018-10-10T09:20:38.661Z",
                                   "errorMessage": "string",
                                   "startDate": "2018-10-10T09:20:38.661Z",
-                                  "state": "SCHEDULED",
+                                  "state": "SENT",
                                   "type": "RESOLVE_INCIDENT",
                                 },
                               ],
@@ -857,7 +867,7 @@ exports[`Selection should contain Instances 1`] = `
                               "workflowVersion": 1,
                             }
                           }
-                          operationState="SCHEDULED"
+                          operationState="SENT"
                           operationType="RESOLVE_INCIDENT"
                         >
                           <ActionStatus
@@ -876,23 +886,12 @@ exports[`Selection should contain Instances 1`] = `
                                 "bpmnProcessId": "someKey",
                                 "endDate": null,
                                 "id": "id_1",
-                                "incidents": Array [
-                                  Object {
-                                    "activityId": Object {},
-                                    "activityInstanceId": Object {},
-                                    "errorMessage": "",
-                                    "errorType": "",
-                                    "id": "id_2",
-                                    "jobId": "jobId_0",
-                                    "state": "ACTIVE",
-                                  },
-                                ],
                                 "operations": Array [
                                   Object {
                                     "endDate": "2018-10-10T09:20:38.661Z",
                                     "errorMessage": "string",
                                     "startDate": "2018-10-10T09:20:38.661Z",
-                                    "state": "SCHEDULED",
+                                    "state": "SENT",
                                     "type": "RESOLVE_INCIDENT",
                                   },
                                 ],
@@ -904,7 +903,7 @@ exports[`Selection should contain Instances 1`] = `
                                 "workflowVersion": 1,
                               }
                             }
-                            operationState="SCHEDULED"
+                            operationState="SENT"
                             operationType="RESOLVE_INCIDENT"
                           >
                             <Themed(Styled(Spinner))

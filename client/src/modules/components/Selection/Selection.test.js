@@ -135,7 +135,7 @@ describe('Selection', () => {
     expect(mockOnCancel).toHaveBeenCalled();
   });
 
-  it.only('should pass the loading state to ActionStatus', async () => {
+  it('should pass the loading state to ActionStatus', async () => {
     const node = shallow(
       <Selection
         isOpen={isOpen}
