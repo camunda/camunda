@@ -53,6 +53,11 @@ const mockProps = {
 };
 
 describe('IncidentsTable', () => {
+  beforeEach(() => {
+    mockProps.onSort.mockClear();
+    mockProps.onIncidentOperation.mockClear();
+    mockProps.onIncidentSelection.mockClear();
+  });
   it('should render the right column headers', () => {
     const node = mount(
       <ThemeProvider>
@@ -289,6 +294,36 @@ describe('IncidentsTable', () => {
       );
     });
 
+    it('should call onIncidentSelection when deselecting a row', () => {
+      const node = mount(
+        <ThemeProvider>
+          <IncidentsTable {...mockProps} />
+        </ThemeProvider>
+      );
+
+      const RowNode = node
+        .find(TBody)
+        .find(TR)
+        .at(1);
+
+      RowNode.simulate('click');
+      node.update();
+
+      node
+        .find(TBody)
+        .find(TR)
+        .at(1)
+        .simulate('click');
+      node.update();
+
+      expect(mockProps.onIncidentSelection).toHaveBeenCalled();
+      expect(mockProps.onIncidentSelection.mock.calls[0][0].id).toEqual(
+        mockProps.instanceId
+      );
+      expect(mockProps.onIncidentSelection.mock.calls[0][0].activityId).toEqual(
+        null
+      );
+    });
     it('shoud mark the selected incidents row', () => {
       const node = mount(
         <ThemeProvider>
@@ -311,6 +346,33 @@ describe('IncidentsTable', () => {
           .at(1)
           .props().isSelected
       ).toBe(true);
+    });
+
+    it('should handle multiple selections', () => {
+      mockProps.selectedIncidents = [id, 'flowNodeInstanceIdA'];
+      const node = mount(
+        <ThemeProvider>
+          <IncidentsTable {...mockProps} />
+        </ThemeProvider>
+      );
+
+      expect(
+        node
+          .find(TBody)
+          .find(TR)
+          .at(0)
+          .props().isSelected
+      ).toBe(true);
+
+      expect(
+        node
+          .find(TBody)
+          .find(TR)
+          .at(1)
+          .props().isSelected
+      ).toBe(true);
+
+      mockProps.selectedIncidents = [id];
     });
   });
 

@@ -70,6 +70,25 @@ export default class IncidentsTable extends React.Component {
     });
   };
 
+  handleIncidentSelection = incident => {
+    const isTheOnlySelectedIncident =
+      this.props.selectedIncidents &&
+      this.props.selectedIncidents.length === 1 &&
+      this.props.selectedIncidents[0] === incident.flowNodeInstanceId;
+
+    if (isTheOnlySelectedIncident) {
+      this.props.onIncidentSelection({
+        id: this.props.instanceId,
+        activityId: null
+      });
+    } else {
+      this.props.onIncidentSelection({
+        id: incident.flowNodeInstanceId,
+        activityId: incident.flowNodeId
+      });
+    }
+  };
+
   render() {
     const {incidents} = this.props;
 
@@ -130,10 +149,7 @@ export default class IncidentsTable extends React.Component {
                       incident.flowNodeInstanceId
                     )
                   }
-                  onClick={this.props.onIncidentSelection.bind(this, {
-                    id: incident.flowNodeInstanceId,
-                    activityId: incident.flowNodeId
-                  })}
+                  onClick={this.handleIncidentSelection.bind(this, incident)}
                 >
                   <TD>
                     <Styled.FirstCell>
