@@ -16,12 +16,15 @@ import {createFlowNodeInstance} from 'modules/testUtils';
 import * as Styled from './styled';
 import FlowNodeInstancesTree from './FlowNodeInstancesTree';
 import Foldable from './Foldable';
+import * as FoldableStyles from './Foldable/styled';
+
+const startEventInstance = createFlowNodeInstance({
+  id: 'StartEventId',
+  type: 'START_EVENT'
+});
 
 const flowNodeInstances = [
-  createFlowNodeInstance({
-    id: 'StartEventId',
-    type: 'START_EVENT'
-  }),
+  startEventInstance,
   createFlowNodeInstance({
     id: 'SubProcessId',
     type: 'SUB_PROCESS',
@@ -52,13 +55,15 @@ jest.mock(
     }
 );
 
+const mockOnSelection = jest.fn();
+
 const mountNode = customProps => {
   const mountedNode = mount(
     <ThemeProvider>
       <FlowNodeInstancesTree
         node={parentNode}
         selectedTreeRowIds={[]}
-        onTreeRowSelection={jest.fn()}
+        onTreeRowSelection={mockOnSelection}
         getFlowNodeDetails={jest.fn()}
         getNodeWithName={node => node.id}
         treeDepth={1}
@@ -124,6 +129,33 @@ describe('FlowNodeInstancesTree', () => {
 
     //then
     expect(barComponent).toExist();
+  });
+
+  describe('FlowNode Instance Selection', () => {
+    it('should show root element as default selection', () => {
+      //Given
+      node = mountNode({selectedTreeRowIds: ['ParentNodeId']});
+      //Then
+      const rootNode = node.find(`[data-test="ParentNodeId"]`);
+
+      expect(rootNode.find(`[isSelected=true]`)).toExist();
+    });
+
+    it('should call the OnSelect method from props with node obj of clicked row', () => {
+      //Given
+      node = mountNode({
+        selectedTreeRowIds: ['ParentNodeId', 'StartEventId', 'ServiceTaskId']
+      });
+      const StartEventNodeButton = node
+        .find(`[data-test="StartEventId"]`)
+        .find(Foldable.Summary)
+        .find(FoldableStyles.FocusButton);
+
+      // When
+      StartEventNodeButton.simulate('click');
+      //Then
+      expect(mockOnSelection).toHaveBeenCalledWith(startEventInstance);
+    });
   });
 
   describe('Child Scopes', () => {
