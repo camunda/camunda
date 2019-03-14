@@ -721,6 +721,86 @@ describe('Instance', () => {
       expect(node.find(FlowNodeInstancesTree).prop('treeDepth')).toBe(1);
     });
 
+    describe('row selection', () => {
+      let node;
+      let instanceNode;
+
+      beforeEach(async () => {
+        node = mountRenderComponent();
+        await flushPromises();
+        node.update();
+
+        instanceNode = node.find(Instance);
+        instanceNode.instance().getCurrentMetadata = jest.fn();
+      });
+
+      it('should select the row when not selected already', async () => {
+        // Given
+        const nodeIdOfSelectedRow = 'someNodeId';
+
+        instanceNode.setState({
+          selection: {treeRowIds: ['rootElementId'], flowNodeId: null},
+          instance: {id: 'rootElementId', startDate: 'some', state: 'ACTIVE'}
+        });
+
+        // When
+        instanceNode.instance().handleTreeRowSelection({
+          id: nodeIdOfSelectedRow,
+          activityId: 'someActivityId'
+        });
+        // Then
+        expect(instanceNode.instance().state.selection.treeRowIds).toEqual([
+          nodeIdOfSelectedRow
+        ]);
+      });
+
+      it('should unselect the row and jump to default when the row selected already', async () => {
+        // Given
+        const nodeIdOfSelectedRow = 'someNodeId';
+        const rootElementId = 'rootElementId';
+
+        instanceNode.setState({
+          selection: {treeRowIds: [nodeIdOfSelectedRow], flowNodeId: null},
+          instance: {id: rootElementId, startDate: 'some', state: 'ACTIVE'}
+        });
+
+        // When
+        instanceNode.instance().handleTreeRowSelection({
+          id: nodeIdOfSelectedRow,
+          activityId: 'someActivityId'
+        });
+
+        // Then
+        expect(instanceNode.instance().state.selection.treeRowIds).toEqual([
+          rootElementId
+        ]);
+      });
+
+      it('should deselect selected sibling rows', () => {
+        // Given
+        const nodeIdOfSelectedRow = 'someNodeId';
+
+        instanceNode.setState({
+          selection: {
+            treeRowIds: [nodeIdOfSelectedRow, 'someNodeIdFoo', 'someNodeIdBar'],
+            flowNodeId: null
+          },
+          instance: {id: 'rootElementId', startDate: 'some', state: 'ACTIVE'}
+        });
+
+        // When
+        instanceNode.instance().handleTreeRowSelection({
+          id: nodeIdOfSelectedRow,
+          activityId: 'someActivityId'
+        });
+
+        // Then
+        expect(instanceNode.instance().state.selection.treeRowIds).toEqual([
+          nodeIdOfSelectedRow
+        ]);
+      });
+    });
+
     describe('getNodeWithName', () => {
       it('should give the name of the instance', async () => {
         // given

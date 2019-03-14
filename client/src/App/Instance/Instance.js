@@ -171,12 +171,12 @@ export default class Instance extends Component {
     const isRootNode = node.id === instance.id;
     // get the first flow node id (i.e. activity id) corresponding to the flowNodeId
     const flowNodeId = isRootNode ? null : node.activityId;
-    const hasSiblings = selection.treeRowIds.length > 1;
+    const hasSelectedSiblings = selection.treeRowIds.length > 1;
     const rowIsSelected = !!selection.treeRowIds.find(
       selectedId => selectedId === node.id
     );
     const newSelection =
-      rowIsSelected && !hasSiblings
+      rowIsSelected && !hasSelectedSiblings
         ? {flowNodeId: null, treeRowIds: [instance.id]}
         : {flowNodeId, treeRowIds: [node.id]};
 

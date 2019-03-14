@@ -430,6 +430,7 @@ export const createFlowNodeInstance = (options = {}) => {
     endDate: '2019-02-07T09:02:34.779+0000',
     id: randomFlowNodeInstanceIdIterator.next().value,
     parentId: '1684',
+    isLastChild: false,
     startDate: '2019-02-07T09:02:34.760+0000',
     state: STATE.ACTIVE,
     type: 'bpmn:StartEvent',
