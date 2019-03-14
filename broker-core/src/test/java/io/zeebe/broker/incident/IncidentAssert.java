@@ -40,7 +40,7 @@ public class IncidentAssert {
       Record<IncidentRecordValue> incidentRecord) {
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
-        "No data found for query $.foo.",
+        "No data found for query foo.",
         workflowInstanceKey,
         activityId,
         followUpEvent,

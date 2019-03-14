@@ -47,7 +47,7 @@ public class SetVariablesTest {
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process")
           .startEvent("start")
-          .serviceTask("task-1", t -> t.zeebeTaskType("task-1").zeebeOutput("$.result", "$.result"))
+          .serviceTask("task-1", t -> t.zeebeTaskType("task-1").zeebeOutput("result", "result"))
           .endEvent("end")
           .done();
 

@@ -47,7 +47,7 @@ public class JsonPathTest {
     final UnsafeBuffer buffer = new UnsafeBuffer(msgPackBytes);
 
     final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
-    final JsonPathQuery jsonPathQuery = queryCompiler.compile("$.foo");
+    final JsonPathQuery jsonPathQuery = queryCompiler.compile("foo");
 
     final MsgPackQueryExecutor visitor = new MsgPackQueryExecutor();
     visitor.init(jsonPathQuery.getFilters(), jsonPathQuery.getFilterInstances());
@@ -78,7 +78,7 @@ public class JsonPathTest {
     final UnsafeBuffer buffer = new UnsafeBuffer(msgPackBytes);
 
     final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
-    final JsonPathQuery jsonPathQuery = queryCompiler.compile("$.foo");
+    final JsonPathQuery jsonPathQuery = queryCompiler.compile("foo");
 
     final MsgPackQueryExecutor visitor = new MsgPackQueryExecutor();
     visitor.init(jsonPathQuery.getFilters(), jsonPathQuery.getFilterInstances());

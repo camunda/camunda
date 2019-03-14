@@ -21,7 +21,6 @@ import io.zeebe.msgpack.filter.MsgPackFilter;
 import io.zeebe.msgpack.filter.RootCollectionFilter;
 import io.zeebe.msgpack.filter.WildcardFilter;
 import io.zeebe.msgpack.query.MsgPackFilterContext;
-import io.zeebe.msgpack.util.ByteUtil;
 import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -54,11 +53,17 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
   }
 
   public JsonPathQuery compile(DirectBuffer buffer, int offset, int length) {
-    // TODO: syntactically validate expression
     currentQuery = new JsonPathQuery(JSON_PATH_FILTERS);
     currentQuery.wrap(buffer, offset, length);
 
-    mode = ParsingMode.DEFAULT;
+    // the path starts with the variable name
+    mode = ParsingMode.LITERAL;
+
+    // extract algorithm expect a root filter first
+    final MsgPackFilterContext filterInstances = currentQuery.getFilterInstances();
+    filterInstances.appendElement();
+    filterInstances.filterId(ROOT_COLLECTION_FILTER_ID);
+
     tokenizer.tokenize(buffer, offset, length, this);
     final JsonPathQuery returnValue = currentQuery;
     currentQuery = null;
@@ -73,57 +78,40 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
       return;
     }
 
-    final MsgPackFilterContext filterInstances = currentQuery.getFilterInstances();
-
-    if (mode == ParsingMode.DEFAULT) {
+    if (mode == ParsingMode.OPERATOR) {
       switch (type) {
-        case ROOT_OBJECT:
-          filterInstances.appendElement();
-          filterInstances.filterId(ROOT_COLLECTION_FILTER_ID);
-          return;
         case CHILD_OPERATOR:
-        case SUBSCRIPT_OPERATOR_BEGIN:
-        case CHILD_BRACKET_OPERATOR_BEGIN:
-          mode = ParsingMode.SUBORDINATE;
+          mode = ParsingMode.LITERAL;
           return;
         case START_INPUT:
         case END_INPUT:
-        case SUBSCRIPT_OPERATOR_END:
-        case CHILD_BRACKET_OPERATOR_END:
           return; // ignore
         default:
           currentQuery.invalidate(valueOffset, "Unexpected json-path token " + type);
       }
 
-    } else if (mode == ParsingMode.SUBORDINATE) {
+    } else if (mode == ParsingMode.LITERAL) {
       switch (type) {
         case LITERAL:
-          if (ByteUtil.isNumeric(valueBuffer, valueOffset, valueLength)) {
-            final int arrayIndex = ByteUtil.parseInteger(valueBuffer, valueOffset, valueLength);
-            filterInstances.appendElement();
-            filterInstances.filterId(ARRAY_INDEX_FILTER_ID);
-            ArrayIndexFilter.encodeDynamicContext(filterInstances.dynamicContext(), arrayIndex);
-          } else {
-            if (!currentQuery.hasTopLevelVariable()) {
-              final byte[] variable = new byte[valueLength];
-              valueBuffer.getBytes(valueOffset, variable);
-              currentQuery.setTopLevelVariable(variable);
-            }
+          final MsgPackFilterContext filterInstances = currentQuery.getFilterInstances();
 
-            filterInstances.appendElement();
-            filterInstances.filterId(MAP_VALUE_FILTER_ID);
-            MapValueWithKeyFilter.encodeDynamicContext(
-                filterInstances.dynamicContext(), valueBuffer, valueOffset, valueLength);
+          // the first literal is the variable name
+          if (filterInstances.size() == 1) {
+            final byte[] variable = new byte[valueLength];
+            valueBuffer.getBytes(valueOffset, variable);
+            currentQuery.setVariableName(variable);
           }
-          mode = ParsingMode.DEFAULT;
+
+          filterInstances.appendElement();
+          filterInstances.filterId(MAP_VALUE_FILTER_ID);
+          MapValueWithKeyFilter.encodeDynamicContext(
+              filterInstances.dynamicContext(), valueBuffer, valueOffset, valueLength);
+
+          mode = ParsingMode.OPERATOR;
           return;
         case START_INPUT:
         case END_INPUT:
           return; // ignore
-        case WILDCARD:
-          filterInstances.appendElement();
-          filterInstances.filterId(WILDCARD_FILTER_ID);
-          return;
         default:
           currentQuery.invalidate(valueOffset, "Unexpected json-path token " + type);
       }
@@ -131,7 +119,7 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
   }
 
   protected enum ParsingMode {
-    DEFAULT,
-    SUBORDINATE,
+    OPERATOR,
+    LITERAL,
   }
 }

@@ -68,13 +68,13 @@ public class JobInputMappingTest {
       {"{}", mapping(b -> {}), "{}"},
       {"{'x': 1, 'y': 2}", mapping(b -> {}), "{'x': 1, 'y': 2}"},
       {"{'x': {'y': 2}}", mapping(b -> {}), "{'x': {'y': 2}}"},
-      {"{'x': 1}", mapping(b -> b.zeebeInput("$.x", "$.y")), "{'x': 1, 'y': 1}"},
+      {"{'x': 1}", mapping(b -> b.zeebeInput("x", "y")), "{'x': 1, 'y': 1}"},
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeInput("$.x", "$.y").zeebeInput("$.x", "$.z")),
+        mapping(b -> b.zeebeInput("x", "y").zeebeInput("x", "z")),
         "{'x': 1, 'y': 1, 'z': 1}"
       },
-      {"{'x': {'y': 2}}", mapping(b -> b.zeebeInput("$.x.y", "$.y")), "{'x': {'y': 2}, 'y': 2}"},
+      {"{'x': {'y': 2}}", mapping(b -> b.zeebeInput("x.y", "y")), "{'x': {'y': 2}, 'y': 2}"},
     };
   }
 

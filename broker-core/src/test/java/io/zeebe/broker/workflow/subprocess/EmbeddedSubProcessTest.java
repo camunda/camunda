@@ -317,7 +317,7 @@ public class EmbeddedSubProcessTest {
             .startEvent()
             .subProcess("outerSubProcess", outSubProcess)
             .boundaryEvent("event")
-            .message(m -> m.name("msg").zeebeCorrelationKey("$.key"))
+            .message(m -> m.name("msg").zeebeCorrelationKey("key"))
             .endEvent("msgEnd")
             .moveToActivity("outerSubProcess")
             .endEvent()

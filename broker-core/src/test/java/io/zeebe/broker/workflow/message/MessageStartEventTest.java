@@ -288,7 +288,7 @@ public class MessageStartEventTest {
   private static BpmnModelInstance createWorkflowWithMessageStartEventOutputMapping() {
     return Bpmn.createExecutableProcess("processId")
         .startEvent(EVENT_ID1)
-        .zeebeOutput("$.foo", "$.mappedfoo")
+        .zeebeOutput("foo", "mappedfoo")
         .message(m -> m.name(MESSAGE_NAME1).id("startmsgId"))
         .endEvent()
         .done();

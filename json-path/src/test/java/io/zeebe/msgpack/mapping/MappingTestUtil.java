@@ -54,8 +54,7 @@ public class MappingTestUtil {
   protected static final String NODE_TEST_ATTR_VALUE = "test";
   protected static final Integer[] NODE_ARRAY_VALUE = {0, 1, 2, 3};
 
-  protected static final String NODE_JSON_OBJECT_PATH = "$.jsonObject";
-  protected static final String NODE_ROOT_PATH = "$";
+  protected static final String NODE_JSON_OBJECT_PATH = "jsonObject";
 
   protected static final Map<String, Object> JSON_PAYLOAD = new HashMap<>();
   protected static final ObjectMapper MSGPACK_MAPPER = new ObjectMapper(new MessagePackFactory());

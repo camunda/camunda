@@ -55,7 +55,7 @@ public class MessageCorrelationTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("catch-event")
-          .message(c -> c.name("order canceled").zeebeCorrelationKey("$.orderId"))
+          .message(c -> c.name("order canceled").zeebeCorrelationKey("orderId"))
           .endEvent()
           .done();
 

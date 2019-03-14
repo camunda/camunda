@@ -67,7 +67,7 @@ case class JsonString(value: DirectBuffer) extends JsonObject with JsonConstant 
 }
 
 case class JsonPath(variableName: DirectBuffer, path: List[String]) extends JsonObject {
-  val jsonPath = "$." + (bufferAsString(variableName) :: path).mkString(".")
+  val jsonPath = (bufferAsString(variableName) :: path).mkString(".")
   val query: JsonPathQuery = new JsonPathQueryCompiler().compile(jsonPath)
 
   var id_ = -1

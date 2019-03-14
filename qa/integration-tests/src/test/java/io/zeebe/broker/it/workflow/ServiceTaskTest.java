@@ -189,7 +189,7 @@ public class ServiceTaskTest {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
-            .serviceTask("task", t -> t.zeebeTaskType("foo").zeebeInput("$.foo", "$.bar"))
+            .serviceTask("task", t -> t.zeebeTaskType("foo").zeebeInput("foo", "bar"))
             .endEvent("end")
             .done();
     deploy(modelInstance);
@@ -221,7 +221,7 @@ public class ServiceTaskTest {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
-            .serviceTask("task", t -> t.zeebeTaskType("foo").zeebeOutput("$.foo", "$.bar"))
+            .serviceTask("task", t -> t.zeebeTaskType("foo").zeebeOutput("foo", "bar"))
             .endEvent("end")
             .done();
     deploy(modelInstance);
@@ -262,10 +262,7 @@ public class ServiceTaskTest {
             .startEvent("start")
             .serviceTask(
                 "task",
-                t ->
-                    t.zeebeTaskType("foo")
-                        .zeebeInput("$.foo", "$.foo")
-                        .zeebeOutput("$.foo", "$.foo"))
+                t -> t.zeebeTaskType("foo").zeebeInput("foo", "foo").zeebeOutput("foo", "foo"))
             .endEvent("end")
             .done();
     deploy(modelInstance);
@@ -357,10 +354,7 @@ public class ServiceTaskTest {
             .startEvent("start")
             .serviceTask(
                 "task",
-                t ->
-                    t.zeebeTaskType("foo")
-                        .zeebeInput("$.foo", "$.foo")
-                        .zeebeOutput("$.foo", "$.foo"))
+                t -> t.zeebeTaskType("foo").zeebeInput("foo", "foo").zeebeOutput("foo", "foo"))
             .endEvent("end")
             .done();
     deploy(modelInstance);

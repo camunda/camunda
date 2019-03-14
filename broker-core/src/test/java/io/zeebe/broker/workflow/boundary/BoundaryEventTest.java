@@ -148,8 +148,8 @@ public class BoundaryEventTest {
             .startEvent()
             .serviceTask("task", b -> b.zeebeTaskType("type"))
             .boundaryEvent("event")
-            .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
-            .zeebeOutput("$.foo", "$.bar")
+            .message(m -> m.name("message").zeebeCorrelationKey("key"))
+            .zeebeOutput("foo", "bar")
             .endEvent("endTimer")
             .moveToActivity("task")
             .endEvent()
@@ -183,7 +183,7 @@ public class BoundaryEventTest {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type").zeebeInput("$.oof", "$.baz"))
+            .serviceTask("task", b -> b.zeebeTaskType("type").zeebeInput("oof", "baz"))
             .boundaryEvent("timer")
             .cancelActivity(true)
             .timerWithDuration("PT1S")
@@ -292,9 +292,9 @@ public class BoundaryEventTest {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
-            .serviceTask("task", c -> c.zeebeTaskType("type").zeebeInput("$.bar", "$.foo"))
+            .serviceTask("task", c -> c.zeebeTaskType("type").zeebeInput("bar", "foo"))
             .boundaryEvent(
-                "event", b -> b.message(m -> m.zeebeCorrelationKey("$.foo").name("message")))
+                "event", b -> b.message(m -> m.zeebeCorrelationKey("foo").name("message")))
             .endEvent()
             .moveToActivity("task")
             .endEvent()
@@ -326,7 +326,7 @@ public class BoundaryEventTest {
             .startEvent()
             .serviceTask("task", c -> c.zeebeTaskType("type"))
             .boundaryEvent(
-                "event", b -> b.message(m -> m.zeebeCorrelationKey("$.orderId").name("message")))
+                "event", b -> b.message(m -> m.zeebeCorrelationKey("orderId").name("message")))
             .endEvent()
             .moveToActivity("task")
             .endEvent()
