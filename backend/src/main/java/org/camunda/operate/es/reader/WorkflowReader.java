@@ -109,7 +109,7 @@ public class WorkflowReader {
             .subAggregation(
               topHits(workflowsAggName)
                 .fetchSource(new String[] { WorkflowIndex.ID, WorkflowIndex.NAME, WorkflowIndex.VERSION, WorkflowIndex.BPMN_PROCESS_ID  }, null)
-                .size(ElasticsearchUtil.TERMS_AGG_SIZE)
+                .size(ElasticsearchUtil.TOPHITS_AGG_SIZE)
                 .sort(WorkflowIndex.VERSION, SortOrder.DESC)));
 
     logger.debug("Grouped workflow request: \n{}", searchRequestBuilder.toString());
