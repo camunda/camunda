@@ -55,7 +55,7 @@ public class CompletedActivityInstanceEngineImportMediator
     boolean timestampNeedsToBeSet = !nextPageEntities.isEmpty();
 
     OffsetDateTime timestamp = timestampNeedsToBeSet ?
-      nextPageEntities.get(nextPageEntities.size() - 1).getStartTime() :
+      nextPageEntities.get(nextPageEntities.size() - 1).getEndTime() :
       null;
 
     if (timestampNeedsToBeSet) {

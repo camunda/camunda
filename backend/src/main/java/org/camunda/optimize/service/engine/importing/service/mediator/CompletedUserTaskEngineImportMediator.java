@@ -8,7 +8,6 @@ import org.camunda.optimize.service.engine.importing.index.handler.impl.Complete
 import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.engine.importing.service.CompletedUserTaskInstanceImportService;
 import org.camunda.optimize.service.es.writer.CompletedUserTaskInstanceWriter;
-import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionFetchException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -57,7 +56,7 @@ public class CompletedUserTaskEngineImportMediator
     boolean timestampNeedsToBeSet = !nextPageUserTaskEntities.isEmpty();
 
     OffsetDateTime timestamp = timestampNeedsToBeSet ?
-      nextPageUserTaskEntities.get(nextPageUserTaskEntities.size() - 1).getStartTime() :
+      nextPageUserTaskEntities.get(nextPageUserTaskEntities.size() - 1).getEndTime() :
       null;
 
     if (timestampNeedsToBeSet) {
