@@ -83,7 +83,7 @@ public class OperationReader {
     return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, OperationEntity.class);
   }
 
-  public Map<String, List<OperationEntity>> getOperationsByWorkflowInstanceId(List<String> workflowInstanceIds) {
+  public Map<String, List<OperationEntity>> getOperationsPerWorkflowInstanceId(List<String> workflowInstanceIds) {
     Map<String, List<OperationEntity>> result = new HashMap<>();
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(termsQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceIds));
@@ -103,7 +103,7 @@ public class OperationReader {
     return result;
   }
 
-  public Map<String, List<OperationEntity>> getOperationsByIncidentId(String workflowInstanceId) {
+  public Map<String, List<OperationEntity>> getOperationsPerIncidentId(String workflowInstanceId) {
     Map<String, List<OperationEntity>> result = new HashMap<>();
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId));

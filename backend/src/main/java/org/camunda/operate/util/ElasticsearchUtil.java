@@ -222,17 +222,17 @@ public abstract class ElasticsearchUtil {
       .setScroll(keepAlive)
       .get();
 
-    //call response processor
-    if (responseProcessor != null) {
-      responseProcessor.accept(response);
-    }
-
     List<T> result = new ArrayList<>();
     do {
       SearchHits hits = response.getHits();
       String scrollId = response.getScrollId();
 
       result.addAll(mapSearchHits(hits.getHits(), objectMapper, clazz));
+
+      //call response processor
+      if (responseProcessor != null) {
+        responseProcessor.accept(response);
+      }
 
       response = esClient
         .prepareSearchScroll(scrollId)

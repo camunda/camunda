@@ -201,7 +201,7 @@ public class DetailViewReader {
         incidentResponse.getFlowNodes().add(new IncidentFlowNodeDto(b.getKeyAsString(), (int)b.getDocCount())));
     });
 
-    final Map<String, List<OperationEntity>> operations = operationReader.getOperationsByIncidentId(workflowInstanceId);
+    final Map<String, List<OperationEntity>> operations = operationReader.getOperationsPerIncidentId(workflowInstanceId);
 
     incidentResponse.setIncidents(IncidentDto.sortDefault(IncidentDto.createFrom(incidents, operations)));
     incidentResponse.setCount(incidents.size());
