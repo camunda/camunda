@@ -53,6 +53,29 @@ describe('Foldable', () => {
     expect(node).toMatchSnapshot();
   });
 
+  it('should not show the folding button when "isFoldable" prop is set "false"', () => {
+    // given
+    const mockOnSelection = jest.fn();
+    const fooDetailsText = 'Foo Details';
+    const fooSummaryText = 'foo summary';
+    const node = shallow(
+      <Foldable isFoldable={false} isFolded={true}>
+        <Foldable.Summary onSelection={mockOnSelection} isSelected={true}>
+          {fooSummaryText}
+        </Foldable.Summary>
+        <Foldable.Details>{fooDetailsText}</Foldable.Details>
+      </Foldable>
+    );
+
+    // then
+    const FoldButtonNode = node
+      .find(Foldable.Summary)
+      .dive()
+      .find(Styled.FoldButton);
+
+    expect(FoldButtonNode).toHaveLength(0);
+  });
+
   it('toggleFold should change folded state', () => {
     // given
     const fooDetailsText = 'Foo Details';
