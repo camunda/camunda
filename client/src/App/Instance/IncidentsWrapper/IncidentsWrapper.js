@@ -10,6 +10,8 @@ import PropTypes from 'prop-types';
 import IncidentsBar from './IncidentsBar';
 import IncidentsOverlay from './IncidentsOverlay';
 import IncidentsTable from './IncidentsTable';
+import {SORT_ORDER} from 'modules/constants';
+import {sortData} from './service';
 
 function IncidentsWrapper(props) {
   const {
@@ -21,9 +23,30 @@ function IncidentsWrapper(props) {
     onIncidentSelection
   } = props;
   const [isOpen, setIsOpen] = useState(false);
+  const [sorting, setSorting] = useState({
+    sortBy: 'errorType',
+    sortOrder: SORT_ORDER.DESC
+  });
+
   function handleToggle() {
     setIsOpen(!isOpen);
   }
+
+  function handleSort(key) {
+    let newSorting = {sortBy: key, sortOrder: SORT_ORDER.DESC};
+
+    if (sorting.sortBy === key && sorting.sortOrder === SORT_ORDER.DESC) {
+      newSorting.sortOrder = SORT_ORDER.ASC;
+    }
+
+    setSorting(newSorting);
+  }
+
+  const sortedIncidents = sortData(
+    incidents,
+    sorting.sortBy,
+    sorting.sortOrder
+  );
 
   return (
     <>
@@ -36,12 +59,14 @@ function IncidentsWrapper(props) {
       {isOpen && (
         <IncidentsOverlay>
           <IncidentsTable
-            incidents={incidents}
+            incidents={sortedIncidents}
             instanceId={instance.id}
             forceSpinner={props.forceSpinner}
             selectedIncidents={selectedIncidents}
+            sorting={sorting}
             onIncidentOperation={onIncidentOperation}
             onIncidentSelection={onIncidentSelection}
+            onSort={handleSort}
           />
         </IncidentsOverlay>
       )}
@@ -49,7 +74,7 @@ function IncidentsWrapper(props) {
   );
 }
 
-IncidentsWrapper.defaultProps = {
+IncidentsWrapper.propTypes = {
   incidents: PropTypes.array,
   incidentsCount: PropTypes.number.isRequired,
   instance: PropTypes.object.isRequired,

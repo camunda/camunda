@@ -9,11 +9,14 @@ import {mount} from 'enzyme';
 
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {createIncidents, createInstance} from 'modules/testUtils';
+import {SORT_ORDER} from 'modules/constants';
+import {act} from 'react-dom/test-utils';
 
 import IncidentsWrapper from './IncidentsWrapper';
 import IncidentsOverlay from './IncidentsOverlay';
 import IncidentsTable from './IncidentsTable';
 import IncidentsBar from './IncidentsBar';
+import {sortData} from './service';
 
 const incidentsMock = createIncidents();
 const mockProps = {
@@ -77,21 +80,81 @@ describe('IncidentsWrapper', () => {
     // open overlay
     node.find(IncidentsBar).simulate('click');
     node.update();
-    expect(node.find(IncidentsTable)).toExist();
-    expect(node.find(IncidentsTable).prop('incidents')).toEqual(
-      mockProps.incidents
+
+    const IncidentsTableNode = node.find(IncidentsTable);
+    expect(IncidentsTableNode).toExist();
+    expect(IncidentsTableNode.prop('incidents')).toEqual(
+      sortData(mockProps.incidents)
     );
-    expect(node.find(IncidentsTable).props().instanceId).toEqual(
+    expect(IncidentsTableNode.props().instanceId).toEqual(
       mockProps.instance.id
     );
-    expect(node.find(IncidentsTable).props().onIncidentOperation).toEqual(
+    expect(IncidentsTableNode.props().onIncidentOperation).toEqual(
       mockProps.onIncidentOperation
     );
-    expect(node.find(IncidentsTable).props().selectedIncidents).toEqual(
+    expect(IncidentsTableNode.props().selectedIncidents).toEqual(
       mockProps.selectedIncidents
     );
-    expect(node.find(IncidentsTable).props().onIncidentSelection).toEqual(
+    expect(IncidentsTableNode.props().onIncidentSelection).toEqual(
       mockProps.onIncidentSelection
     );
+  });
+
+  describe('Sorting', () => {
+    it('it should apply default sorting to IncidentsTable', () => {
+      const node = mount(
+        <ThemeProvider>
+          <IncidentsWrapper {...mockProps} />
+        </ThemeProvider>
+      );
+
+      // open overlay
+      node.find(IncidentsBar).simulate('click');
+      node.update();
+
+      const IncidentsTableNode = node.find(IncidentsTable);
+
+      expect(IncidentsTableNode.props().sorting.sortBy).toEqual('errorType');
+      expect(IncidentsTableNode.props().sorting.sortOrder).toEqual(
+        SORT_ORDER.DESC
+      );
+    });
+    it.only('should change the sorting', () => {
+      const node = mount(
+        <ThemeProvider>
+          <IncidentsWrapper {...mockProps} />
+        </ThemeProvider>
+      );
+
+      // open overlay
+      node.find(IncidentsBar).simulate('click');
+      node.update();
+
+      const IncidentsTableNode = node.find(IncidentsTable);
+      const onSort = IncidentsTableNode.props().onSort;
+
+      act(() => {
+        onSort('errorType');
+      });
+      node.update();
+
+      expect(node.find(IncidentsTable).props().sorting.sortBy).toEqual(
+        'errorType'
+      );
+      expect(node.find(IncidentsTable).props().sorting.sortOrder).toEqual(
+        SORT_ORDER.ASC
+      );
+      act(() => {
+        onSort('creationTime');
+      });
+      node.update();
+
+      expect(node.find(IncidentsTable).props().sorting.sortBy).toEqual(
+        'creationTime'
+      );
+      expect(node.find(IncidentsTable).props().sorting.sortOrder).toEqual(
+        SORT_ORDER.DESC
+      );
+    });
   });
 });

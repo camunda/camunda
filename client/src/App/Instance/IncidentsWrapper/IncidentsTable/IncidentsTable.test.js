@@ -18,6 +18,7 @@ import {createIncident} from 'modules/testUtils';
 import {formatDate} from 'modules/utils/date';
 
 import IncidentsTable from '../IncidentsTable';
+import {SORT_ORDER} from 'modules/constants';
 
 const {TBody, TR, TD} = Table;
 
@@ -28,11 +29,13 @@ const longError =
 const mockProps = {
   incidents: [
     createIncident({
+      errorType: 'Error A',
       errorMessage: shortError,
       flowNodeName: 'Task A',
       flowNodeInstanceId: 'flowNodeInstanceIdA'
     }),
     createIncident({
+      errorType: 'Error B',
       errorMessage: longError,
       flowNodeName: 'Task B',
       flowNodeInstanceId: id
@@ -41,7 +44,12 @@ const mockProps = {
   instanceId: '1',
   onIncidentOperation: jest.fn(),
   onIncidentSelection: jest.fn(),
-  selectedIncidents: [id]
+  selectedIncidents: [id],
+  sorting: {
+    sortBy: 'errorType',
+    sortOrder: SORT_ORDER.DESC
+  },
+  onSort: jest.fn()
 };
 
 describe('IncidentsTable', () => {
@@ -61,9 +69,23 @@ describe('IncidentsTable', () => {
     expect(
       node
         .find(ColumnHeader)
+        .at(0)
+        .props().sortKey
+    ).toEqual('errorType');
+
+    expect(
+      node
+        .find(ColumnHeader)
         .at(1)
         .text()
     ).toContain('Flow Node');
+    expect(
+      node
+        .find(ColumnHeader)
+        .at(1)
+        .props().sortKey
+    ).toEqual('flowNodeName');
+
     expect(
       node
         .find(ColumnHeader)
@@ -73,9 +95,29 @@ describe('IncidentsTable', () => {
     expect(
       node
         .find(ColumnHeader)
+        .at(2)
+        .props().sortKey
+    ).toEqual('jobId');
+    expect(
+      node
+        .find(ColumnHeader)
+        .at(2)
+        .props().disabled
+    ).toBe(false);
+
+    expect(
+      node
+        .find(ColumnHeader)
         .at(3)
         .text()
     ).toContain('Creation Time');
+    expect(
+      node
+        .find(ColumnHeader)
+        .at(3)
+        .props().sortKey
+    ).toEqual('creationTime');
+
     expect(
       node
         .find(ColumnHeader)
@@ -222,6 +264,7 @@ describe('IncidentsTable', () => {
 
     expect(mockProps.onIncidentOperation).toHaveBeenCalled();
   });
+
   describe('Selection', () => {
     it('should call onIncidentSelection when clicking on a row', () => {
       const node = mount(
@@ -268,6 +311,51 @@ describe('IncidentsTable', () => {
           .at(1)
           .props().isSelected
       ).toBe(true);
+    });
+  });
+
+  describe('Sorting', () => {
+    it('should call onSort when clicking on a column header', () => {
+      const node = mount(
+        <ThemeProvider>
+          <IncidentsTable {...mockProps} />
+        </ThemeProvider>
+      );
+
+      const randomColumn = Math.floor(Math.random() * 3);
+      const ColumnHeaderNode = node.find(ColumnHeader).at(randomColumn);
+
+      ColumnHeaderNode.simulate('click');
+
+      expect(mockProps.onSort).toHaveBeenCalledWith(
+        ColumnHeaderNode.props().sortKey
+      );
+    });
+    it('should disable sorting for jobId column', () => {
+      mockProps.incidents = [
+        createIncident({
+          errorType: 'Error A',
+          errorMessage: shortError,
+          flowNodeName: 'Task A',
+          flowNodeInstanceId: 'flowNodeInstanceIdA',
+          jobId: null
+        }),
+        createIncident({
+          errorType: 'Error B',
+          errorMessage: longError,
+          flowNodeName: 'Task B',
+          flowNodeInstanceId: id,
+          jobId: null
+        })
+      ];
+      const node = mount(
+        <ThemeProvider>
+          <IncidentsTable {...mockProps} />
+        </ThemeProvider>
+      );
+
+      const ColumnHeaderNode = node.find(ColumnHeader).at(2);
+      expect(ColumnHeaderNode.props().disabled).toBe(true);
     });
   });
 });

@@ -22,6 +22,7 @@ export const Overlay = themed(styled.div`
   bottom: 0;
   left: 0;
   right: 0;
+  overflow: auto;
 
   background-image: ${themeStyle({
     dark: `url(${BgDark})`,

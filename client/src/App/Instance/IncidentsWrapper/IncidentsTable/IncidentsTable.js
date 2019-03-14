@@ -13,6 +13,8 @@ import {IncidentAction} from 'modules/components/Actions';
 import ColumnHeader from '../../../Instances/ListView/List/ColumnHeader';
 import Modal from 'modules/components/Modal';
 import {formatDate} from 'modules/utils/date';
+import {isJobIdPresent} from './../service';
+
 import * as Styled from './styled';
 const {THead, TBody, TH, TR, TD} = Table;
 
@@ -22,15 +24,19 @@ export default class IncidentsTable extends React.Component {
     instanceId: PropTypes.string.isRequired,
     forceSpinner: PropTypes.bool,
     selectedIncidents: PropTypes.array,
+    sorting: PropTypes.object.isRequired,
     onIncidentOperation: PropTypes.func.isRequired,
-    onIncidentSelection: PropTypes.func.isRequired
+    onIncidentSelection: PropTypes.func.isRequired,
+    onSort: PropTypes.func.isRequired
   };
 
   static defaultProps = {
     forceSpinner: false
   };
 
-  state = {isModalVisibile: false};
+  state = {
+    isModalVisibile: false
+  };
 
   toggleModal = ({content, title}) => {
     this.setState(prevState => ({
@@ -74,34 +80,35 @@ export default class IncidentsTable extends React.Component {
             <TR>
               <Styled.FirstTH>
                 <ColumnHeader
-                  sortKey="1"
+                  sortKey="errorType"
                   label="Incident Type"
-                  sorting={{sortBy: ''}}
-                  disabled
+                  sorting={this.props.sorting}
+                  onSort={this.props.onSort}
                 />
               </Styled.FirstTH>
               <TH>
                 <ColumnHeader
-                  sortKey="1"
+                  sortKey="flowNodeName"
                   label="Flow Node"
-                  sorting={{sortBy: ''}}
-                  disabled
+                  sorting={this.props.sorting}
+                  onSort={this.props.onSort}
                 />
               </TH>
               <TH>
                 <ColumnHeader
-                  sortKey="1"
+                  sortKey="jobId"
                   label="Job Id"
-                  sorting={{sortBy: ''}}
-                  disabled
+                  sorting={this.props.sorting}
+                  onSort={this.props.onSort}
+                  disabled={isJobIdPresent(incidents)}
                 />
               </TH>
               <TH>
                 <ColumnHeader
-                  sortKey="1"
+                  sortKey="creationTime"
                   label="Creation Time"
-                  sorting={{sortBy: ''}}
-                  disabled
+                  sorting={this.props.sorting}
+                  onSort={this.props.onSort}
                 />
               </TH>
               <TH>
