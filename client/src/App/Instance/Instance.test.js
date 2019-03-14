@@ -117,6 +117,7 @@ describe('Instance', () => {
     instancesApi.fetchWorkflowInstanceIncidents = mockResolvedAsyncFn(
       INCIDENTS
     );
+    instancesApi.fetchVariables = mockResolvedAsyncFn([]);
     diagramApi.fetchWorkflowXML = mockResolvedAsyncFn(xmlMock);
     activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
       mockTree
@@ -157,6 +158,9 @@ describe('Instance', () => {
 
     // FlowNodeInstancesTree;
     expect(node.find(FlowNodeInstancesTree)).toHaveLength(1);
+
+    // Variables
+    expect(node.find('Variables')).toHaveLength(1);
   });
 
   it('should not display IncidentsWrapper if there is no incident', async () => {
@@ -223,6 +227,12 @@ describe('Instance', () => {
     expect(eventsApi.fetchEvents.mock.calls[0][0]).toBe(INSTANCE.id);
 
     expect(instancesApi.fetchWorkflowInstanceIncidents).not.toBeCalled();
+
+    // fetch variables
+    expect(instancesApi.fetchVariables).toBeCalledWith(
+      INSTANCE.id,
+      INSTANCE.id
+    );
   });
 
   describe('check for updates poll', () => {
@@ -805,6 +815,54 @@ describe('Instance', () => {
       node.update();
 
       expect(node.find('IncidentsWrapper').props().forceSpinner).toEqual(true);
+    });
+  });
+
+  describe('Variables', () => {
+    it('it should fetch variables when single row is selected', async () => {
+      // given
+      const activityId = 'taskD';
+      const matchingTreeRowIds = [
+        'firstActivityInstanceOfTaskD',
+        'secondActivityInstanceOfTaskD'
+      ];
+      const mockEvents = [
+        createEvent({activityId, activityInstanceId: matchingTreeRowIds[0]}),
+        createEvent({activityId, activityInstanceId: matchingTreeRowIds[1]})
+      ];
+      const mockTree = {
+        children: [
+          createRawTreeNode({
+            id: matchingTreeRowIds[0],
+            activityId
+          }),
+          createRawTreeNode({
+            id: matchingTreeRowIds[1],
+            activityId
+          })
+        ]
+      };
+      eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
+      activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+        mockTree
+      );
+      const node = mountRenderComponent();
+      await flushPromises();
+      node.update();
+      instancesApi.fetchVariables.mockClear();
+
+      // when
+      node.find(FlowNodeInstancesTree).prop('onTreeRowSelection')({
+        id: matchingTreeRowIds[0],
+        activityId
+      });
+      node.update();
+
+      // then
+      expect(instancesApi.fetchVariables).toBeCalledWith(
+        INSTANCE.id,
+        matchingTreeRowIds[0]
+      );
     });
   });
 });

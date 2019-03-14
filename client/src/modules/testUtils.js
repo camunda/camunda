@@ -563,3 +563,30 @@ export const createIncidents = () => {
     incidents: [createIncident(), createIncident()]
   };
 };
+
+export const createVariables = () => {
+  return [
+    {
+      id: '1031-clientNo',
+      name: 'clientNo',
+      value: '"CNT-1211132-02"',
+      scopeId: '1031',
+      workflowInstanceId: '1031'
+    },
+    {
+      id: '1031-items',
+      name: 'items',
+      value:
+        '[{"code":"123.135.625","name":"Laptop Lenovo ABC-001","quantity":1,"price":488.0},{"code":"111.653.365","name":"Headset Sony QWE-23","quantity":2,"price":72.0}]',
+      scopeId: '1031',
+      workflowInstanceId: '1031'
+    },
+    {
+      id: '1031-mwst',
+      name: 'mwst',
+      value: '106.4',
+      scopeId: '1031',
+      workflowInstanceId: '1031'
+    }
+  ];
+};

@@ -27,6 +27,7 @@ import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
 import DiagramPanel from './DiagramPanel';
 import InstanceHistory from './InstanceHistory';
+import Variables from './InstanceHistory/Variables';
 import {
   getFlowNodeStateOverlays,
   getActivityIdToNameMap,
@@ -65,7 +66,8 @@ export default class Instance extends Component {
         incidents: []
       },
       forceInstanceSpinner: false,
-      forceIncidentsSpinner: false
+      forceIncidentsSpinner: false,
+      variables: null
     };
 
     this.pollingTimer = null;
@@ -85,10 +87,16 @@ export default class Instance extends Component {
       incidents = await api.fetchWorkflowInstanceIncidents(id);
     }
 
-    const [activitiesInstancesTree, diagramXml, events] = await Promise.all([
+    const [
+      activitiesInstancesTree,
+      diagramXml,
+      events,
+      variables
+    ] = await Promise.all([
       fetchActivityInstancesTree(id),
       fetchWorkflowXML(instance.workflowId),
-      fetchEvents(instance.id)
+      fetchEvents(instance.id),
+      api.fetchVariables(instance.id, instance.id)
     ]);
 
     const {bpmnElements, definitions} = await parseDiagramXML(diagramXml);
@@ -118,7 +126,8 @@ export default class Instance extends Component {
         selection: {
           flowNodeId: null,
           treeRowIds: [instance.id]
-        }
+        },
+        variables
       },
       () => {
         this.initializePolling();
@@ -157,7 +166,7 @@ export default class Instance extends Component {
    * Handles selecting a node row in the tree
    * @param {object} node: selected row node
    */
-  handleTreeRowSelection = node => {
+  handleTreeRowSelection = async node => {
     const {selection, instance} = this.state;
     const isRootNode = node.id === instance.id;
     // get the first flow node id (i.e. activity id) corresponding to the flowNodeId
@@ -166,20 +175,29 @@ export default class Instance extends Component {
     const rowIsSelected = !!selection.treeRowIds.find(
       selectedId => selectedId === node.id
     );
+    const newSelection =
+      rowIsSelected && !hasSiblings
+        ? {flowNodeId: null, treeRowIds: [instance.id]}
+        : {flowNodeId, treeRowIds: [node.id]};
 
     this.setState({
-      selection:
-        rowIsSelected && !hasSiblings
-          ? {flowNodeId: null, treeRowIds: [instance.id]}
-          : {flowNodeId, treeRowIds: [node.id]}
+      selection: newSelection,
+      // clear variables object if we don't have exactly 1 selected row
+      ...(newSelection.treeRowIds.length !== 1 && {variables: null})
     });
+
+    if (newSelection.treeRowIds.length === 1) {
+      const scopeId = newSelection.treeRowIds[0];
+      const variables = await api.fetchVariables(instance.id, scopeId);
+      this.setState({variables});
+    }
   };
 
   /**
    * Handles selecting a flow node from the diagram
    * @param {string} flowNodeId: id of the selected flow node
    */
-  handleFlowNodeSelection = flowNodeId => {
+  handleFlowNodeSelection = async flowNodeId => {
     const {instance, activityIdToActivityInstanceMap} = this.state;
 
     // get the first activity instance corresponding to the flowNodeId
@@ -191,8 +209,16 @@ export default class Instance extends Component {
       selection: {
         treeRowIds,
         flowNodeId
-      }
+      },
+      // clear variables object if we don't have exactly 1 selected row
+      ...(treeRowIds.length !== 1 && {variables: null})
     });
+
+    if (treeRowIds.length === 1) {
+      const scopeId = treeRowIds[0];
+      const variables = await api.fetchVariables(instance.id, scopeId);
+      this.setState({variables});
+    }
   };
 
   initializePolling = () => {
@@ -210,17 +236,27 @@ export default class Instance extends Component {
 
   detectChangesPoll = async () => {
     const {id} = this.state.instance;
-    const [
-      instance,
-      incidents,
-      activitiesInstancesTree,
-      events
-    ] = await Promise.all([
+    const {treeRowIds} = this.state.selection;
+    const shouldFetchVariables = treeRowIds.length === 1;
+
+    let requestsPromises = [
       api.fetchWorkflowInstance(id),
       api.fetchWorkflowInstanceIncidents(id),
       fetchActivityInstancesTree(id),
       fetchEvents(id)
-    ]);
+    ];
+
+    if (shouldFetchVariables) {
+      requestsPromises.push(api.fetchVariables(id, treeRowIds[0]));
+    }
+
+    const [
+      instance,
+      incidents,
+      activitiesInstancesTree,
+      events,
+      variables
+    ] = await Promise.all(requestsPromises);
 
     const activityIdToActivityInstanceMap = getActivityIdToActivityInstancesMap(
       activitiesInstancesTree
@@ -229,6 +265,7 @@ export default class Instance extends Component {
     this.setState(
       {
         instance,
+        incidents,
         events,
         activityInstancesTree: {
           ...activitiesInstancesTree,
@@ -237,7 +274,7 @@ export default class Instance extends Component {
           state: instance.state
         },
         activityIdToActivityInstanceMap,
-        incidents
+        ...(shouldFetchVariables && variables)
       },
       () => {
         this.initializePolling();
@@ -344,7 +381,8 @@ export default class Instance extends Component {
       instance,
       selection,
       activityIdToActivityInstanceMap,
-      activityIdToNameMap
+      activityIdToNameMap,
+      variables
     } = this.state;
 
     if (!loaded) {
@@ -414,7 +452,7 @@ export default class Instance extends Component {
                   />
                 </Styled.NodeContainer>
               </Styled.FlowNodeInstanceLog>
-              <div style={{height: '100%', width: '50%'}} />
+              <Variables variables={variables} />
             </InstanceHistory>
           </SplitPane>
         </Styled.Instance>

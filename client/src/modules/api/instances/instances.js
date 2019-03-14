@@ -114,3 +114,10 @@ export async function applyOperation(instanceId, operationType, incidentId) {
   const response = await post(url, payload);
   return await response.json();
 }
+
+export async function fetchVariables(instanceId, scopeId) {
+  const response = await get(
+    `${URL}/${instanceId}/variables?scopeId=${scopeId}`
+  );
+  return await response.json();
+}
