@@ -161,7 +161,7 @@
 # This section allows to configure Zeebe's data storage. Data is stored in
 # "partition folders". A partition folder has the following structure:
 #
-# internal-system-0                 (root partition folder)
+# partition-0                       (root partition folder)
 # ├── partition.json                (metadata about the partition)
 # ├── segments                      (the actual data as segment files)
 # │   ├── 00.data
