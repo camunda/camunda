@@ -7,12 +7,15 @@ package org.camunda.operate.it;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.entities.VariableEntity;
+import org.camunda.operate.entities.detailview.ActivityInstanceForDetailViewEntity;
 import org.camunda.operate.es.reader.DetailViewReader;
 import org.camunda.operate.es.reader.OperationReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
@@ -35,6 +38,7 @@ import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebe.operation.ResolveIncidentHandler;
+import org.camunda.operate.zeebe.operation.UpdateVariableHandler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -80,6 +84,9 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   private ResolveIncidentHandler updateRetriesHandler;
 
   @Autowired
+  private UpdateVariableHandler updateVariableHandler;
+
+  @Autowired
   @Qualifier("activityIsActiveCheck")
   private Predicate<Object[]> activityIsActiveCheck;
 
@@ -115,6 +122,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     try {
       FieldSetter.setField(cancelWorkflowInstanceHandler, CancelWorkflowInstanceHandler.class.getDeclaredField("zeebeClient"), super.getClient());
       FieldSetter.setField(updateRetriesHandler, ResolveIncidentHandler.class.getDeclaredField("zeebeClient"), super.getClient());
+      FieldSetter.setField(updateVariableHandler, UpdateVariableHandler.class.getDeclaredField("zeebeClient"), super.getClient());
     } catch (NoSuchFieldException e) {
       fail("Failed to inject ZeebeClient into some of the beans");
     }
@@ -290,6 +298,108 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getEndDate()).isNotNull();
     //assert that incident is resolved
     assertThat(workflowInstance.getState()).isEqualTo(WorkflowInstanceStateDto.ACTIVE);
+  }
+
+  @Test
+  public void testUpdateVariableOnWorkflowInstance() throws Exception {
+    // given
+    final long workflowInstanceKey = startDemoWorkflowInstance();
+
+    //when
+    //we call UPDATE_VARIABLE operation on instance
+    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
+    final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
+    op.setName("a");
+    op.setValue("\"newValue\"");
+    op.setScopeId(workflowInstanceId);
+    postOperationWithOKResponse(workflowInstanceId, op);
+
+    //and execute the operation
+    operationExecutor.executeOneBatch();
+
+    //then
+    //before we process messages from Zeebe, the state of the operation must be SENT
+    ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(workflowInstanceId);
+
+    assertThat(workflowInstance.isHasActiveOperation()).isEqualTo(true);
+    assertThat(workflowInstance.getOperations()).hasSize(1);
+    OperationDto operation = workflowInstance.getOperations().get(0);
+    assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
+    assertThat(operation.getState()).isEqualTo(OperationState.SENT);
+    assertThat(operation.getStartDate()).isNotNull();
+    assertThat(operation.getEndDate()).isNull();
+
+    //after we process messages from Zeebe, the state of the operation is changed to COMPLETED
+    elasticsearchTestRule.processAllEvents(2);
+    workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(workflowInstanceId);
+    assertThat(workflowInstance.isHasActiveOperation()).isEqualTo(false);
+    assertThat(workflowInstance.getOperations()).hasSize(1);
+    operation = workflowInstance.getOperations().get(0);
+    assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
+    assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
+    assertThat(operation.getStartDate()).isNotNull();
+    assertThat(operation.getEndDate()).isNotNull();
+
+    //check variables
+    final List<VariableEntity> variables = detailViewReader.getVariables(workflowInstanceId, workflowInstanceId);
+    assertThat(variables).hasSize(1);
+    assertThat(variables.get(0).getName()).isEqualTo("a");
+    assertThat(variables.get(0).getValue()).isEqualTo("\"newValue\"");
+  }
+
+  @Test
+  public void testUpdateVariableOnTask() throws Exception {
+    // given
+    final long workflowInstanceKey = startDemoWorkflowInstance();
+
+    //when
+    //we call UPDATE_VARIABLE operation on task level
+    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
+    final String taskAId = getActivityInstanceId(workflowInstanceId, "taskA");
+    final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
+    op.setName("foo");
+    op.setValue("\"newFooValue\"");
+    op.setScopeId(taskAId);
+    postOperationWithOKResponse(workflowInstanceId, op);
+
+    //and execute the operation
+    operationExecutor.executeOneBatch();
+
+    //then
+    //before we process messages from Zeebe, the state of the operation must be SENT
+    ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(workflowInstanceId);
+
+    assertThat(workflowInstance.isHasActiveOperation()).isEqualTo(true);
+    assertThat(workflowInstance.getOperations()).hasSize(1);
+    OperationDto operation = workflowInstance.getOperations().get(0);
+    assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
+    assertThat(operation.getState()).isEqualTo(OperationState.SENT);
+    assertThat(operation.getStartDate()).isNotNull();
+    assertThat(operation.getEndDate()).isNull();
+
+    //after we process messages from Zeebe, the state of the operation is changed to COMPLETED
+    elasticsearchTestRule.processAllEvents(2);
+    workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(workflowInstanceId);
+    assertThat(workflowInstance.isHasActiveOperation()).isEqualTo(false);
+    assertThat(workflowInstance.getOperations()).hasSize(1);
+    operation = workflowInstance.getOperations().get(0);
+    assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
+    assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
+    assertThat(operation.getStartDate()).isNotNull();
+    assertThat(operation.getEndDate()).isNotNull();
+
+    //check variables
+    final List<VariableEntity> variables = detailViewReader.getVariables(workflowInstanceId, taskAId);
+    assertThat(variables).hasSize(1);
+    assertThat(variables.get(0).getName()).isEqualTo("foo");
+    assertThat(variables.get(0).getValue()).isEqualTo("\"newFooValue\"");
+  }
+
+  protected String getActivityInstanceId(String workflowInstanceId, String activityId) {
+    final List<ActivityInstanceForDetailViewEntity> allActivityInstances = detailViewReader.getAllActivityInstances(workflowInstanceId);
+    final Optional<ActivityInstanceForDetailViewEntity> first = allActivityInstances.stream().filter(ai -> ai.getActivityId().equals(activityId)).findFirst();
+    assertThat(first.isPresent()).isTrue();
+    return first.get().getId();
   }
 
   @Test

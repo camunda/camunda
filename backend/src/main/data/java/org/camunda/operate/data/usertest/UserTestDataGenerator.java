@@ -106,17 +106,17 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     doNotTouchWorkflowInstanceKeys.add(startOrderProcess());
 
     final long instanceKey5 = startOrderProcess();
-    completeTask(instanceKey5, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceKey5, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     failTask(instanceKey5, "shipArticles", "Cannot connect to server delivery05");
     doNotTouchWorkflowInstanceKeys.add(instanceKey5);
 
     final long instanceKey6 = startOrderProcess();
-    completeTask(instanceKey6, "checkPayment", "{\"paid\":false,\"paidAmount\":0.0}");
+    completeTask(instanceKey6, "checkPayment", "{\"paid\":false}");
     ZeebeTestUtil.cancelWorkflowInstance(client, instanceKey6);
     doNotTouchWorkflowInstanceKeys.add(instanceKey6);
 
     final long instanceKey7 = startOrderProcess();
-    completeTask(instanceKey7, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceKey7, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey7, "shipArticles", "{\"orderStatus\":\"SHIPPED\"}");
     doNotTouchWorkflowInstanceKeys.add(instanceKey7);
 
@@ -147,41 +147,41 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   public void createSpecialDataV2() {
     final long instanceKey4 = startOrderProcess();
-    completeTask(instanceKey4, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceKey4, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey4, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
     doNotTouchWorkflowInstanceKeys.add(instanceKey4);
 
     final long instanceKey5 = startOrderProcess();
-    completeTask(instanceKey5, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceKey5, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     failTask(instanceKey5, "checkItems", "Order information is not complete");
     doNotTouchWorkflowInstanceKeys.add(instanceKey5);
 
     final long instanceKey3 = startOrderProcess();
-    completeTask(instanceKey3, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceKey3, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey3, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
     failTask(instanceKey3, "shipArticles", "Cannot connect to server delivery05");
     doNotTouchWorkflowInstanceKeys.add(instanceKey3);
 
     final long instanceKey2 = startOrderProcess();
-    completeTask(instanceKey2, "checkPayment", "{\"paid\":true,\"paidAmount\":400.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceKey2, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey2, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
     failTask(instanceKey2, "shipArticles", "Order information is not complete");
     doNotTouchWorkflowInstanceKeys.add(instanceKey2);
 
     final long instanceKey1 = startOrderProcess();
-    completeTask(instanceKey1, "checkPayment", "{\"paid\":true,\"paidAmount\":400.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceKey1, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey1, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
     failTask(instanceKey1, "shipArticles", "Cannot connect to server delivery05");
     doNotTouchWorkflowInstanceKeys.add(instanceKey1);
 
     final long instanceKey7 = startOrderProcess();
-    completeTask(instanceKey7, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceKey7, "checkPayment", "{\"paid\":true,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey7, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
     completeTask(instanceKey7, "shipArticles", "{\"orderStatus\":\"SHIPPED\"}");
     doNotTouchWorkflowInstanceKeys.add(instanceKey7);
 
     final long instanceKey6 = startOrderProcess();
-    completeTask(instanceKey6, "checkPayment", "{\"paid\":false,\"paidAmount\":0.0}");
+    completeTask(instanceKey6, "checkPayment", "{\"paid\":false}");
     ZeebeTestUtil.cancelWorkflowInstance(client, instanceKey6);
     doNotTouchWorkflowInstanceKeys.add(instanceKey6);
 
@@ -360,35 +360,12 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
           //fail
           throw new RuntimeException("Payment system not available.");
         case 1:
-          Double total = null;
-          Double paidAmount = null;
-          try {
-            final Map<String, Object> variables = payloadUtil.parsePayload(job.getPayload());
-            total = Double.valueOf(variables.get("total").toString());
-            paidAmount = Double.valueOf(variables.get("paidAmount").toString());
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-          if (total != null) {
-            if (paidAmount != null) {
-              paidAmount = paidAmount + ((total-paidAmount)/2);
-            } else {
-              paidAmount = total / 2;
-            }
-          }
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":false,\"paidAmount\":" + (paidAmount == null ? 0.0 : paidAmount) + "}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":false}").send().join();
           break;
         case 2:
         case 3:
         case 4:
-          total = null;
-          try {
-            final Map<String, Object> variables = payloadUtil.parsePayload(job.getPayload());
-            total = Double.valueOf(variables.get("total").toString());
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":true,\"paidAmount\":" + (total == null ? 0.0 : total) + ",\"orderStatus\": \"PAID\"}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":true,\"orderStatus\": \"PAID\"}").send().join();
           break;
         }
       })
@@ -616,7 +593,6 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       + "  ],\n"
       + "  \"mwst\": " + Double.valueOf((price1 + price2) * 0.19) + ",\n"
       + "  \"total\": " + Double.valueOf((price1 + price2)) + ",\n"
-      + "  \"paidAmount\": 0,\n"
       + "  \"orderStatus\": \"NEW\"\n"
       + "}");
   }

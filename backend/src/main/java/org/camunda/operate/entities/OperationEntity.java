@@ -12,7 +12,9 @@ public class OperationEntity extends OperateEntity {
 
   private String workflowInstanceId;
   private String incidentId;
-  private String variableId;
+  private String scopeId;
+  private String variableName;
+  private String variableValue;
   private OperationType type;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
@@ -37,12 +39,28 @@ public class OperationEntity extends OperateEntity {
     this.incidentId = incidentId;
   }
 
-  public String getVariableId() {
-    return variableId;
+  public String getScopeId() {
+    return scopeId;
   }
 
-  public void setVariableId(String variableId) {
-    this.variableId = variableId;
+  public void setScopeId(String scopeId) {
+    this.scopeId = scopeId;
+  }
+
+  public String getVariableName() {
+    return variableName;
+  }
+
+  public void setVariableName(String variableName) {
+    this.variableName = variableName;
+  }
+
+  public String getVariableValue() {
+    return variableValue;
+  }
+
+  public void setVariableValue(String variableValue) {
+    this.variableValue = variableValue;
   }
 
   public OperationType getType() {
@@ -120,7 +138,11 @@ public class OperationEntity extends OperateEntity {
       return false;
     if (incidentId != null ? !incidentId.equals(that.incidentId) : that.incidentId != null)
       return false;
-    if (variableId != null ? !variableId.equals(that.variableId) : that.variableId != null)
+    if (scopeId != null ? !scopeId.equals(that.scopeId) : that.scopeId != null)
+      return false;
+    if (variableName != null ? !variableName.equals(that.variableName) : that.variableName != null)
+      return false;
+    if (variableValue != null ? !variableValue.equals(that.variableValue) : that.variableValue != null)
       return false;
     if (type != that.type)
       return false;
@@ -142,7 +164,9 @@ public class OperationEntity extends OperateEntity {
     int result = super.hashCode();
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
     result = 31 * result + (incidentId != null ? incidentId.hashCode() : 0);
-    result = 31 * result + (variableId != null ? variableId.hashCode() : 0);
+    result = 31 * result + (scopeId != null ? scopeId.hashCode() : 0);
+    result = 31 * result + (variableName != null ? variableName.hashCode() : 0);
+    result = 31 * result + (variableValue != null ? variableValue.hashCode() : 0);
     result = 31 * result + (type != null ? type.hashCode() : 0);
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);

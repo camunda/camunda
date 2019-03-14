@@ -7,12 +7,15 @@ package org.camunda.operate.rest;
 
 import java.util.Collection;
 import java.util.List;
+import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.es.reader.DetailViewReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
+import org.camunda.operate.rest.dto.detailview.VariableDto;
 import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
@@ -74,9 +77,21 @@ public class WorkflowInstanceRestService {
 
   @ApiOperation("Perform batch operation on an instance (async)")
   @PostMapping("/{id}/operation")
-  public OperationResponseDto batchOperation(@PathVariable String id,
+  public OperationResponseDto operation(@PathVariable String id,
       @RequestBody OperationRequestDto operationRequest) throws PersistenceException {
+    validateOperationRequest(operationRequest);
     return batchOperationWriter.scheduleOperation(id, operationRequest);
+  }
+
+  private void validateOperationRequest(OperationRequestDto operationRequest) {
+    if (operationRequest.getOperationType() == null) {
+      throw new InvalidRequestException("Operation type must be defined.");
+    }
+    if (operationRequest.getOperationType().equals(OperationType.UPDATE_VARIABLE)
+      && (operationRequest.getScopeId() == null || operationRequest.getName() == null || operationRequest.getName().isEmpty()
+        || operationRequest.getValue() == null)) {
+        throw new InvalidRequestException("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
+    }
   }
 
   @ApiOperation("Perform batch operation on selection (async)")
@@ -96,6 +111,13 @@ public class WorkflowInstanceRestService {
   @GetMapping("/{id}/incidents")
   public IncidentResponseDto queryIncidentsByWorkflowInstanceId(@PathVariable String id) {
     return detailViewReader.getIncidents(id);
+  }
+
+  @ApiOperation("Get variables by workflow instance id and scope id")
+  @GetMapping("/{workflowInstanceId}/variables")
+  public List<VariableDto> getVariables(@PathVariable String workflowInstanceId, @RequestParam String scopeId) {
+    final List<VariableEntity> variableEntities = detailViewReader.getVariables(workflowInstanceId, scopeId);
+    return VariableDto.createFrom(variableEntities);
   }
 
   @ApiOperation("Get activity instance statistics")

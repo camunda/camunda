@@ -22,8 +22,8 @@ import org.camunda.operate.es.reader.OperationReader;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
+import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
@@ -186,6 +186,54 @@ public class BatchOperationWriter {
     }
   }
 
+  public void completeUpdateVariableOperation(String workflowInstanceId, String scopeId, String variableName) throws PersistenceException {
+    try {
+      Map<String, Object> params = new HashMap<>();
+      params.put("endDate", OffsetDateTime.now());
+
+      Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(params), HashMap.class);
+
+      String script =
+            "ctx._source.state = '" + OperationState.COMPLETED.toString() + "';" +
+            "ctx._source.endDate = params.endDate;" +
+            "ctx._source.lockOwner = null;" +
+            "ctx._source.lockExpirationTime = null;";
+      Script updateScript = new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, jsonMap);
+
+      TermQueryBuilder scopeIdQ = termQuery(OperationTemplate.SCOPE_ID, scopeId);
+      TermQueryBuilder variableNameIdQ = termQuery(OperationTemplate.VARIABLE_NAME, variableName);
+
+
+      QueryBuilder query =
+        joinWithAnd(
+          termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId),
+          scopeIdQ,
+          variableNameIdQ,
+          termsQuery(OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name()),
+          termQuery(OperationTemplate.TYPE, OperationType.UPDATE_VARIABLE.name())
+          );
+
+      BulkByScrollResponse response =
+        UpdateByQueryAction.INSTANCE.newRequestBuilder(esClient)
+          .source(operationTemplate.getMainIndexName())
+          .filter(query)
+          .size(1)
+          .script(updateScript)
+          .refresh(true)
+          .get();
+      for (BulkItemResponse.Failure failure: response.getBulkFailures()) {
+        logger.error(String.format("Complete operation failed for operation id [%s]: %s", failure.getId(),
+          failure.getMessage()), failure.getCause());
+        throw new PersistenceException("Complete operation failed: " + failure.getMessage(), failure.getCause());
+      }
+
+    } catch (IOException e) {
+      logger.error("Error preparing the query to complete operation", e);
+      throw new PersistenceException(String.format("Error preparing the query to complete operation of type [%s] for workflow instance id [%s]",
+        OperationType.UPDATE_VARIABLE, workflowInstanceId), e);
+    }
+  }
+
   public void updateOperation(OperationEntity operation) throws PersistenceException {
     final UpdateRequestBuilder updateRequest = createUpdateByIdRequest(operation, true);
     ElasticsearchUtil.executeUpdate(updateRequest);
@@ -214,6 +262,8 @@ public class BatchOperationWriter {
           requests.add(getIndexOperationRequest(workflowInstanceId, incident.getId(), operationType));
         }
       }
+    } else if (operationType.equals(OperationType.UPDATE_VARIABLE)) {
+      requests.add(getIndexUpdateVariableOperationRequest(workflowInstanceId, operationRequest.getScopeId(), operationRequest.getName(), operationRequest.getValue()));
     } else {
       requests.add(getIndexOperationRequest(workflowInstanceId, operationRequest.getIncidentId(), operationType));
     }
@@ -252,7 +302,7 @@ public class BatchOperationWriter {
     } while (hits.getHits().length != 0);
 
     if (operationsCount == 0) {
-      return new OperationResponseDto(0, "No workflow instances found.");
+      return new OperationResponseDto(0, "No operations were scheduled.");
     } else {
       return new OperationResponseDto(operationsCount);
     }
@@ -276,6 +326,28 @@ public class BatchOperationWriter {
     }
     ElasticsearchUtil.executeIndex(esClient, requests);
     return requests.size();
+  }
+
+  private IndexRequestBuilder getIndexUpdateVariableOperationRequest(String workflowInstanceId, String scopeId, String name, String value) throws PersistenceException {
+    OperationEntity operationEntity = new OperationEntity();
+    operationEntity.generateId();
+    operationEntity.setWorkflowInstanceId(workflowInstanceId);
+    operationEntity.setScopeId(scopeId);
+    operationEntity.setVariableName(name);
+    operationEntity.setVariableValue(value);
+    operationEntity.setType(OperationType.UPDATE_VARIABLE);
+    operationEntity.setStartDate(OffsetDateTime.now());
+    operationEntity.setState(OperationState.SCHEDULED);
+
+    try {
+      return esClient
+        .prepareIndex(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operationEntity.getId())
+        .setSource(objectMapper.writeValueAsString(operationEntity), XContentType.JSON);
+    } catch (IOException e) {
+      logger.error("Error preparing the query to insert operation", e);
+      throw new PersistenceException(String.format("Error preparing the query to insert operation [%s] for workflow instance id [%s]",
+        OperationType.UPDATE_VARIABLE, workflowInstanceId), e);
+    }
   }
 
   private IndexRequestBuilder getIndexOperationRequest(String workflowInstanceId, String incidentId, OperationType operationType) throws PersistenceException {

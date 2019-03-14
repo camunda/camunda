@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.es.schema.templates.VariableTemplate;
+import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdUtil;
@@ -54,6 +55,9 @@ public class VariableZeebeRecordProcessor {
   @Autowired
   private WorkflowCache workflowCache;
 
+  @Autowired
+  private BatchOperationWriter batchOperationWriter;
+
   public void processVariableRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
     VariableRecordValueImpl recordValue = (VariableRecordValueImpl)record.getValue();
 
@@ -76,6 +80,10 @@ public class VariableZeebeRecordProcessor {
 
   private UpdateRequestBuilder getVariableQuery(VariableEntity entity) throws PersistenceException {
     try {
+
+      //complete operation
+      batchOperationWriter.completeUpdateVariableOperation(entity.getWorkflowInstanceId(), entity.getScopeId(), entity.getName());
+
       logger.debug("Variable instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(VariableTemplate.VALUE, entity.getValue());

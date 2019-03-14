@@ -16,14 +16,21 @@ public class OperationRequestDto {
     this.operationType = operationType;
   }
 
-  public OperationRequestDto(OperationType operationType, String incidentId) {
-    this.operationType = operationType;
-    this.incidentId = incidentId;
-  }
-
   private OperationType operationType;
 
+  /**
+   * RESOLVE_INCIDENT operation.
+   */
   private String incidentId;
+
+  /**
+   * UPDATE_VARIABLE operation.
+   */
+  private String scopeId;
+
+  private String name;
+
+  private String value;
 
   public OperationType getOperationType() {
     return operationType;
@@ -41,6 +48,30 @@ public class OperationRequestDto {
     this.incidentId = incidentId;
   }
 
+  public String getScopeId() {
+    return scopeId;
+  }
+
+  public void setScopeId(String scopeId) {
+    this.scopeId = scopeId;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public String getValue() {
+    return value;
+  }
+
+  public void setValue(String value) {
+    this.value = value;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -52,13 +83,22 @@ public class OperationRequestDto {
 
     if (operationType != that.operationType)
       return false;
-    return incidentId != null ? incidentId.equals(that.incidentId) : that.incidentId == null;
+    if (incidentId != null ? !incidentId.equals(that.incidentId) : that.incidentId != null)
+      return false;
+    if (scopeId != null ? !scopeId.equals(that.scopeId) : that.scopeId != null)
+      return false;
+    if (name != null ? !name.equals(that.name) : that.name != null)
+      return false;
+    return value != null ? value.equals(that.value) : that.value == null;
   }
 
   @Override
   public int hashCode() {
     int result = operationType != null ? operationType.hashCode() : 0;
     result = 31 * result + (incidentId != null ? incidentId.hashCode() : 0);
+    result = 31 * result + (scopeId != null ? scopeId.hashCode() : 0);
+    result = 31 * result + (name != null ? name.hashCode() : 0);
+    result = 31 * result + (value != null ? value.hashCode() : 0);
     return result;
   }
 }
