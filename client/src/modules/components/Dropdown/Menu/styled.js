@@ -23,6 +23,7 @@ export const PointerBasics = css`
   border: solid transparent;
   content: ' ';
   pointer-events: none;
+  z-index: 2;
   ${({placement}) =>
     placement === DROPDOWN_PLACEMENT.TOP ? PointerBottom : PointerTop};
 `;
@@ -35,7 +36,7 @@ export const PointerBody = css`
     light: Colors.uiLight02
   })};
   ${({placement}) =>
-    placement === DROPDOWN_PLACEMENT.TOP ? 'transform: rotate(180deg)' : ''};
+    placement === DROPDOWN_PLACEMENT.TOP && 'transform: rotate(180deg)'};
 `;
 
 export const PointerShadow = css`
@@ -47,56 +48,7 @@ export const PointerShadow = css`
   })};
 
   ${({placement}) =>
-    placement === DROPDOWN_PLACEMENT.TOP ? 'transform: rotate(180deg)' : ''};
-`;
-
-// hover & active styles for top pointer
-const topPointer = css`
-&:first-child:hover:after, &:first-child:hover:before {
-  ${PointerBasics};
-  }
-
-  &:first-child:hover:after{
-    z-index: 1;
-    ${PointerBody}
-      border-bottom-color: ${themeStyle({
-        dark: Colors.uiDark06,
-        light: Colors.uiLight05
-      })};
-  }
-
-  &:first-child:active:after{
-      ${PointerBody}
-      border-bottom-color: ${themeStyle({
-        dark: Colors.darkActive,
-        light: Colors.lightActive
-      })};
-  } 
- 
-`;
-
-// hover & active styles for bottom pointer
-const bottomPointer = css`
-  &:last-child:hover:after, &:last-child:hover:before {
-  ${PointerBasics};
-  }
-
-  &:last-child:hover:after{
-    z-index: 1;
-    ${PointerBody}
-      border-bottom-color: ${themeStyle({
-        dark: Colors.uiDark06,
-        light: Colors.uiLight05
-      })};
-  }
-
-  &:last-child:active:after{
-      ${PointerBody}
-      border-bottom-color: ${themeStyle({
-        dark: Colors.darkActive,
-        light: Colors.lightActive
-      })};
-  } 
+    placement === DROPDOWN_PLACEMENT.TOP && 'transform: rotate(180deg)'};
 `;
 
 const placementStyle = (placement, topStyle, bottomStyle) =>
@@ -132,22 +84,82 @@ export const Ul = themed(styled.ul`
     dark: '#ffffff',
     light: Colors.uiLight06
   })};
-
-  /* Pointer Styles */
-  &:after,
-  &:before {
-    ${PointerBasics};
-  }
-
-  &:after {
-    ${PointerBody};
-  }
-  &:before {
-    ${PointerShadow};
-  }
 `);
 
+const topPointer = css`
+  &:first-child {
+    /* Pointer Styles */
+    &:after,
+    &:before {
+      ${PointerBasics};
+    }
+
+    &:after {
+      ${PointerBody};
+    }
+    &:before {
+      ${PointerShadow};
+    }
+  }
+
+  &:first-child:hover {
+    &:after {
+      border-bottom-color: ${themeStyle({
+        dark: Colors.uiDark06,
+        light: Colors.uiLight05
+      })};
+    }
+  }
+
+  &:first-child:active {
+    &:after {
+      border-bottom-color: ${themeStyle({
+        dark: Colors.darkActive,
+        light: Colors.lightActive
+      })};
+    }
+  }
+`;
+
+const bottomPointer = css`
+  /* Pointer Styles */
+  &:last-child {
+    &:after,
+    &:before {
+      ${PointerBasics};
+    }
+
+    &:after {
+      ${PointerBody};
+    }
+    &:before {
+      ${PointerShadow};
+    }
+  }
+
+  &:last-child:hover {
+    &:after {
+      border-bottom-color: ${themeStyle({
+        dark: Colors.uiDark06,
+        light: Colors.uiLight05
+      })};
+    }
+  }
+
+  &:last-child:active {
+    &:after {
+      border-bottom-color: ${themeStyle({
+        dark: Colors.darkActive,
+        light: Colors.lightActive
+      })};
+    }
+  }
+`;
+
 export const Li = themed(styled.li`
+  ${({placement}) =>
+    placement === DROPDOWN_PLACEMENT.TOP ? bottomPointer : topPointer}
+
   /* Add Border between options */
   &:not(:last-child) {
     border-bottom: 1px solid
@@ -169,8 +181,4 @@ export const Li = themed(styled.li`
   &:first-child > div > button {
     border-radius: 2px 2px 0 0;
   }
-
-  /* Dropdown pointer hover & active styles
-  ${({placement}) =>
-    placement === DROPDOWN_PLACEMENT.TOP ? bottomPointer : topPointer}; */
 `);
