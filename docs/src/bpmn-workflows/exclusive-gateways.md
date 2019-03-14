@@ -16,7 +16,7 @@ In case the gateway has no default flow (not recommended), the execution stops a
 
 <bpmn:sequenceFlow id="priceGreaterThan100" name="$.totalPrice &#62; 100" sourceRef="exclusiveGateway" targetRef="shipParcelWithInsurance">
   <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">
-    <![CDATA[ $.totalPrice > 100 ]]>
+    <![CDATA[ totalPrice > 100 ]]>
   </bpmn:conditionExpression>
 </bpmn:sequenceFlow>
 

@@ -70,10 +70,10 @@ public class ZeebeRuntimeValidationTest {
         Arrays.asList(
             expect(
                 ConditionExpression.class,
-                "Condition expression is invalid: [1.1] failure: expected comparison, disjunction or conjunction.\n"
+                "Condition expression is invalid: [1.4] failure: expected comparison operator ('==', '!=', '<', '<=', '>', '>=')\n"
                     + "\n"
                     + "foo\n"
-                    + "^"))
+                    + "   ^"))
       },
       {
         // not a json path expression

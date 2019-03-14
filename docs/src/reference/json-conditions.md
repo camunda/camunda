@@ -3,15 +3,15 @@
 Conditions can be used for conditional flows to determine the following task.
 
 A condition is a boolean expression with a JavaScript-like syntax.
-It allows to compare properties of the workflow instance payload with other properties or literals (e.g., numbers, strings, etc.).
-The payload properties are selected using [JSON Path](reference/json-path.html).
+It allows to compare variables of a workflow instance with other variables or literals (e.g., numbers, strings, etc.).
+Variables are accessed by name. If a variable has a JSON value then the nested properties can be accessed via dot notation.
 
 ```
-$.totalPrice > 100
+totalPrice > 100
 
-$.owner == "Paul"
+owner == "Paul"
 
-$.orderCount >= 5 && $.orderCount < 15
+orderCount >= 5 && orderCount < 15
 ```
 
 ### Literals
@@ -23,8 +23,8 @@ $.orderCount >= 5 && $.orderCount < 15
   </tr>
 
   <tr>
-    <td>JSON Path</td>
-    <td>$.totalPrice, $.order.id, $.items[0].name</td>
+    <td>Variable</td>
+    <td>totalPrice, order.id</td>
   </tr>
 
   <tr>
@@ -48,34 +48,8 @@ $.orderCount >= 5 && $.orderCount < 15
   </tr>
 </table>
 
-A Null-Value can be used to check if a property is set (e.g., `$.owner == null`).
-If the any property in specified JSON Path doesn't exist, then it would be resolved as `null` and could be compared as such.
-
-<table style="width:100%">
-  <tr>
-    <th>Payload</th>
-    <th>JSON Path</th>
-    <th>Value</th
-  </tr>
-
-  <tr>
-    <td>{"foo": 3}</td>
-    <td>$.foo</td>
-    <td>3</td>
-  </tr>
-
-  <tr>
-    <td>{"foo": 3}</td>
-    <td>$.bar</td>
-    <td>null</td>
-  </tr>
-
-  <tr>
-    <td>{"foo": 3}</td>
-    <td>$.bar.baz</td>
-    <td>null</td>
-  </tr>
-</table>
+A Null-Value can be used to check if a variable or nested property is set (e.g., `owner == null`).
+If a variable or nested property doesn't exist, then it is resolved to `null` and can be compared as such.
 
 ### Comparison Operators
 
@@ -89,37 +63,37 @@ If the any property in specified JSON Path doesn't exist, then it would be resol
   <tr>
     <td>==</td>
     <td>equal to</td>
-    <td>$.owner == "Paul"</td>
+    <td>owner == "Paul"</td>
   </tr>
 
   <tr>
     <td>!=</td>
     <td>not equal to</td>
-    <td>$.owner != "Paul"</td>
+    <td>owner != "Paul"</td>
   </tr>
 
   <tr>
     <td>&#60;</td>
     <td>less than</td>
-    <td>$.totalPrice &#60; 25</td>
+    <td>totalPrice &#60; 25</td>
   </tr>
 
   <tr>
     <td>&#60;=</td>
     <td>less than or equal to</td>
-    <td>$.totalPrice &#60;= 25</td>
+    <td>totalPrice &#60;= 25</td>
   </tr>
 
   <tr>
     <td>&#62;</td>
     <td>greater than</td>
-    <td>$.totalPrice &#62; 25</td>
+    <td>totalPrice &#62; 25</td>
   </tr>
 
   <tr>
     <td>&#62;=</td>
     <td>greater than or equal to</td>
-    <td>$.totalPrice &#62;= 25</td>
+    <td>totalPrice &#62;= 25</td>
   </tr>
 </table>
 
@@ -140,14 +114,14 @@ Comparing null or missing property with a number is considered as comparing diff
   <tr>
     <td>&&</td>
     <td>and</td>
-    <td>$.orderCount &#62;= 5 && $.orderCount &#60; 15</td>
+    <td>orderCount &#62;= 5 && orderCount &#60; 15</td>
   </tr>
 
   <tr>
     <td>||</td>
     <td>or</td>
-    <td>$.orderCount &#62; 15 || $.totalPrice &#62; 50</td>
+    <td>orderCount &#62; 15 || totalPrice &#62; 50</td>
   </tr>
 </table>
 
-It's also possible to use parentheses between the operators to change the precedence (e.g., `($.owner == "Paul" || $.owner == "Jonny") && $.totalPrice > 25`).
+It's also possible to use parentheses between the operators to change the precedence (e.g., `(owner == "Paul" || owner == "Jonny") && totalPrice > 25`).
