@@ -15,10 +15,10 @@ import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
-import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.incidents.IncidentByWorkflowStatisticsDto;
 import org.camunda.operate.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import org.camunda.operate.rest.dto.incidents.IncidentsByWorkflowGroupStatisticsDto;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
@@ -57,9 +57,6 @@ public class IncidentStatisticsReader {
 
   @Autowired
   private ListViewTemplate workflowInstanceTemplate;
-
-  @Autowired
-  private OperateProperties operateProperties;
 
   @Autowired
   private WorkflowReader workflowReader;
@@ -136,7 +133,7 @@ public class IncidentStatisticsReader {
     final AggregationBuilder agg =
       terms(workflowIdsAggName)
         .field(ListViewTemplate.WORKFLOW_ID)
-        .size(operateProperties.getElasticsearch().getTerms().getMaxWorkflowCount())
+        .size(ElasticsearchUtil.TERMS_AGG_SIZE)
         .subAggregation(
           children(activitiesAggName, ListViewTemplate.ACTIVITIES_JOIN_RELATION)
             .subAggregation(filter(incidentActivitiesAggName, existsQuery(INCIDENT_KEY))
@@ -190,11 +187,11 @@ public class IncidentStatisticsReader {
       children(activitiesAggName, ListViewTemplate.ACTIVITIES_JOIN_RELATION)
         .subAggregation(filter(incidentActivitiesAggName, existsQuery(INCIDENT_KEY)).subAggregation(
           terms(errorMessagesAggName)
-            .size(operateProperties.getElasticsearch().getTerms().getMaxIncidentErrorMessageCount())
+            .size(ElasticsearchUtil.TERMS_AGG_SIZE)
             .field(ListViewTemplate.ERROR_MSG).subAggregation(
               parent(activityToInstanceAggName, ACTIVITIES_JOIN_RELATION).subAggregation(
                 terms(workflowIdsAggName)
-                  .size(operateProperties.getElasticsearch().getTerms().getMaxWorkflowCount())
+                  .size(ElasticsearchUtil.TERMS_AGG_SIZE)
                   .field(ListViewTemplate.WORKFLOW_ID)     //TODO check if we can put workflowId inside incident entity
             )
           )

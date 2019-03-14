@@ -42,6 +42,7 @@ public abstract class ElasticsearchUtil {
 
   public static final String ES_INDEX_TYPE = "_doc";
   public static final int SCROLL_KEEP_ALIVE_MS = 60000;
+  public static final int TERMS_AGG_SIZE = 10000;
 
   public static QueryBuilder joinWithOr(BoolQueryBuilder boolQueryBuilder, QueryBuilder... queries) {
     List<QueryBuilder> notNullQueries = CollectionUtil.throwAwayNullElements(queries);

@@ -18,7 +18,6 @@ import org.camunda.operate.entities.detailview.ActivityInstanceForDetailViewEnti
 import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.VariableTemplate;
-import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeDto;
 import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeRequestDto;
 import org.camunda.operate.rest.dto.detailview.DetailViewActivityInstanceDto;
@@ -68,9 +67,6 @@ public class DetailViewReader {
 
   @Autowired
   private IncidentTemplate incidentTemplate;
-
-  @Autowired
-  private OperateProperties operateProperties;
 
   @Autowired
   private OperationReader operationReader;
@@ -181,7 +177,7 @@ public class DetailViewReader {
     final TermsAggregationBuilder flowNodesAgg =
       terms(flowNodesAggName)
         .field(IncidentTemplate.FLOW_NODE_ID)
-        .size(operateProperties.getElasticsearch().getTerms().getMaxFlowNodesInOneWorkflow())
+        .size(ElasticsearchUtil.TERMS_AGG_SIZE)
         .order(BucketOrder.key(true));
 
     final SearchRequestBuilder requestBuilder =

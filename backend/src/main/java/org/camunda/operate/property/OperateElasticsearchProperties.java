@@ -29,9 +29,6 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
 
   private int rolloverBatchSize = 100;
 
-  @NestedConfigurationProperty
-  private TermsQueryProperties terms = new TermsQueryProperties();
-
   public String getIndexPrefix() {
     return indexPrefix;
   }
@@ -80,11 +77,4 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
     this.rolloverBatchSize = rolloverBatchSize;
   }
 
-  public TermsQueryProperties getTerms() {
-    return terms;
-  }
-
-  public void setTerms(TermsQueryProperties terms) {
-    this.terms = terms;
-  }
 }
