@@ -39,7 +39,7 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
    *
    * @param operations the operations
    * @throws ZeebeDbException is thrown on an unexpected error in the database layer
-   * @throws ZeebeDbOperationException is thrown on an unexpected error in executing the operations
+   * @throws RuntimeException is thrown on an unexpected error in executing the operations
    */
   void transaction(TransactionOperation operations);
 

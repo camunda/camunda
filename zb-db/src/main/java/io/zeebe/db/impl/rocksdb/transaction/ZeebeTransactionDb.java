@@ -16,6 +16,14 @@
 package io.zeebe.db.impl.rocksdb.transaction;
 
 import static io.zeebe.util.buffer.BufferUtil.startsWith;
+import static org.rocksdb.Status.Code.Aborted;
+import static org.rocksdb.Status.Code.Busy;
+import static org.rocksdb.Status.Code.Expired;
+import static org.rocksdb.Status.Code.IOError;
+import static org.rocksdb.Status.Code.MergeInProgress;
+import static org.rocksdb.Status.Code.Ok;
+import static org.rocksdb.Status.Code.TimedOut;
+import static org.rocksdb.Status.Code.TryAgain;
 
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.DbKey;
@@ -27,6 +35,7 @@ import io.zeebe.db.ZeebeDbException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -44,10 +53,15 @@ import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.RocksObject;
+import org.rocksdb.Status;
+import org.rocksdb.Status.Code;
 import org.rocksdb.WriteOptions;
 
 public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames>>
     implements ZeebeDb<ColumnFamilyNames> {
+
+  private static final EnumSet<Code> RECOVERABLE_ERROR_CODES =
+      EnumSet.of(Ok, Aborted, Expired, IOError, Busy, TimedOut, TryAgain, MergeInProgress);
 
   public static final byte[] ZERO_SIZE_ARRAY = new byte[0];
 
@@ -167,11 +181,22 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
         runInNewTransaction(operations);
       }
     } catch (RocksDBException rdbex) {
-      throw new ZeebeDbException("Unexpected error occurred during RocksDB transaction.", rdbex);
+      final String errorMessage = "Unexpected error occurred during RocksDB transaction.";
+      if (isRocksDbExceptionRecoverable(rdbex)) {
+        throw new ZeebeDbException(errorMessage, rdbex);
+      } else {
+        throw new RuntimeException(errorMessage, rdbex);
+      }
+
     } catch (Exception ex) {
       throw new RuntimeException(
           "Unexpected error occurred during zeebe db transaction operation.", ex);
     }
+  }
+
+  private boolean isRocksDbExceptionRecoverable(RocksDBException rdbex) {
+    final Status status = rdbex.getStatus();
+    return RECOVERABLE_ERROR_CODES.contains(status.getCode());
   }
 
   private void runInNewTransaction(TransactionOperation operations) throws Exception {
