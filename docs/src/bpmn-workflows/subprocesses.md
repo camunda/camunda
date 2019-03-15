@@ -17,6 +17,20 @@ XML representation:
 </bpmn:subProcess>
 ```
 
-### Payload Mapping
+## Variable Mappings
 
-When a subprocess completes, the payloads of each executed end event are merged into the result document of the subprocess. See the [end events](/bpmn-workflows/events.html#end-events) section for how to configure the merge.
+Input mappings can be used to create new variables in the scope of the sub process. These variables are only visible within the sub process.
+
+```xml
+<bpmn:subProcess id="shipping" name="Shipping">
+  <bpmn:extensionElements>
+    <zeebe:ioMapping>
+      <zeebe:input source="order.id" target="trackingId"/>
+     </zeebe:ioMapping>
+  </bpmn:extensionElements>
+</bpmn:subProcess>
+```
+
+## Additional Resources
+
+* [Variable Mappings](reference/variables.html#inputoutput-variable-mappings)

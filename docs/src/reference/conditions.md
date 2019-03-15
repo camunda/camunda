@@ -1,17 +1,19 @@
-# JSON Conditions
+# Conditions
 
 Conditions can be used for conditional flows to determine the following task.
 
-A condition is a boolean expression with a JavaScript-like syntax.
-It allows to compare variables of a workflow instance with other variables or literals (e.g., numbers, strings, etc.).
-Variables are accessed by name. If a variable has a JSON value then the nested properties can be accessed via dot notation.
+A condition is a Boolean expression with a JavaScript-like syntax. It allows to compare variables of a workflow instance with other variables or literals (e.g., numbers, strings, etc.).
+
+Variables of a workflow instance are accessed by its name. If a variable has a document value then the nested properties can be accessed via dot notation. See the [Variable](reference/variables.html#access-variables) section for details.
+
+Examples:
 
 ```
 totalPrice > 100
 
 owner == "Paul"
 
-orderCount >= 5 && orderCount < 15
+order.count >= 5 && order.count < 15
 ```
 
 ### Literals
