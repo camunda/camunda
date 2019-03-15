@@ -1,6 +1,6 @@
-import {drawHorizentalLine} from '../service';
 import createCombinedChartData from './createCombinedChartData';
 import createCombinedChartOptions from './createCombinedChartOptions';
+import createPlugins from '../createPlugins';
 
 export default function createCombinedChartConfig(props) {
   const {visualization} = props.report.data;
@@ -10,10 +10,6 @@ export default function createCombinedChartConfig(props) {
     type: chartVisualization,
     data: createCombinedChartData(props),
     options: createCombinedChartOptions(props),
-    plugins: [
-      {
-        afterDatasetsDraw: drawHorizentalLine
-      }
-    ]
+    plugins: createPlugins(props)
   };
 }
