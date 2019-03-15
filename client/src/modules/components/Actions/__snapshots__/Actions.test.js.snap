@@ -41,7 +41,7 @@ exports[`Actions should match snapshots 1`] = `
   <ActionItems>
     <Item
       onClick={[Function]}
-      title="Cancel instance id_1"
+      title="Cancel Instance id_1"
       type="CANCEL_WORKFLOW_INSTANCE"
     />
   </ActionItems>
@@ -89,7 +89,7 @@ exports[`Actions should match snapshots 2`] = `
   <ActionItems>
     <Item
       onClick={[Function]}
-      title="Cancel instance id_3"
+      title="Cancel Instance id_3"
       type="CANCEL_WORKFLOW_INSTANCE"
     />
   </ActionItems>

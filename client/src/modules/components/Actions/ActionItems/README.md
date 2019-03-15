@@ -5,7 +5,7 @@ A single retry action item
   <ActionItems.Item
     type={'RESOLVE_INCIDENT'}
     onClick={() => console.log('foo')}
-    title="Retry instance 1"
+    title="Retry Instance 1"
   />
 </ActionItems>
 ```
@@ -14,7 +14,7 @@ A single cancel action item
 
 ```js
 <ActionItems>
-  <ActionItems.Item type={'CANCEL_WORKFLOW_INSTANCE'} onClick={() => console.log('foo')} title="Cancel instance 1"/>
+  <ActionItems.Item type={'CANCEL_WORKFLOW_INSTANCE'} onClick={() => console.log('foo')} title="Cancel Instance 1"/>
 </ActionItems>
 ```
 
@@ -25,13 +25,13 @@ Multiple action items
   <ActionItems.Item
     type="RESOLVE_INCIDENT"
     onClick={() => console.log('foobar')}
-    title="Retry instance 1"
+    title="Retry Instance 1"
   />
-  <ActionItems.Item type="CANCEL_WORKFLOW_INSTANCE" onClick={() => console.log('foobar')} title="Cancel instance 1"/>
+  <ActionItems.Item type="CANCEL_WORKFLOW_INSTANCE" onClick={() => console.log('foobar')} title="Cancel Instance 1"/>
   <ActionItems.Item
     type="RESOLVE_INCIDENT"
     onClick={() => console.log('foobar')}
-    title="Retry instance 1"
+    title="Retry Instance 1"
   />
 </ActionItems>
 ```

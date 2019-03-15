@@ -38,7 +38,7 @@ describe('ActionItems', () => {
         <ActionItems.Item
           type={OPERATION_TYPE.RESOLVE_INCIDENT}
           onClick={() => mockOnClick()}
-          title={'Retry instance 1'}
+          title={'Retry Instance 1'}
         />
       );
     });
@@ -51,7 +51,7 @@ describe('ActionItems', () => {
     });
 
     it('should display title', () => {
-      expect(node.find(Styled.Button).props().title).toBe('Retry instance 1');
+      expect(node.find(Styled.Button).props().title).toBe('Retry Instance 1');
     });
 
     it('should execute the passed method when clicked', () => {
@@ -66,7 +66,7 @@ describe('ActionItems', () => {
         <ActionItems.Item
           type={OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE}
           onClick={() => mockOnClick()}
-          title={'Cancel instance 1'}
+          title={'Cancel Instance 1'}
         />
       );
     });
@@ -79,7 +79,7 @@ describe('ActionItems', () => {
     });
 
     it('should display title', () => {
-      expect(node.find(Styled.Button).props().title).toBe('Cancel instance 1');
+      expect(node.find(Styled.Button).props().title).toBe('Cancel Instance 1');
     });
 
     it('should execute the passed method when clicked', () => {
