@@ -1,3 +1,15 @@
+<a name="0.16.3"></a>
+## 0.16.3 (2019-03-15)
+
+
+#### Bug Fixes
+
+* **broker:**
+  *  stop iterating jobs if job batch reached max capacity ([cc90c04a](https://github.com/zeebe-io/zeebe/commit/cc90c04a3e0e5d625c1cae36d4ae3c9bd446a579))
+  *  increase gateway transport buffer to default 64 megabyte ([449ea10e](https://github.com/zeebe-io/zeebe/commit/449ea10e61712d768cccb166ecc8f5ed79e2f71d))
+
+
+
 <a name="0.16.2"></a>
 ## 0.16.2 (2019-03-11)
 
