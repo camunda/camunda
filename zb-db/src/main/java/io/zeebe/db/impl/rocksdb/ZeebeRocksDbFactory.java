@@ -61,12 +61,13 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
     final ZeebeTransactionDb<ColumnFamilyType> db;
     try {
       final List<AutoCloseable> closeables = new ArrayList<>();
+
+      // column family options have to be closed as last
       final ColumnFamilyOptions columnFamilyOptions = createColumnFamilyOptions();
       closeables.add(columnFamilyOptions);
 
       final List<ColumnFamilyDescriptor> columnFamilyDescriptors =
           createFamilyDescriptors(columnFamilyNames, columnFamilyOptions);
-
       final DBOptions dbOptions =
           new DBOptions()
               .setCreateMissingColumnFamilies(true)
