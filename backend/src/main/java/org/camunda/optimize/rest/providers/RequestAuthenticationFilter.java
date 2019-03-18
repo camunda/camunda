@@ -1,8 +1,8 @@
 package org.camunda.optimize.rest.providers;
 
 import org.camunda.optimize.rest.util.AuthenticationUtil;
+import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +18,6 @@ import javax.ws.rs.ext.Provider;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.createDeleteOptimizeAuthCookie;
-
 @Secured
 @Provider
 @Priority(Priorities.AUTHENTICATION)
@@ -33,12 +31,12 @@ public class RequestAuthenticationFilter implements ContainerRequestFilter {
   private static final String STATUS = "status";
 
   private SessionService sessionService;
-  private ConfigurationService configurationService;
+  private AuthCookieService authCookieService;
 
   @Autowired
-  public RequestAuthenticationFilter(SessionService sessionService, ConfigurationService configurationService) {
+  public RequestAuthenticationFilter(SessionService sessionService, AuthCookieService authCookieService) {
     this.sessionService = sessionService;
-    this.configurationService = configurationService;
+    this.authCookieService = authCookieService;
   }
 
   @Override
@@ -74,7 +72,7 @@ public class RequestAuthenticationFilter implements ContainerRequestFilter {
     } else {
       requestContext.abortWith(
         Response.status(Response.Status.UNAUTHORIZED)
-          .cookie(createDeleteOptimizeAuthCookie(configurationService.isHttpDisabled()))
+          .cookie(authCookieService.createDeleteOptimizeAuthCookie())
           .build()
       );
     }
@@ -89,7 +87,7 @@ public class RequestAuthenticationFilter implements ContainerRequestFilter {
     }
     requestContext.abortWith(
       Response.temporaryRedirect(loginUri)
-        .cookie(createDeleteOptimizeAuthCookie(configurationService.isHttpDisabled()))
+        .cookie(authCookieService.createDeleteOptimizeAuthCookie())
         .build()
     );
   }

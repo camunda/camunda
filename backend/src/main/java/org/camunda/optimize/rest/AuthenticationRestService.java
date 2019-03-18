@@ -3,9 +3,9 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
+import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.AuthenticationService;
 import org.camunda.optimize.service.security.SessionService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -18,9 +18,6 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.createDeleteOptimizeAuthCookie;
-import static org.camunda.optimize.rest.util.AuthenticationUtil.createNewOptimizeAuthCookie;
-
 /**
  * Basic implementation of authentication tokens creation based on user credentials.
  * Please note that authentication token validation/refresh is performed in request filters.
@@ -30,15 +27,15 @@ import static org.camunda.optimize.rest.util.AuthenticationUtil.createNewOptimiz
 public class AuthenticationRestService {
 
   private final AuthenticationService authenticationService;
-  private final ConfigurationService configurationService;
+  private final AuthCookieService authCookieService;
   private final SessionService sessionService;
 
   @Autowired
   public AuthenticationRestService(final AuthenticationService authenticationService,
-                                   final ConfigurationService configurationService,
+                                   final AuthCookieService authCookieService,
                                    final SessionService sessionService) {
     this.authenticationService = authenticationService;
-    this.configurationService = configurationService;
+    this.authCookieService = authCookieService;
     this.sessionService = sessionService;
   }
 
@@ -56,11 +53,7 @@ public class AuthenticationRestService {
     String securityToken = authenticationService.authenticateUser(credentials);
     // Return the token on the response
     return Response.ok(securityToken)
-      .cookie(createNewOptimizeAuthCookie(
-        securityToken,
-        configurationService.getTokenLifeTimeMinutes(),
-        configurationService.isHttpDisabled()
-      ))
+      .cookie(authCookieService.createNewOptimizeAuthCookie(securityToken))
       .build();
   }
 
@@ -88,7 +81,7 @@ public class AuthenticationRestService {
     AuthenticationUtil.getToken(requestContext).ifPresent(sessionService::invalidateAuthToken);
     return Response.status(200)
       .entity("OK")
-      .cookie(createDeleteOptimizeAuthCookie(configurationService.isHttpDisabled()))
+      .cookie(authCookieService.createDeleteOptimizeAuthCookie())
       .build();
   }
 }

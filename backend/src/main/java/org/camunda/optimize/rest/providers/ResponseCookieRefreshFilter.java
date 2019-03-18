@@ -1,6 +1,7 @@
 package org.camunda.optimize.rest.providers;
 
 import org.camunda.optimize.rest.util.AuthenticationUtil;
+import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -17,8 +18,6 @@ import javax.ws.rs.ext.Provider;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.createNewOptimizeAuthCookie;
-
 @Provider
 @Priority(Priorities.AUTHENTICATION)
 @Component
@@ -26,12 +25,15 @@ public class ResponseCookieRefreshFilter implements ContainerResponseFilter {
 
   private final SessionService sessionService;
   private final ConfigurationService configurationService;
+  private final AuthCookieService authCookieService;
 
   @Autowired
   public ResponseCookieRefreshFilter(final SessionService sessionService,
-                                     final ConfigurationService configurationService) {
+                                     final ConfigurationService configurationService,
+                                     final AuthCookieService authCookieService) {
     this.sessionService = sessionService;
     this.configurationService = configurationService;
+    this.authCookieService = authCookieService;
   }
 
   @Override
@@ -49,11 +51,7 @@ public class ResponseCookieRefreshFilter implements ContainerResponseFilter {
       .flatMap(sessionService::refreshAuthToken)
       .ifPresent(newToken -> responseContext.getHeaders().add(
         HttpHeaders.SET_COOKIE,
-        createNewOptimizeAuthCookie(
-          newToken,
-          configurationService.getTokenLifeTimeMinutes(),
-          configurationService.isHttpDisabled()
-        ).toString()
+        authCookieService.createNewOptimizeAuthCookie(newToken).toString()
       ));
   }
 }

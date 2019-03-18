@@ -6,8 +6,8 @@ import org.camunda.optimize.plugin.security.authentication.AuthenticationResult;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.security.ApplicationAuthorizationService;
+import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.Optional;
 
 import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.rest.util.AuthenticationUtil.createNewOptimizeAuthCookie;
 import static org.camunda.optimize.rest.util.AuthenticationUtil.extractTokenFromAuthorizationValueOrFailNotAuthorized;
 
 public class SingleSignOnFilter implements Filter {
@@ -39,7 +38,8 @@ public class SingleSignOnFilter implements Filter {
   private EngineContextFactory engineContextFactory;
   private ApplicationAuthorizationService applicationAuthorizationService;
   private SessionService sessionService;
-  private ConfigurationService configurationService;
+  private AuthCookieService authCookieService;
+
 
   public SingleSignOnFilter(SpringAwareServletConfiguration awareDelegate) {
     this.awareDelegate = awareDelegate;
@@ -87,8 +87,8 @@ public class SingleSignOnFilter implements Filter {
     if (sessionService == null) {
       sessionService = awareDelegate.getApplicationContext().getBean(SessionService.class);
     }
-    if (configurationService == null) {
-      configurationService = awareDelegate.getApplicationContext().getBean(ConfigurationService.class);
+    if (authCookieService == null) {
+      authCookieService = awareDelegate.getApplicationContext().getBean(AuthCookieService.class);
     }
   }
 
@@ -154,11 +154,7 @@ public class SingleSignOnFilter implements Filter {
   private void setOptimizeAuthCookie(HttpServletRequest servletRequest,
                                      HttpServletResponse servletResponse,
                                      String token) {
-    final NewCookie optimizeAuthCookie = createNewOptimizeAuthCookie(
-      token,
-      configurationService.getTokenLifeTimeMinutes(),
-      configurationService.isHttpDisabled()
-    );
+    final NewCookie optimizeAuthCookie = authCookieService.createNewOptimizeAuthCookie(token);
     // for direct access by request filters
     servletRequest.setAttribute(OPTIMIZE_AUTHORIZATION, optimizeAuthCookie.getValue());
     servletResponse.addHeader(HttpHeaders.SET_COOKIE, optimizeAuthCookie.toString());

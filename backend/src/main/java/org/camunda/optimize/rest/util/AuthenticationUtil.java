@@ -8,8 +8,6 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
-import javax.ws.rs.core.NewCookie;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
@@ -27,7 +25,7 @@ public class AuthenticationUtil {
       .map(AuthenticationUtil::extractTokenFromAuthorizationValueOrFailNotAuthorized);
   }
 
-  private static Optional<Date> getTokenIssuedAt(String token) {
+  public static Optional<Date> getTokenIssuedAt(String token) {
     return getTokenAttribute(token, DecodedJWT::getIssuedAt);
   }
 
@@ -74,35 +72,6 @@ public class AuthenticationUtil {
 
     // Extract the token from the HTTP Authorization header
     return authorizationHeader.substring(AUTH_COOKIE_TOKEN_VALUE_PREFIX.length()).trim();
-  }
-
-  public static NewCookie createDeleteOptimizeAuthCookie(final boolean isSecure) {
-    logger.trace("Deleting Optimize authentication cookie.");
-    return new NewCookie(
-      OPTIMIZE_AUTHORIZATION, "", "/", null, "delete cookie", 0, isSecure, true
-    );
-  }
-
-  public static NewCookie createNewOptimizeAuthCookie(final String securityToken,
-                                                      final int lifeTimeMinutes,
-                                                      final boolean isSecure) {
-    logger.trace("Creating Optimize authentication cookie.");
-    return new NewCookie(
-      OPTIMIZE_AUTHORIZATION,
-      createOptimizeAuthCookieValue(securityToken),
-      "/",
-      null,
-      1,
-      null,
-      -1,
-      getTokenIssuedAt(securityToken)
-        .map(Date::toInstant)
-        .map(issuedAt -> issuedAt.plus(lifeTimeMinutes, ChronoUnit.MINUTES))
-        .map(Date::from)
-        .orElse(null),
-      isSecure,
-      true
-    );
   }
 
   public static String createOptimizeAuthCookieValue(final String securityToken) {

@@ -122,7 +122,6 @@ public class AuthenticationRestServiceIT {
 
     // then
     assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isSecure(), is(true));
-    assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isHttpOnly(), is(true));
 
     // cleanup
     embeddedOptimizeRule.getConfigurationService().setContainerHttpPort(defaultHttpPort);
