@@ -3,7 +3,9 @@ package org.camunda.optimize.service.es.report.command.process;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -38,6 +40,23 @@ class LatestFlowNodesOnlyFilter {
       final Map<String, Long> filteredNodes = new HashMap<>();
 
       for (Map.Entry<String, Long> node : evaluationResult.getResultAsDto().getResult().entrySet()) {
+        if (latestXml.getFlowNodeNames().containsKey(node.getKey())) {
+          filteredNodes.put(node.getKey(), node.getValue());
+        }
+      }
+
+      evaluationResult.getResultAsDto().setResult(filteredNodes);
+    }
+    return evaluationResult;
+  }
+
+  static SingleProcessMapDurationReportResult filterResultData(final CommandContext<ProcessReportDataDto> commandContext,
+                                                               final SingleProcessMapDurationReportResult evaluationResult) {
+    if (ReportConstants.ALL_VERSIONS.equalsIgnoreCase(commandContext.getReportData().getProcessDefinitionVersion())) {
+      final ProcessDefinitionOptimizeDto latestXml = fetchLatestDefinitionXml(commandContext);
+      final Map<String, OperationResultDto> filteredNodes = new HashMap<>();
+
+      for (Map.Entry<String, OperationResultDto> node : evaluationResult.getResultAsDto().getResult().entrySet()) {
         if (latestXml.getFlowNodeNames().containsKey(node.getKey())) {
           filteredNodes.put(node.getKey(), node.getValue());
         }

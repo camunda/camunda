@@ -35,7 +35,7 @@ import java.util.Map;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createAvgPiDurationAsNumberGroupByNone;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -241,7 +241,7 @@ public abstract class AbstractAlertIT {
   }
 
   private SingleProcessReportDefinitionDto getDurationReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
-    ProcessReportDataDto reportData = createAvgPiDurationAsNumberGroupByNone(
+    ProcessReportDataDto reportData = createProcessInstanceDurationGroupByNone(
       processDefinitionKey, processDefinitionVersion
     );
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();

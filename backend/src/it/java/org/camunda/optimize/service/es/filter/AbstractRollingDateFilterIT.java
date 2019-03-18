@@ -6,7 +6,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -40,7 +39,7 @@ public abstract class AbstractRollingDateFilterIT {
     return deployAndStartSimpleProcessWithVariables(new HashMap<>());
   }
 
-  protected ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
+  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
         .name("aProcessName")
         .startEvent()
@@ -61,7 +60,6 @@ public abstract class AbstractRollingDateFilterIT {
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    assertThat(resultDataDto.getView().getOperation(), is(ProcessViewOperation.RAW));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat("rolling date result size", result.getResult().size(), is(expectedPiCount));
 
@@ -114,7 +112,7 @@ public abstract class AbstractRollingDateFilterIT {
             .execute();
   }
 
-  protected Response evaluateReportAndReturnResponseWithNewToken(ProcessReportDataDto reportData) {
+  private Response evaluateReportAndReturnResponseWithNewToken(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
             .getRequestExecutor()
             .withGivenAuthToken(embeddedOptimizeRule.getNewAuthenticationToken())

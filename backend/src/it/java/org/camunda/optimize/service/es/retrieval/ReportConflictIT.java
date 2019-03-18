@@ -77,7 +77,7 @@ public class ReportConflictIT {
     final SingleProcessReportDefinitionDto firstSingleReport =
       (SingleProcessReportDefinitionDto) getReport(firstSingleReportId);
     final SingleProcessReportDefinitionDto reportUpdate = new SingleProcessReportDefinitionDto();
-    reportUpdate.setData(ProcessReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
+    reportUpdate.setData(ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByStartDateReport(
       firstSingleReport.getData().getProcessDefinitionKey(),
       firstSingleReport.getData().getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
@@ -105,7 +105,7 @@ public class ReportConflictIT {
     final SingleProcessReportDefinitionDto singleReport =
       (SingleProcessReportDefinitionDto) getReport(reportId);
     final SingleProcessReportDefinitionDto reportUpdate = new SingleProcessReportDefinitionDto();
-    reportUpdate.setData(ProcessReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
+    reportUpdate.setData(ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByStartDateReport(
       singleReport.getData().getProcessDefinitionKey(),
       singleReport.getData().getProcessDefinitionVersion(),
       GroupByDateUnit.DAY

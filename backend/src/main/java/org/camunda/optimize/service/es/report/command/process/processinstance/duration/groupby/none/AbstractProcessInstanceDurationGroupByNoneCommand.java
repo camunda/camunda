@@ -1,10 +1,10 @@
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.none;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberReportResult;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberDurationReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -15,18 +15,16 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
+import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
 public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
-  extends ProcessReportCommand<SingleProcessNumberReportResult> {
-
-
-  public static final String DURATION_AGGREGATION = "durationAggregation";
+  extends ProcessReportCommand<SingleProcessNumberDurationReportResult> {
 
   @Override
-  protected SingleProcessNumberReportResult evaluate() {
+  protected SingleProcessNumberDurationReportResult evaluate() {
 
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
@@ -41,8 +39,9 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(false)
-      .aggregation(createAggregationOperation(ProcessInstanceType.DURATION))
       .size(0);
+    addAggregation(searchSourceBuilder);
+
     SearchRequest searchRequest =
       new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
         .types(PROC_INSTANCE_TYPE)
@@ -65,14 +64,19 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
 
     Aggregations aggregations = response.getAggregations();
 
-    ProcessReportNumberResultDto numberResultDto = new ProcessReportNumberResultDto();
-    numberResultDto.setResult(processAggregation(aggregations));
+    ProcessDurationReportNumberResultDto numberResultDto = new ProcessDurationReportNumberResultDto();
+    numberResultDto.setResult(processAggregationOperation(aggregations));
     numberResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessNumberReportResult(numberResultDto);
+    return new SingleProcessNumberDurationReportResult(numberResultDto);
   }
 
-  protected abstract long processAggregation(Aggregations aggregations);
+  private void addAggregation(SearchSourceBuilder searchSourceBuilder) {
+    createOperationsAggregations()
+      .forEach(searchSourceBuilder::aggregation);
+  }
 
-  protected abstract AggregationBuilder createAggregationOperation(String fieldName);
+  protected abstract OperationResultDto processAggregationOperation(Aggregations aggregations);
+
+  protected abstract List<AggregationBuilder> createOperationsAggregations();
 
 }

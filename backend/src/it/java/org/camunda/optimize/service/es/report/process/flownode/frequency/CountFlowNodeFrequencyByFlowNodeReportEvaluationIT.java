@@ -7,7 +7,6 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -48,7 +47,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
     //given
     deployAndStartSimpleServiceTaskProcess();
-    ProcessInstanceEngineDto latestProcess = deployProcessWithTwoTasks(TEST_ACTIVITY);
+    ProcessInstanceEngineDto latestProcess = deployProcessWithTwoTasks();
     assertThat(latestProcess.getProcessDefinitionVersion(), Is.is("2"));
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -70,7 +69,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
     //given
-    deployProcessWithTwoTasks(TEST_ACTIVITY);
+    deployProcessWithTwoTasks();
     ProcessInstanceEngineDto latestProcess = deployAndStartSimpleServiceTaskProcess();
     assertThat(latestProcess.getProcessDefinitionVersion(), Is.is("2"));
 
@@ -109,7 +108,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(ALL_VERSIONS));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getOperation(), is(ProcessViewOperation.COUNT));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.FLOW_NODE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
     assertThat(result.getResult(), is(notNullValue()));
@@ -137,7 +135,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getOperation(), is(ProcessViewOperation.COUNT));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.FLOW_NODE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
     assertThat(result.getResult(), is(notNullValue()));
@@ -165,7 +162,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getOperation(), is(ProcessViewOperation.COUNT));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.FLOW_NODE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
     assertThat(result.getResult(), is(notNullValue()));
@@ -413,11 +409,11 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     return deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
   }
 
-  private ProcessInstanceEngineDto deployProcessWithTwoTasks(String activityId) {
+  private ProcessInstanceEngineDto deployProcessWithTwoTasks() {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent("start")
-      .serviceTask(activityId)
+      .serviceTask(CountFlowNodeFrequencyByFlowNodeReportEvaluationIT.TEST_ACTIVITY)
         .camundaExpression("${true}")
       .serviceTask(TEST_ACTIVITY_2)
         .camundaExpression("${true}")

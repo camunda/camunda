@@ -1,6 +1,8 @@
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
@@ -12,10 +14,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.scripted.ScriptedMetric;
 import org.elasticsearch.search.aggregations.metrics.scripted.ScriptedMetricAggregationBuilder;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -31,8 +30,9 @@ public class ProcessPartQueryUtil {
   private static final String NESTED_AGGREGATION = "nestedAggregation";
   private static final String TERMS_AGGREGATIONS = "termsAggregations";
 
-  public static long processProcessPartAggregationAsAverage(Aggregations aggs) {
+  public static OperationResultDto processProcessPartAggregationOperations(Aggregations aggs) {
     Terms agg = aggs.get(TERMS_AGGREGATIONS);
+    DescriptiveStatistics stats = new DescriptiveStatistics();
     long sum = 0L;
     for (Terms.Bucket entry : agg.getBuckets()) {
       Nested nested = entry.getAggregations().get(NESTED_AGGREGATION);
@@ -40,52 +40,15 @@ public class ProcessPartQueryUtil {
       Integer scriptedResult = (Integer) scriptedMetric.aggregation();
       if (scriptedResult != null) {
         sum += scriptedResult;
+        stats.addValue(scriptedResult);
       }
     }
-    return sum/ Math.max(agg.getBuckets().size(), 1);
-  }
-
-  public static long processProcessPartAggregationAsMin(Aggregations aggs) {
-    Terms agg = aggs.get(TERMS_AGGREGATIONS);
-    long min = Long.MAX_VALUE;
-    for (Terms.Bucket entry : agg.getBuckets()) {
-      Nested nested = entry.getAggregations().get(NESTED_AGGREGATION);
-      ScriptedMetric scriptedMetric = nested.getAggregations().get(SCRIPT_AGGREGATION);
-      Integer scriptedResult = (Integer) scriptedMetric.aggregation();
-      if (scriptedResult != null) {
-        min = min < scriptedResult ? min : scriptedResult;
-      }
-    }
-    return min == Long.MAX_VALUE ? 0L : min;
-  }
-
-  public static long processProcessPartAggregationAsMax(Aggregations aggs) {
-    Terms agg = aggs.get(TERMS_AGGREGATIONS);
-    long max = 0L;
-    for (Terms.Bucket entry : agg.getBuckets()) {
-      Nested nested = entry.getAggregations().get(NESTED_AGGREGATION);
-      ScriptedMetric scriptedMetric = nested.getAggregations().get(SCRIPT_AGGREGATION);
-      Integer scriptedResult = (Integer) scriptedMetric.aggregation();
-      if (scriptedResult != null) {
-        max = max > scriptedResult ? max : scriptedResult;
-      }
-    }
-    return max;
-  }
-
-  public static long processProcessPartAggregationAsMedian(Aggregations aggs) {
-    Terms agg = aggs.get(TERMS_AGGREGATIONS);
-    List<Integer> allDurations = new ArrayList<>();
-    for (Terms.Bucket entry : agg.getBuckets()) {
-      Nested nested = entry.getAggregations().get(NESTED_AGGREGATION);
-      ScriptedMetric scriptedMetric = nested.getAggregations().get(SCRIPT_AGGREGATION);
-      Integer scriptedResult = (Integer) scriptedMetric.aggregation();
-      if (scriptedResult != null) {
-        allDurations.add(scriptedResult);
-      }
-    }
-    Collections.sort(allDurations);
-    return allDurations.isEmpty()? 0L : allDurations.get(allDurations.size()/2);
+    return new OperationResultDto(
+      Math.round(stats.getMin()),
+      Math.round(stats.getMax()),
+      Math.round(stats.getMean()),
+      Math.round(stats.getPercentile(50))
+    );
   }
 
   public static BoolQueryBuilder addProcessPartQuery(BoolQueryBuilder boolQueryBuilder,

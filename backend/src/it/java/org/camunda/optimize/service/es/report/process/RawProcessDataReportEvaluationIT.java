@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Vari
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -91,13 +91,13 @@ public class RawProcessDataReportEvaluationIT {
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(ReportConstants.ALL_VERSIONS));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    assertThat(resultDataDto.getView().getOperation(), is(ProcessViewOperation.RAW));
+    assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(2));
   }
 
   @Test
-  public void otherProcessDefinitionsDoNoAffectResult() throws Exception {
+  public void otherProcessDefinitionsDoNoAffectResult() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
@@ -116,7 +116,7 @@ public class RawProcessDataReportEvaluationIT {
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    assertThat(resultDataDto.getView().getOperation(), is(ProcessViewOperation.RAW));
+    assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
@@ -132,7 +132,7 @@ public class RawProcessDataReportEvaluationIT {
   }
 
   @Test
-  public void reportEvaluationForOneProcessInstance() throws Exception {
+  public void reportEvaluationForOneProcessInstance() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
@@ -149,7 +149,7 @@ public class RawProcessDataReportEvaluationIT {
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    assertThat(resultDataDto.getView().getOperation(), is(ProcessViewOperation.RAW));
+    assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
@@ -164,7 +164,7 @@ public class RawProcessDataReportEvaluationIT {
   }
 
   @Test
-  public void reportEvaluationByIdForOneProcessInstance() throws Exception {
+  public void reportEvaluationByIdForOneProcessInstance() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
@@ -183,7 +183,7 @@ public class RawProcessDataReportEvaluationIT {
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    assertThat(resultDataDto.getView().getOperation(), is(ProcessViewOperation.RAW));
+    assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
@@ -217,7 +217,7 @@ public class RawProcessDataReportEvaluationIT {
   }
 
   @Test
-  public void reportEvaluationWithSeveralProcessInstances() throws Exception {
+  public void reportEvaluationWithSeveralProcessInstances() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
@@ -235,7 +235,7 @@ public class RawProcessDataReportEvaluationIT {
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    assertThat(resultDataDto.getView().getOperation(), is(ProcessViewOperation.RAW));
+    assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(2));
     Set<String> expectedProcessInstanceIds = new HashSet<>();
@@ -251,7 +251,7 @@ public class RawProcessDataReportEvaluationIT {
   }
 
   @Test
-  public void reportEvaluationOnProcessInstanceWithAllVariableTypes() throws Exception {
+  public void reportEvaluationOnProcessInstanceWithAllVariableTypes() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("stringVar", "Hello World!");
@@ -276,7 +276,7 @@ public class RawProcessDataReportEvaluationIT {
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    assertThat(resultDataDto.getView().getOperation(), is(ProcessViewOperation.RAW));
+    assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
@@ -443,7 +443,7 @@ public class RawProcessDataReportEvaluationIT {
   }
 
   @Test
-  public void variablesOfOneProcessInstanceAreAddedToOther() throws Exception {
+  public void variablesOfOneProcessInstanceAreAddedToOther() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("varName1", "value1");
@@ -482,7 +482,7 @@ public class RawProcessDataReportEvaluationIT {
   }
 
   @Test
-  public void evaluationReturnsOnlyDataToGivenProcessDefinitionId() throws Exception {
+  public void evaluationReturnsOnlyDataToGivenProcessDefinitionId() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
@@ -507,7 +507,7 @@ public class RawProcessDataReportEvaluationIT {
   //test that basic support for filter is there
 
   @Test
-  public void durationFilterInReport() throws Exception {
+  public void durationFilterInReport() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
@@ -525,7 +525,7 @@ public class RawProcessDataReportEvaluationIT {
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    assertThat(resultDataDto.getView().getOperation(), is(ProcessViewOperation.RAW));
+    assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(0));
 
@@ -540,7 +540,7 @@ public class RawProcessDataReportEvaluationIT {
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    assertThat(resultDataDto.getView().getOperation(), is(ProcessViewOperation.RAW));
+    assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
@@ -548,7 +548,7 @@ public class RawProcessDataReportEvaluationIT {
   }
 
   @Test
-  public void dateFilterInReport() throws Exception {
+  public void dateFilterInReport() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
@@ -566,7 +566,7 @@ public class RawProcessDataReportEvaluationIT {
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    assertThat(resultDataDto.getView().getOperation(), is(ProcessViewOperation.RAW));
+    assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(0));
 
@@ -581,7 +581,7 @@ public class RawProcessDataReportEvaluationIT {
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    assertThat(resultDataDto.getView().getOperation(), is(ProcessViewOperation.RAW));
+    assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
@@ -589,7 +589,7 @@ public class RawProcessDataReportEvaluationIT {
   }
 
   @Test
-  public void variableFilterInReport() throws Exception {
+  public void variableFilterInReport() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
@@ -624,7 +624,7 @@ public class RawProcessDataReportEvaluationIT {
   }
 
   @Test
-  public void flowNodeFilterInReport() throws Exception {
+  public void flowNodeFilterInReport() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask1", true);
@@ -685,10 +685,10 @@ public class RawProcessDataReportEvaluationIT {
   }
 
   @Test
-  public void missingOperationField() {
+  public void missingPropertyField() {
     //when
     ProcessReportDataDto dataDto = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(null, null);
-    dataDto.getView().setOperation(null);
+    dataDto.getView().setProperty(null);
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -706,7 +706,8 @@ public class RawProcessDataReportEvaluationIT {
     assertThat(response.getStatus(), is(500));
   }
 
-  private Map<String, Object> toImmutableMap(SimpleEntry<String, Object>... Entry) {
+  @SafeVarargs
+  private final Map<String, Object> toImmutableMap(SimpleEntry<String, Object>... Entry) {
     return Collections.unmodifiableMap(
       Stream.of(Entry).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue))
     );
@@ -725,7 +726,7 @@ public class RawProcessDataReportEvaluationIT {
     return engineRule.deployAndStartProcessWithVariables(processModel, variables, BUSINESS_KEY);
   }
 
-  private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() throws Exception {
+  private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent("startEvent")
       .exclusiveGateway("splittingGateway")

@@ -9,10 +9,14 @@ public class ElasticsearchAggregationResultMappingUtil {
   }
 
   public static Long mapToLong(final ParsedSingleValueNumericMetricsAggregation aggregation) {
-    if (Double.isInfinite(aggregation.value())) {
+    return mapToLong(aggregation.value());
+  }
+
+  public static Long mapToLong(final Double value) {
+    if (Double.isInfinite(value)) {
       return 0L;
     } else {
-      return Math.round(aggregation.value());
+      return Math.round(value);
     }
   }
 

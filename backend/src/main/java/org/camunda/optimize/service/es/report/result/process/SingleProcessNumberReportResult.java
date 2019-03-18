@@ -8,7 +8,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-public class SingleProcessNumberReportResult extends ReportResult<ProcessReportNumberResultDto, ProcessReportDataDto> {
+public class SingleProcessNumberReportResult
+  extends ReportResult<ProcessReportNumberResultDto, ProcessReportDataDto> implements NumberResult {
 
   public SingleProcessNumberReportResult(ProcessReportNumberResultDto reportResultDto) {
     super(reportResultDto);
@@ -31,5 +32,8 @@ public class SingleProcessNumberReportResult extends ReportResult<ProcessReportN
     reportResultDto.setData(processReportDataDto);
   }
 
-
+  @Override
+  public long getResultAsNumber() {
+    return reportResultDto.getResult();
+  }
 }

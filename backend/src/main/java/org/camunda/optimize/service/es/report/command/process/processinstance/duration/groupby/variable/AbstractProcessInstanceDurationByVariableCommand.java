@@ -3,10 +3,11 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.d
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -24,6 +25,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
@@ -38,16 +40,15 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 public abstract class AbstractProcessInstanceDurationByVariableCommand
-  extends ProcessReportCommand<SingleProcessMapReportResult> {
+  extends ProcessReportCommand<SingleProcessMapDurationReportResult> {
 
   private static final String NESTED_AGGREGATION = "nested";
   private static final String VARIABLES_AGGREGATION = "variables";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
-  public static final String DURATION_AGGREGATION = "aggregatedDuration";
   private static final String REVERSE_NESTED_AGGREGATION = "reverseNested";
 
   @Override
-  protected SingleProcessMapReportResult evaluate() {
+  protected SingleProcessMapDurationReportResult evaluate() {
 
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
@@ -86,10 +87,10 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    ProcessReportMapResultDto mapResultDto = new ProcessReportMapResultDto();
+    ProcessDurationReportMapResultDto mapResultDto = new ProcessDurationReportMapResultDto();
     mapResultDto.setResult(processAggregations(response.getAggregations()));
     mapResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessMapReportResult(mapResultDto);
+    return new SingleProcessMapDurationReportResult(mapResultDto);
   }
 
   private AggregationBuilder createAggregation(String variableName, VariableType variableType) {
@@ -118,30 +119,33 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
           .subAggregation(
             collectVariableValueCount
               .subAggregation(
-                AggregationBuilders.reverseNested(REVERSE_NESTED_AGGREGATION)
-                  .subAggregation(
-                    createAggregationOperation()
-                  )
+                addOperationsAggregation(AggregationBuilders.reverseNested(REVERSE_NESTED_AGGREGATION))
               )
           )
       );
   }
 
-  private Map<String, Long> processAggregations(Aggregations aggregations) {
+  private AggregationBuilder addOperationsAggregation(AggregationBuilder aggregationBuilder) {
+    createOperationsAggregations()
+      .forEach(aggregationBuilder::subAggregation);
+    return aggregationBuilder;
+  }
+
+  private Map<String, OperationResultDto> processAggregations(Aggregations aggregations) {
     Nested nested = aggregations.get(NESTED_AGGREGATION);
     Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     Terms variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
-    Map<String, Long> result = new HashMap<>();
+    Map<String, OperationResultDto> result = new HashMap<>();
     for (Terms.Bucket b : variableTerms.getBuckets()) {
       ReverseNested reverseNested = b.getAggregations().get(REVERSE_NESTED_AGGREGATION);
-      long roundedDuration = processAggregationOperation(reverseNested.getAggregations());
-      result.put(b.getKeyAsString(), roundedDuration);
+      OperationResultDto operationsResult = processAggregationOperation(reverseNested.getAggregations());
+      result.put(b.getKeyAsString(), operationsResult);
     }
     return result;
   }
 
-  protected abstract long processAggregationOperation(Aggregations aggs);
+  protected abstract OperationResultDto processAggregationOperation(Aggregations aggs);
 
-  protected abstract AggregationBuilder createAggregationOperation();
+  protected abstract List<AggregationBuilder> createOperationsAggregations();
 
 }

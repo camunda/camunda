@@ -8,6 +8,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Singl
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.service.es.schema.type.report.AbstractReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleProcessReportType;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -411,6 +412,21 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     assertThat(configuration.getTargetValue().getDurationProgress().getTarget().getUnit(), is(TargetValueUnit.SECONDS));
   }
 
+  @Test
+  public void rawDataViewOperationFieldHasBeenMovedToViewEntityField() throws Exception {
+    //given
+    UpgradePlan upgradePlan = getReportConfigurationUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    final SingleProcessReportDefinitionDto report =
+      getSingleProcessReportDefinition(REPORT_210_4_RAW_DATA_EMPTY_TARGET_VALUE_COLUMN_ORDER);
+
+    assertThat(report.getData().getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
+  }
+
   public void checkColor(final String reportId, final String expectedColor) throws IOException {
     assertThat(
       getSingleProcessReportDefinitionConfigurationById(reportId).getColor(),
@@ -437,7 +453,7 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     return getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE.getType());
   }
 
-  private UpgradePlan getReportConfigurationUpgradePlan() throws Exception {
+  private UpgradePlan getReportConfigurationUpgradePlan() {
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
@@ -445,13 +461,18 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
       .build();
   }
 
-  private SingleReportConfigurationDto getSingleProcessReportDefinitionConfigurationById(final String id) throws IOException {
+  private SingleReportConfigurationDto getSingleProcessReportDefinitionConfigurationById(final String reportId) throws
+                                                                                                                IOException {
+    return getSingleProcessReportDefinition(reportId).getData().getConfiguration();
+  }
+
+  private SingleProcessReportDefinitionDto getSingleProcessReportDefinition(final String reportId) throws IOException {
     final GetResponse reportResponse = restClient.get(
-      new GetRequest(getReportIndexAlias(), SINGLE_PROCESS_REPORT_TYPE.getType(), id), RequestOptions.DEFAULT
+      new GetRequest(getReportIndexAlias(), SINGLE_PROCESS_REPORT_TYPE.getType(), reportId), RequestOptions.DEFAULT
     );
     return objectMapper.readValue(
       reportResponse.getSourceAsString(), SingleProcessReportDefinitionDto.class
-    ).getData().getConfiguration();
+    );
   }
 
   private List<SingleProcessReportDefinitionDto> getAllSingleProcessReportDefinitionDtos() throws IOException {

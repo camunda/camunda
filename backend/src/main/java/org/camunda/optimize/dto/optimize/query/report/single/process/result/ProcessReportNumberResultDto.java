@@ -16,6 +16,6 @@ public class ProcessReportNumberResultDto extends ProcessReportResultDto {
 
   @Override
   public ResultType getResultType() {
-    return ResultType.NUMBER;
+    return ResultType.FREQUENCY_NUMBER;
   }
 }

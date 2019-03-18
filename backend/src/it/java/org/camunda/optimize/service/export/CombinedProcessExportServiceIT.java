@@ -76,7 +76,7 @@ public class CombinedProcessExportServiceIT {
 
     String actualContent = getActualContentAsString(response);
     String stringExpected =
-      getExpectedContentAsString("/csv/process/combined/combined_count_flow_node_frequency_group_by_flow_node.csv");
+      getExpectedContentAsString("/csv/process/combined/combined_flow_node_frequency_group_by_flow_node.csv");
 
     assertThat(actualContent, is(stringExpected));
   }
@@ -103,8 +103,9 @@ public class CombinedProcessExportServiceIT {
 
     String actualContent = getActualContentAsString(response);
     String stringExpected =
-      getExpectedContentAsString("/csv/process/combined/" +
-                                   "combined_count_flow_node_frequency_group_by_flow_node_different_order.csv");
+      getExpectedContentAsString(
+        "/csv/process/combined/combined_flow_node_frequency_group_by_flow_node_different_order.csv"
+      );
 
     assertThat(actualContent, is(stringExpected));
   }
@@ -131,7 +132,7 @@ public class CombinedProcessExportServiceIT {
 
     String actualContent = getActualContentAsString(response);
     String stringExpected =
-      getExpectedContentAsString("/csv/process/combined/combined_count_pi_frequency_group_by_none.csv");
+      getExpectedContentAsString("/csv/process/combined/combined_pi_frequency_group_by_none.csv");
 
     assertThat(actualContent, is(stringExpected));
   }

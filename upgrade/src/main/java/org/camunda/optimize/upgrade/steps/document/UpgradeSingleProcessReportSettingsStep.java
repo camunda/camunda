@@ -19,7 +19,8 @@ public class UpgradeSingleProcessReportSettingsStep extends AbstractReportConfig
         getMigrate21IncompatibleFieldScript() +
         getMigrate22IncompatibleFieldsScript() +
         getMigrate23IncompatibleFieldsScript() +
-        "reportData.configuration = newConfig;\n",
+        "reportData.configuration = newConfig;\n" +
+        getMigrateReportViewStructureScript(),
       Collections.singletonMap("defaultConfiguration", defaultReportConfiguration)
     );
   }
@@ -181,6 +182,20 @@ public class UpgradeSingleProcessReportSettingsStep extends AbstractReportConfig
       "      }\n" +
       "    }\n" +
       "  }\n" +
+      "}\n";
+    // @formatter:on
+  }
+
+  private static String getMigrateReportViewStructureScript() {
+    // @formatter:off
+    return
+      "if (reportData.view != null) {\n" +
+      "  if (reportData.view.operation != null) {\n" +
+      "    if (reportData.view.operation == \"rawData\") {\n" +
+      "      reportData.view.property = \"rawData\";\n" +
+      "    }\n" +
+      "  }\n" +
+      "  reportData.view.remove('operation');\n"+
       "}\n";
     // @formatter:on
   }

@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.query.report.combined.configuration.Com
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.service.es.schema.type.report.AbstractReportType;
 import org.camunda.optimize.service.es.schema.type.report.CombinedReportType;
@@ -306,7 +305,6 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
       .generate(() -> new AbstractMap.SimpleImmutableEntry<>(UUID.randomUUID().toString(), ImmutableMap.of(
         "visualization", ProcessVisualization.TABLE.getId(),
         "view", ImmutableMap.of(
-          "operation", ProcessViewOperation.MAX,
           "entity", ProcessViewEntity.PROCESS_INSTANCE,
           "property", ProcessViewProperty.FREQUENCY
         )

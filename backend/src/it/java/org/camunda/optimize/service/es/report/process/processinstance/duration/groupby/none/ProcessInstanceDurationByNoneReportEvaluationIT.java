@@ -1,7 +1,5 @@
 package org.camunda.optimize.service.es.report.process.processinstance.duration.groupby.none;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.ReportConstants;
@@ -12,9 +10,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -22,11 +20,9 @@ import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
-import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
@@ -35,33 +31,30 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
 import static org.camunda.optimize.test.util.ProcessVariableFilterUtilHelper.createBooleanVariableFilter;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-@RunWith(JUnitParamsRunner.class)
 public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   public static final String PROCESS_DEFINITION_KEY = "123";
+  private static final String TEST_ACTIVITY = "testActivity";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
   public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
-
-  private static final String TEST_ACTIVITY = "testActivity";
-
   @Rule
   public RuleChain chain = RuleChain
     .outerRule(elasticSearchRule)
-      .around(engineRule)
-      .around(embeddedOptimizeRule)
-      .around(engineDatabaseRule);
+    .around(engineRule)
+    .around(embeddedOptimizeRule)
+    .around(engineDatabaseRule);
 
   @Test
-  @Parameters
-  public void reportEvaluationForOneProcess(ProcessReportDataType reportDataType, ProcessViewOperation operation) throws Exception {
+  public void reportEvaluationForOneProcess() throws Exception {
 
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
@@ -74,41 +67,34 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
-            .createReportData()
-            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-            .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-            .setReportDataType(reportDataType)
-            .build();
+      .createReportData()
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+      .build();
 
-    ProcessReportNumberResultDto result = evaluateReport(reportData);
+    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    ProcessReportDataDto resultReportDataDto = resultDto.getData();
+    assertThat(resultDto.getProcessInstanceCount(), is(1L));
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getOperation(), is(operation));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
     assertThat(resultReportDataDto.getParameters().getProcessPart(), is(nullValue()));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(1000L));
-  }
-
-  private Object[] parametersForReportEvaluationForOneProcess() {
-    return new Object[]{
-      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.AVG},
-      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MIN},
-      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MAX},
-      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MEDIAN}
-    };
+    OperationResultDto calculatedResult = resultDto.getResult();
+    assertThat(calculatedResult, is(notNullValue()));
+    assertThat(calculatedResult.getAvg(), is(1000L));
+    assertThat(calculatedResult.getMax(), is(1000L));
+    assertThat(calculatedResult.getMin(), is(1000L));
+    assertThat(calculatedResult.getMedian(), is(1000L));
   }
 
   @Test
-  @Parameters
-  public void reportEvaluationById(ProcessReportDataType reportDataType, ProcessViewOperation operation) throws Exception {
+  public void reportEvaluationById() throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -118,43 +104,36 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
     ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
-            .createReportData()
-            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-            .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-            .setReportDataType(reportDataType)
-            .build();
+      .createReportData()
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+      .build();
 
     String reportId = createAndStoreDefaultReportDefinition(reportDataDto);
 
     // when
-    ProcessReportNumberResultDto result = evaluateReportById(reportId);
+    ProcessDurationReportNumberResultDto resultDto = evaluateReportById(reportId);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
+    ProcessReportDataDto resultReportDataDto = resultDto.getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
 
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getOperation(), is(operation));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(1000L));
-  }
-
-  private Object[] parametersForReportEvaluationById() {
-    return new Object[]{
-      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.AVG},
-      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MIN},
-      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MAX},
-      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MEDIAN}
-    };
+    OperationResultDto calculatedResult = resultDto.getResult();
+    assertThat(calculatedResult, is(notNullValue()));
+    assertThat(calculatedResult.getAvg(), is(1000L));
+    assertThat(calculatedResult.getMax(), is(1000L));
+    assertThat(calculatedResult.getMin(), is(1000L));
+    assertThat(calculatedResult.getMedian(), is(1000L));
   }
 
   @Test
-  @Parameters
-  public void evaluateReportForMultipleEvents(ProcessReportDataType reportDataType, Long expectedDuration) throws Exception {
+  public void evaluateReportForMultipleEvents() throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -177,48 +156,46 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
-            .createReportData()
-            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-            .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-            .setReportDataType(reportDataType)
-            .build();
-    ProcessReportNumberResultDto result = evaluateReport(reportDataDto);
+      .createReportData()
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+      .build();
+    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportDataDto);
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(expectedDuration));
-  }
-
-  private Object[] parametersForEvaluateReportForMultipleEvents() {
-    return new Object[]{
-      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, 4000L},
-      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, 1000L},
-      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, 9000L},
-      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, 2000L}
-    };
+    assertThat(resultDto.getResult(), is(notNullValue()));
+    OperationResultDto calculatedResult = resultDto.getResult();
+    assertThat(calculatedResult, is(notNullValue()));
+    assertThat(calculatedResult.getAvg(), is(4000L));
+    assertThat(calculatedResult.getMin(), is(1000L));
+    assertThat(calculatedResult.getMax(), is(9000L));
+    assertThat(calculatedResult.getMedian(), is(2000L));
   }
 
   @Test
-  @Parameters(source = ReportDataBuilderProvider.class)
-  public void noAvailableProcessInstancesReturnsZero(ProcessReportDataType reportDataType) {
+  public void noAvailableProcessInstancesReturnsZero() {
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
-            .createReportData()
-            .setProcessDefinitionKey("fooProcDef")
-            .setProcessDefinitionVersion("1")
-            .setReportDataType(reportDataType)
-            .build();
+      .createReportData()
+      .setProcessDefinitionKey("fooProcDef")
+      .setProcessDefinitionVersion("1")
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+      .build();
 
-    ProcessReportNumberResultDto result = evaluateReport(reportData);
+    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(0L));
+    OperationResultDto calculatedResult = resultDto.getResult();
+    assertThat(calculatedResult, is(notNullValue()));
+    assertThat(calculatedResult.getAvg(), is(0L));
+    assertThat(calculatedResult.getMax(), is(0L));
+    assertThat(calculatedResult.getMin(), is(0L));
+    assertThat(calculatedResult.getMedian(), is(0L));
   }
 
   @Test
-  @Parameters
-  public void reportAcrossAllVersions(ProcessReportDataType reportDataType, Long expectedDuration) throws Exception {
+  public void reportAcrossAllVersions() throws Exception {
     //given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -237,31 +214,25 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
-            .createReportData()
-            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-            .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
-            .setReportDataType(reportDataType)
-            .build();
+      .createReportData()
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+      .build();
 
-    ProcessReportNumberResultDto result = evaluateReport(reportDataDto);
+    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportDataDto);
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(expectedDuration));
-  }
-
-  private Object[] parametersForReportAcrossAllVersions() {
-    return new Object[]{
-      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, 4000L},
-      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, 1000L},
-      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, 9000L},
-      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, 2000L}
-    };
+    OperationResultDto calculatedResult = resultDto.getResult();
+    assertThat(calculatedResult, is(notNullValue()));
+    assertThat(calculatedResult.getAvg(), is(4000L));
+    assertThat(calculatedResult.getMax(), is(9000L));
+    assertThat(calculatedResult.getMin(), is(1000L));
+    assertThat(calculatedResult.getMedian(), is(2000L));
   }
 
   @Test
-  @Parameters
-  public void otherProcessDefinitionsDoNoAffectResult(ProcessReportDataType reportDataType, Long expectedDuration) throws Exception {
+  public void otherProcessDefinitionsDoNoAffectResult() throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -283,31 +254,25 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
-            .createReportData()
-            .setProcessDefinitionKey(processDefinitionKey)
-            .setProcessDefinitionVersion(processDefinitionVersion)
-            .setReportDataType(reportDataType)
-            .build();
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+      .build();
 
-    ProcessReportNumberResultDto result = evaluateReport(reportDataDto);
+    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportDataDto);
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(expectedDuration));
-  }
-
-  private Object[] parametersForOtherProcessDefinitionsDoNoAffectResult() {
-    return new Object[]{
-      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, 4000L},
-      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, 1000L},
-      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, 9000L},
-      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, 2000L}
-    };
+    OperationResultDto calculatedResult = resultDto.getResult();
+    assertThat(calculatedResult, is(notNullValue()));
+    assertThat(calculatedResult.getAvg(), is(4000L));
+    assertThat(calculatedResult.getMax(), is(9000L));
+    assertThat(calculatedResult.getMin(), is(1000L));
+    assertThat(calculatedResult.getMedian(), is(2000L));
   }
 
   @Test
-  @Parameters(source = ReportDataBuilderProvider.class)
-  public void filterInReportWorks(ProcessReportDataType reportDataType) throws Exception {
+  public void filterInReportWorks() throws Exception {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
@@ -322,41 +287,50 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
-            .createReportData()
-            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-            .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-            .setReportDataType(reportDataType)
-            .build();
+      .createReportData()
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+      .build();
 
-    reportData.setFilter(createVariableFilter("var", "true"));
-    ProcessReportNumberResultDto result = evaluateReport(reportData);
+    reportData.setFilter(createVariableFilter("true"));
+    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
 
     // then
-    assertThat(result.getResult(), is(1000L));
+    OperationResultDto calculatedResult = resultDto.getResult();
+    assertThat(calculatedResult, is(notNullValue()));
+    assertThat(calculatedResult.getAvg(), is(1000L));
+    assertThat(calculatedResult.getMax(), is(1000L));
+    assertThat(calculatedResult.getMin(), is(1000L));
+    assertThat(calculatedResult.getMedian(), is(1000L));
 
     // when
-    reportData.setFilter(createVariableFilter("var", "false"));
-    result = evaluateReport(reportData);
+    reportData.setFilter(createVariableFilter("false"));
+    resultDto = evaluateReport(reportData);
 
     // then
-    assertThat(result.getResult(), is(0L));
+    calculatedResult = resultDto.getResult();
+    assertThat(calculatedResult, is(notNullValue()));
+    assertThat(calculatedResult.getAvg(), is(0L));
+    assertThat(calculatedResult.getMax(), is(0L));
+    assertThat(calculatedResult.getMin(), is(0L));
+    assertThat(calculatedResult.getMedian(), is(0L));
   }
 
-  private List<ProcessFilterDto> createVariableFilter(String varName, String value) {
-    VariableFilterDto variableFilterDto = createBooleanVariableFilter(varName, value);
+  private List<ProcessFilterDto> createVariableFilter(String value) {
+    VariableFilterDto variableFilterDto = createBooleanVariableFilter("var", value);
     return Collections.singletonList(variableFilterDto);
   }
 
   @Test
-  @Parameters(source = ReportDataBuilderProvider.class)
-  public void optimizeExceptionOnViewPropertyIsNull(ProcessReportDataType reportDataType) {
+  public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     ProcessReportDataDto dataDto = ProcessReportDataBuilder
-            .createReportData()
-            .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
-            .setProcessDefinitionVersion("1")
-            .setReportDataType(reportDataType)
-            .build();
+      .createReportData()
+      .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
+      .setProcessDefinitionVersion("1")
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+      .build();
 
     dataDto.getView().setProperty(null);
 
@@ -368,15 +342,14 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
   }
 
   @Test
-  @Parameters(source = ReportDataBuilderProvider.class)
-  public void optimizeExceptionOnGroupByTypeIsNull(ProcessReportDataType reportDataType) {
+  public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
     ProcessReportDataDto dataDto = ProcessReportDataBuilder
-            .createReportData()
-            .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
-            .setProcessDefinitionVersion("1")
-            .setReportDataType(reportDataType)
-            .build();
+      .createReportData()
+      .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
+      .setProcessDefinitionVersion("1")
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+      .build();
 
     dataDto.getGroupBy().setType(null);
 
@@ -388,14 +361,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
-    return deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String activityId) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent()
-      .serviceTask(activityId)
+      .serviceTask(ProcessInstanceDurationByNoneReportEvaluationIT.TEST_ACTIVITY)
       .camundaExpression("${true}")
       .endEvent()
       .done();
@@ -403,33 +372,28 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {
-    return deployAndStartSimpleServiceTaskProcessWithVariables(TEST_ACTIVITY, variables);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(String activityId,
-                                                                                       Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent()
-      .serviceTask(activityId)
+      .serviceTask(ProcessInstanceDurationByNoneReportEvaluationIT.TEST_ACTIVITY)
       .camundaExpression("${true}")
       .endEvent()
       .done();
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  private ProcessReportNumberResultDto evaluateReport(ProcessReportDataDto reportData) {
+  private ProcessDurationReportNumberResultDto evaluateReport(ProcessReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(ProcessReportNumberResultDto.class);
+    return response.readEntity(ProcessDurationReportNumberResultDto.class);
   }
 
   private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateSingleUnsavedReportRequest(reportData)
-            .execute();
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      .execute();
   }
 
   private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
@@ -449,37 +413,26 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildUpdateReportRequest(id, updatedReport)
-            .execute();
+      .getRequestExecutor()
+      .buildUpdateReportRequest(id, updatedReport)
+      .execute();
 
     assertThat(response.getStatus(), is(204));
   }
 
   private String createNewReport() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateSingleProcessReportRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
-  private ProcessReportNumberResultDto evaluateReportById(String reportId) {
+  private ProcessDurationReportNumberResultDto evaluateReportById(String reportId) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateSavedReportRequest(reportId)
-            .execute(ProcessReportNumberResultDto.class, 200);
-  }
-
-  public static class ReportDataBuilderProvider {
-    public static Object[] provideReportDataCreator() {
-      return new Object[]{
-        new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE},
-        new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE},
-        new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE},
-        new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE}
-      };
-    }
+      .getRequestExecutor()
+      .buildEvaluateSavedReportRequest(reportId)
+      .execute(ProcessDurationReportNumberResultDto.class, 200);
   }
 
 }

@@ -7,7 +7,6 @@ import java.util.Objects;
 
 public class ProcessViewDto implements Combinable {
 
-  protected ProcessViewOperation operation;
   protected ProcessViewEntity entity;
   protected ProcessViewProperty property;
 
@@ -15,24 +14,14 @@ public class ProcessViewDto implements Combinable {
     super();
   }
 
-  public ProcessViewDto(ProcessViewOperation operation) {
-    this(operation, null, null);
+  public ProcessViewDto(ProcessViewProperty property) {
+    this(null, property);
   }
 
-  public ProcessViewDto(final ProcessViewOperation operation,
-                        final ProcessViewEntity entity,
+  public ProcessViewDto(final ProcessViewEntity entity,
                         final ProcessViewProperty property) {
-    this.operation = operation;
     this.entity = entity;
     this.property = property;
-  }
-
-  public ProcessViewOperation getOperation() {
-    return operation;
-  }
-
-  public void setOperation(ProcessViewOperation operation) {
-    this.operation = operation;
   }
 
   public ProcessViewEntity getEntity() {
@@ -69,13 +58,12 @@ public class ProcessViewDto implements Combinable {
   @JsonIgnore
   public String createCommandKey() {
     String separator = "-";
-    return operation + separator + entity + separator + property;
+    return entity + separator + property;
   }
 
   @Override
   public String toString() {
     return "ProcessViewDto{" +
-      "operation='" + operation + '\'' +
       ", entity='" + entity + '\'' +
       ", property='" + property + '\'' +
       '}';

@@ -86,7 +86,6 @@ public class ValidationHelper {
       ensureNotNull("report data", processReportDataDto);
       ProcessViewDto viewDto = processReportDataDto.getView();
       ensureNotNull("view", viewDto);
-      ensureNotEmpty("view operation", viewDto.getOperation());
       ensureNotNull("group by", processReportDataDto.getGroupBy());
       validateProcessFilters(processReportDataDto.getFilter());
     } else if (dataDto instanceof DecisionReportDataDto) {

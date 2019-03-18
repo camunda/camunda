@@ -22,6 +22,7 @@ public class ReportConstants {
   public static final String VIEW_DURATION_PROPERTY = "duration";
   public static final String VIEW_IDLE_DURATION_PROPERTY = "idleDuration";
   public static final String VIEW_WORK_DURATION_PROPERTY = "workDuration";
+  public static final String VIEW_RAW_DATA_PROPERTY = "rawData";
 
   public static final String GROUP_BY_FLOW_NODES_TYPE = "flowNodes";
   public static final String GROUP_BY_USER_TASKS_TYPE = "userTasks";
@@ -58,6 +59,8 @@ public class ReportConstants {
   public static final String DECISION_REPORT_TYPE = "decision";
 
   public static final String RAW_RESULT_TYPE = "raw";
-  public static final String MAP_RESULT_TYPE = "map";
-  public static final String NUMBER_RESULT_TYPE = "number";
+  public static final String FREQUENCY_MAP_RESULT_TYPE = "frequencyMap";
+  public static final String DURATION_MAP_RESULT_TYPE = "durationMap";
+  public static final String FREQUENCY_NUMBER_RESULT_TYPE = "frequencyNumber";
+  public static final String DURATION_NUMBER_RESULT_TYPE = "durationNumber";
 }

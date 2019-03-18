@@ -60,49 +60,49 @@ public class ProcessExportServiceIT {
           FAKE,
           GroupByDateUnit.DAY
         ),
-        "/csv/process/single/count_pi_frequency_group_by_start_date.csv",
-        "Count PI Grouped By PI Start Date"
+        "/csv/process/single/pi_frequency_group_by_start_date.csv",
+        "Process Instance Frequency Grouped By Start Date"
       },
       {
         ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
           FAKE,
           FAKE
         ),
-        "/csv/process/single/count_pi_frequency_group_by_none.csv",
-        "Count PI Grouped By None"
+        "/csv/process/single/pi_frequency_group_by_none.csv",
+        "Process Instance Frequency Grouped By None"
       },
       {
         ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode(
           FAKE,
           FAKE
         ),
-        "/csv/process/single/count_flownode_frequency_group_by_flownodes.csv",
-        "Count Flow Nodes Grouped By Flow Node"
+        "/csv/process/single/flownode_frequency_group_by_flownodes.csv",
+        "Flow Node Frequency Grouped By Flow Node"
       },
       {
-        ProcessReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
+        ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByStartDateReport(
           FAKE,
           FAKE,
           GroupByDateUnit.DAY
         ),
-        "/csv/process/single/avg_pi_duration_group_by_start_date.csv",
-        "Avg PI Duration Grouped By PI Start Date"
+        "/csv/process/single/pi_duration_group_by_start_date.csv",
+        "Process Instance Duration Grouped By PI Start Date"
       },
       {
-        ProcessReportDataBuilderHelper.createAvgPiDurationHeatMapGroupByNone(
+        ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone(
           FAKE,
           FAKE
         ),
-        "/csv/process/single/avg_pi_duration_group_by_none.csv",
-        "Count PI Grouped By None"
+        "/csv/process/single/pi_duration_group_by_none.csv",
+        "Process Instance Duration Grouped By None"
       },
       {
-        ProcessReportDataBuilderHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeHeatmapReport(
           FAKE,
           FAKE
         ),
-        "/csv/process/single/avg_flownode_duration_group_by_flownodes.csv",
-        "Avg Flow Node Duration Grouped By Flow Node"
+        "/csv/process/single/flownode_duration_group_by_flownodes.csv",
+        "Flow Node Duration Grouped By Flow Node"
       }
     });
   }

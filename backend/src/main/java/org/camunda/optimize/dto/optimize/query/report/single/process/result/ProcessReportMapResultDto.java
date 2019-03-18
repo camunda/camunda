@@ -19,6 +19,6 @@ public class ProcessReportMapResultDto extends ProcessReportResultDto {
 
   @Override
   public ResultType getResultType() {
-    return ResultType.MAP;
+    return ResultType.FREQUENCY_MAP;
   }
 }

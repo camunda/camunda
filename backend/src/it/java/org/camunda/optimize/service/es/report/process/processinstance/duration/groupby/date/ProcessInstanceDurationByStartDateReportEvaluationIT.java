@@ -1,7 +1,6 @@
 package org.camunda.optimize.service.es.report.process.processinstance.duration.groupby.date;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -15,9 +14,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -25,14 +24,12 @@ import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
-import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
@@ -46,8 +43,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessVariableFilterUtilHelper.createBooleanVariableFilter;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -55,7 +54,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-@RunWith(JUnitParamsRunner.class)
 public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   private static final String PROCESS_DEFINITION_KEY = "123";
@@ -75,9 +73,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     .around(engineDatabaseRule);
 
   @Test
-  @Parameters(method = "reportDataTypeAndViewOperationProvider")
-  public void simpleReportEvaluation(ProcessReportDataType reportDataType, ProcessViewOperation operation) throws
-                                                                                                           Exception {
+  public void simpleReportEvaluation() throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -90,44 +86,35 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    ProcessReportDataDto resultReportDataDto = resultDto.getData();
+    assertThat(resultDto.getProcessInstanceCount(), is(1L));
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
 
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getOperation(), is(operation));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.START_DATE));
     StartDateGroupByDto startDateGroupByDto = (StartDateGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(startDateGroupByDto.getValue().getUnit(), is(GroupByDateUnit.DAY));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    Map<String, Long> resultMap = result.getResult();
+    assertThat(resultDto.getResult(), is(notNullValue()));
+    assertThat(resultDto.getResult().size(), is(1));
+    Map<String, OperationResultDto> resultMap = resultDto.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(startDate, ChronoUnit.DAYS);
     assertThat(resultMap.keySet(), hasItem(localDateTimeToString(startOfToday)));
-    assertThat(resultMap.get(localDateTimeToString(startOfToday)), is(1000L));
-  }
-
-  private Object[] reportDataTypeAndViewOperationProvider() {
-    return new Object[]{
-      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, ProcessViewOperation.AVG},
-      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, ProcessViewOperation.MIN},
-      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, ProcessViewOperation.MAX},
-      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_START_DATE, ProcessViewOperation.MEDIAN}
-    };
+    OperationResultDto calculatedResult = resultMap.get(localDateTimeToString(startOfToday));
+    assertThat(calculatedResult, is(notNullValue()));
+    assertThat(calculatedResult, is(calculateExpectedValueGivenDurations(1000L)));
   }
 
   @Test
-  @Parameters(method = "reportDataTypeAndViewOperationProvider")
-  public void simpleReportEvaluationById(ProcessReportDataType reportDataType, ProcessViewOperation operation) throws
-                                                                                                               Exception {
+  public void simpleReportEvaluationById() throws
+                                           Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -139,40 +126,37 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .createReportData()
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
     String reportId = createAndStoreDefaultReportDefinition(reportData);
 
     // when
-    ProcessReportMapResultDto result = evaluateReportById(reportId);
+    ProcessDurationReportMapResultDto resultDto = evaluateReportById(reportId);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
+    ProcessReportDataDto resultReportDataDto = resultDto.getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getOperation(), is(operation));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.START_DATE));
     StartDateGroupByDto startDateGroupByDto = (StartDateGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(startDateGroupByDto.getValue().getUnit(), is(GroupByDateUnit.DAY));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    Map<String, Long> resultMap = result.getResult();
-
-    ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    assertThat(resultDto.getResult(), is(notNullValue()));
+    assertThat(resultDto.getResult().size(), is(1));
+    Map<String, OperationResultDto> resultMap = resultDto.getResult();
+    ZonedDateTime startOfToday = truncateToStartOfUnit(startDate, ChronoUnit.DAYS);
     assertThat(resultMap.keySet(), hasItem(localDateTimeToString(startOfToday)));
-    assertThat(resultMap.get(localDateTimeToString(startOfToday)), is(1000L));
+    OperationResultDto calculatedResult = resultMap.get(localDateTimeToString(startOfToday));
+    assertThat(calculatedResult, is(notNullValue()));
+    assertThat(calculatedResult, is(calculateExpectedValueGivenDurations(1000L)));
   }
 
   @Test
-  @Parameters
-  public void processInstancesStartedAtSameIntervalAreGroupedTogether(ProcessReportDataType reportDataType,
-                                                                      long expectedToday,
-                                                                      long expectedYesterday) throws Exception {
+  public void processInstancesStartedAtSameIntervalAreGroupedTogether() throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -193,38 +177,27 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData);
 
     // then
-    Map<String, Long> resultMap = result.getResult();
-    assertThat(resultMap.size(), is(2));
+    Map<String, OperationResultDto> resultMap = resultDto.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(startDate, ChronoUnit.DAYS);
     String expectedStringToday = localDateTimeToString(startOfToday);
     assertThat(resultMap.keySet(), hasItem(expectedStringToday));
-    assertThat(resultMap.get(expectedStringToday), is(expectedToday));
+    assertThat(resultMap.get(expectedStringToday), is(calculateExpectedValueGivenDurations(1000L, 9000L, 2000L)));
     String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
     assertThat(resultMap.keySet(), hasItem(expectedStringYesterday));
-    assertThat(resultMap.get(expectedStringYesterday), is(expectedYesterday));
-  }
-
-  private Object[] parametersForProcessInstancesStartedAtSameIntervalAreGroupedTogether() {
-    return new Object[]{
-      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, 4000L, 1000L},
-      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L, 1000L},
-      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, 9000L, 1000L},
-      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_START_DATE, 2000L, 1000L}
-    };
+    assertThat(resultMap.get(expectedStringYesterday), is(calculateExpectedValueGivenDurations(1000L)));
   }
 
   @Test
-  @Parameters(source = ReportDataTypeProvider.class)
-  public void resultIsSortedInDescendingOrder(ProcessReportDataType reportDataType) throws Exception {
+  public void resultIsSortedInDescendingOrder() throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -247,12 +220,12 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, OperationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(3));
     assertThat(new ArrayList<>(resultMap.keySet()), isInDescendingOrdering());
   }
@@ -286,9 +259,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   }
 
   @Test
-  @Parameters
-  public void emptyIntervalBetweenTwoProcessInstances(ProcessReportDataType reportDataType,
-                                                      long expectedTodayDuration) throws Exception {
+  public void emptyIntervalBetweenTwoProcessInstances() throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -309,43 +280,32 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setProcessDefinitionKey(processDefinitionKey)
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, OperationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(3));
 
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
 
     String expectedStringToday = localDateTimeToString(startOfToday);
     assertThat(resultMap.containsKey(expectedStringToday), is(true));
-    assertThat(resultMap.get(expectedStringToday), is(expectedTodayDuration));
+    assertThat(resultMap.get(expectedStringToday), is(calculateExpectedValueGivenDurations(1000L, 9000L, 2000L)));
     String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
     assertThat(resultMap.keySet(), hasItem(expectedStringYesterday));
-    assertThat(resultMap.get(expectedStringYesterday), is(0L));
+    assertThat(resultMap.get(expectedStringYesterday), is(calculateExpectedValueGivenDurations(0L)));
     String expectedStringDayBeforeYesterday = localDateTimeToString(startOfToday.minusDays(2));
     assertThat(resultMap.keySet(), hasItem(expectedStringDayBeforeYesterday));
-    assertThat(resultMap.get(expectedStringDayBeforeYesterday), is(1000L));
-  }
-
-  private Object[] parametersForEmptyIntervalBetweenTwoProcessInstances() {
-    return new Object[]{
-      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, 4000L},
-      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L},
-      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, 9000L},
-      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_START_DATE, 2000L}
-    };
+    assertThat(resultMap.get(expectedStringDayBeforeYesterday), is(calculateExpectedValueGivenDurations(1000L)));
   }
 
   @Test
-  @Parameters
-  public void automaticIntervalSelectionWorks(ProcessReportDataType reportDataType,
-                                              long expectedTodayDuration) throws Exception {
+  public void automaticIntervalSelectionWorks() throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -366,34 +326,24 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setProcessDefinitionKey(processDefinitionKey)
       .setDateInterval(GroupByDateUnit.AUTOMATIC)
       .build();
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, OperationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-    ArrayList<Long> resultValues = new ArrayList<>(resultMap.values());
-    assertThat(resultValues.get(0), is(expectedTodayDuration));
-    assertThat(resultValues.stream().filter(v -> v > 0L).count(), is(2L));
-    assertThat(resultValues.get(resultMap.size() - 1), is(1000L));
-  }
-
-  private Object[] parametersForAutomaticIntervalSelectionWorks() {
-    return new Object[]{
-      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, 4000L},
-      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L},
-      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, 9000L},
-      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_START_DATE, 2000L}
-    };
+    ArrayList<OperationResultDto> resultValues = new ArrayList<>(resultMap.values());
+    assertThat(resultValues.get(0), is(calculateExpectedValueGivenDurations(1000L, 9000L, 2000L)));
+    assertThat(resultValues.stream().filter(v -> v.getAvg() > 0L).count(), is(2L));
+    assertThat(resultValues.get(resultMap.size() - 1), is(calculateExpectedValueGivenDurations(1000L)));
   }
 
   @Test
-  @Parameters(source = ReportDataTypeProvider.class)
-  public void groupedByHour(ProcessReportDataType reportDataType) throws Exception {
+  public void groupedByHour() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(5);
     OffsetDateTime now = OffsetDateTime.now();
@@ -407,25 +357,26 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setDateInterval(GroupByDateUnit.HOUR)
       .setProcessDefinitionKey(dto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
 
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, OperationResultDto> resultMap = result.getResult();
     assertDateResultMap(resultMap, 5, now, ChronoUnit.HOURS);
   }
 
-  private void assertDateResultMap(Map<String, Long> resultMap, int size, OffsetDateTime now, ChronoUnit unit) {
+  private void assertDateResultMap(Map<String, OperationResultDto> resultMap, int size, OffsetDateTime now,
+                                   ChronoUnit unit) {
     assertThat(resultMap.size(), is(size));
     final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
     IntStream.range(0, size)
       .forEach(i -> {
         String expectedDateString = localDateTimeToString(finalStartOfUnit.minus(i, unit));
         assertThat(resultMap.keySet(), hasItem(expectedDateString));
-        assertThat(resultMap.get(expectedDateString), is(1000L));
+        assertThat(resultMap.get(expectedDateString), is(calculateExpectedValueGivenDurations(1000L)));
       });
   }
 
@@ -446,8 +397,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   }
 
   @Test
-  @Parameters(source = ReportDataTypeProvider.class)
-  public void groupedByDay(ProcessReportDataType reportDataType) throws Exception {
+  public void groupedByDay() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
     OffsetDateTime now = OffsetDateTime.now();
@@ -458,22 +408,21 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     // when
     ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, OperationResultDto> resultMap = result.getResult();
     assertDateResultMap(resultMap, 8, now, ChronoUnit.DAYS);
   }
 
   @Test
-  @Parameters(source = ReportDataTypeProvider.class)
-  public void groupedByWeek(ProcessReportDataType reportDataType) throws Exception {
+  public void groupedByWeek() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
     OffsetDateTime now = OffsetDateTime.now();
@@ -487,20 +436,19 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setProcessDefinitionKey(dto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
       .setDateInterval(GroupByDateUnit.WEEK)
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
 
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, OperationResultDto> resultMap = result.getResult();
     assertDateResultMap(resultMap, 8, now, ChronoUnit.WEEKS);
   }
 
   @Test
-  @Parameters(source = ReportDataTypeProvider.class)
-  public void groupedByMonth(ProcessReportDataType reportDataType) throws Exception {
+  public void groupedByMonth() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
     OffsetDateTime now = OffsetDateTime.now();
@@ -514,20 +462,19 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setDateInterval(GroupByDateUnit.MONTH)
       .setProcessDefinitionKey(dto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
 
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, OperationResultDto> resultMap = result.getResult();
     assertDateResultMap(resultMap, 8, now, ChronoUnit.MONTHS);
   }
 
   @Test
-  @Parameters(source = ReportDataTypeProvider.class)
-  public void groupedByYear(ProcessReportDataType reportDataType) throws Exception {
+  public void groupedByYear() throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
     OffsetDateTime now = OffsetDateTime.now();
@@ -538,24 +485,22 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     // when
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(dto.getProcessDefinitionKey())
       .setDateInterval(GroupByDateUnit.YEAR)
       .build();
 
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, OperationResultDto> resultMap = result.getResult();
     assertDateResultMap(resultMap, 8, now, ChronoUnit.YEARS);
   }
 
   @Test
-  @Parameters
-  public void reportAcrossAllVersions(ProcessReportDataType reportDataType,
-                                      long expectedDuration) throws Exception {
+  public void reportAcrossAllVersions() throws Exception {
     //given
     OffsetDateTime startDate = OffsetDateTime.now().minusDays(2);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -571,32 +516,22 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
 
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, OperationResultDto> resultMap = result.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(startDate, ChronoUnit.DAYS);
     String expectedStartDateString = localDateTimeToString(startOfToday);
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.containsKey(expectedStartDateString), is(true));
-    assertThat(resultMap.get(expectedStartDateString), is(expectedDuration));
-  }
-
-  private Object[] parametersForReportAcrossAllVersions() {
-    return new Object[]{
-      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, 1500L},
-      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L},
-      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, 2000L}
-    };
+    assertThat(resultMap.get(expectedStartDateString), is(calculateExpectedValueGivenDurations(1000L, 2000L)));
   }
 
   @Test
-  @Parameters
-  public void otherProcessDefinitionsDoNoAffectResult(ProcessReportDataType reportDataType,
-                                                      long expectedDuration) throws Exception {
+  public void otherProcessDefinitionsDoNoAffectResult() throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now().minusDays(2);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -607,34 +542,25 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, OperationResultDto> resultMap = result.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(startDate, ChronoUnit.DAYS);
     String expectedStartDateString = localDateTimeToString(startOfToday);
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.keySet(), hasItem(expectedStartDateString));
-    assertThat(resultMap.get(expectedStartDateString), is(expectedDuration));
-  }
-
-  private Object[] parametersForOtherProcessDefinitionsDoNoAffectResult() {
-    return new Object[]{
-      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L},
-      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L},
-      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L}
-    };
+    assertThat(resultMap.get(expectedStartDateString), is(calculateExpectedValueGivenDurations(1000L)));
   }
 
   @Test
-  @Parameters(source = ReportDataTypeProvider.class)
-  public void filterInReportWorks(ProcessReportDataType reportDataType) throws Exception {
+  public void filterInReportWorks() throws Exception {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
@@ -652,11 +578,11 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setReportDataType(reportDataType)
-      .setFilter(createVariableFilter("var", "true"))
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
+      .setFilter(createVariableFilter("true"))
       .build();
 
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
@@ -668,8 +594,8 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setReportDataType(reportDataType)
-      .setFilter(createVariableFilter("var", "false"))
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
+      .setFilter(createVariableFilter("false"))
       .build();
 
     result = evaluateReport(reportData);
@@ -679,21 +605,20 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     assertThat(result.getResult().size(), is(0));
   }
 
-  private List<ProcessFilterDto> createVariableFilter(String varName, String value) {
-    VariableFilterDto variableFilterDto = createBooleanVariableFilter(varName, value);
+  private List<ProcessFilterDto> createVariableFilter(String value) {
+    VariableFilterDto variableFilterDto = createBooleanVariableFilter("var", value);
     return Collections.singletonList(variableFilterDto);
   }
 
   @Test
-  @Parameters(source = ReportDataTypeProvider.class)
-  public void optimizeExceptionOnGroupByTypeIsNull(ProcessReportDataType reportDataType) {
+  public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
     ProcessReportDataDto dataDto = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
       .setDateInterval(GroupByDateUnit.DAY)
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
 
     dataDto.getGroupBy().setType(null);
@@ -706,15 +631,14 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   }
 
   @Test
-  @Parameters(source = ReportDataTypeProvider.class)
-  public void optimizeExceptionOnGroupByValueIsNull(ProcessReportDataType reportDataType) {
+  public void optimizeExceptionOnGroupByValueIsNull() {
     // given
     ProcessReportDataDto dataDto = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
       .setDateInterval(GroupByDateUnit.DAY)
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
 
     StartDateGroupByDto groupByDto = (StartDateGroupByDto) dataDto.getGroupBy();
@@ -728,14 +652,13 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   }
 
   @Test
-  @Parameters(source = ReportDataTypeProvider.class)
-  public void optimizeExceptionOnGroupByUnitIsNull(ProcessReportDataType reportDataType) {
+  public void optimizeExceptionOnGroupByUnitIsNull() {
     // given
     ProcessReportDataDto dataDto = ProcessReportDataBuilder.createReportData()
       .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
       .setDateInterval(GroupByDateUnit.DAY)
-      .setReportDataType(reportDataType)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
     StartDateGroupByDto groupByStartDate = (StartDateGroupByDto) dataDto.getGroupBy();
     groupByStartDate.setValue(null);
@@ -775,15 +698,10 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {
-    return deployAndStartSimpleServiceTaskProcessWithVariables(TEST_ACTIVITY, variables);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(String activityId,
-                                                                                       Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent()
-      .serviceTask(activityId)
+      .serviceTask(ProcessInstanceDurationByStartDateReportEvaluationIT.TEST_ACTIVITY)
       .camundaExpression("${true}")
       .endEvent()
       .done();
@@ -807,11 +725,11 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .getId();
   }
 
-  private ProcessReportMapResultDto evaluateReportById(String reportId) {
+  private ProcessDurationReportMapResultDto evaluateReportById(String reportId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId)
-      .execute(ProcessReportMapResultDto.class, 200);
+      .execute(ProcessDurationReportMapResultDto.class, 200);
   }
 
   private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
@@ -835,11 +753,11 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   }
 
 
-  private ProcessReportMapResultDto evaluateReport(ProcessReportDataDto reportData) {
+  private ProcessDurationReportMapResultDto evaluateReport(ProcessReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(ProcessReportMapResultDto.class);
+    return response.readEntity(ProcessDurationReportMapResultDto.class);
   }
 
   private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
@@ -849,16 +767,16 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .execute();
   }
 
-  public static class ReportDataTypeProvider {
-    public static Object[] provideReportDataType() {
-      return new Object[]{
-        new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE},
-        new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE},
-        new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE},
-        new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_START_DATE}
-      };
-    }
-  }
+  private OperationResultDto calculateExpectedValueGivenDurations(final Long... setDuration) {
+    final DescriptiveStatistics statistics = new DescriptiveStatistics();
+    Stream.of(setDuration).map(Long::doubleValue).forEach(statistics::addValue);
 
+    return new OperationResultDto(
+      Math.round(statistics.getMin()),
+      Math.round(statistics.getMax()),
+      Math.round(statistics.getMean()),
+      Math.round(statistics.getPercentile(50.0D))
+    );
+  }
 
 }

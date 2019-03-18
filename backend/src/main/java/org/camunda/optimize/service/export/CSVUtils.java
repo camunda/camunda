@@ -3,6 +3,7 @@ package org.camunda.optimize.service.export;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,7 +100,7 @@ public class CSVUtils {
     );
 
     // header line
-    result.add(allIncludedKeys.toArray(new String[allIncludedKeys.size()]));
+    result.add(allIncludedKeys.toArray(new String[0]));
 
     int currentPosition = 0;
     for (RawDataDecisionInstanceDto instanceDto : rawData) {
@@ -137,6 +138,28 @@ public class CSVUtils {
         String[] line = new String[2];
         line[0] = value.getKey();
         line[1] = value.getValue().toString();
+        result.add(line);
+      }
+      currentPosition = currentPosition + 1;
+    }
+    return result;
+  }
+
+  public static List<String[]> mapOperationValues(Map<String, OperationResultDto> valuesMap, Integer limit,
+                                                  Integer offset) {
+    List<String[]> result = new ArrayList<>();
+
+    int currentPosition = 0;
+    for (Map.Entry<String, OperationResultDto> value : valuesMap.entrySet()) {
+      boolean limitNotExceeded = isLimitNotExceeded(limit, result);
+      boolean offsetPassed = isOffsetPassed(offset, currentPosition);
+      if ((offset == null && limitNotExceeded) || (offsetPassed && limitNotExceeded)) {
+        String[] line = new String[5];
+        line[0] = value.getKey();
+        line[1] = value.getValue().getMin().toString();
+        line[2] = value.getValue().getMax().toString();
+        line[3] = value.getValue().getAvg().toString();
+        line[4] = value.getValue().getMedian().toString();
         result.add(line);
       }
       currentPosition = currentPosition + 1;
