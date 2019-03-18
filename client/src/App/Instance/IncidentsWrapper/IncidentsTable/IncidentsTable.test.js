@@ -242,7 +242,7 @@ describe('IncidentsTable', () => {
     expect(modalNode).toHaveLength(1);
     // expect modal header to have the right text
     expect(modalNode.find(Modal.Header).text()).toContain(
-      `Flow Node ${mockProps.incidents[1].flowNodeName} Error`
+      `Flow Node "${mockProps.incidents[1].flowNodeName}" Error`
     );
     // expect modal content to have the right error message
     expect(modalNode.find(Modal.Body).text()).toContain(
