@@ -148,12 +148,12 @@ it('should remove any previous evaluationDateTime filters when adding a new date
   });
 });
 
-it('should show the number of decision instances in the current Filter', () => {
+it('should show the number of decision evaluations in the current Filter', () => {
   const node = shallow(<DecisionFilter data={[]} />);
 
   expect(node).not.toIncludeText('in current filter');
 
   node.setProps({instanceCount: 12});
 
-  expect(node).toIncludeText('12 instances in current filter');
+  expect(node).toIncludeText('12 evaluations in current filter');
 });

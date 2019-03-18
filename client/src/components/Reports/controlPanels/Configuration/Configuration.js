@@ -84,6 +84,7 @@ export default class Configuration extends React.Component {
               <ShowInstanceCount
                 configuration={report.data.configuration}
                 onChange={this.updateConfiguration}
+                label={report.reportType === 'decision' ? 'Evaluation' : 'Instance'}
               />
             )}
             {Component && <Component report={report} onChange={this.updateConfiguration} />}

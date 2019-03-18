@@ -25,7 +25,7 @@ exports[`should display meaningful data if there are no evaluations 1`] = `
   >
     <b>
       0
-       Instance
+       Evaluation
       s
     </b>
   </DmnJsPortal>
@@ -57,7 +57,7 @@ exports[`should render content in DmnJsPortals 1`] = `
   >
     <b>
       3
-       Instance
+       Evaluation
       s
     </b>
   </DmnJsPortal>

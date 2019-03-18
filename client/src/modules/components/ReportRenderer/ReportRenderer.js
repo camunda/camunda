@@ -17,8 +17,10 @@ export default function ReportRenderer(props) {
   const {report} = props;
   let View;
   if (report) {
+    const isDecision = report.reportType === 'decision';
+
     if (report.combined) View = CombinedReportRenderer;
-    else if (report.reportType === 'decision') View = DecisionReportRenderer;
+    else if (isDecision) View = DecisionReportRenderer;
     else View = ProcessReportRenderer;
 
     return (
@@ -27,7 +29,7 @@ export default function ReportRenderer(props) {
           <View {...props} errorMessage={errorMessage} />
           {report.data.configuration.showInstanceCount && (
             <div className="additionalInfo">
-              Total Instance
+              Total {isDecision ? 'Evaluation' : 'Instance'}
               <br />
               Count:
               <b>
