@@ -22,3 +22,22 @@ export function isChecked(data, current) {
     )
   );
 }
+
+export function isDurationHeatmap({
+  view,
+  visualization,
+  processDefinitionKey,
+  processDefinitionVersion
+}) {
+  return (
+    view &&
+    ((view.entity === 'flowNode' && view.property === 'duration') || view.entity === 'userTask') &&
+    visualization === 'heat' &&
+    processDefinitionKey &&
+    processDefinitionVersion
+  );
+}
+
+export function isProcessInstanceDuration({view}) {
+  return view && view.entity === 'processInstance' && view.property === 'duration';
+}

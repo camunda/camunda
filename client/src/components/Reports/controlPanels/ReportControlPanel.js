@@ -15,7 +15,7 @@ import {
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
 
-import {loadVariables} from './service';
+import {loadVariables, isDurationHeatmap, isProcessInstanceDuration} from './service';
 
 import {Configuration} from './Configuration';
 
@@ -182,7 +182,7 @@ export default class ReportControlPanel extends React.Component {
               instanceCount={this.props.report && this.props.report.processInstanceCount}
             />
           </li>
-          {this.shouldDisplayTargetValue() && (
+          {isDurationHeatmap(data) && (
             <li>
               <TargetValueComparison
                 report={this.props.report}
@@ -195,7 +195,7 @@ export default class ReportControlPanel extends React.Component {
             onChange={this.props.updateReport}
             report={this.props.report}
           />
-          {this.shouldDisplayProcessPart() && (
+          {isProcessInstanceDuration(data) && (
             <li>
               <ProcessPart
                 flowNodeNames={this.state.flowNodeNames}
@@ -211,27 +211,4 @@ export default class ReportControlPanel extends React.Component {
       </div>
     );
   }
-
-  shouldDisplayProcessPart = () => {
-    const {view} = this.props.report.data;
-    return view && view.entity === 'processInstance' && view.property === 'duration';
-  };
-
-  shouldDisplayTargetValue = () => {
-    const {
-      view,
-      visualization,
-      processDefinitionKey,
-      processDefinitionVersion
-    } = this.props.report.data;
-
-    return (
-      view &&
-      ((view.entity === 'flowNode' && view.property === 'duration') ||
-        view.entity === 'userTask') &&
-      visualization === 'heat' &&
-      processDefinitionKey &&
-      processDefinitionVersion
-    );
-  };
 }
