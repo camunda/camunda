@@ -5,9 +5,9 @@
  */
 
 /**
- * if the parsed value is an object, it returns it as a string
+ * only parse non string and non object values
  */
 export function safelyParseValue(value) {
   const parsed = JSON.parse(value);
-  return typeof parsed === 'object' ? value : parsed;
+  return ['object', 'string'].includes(typeof parsed) ? value : parsed;
 }

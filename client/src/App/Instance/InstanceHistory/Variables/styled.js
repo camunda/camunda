@@ -7,29 +7,19 @@
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-export const Variables = themed(styled.div`
+import Panel from 'modules/components/Panel';
+
+export const Variables = themed(styled(Panel)`
   flex: 1;
   font-size: 14px;
   overflow: auto;
-  position: relative;
-  background-color: ${themeStyle({
-    dark: Colors.uiDark02,
-    light: Colors.uiLight04
-  })};
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.8)',
     light: 'rgba(98, 98, 110, 0.8)'
   })};
-  position: relative;
 `);
 
-export const VariablesContent = styled.div`
-  position: absolute;
-  height: 100%;
-  width: 100%;
-  display: flex;
-  align-items: center;
-`;
+export const VariablesContent = styled(Panel.Body)``;
 
 export const Placeholder = themed(styled.span`
   position: absolute;
