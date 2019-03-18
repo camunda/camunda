@@ -35,7 +35,8 @@ public class AuthenticationRestService {
 
   @Autowired
   public AuthenticationRestService(final AuthenticationService authenticationService,
-                                   final ConfigurationService configurationService, final SessionService sessionService) {
+                                   final ConfigurationService configurationService,
+                                   final SessionService sessionService) {
     this.authenticationService = authenticationService;
     this.configurationService = configurationService;
     this.sessionService = sessionService;

@@ -24,7 +24,7 @@ public class AuthenticationRestServiceIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
 
   @Test
   public void authenticateUser() {
@@ -35,9 +35,9 @@ public class AuthenticationRestServiceIT {
     Response response = embeddedOptimizeRule.authenticateUserRequest("admin", "admin");
 
     //then
-    assertThat(response.getStatus(),is(200));
+    assertThat(response.getStatus(), is(200));
     String responseEntity = response.readEntity(String.class);
-    assertThat(responseEntity,is(notNullValue()));
+    assertThat(responseEntity, is(notNullValue()));
   }
 
   @Test
@@ -48,15 +48,15 @@ public class AuthenticationRestServiceIT {
 
     //when
     Response logoutResponse = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildLogOutRequest()
-            .withGivenAuthToken(token)
-            .execute();
+      .getRequestExecutor()
+      .buildLogOutRequest()
+      .withGivenAuthToken(token)
+      .execute();
 
     //then
-    assertThat(logoutResponse.getStatus(),is(200));
+    assertThat(logoutResponse.getStatus(), is(200));
     String responseEntity = logoutResponse.readEntity(String.class);
-    assertThat(responseEntity,is("OK"));
+    assertThat(responseEntity, is("OK"));
   }
 
   @Test
@@ -64,49 +64,50 @@ public class AuthenticationRestServiceIT {
 
     //when
     Response logoutResponse = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildLogOutRequest()
-            .withGivenAuthToken("randomToken")
-            .execute();
+      .getRequestExecutor()
+      .buildLogOutRequest()
+      .withGivenAuthToken("randomToken")
+      .execute();
 
     //then
-    assertThat(logoutResponse.getStatus(),is(401));
+    assertThat(logoutResponse.getStatus(), is(401));
   }
 
   @Test
   public void testAuthenticationIfNotAuthenticated() {
     //when
     Response logoutResponse = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildAuthTestRequest()
-            .withoutAuthentication()
-            .execute();
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .withoutAuthentication()
+      .execute();
 
     //then
-    assertThat(logoutResponse.getStatus(),is(401));
+    assertThat(logoutResponse.getStatus(), is(401));
   }
 
   @Test
   public void testIfAuthenticated() {
     //when
     Response logoutResponse = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildAuthTestRequest()
-            .execute();
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .execute();
 
     //then
-    assertThat(logoutResponse.getStatus(),is(200));
+    assertThat(logoutResponse.getStatus(), is(200));
   }
 
   @Test
   public void cookieIsInsecureIfHttpIsEnabled() {
     //when
     Response authResponse = embeddedOptimizeRule
-            .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     //then
     assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isSecure(), is(false));
   }
+
 
   @Test
   public void cookieIsSecureIfHttpIsDisabled() {
@@ -117,17 +118,28 @@ public class AuthenticationRestServiceIT {
 
     // when
     Response authResponse = embeddedOptimizeRule
-            .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then
     assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isSecure(), is(true));
+    assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isHttpOnly(), is(true));
 
     // cleanup
     embeddedOptimizeRule.getConfigurationService().setContainerHttpPort(defaultHttpPort);
   }
 
+  @Test
+  public void cookieIsHttpOnly() {
+    // when
+    Response authResponse = embeddedOptimizeRule
+      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+
+    // then
+    assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isHttpOnly(), is(true));
+  }
+
   private String authenticateAdminUser() {
-    return embeddedOptimizeRule.authenticateUser("admin","admin");
+    return embeddedOptimizeRule.authenticateUser("admin", "admin");
   }
 
   private void addAdminUserAndGrantAccessPermission() {

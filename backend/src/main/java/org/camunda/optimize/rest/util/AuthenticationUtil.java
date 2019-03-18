@@ -79,7 +79,7 @@ public class AuthenticationUtil {
   public static NewCookie createDeleteOptimizeAuthCookie(final boolean isSecure) {
     logger.trace("Deleting Optimize authentication cookie.");
     return new NewCookie(
-      OPTIMIZE_AUTHORIZATION, "", "/", null, "delete cookie", 0, isSecure
+      OPTIMIZE_AUTHORIZATION, "", "/", null, "delete cookie", 0, isSecure, true
     );
   }
 
@@ -101,7 +101,7 @@ public class AuthenticationUtil {
         .map(Date::from)
         .orElse(null),
       isSecure,
-      false
+      true
     );
   }
 

@@ -155,7 +155,9 @@ public class SingleSignOnFilter implements Filter {
                                      HttpServletResponse servletResponse,
                                      String token) {
     final NewCookie optimizeAuthCookie = createNewOptimizeAuthCookie(
-      token, configurationService.getTokenLifeTimeMinutes(), configurationService.isHttpDisabled()
+      token,
+      configurationService.getTokenLifeTimeMinutes(),
+      configurationService.isHttpDisabled()
     );
     // for direct access by request filters
     servletRequest.setAttribute(OPTIMIZE_AUTHORIZATION, optimizeAuthCookie.getValue());
