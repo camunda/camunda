@@ -188,23 +188,25 @@ describe('FlowNodeInstancesTree', () => {
       expect(StartEventNode.find(Styled.NodeStateIcon)).toHaveLength(1);
     });
 
-    it('nodes should receive a positionMultiplier to position the state Icon correctly', () => {
+    it('nodes should receive a indentationMultiplier to position the state Icon correctly', () => {
       // On Tree level: 1
       expect(
         node
           .find(`[data-test="${parentNode.id}"]`)
           .find(Styled.NodeStateIcon)
-          .find('[positionMultiplier=1]')
+          .find('[indentationMultiplier=1]')
       ).toExist();
 
       // On Tree level: 2
       expect(
-        StartEventNode.find(Styled.NodeStateIcon).find('[positionMultiplier=2]')
+        StartEventNode.find(Styled.NodeStateIcon).find(
+          '[indentationMultiplier=2]'
+        )
       ).toExist();
 
       // On Tree level: 3
       expect(
-        ServiceNode.find(Styled.NodeStateIcon).find('[positionMultiplier=3]')
+        ServiceNode.find(Styled.NodeStateIcon).find('[indentationMultiplier=3]')
       ).toExist();
     });
   });

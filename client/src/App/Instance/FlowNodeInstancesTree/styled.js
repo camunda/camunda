@@ -11,11 +11,11 @@ import withStrippedProps from 'modules/utils/withStrippedProps';
 import StateIcon from 'modules/components/StateIcon';
 
 export const NodeStateIcon = styled(
-  withStrippedProps(['positionMultiplier'])(StateIcon)
+  withStrippedProps(['indentationMultiplier'])(StateIcon)
 )`
   top: 6px;
-  left: ${({positionMultiplier}) =>
-    positionMultiplier ? -positionMultiplier * 32 + 'px' : '5px'};
+  left: ${({indentationMultiplier}) =>
+    indentationMultiplier ? -indentationMultiplier * 32 + 'px' : '5px'};
 `;
 
 const connectionDotStyles = css`
