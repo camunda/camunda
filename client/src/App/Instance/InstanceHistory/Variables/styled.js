@@ -20,6 +20,7 @@ export const Variables = themed(styled.div`
     dark: 'rgba(255, 255, 255, 0.8)',
     light: 'rgba(98, 98, 110, 0.8)'
   })};
+  position: relative;
 `);
 
 export const VariablesContent = styled.div`
@@ -31,15 +32,16 @@ export const VariablesContent = styled.div`
 `;
 
 export const Placeholder = themed(styled.span`
+  position: absolute;
   text-align: center;
-  top: 0;
-  left: 0;
+  top: 40%;
   width: 100%;
-  font-size: 16px;
+  font-size: 14px;
   color: ${themeStyle({
     dark: '#dedede',
     light: Colors.uiLight06
   })};
+  padding: 0 20px;
 `);
 
 export const Table = themed(styled.table`

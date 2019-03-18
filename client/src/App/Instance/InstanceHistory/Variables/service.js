@@ -4,7 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export const EMPTY_PLACEHOLDER = 'The Flow Node has no variables.';
-
-export const NULL_PLACEHOLDER =
-  'To view the variables, select a single Flow Node Instance in the Instance History.';
+/**
+ * if the parsed value is an object, it returns it as a string
+ */
+export function safelyParseValue(value) {
+  const parsed = JSON.parse(value);
+  return typeof parsed === 'object' ? value : parsed;
+}
