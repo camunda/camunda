@@ -10,6 +10,7 @@ import PropTypes from 'prop-types';
 import IncidentsBar from './IncidentsBar';
 import IncidentsOverlay from './IncidentsOverlay';
 import IncidentsTable from './IncidentsTable';
+import IncidentsFilter from './IncidentsFilter';
 import {SORT_ORDER} from 'modules/constants';
 import {sortData} from './service';
 
@@ -58,6 +59,10 @@ function IncidentsWrapper(props) {
       />
       {isOpen && (
         <IncidentsOverlay>
+          <IncidentsFilter
+            flowNodes={props.flowNodes}
+            errorTypes={props.errorTypes}
+          />
           <IncidentsTable
             incidents={sortedIncidents}
             instanceId={instance.id}
@@ -81,7 +86,9 @@ IncidentsWrapper.propTypes = {
   onIncidentOperation: PropTypes.func.isRequired,
   forceSpinner: PropTypes.bool,
   selectedIncidents: PropTypes.array,
-  onIncidentSelection: PropTypes.func.isRequired
+  onIncidentSelection: PropTypes.func.isRequired,
+  flowNodes: PropTypes.array,
+  errorTypes: PropTypes.array
 };
 
 export default IncidentsWrapper;

@@ -19,7 +19,10 @@ export default function Pill(props) {
   return (
     <Styled.Pill {...props}>
       <TargetIcon />
-      <span>{props.children}</span>
+      <Styled.Label grow={props.grow}>{props.children}</Styled.Label>
+      {props.type === PILL_TYPE.FILTER && (
+        <Styled.Count>{props.count}</Styled.Count>
+      )}
     </Styled.Pill>
   );
 }
@@ -27,5 +30,12 @@ export default function Pill(props) {
 Pill.propTypes = {
   type: PropTypes.oneOf(Object.values(PILL_TYPE)),
   isActive: PropTypes.bool.isRequired,
-  children: PropTypes.string.isRequired
+  children: PropTypes.node,
+  count: PropTypes.number,
+  grow: PropTypes.bool
+};
+
+Pill.defaultProps = {
+  isActive: false,
+  grow: false
 };

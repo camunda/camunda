@@ -155,7 +155,8 @@ export const PAGE_TITLE = {
 };
 
 export const PILL_TYPE = {
-  TIMESTAMP: 'TIMESTAMP'
+  TIMESTAMP: 'TIMESTAMP',
+  FILTER: 'FILTER'
 };
 
 export const POPOVER_SIDE = {

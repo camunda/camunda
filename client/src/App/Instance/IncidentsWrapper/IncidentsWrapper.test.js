@@ -26,7 +26,9 @@ const mockProps = {
   forceSpinner: false,
   selectedIncidents: ['1', '2', '3'],
   onIncidentOperation: jest.fn(),
-  onIncidentSelection: jest.fn()
+  onIncidentSelection: jest.fn(),
+  errorTypes: incidentsMock.errorTypes,
+  flowNodes: incidentsMock.flowNodes
 };
 
 describe('IncidentsWrapper', () => {

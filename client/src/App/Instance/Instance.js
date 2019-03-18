@@ -345,6 +345,16 @@ export default class Instance extends Component {
     });
   };
 
+  formatFlowNodes = () => {
+    return this.state.incidents.flowNodes.map(item => {
+      const clone = Object.assign({}, item);
+      clone.flowNodeName =
+        this.state.activityIdToNameMap.get(item.flowNodeId) || UNNAMED_ACTIVITY;
+
+      return clone;
+    });
+  };
+
   handleIncidentOperation = () => {
     this.setState({forceInstanceSpinner: true});
   };
@@ -398,15 +408,15 @@ export default class Instance extends Component {
             >
               {this.state.instance.state === 'INCIDENT' && (
                 <IncidentsWrapper
-                  incidents={this.formatIncidents(
-                    this.state.incidents.incidents
-                  )}
+                  incidents={this.formatIncidents()}
                   incidentsCount={this.state.incidents.count}
                   instance={this.state.instance}
                   forceSpinner={this.state.forceIncidentsSpinner}
                   selectedIncidents={this.state.selection.treeRowIds}
                   onIncidentOperation={this.handleIncidentOperation}
                   onIncidentSelection={this.handleTreeRowSelection}
+                  flowNodes={this.formatFlowNodes()}
+                  errorTypes={this.state.incidents.errorTypes}
                 />
               )}
               {diagramDefinitions && (

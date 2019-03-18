@@ -13,6 +13,7 @@ const {TH, TR} = Table;
 export const FirstCell = styled.div`
   position: relative;
   padding-left: 23px;
+  z-index: 0;
 `;
 
 export const Index = styled.span`
@@ -48,6 +49,7 @@ export const FirstTH = themed(styled(TH)`
   position: relative;
   height: 100%;
   padding-left: 27px
+  z-index: 0;
 
   &:before {
     content: ' ';

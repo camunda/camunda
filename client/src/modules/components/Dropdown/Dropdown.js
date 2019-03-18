@@ -31,7 +31,8 @@ export default class Dropdown extends React.Component {
     ]),
     buttonStyles: PropTypes.array,
     disabled: PropTypes.bool,
-    onOpen: PropTypes.func
+    onOpen: PropTypes.func,
+    className: PropTypes.string
   };
 
   state = {
@@ -117,7 +118,7 @@ export default class Dropdown extends React.Component {
       exit: 20
     };
     return (
-      <Styled.Dropdown ref={this.setRef}>
+      <Styled.Dropdown ref={this.setRef} className={this.props.className}>
         <Styled.Button
           data-test="dropdown-toggle"
           onKeyDown={this.handleKeyPress}

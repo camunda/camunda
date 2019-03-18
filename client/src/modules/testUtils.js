@@ -561,7 +561,47 @@ export const createDeepNestedTree = depth => {
 export const createIncidents = () => {
   return {
     count: 2,
-    incidents: [createIncident(), createIncident()]
+    incidents: [createIncident(), createIncident()],
+    errorTypes: [
+      {
+        errorType: 'CONDITION_ERROR',
+        errorTypeTitle: 'Condition error',
+        count: 1
+      },
+      {
+        errorType: 'EXTRACT_VALUE_ERROR',
+        errorTypeTitle: 'Extract value error',
+        count: 1
+      },
+      {
+        errorType: 'IO_MAPPING_ERROR',
+        errorTypeTitle: 'I/O mapping error',
+        count: 1
+      },
+      {
+        errorType: 'JOB_NO_RETRIES',
+        errorTypeTitle: 'No more retries left',
+        count: 1
+      }
+    ],
+    flowNodes: [
+      {
+        flowNodeId: 'alwaysFailingTask',
+        count: 1
+      },
+      {
+        flowNodeId: 'exclusiveGateway',
+        count: 1
+      },
+      {
+        flowNodeId: 'messageCatchEvent',
+        count: 1
+      },
+      {
+        flowNodeId: 'upperTask',
+        count: 1
+      }
+    ]
   };
 };
 
