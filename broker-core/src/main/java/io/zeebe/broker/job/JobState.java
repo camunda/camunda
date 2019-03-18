@@ -88,11 +88,17 @@ public class JobState {
   }
 
   private void createJob(long key, JobRecord record, DirectBuffer type) {
-    updateJobRecord(key, record);
+    resetPayloadAndUpdateJobRecord(key, record);
     updateJobState(State.ACTIVATABLE);
     makeJobActivatable(type);
   }
 
+  /**
+   * <b>Note:</b> calling this method will reset the payload of the job record. Make sure to write
+   * the job record to the log before updating it in the state.
+   *
+   * <p>related to https://github.com/zeebe-io/zeebe/issues/2182
+   */
   public void activate(final long key, final JobRecord record) {
     final DirectBuffer type = record.getType();
     final long deadline = record.getDeadline();
@@ -101,7 +107,7 @@ public class JobState {
 
     zeebeDb.transaction(
         () -> {
-          updateJobRecord(key, record);
+          resetPayloadAndUpdateJobRecord(key, record);
 
           updateJobState(State.ACTIVATED);
 
@@ -150,7 +156,7 @@ public class JobState {
 
     zeebeDb.transaction(
         () -> {
-          updateJobRecord(key, updatedValue);
+          resetPayloadAndUpdateJobRecord(key, updatedValue);
 
           final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
           updateJobState(newState);
@@ -173,7 +179,7 @@ public class JobState {
 
     zeebeDb.transaction(
         () -> {
-          updateJobRecord(key, updatedValue);
+          resetPayloadAndUpdateJobRecord(key, updatedValue);
           updateJobState(State.ACTIVATABLE);
           makeJobActivatable(type);
         });
@@ -227,7 +233,7 @@ public class JobState {
         }));
   }
 
-  private boolean visitJob(long jobKey, BiFunction<Long, JobRecord, Boolean> callback) {
+  boolean visitJob(long jobKey, BiFunction<Long, JobRecord, Boolean> callback) {
     final JobRecord job = getJob(jobKey);
     if (job == null) {
       throw new IllegalStateException(
@@ -240,7 +246,7 @@ public class JobState {
     final JobRecord job = getJob(jobKey);
     if (job != null) {
       job.setRetries(retries);
-      updateJobRecord(jobKey, job);
+      resetPayloadAndUpdateJobRecord(jobKey, job);
     }
     return job;
   }
@@ -277,8 +283,10 @@ public class JobState {
     }
   }
 
-  private void updateJobRecord(long key, JobRecord updatedValue) {
+  private void resetPayloadAndUpdateJobRecord(long key, JobRecord updatedValue) {
     jobKey.wrapLong(key);
+    // do not persist payload in job state
+    updatedValue.resetPayload();
     jobRecordToWrite.wrapObject(updatedValue);
     jobsColumnFamily.put(jobKey, jobRecordToWrite);
   }

@@ -43,6 +43,8 @@ public class BrokerTopologyManagerImpl extends Actor implements BrokerTopologyMa
    */
   public static final Duration MIN_REFRESH_INTERVAL_MILLIS = Duration.ofMillis(300);
 
+  public static final Duration TOPOLOGY_TIMEOUT = Duration.ofSeconds(5);
+
   protected final ClientOutput output;
   protected final BiConsumer<Integer, SocketAddress> registerEndpoint;
 
@@ -148,7 +150,7 @@ public class BrokerTopologyManagerImpl extends Actor implements BrokerTopologyMa
       endpoint = ClientTransport.UNKNOWN_NODE_ID;
     }
     final ActorFuture<ClientResponse> responseFuture =
-        output.sendRequest(endpoint, topologyRequest, Duration.ofSeconds(1));
+        output.sendRequest(endpoint, topologyRequest, TOPOLOGY_TIMEOUT);
 
     refreshAttempt++;
     lastRefreshTime = ActorClock.currentTimeMillis();
