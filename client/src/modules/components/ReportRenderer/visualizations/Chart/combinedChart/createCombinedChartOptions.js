@@ -13,7 +13,9 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
   const stacked = visualization === 'number';
   const property = Object.values(result)[0].data.view.property;
   const instanceCountArr = Object.values(result).map(report => report.processInstanceCount);
-  const maxDuration = isDurationReport(report) ? findMaxDurationAcrossReports(result) : 0;
+  const maxDuration = isDurationReport(Object.values(result)[0])
+    ? findMaxDurationAcrossReports(result)
+    : 0;
 
   return {
     ...createBarOptions(targetValue, configuration, stacked, maxDuration, isDark),
