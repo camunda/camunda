@@ -7,7 +7,7 @@ export async function loadDashboard(id) {
 }
 
 export async function remove(id) {
-  return await del(`api/dashboard/${id}`);
+  return await del(`api/dashboard/${id}`, {force: true});
 }
 
 export async function update(id, state) {
@@ -125,7 +125,10 @@ export function snapInPosition({
 }
 
 export function collidesWithReport({
-  placement: {position: {x: left, y: top}, dimensions: {width, height}},
+  placement: {
+    position: {x: left, y: top},
+    dimensions: {width, height}
+  },
   reports
 }) {
   const occupiedTiles = getOccupiedTiles(reports);
@@ -142,7 +145,10 @@ export function collidesWithReport({
 }
 
 export function applyPlacement({
-  placement: {position: {x, y}, dimensions: {width, height}},
+  placement: {
+    position: {x, y},
+    dimensions: {width, height}
+  },
   tileDimensions: {outerWidth, outerHeight, innerWidth},
   node: {style}
 }) {
