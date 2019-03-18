@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.util;
 
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.broker.logstreams.state.ZeebeState;
@@ -59,6 +60,10 @@ public class ZeebeStateRule extends ExternalResource {
 
   public ZeebeState getZeebeState() {
     return zeebeState;
+  }
+
+  public KeyGenerator getKeyGenerator() {
+    return zeebeState.getKeyGenerator();
   }
 
   public ZeebeDb<ZbColumnFamilies> createNewDb() {

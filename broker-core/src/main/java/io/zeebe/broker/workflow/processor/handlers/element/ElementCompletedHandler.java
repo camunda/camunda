@@ -40,7 +40,7 @@ public class ElementCompletedHandler<T extends ExecutableFlowNode>
   protected boolean shouldHandleState(BpmnStepContext<T> context) {
     return super.shouldHandleState(context)
         && isStateSameAsElementState(context)
-        && isElementActive(context.getFlowScopeInstance());
+        && (isRootScope(context) || isElementActive(context.getFlowScopeInstance()));
   }
 
   @Override
