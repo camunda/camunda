@@ -15,6 +15,7 @@ import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.schema.indices.IndexCreator;
@@ -258,6 +259,9 @@ public class ElasticsearchTestRule extends ExternalResource {
         if (entity instanceof ActivityInstanceForListViewEntity) {
           indexRequestBuilder.setRouting(((ActivityInstanceForListViewEntity)entity).getWorkflowInstanceId());
         }
+        if (entity instanceof VariableForListViewEntity) {
+          indexRequestBuilder.setRouting(((VariableForListViewEntity)entity).getWorkflowInstanceId());
+        }
         bulkRequest.add(indexRequestBuilder);
       }
       ElasticsearchUtil.processBulkRequest(bulkRequest, true);
@@ -274,6 +278,7 @@ public class ElasticsearchTestRule extends ExternalResource {
       entityToESAliasMap.put(IncidentEntity.class, incidentTemplate.getAlias());
       entityToESAliasMap.put(WorkflowInstanceForListViewEntity.class, listViewTemplate.getAlias());
       entityToESAliasMap.put(ActivityInstanceForListViewEntity.class, listViewTemplate.getAlias());
+      entityToESAliasMap.put(VariableForListViewEntity.class, listViewTemplate.getAlias());
       entityToESAliasMap.put(OperationEntity.class, operationTemplate.getAlias());
     }
     return entityToESAliasMap;

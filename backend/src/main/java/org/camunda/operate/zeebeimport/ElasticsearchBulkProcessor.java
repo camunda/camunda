@@ -68,6 +68,7 @@ public class ElasticsearchBulkProcessor extends Thread {
           break;
         case VARIABLE:
           variableZeebeRecordProcessor.processVariableRecord(record, bulkRequest);
+          listViewZeebeRecordProcessor.processVariableRecord(record, bulkRequest);
           break;
         case DEPLOYMENT:
           deploymentZeebeRecordProcessor.processDeploymentRecord(record, bulkRequest);

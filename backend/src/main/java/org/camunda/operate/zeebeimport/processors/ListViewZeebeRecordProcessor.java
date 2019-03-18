@@ -14,6 +14,7 @@ import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
@@ -24,6 +25,7 @@ import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
+import org.camunda.operate.zeebeimport.record.value.VariableRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.support.WriteRequest;
@@ -76,6 +78,13 @@ public class ListViewZeebeRecordProcessor {
 
     //update activity instance
     bulkRequestBuilder.add(persistActivityInstanceFromIncident(record, intentStr, recordValue));
+
+  }
+
+  public void processVariableRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+    VariableRecordValueImpl recordValue = (VariableRecordValueImpl)record.getValue();
+
+    bulkRequestBuilder.add(persistVariable(record, recordValue));
 
   }
 
@@ -152,6 +161,24 @@ public class ListViewZeebeRecordProcessor {
 
   }
 
+  private UpdateRequestBuilder persistVariable(Record record, VariableRecordValueImpl recordValue) throws PersistenceException {
+    VariableForListViewEntity entity = new VariableForListViewEntity();
+    entity.setId(IdUtil.getVariableId(recordValue.getScopeKey(), recordValue.getName()));
+    entity.setKey(record.getKey());
+    entity.setPartitionId(record.getMetadata().getPartitionId());
+    entity.setScopeId(IdUtil.getId(recordValue.getScopeKey(), record));
+    entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+    entity.setVarName(recordValue.getName());
+    entity.setVarValue(recordValue.getValue());
+
+    //set parent
+    String workflowInstanceId = IdUtil.getId(recordValue.getWorkflowInstanceKey(), record);
+    entity.getJoinRelation().setParent(workflowInstanceId);
+
+    return getVariableQuery(entity, workflowInstanceId);
+
+  }
+
   private UpdateRequestBuilder getActivityInstanceQuery(ActivityInstanceForListViewEntity entity, String workflowInstanceId) throws PersistenceException {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());
@@ -173,6 +200,28 @@ public class ListViewZeebeRecordProcessor {
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);
       throw new PersistenceException(String.format("Error preparing the query to upsert activity instance [%s]  for list view", entity.getId()), e);
+    }
+  }
+
+  private UpdateRequestBuilder getVariableQuery(VariableForListViewEntity entity, String workflowInstanceId) throws PersistenceException {
+    try {
+      logger.debug("Variable for list view: id {}", entity.getId());
+      Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(ListViewTemplate.VAR_NAME, entity.getVarName());
+      updateFields.put(ListViewTemplate.VAR_VALUE, entity.getVarValue());
+
+      //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
+      Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+
+      return esClient
+        .prepareUpdate(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+        .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+        .setDoc(jsonMap)
+        .setRouting(workflowInstanceId);
+
+    } catch (IOException e) {
+      logger.error("Error preparing the query to upsert variable for list view", e);
+      throw new PersistenceException(String.format("Error preparing the query to upsert variable [%s]  for list view", entity.getId()), e);
     }
   }
 

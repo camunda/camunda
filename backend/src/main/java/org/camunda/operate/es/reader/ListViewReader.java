@@ -25,6 +25,8 @@ import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
+import org.camunda.operate.rest.dto.listview.VariablesQueryDto;
+import org.camunda.operate.rest.exception.InvalidRequestException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -57,6 +59,9 @@ import static org.camunda.operate.es.schema.templates.ListViewTemplate.ERROR_MSG
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.INCIDENT_KEY;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.STATE;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.VARIABLES_JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.VAR_NAME;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.VAR_VALUE;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
 import static org.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
@@ -201,12 +206,12 @@ public class ListViewReader {
       excludeIdsQuery = createExcludeIdsQuery(query.getExcludeIds());
     }
 
-//    QueryBuilder variablesQuery = null;
-//    if (query.getVariablesQuery() != null) {
-//      variablesQuery = createVariablesQuery(query.getVariablesQuery());
-//    }
+    QueryBuilder variablesQuery = null;
+    if (query.getVariablesQuery() != null) {
+      variablesQuery = createVariablesQuery(query.getVariablesQuery());
+    }
 
-    return joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, createDateQuery, endDateQuery, workflowIdQuery, bpmnProcessIdQuery, excludeIdsQuery);
+    return joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, createDateQuery, endDateQuery, workflowIdQuery, bpmnProcessIdQuery, excludeIdsQuery, variablesQuery);
   }
 
   private QueryBuilder createBpmnProcessIdQuery(String bpmnProcessId, Integer workflowVersion) {
@@ -218,31 +223,12 @@ public class ListViewReader {
     return joinWithAnd(bpmnProcessIdQ, versionQ);
   }
 
-//  private QueryBuilder createVariablesQuery(VariablesQueryDto variablesQuery) {
-//    if (variablesQuery.getName() == null) {
-//      throw new InvalidRequestException("Variables query must provide not-null variable name.");
-//    }
-//    if (variablesQuery.getValue() instanceof Long || variablesQuery.getValue() instanceof Integer) {
-//      return createVariableQuery(LONG_VARIABLES, variablesQuery);
-//    } else if (variablesQuery.getValue() instanceof String || variablesQuery.getValue() == null) {
-//      return createVariableQuery(STRING_VARIABLES, variablesQuery);
-//    } else if (variablesQuery.getValue() instanceof Double) {
-//      return createVariableQuery(DOUBLE_VARIABLES, variablesQuery);
-//    } else if (variablesQuery.getValue() instanceof Boolean) {
-//      return createVariableQuery(BOOLEAN_VARIABLES, variablesQuery);
-//    } else {
-//      logger.warn("Unable to search for variable {} with given value type: {}", variablesQuery.getName(), variablesQuery.getValue().getClass().getName());
-//      return null;
-//    }
-//  }
-
-//  private QueryBuilder createVariableQuery(String nestedCollectionName, VariablesQueryDto variablesQuery) {
-//    return nestedQuery(nestedCollectionName,
-//      joinWithAnd(
-//        termQuery(String.format("%s.%s", nestedCollectionName, VARIABLE_NAME), variablesQuery.getName()),
-//        termQuery(String.format("%s.%s", nestedCollectionName, VARIABLE_VALUE), variablesQuery.getValue() == null ? WorkflowInstanceTemplate.NULL_VALUE : variablesQuery.getValue())
-//      ), None);
-//  }
+  private QueryBuilder createVariablesQuery(VariablesQueryDto variablesQuery) {
+    if (variablesQuery.getName() == null) {
+      throw new InvalidRequestException("Variables query must provide not-null variable name.");
+    }
+    return hasChildQuery(VARIABLES_JOIN_RELATION,  joinWithAnd(termQuery(VAR_NAME, variablesQuery.getName()), termQuery(VAR_VALUE, variablesQuery.getValue())), None);
+  }
 
   private QueryBuilder createExcludeIdsQuery(List<String> excludeIds) {
     return boolQuery().mustNot(termsQuery(ListViewTemplate.ID, excludeIds));

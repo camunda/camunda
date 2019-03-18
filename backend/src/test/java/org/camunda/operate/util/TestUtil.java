@@ -19,6 +19,7 @@ import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
@@ -241,5 +242,16 @@ public abstract class TestUtil {
         q.setCompleted(true);
         q.setCanceled(true);
       });
+  }
+
+  public static VariableForListViewEntity createVariable(String workflowInstanceId, String scopeId, String name, String value) {
+    VariableForListViewEntity variable = new VariableForListViewEntity();
+    variable.setId(scopeId + "_" + name);
+    variable.setWorkflowInstanceId(workflowInstanceId);
+    variable.setScopeId(scopeId);
+    variable.setVarName(name);
+    variable.setVarValue(value);
+    variable.getJoinRelation().setParent(workflowInstanceId);
+    return variable;
   }
 }

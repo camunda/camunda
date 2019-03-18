@@ -20,14 +20,17 @@ import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeDto;
 import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeRequestDto;
 import org.camunda.operate.rest.dto.detailview.DetailViewActivityInstanceDto;
+import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
+import org.camunda.operate.rest.dto.listview.VariablesQueryDto;
 import org.camunda.operate.rest.dto.listview.WorkflowInstanceStateDto;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
+import org.camunda.operate.zeebeimport.ZeebeESImporter;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.After;
 import org.junit.Before;
@@ -150,15 +153,59 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
     assertActivityIsActive(tree.getChildren().get(1), "taskA");
   }
 
-  protected ActivityInstanceTreeDto getActivityInstanceTree(long workflowInstanceKey) {
+  @Test
+  public void testVariablesAreLoaded() {
+    // having
+    String processId = "demoProcess";
+    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
+
+    //when TC 1
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
+
+    //then we can find the instance by 2 variable values: a = b, foo = b
+    assertVariableExists(workflowInstanceKey, "a", "\"b\"");
+    assertVariableExists(workflowInstanceKey, "foo", "\"b\"");
+    assertVariableDoesNotExist(workflowInstanceKey, "a", "\"c\"");
+
+    //when TC 2
+    //update variable
+    ZeebeTestUtil.updatePayload(zeebeClient, IdTestUtil.getId(workflowInstanceKey), "{\"a\": \"c\"}");
+    elasticsearchTestRule.processAllEvents(2, ZeebeESImporter.ImportValueType.VARIABLE);
+    //then we can find the instance by 2 variable values: foo = b
+    assertVariableDoesNotExist(workflowInstanceKey, "a", "\"b\"");
+    assertVariableExists(workflowInstanceKey, "foo", "\"b\"");
+    assertVariableExists(workflowInstanceKey, "a", "\"c\"");
+  }
+
+  private void assertVariableExists(long workflowInstanceKey, String name, String value) {
+    ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView(
+      TestUtil.createGetAllWorkflowInstancesQuery(q -> {
+        q.setVariablesQuery(new VariablesQueryDto(name, value));
+      }));
+    assertThat(wi.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
+  }
+
+  private void assertVariableDoesNotExist(long workflowInstanceKey, String name, String value) {
+    final ListViewResponseDto listViewResponse = listViewReader.queryWorkflowInstances(TestUtil.createGetAllWorkflowInstancesQuery(q ->
+      q.setVariablesQuery(new VariablesQueryDto(name, value))), 0, 100);
+    assertThat(listViewResponse.getTotalCount()).isEqualTo(0);
+    assertThat(listViewResponse.getWorkflowInstances()).hasSize(0);
+  }
+
+  private ActivityInstanceTreeDto getActivityInstanceTree(long workflowInstanceKey) {
     return detailViewReader.getActivityInstanceTree(new ActivityInstanceTreeRequestDto(IdTestUtil.getId(workflowInstanceKey)));
   }
 
-  protected ListViewWorkflowInstanceDto getSingleWorkflowInstanceForListView() {
-    final ListViewResponseDto listViewResponse = listViewReader.queryWorkflowInstances(TestUtil.createGetAllWorkflowInstancesQuery(), 0, 100);
+  private ListViewWorkflowInstanceDto getSingleWorkflowInstanceForListView(ListViewRequestDto request) {
+    final ListViewResponseDto listViewResponse = listViewReader.queryWorkflowInstances(request, 0, 100);
     assertThat(listViewResponse.getTotalCount()).isEqualTo(1);
     assertThat(listViewResponse.getWorkflowInstances()).hasSize(1);
     return listViewResponse.getWorkflowInstances().get(0);
+  }
+
+  private ListViewWorkflowInstanceDto getSingleWorkflowInstanceForListView() {
+    return getSingleWorkflowInstanceForListView(TestUtil.createGetAllWorkflowInstancesQuery());
   }
 
   @Test

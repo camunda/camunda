@@ -9,12 +9,12 @@ public class VariablesQueryDto {
 
   private String name;
 
-  private Object value;
+  private String value;
 
   public VariablesQueryDto() {
   }
 
-  public VariablesQueryDto(String variableName, Object variableValue) {
+  public VariablesQueryDto(String variableName, String variableValue) {
     this.name = variableName;
     this.value = variableValue;
   }
@@ -27,11 +27,11 @@ public class VariablesQueryDto {
     this.name = name;
   }
 
-  public Object getValue() {
+  public String getValue() {
     return value;
   }
 
-  public void setValue(Object value) {
+  public void setValue(String value) {
     this.value = value;
   }
 

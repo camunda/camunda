@@ -35,9 +35,14 @@ public class ListViewTemplate extends AbstractTemplateCreator {
   public static final String INCIDENT_JOB_KEY = "incidentJobKey";
   public static final String ERROR_MSG = "errorMessage";
 
+  public static final String VAR_NAME = "varName";
+  public static final String VAR_VALUE = "varValue";
+  public static final String SCOPE_ID = "scopeId";
+
   public static final String JOIN_RELATION = "joinRelation";
   public static final String WORKFLOW_INSTANCE_JOIN_RELATION = "workflowInstance";
   public static final String ACTIVITIES_JOIN_RELATION = "activity";
+  public static final String VARIABLES_JOIN_RELATION = "variable";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -100,10 +105,23 @@ public class ListViewTemplate extends AbstractTemplateCreator {
       .startObject(ACTIVITY_TYPE)
         .field("type", "keyword")
       .endObject()
+      //variable fields
+      .startObject(SCOPE_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(VAR_NAME)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(VAR_VALUE)
+        .field("type", "keyword")
+      .endObject()
       .startObject(JOIN_RELATION)
         .field("type", "join")
         .startObject("relations")
-          .field(WORKFLOW_INSTANCE_JOIN_RELATION, ACTIVITIES_JOIN_RELATION)
+          .startArray(WORKFLOW_INSTANCE_JOIN_RELATION)
+            .value(ACTIVITIES_JOIN_RELATION)
+            .value(VARIABLES_JOIN_RELATION)
+          .endArray()
         .endObject()
       .endObject()
       .startObject(PARTITION_ID)

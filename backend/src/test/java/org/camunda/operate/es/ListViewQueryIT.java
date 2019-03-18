@@ -15,16 +15,17 @@ import java.util.Random;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperateEntity;
+import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.rest.dto.SortingDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
+import org.camunda.operate.rest.dto.listview.VariablesQueryDto;
 import org.camunda.operate.rest.dto.listview.WorkflowInstanceStateDto;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
@@ -42,6 +43,7 @@ import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INST
 import static org.camunda.operate.util.TestUtil.createActivityInstance;
 import static org.camunda.operate.util.TestUtil.createActivityInstanceWithIncident;
 import static org.camunda.operate.util.TestUtil.createIncident;
+import static org.camunda.operate.util.TestUtil.createVariable;
 import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -64,6 +66,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
 
   private WorkflowInstanceForListViewEntity instanceWithoutIncident;
+  private WorkflowInstanceForListViewEntity runningInstance;
+  private WorkflowInstanceForListViewEntity completedInstance;
+  private WorkflowInstanceForListViewEntity canceledInstance;
 
   private MockMvc mockMvc;
 
@@ -217,6 +222,54 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final ListViewWorkflowInstanceDto workflowInstance = response.getWorkflowInstances().get(0);
     assertThat(workflowInstance.getState()).isEqualTo(WorkflowInstanceStateDto.INCIDENT);
     assertThat(workflowInstance.getId()).isEqualTo(workflowInstance1.getId());
+
+  }
+
+  @Test
+  public void testQueryByVariableValue() throws Exception {
+    createData();
+
+    //given
+    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setVariablesQuery(new VariablesQueryDto("var1", "X")));
+
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+        .content(mockMvcTestRule.json(query))
+        .contentType(mockMvcTestRule.getContentType());
+    //when
+    MvcResult mvcResult = mockMvc.perform(request)
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+        .andReturn();
+
+    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
+
+    //then
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(3);
+    assertThat(response.getWorkflowInstances()).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(runningInstance.getId(),
+      completedInstance.getId(), canceledInstance.getId());
+
+  }
+
+  @Test
+  public void testQueryByVariableValueNotExists() throws Exception {
+    createData();
+
+    //given
+    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setVariablesQuery(new VariablesQueryDto("var1", "A")));
+
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+        .content(mockMvcTestRule.json(query))
+        .contentType(mockMvcTestRule.getContentType());
+    //when
+    MvcResult mvcResult = mockMvc.perform(request)
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+        .andReturn();
+
+    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
+
+    //then
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(0);
 
   }
 
@@ -1136,23 +1189,32 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 //  }
 
   private void createData() {
+    List<VariableForListViewEntity> vars = new ArrayList<>();
+
     //running instance with one activity and without incidents
     final String workflowId = "someWorkflowId";
-    final WorkflowInstanceForListViewEntity runningInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
+    runningInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
     final ActivityInstanceForListViewEntity activityInstance1 = createActivityInstance(runningInstance.getId(), ActivityState.ACTIVE);
+    vars.add(createVariable(runningInstance.getId(), runningInstance.getId(), "var1", "X"));
+    vars.add(createVariable(runningInstance.getId(), runningInstance.getId(), "var2", "Y"));
 
     //completed instance with one activity and without incidents
-    final WorkflowInstanceForListViewEntity completedInstance = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowId);
+    completedInstance = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowId);
     final ActivityInstanceForListViewEntity activityInstance2 = createActivityInstance(completedInstance.getId(), ActivityState.COMPLETED);
+    vars.add(createVariable(completedInstance.getId(), completedInstance.getId(), "var1", "X"));
+    vars.add(createVariable(completedInstance.getId(), completedInstance.getId(), "var2", "Z"));
 
     //canceled instance with two activities and without incidents
-    final WorkflowInstanceForListViewEntity canceledInstance = createWorkflowInstance(WorkflowInstanceState.CANCELED);
+    canceledInstance = createWorkflowInstance(WorkflowInstanceState.CANCELED);
     final ActivityInstanceForListViewEntity activityInstance3 = createActivityInstance(canceledInstance.getId(), ActivityState.COMPLETED);
     final ActivityInstanceForListViewEntity activityInstance4 = createActivityInstance(canceledInstance.getId(), ActivityState.TERMINATED);
+    vars.add(createVariable(canceledInstance.getId(), activityInstance3.getId(), "var1", "X"));
+    vars.add(createVariable(canceledInstance.getId(), canceledInstance.getId(), "var2", "W"));
 
     //instance with incidents (one resolved and one active) and one active activity
     final WorkflowInstanceForListViewEntity instanceWithIncident = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
     final ActivityInstanceForListViewEntity activityInstance5 = createActivityInstance(instanceWithIncident.getId(), ActivityState.ACTIVE);
+    vars.add(createVariable(instanceWithIncident.getId(), instanceWithIncident.getId(), "var1", "Y"));
     createIncident(activityInstance5, null, null);
 
     //instance with one resolved incident and one completed activity
@@ -1162,20 +1224,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //persist instances
     elasticsearchTestRule.persistNew(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident, canceledInstance,
       activityInstance1, activityInstance2, activityInstance3, activityInstance4, activityInstance5, activityInstance6);
-  }
 
-//  private void addVariableEntity(WorkflowInstanceEntity workflowInstance, String name, String value) {
-//    workflowInstance.getStringVariables().add(new StringVariableEntity(name, value));
-//  }
-//  private void addVariableEntity(WorkflowInstanceEntity workflowInstance, String name, Long value) {
-//    workflowInstance.getLongVariables().add(new LongVariableEntity(name, value));
-//  }
-//  private void addVariableEntity(WorkflowInstanceEntity workflowInstance, String name, Double value) {
-//    workflowInstance.getDoubleVariables().add(new DoubleVariableEntity(name, value));
-//  }
-//  private void addVariableEntity(WorkflowInstanceEntity workflowInstance, String name, Boolean value) {
-//    workflowInstance.getBooleanVariables().add(new BooleanVariableEntity(name, value));
-//  }
+    elasticsearchTestRule.persistNew(vars.toArray(new OperateEntity[vars.size()]));
+  }
 
   private String query(int firstResult, int maxResults) {
     return String.format("%s?firstResult=%d&maxResults=%d", QUERY_INSTANCES_URL, firstResult, maxResults);
