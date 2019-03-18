@@ -61,7 +61,10 @@ const colorStyle = ({color}) => {
       background-color: ${Colors.primaryButton03};
       color: #ffffff;
     }
-
+    &:focus {
+      color: ${Colors.uiLight02};
+      border-color: ${Colors.primaryButton01};
+    }
     &:active {
       background-color: ${Colors.primaryButton02};
       border-color: ${Colors.primaryButton02};
@@ -71,10 +74,6 @@ const colorStyle = ({color}) => {
     &:disabled {
       color: rgba(247, 248, 250, 0.6);
       border-color: ${Colors.primaryButton03};
-    }
-    &:focus {
-      color: rgba(247, 248, 250, 0.6);
-      border-color: ${Colors.primaryButton01};
     }
   `;
 
@@ -106,6 +105,13 @@ const colorStyle = ({color}) => {
       })};
     }
 
+    &:focus {
+      border-color: ${themeStyle({
+        dark: Colors.uiDark06,
+        light: Colors.uiLight03
+      })};
+    }
+
     &:active {
       background-color: ${themeStyle({
         dark: Colors.uiDark04,
@@ -133,17 +139,6 @@ const colorStyle = ({color}) => {
         light: 'rgba(69, 70, 78, 0.5)'
       })};
       box-shadow: none;
-    }
-
-    &:focus {
-      background-color: ${themeStyle({
-        dark: Colors.uiDark05,
-        light: '#f1f2f5'
-      })};
-      border-color: ${themeStyle({
-        dark: Colors.uiDark06,
-        light: Colors.uiLight03
-      })};
     }
   `;
 

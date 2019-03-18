@@ -50,40 +50,24 @@ export const FirstTH = themed(styled(TH)`
   padding-left: 27px
 
   &:before {
-    content: '';
-    position: absolute;
-    top: -1px;
-    left: -51px;
-    width: 51px;
-    height: 100%;
-
-    border-bottom: 1px solid
-      ${themeStyle({
-        dark: Colors.uiDark04,
-        light: Colors.uiLight05
-      })};
-    border-top: 1px solid
-      ${themeStyle({
-        dark: Colors.uiDark04,
-        light: Colors.uiLight05
-      })};
-
-    background-color: ${themeStyle({
-      dark: Colors.uiDark03,
-      light: Colors.uiLight02
+    content: ' ';
+    float: left;
+    height: 31px;
+    margin-top: 3px;
+    margin-right: 5px;
+    width: 1px;
+    background: ${themeStyle({
+      dark: Colors.uiDark04,
+      light: Colors.uiLight05
     })};
   }
 
   &:after {
-    content: '';
-    display: block;
-    position: absolute;
-    top: -3px !important;
-    left: 21px;
+    content: ' ';
+    float: right;
+    height: 31px;
+    margin-top: 3px;
     width: 1px;
-    height: 100% !important;
-    margin-top: 0;
-
     background: ${themeStyle({
       dark: Colors.uiDark04,
       light: Colors.uiLight05
@@ -119,6 +103,41 @@ export const IncidentTR = themed(styled(TR)`
     background-color: ${themeStyle({
       dark: Colors.darkTreeHover,
       light: Colors.lightButton05
+    })};
+  }
+`);
+
+export const Fake = themed(styled.span`
+  background: yellow;
+  position: absolute;
+
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0;
+
+  &:before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -52px;
+    width: 52px;
+    height: 100%;
+
+    border-bottom: 1px solid
+      ${themeStyle({
+        dark: Colors.uiDark04,
+        light: Colors.uiLight05
+      })};
+    border-top: 1px solid
+      ${themeStyle({
+        dark: Colors.uiDark04,
+        light: Colors.uiLight05
+      })};
+
+    background-color: ${themeStyle({
+      dark: Colors.uiDark03,
+      light: Colors.uiLight02
     })};
   }
 `);

@@ -66,7 +66,7 @@ export default class IncidentsTable extends React.Component {
     e.stopPropagation();
     this.toggleModal({
       content: incident.errorMessage,
-      title: `Flow Node ${incident.flowNodeName} Error`
+      title: `Flow Node "${incident.flowNodeName}" Error`
     });
   };
 
@@ -98,6 +98,7 @@ export default class IncidentsTable extends React.Component {
           <THead>
             <TR>
               <Styled.FirstTH>
+                <Styled.Fake />
                 <ColumnHeader
                   sortKey="errorType"
                   label="Incident Type"

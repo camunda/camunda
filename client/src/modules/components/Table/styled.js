@@ -27,14 +27,11 @@ export const TH = themed(styled.th`
     float: right;
     height: 31px;
     margin-top: 3px;
-  }
-
-  &:not(:last-child) {
-    border-right: 1px solid
-      ${themeStyle({
-        dark: Colors.uiDark04,
-        light: Colors.uiLight05
-      })};
+    width: 1px;
+    background: ${themeStyle({
+      dark: Colors.uiDark04,
+      light: Colors.uiLight05
+    })};
   }
 `);
 
