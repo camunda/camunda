@@ -30,6 +30,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.Aggregations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JavaType;
@@ -213,16 +214,21 @@ public abstract class ElasticsearchUtil {
   }
 
   public static <T extends OperateEntity> List<T> scroll(SearchRequestBuilder builder, Class<T> clazz, ObjectMapper objectMapper, TransportClient esClient) {
-    return scroll(builder, clazz, objectMapper, esClient, null);
+    return scroll(builder, clazz, objectMapper, esClient, null, null);
   }
 
 
   public static <T extends OperateEntity> List<T> scroll(SearchRequestBuilder builder, Class<T> clazz, ObjectMapper objectMapper, TransportClient esClient,
-    Consumer<SearchResponse> responseProcessor) {
+    Consumer<SearchHits> searchHitsProcessor, Consumer<Aggregations> aggsProcessor) {
     TimeValue keepAlive = new TimeValue(SCROLL_KEEP_ALIVE_MS);
     SearchResponse response = builder
       .setScroll(keepAlive)
       .get();
+
+    //call aggregations processor
+    if (aggsProcessor != null) {
+      aggsProcessor.accept(response.getAggregations());
+    }
 
     List<T> result = new ArrayList<>();
     do {
@@ -232,8 +238,8 @@ public abstract class ElasticsearchUtil {
       result.addAll(mapSearchHits(hits.getHits(), objectMapper, clazz));
 
       //call response processor
-      if (responseProcessor != null) {
-        responseProcessor.accept(response);
+      if (searchHitsProcessor != null) {
+        searchHitsProcessor.accept(response.getHits());
       }
 
       response = esClient

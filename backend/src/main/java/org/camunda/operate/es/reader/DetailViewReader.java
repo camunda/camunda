@@ -33,6 +33,7 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
@@ -188,12 +189,12 @@ public class DetailViewReader {
 
     IncidentResponseDto incidentResponse = new IncidentResponseDto();
 
-    final List<IncidentEntity> incidents = scroll(requestBuilder, IncidentEntity.class, searchResponse -> {
-      ((Terms)searchResponse.getAggregations().get(errorTypesAggName)).getBuckets().forEach(b -> {
+    final List<IncidentEntity> incidents = scroll(requestBuilder, IncidentEntity.class, aggs -> {
+      ((Terms)aggs.get(errorTypesAggName)).getBuckets().forEach(b -> {
         ErrorType errorType = ErrorType.createFrom(b.getKeyAsString());
         incidentResponse.getErrorTypes().add(new IncidentErrorTypeDto(errorType.name(), errorType.getTitle(), (int)b.getDocCount()));
       });
-      ((Terms)searchResponse.getAggregations().get(flowNodesAggName)).getBuckets().forEach(b ->
+      ((Terms)aggs.get(flowNodesAggName)).getBuckets().forEach(b ->
         incidentResponse.getFlowNodes().add(new IncidentFlowNodeDto(b.getKeyAsString(), (int)b.getDocCount())));
     });
 
@@ -210,7 +211,7 @@ public class DetailViewReader {
   }
 
   protected <T extends OperateEntity> List<T> scroll(SearchRequestBuilder builder, Class<T> clazz,
-    Consumer<SearchResponse> responseProcessor) {
-    return ElasticsearchUtil.scroll(builder, clazz, objectMapper, esClient, responseProcessor);
+    Consumer<Aggregations> aggsProcessor) {
+    return ElasticsearchUtil.scroll(builder, clazz, objectMapper, esClient, null, aggsProcessor);
   }
 }

@@ -93,12 +93,12 @@ public class OperationReader {
       .addSort(OperationTemplate.WORKFLOW_INSTANCE_ID, SortOrder.ASC)
       .addSort(OperationTemplate.START_DATE, SortOrder.DESC)
       .addSort(OperationTemplate.ID, SortOrder.ASC);
-    ElasticsearchUtil.scroll(searchRequestBuilder, OperationEntity.class, objectMapper, esClient, response -> {
-      final List<OperationEntity> operationEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, OperationEntity.class);
+    ElasticsearchUtil.scroll(searchRequestBuilder, OperationEntity.class, objectMapper, esClient, hits -> {
+      final List<OperationEntity> operationEntities = ElasticsearchUtil.mapSearchHits(hits.getHits(), objectMapper, OperationEntity.class);
       for (OperationEntity operationEntity: operationEntities) {
         CollectionUtil.addToMap(result, operationEntity.getWorkflowInstanceId(), operationEntity);
       }
-    });
+    }, null);
 
     return result;
   }
@@ -114,12 +114,12 @@ public class OperationReader {
       .addSort(OperationTemplate.START_DATE, SortOrder.DESC)
       .addSort(OperationTemplate.ID, SortOrder.ASC);
 
-    ElasticsearchUtil.scroll(searchRequestBuilder, OperationEntity.class, objectMapper, esClient, response -> {
-      final List<OperationEntity> operationEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, OperationEntity.class);
+    ElasticsearchUtil.scroll(searchRequestBuilder, OperationEntity.class, objectMapper, esClient, hits -> {
+      final List<OperationEntity> operationEntities = ElasticsearchUtil.mapSearchHits(hits.getHits(), objectMapper, OperationEntity.class);
       for (OperationEntity operationEntity: operationEntities) {
         CollectionUtil.addToMap(result, operationEntity.getIncidentId(), operationEntity);
       }
-    });
+    }, null);
 
     return result;
   }
