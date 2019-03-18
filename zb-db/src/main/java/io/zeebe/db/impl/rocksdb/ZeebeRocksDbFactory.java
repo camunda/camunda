@@ -104,8 +104,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
   private static ColumnFamilyOptions createColumnFamilyOptions() {
 
     // Options which are used on all column families
-    final ColumnFamilyOptions columnFamilyOptions =
-        new ColumnFamilyOptions().optimizeUniversalStyleCompaction();
+    final ColumnFamilyOptions columnFamilyOptions = new ColumnFamilyOptions();
 
     return columnFamilyOptions;
   }
