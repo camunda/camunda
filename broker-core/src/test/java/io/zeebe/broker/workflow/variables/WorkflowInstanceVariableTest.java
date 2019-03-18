@@ -107,7 +107,7 @@ public class WorkflowInstanceVariableTest {
     testClient.deploy(
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType("test").zeebeOutput("$.x", "$.y"))
+            .serviceTask("task", t -> t.zeebeTaskType("test").zeebeOutput("x", "y"))
             .endEvent()
             .done());
 
@@ -196,7 +196,7 @@ public class WorkflowInstanceVariableTest {
     testClient.deploy(
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType("test").zeebeOutput("$.x", "$.y"))
+            .serviceTask("task", t -> t.zeebeTaskType("test").zeebeOutput("x", "y"))
             .endEvent()
             .done());
 

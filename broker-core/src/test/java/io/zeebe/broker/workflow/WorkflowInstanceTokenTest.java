@@ -168,7 +168,7 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-1")
             .moveToLastGateway()
             .intermediateCatchEvent(
-                "catch", e -> e.message(m -> m.name("msg").zeebeCorrelationKey("$.key")))
+                "catch", e -> e.message(m -> m.name("msg").zeebeCorrelationKey("key")))
             .endEvent("end-2")
             .done());
 
@@ -259,11 +259,11 @@ public class WorkflowInstanceTokenTest {
             .moveToLastGateway()
             .eventBasedGateway("gateway")
             .intermediateCatchEvent(
-                "catch-1", e -> e.message(m -> m.name("msg-1").zeebeCorrelationKey("$.key")))
+                "catch-1", e -> e.message(m -> m.name("msg-1").zeebeCorrelationKey("key")))
             .endEvent("end-2")
             .moveToNode("gateway")
             .intermediateCatchEvent(
-                "catch-2", e -> e.message(m -> m.name("msg-2").zeebeCorrelationKey("$.key")))
+                "catch-2", e -> e.message(m -> m.name("msg-2").zeebeCorrelationKey("key")))
             .endEvent("end-3")
             .done());
 
@@ -348,7 +348,7 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-1")
             .moveToLastGateway()
             .intermediateCatchEvent(
-                "catch", e -> e.message(m -> m.name("msg").zeebeCorrelationKey("$.key")))
+                "catch", e -> e.message(m -> m.name("msg").zeebeCorrelationKey("key")))
             .endEvent("end-2")
             .done());
 
@@ -383,7 +383,7 @@ public class WorkflowInstanceTokenTest {
             .serviceTask("task-1", t -> t.zeebeTaskType("task-1"))
             .endEvent("end-1")
             .moveToLastGateway()
-            .serviceTask("task-2", t -> t.zeebeTaskType("task-2").zeebeOutput("$.result", "$.r"))
+            .serviceTask("task-2", t -> t.zeebeTaskType("task-2").zeebeOutput("result", "r"))
             .endEvent("end-2")
             .done());
 

@@ -89,10 +89,10 @@ public class IOMappingHelper {
 
   private DirectBuffer determineVariables(
       VariablesState variablesState, long elementInstanceKey, Mapping[] outputMappings) {
-    final Set<DirectBuffer> actualNeededVariables = new HashSet<>();
+    final Set<DirectBuffer> variableNames = new HashSet<>();
     for (Mapping m : outputMappings) {
-      actualNeededVariables.add(m.getSource().getTopLevelVariable());
+      variableNames.add(m.getSource().getVariableName());
     }
-    return variablesState.getVariablesAsDocument(elementInstanceKey, actualNeededVariables);
+    return variablesState.getVariablesAsDocument(elementInstanceKey, variableNames);
   }
 }

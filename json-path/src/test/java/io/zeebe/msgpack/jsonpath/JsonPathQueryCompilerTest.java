@@ -35,11 +35,11 @@ public class JsonPathQueryCompilerTest {
     final JsonPathQueryCompiler compiler = new JsonPathQueryCompiler();
 
     // when
-    final JsonPathQuery jsonPathQuery = compiler.compile("$.key1.key2[1].key3");
+    final JsonPathQuery jsonPathQuery = compiler.compile("key1.key2.key3");
 
     // then
     assertThat(jsonPathQuery.isValid()).isTrue();
-    assertThat(jsonPathQuery.getTopLevelVariable()).isEqualTo(BufferUtil.wrapString("key1"));
+    assertThat(jsonPathQuery.getVariableName()).isEqualTo(BufferUtil.wrapString("key1"));
 
     final MsgPackFilter[] filters = jsonPathQuery.getFilters();
     assertThat(filters).hasSize(4);
@@ -52,38 +52,18 @@ public class JsonPathQueryCompilerTest {
     assertThat(filters[3]).isInstanceOf(WildcardFilter.class);
 
     final MsgPackFilterContext filterInstances = jsonPathQuery.getFilterInstances();
-    assertThat(filterInstances.size()).isEqualTo(5);
+    assertThat(filterInstances.size()).isEqualTo(4);
 
     assertFilterAtPosition(filterInstances, 0, 0);
     assertFilterAtPosition(filterInstances, 1, 1);
     assertFilterAtPosition(filterInstances, 2, 1);
-    assertFilterAtPosition(filterInstances, 3, 2);
-    assertFilterAtPosition(filterInstances, 4, 1);
-  }
-
-  @Test
-  public void testWildcardCompilation() {
-    // given
-    final JsonPathQueryCompiler compiler = new JsonPathQueryCompiler();
-
-    // when
-    final JsonPathQuery jsonPathQuery = compiler.compile("$.*");
-
-    // then
-    final MsgPackFilter[] filters = jsonPathQuery.getFilters();
-    assertThat(filters).hasSize(4);
-    assertThat(filters[0]).isInstanceOf(RootCollectionFilter.class);
-    assertThat(filters[3]).isInstanceOf(WildcardFilter.class);
-
-    final MsgPackFilterContext filterInstances = jsonPathQuery.getFilterInstances();
-    assertFilterAtPosition(filterInstances, 0, 0);
-    assertFilterAtPosition(filterInstances, 1, 3);
+    assertFilterAtPosition(filterInstances, 3, 1);
   }
 
   @Test
   public void testQueryProvideUnderlyingExpression() {
     // given
-    final String expression = "$.key1.key2[1].key3";
+    final String expression = "key1.key2.key3";
     final JsonPathQueryCompiler compiler = new JsonPathQueryCompiler();
 
     // when

@@ -51,10 +51,7 @@ public class ActivityTest {
           .startEvent()
           .serviceTask(
               "task",
-              b ->
-                  b.zeebeTaskType("type")
-                      .zeebeInput("$.foo", "$.bar")
-                      .zeebeOutput("$.bar", "$.oof"))
+              b -> b.zeebeTaskType("type").zeebeInput("foo", "bar").zeebeOutput("bar", "oof"))
           .endEvent()
           .done();
 

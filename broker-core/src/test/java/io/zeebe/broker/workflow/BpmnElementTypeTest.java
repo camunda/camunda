@@ -132,7 +132,7 @@ public class BpmnElementTypeTest {
               return Bpmn.createExecutableProcess(processId())
                   .startEvent()
                   .intermediateCatchEvent(elementId())
-                  .message(b -> b.name(messageName()).zeebeCorrelationKey("$.id"))
+                  .message(b -> b.name(messageName()).zeebeCorrelationKey("id"))
                   .done();
             }
 
@@ -178,7 +178,7 @@ public class BpmnElementTypeTest {
                   .startEvent()
                   .serviceTask("task", b -> b.zeebeTaskType(taskType()))
                   .boundaryEvent(elementId())
-                  .message(b -> b.name(messageName()).zeebeCorrelationKey("$.id"))
+                  .message(b -> b.name(messageName()).zeebeCorrelationKey("id"))
                   .endEvent()
                   .done();
             }
@@ -231,7 +231,7 @@ public class BpmnElementTypeTest {
               return Bpmn.createExecutableProcess(processId())
                   .startEvent()
                   .receiveTask(elementId())
-                  .message(b -> b.name(messageName()).zeebeCorrelationKey("$.id"))
+                  .message(b -> b.name(messageName()).zeebeCorrelationKey("id"))
                   .done();
             }
 
@@ -275,7 +275,7 @@ public class BpmnElementTypeTest {
                   .startEvent()
                   .eventBasedGateway(elementId())
                   .intermediateCatchEvent()
-                  .message(b -> b.name(messageName()).zeebeCorrelationKey("$.id"))
+                  .message(b -> b.name(messageName()).zeebeCorrelationKey("id"))
                   .moveToLastGateway()
                   .intermediateCatchEvent()
                   .timerWithDuration("PT0.01S")

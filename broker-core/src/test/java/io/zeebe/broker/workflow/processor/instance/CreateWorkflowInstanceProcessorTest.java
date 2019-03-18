@@ -156,7 +156,7 @@ public class CreateWorkflowInstanceProcessorTest
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess()
             .startEvent()
-            .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
+            .message(m -> m.name("message").zeebeCorrelationKey("key"))
             .endEvent()
             .done();
     final DeployedWorkflow workflow = deployNewWorkflow(process);

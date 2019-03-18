@@ -72,32 +72,24 @@ public class ActivityOutputMappingTest {
   @Parameters(name = "from {0} to {2}")
   public static Object[][] parameters() {
     return new Object[][] {
-      {"{'x': 1}", mapping(b -> b.zeebeOutput("$.x", "$.y")), scopeVariables(tuple("y", "1"))},
-      {
-        "{'x': 1, 'y': 2}",
-        mapping(b -> b.zeebeOutput("$.y", "$.z")),
-        scopeVariables(tuple("z", "2"))
-      },
+      {"{'x': 1}", mapping(b -> b.zeebeOutput("x", "y")), scopeVariables(tuple("y", "1"))},
+      {"{'x': 1, 'y': 2}", mapping(b -> b.zeebeOutput("y", "z")), scopeVariables(tuple("z", "2"))},
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeInput("$.x", "$.y").zeebeOutput("$.y", "$.z")),
+        mapping(b -> b.zeebeInput("x", "y").zeebeOutput("y", "z")),
         scopeVariables(tuple("z", "1"))
       },
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeInput("$.x", "$.y").zeebeOutput("$.x", "$.z")),
+        mapping(b -> b.zeebeInput("x", "y").zeebeOutput("x", "z")),
         scopeVariables(tuple("z", "1"))
       },
       {
         "{'x': {'y': 2}}",
-        mapping(b -> b.zeebeOutput("$.x", "$.z")),
+        mapping(b -> b.zeebeOutput("x", "z")),
         scopeVariables(tuple("z", "{\"y\":2}"))
       },
-      {
-        "{'x': {'y': 2}}",
-        mapping(b -> b.zeebeOutput("$.x.y", "$.z")),
-        scopeVariables(tuple("z", "2"))
-      },
+      {"{'x': {'y': 2}}", mapping(b -> b.zeebeOutput("x.y", "z")), scopeVariables(tuple("z", "2"))},
     };
   }
 

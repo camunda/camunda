@@ -70,21 +70,19 @@ public class ActivityInputMappingTest {
   @Parameters(name = "from {0} to {2}")
   public static Object[][] parameters() {
     return new Object[][] {
-      {"{'x': 1}", mapping(b -> b.zeebeInput("$.x", "$.x")), activityVariables(tuple("x", "1"))},
-      {"{'x': 1}", mapping(b -> b.zeebeInput("$.x", "$.y")), activityVariables(tuple("y", "1"))},
+      {"{'x': 1}", mapping(b -> b.zeebeInput("x", "x")), activityVariables(tuple("x", "1"))},
+      {"{'x': 1}", mapping(b -> b.zeebeInput("x", "y")), activityVariables(tuple("y", "1"))},
       {
-        "{'x': 1, 'y': 2}",
-        mapping(b -> b.zeebeInput("$.y", "$.z")),
-        activityVariables(tuple("z", "2"))
+        "{'x': 1, 'y': 2}", mapping(b -> b.zeebeInput("y", "z")), activityVariables(tuple("z", "2"))
       },
       {
         "{'x': {'y': 2}}",
-        mapping(b -> b.zeebeInput("$.x", "$.x")),
+        mapping(b -> b.zeebeInput("x", "x")),
         activityVariables(tuple("x", "{\"y\":2}"))
       },
       {
         "{'x': {'y': 2}}",
-        mapping(b -> b.zeebeInput("$.x.y", "$.y")),
+        mapping(b -> b.zeebeInput("x.y", "y")),
         activityVariables(tuple("y", "2"))
       },
     };

@@ -116,7 +116,7 @@ public class BrokerReprocessingTest {
   private static final BpmnModelInstance WORKFLOW_INCIDENT =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
-          .serviceTask("task", t -> t.zeebeTaskType("test").zeebeInput("$.foo", "$.foo"))
+          .serviceTask("task", t -> t.zeebeTaskType("test").zeebeInput("foo", "foo"))
           .endEvent("end")
           .done();
 
@@ -124,7 +124,7 @@ public class BrokerReprocessingTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("catch-event")
-          .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
+          .message(m -> m.name("order canceled").zeebeCorrelationKey("orderId"))
           .sequenceFlowId("to-end")
           .endEvent()
           .done();

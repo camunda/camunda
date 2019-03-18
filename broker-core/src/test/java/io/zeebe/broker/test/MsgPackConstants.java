@@ -21,10 +21,6 @@ import io.zeebe.test.util.MsgPackUtil;
 
 public class MsgPackConstants {
 
-  public static final String NODE_STRING_PATH = "$.string";
-  public static final String NODE_JSON_OBJECT_PATH = "$.jsonObject";
-  public static final String NODE_ROOT_PATH = "$";
-
   public static final String JSON_DOCUMENT = "{'string':'value', 'jsonObject':{'testAttr':'test'}}";
   public static final String OTHER_DOCUMENT = "{'string':'bar', 'otherObject':{'testAttr':'test'}}";
   public static final String MERGED_OTHER_WITH_JSON_DOCUMENT =
