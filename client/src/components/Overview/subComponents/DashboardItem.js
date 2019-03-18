@@ -3,6 +3,7 @@ import {Button, Icon} from 'components';
 import LastModified from './LastModified';
 import {Link} from 'react-router-dom';
 import entityIcons from '../entityIcons';
+import CollectionsDropdown from './CollectionsDropdown';
 
 const EntityIcon = entityIcons.dashboard.generic.Component;
 
@@ -10,8 +11,7 @@ export default function DashboardItem({
   dashboard,
   duplicateEntity,
   showDeleteModalFor,
-  collection,
-  renderCollectionsDropdown
+  collection
 }) {
   return (
     <li className="DashboardItem listItem">
@@ -29,14 +29,14 @@ export default function DashboardItem({
               {dashboard.reports.length !== 1 ? 's' : ''}
             </span>
             <LastModified
-              label="Last modified"
+              label="Last changed"
               date={dashboard.lastModified}
               author={dashboard.lastModifier}
             />
           </div>
         </div>
       </Link>
-      {renderCollectionsDropdown(dashboard, collection)}
+      <CollectionsDropdown entity={dashboard} currentCollection={collection} />
       <div className="operations">
         <Link title="Edit Dashboard" to={`/dashboard/${dashboard.id}/edit`}>
           <Icon title="Edit Dashboard" type="edit" className="editLink" />

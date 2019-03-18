@@ -1,14 +1,16 @@
 import React from 'react';
 import {Dropdown} from 'components';
+import {withStore} from '../OverviewStore';
 
-export default function CollectionsDropdown({
-  collections,
+export default withStore(function CollectionsDropdown({
+  store: {collections},
   entity,
   toggleEntityCollection,
   currentCollection,
-  createCollectionWithEntity,
-  entityCollections = []
+  setCollectionToUpdate,
+  entitiesCollections
 }) {
+  const entityCollections = entitiesCollections[entity.id] || [];
   const collectionsCount = entityCollections.length;
   let label = <span className="noCollection">Add to Collection</span>;
   if (collectionsCount) {
@@ -37,9 +39,9 @@ export default function CollectionsDropdown({
           </Dropdown.Option>
         );
       })}
-      <Dropdown.Option onClick={() => createCollectionWithEntity({data: {entities: [entity.id]}})}>
+      <Dropdown.Option onClick={() => setCollectionToUpdate({data: {entities: [entity.id]}})}>
         Add to new Collection...
       </Dropdown.Option>
     </Dropdown>
   );
-}
+});

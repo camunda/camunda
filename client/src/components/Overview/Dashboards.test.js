@@ -3,8 +3,10 @@ import {shallow} from 'enzyme';
 
 import {Button} from 'components';
 
-import Dashboards from './Dashboards';
+import DashboardsWithStore from './Dashboards';
 jest.mock('./service');
+
+const Dashboards = DashboardsWithStore.WrappedComponent;
 
 const dashboard = {
   id: 'dashboardID',
@@ -17,12 +19,14 @@ const dashboard = {
 const dashboards = new Array(7).fill(dashboard);
 
 const props = {
-  dashboards: [dashboard],
+  store: {
+    dashboards: [dashboard]
+  },
   createDashboard: jest.fn()
 };
 
 it('should show no data indicator', () => {
-  const node = shallow(<Dashboards {...props} dashboards={[]} />);
+  const node = shallow(<Dashboards {...props} store={{dashboards: []}} />);
 
   expect(node.find('NoEntities')).toBePresent();
 });
@@ -53,13 +57,13 @@ it('should not show a button to show all entities if the number of entities is l
 });
 
 it('should show a button to show all entities if the number of entities is greater than 5', () => {
-  const node = shallow(<Dashboards {...props} dashboards={dashboards} />);
+  const node = shallow(<Dashboards {...props} store={{dashboards}} />);
 
   expect(node).toIncludeText('Show all');
 });
 
 it('should show a button to show all entities if the number of entities is greater than 5', () => {
-  const node = shallow(<Dashboards {...props} dashboards={dashboards} />);
+  const node = shallow(<Dashboards {...props} store={{dashboards}} />);
 
   const button = node.find(Button).filter('[type="link"]');
 

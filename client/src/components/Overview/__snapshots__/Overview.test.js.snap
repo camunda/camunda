@@ -1,69 +1,23 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should have a Dropdown with more creation options 1`] = `
-Array [
-  <Dropdown
-    label={
-      <React.Fragment>
-        Create New 
-        <Icon
-          type="down"
-        />
-      </React.Fragment>
-    }
+<Dropdown
+  label={
+    <Icon
+      type="down"
+    />
+  }
+>
+  <ForwardRef(DropdownOption)
+    onClick={[MockFunction]}
   >
-    <ForwardRef(DropdownOption)
-      onClick={[Function]}
-    >
-      Create Collection
-    </ForwardRef(DropdownOption)>
-    <ForwardRef(DropdownOption)
-      onClick={[Function]}
-    >
-      Create Dashboard
-    </ForwardRef(DropdownOption)>
-    <Submenu
-      label="New Report"
-    >
-      <ForwardRef(DropdownOption)
-        onClick={[Function]}
-      >
-        Create Process Report
-      </ForwardRef(DropdownOption)>
-      <ForwardRef(DropdownOption)
-        onClick={[Function]}
-      >
-        Create Combined Process Report
-      </ForwardRef(DropdownOption)>
-      <ForwardRef(DropdownOption)
-        onClick={[Function]}
-      >
-        Create Decision Report
-      </ForwardRef(DropdownOption)>
-    </Submenu>
-  </Dropdown>,
-  <Dropdown
-    label={
-      <Icon
-        type="down"
-      />
-    }
-  >
-    <ForwardRef(DropdownOption)
-      onClick={[Function]}
-    >
-      Create Process Report
-    </ForwardRef(DropdownOption)>
-    <ForwardRef(DropdownOption)
-      onClick={[Function]}
-    >
-      Create Combined Process Report
-    </ForwardRef(DropdownOption)>
-    <ForwardRef(DropdownOption)
-      onClick={[Function]}
-    >
-      Create Decision Report
-    </ForwardRef(DropdownOption)>
-  </Dropdown>,
-]
+    Create Process Report
+  </ForwardRef(DropdownOption)>
+  <ForwardRef(DropdownOption)>
+    Create Combined Process Report
+  </ForwardRef(DropdownOption)>
+  <ForwardRef(DropdownOption)>
+    Create Decision Report
+  </ForwardRef(DropdownOption)>
+</Dropdown>
 `;

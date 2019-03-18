@@ -3,9 +3,11 @@ import {shallow} from 'enzyme';
 
 import {Button} from 'components';
 
-import Reports from './Reports';
+import ReportsWithStore from './Reports';
+
 import {getReportIcon} from './service';
 
+const Reports = ReportsWithStore.WrappedComponent;
 jest.mock('./service');
 
 beforeAll(() => {
@@ -59,8 +61,10 @@ const reports = [
 ];
 
 const props = {
-  reports: [processReport],
-  collections: [collection],
+  store: {
+    reports: [processReport],
+    collections: [collection]
+  },
   duplicateEntity: jest.fn(),
   createProcessReport: jest.fn(),
   showDeleteModalFor: jest.fn(),
@@ -69,7 +73,7 @@ const props = {
 };
 
 it('should show no data indicator', () => {
-  const node = shallow(<Reports {...props} reports={[]} />);
+  const node = shallow(<Reports {...props} store={{reports: []}} />);
 
   expect(node.find('NoEntities')).toBePresent();
 });
@@ -100,13 +104,13 @@ it('should not show a button to show all entities if the number of entities is l
 });
 
 it('should show a button to show all entities if the number of entities is greater than 5', () => {
-  const node = shallow(<Reports {...props} reports={reports} />);
+  const node = shallow(<Reports {...props} store={{reports}} />);
 
   expect(node).toIncludeText('Show all');
 });
 
 it('should show a button to show all entities if the number of entities is greater than 5', () => {
-  const node = shallow(<Reports {...props} reports={reports} />);
+  const node = shallow(<Reports {...props} store={{reports}} />);
 
   const button = node.find(Button).filter('[type="link"]');
 

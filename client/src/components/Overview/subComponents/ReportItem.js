@@ -3,14 +3,9 @@ import {Button, Icon} from 'components';
 import {getReportInfo, getReportIcon} from '../service';
 import LastModified from './LastModified';
 import {Link} from 'react-router-dom';
+import CollectionsDropdown from './CollectionsDropdown';
 
-export default function ReportItem({
-  report,
-  duplicateEntity,
-  showDeleteModalFor,
-  collection,
-  renderCollectionsDropdown
-}) {
+export default function ReportItem({report, duplicateEntity, showDeleteModalFor, collection}) {
   const {Icon: ReportIcon, label} = getReportIcon(report);
 
   return (
@@ -27,11 +22,15 @@ export default function ReportItem({
           </div>
           <div className="extraInfo">
             <span className="data custom">{getReportInfo(report)}</span>
-            <LastModified date={report.lastModified} author={report.lastModifier} />
+            <LastModified
+              label="Last changed"
+              date={report.lastModified}
+              author={report.lastModifier}
+            />
           </div>
         </div>
       </Link>
-      {renderCollectionsDropdown(report, collection)}
+      <CollectionsDropdown entity={report} currentCollection={collection} />
       <div className="operations">
         <Link title="Edit Report" to={`/report/${report.id}/edit`}>
           <Icon title="Edit Report" type="edit" className="editLink" />

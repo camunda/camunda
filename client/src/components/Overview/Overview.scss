@@ -49,16 +49,13 @@
   }
 
   .createButton {
-    float: right;
-    margin: 6px 0 0 10px;
-
     & > .Button {
       border-top-right-radius: 0;
       border-bottom-right-radius: 0;
     }
 
     .Dropdown {
-      border-left: 1px solid lightgreen;
+      border-left: 1px solid white;
 
       .downIcon {
         display: none;
@@ -69,18 +66,26 @@
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;
 
-        color: white;
-        background-color: $cam-green;
-        border: 1px solid $cam-green;
-
-        &:hover {
-          background-color: darken($cam-green, 10%);
-          border: 1px solid darken($cam-green, 10%);
-        }
-
         .Icon {
           margin: 0;
         }
+      }
+    }
+  }
+
+  .createButton,
+  .createAllButton {
+    float: right;
+    margin: 6px 0 0 10px;
+
+    .activateButton {
+      color: white;
+      background-color: $cam-green;
+      border: 1px solid $cam-green;
+
+      &:hover {
+        background-color: darken($cam-green, 10%);
+        border: 1px solid darken($cam-green, 10%);
       }
     }
   }

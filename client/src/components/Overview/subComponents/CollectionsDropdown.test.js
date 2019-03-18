@@ -1,7 +1,9 @@
 import React from 'react';
 import {shallow} from 'enzyme';
-import CollectionsDropdown from './CollectionsDropdown';
+import CollectionsDropdownWithStore from './CollectionsDropdown';
 import {Dropdown} from 'components';
+
+const CollectionsDropdown = CollectionsDropdownWithStore.WrappedComponent;
 
 const processReport = {
   id: 'reportID',
@@ -24,11 +26,13 @@ const collection = {
 };
 
 const props = {
-  collections: [collection],
-  entityCollections: [collection],
+  store: {
+    collections: [collection]
+  },
   entity: processReport,
+  entitiesCollections: {reportID: [collection]},
   toggleEntityCollection: jest.fn(),
-  createCollectionWithEntity: jest.fn()
+  setCollectionToUpdate: jest.fn()
 };
 
 it('should show for each entity the collection count', () => {
@@ -43,7 +47,7 @@ it('should show for each report a dropdown with all collections', () => {
   expect(node.find(Dropdown.Option).first()).toIncludeText('aCollectionName');
 });
 
-it('should invok toggleEntityCollection to remove entity from collection when clicking on an option', () => {
+it('should invoke toggleEntityCollection to remove entity from collection when clicking on an option', () => {
   const node = shallow(<CollectionsDropdown {...props} />);
   node
     .find(Dropdown.Option)
@@ -53,8 +57,8 @@ it('should invok toggleEntityCollection to remove entity from collection when cl
   expect(props.toggleEntityCollection).toHaveBeenCalledWith(processReport, collection, true);
 });
 
-it('should invok toggleEntityCollection on collections dropdown click to add an entity to collection ', () => {
-  const node = shallow(<CollectionsDropdown {...props} entityCollections={[]} />);
+it('should invoke toggleEntityCollection on collections dropdown click to add an entity to collection ', () => {
+  const node = shallow(<CollectionsDropdown {...props} entitiesCollections={{}} />);
 
   node
     .find(Dropdown.Option)
@@ -77,7 +81,7 @@ it('should show the current collection on the top of the dropdown list', () => {
   expect(node.find(Dropdown.Option).first()).toIncludeText('test');
 });
 
-it('should invok createCollectionWithEntity when clicking Add to new collection', () => {
+it('should invoke setCollectionToUpdate when clicking Add to new collection', () => {
   const node = shallow(<CollectionsDropdown {...props} />);
 
   node
@@ -85,5 +89,5 @@ it('should invok createCollectionWithEntity when clicking Add to new collection'
     .at(1)
     .simulate('click');
 
-  expect(props.createCollectionWithEntity).toHaveBeenCalledWith({data: {entities: ['reportID']}});
+  expect(props.setCollectionToUpdate).toHaveBeenCalledWith({data: {entities: ['reportID']}});
 });

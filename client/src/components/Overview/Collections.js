@@ -8,6 +8,8 @@ import ReportItem from './subComponents/ReportItem';
 import './Collections.scss';
 import DashboardItem from './subComponents/DashboardItem';
 
+import {withStore} from './OverviewStore';
+
 class Collections extends React.Component {
   state = {
     showAllId: null
@@ -18,7 +20,9 @@ class Collections extends React.Component {
   };
 
   render() {
-    const empty = this.props.collections.length === 0 && (
+    const {updating, collections} = this.props.store;
+
+    const empty = collections.length === 0 && (
       <div className="collectionBlankSlate">
         <strong>Group Reports and Dashboards into Collections.</strong> <br />
         <Button
@@ -35,8 +39,8 @@ class Collections extends React.Component {
       <div className="Collections">
         <ul className="entityList">
           {empty}
-          {this.props.collections.length > 0 &&
-            this.props.collections.map(collection => (
+          {!empty &&
+            collections.map(collection => (
               <CollectionItem
                 key={collection.id}
                 collection={collection}
@@ -55,7 +59,6 @@ class Collections extends React.Component {
                             collection={collection}
                             duplicateEntity={this.props.duplicateEntity}
                             showDeleteModalFor={this.props.showDeleteModalFor}
-                            renderCollectionsDropdown={this.props.renderCollectionsDropdown}
                           />
                         ) : (
                           <ReportItem
@@ -64,7 +67,6 @@ class Collections extends React.Component {
                             collection={collection}
                             showDeleteModalFor={this.props.showDeleteModalFor}
                             duplicateEntity={this.props.duplicateEntity}
-                            renderCollectionsDropdown={this.props.renderCollectionsDropdown}
                           />
                         )
                       )}
@@ -94,9 +96,9 @@ class Collections extends React.Component {
               </CollectionItem>
             ))}
         </ul>
-        {this.props.updating && (
+        {updating && (
           <UpdateCollectionModal
-            collection={this.props.updating}
+            collection={updating}
             onClose={() => this.props.setCollectionToUpdate(null)}
             onConfirm={this.props.updateOrCreateCollection}
           />
@@ -106,4 +108,4 @@ class Collections extends React.Component {
   }
 }
 
-export default Collections;
+export default withStore(Collections);

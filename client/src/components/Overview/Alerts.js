@@ -147,7 +147,11 @@ class Alerts extends React.Component {
                   </div>
                   <div className="extraInfo">
                     <span className="data custom">{this.renderMetadata(itemData)}</span>
-                    <LastModified date={itemData.lastModified} author={itemData.lastModifier} />
+                    <LastModified
+                      label="Last changed"
+                      date={itemData.lastModified}
+                      author={itemData.lastModifier}
+                    />
                   </div>
                 </div>
               </span>

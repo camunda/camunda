@@ -5,6 +5,7 @@ import entityIcons from './entityIcons';
 import ReportItem from './subComponents/ReportItem';
 import NoEntities from './subComponents/NoEntities';
 import classnames from 'classnames';
+import {withStore} from './OverviewStore';
 
 const HeaderIcon = entityIcons.report.header.Component;
 const OpenCloseIcon = entityIcons.entityOpenClose;
@@ -16,12 +17,13 @@ class Reports extends React.Component {
   };
 
   render() {
-    const empty = this.props.reports.length === 0 && (
+    const {reports} = this.props.store;
+    const empty = reports.length === 0 && (
       <NoEntities label="Report" createFunction={this.props.createProcessReport} />
     );
 
     const ToggleButton = ({children}) =>
-      this.props.reports.length > 0 ? (
+      !empty ? (
         <Button className="ToggleCollapse" onClick={() => this.setState({open: !this.state.open})}>
           <OpenCloseIcon className={classnames('collapseIcon', {right: !this.state.open})} />
           {children}
@@ -43,20 +45,19 @@ class Reports extends React.Component {
           <>
             <ul className="entityList">
               {empty}
-              {this.props.reports.slice(0, this.state.limit ? 5 : undefined).map(report => (
+              {reports.slice(0, this.state.limit ? 5 : undefined).map(report => (
                 <ReportItem
                   key={report.id}
                   report={report}
                   duplicateEntity={this.props.duplicateEntity}
                   showDeleteModalFor={this.props.showDeleteModalFor}
-                  renderCollectionsDropdown={this.props.renderCollectionsDropdown}
                 />
               ))}
             </ul>
-            {this.props.reports.length > 5 &&
+            {reports.length > 5 &&
               (this.state.limit ? (
                 <>
-                  {this.props.reports.length} Reports.{' '}
+                  {reports.length} Reports.{' '}
                   <Button type="link" onClick={() => this.setState({limit: false})}>
                     Show all...
                   </Button>
@@ -73,4 +74,4 @@ class Reports extends React.Component {
   }
 }
 
-export default Reports;
+export default withStore(Reports);

@@ -15,7 +15,7 @@
   position: relative;
 
   .activateButton {
-    padding-right: 20px;
+    padding-right: 25px;
 
     &:focus {
       outline: none;
@@ -27,7 +27,7 @@
       position: absolute;
       right: 0;
       display: inline-block;
-      margin-right: 2px;
+      margin-right: 5px;
     }
   }
 

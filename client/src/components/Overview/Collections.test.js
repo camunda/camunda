@@ -3,7 +3,9 @@ import {shallow} from 'enzyme';
 
 import {Button} from 'components';
 
-import Collections from './Collections';
+import CollectionsWithStore from './Collections';
+const Collections = CollectionsWithStore.WrappedComponent;
+
 jest.mock('./service');
 
 const processReport = {
@@ -46,12 +48,14 @@ const collectionWithManyReports = {
 };
 
 const props = {
-  updating: null,
-  collections: [collection]
+  store: {
+    updating: null,
+    collections: [collection]
+  }
 };
 
 it('should show no data indicator', () => {
-  const node = shallow(<Collections {...props} collections={[]} />);
+  const node = shallow(<Collections {...props} store={{collections: []}} />);
 
   expect(node.find('.collectionBlankSlate')).toBePresent();
 });
@@ -72,7 +76,9 @@ it('should not show a button to show all reports if the number of reports is les
 });
 
 it('should show a button to show all reports if the number of reports is greater than 5', () => {
-  const node = shallow(<Collections {...props} collections={[collectionWithManyReports]} />);
+  const node = shallow(
+    <Collections {...props} store={{collections: [collectionWithManyReports]}} />
+  );
 
   node.setState({[collection.id]: true});
 
@@ -80,7 +86,9 @@ it('should show a button to show all reports if the number of reports is greater
 });
 
 it('should show a button to show less reports if the number of reports is greater than 5', () => {
-  const node = shallow(<Collections {...props} collections={[collectionWithManyReports]} />);
+  const node = shallow(
+    <Collections {...props} store={{collections: [collectionWithManyReports]}} />
+  );
   node.setState({[collection.id]: true});
 
   node.find(Button).simulate('click');

@@ -55,7 +55,8 @@ it('should invok setCollectionToUpdate on updating a collection', () => {
 
   expect(props.setCollectionToUpdate).toHaveBeenCalledWith({
     id: 'aCollectionId',
-    name: 'aCollectionName'
+    name: 'aCollectionName',
+    data: {entities: ['reportID']}
   });
 });
 
