@@ -458,9 +458,9 @@ public class TestStreams {
         }
 
         @Override
-        public void processingFailed(Exception exception) {
+        public void onError(Throwable throwable) {
           if (actualProcessor != null) {
-            actualProcessor.processingFailed(exception);
+            actualProcessor.onError(throwable);
           }
         }
 

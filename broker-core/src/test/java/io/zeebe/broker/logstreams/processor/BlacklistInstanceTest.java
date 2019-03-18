@@ -270,7 +270,7 @@ public class BlacklistInstanceTest {
     delegatingEventProcessor.wrap(processor, typedEvent, 1024);
 
     // when
-    delegatingEventProcessor.processingFailed(new Exception("expected"));
+    delegatingEventProcessor.onError(new Exception("expected"));
 
     // then
     metadata.intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
