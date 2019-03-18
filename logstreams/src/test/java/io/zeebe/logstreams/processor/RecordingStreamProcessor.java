@@ -38,7 +38,7 @@ public class RecordingStreamProcessor implements StreamProcessor {
             }
 
             @Override
-            public void processingFailed(Exception exception) {
+            public void onError(Throwable exception) {
               failedEvents.incrementAndGet();
             }
           });
