@@ -8,7 +8,7 @@ exports[`it should display correct configuration for barchart 1`] = `
     className="ColorSection"
   >
     <legend>
-      Select visualization color
+      Visualization Color
     </legend>
     <ColorPicker
       onChange={[Function]}
@@ -19,17 +19,19 @@ exports[`it should display correct configuration for barchart 1`] = `
     className="axisConfig"
   >
     <legend>
-      Axis names
+      Axis Labels
     </legend>
     <LabeledInput
-      label="x-axis"
+      label="X Axis"
       onChange={[Function]}
+      placeholder="X Axis Label"
       type="text"
       value=""
     />
     <LabeledInput
-      label="y-axis"
+      label="Y Axis"
       onChange={[Function]}
+      placeholder="Y Axis Label"
       type="text"
       value=""
     />

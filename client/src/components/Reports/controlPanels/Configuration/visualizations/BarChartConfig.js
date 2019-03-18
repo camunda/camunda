@@ -2,6 +2,8 @@ import React from 'react';
 import {ColorPicker, Switch, LabeledInput} from 'components';
 import ChartTargetInput from './subComponents/ChartTargetInput';
 
+import './BarChartConfig.scss';
+
 export default function BarChartConfig({onChange, report}) {
   const {
     combined,
@@ -12,7 +14,7 @@ export default function BarChartConfig({onChange, report}) {
     <div className="BarChartConfig">
       {!combined && (
         <fieldset className="ColorSection">
-          <legend>Select visualization color</legend>
+          <legend>Visualization Color</legend>
           <ColorPicker
             selectedColor={configuration.color}
             onChange={color => onChange({color: {$set: color}})}
@@ -20,15 +22,17 @@ export default function BarChartConfig({onChange, report}) {
         </fieldset>
       )}
       <fieldset className="axisConfig">
-        <legend>Axis names</legend>
+        <legend>Axis Labels</legend>
         <LabeledInput
-          label="x-axis"
+          label="X Axis"
+          placeholder="X Axis Label"
           type="text"
           value={configuration.xLabel}
           onChange={({target: {value}}) => onChange({xLabel: {$set: value}})}
         />
         <LabeledInput
-          label="y-axis"
+          label="Y Axis"
+          placeholder="Y Axis Label"
           type="text"
           value={configuration.yLabel}
           onChange={({target: {value}}) => onChange({yLabel: {$set: value}})}
