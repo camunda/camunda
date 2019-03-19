@@ -133,6 +133,7 @@ exports[`Selection should contain Actions 1`] = `
 ",
                         ]
                       }
+                      data-button-open={false}
                       data-test="dropdown-toggle"
                       onClick={[Function]}
                       onKeyDown={[Function]}
@@ -145,6 +146,7 @@ exports[`Selection should contain Actions 1`] = `
 ",
                           ]
                         }
+                        data-button-open={false}
                         data-test="dropdown-toggle"
                         forwardedRef={null}
                         onClick={[Function]}
@@ -158,6 +160,7 @@ exports[`Selection should contain Actions 1`] = `
 ",
                             ]
                           }
+                          data-button-open={false}
                           data-test="dropdown-toggle"
                           onClick={[Function]}
                           onKeyDown={[Function]}
@@ -171,6 +174,7 @@ exports[`Selection should contain Actions 1`] = `
 ",
                               ]
                             }
+                            data-button-open={false}
                             data-test="dropdown-toggle"
                             forwardedClass={
                               Object {
@@ -233,6 +237,7 @@ exports[`Selection should contain Actions 1`] = `
                           >
                             <button
                               className="sc-jzJRlG fBbEHG"
+                              data-button-open={false}
                               data-test="dropdown-toggle"
                               onClick={[Function]}
                               onKeyDown={[Function]}
@@ -1720,6 +1725,7 @@ exports[`Selection should contain a Header 1`] = `
 ",
                                   ]
                                 }
+                                data-button-open={false}
                                 data-test="dropdown-toggle"
                                 onClick={[Function]}
                                 onKeyDown={[Function]}
@@ -1732,6 +1738,7 @@ exports[`Selection should contain a Header 1`] = `
 ",
                                     ]
                                   }
+                                  data-button-open={false}
                                   data-test="dropdown-toggle"
                                   forwardedRef={null}
                                   onClick={[Function]}
@@ -1745,6 +1752,7 @@ exports[`Selection should contain a Header 1`] = `
 ",
                                       ]
                                     }
+                                    data-button-open={false}
                                     data-test="dropdown-toggle"
                                     onClick={[Function]}
                                     onKeyDown={[Function]}
@@ -1758,6 +1766,7 @@ exports[`Selection should contain a Header 1`] = `
 ",
                                         ]
                                       }
+                                      data-button-open={false}
                                       data-test="dropdown-toggle"
                                       forwardedClass={
                                         Object {
@@ -1820,6 +1829,7 @@ exports[`Selection should contain a Header 1`] = `
                                     >
                                       <button
                                         className="sc-jzJRlG fBbEHG"
+                                        data-button-open={false}
                                         data-test="dropdown-toggle"
                                         onClick={[Function]}
                                         onKeyDown={[Function]}

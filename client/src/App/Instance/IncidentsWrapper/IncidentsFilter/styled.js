@@ -107,24 +107,34 @@ export const MoreDropdown = themed(styled(Dropdown)`
         dark: Colors.uiDark02,
         light: Colors.uiDark04
       })};
+
+    &:active,
+    &[data-button-open='true'] {
+      color: #fff;
+      background: ${Colors.selections};
+      border-color: ${Colors.primaryButton01};
+    }
   }
-  // style drop down
+
   [data-test='menu'] {
     margin-top: 9px;
     width: 235px;
     padding: 0 6px;
     z-index: 4;
   }
+
   li {
     width: 100%;
+
     &:not(:last-child) {
       border-bottom: 0;
     }
-
+    // style arrows
     &:first-child {
       &:before {
         margin-right: -4px;
       }
+
       &:after {
         margin-right: -3px;
       }
@@ -135,7 +145,9 @@ export const MoreDropdown = themed(styled(Dropdown)`
         }
       }
     }
+    // end style arrows
   }
+
   button {
     border-radius: 16px !important;
   }

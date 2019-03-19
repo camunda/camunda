@@ -73,6 +73,10 @@ export const Pill = themed(styled.button`
       light: Colors.uiLight06
     })};
 
+    ${({isActive}) => isActive && 'background: #fff'}
+    ${({isActive}) => isActive && `color: ${Colors.selections}`}
+
+
     opacity: ${themeStyle({
       dark: 1,
       light: 0.5
@@ -89,6 +93,9 @@ export const Pill = themed(styled.button`
         light: Colors.lightButton01
       })};
 
+      ${({isActive}) => isActive && 'background: #fff'}
+      ${({isActive}) => isActive && `color: ${Colors.selections}`}
+      
       opacity: ${themeStyle({
         dark: 1,
         light: 0.55

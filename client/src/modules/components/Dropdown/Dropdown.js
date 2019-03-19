@@ -125,6 +125,7 @@ export default class Dropdown extends React.Component {
           buttonStyles={this.props.buttonStyles}
           disabled={this.props.disabled}
           onClick={() => this.handleOnClick()}
+          data-button-open={isOpen}
         >
           {this.renderLabel()}
           <Down />

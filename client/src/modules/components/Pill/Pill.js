@@ -32,7 +32,8 @@ Pill.propTypes = {
   isActive: PropTypes.bool.isRequired,
   children: PropTypes.node,
   count: PropTypes.number,
-  grow: PropTypes.bool
+  grow: PropTypes.bool,
+  onClick: PropTypes.func
 };
 
 Pill.defaultProps = {
