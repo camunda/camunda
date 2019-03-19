@@ -323,7 +323,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     entities.add(workflowInstance1);
     activityInstances.addAll(Arrays.asList(activeWithIdActivityInstance, completedWithoutIdActivityInstance));
 
-    //wi 2: active with active activity with another id
+    //wi 2: active with active activity with another id and incident activity with given id
     final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
 
     final ActivityInstanceForListViewEntity activeWithoutIdActivityInstance = createActivityInstance(workflowInstance2.getId(), ActivityState.ACTIVE, "otherActivityId");
@@ -471,7 +471,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     entities.addAll(Arrays.asList(workflowInstance2, terminatedWithoutIdActivityInstance, completedWithIdActivityInstance));
 
-    //wi3: active with ACTIVE activity with given id
+    //wi3: active with TERMINATED activity with given id
     final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
 
     final ActivityInstanceForListViewEntity activeWithIdActivityInstance = createActivityInstance(workflowInstance3.getId(), ActivityState.TERMINATED, activityId);
@@ -501,6 +501,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     data = createDataForTerminatedActivityIdQuery(activityId);
     selectedIds.add(data[0].getId());
+    selectedIds.add(data[6].getId());
     elasticsearchTestRule.persistNew(data);
 
     //when

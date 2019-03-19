@@ -171,6 +171,8 @@ public class ListViewReader {
   private QueryBuilder createQueryFragment(ListViewQueryDto query) {
     final QueryBuilder runningFinishedQuery = createRunningFinishedQuery(query);
 
+    final QueryBuilder activityIdQuery = createActivityIdQuery(query);
+
     QueryBuilder idsQuery = null;
     if (query.getIds() != null && !query.getIds().isEmpty()) {
       idsQuery = createIdsQuery(query.getIds());
@@ -211,7 +213,7 @@ public class ListViewReader {
       variablesQuery = createVariablesQuery(query.getVariablesQuery());
     }
 
-    return joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, createDateQuery, endDateQuery, workflowIdQuery, bpmnProcessIdQuery, excludeIdsQuery, variablesQuery);
+    return joinWithAnd(runningFinishedQuery, activityIdQuery, idsQuery, errorMessageQuery, createDateQuery, endDateQuery, workflowIdQuery, bpmnProcessIdQuery, excludeIdsQuery, variablesQuery);
   }
 
   private QueryBuilder createBpmnProcessIdQuery(String bpmnProcessId, Integer workflowVersion) {
@@ -305,16 +307,14 @@ public class ListViewReader {
       runningQuery = boolQuery().mustNot(existsQuery(END_DATE));
 
       QueryBuilder activeQuery = createActiveQuery(query);
-      QueryBuilder activeActivityIdQuery = createActivityIdQuery(query.getActivityId(), ActivityState.ACTIVE, query.isActive());
       QueryBuilder incidentsQuery = createIncidentsQuery(query);
-      QueryBuilder incidentActivityIdQuery = createActivityIdIncidentQuery(query.getActivityId(), query.isIncidents());
 
       if (query.getActivityId() == null && query.isActive() && query.isIncidents()) {
          //we request all running instances
       } else {
         //some of the queries may be null
         runningQuery = joinWithAnd(runningQuery,
-          joinWithOr(joinWithAnd(activeQuery, activeActivityIdQuery), joinWithAnd(incidentsQuery, incidentActivityIdQuery)));
+          joinWithOr(activeQuery, incidentsQuery));
       }
     }
 
@@ -326,14 +326,12 @@ public class ListViewReader {
       finishedQuery = existsQuery(END_DATE);
 
       QueryBuilder completedQuery = createCompletedQuery(query);
-      QueryBuilder completedActivityIdQuery = createActivityIdQuery(query.getActivityId(), ActivityState.COMPLETED, query.isCompleted());
       QueryBuilder canceledQuery = createCanceledQuery(query);
-      QueryBuilder canceledActivityIdQuery = createActivityIdQuery(query.getActivityId(), ActivityState.TERMINATED, query.isCanceled());
 
       if (query.getActivityId() == null && query.isCompleted() && query.isCanceled()) {
         //we request all finished instances
       } else {
-        finishedQuery = joinWithAnd(finishedQuery, joinWithOr(joinWithAnd(completedQuery, completedActivityIdQuery), joinWithAnd(canceledQuery, canceledActivityIdQuery)));
+        finishedQuery = joinWithAnd(finishedQuery, joinWithOr(completedQuery, canceledQuery));
       }
     }
 
@@ -345,6 +343,29 @@ public class ListViewReader {
 
     return workflowInstanceQuery;
 
+  }
+
+  private QueryBuilder createActivityIdQuery(ListViewQueryDto query) {
+    if (query.getActivityId() == null) {
+      return null;
+    }
+    QueryBuilder activeActivityIdQuery = null;
+    if (query.isActive()) {
+      activeActivityIdQuery = createActivityIdQuery(query.getActivityId(), ActivityState.ACTIVE);
+    }
+    QueryBuilder incidentActivityIdQuery = null;
+    if (query.isIncidents()) {
+      incidentActivityIdQuery = createActivityIdIncidentQuery(query.getActivityId());
+    }
+    QueryBuilder completedActivityIdQuery = null;
+    if (query.isCompleted()) {
+      completedActivityIdQuery = createActivityIdQuery(query.getActivityId(), ActivityState.COMPLETED);
+    }
+    QueryBuilder canceledActivityIdQuery = null;
+    if (query.isCanceled()) {
+      canceledActivityIdQuery = createActivityIdQuery(query.getActivityId(), ActivityState.TERMINATED);
+    }
+    return joinWithOr(activeActivityIdQuery, incidentActivityIdQuery, completedActivityIdQuery, canceledActivityIdQuery);
   }
 
   private QueryBuilder createCanceledQuery(ListViewQueryDto query) {
@@ -376,10 +397,7 @@ public class ListViewReader {
 
   }
 
-  private QueryBuilder createActivityIdQuery(String activityId, ActivityState state, boolean createQuery) {
-    if (activityId == null || createQuery == false) {
-      return null;
-    }
+  private QueryBuilder createActivityIdQuery(String activityId, ActivityState state) {
     final QueryBuilder activitiesQuery = termQuery(ACTIVITY_STATE, state.name());
     final QueryBuilder activityIdQuery = termQuery(ACTIVITY_ID, activityId);
     QueryBuilder activityIsEndNodeQuery = null;
@@ -390,10 +408,7 @@ public class ListViewReader {
     return hasChildQuery(ACTIVITIES_JOIN_RELATION,  joinWithAnd(activitiesQuery, activityIdQuery, activityIsEndNodeQuery), None);
   }
 
-  private QueryBuilder createActivityIdIncidentQuery(String activityId, boolean createQuery) {
-    if (activityId == null || createQuery == false) {
-      return null;
-    }
+  private QueryBuilder createActivityIdIncidentQuery(String activityId) {
     final QueryBuilder activitiesQuery = termQuery(ACTIVITY_STATE, ActivityState.ACTIVE.name());
     final QueryBuilder activityIdQuery = termQuery(ACTIVITY_ID, activityId);
     final ExistsQueryBuilder incidentExists = existsQuery(ERROR_MSG);

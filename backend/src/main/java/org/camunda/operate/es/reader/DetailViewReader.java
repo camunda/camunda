@@ -105,7 +105,6 @@ public class DetailViewReader {
     final SearchResponse response =
       esClient.prepareSearch(incidentTemplate.getAlias())
         .setQuery(query)
-        .addSort(IncidentTemplate.CREATION_TIME, SortOrder.ASC)
         .get();
     if (response.getHits().totalHits == 1) {
       return ElasticsearchUtil
