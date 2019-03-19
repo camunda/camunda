@@ -8,7 +8,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {EMPTY_PLACEHOLDER, NULL_PLACEHOLDER} from './constants';
-import {safelyParseValue} from './service';
 import * as Styled from './styled';
 
 export default class Variables extends React.Component {
@@ -36,7 +35,7 @@ export default class Variables extends React.Component {
                 {this.props.variables.map(({name, value}) => (
                   <Styled.TR key={name} data-test={name}>
                     <Styled.TD isBold={true}>{name}</Styled.TD>
-                    <Styled.TD>{safelyParseValue(value)}</Styled.TD>
+                    <Styled.TD>{value}</Styled.TD>
                   </Styled.TR>
                 ))}
               </tbody>

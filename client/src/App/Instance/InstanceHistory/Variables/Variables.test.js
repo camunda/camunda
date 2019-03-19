@@ -11,7 +11,6 @@ import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {createVariables} from 'modules/testUtils';
 
 import {EMPTY_PLACEHOLDER, NULL_PLACEHOLDER} from './constants';
-import {safelyParseValue} from './service';
 import Variables from './Variables';
 
 function mountNode(props = {}) {
@@ -52,7 +51,7 @@ describe('Variables', () => {
       const columns = row.find('td');
       expect(columns).toHaveLength(2);
       expect(columns.at(0).text()).toContain(variable.name);
-      expect(columns.at(1).text()).toContain(safelyParseValue(variable.value));
+      expect(columns.at(1).text()).toContain(variable.value);
     });
   });
 });
