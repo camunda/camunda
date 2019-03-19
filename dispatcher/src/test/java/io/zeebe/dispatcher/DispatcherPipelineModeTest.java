@@ -96,7 +96,6 @@ public class DispatcherPipelineModeTest {
     // then
     assertThatThrownBy(() -> future.get())
         .isInstanceOf(ExecutionException.class)
-        .hasMessage("Subscription with name nonExisting not registered")
         .hasCauseInstanceOf(RuntimeException.class);
   }
 
