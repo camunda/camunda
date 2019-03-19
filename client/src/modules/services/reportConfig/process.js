@@ -62,92 +62,50 @@ const combinations = {
 
 export const view = {
   rawData: {
-    data: {operation: 'rawData'},
+    data: {property: 'rawData', entity: null},
     label: 'Raw Data',
     next: combinations.rawData
   },
-  frequency: {
+  processInstance: {
+    label: 'Process Instance',
     data: {
-      operation: 'count',
-      property: 'frequency',
-      entity: [
-        {
-          data: 'processInstance',
-          label: 'Process Instances',
-          next: combinations.instance
-        },
-        {
-          data: 'flowNode',
-          label: 'Flow Nodes',
-          next: combinations.flowNodes
-        }
-      ]
-    },
-    label: 'Count Frequency of'
-  },
-  processInstanceDuration: {
-    data: {
-      property: 'duration',
       entity: 'processInstance',
-      operation: [
+      property: [
         {
-          data: 'min',
-          label: 'Minimum',
+          data: 'frequency',
+          label: 'Count',
           next: combinations.instance
         },
         {
-          data: 'avg',
-          label: 'Average',
-          next: combinations.instance
-        },
-        {
-          data: 'median',
-          label: 'Median',
-          next: combinations.instance
-        },
-        {
-          data: 'max',
-          label: 'Maximum',
+          data: 'duration',
+          label: 'Duration',
           next: combinations.instance
         }
       ]
-    },
-    label: 'Process Instance Duration'
+    }
   },
-  flowNodeDuration: {
+  flowNode: {
+    label: 'Flow Node',
     data: {
-      property: 'duration',
       entity: 'flowNode',
-      operation: [
+      property: [
         {
-          data: 'min',
-          label: 'Minimum',
+          data: 'frequency',
+          label: 'Count',
           next: combinations.flowNodes
         },
         {
-          data: 'avg',
-          label: 'Average',
-          next: combinations.flowNodes
-        },
-        {
-          data: 'median',
-          label: 'Median',
-          next: combinations.flowNodes
-        },
-        {
-          data: 'max',
-          label: 'Maximum',
+          data: 'duration',
+          label: 'Duration',
           next: combinations.flowNodes
         }
       ]
-    },
-    label: 'Flow Node Duration'
+    }
   },
   userTaskDuration: {
     label: 'User Task Duration',
     data: {
       entity: 'userTask',
-      operation: 'avg',
       property: [
         {data: 'idleDuration', label: 'Idle', next: combinations.flowNodes},
         {data: 'workDuration', label: 'Work', next: combinations.flowNodes},

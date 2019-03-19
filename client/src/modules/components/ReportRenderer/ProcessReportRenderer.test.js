@@ -32,7 +32,8 @@ const report = {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: '1',
     view: {
-      operation: 'foo'
+      property: 'foo',
+      entity: 'whatever'
     },
     groupBy: {
       type: 'bar'
@@ -56,7 +57,7 @@ it('should display a number if visualization is number', () => {
   });
 
   expect(node.find(Number)).toBePresent();
-  expect(node.find(Number).prop('report')).toBe(report);
+  expect(node.find(Number).prop('report')).toEqual(report);
 });
 
 it('should provide an errorMessage property to the component', () => {
@@ -152,7 +153,7 @@ it('should not add instruction for group by if operation is raw data', () => {
     data: {
       ...report.data,
       view: {
-        operation: 'rawData'
+        property: 'rawData'
       }
     }
   };
@@ -172,7 +173,8 @@ const exampleDurationReport = {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: '1',
     view: {
-      operation: 'foo'
+      property: 'foo',
+      entity: 'whatever'
     },
     groupBy: {
       type: 'processInstance',
@@ -194,4 +196,45 @@ it('should pass the report to the visualization component', () => {
   });
 
   expect(node.find(Table)).toHaveProp('report', exampleDurationReport);
+});
+
+it('should process duration reports', () => {
+  const node = shallow(
+    <ProcessReportRenderer
+      report={{
+        combined: false,
+        reportType: 'process',
+        resultType: 'durationMap',
+        data: {
+          processDefinitionKey: 'aKey',
+          processDefinitionVersion: '1',
+          view: {
+            property: 'duration',
+            entity: 'processInstance'
+          },
+          groupBy: {
+            type: 'processInstance',
+            unit: 'day'
+          },
+          visualization: 'table',
+          configuration: {}
+        },
+        result: {
+          '2015-03-25T12:00:00Z': {min: 1, median: 2, avg: 3, max: 4},
+          '2015-03-26T12:00:00Z': {min: 5, median: 6, avg: 7, max: 8}
+        }
+      }}
+    />
+  );
+
+  node.setState({
+    loaded: true
+  });
+
+  const passedReport = node.find(Table).prop('report');
+
+  expect(passedReport.result).toEqual({
+    '2015-03-25T12:00:00Z': 3,
+    '2015-03-26T12:00:00Z': 7
+  });
 });

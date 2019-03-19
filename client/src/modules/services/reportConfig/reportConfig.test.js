@@ -15,9 +15,9 @@ it('should get a label for a simple visualization', () => {
 });
 
 it('should get a label for a complex view', () => {
-  expect(
-    getLabelFor(view, {operation: 'count', entity: 'processInstance', property: 'frequency'})
-  ).toBe('Count Frequency of: Process Instances');
+  expect(getLabelFor(view, {entity: 'processInstance', property: 'frequency'})).toBe(
+    'Process Instance: Count'
+  );
 });
 
 it('should get a label for group by variables', () => {
@@ -55,22 +55,21 @@ it('should return undefined if an unambiguous next config param could not be fou
 });
 
 it('should always allow view selection', () => {
-  expect(isAllowed({operation: 'rawData'})).toBe(true);
+  expect(isAllowed({property: 'rawData', entity: null})).toBe(true);
 });
 
 it('should allow only groupBy options that make sense for the selected view', () => {
-  expect(isAllowed({operation: 'rawData'}, {type: 'none'})).toBe(true);
-  expect(isAllowed({operation: 'rawData'}, {type: 'flowNodes'})).toBe(false);
+  expect(isAllowed({property: 'rawData', entity: null}, {type: 'none'})).toBe(true);
+  expect(isAllowed({property: 'rawData', entity: null}, {type: 'flowNodes'})).toBe(false);
 });
 
 it('should allow only visualization options that make sense for the selected view and group', () => {
-  expect(isAllowed({operation: 'rawData'}, {type: 'none'}, 'table')).toBe(true);
-  expect(isAllowed({operation: 'rawData'}, {type: 'none'}, 'heat')).toBe(false);
+  expect(isAllowed({property: 'rawData', entity: null}, {type: 'none'}, 'table')).toBe(true);
+  expect(isAllowed({property: 'rawData', entity: null}, {type: 'none'}, 'heat')).toBe(false);
 
   expect(
     isAllowed(
       {
-        operation: 'avg',
         entity: 'processInstance',
         property: 'duration'
       },
@@ -86,7 +85,6 @@ it('should allow only visualization options that make sense for the selected vie
   expect(
     isAllowed(
       {
-        operation: 'avg',
         entity: 'processInstance',
         property: 'duration'
       },

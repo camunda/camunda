@@ -57,11 +57,7 @@ export default class ProcessReportRenderer extends React.Component {
       );
     }
 
-    const {
-      report: {
-        data: {view}
-      }
-    } = this.props;
+    const {report} = this.props;
 
     if (!this.state.loaded) {
       return <LoadingIndicator />;
@@ -71,8 +67,9 @@ export default class ProcessReportRenderer extends React.Component {
 
     const props = {
       ...this.props,
-      formatter: getFormatter(view.property),
-      flowNodeNames: this.state.flowNodeNames
+      formatter: getFormatter(report.data.view.property),
+      flowNodeNames: this.state.flowNodeNames,
+      report: {...this.props.report, result: processResult(this.props.report)}
     };
 
     return (
@@ -116,4 +113,19 @@ export default class ProcessReportRenderer extends React.Component {
         return ReportBlankSlate;
     }
   };
+}
+
+function processResult(report) {
+  if (report.data.view.property.toLowerCase().includes('duration')) {
+    if (report.resultType === 'durationNumber') {
+      return report.result.avg;
+    }
+    if (report.resultType === 'durationMap') {
+      return Object.entries(report.result).reduce((result, [key, {avg}]) => {
+        result[key] = avg;
+        return result;
+      }, {});
+    }
+  }
+  return report.result;
 }
