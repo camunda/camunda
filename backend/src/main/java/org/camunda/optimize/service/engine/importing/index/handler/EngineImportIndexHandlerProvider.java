@@ -13,7 +13,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningA
 import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.UserOperationLogInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableUpdateInstanceImportIndexHandler;
-import org.camunda.optimize.service.util.BeanHelper;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -31,7 +31,7 @@ import java.util.Map;
 public class EngineImportIndexHandlerProvider {
 
   @Autowired
-  private BeanHelper beanHelper;
+  private BeanFactory beanFactory;
 
   private final EngineContext engineContext;
 
@@ -107,7 +107,7 @@ public class EngineImportIndexHandlerProvider {
         allHandlers.get(requiredType.getSimpleName())
       );
     } else {
-      result = beanHelper.getInstance(requiredType, engineContext);
+      result = beanFactory.getBean(requiredType, engineContext);
     }
     return result;
   }
@@ -147,6 +147,7 @@ public class EngineImportIndexHandlerProvider {
   public CompletedUserTaskInstanceImportIndexHandler getCompletedUserTaskInstanceImportIndexHandler() {
     return getImportIndexHandlerInstance(engineContext, CompletedUserTaskInstanceImportIndexHandler.class);
   }
+
   public UserOperationLogInstanceImportIndexHandler getUserOperationLogImportIndexHandler() {
     return getImportIndexHandlerInstance(engineContext, UserOperationLogInstanceImportIndexHandler.class);
   }

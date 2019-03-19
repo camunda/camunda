@@ -23,7 +23,6 @@ import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.util.SynchronizationElasticsearchImportJob;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -136,9 +135,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public void storeImportIndexesToElasticsearch() {
     for (EngineContext engineContext : getConfiguredEngines()) {
-      StoreIndexesEngineImportMediator storeIndexesEngineImportJobFactory = (StoreIndexesEngineImportMediator)
+      StoreIndexesEngineImportMediator storeIndexesEngineImportJobFactory =
         getApplicationContext().getBean(
-          BeanHelper.getBeanName(StoreIndexesEngineImportMediator.class),
+          StoreIndexesEngineImportMediator.class,
           engineContext
         );
       storeIndexesEngineImportJobFactory.disableBlocking();

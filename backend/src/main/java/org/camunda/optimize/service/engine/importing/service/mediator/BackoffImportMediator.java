@@ -5,11 +5,11 @@ import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHa
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.util.BackoffCalculator;
-import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.ImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
@@ -20,7 +20,7 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
   protected T importIndexHandler;
 
   @Autowired
-  protected BeanHelper beanHelper;
+  protected BeanFactory beanFactory;
 
   @Autowired
   protected ConfigurationService configurationService;

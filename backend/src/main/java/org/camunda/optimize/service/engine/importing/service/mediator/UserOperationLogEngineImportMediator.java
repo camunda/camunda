@@ -37,7 +37,7 @@ public class UserOperationLogEngineImportMediator
   @PostConstruct
   public void init() {
     importIndexHandler = provider.getUserOperationLogImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanHelper.getInstance(UserOperationLogEntryFetcher.class, engineContext);
+    engineEntityFetcher = beanFactory.getBean(UserOperationLogEntryFetcher.class, engineContext);
     userOperationLogImportService = new UserOperationLogImportService(
       userOperationsLogEntryWriter, elasticsearchImportJobExecutor, engineContext
     );

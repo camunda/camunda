@@ -4,7 +4,6 @@ import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportInd
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
-import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +25,6 @@ public abstract class TimestampBasedImportIndexHandler
   private TimestampBasedImportIndexReader importIndexReader;
   @Autowired
   protected ConfigurationService configurationService;
-  @Autowired
-  protected BeanHelper beanHelper;
 
   private OffsetDateTime persistedTimestampOfLastEntity = getTimestampBeforeEngineExisted();
   private OffsetDateTime timestampOfLastEntity = persistedTimestampOfLastEntity;

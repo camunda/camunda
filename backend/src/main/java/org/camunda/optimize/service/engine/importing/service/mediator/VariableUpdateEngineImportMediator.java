@@ -37,7 +37,7 @@ public class VariableUpdateEngineImportMediator
   @PostConstruct
   public void init() {
     importIndexHandler = provider.getRunningVariableInstanceImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanHelper.getInstance(VariableUpdateInstanceFetcher.class, engineContext);
+    engineEntityFetcher = beanFactory.getBean(VariableUpdateInstanceFetcher.class, engineContext);
     variableUpdateInstanceImportService = new VariableUpdateInstanceImportService(
       variableWriter, importAdapterProvider, elasticsearchImportJobExecutor, engineContext
     );

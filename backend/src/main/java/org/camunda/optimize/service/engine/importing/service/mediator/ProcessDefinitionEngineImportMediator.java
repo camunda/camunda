@@ -32,7 +32,7 @@ public class ProcessDefinitionEngineImportMediator
   @PostConstruct
   public void init() {
     importIndexHandler = provider.getProcessDefinitionImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionFetcher.class, engineContext);
+    engineEntityFetcher = beanFactory.getBean(ProcessDefinitionFetcher.class, engineContext);
     definitionImportService = new ProcessDefinitionImportService(
       processDefinitionWriter,
       elasticsearchImportJobExecutor,

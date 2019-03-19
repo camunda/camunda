@@ -37,7 +37,7 @@ public class CompletedActivityInstanceEngineImportMediator
   @PostConstruct
   public void init() {
     importIndexHandler = provider.getCompletedActivityInstanceImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanHelper.getInstance(CompletedActivityInstanceFetcher.class, engineContext);
+    engineEntityFetcher = beanFactory.getBean(CompletedActivityInstanceFetcher.class, engineContext);
     completedActivityInstanceImportService = new CompletedActivityInstanceImportService(
       completedActivityInstanceWriter, elasticsearchImportJobExecutor, engineContext
     );

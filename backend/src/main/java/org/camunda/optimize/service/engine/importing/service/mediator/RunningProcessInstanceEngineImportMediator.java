@@ -34,7 +34,7 @@ public class RunningProcessInstanceEngineImportMediator
   @PostConstruct
   public void init() {
     importIndexHandler = provider.getRunningProcessInstanceImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanHelper.getInstance(RunningProcessInstanceFetcher.class, engineContext);
+    engineEntityFetcher = beanFactory.getBean(RunningProcessInstanceFetcher.class, engineContext);
     runningProcessInstanceImportService = new RunningProcessInstanceImportService(
       runningProcessInstanceWriter, elasticsearchImportJobExecutor, engineContext
     );
@@ -62,7 +62,9 @@ public class RunningProcessInstanceEngineImportMediator
     if (!entitiesOfLastTimestamp.isEmpty() || timestampNeedsToBeSet) {
       final List<HistoricProcessInstanceDto> allEntities = ListUtils.union(entitiesOfLastTimestamp, nextPageEntities);
       runningProcessInstanceImportService.executeImport(allEntities, () -> {
-        if (timestampNeedsToBeSet) importIndexHandler.updateTimestampOfLastEntity(timestamp);
+        if (timestampNeedsToBeSet) {
+          importIndexHandler.updateTimestampOfLastEntity(timestamp);
+        }
       });
     }
 

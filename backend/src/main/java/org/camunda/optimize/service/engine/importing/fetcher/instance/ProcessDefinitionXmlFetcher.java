@@ -3,8 +3,6 @@ package org.camunda.optimize.service.engine.importing.fetcher.instance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
-import org.camunda.optimize.service.util.BeanHelper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -19,9 +17,6 @@ import java.util.Set;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionXmlFetcher
   extends RetryBackoffEngineEntityFetcher<ProcessDefinitionXmlEngineDto> {
-
-  @Autowired
-  private BeanHelper beanHelper;
 
 
   public ProcessDefinitionXmlFetcher(EngineContext engineContext) {

@@ -44,7 +44,7 @@ public class DecisionInstanceEngineImportMediator extends BackoffImportMediator<
   @PostConstruct
   public void init() {
     importIndexHandler = provider.getDecisionInstanceImportIndexHandler(engineContext.getEngineAlias());
-    decisionInstanceFetcher = beanHelper.getInstance(DecisionInstanceFetcher.class, engineContext);
+    decisionInstanceFetcher = beanFactory.getBean(DecisionInstanceFetcher.class, engineContext);
     decisionInstanceImportService = new DecisionInstanceImportService(
       decisionInstanceWriter,
       elasticsearchImportJobExecutor,

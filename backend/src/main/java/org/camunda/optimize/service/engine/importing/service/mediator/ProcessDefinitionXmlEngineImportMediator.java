@@ -32,7 +32,7 @@ public class ProcessDefinitionXmlEngineImportMediator
   @PostConstruct
   public void init() {
     importIndexHandler = provider.getProcessDefinitionXmlImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanHelper.getInstance(ProcessDefinitionXmlFetcher.class, engineContext);
+    engineEntityFetcher = beanFactory.getBean(ProcessDefinitionXmlFetcher.class, engineContext);
 
     definitionXmlImportService = new ProcessDefinitionXmlImportService(
       processDefinitionXmlWriter,

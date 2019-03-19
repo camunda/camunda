@@ -33,7 +33,7 @@ public class DecisionDefinitionXmlEngineImportMediator
   @PostConstruct
   public void init() {
     importIndexHandler = provider.getDecisionDefinitionXmlImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanHelper.getInstance(DecisionDefinitionXmlFetcher.class, engineContext);
+    engineEntityFetcher = beanFactory.getBean(DecisionDefinitionXmlFetcher.class, engineContext);
 
     definitionXmlImportService = new DecisionDefinitionXmlImportService(
       decisionDefinitionXmlWriter, elasticsearchImportJobExecutor, engineContext
