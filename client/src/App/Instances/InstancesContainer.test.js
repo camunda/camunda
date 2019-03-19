@@ -83,9 +83,10 @@ jest.mock('modules/utils/bpmn');
 
 // local utility
 const pushMock = jest.fn();
+const listenMock = jest.fn();
 function getRouterProps(filter = DEFAULT_FILTER) {
   return {
-    history: {push: pushMock},
+    history: {push: pushMock, listen: () => listenMock},
     location: {
       search: getFilterQueryString(filter)
     }
@@ -95,6 +96,39 @@ function getRouterProps(filter = DEFAULT_FILTER) {
 describe('InstancesContainer', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it.only('should register a listener for URL changes', async () => {
+    // given
+    const routerProps = getRouterProps();
+    const node = mount(
+      <InstancesContainerWrapped {...localStorageProps} {...routerProps} />
+    );
+
+    // when
+    await flushPromises();
+    node.update();
+
+    expect(node.instance().unlistenUrlChange).toEqual(listenMock);
+  });
+
+  it.only('should unregister a listener for URL changes when unmounting', async () => {
+    // given
+    const routerProps = getRouterProps();
+    const node = mount(
+      <InstancesContainerWrapped {...localStorageProps} {...routerProps} />
+    );
+
+    const unlistenUrlChangeSpy = jest.spyOn(
+      node.instance(),
+      'unlistenUrlChange'
+    );
+
+    // when
+    node.unmount();
+
+    // then
+    expect(unlistenUrlChangeSpy).toHaveBeenCalled();
   });
 
   it('should fetch the groupedWorkflows', async () => {
