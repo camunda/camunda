@@ -38,6 +38,8 @@ import io.zeebe.protocol.intent.JobIntent;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static org.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
+import static org.camunda.operate.entities.EventType.ELEMENT_COMPLETING;
 
 @Component
 public class EventZeebeRecordProcessor {
@@ -61,7 +63,9 @@ public class EventZeebeRecordProcessor {
     JOB_EVENTS.add(JobIntent.RETRIES_UPDATED.name());
     JOB_EVENTS.add(JobIntent.CANCELED.name());
 
+    WORKFLOW_INSTANCE_STATES.add(ELEMENT_ACTIVATING.name());
     WORKFLOW_INSTANCE_STATES.add(ELEMENT_ACTIVATED.name());
+    WORKFLOW_INSTANCE_STATES.add(ELEMENT_COMPLETING.name());
     WORKFLOW_INSTANCE_STATES.add(ELEMENT_COMPLETED.name());
     WORKFLOW_INSTANCE_STATES.add(ELEMENT_TERMINATED.name());
   }
