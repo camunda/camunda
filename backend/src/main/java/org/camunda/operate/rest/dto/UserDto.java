@@ -30,8 +30,8 @@ public class UserDto {
 
   public static UserDto fromUserDetails(UserDetails userDetails) {
     UserDto dto = new UserDto();
-    dto.firstname = "Jonny";
-    dto.lastname = "Prosciutto";
+    dto.firstname = "Trial";
+    dto.lastname = "License";
     return dto;
   }
 
