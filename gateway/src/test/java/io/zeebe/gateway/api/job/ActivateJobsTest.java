@@ -82,7 +82,7 @@ public class ActivateJobsTest extends GatewayTest {
       assertThat(job.getJobHeaders().getElementInstanceKey())
           .isEqualTo(stub.getElementInstanceKey());
       JsonUtil.assertEquality(job.getCustomHeaders(), stub.getCustomHeaders());
-      JsonUtil.assertEquality(job.getPayload(), stub.getPayload());
+      JsonUtil.assertEquality(job.getVariables(), stub.getVariables());
     }
 
     final BrokerActivateJobsRequest brokerRequest = gateway.getSingleBrokerRequest();

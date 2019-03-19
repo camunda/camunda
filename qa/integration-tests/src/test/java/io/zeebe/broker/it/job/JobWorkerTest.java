@@ -134,7 +134,7 @@ public class JobWorkerTest {
     // when
     final RecordingJobHandler jobHandler =
         new RecordingJobHandler(
-            (c, t) -> c.newCompleteCommand(t.getKey()).payload("{\"a\":3}").send());
+            (c, t) -> c.newCompleteCommand(t.getKey()).variables("{\"a\":3}").send());
 
     client
         .newWorker()
@@ -157,7 +157,7 @@ public class JobWorkerTest {
     waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
 
     final Record<JobRecordValue> completedRecord = jobRecords(JobIntent.COMPLETED).getFirst();
-    assertThat(completedRecord.getValue().getPayload()).isEqualTo("{\"a\":3}");
+    assertThat(completedRecord.getValue().getVariables()).isEqualTo("{\"a\":3}");
     assertThat(completedRecord.getValue()).hasCustomHeaders(Collections.singletonMap("b", "2"));
   }
 
@@ -449,8 +449,8 @@ public class JobWorkerTest {
         .jobType(jobType)
         .handler(
             (c, job) -> {
-              final Map<String, Object> payload = job.getPayloadAsMap();
-              capturedVariables.addAll(payload.keySet());
+              final Map<String, Object> variables = job.getVariablesAsMap();
+              capturedVariables.addAll(variables.keySet());
               latch.countDown();
             })
         .fetchVariables(fetchVariables)
@@ -477,8 +477,8 @@ public class JobWorkerTest {
         .jobType(jobType)
         .handler(
             (c, job) -> {
-              final Map<String, Object> payload = job.getPayloadAsMap();
-              capturedVariables.addAll(payload.keySet());
+              final Map<String, Object> variables = job.getVariablesAsMap();
+              capturedVariables.addAll(variables.keySet());
               latch.countDown();
             })
         .fetchVariables(fetchVariables)

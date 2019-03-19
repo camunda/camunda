@@ -134,7 +134,7 @@ public class GossipEvent implements BufferReader, BufferWriter {
               + event.getPayload().capacity()
               + CustomEventsEncoder.sbeBlockLength()
               + CustomEventsEncoder.eventTypeHeaderLength()
-              + CustomEventsEncoder.payloadHeaderLength();
+              + CustomEventsEncoder.variablesHeaderLength();
     }
 
     return length;
@@ -185,7 +185,7 @@ public class GossipEvent implements BufferReader, BufferWriter {
       final GossipTerm senderGossipTerm = customEvent.getSenderGossipTerm();
       final int senderId = customEvent.getSenderId();
       final DirectBuffer eventType = customEvent.getType();
-      final DirectBuffer payload = customEvent.getPayload();
+      final DirectBuffer variables = customEvent.getPayload();
 
       customEventsEncoder
           .next()
@@ -195,7 +195,7 @@ public class GossipEvent implements BufferReader, BufferWriter {
 
       customEventsEncoder
           .putEventType(eventType, 0, eventType.capacity())
-          .putPayload(payload, 0, payload.capacity());
+          .putVariables(variables, 0, variables.capacity());
     }
   }
 
@@ -243,9 +243,9 @@ public class GossipEvent implements BufferReader, BufferWriter {
         customEvent.typeLength(typeLength);
         customEventDecoder.getEventType(customEvent.getTypeBuffer(), 0, typeLength);
 
-        final int payloadLength = customEventDecoder.payloadLength();
-        customEvent.payloadLength(payloadLength);
-        customEventDecoder.getPayload(customEvent.getPayloadBuffer(), 0, payloadLength);
+        final int variablesLength = customEventDecoder.variablesLength();
+        customEvent.payloadLength(variablesLength);
+        customEventDecoder.getVariables(customEvent.getPayloadBuffer(), 0, variablesLength);
 
         customEventConsumer.consumeCustomEvent(customEvent);
       }

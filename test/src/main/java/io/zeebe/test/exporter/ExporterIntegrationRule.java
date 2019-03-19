@@ -317,19 +317,19 @@ public class ExporterIntegrationRule extends ExternalResource {
   }
 
   /**
-   * Creates a workflow instance for the given process ID, with the given payload.
+   * Creates a workflow instance for the given process ID, with the given variables.
    *
    * @param processId BPMN process ID
-   * @param payload initial payload for the instance
+   * @param variables initial variables for the instance
    * @return unique ID used to interact with the instance
    */
-  public long createWorkflowInstance(String processId, Map<String, Object> payload) {
+  public long createWorkflowInstance(String processId, Map<String, Object> variables) {
     return clientRule
         .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(processId)
         .latestVersion()
-        .variables(payload)
+        .variables(variables)
         .send()
         .join()
         .getWorkflowInstanceKey();

@@ -37,27 +37,27 @@ var (
 	}
 	job = Job{pb.ActivatedJob{
 		CustomHeaders: expectedJson,
-		Payload:       expectedJson,
+		Variables:     expectedJson,
 	}}
 )
 
-func TestJob_GetPayloadAsMap(t *testing.T) {
-	payload, err := job.GetPayloadAsMap()
+func TestJob_GetVariablesAsMap(t *testing.T) {
+	variables, err := job.GetVariablesAsMap()
 	if err != nil {
-		t.Error("Failed to get payload as map", err)
+		t.Error("Failed to get variables as map", err)
 	}
-	if reflect.DeepEqual(payload, expectedJsonAsMap) {
-		t.Error("Failed to get payload as map, got", payload, "instead of", expectedJsonAsMap)
+	if reflect.DeepEqual(variables, expectedJsonAsMap) {
+		t.Error("Failed to get variables as map, got", variables, "instead of", expectedJsonAsMap)
 	}
 }
 
-func TestJob_GetPayloadAs(t *testing.T) {
-	var payload MyType
-	if err := job.GetPayloadAs(&payload); err != nil {
-		t.Error("Failed to get payload as struct", err)
+func TestJob_GetVariablesAs(t *testing.T) {
+	var variables MyType
+	if err := job.GetVariablesAs(&variables); err != nil {
+		t.Error("Failed to get variables as struct", err)
 	}
-	if payload != expectedJsonAsStruct {
-		t.Error("Failed to get payload as struct, got", payload, "instead of", expectedJsonAsStruct)
+	if variables != expectedJsonAsStruct {
+		t.Error("Failed to get variables as struct, got", variables, "instead of", expectedJsonAsStruct)
 	}
 }
 

@@ -155,7 +155,7 @@ public class SetVariablesTest {
         .jobType("task-1")
         .handler(
             (client, job) ->
-                client.newCompleteCommand(job.getKey()).payload("{\"result\": \"ok\"}").send())
+                client.newCompleteCommand(job.getKey()).variables("{\"result\": \"ok\"}").send())
         .open();
 
     // then
@@ -216,7 +216,7 @@ public class SetVariablesTest {
         .jobType("task-1")
         .handler(
             (client, job) ->
-                client.newCompleteCommand(job.getKey()).payload("{\"result\": \"done\"}").send())
+                client.newCompleteCommand(job.getKey()).variables("{\"result\": \"done\"}").send())
         .open();
     assertWorkflowInstanceCompleted("process");
 

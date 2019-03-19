@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 public class JobRecordStream
-    extends ExporterRecordWithPayloadStream<JobRecordValue, JobRecordStream> {
+    extends ExporterRecordWithVariablesStream<JobRecordValue, JobRecordStream> {
 
   public JobRecordStream(final Stream<Record<JobRecordValue>> wrappedStream) {
     super(wrappedStream);

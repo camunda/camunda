@@ -38,7 +38,7 @@ public class PublishMessageTest extends GatewayTest {
     final PublishMessageStub stub = new PublishMessageStub();
     stub.registerWith(gateway);
 
-    final String payload = JsonUtil.toJson(Collections.singletonMap("key", "value"));
+    final String variables = JsonUtil.toJson(Collections.singletonMap("key", "value"));
 
     final PublishMessageRequest request =
         PublishMessageRequest.newBuilder()
@@ -46,7 +46,7 @@ public class PublishMessageTest extends GatewayTest {
             .setName("message")
             .setMessageId("unique")
             .setTimeToLive(123)
-            .setPayload(payload)
+            .setVariables(variables)
             .build();
 
     // when
@@ -65,6 +65,6 @@ public class PublishMessageTest extends GatewayTest {
     assertThat(bufferAsString(brokerRequestValue.getName())).isEqualTo(request.getName());
     assertThat(bufferAsString(brokerRequestValue.getMessageId())).isEqualTo(request.getMessageId());
     assertThat(brokerRequestValue.getTimeToLive()).isEqualTo(request.getTimeToLive());
-    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getPayload(), payload);
+    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariables(), variables);
   }
 }

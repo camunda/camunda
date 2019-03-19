@@ -100,12 +100,12 @@ public class WorkflowAssert {
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled");
 
-    assertThat(subscription.getValue().getPayload()).isEqualTo("{}");
+    assertThat(subscription.getValue().getVariables()).isEqualTo("{}");
   }
 
   public static void assertWorkflowSubscription(
       long workflowInstanceKey,
-      String payload,
+      String variables,
       Record catchEventEntered,
       Record<WorkflowInstanceSubscriptionRecordValue> subscription) {
     Assertions.assertThat(subscription.getValue())
@@ -113,6 +113,6 @@ public class WorkflowAssert {
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled");
 
-    assertThat(subscription.getValue().getPayload()).isEqualTo(payload);
+    assertThat(subscription.getValue().getVariables()).isEqualTo(variables);
   }
 }

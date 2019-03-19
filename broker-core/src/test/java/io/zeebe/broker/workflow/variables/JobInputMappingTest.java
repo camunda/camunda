@@ -54,13 +54,13 @@ public class JobInputMappingTest {
       new RecordingExporterTestWatcher();
 
   @Parameter(0)
-  public String initialPayload;
+  public String initialVariables;
 
   @Parameter(1)
   public Consumer<ServiceTaskBuilder> mappings;
 
   @Parameter(2)
-  public String expectedPayload;
+  public String expectedVariables;
 
   @Parameters(name = "from {0} to {2}")
   public static Object[][] parameters() {
@@ -100,7 +100,7 @@ public class JobInputMappingTest {
             .getWorkflowKey();
 
     // when
-    final DirectBuffer variables = MsgPackUtil.asMsgPack(initialPayload);
+    final DirectBuffer variables = MsgPackUtil.asMsgPack(initialVariables);
     final long workflowInstanceKey =
         apiRule
             .partitionClient()
@@ -115,7 +115,7 @@ public class JobInputMappingTest {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
-    JsonUtil.assertEquality(jobCreated.getValue().getPayload(), expectedPayload);
+    JsonUtil.assertEquality(jobCreated.getValue().getVariables(), expectedVariables);
   }
 
   private static Consumer<ServiceTaskBuilder> mapping(Consumer<ServiceTaskBuilder> mappingBuilder) {

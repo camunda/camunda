@@ -153,7 +153,7 @@ public class WorkflowInstanceAssert
     if (record.isPresent()) {
       hasVariables(record.get(), key, expectedValue);
     } else {
-      failWithMessage("Expected workflow instance to contain payload but instance is not ended");
+      failWithMessage("Expected workflow instance to contain variables but instance is not ended");
     }
 
     return this;

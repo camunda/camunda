@@ -15,14 +15,14 @@
  */
 package io.zeebe.exporter.api.record.value;
 
-import io.zeebe.exporter.api.record.RecordValueWithPayload;
+import io.zeebe.exporter.api.record.RecordValueWithVariables;
 
 /**
  * Represents a message event or command.
  *
  * <p>See {@link io.zeebe.protocol.intent.MessageIntent} for intents.
  */
-public interface MessageRecordValue extends RecordValueWithPayload {
+public interface MessageRecordValue extends RecordValueWithVariables {
   /** @return the name of the message */
   String getName();
 

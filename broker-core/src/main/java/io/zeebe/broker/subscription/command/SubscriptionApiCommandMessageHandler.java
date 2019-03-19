@@ -174,7 +174,7 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
         .setWorkflowInstanceKey(workflowInstanceKey)
         .setElementInstanceKey(correlateWorkflowInstanceSubscriptionCommand.getElementInstanceKey())
         .setMessageName(correlateWorkflowInstanceSubscriptionCommand.getMessageName())
-        .setPayload(correlateWorkflowInstanceSubscriptionCommand.getPayload());
+        .setVariables(correlateWorkflowInstanceSubscriptionCommand.getVariables());
 
     return writeCommand(
         workflowInstancePartitionId,

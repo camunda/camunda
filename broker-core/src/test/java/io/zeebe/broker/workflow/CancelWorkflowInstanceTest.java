@@ -404,7 +404,7 @@ public class CancelWorkflowInstanceTest {
 
     // then
     MsgPackUtil.assertEqualityExcluding(
-        response.getRawValue(), activatedEvent.getValue().toJson(), "payload");
+        response.getRawValue(), activatedEvent.getValue().toJson(), "variables");
 
     final Record<WorkflowInstanceRecordValue> cancelingEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_TERMINATING)

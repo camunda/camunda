@@ -17,7 +17,7 @@
   "workflowInstanceKey": -1,
   "flowScopeKey": -1,
   "elementId": null,
-  "payload": {
+  "variables": {
     "foo": "bar"
   }
 }

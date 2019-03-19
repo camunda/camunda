@@ -225,7 +225,7 @@ public class FailJobTest {
     apiRule.activateJobs(JOB_TYPE).await();
 
     final Record<JobRecordValue> jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
-    client.completeJob(jobEvent.getKey(), jobEvent.getValue().getPayload());
+    client.completeJob(jobEvent.getKey(), jobEvent.getValue().getVariables());
 
     // when
     final ExecuteCommandResponse response = client.failJob(jobEvent.getKey(), 3);

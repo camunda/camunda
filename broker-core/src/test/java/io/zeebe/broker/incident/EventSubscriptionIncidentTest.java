@@ -301,15 +301,15 @@ public class EventSubscriptionIncidentTest {
   @Test
   public void shouldCreateIncidentIfMessageCorrelationKeyHasInvalidType() {
     // when
-    final Map<String, Object> payload = new HashMap<>();
-    payload.put(CORRELATION_VARIABLE_1, correlationKey1);
-    payload.put(CORRELATION_VARIABLE_2, Arrays.asList(1, 2, 3));
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put(CORRELATION_VARIABLE_1, correlationKey1);
+    variables.put(CORRELATION_VARIABLE_2, Arrays.asList(1, 2, 3));
 
     final long workflowInstanceKey =
         apiRule
             .partitionClient()
             .createWorkflowInstance(
-                r -> r.setBpmnProcessId(processId).setVariables(MsgPackUtil.asMsgPack(payload)))
+                r -> r.setBpmnProcessId(processId).setVariables(MsgPackUtil.asMsgPack(variables)))
             .getInstanceKey();
 
     final Record<WorkflowInstanceRecordValue> failureEvent =

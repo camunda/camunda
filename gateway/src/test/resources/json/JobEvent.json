@@ -25,7 +25,7 @@
   "worker": "default",
   "retries": 3,
   "type": "task",
-  "payload": {
+  "variables": {
     "foo": "bar"
   },
   "deadline": "2018-05-22T09:06:42.994Z"

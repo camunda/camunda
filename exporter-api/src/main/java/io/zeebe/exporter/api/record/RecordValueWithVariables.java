@@ -13,21 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.benchmark.msgpack;
+package io.zeebe.exporter.api.record;
 
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
+import java.util.Map;
 
-public interface MsgPackSerializer {
+/** Shared behaviour for all record values containing a variables document. */
+public interface RecordValueWithVariables extends RecordValue {
+  /** @return JSON-formatted variables */
+  String getVariables();
 
-  void serialize(Object value, MutableDirectBuffer buf, int offset) throws Exception;
-
-  Object deserialize(Class<?> clazz, DirectBuffer buf, int offset, int length) throws Exception;
-
-  String getDescription();
-
-  enum Type {
-    JACKSON,
-    BROKER
-  }
+  /** @return de-serialized variables as map */
+  Map<String, Object> getVariablesAsMap();
 }

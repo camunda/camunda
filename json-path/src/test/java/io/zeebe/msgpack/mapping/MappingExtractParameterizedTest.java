@@ -168,20 +168,20 @@ public class MappingExtractParameterizedTest {
         });
   }
 
-  @Parameter public String sourcePayload;
+  @Parameter public String sourceVariables;
 
   @Parameter(1)
   public Mapping[] mappings;
 
   @Parameter(2)
-  public String expectedPayload;
+  public String expectedVariables;
 
   private MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
 
   @Test
   public void shouldExtract() throws Throwable {
-    // given payload
-    final byte[] bytes = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(sourcePayload));
+    // given variable
+    final byte[] bytes = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(sourceVariables));
     final DirectBuffer sourceDocument = new UnsafeBuffer(bytes);
 
     // when
@@ -193,6 +193,6 @@ public class MappingExtractParameterizedTest {
     resultBuffer.getBytes(0, result, 0, result.length);
 
     // then
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree(expectedPayload));
+    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree(expectedVariables));
   }
 }

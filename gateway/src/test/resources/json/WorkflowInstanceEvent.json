@@ -17,7 +17,7 @@
   "workflowInstanceKey": 4294967408,
   "flowScopeKey": 123456,
   "elementId": "start",
-  "payload": {
+  "variables": {
     "foo": "bar"
   }
 }

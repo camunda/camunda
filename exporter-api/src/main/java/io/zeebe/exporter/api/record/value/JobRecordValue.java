@@ -15,7 +15,7 @@
  */
 package io.zeebe.exporter.api.record.value;
 
-import io.zeebe.exporter.api.record.RecordValueWithPayload;
+import io.zeebe.exporter.api.record.RecordValueWithVariables;
 import io.zeebe.exporter.api.record.value.job.Headers;
 import java.time.Instant;
 import java.util.Map;
@@ -25,7 +25,7 @@ import java.util.Map;
  *
  * <p>See {@link io.zeebe.protocol.intent.JobIntent} for intents.
  */
-public interface JobRecordValue extends RecordValueWithPayload {
+public interface JobRecordValue extends RecordValueWithVariables {
   /** @return the type of the job */
   String getType();
 

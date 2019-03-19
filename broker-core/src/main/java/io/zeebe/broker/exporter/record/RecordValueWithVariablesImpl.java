@@ -19,28 +19,29 @@ package io.zeebe.broker.exporter.record;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
-import io.zeebe.exporter.api.record.RecordValueWithPayload;
+import io.zeebe.exporter.api.record.RecordValueWithVariables;
 import java.util.Map;
 import java.util.Objects;
 
-public abstract class RecordValueWithPayloadImpl extends RecordValueImpl
-    implements RecordValueWithPayload {
-  protected final String payload;
+public abstract class RecordValueWithVariablesImpl extends RecordValueImpl
+    implements RecordValueWithVariables {
+  protected final String variables;
 
-  public RecordValueWithPayloadImpl(final ExporterObjectMapper objectMapper, final String payload) {
+  public RecordValueWithVariablesImpl(
+      final ExporterObjectMapper objectMapper, final String variables) {
     super(objectMapper);
-    this.payload = payload;
+    this.variables = variables;
   }
 
   @Override
-  public String getPayload() {
-    return payload;
+  public String getVariables() {
+    return variables;
   }
 
   @Override
   @JsonIgnore
-  public Map<String, Object> getPayloadAsMap() {
-    return objectMapper.fromJsonAsMap(payload);
+  public Map<String, Object> getVariablesAsMap() {
+    return objectMapper.fromJsonAsMap(variables);
   }
 
   @Override
@@ -51,12 +52,12 @@ public abstract class RecordValueWithPayloadImpl extends RecordValueImpl
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final RecordValueWithPayloadImpl that = (RecordValueWithPayloadImpl) o;
-    return Objects.equals(payload, that.payload);
+    final RecordValueWithVariablesImpl that = (RecordValueWithVariablesImpl) o;
+    return Objects.equals(variables, that.variables);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(payload);
+    return Objects.hash(variables);
   }
 }

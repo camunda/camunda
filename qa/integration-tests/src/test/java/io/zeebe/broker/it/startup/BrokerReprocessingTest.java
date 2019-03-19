@@ -77,7 +77,7 @@ import org.junit.runners.Parameterized.Parameters;
 public class BrokerReprocessingTest {
 
   private static final String PROCESS_ID = "process";
-  private static final String NULL_PAYLOAD = "{}";
+  private static final String NULL_VARIABLES = "{}";
 
   @Parameters(name = "{index}: {1}")
   public static Object[][] reprocessingTriggers() {
@@ -191,7 +191,8 @@ public class BrokerReprocessingTest {
         .newWorker()
         .jobType("foo")
         .handler(
-            (client, job) -> client.newCompleteCommand(job.getKey()).payload(NULL_PAYLOAD).send())
+            (client, job) ->
+                client.newCompleteCommand(job.getKey()).variables(NULL_VARIABLES).send())
         .open();
 
     // then
@@ -252,7 +253,8 @@ public class BrokerReprocessingTest {
         .newWorker()
         .jobType("foo")
         .handler(
-            (client, job) -> client.newCompleteCommand(job.getKey()).payload(NULL_PAYLOAD).send())
+            (client, job) ->
+                client.newCompleteCommand(job.getKey()).variables(NULL_VARIABLES).send())
         .open();
 
     final CountDownLatch latch = new CountDownLatch(1);
@@ -278,7 +280,8 @@ public class BrokerReprocessingTest {
         .newWorker()
         .jobType("bar")
         .handler(
-            (client, job) -> client.newCompleteCommand(job.getKey()).payload(NULL_PAYLOAD).send())
+            (client, job) ->
+                client.newCompleteCommand(job.getKey()).variables(NULL_VARIABLES).send())
         .open();
 
     // then
@@ -698,13 +701,13 @@ public class BrokerReprocessingTest {
   }
 
   protected void publishMessage(
-      final String messageName, final String correlationKey, final Map<String, Object> payload) {
+      final String messageName, final String correlationKey, final Map<String, Object> variables) {
     clientRule
         .getClient()
         .newPublishMessageCommand()
         .messageName(messageName)
         .correlationKey(correlationKey)
-        .payload(payload)
+        .variables(variables)
         .send()
         .join();
   }

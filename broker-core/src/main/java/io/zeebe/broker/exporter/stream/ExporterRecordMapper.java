@@ -202,7 +202,7 @@ public class ExporterRecordMapper {
 
     return new JobRecordValueImpl(
         objectMapper,
-        asJson(record.getPayload()),
+        asJson(record.getVariables()),
         asString(record.getType()),
         asString(record.getWorker()),
         deadline,
@@ -263,7 +263,7 @@ public class ExporterRecordMapper {
 
     return new io.zeebe.broker.exporter.record.value.MessageRecordValueImpl(
         objectMapper,
-        asJson(record.getPayload()),
+        asJson(record.getVariables()),
         asString(record.getName()),
         asString(record.getMessageId()),
         asString(record.getCorrelationKey()),
@@ -316,7 +316,7 @@ public class ExporterRecordMapper {
 
     return new WorkflowInstanceSubscriptionRecordValueImpl(
         objectMapper,
-        asJson(record.getPayload()),
+        asJson(record.getVariables()),
         asString(record.getMessageName()),
         record.getWorkflowInstanceKey(),
         record.getElementInstanceKey());

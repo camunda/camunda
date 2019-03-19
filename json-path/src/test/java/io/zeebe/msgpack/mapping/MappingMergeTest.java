@@ -54,7 +54,7 @@ public class MappingMergeTest {
 
   @Test
   public void shouldThrowExceptionOnMapAndMergeIfDocumentIsNull() throws Throwable {
-    // given payload
+    // given variables
     final Mapping[] mapping = createMapping("foo", "bar");
 
     // expect
@@ -67,7 +67,7 @@ public class MappingMergeTest {
 
   @Test
   public void shouldThrowExceptionIfMappingDoesNotMatchInStrictMode() throws Throwable {
-    // given payload
+    // given variables
     final DirectBuffer sourceDocument = new UnsafeBuffer(EMTPY_OBJECT);
     final Mapping[] mapping = createMapping("foo", "bar");
 
@@ -122,7 +122,7 @@ public class MappingMergeTest {
 
   @Test
   public void shouldMergeNilWithEmptyObject() throws Throwable {
-    // given payload
+    // given variables
     final DirectBuffer sourceDocument = new UnsafeBuffer(NIL);
     final DirectBuffer targetDocument = new UnsafeBuffer(EMTPY_OBJECT);
 
@@ -137,7 +137,7 @@ public class MappingMergeTest {
 
   @Test
   public void shouldMergeEmptyObjectWithNil() throws Throwable {
-    // given payload
+    // given variables
     final DirectBuffer sourceDocument = new UnsafeBuffer(EMTPY_OBJECT);
     final DirectBuffer targetDocument = new UnsafeBuffer(NIL);
 
@@ -152,7 +152,7 @@ public class MappingMergeTest {
 
   @Test
   public void shouldMergeNilWithNil() throws Throwable {
-    // given payload
+    // given variables
     final DirectBuffer sourceDocument = new UnsafeBuffer(NIL);
     final DirectBuffer targetDocument = new UnsafeBuffer(NIL);
 

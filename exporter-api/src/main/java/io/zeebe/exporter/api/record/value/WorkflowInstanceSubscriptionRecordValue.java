@@ -15,14 +15,14 @@
  */
 package io.zeebe.exporter.api.record.value;
 
-import io.zeebe.exporter.api.record.RecordValueWithPayload;
+import io.zeebe.exporter.api.record.RecordValueWithVariables;
 
 /**
  * Represents a workflow instance subscription command or event.
  *
  * <p>See {@link io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent} for intents.
  */
-public interface WorkflowInstanceSubscriptionRecordValue extends RecordValueWithPayload {
+public interface WorkflowInstanceSubscriptionRecordValue extends RecordValueWithVariables {
   /** @return the workflow instance key */
   long getWorkflowInstanceKey();
 

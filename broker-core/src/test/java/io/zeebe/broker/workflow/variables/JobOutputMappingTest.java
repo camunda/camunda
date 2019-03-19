@@ -25,7 +25,7 @@ import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
-import io.zeebe.model.bpmn.builder.ZeebePayloadMappingBuilder;
+import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -62,7 +62,7 @@ public class JobOutputMappingTest {
       new RecordingExporterTestWatcher();
 
   @Parameter(0)
-  public String jobPayload;
+  public String jobVariables;
 
   @Parameter(1)
   public Consumer<ServiceTaskBuilder> mappings;
@@ -191,7 +191,7 @@ public class JobOutputMappingTest {
             .createWorkflowInstance(
                 r -> r.setKey(workflowKey).setVariables(MsgPackUtil.asMsgPack("i", 0)))
             .getInstanceKey();
-    apiRule.completeJob(jobType, MsgPackUtil.asMsgPack(jobPayload));
+    apiRule.completeJob(jobType, MsgPackUtil.asMsgPack(jobVariables));
 
     // then
     final long elementInstanceKey =
@@ -230,8 +230,8 @@ public class JobOutputMappingTest {
         .containsAll(expectedScopeVariables);
   }
 
-  private static Consumer<ZeebePayloadMappingBuilder<ServiceTaskBuilder>> mapping(
-      Consumer<ZeebePayloadMappingBuilder<ServiceTaskBuilder>> mappingBuilder) {
+  private static Consumer<ZeebeVariablesMappingBuilder<ServiceTaskBuilder>> mapping(
+      Consumer<ZeebeVariablesMappingBuilder<ServiceTaskBuilder>> mappingBuilder) {
     return mappingBuilder;
   }
 

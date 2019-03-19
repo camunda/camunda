@@ -190,13 +190,13 @@ public class MessageCorrelationMultiplePartitionsTest {
         .getWorkflowInstanceKey();
   }
 
-  private void publishMessage(String correlationKey, Object payload) {
+  private void publishMessage(String correlationKey, Object variables) {
     clientRule
         .getClient()
         .newPublishMessageCommand()
         .messageName("message")
         .correlationKey(correlationKey)
-        .payload(payload)
+        .variables(variables)
         .send()
         .join();
   }

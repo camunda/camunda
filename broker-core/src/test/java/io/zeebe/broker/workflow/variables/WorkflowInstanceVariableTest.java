@@ -147,7 +147,7 @@ public class WorkflowInstanceVariableTest {
   }
 
   @Test
-  public void shouldCreateMultipleVariablesFromPayload() {
+  public void shouldCreateMultipleVariables() {
     // given
     testClient.deploy(WORKFLOW);
 
@@ -242,7 +242,7 @@ public class WorkflowInstanceVariableTest {
   }
 
   @Test
-  public void shouldUpdateMultipleVariablesFromPayload() {
+  public void shouldUpdateMultipleVariables() {
     // given
     testClient.deploy(WORKFLOW);
     testClient.createWorkflowInstance(
@@ -262,7 +262,7 @@ public class WorkflowInstanceVariableTest {
   }
 
   @Test
-  public void shouldCreateAndUpdateVariablesFromPayload() {
+  public void shouldCreateAndUpdateVariables() {
     // given
     testClient.deploy(WORKFLOW);
 

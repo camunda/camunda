@@ -43,8 +43,8 @@ public class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void> {
     return this;
   }
 
-  public BrokerPublishMessageRequest setPayload(DirectBuffer payload) {
-    requestDto.setPayload(payload);
+  public BrokerPublishMessageRequest setVariables(DirectBuffer variables) {
+    requestDto.setVariables(variables);
     return this;
   }
 

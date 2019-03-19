@@ -117,7 +117,7 @@ public class ActivityTest {
 
     // when
     final Record<JobRecordValue> jobRecord = testClient.receiveFirstJobEvent(JobIntent.CREATED);
-    testClient.completeJob(jobRecord.getKey(), jobRecord.getValue().getPayload());
+    testClient.completeJob(jobRecord.getKey(), jobRecord.getValue().getVariables());
 
     // then
     final Record<WorkflowInstanceRecordValue> record =
@@ -160,7 +160,7 @@ public class ActivityTest {
 
     // when
     final Record<JobRecordValue> job = testClient.receiveFirstJobEvent(JobIntent.CREATED);
-    testClient.completeJob(job.getKey(), job.getValue().getPayload());
+    testClient.completeJob(job.getKey(), job.getValue().getVariables());
     testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     // then

@@ -25,7 +25,7 @@ import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.ZeebePayloadMappingBuilder;
+import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
@@ -137,7 +137,7 @@ public class MessageMappingTest {
   }
 
   @Test
-  public void shouldMergeMessagePayloadByDefault() {
+  public void shouldMergeMessageVariablesByDefault() {
     // given
     final long workflowKey = deployWorkflowWithMapping(e -> {});
 
@@ -166,7 +166,7 @@ public class MessageMappingTest {
   }
 
   @Test
-  public void shouldMergeMessagePayload() {
+  public void shouldMergeMessageVariables() {
     // given
     final long workflowKey = deployWorkflowWithMapping(e -> {});
 
@@ -195,7 +195,7 @@ public class MessageMappingTest {
   }
 
   @Test
-  public void shouldMapMessagePayloadIntoInstancePayload() {
+  public void shouldMapMessageVariablesIntoInstanceVariables() {
     // given
     final long workflowKey = deployWorkflowWithMapping(e -> e.zeebeOutput("foo", MESSAGE_NAME));
     final long workflowInstanceKey =
@@ -222,7 +222,7 @@ public class MessageMappingTest {
         .hasScopeKey(workflowInstanceKey);
   }
 
-  private long deployWorkflowWithMapping(Consumer<ZeebePayloadMappingBuilder<?>> c) {
+  private long deployWorkflowWithMapping(Consumer<ZeebeVariablesMappingBuilder<?>> c) {
     final BpmnModelInstance modifiedWorkflow = workflow.clone();
     final ModelElementInstance element = modifiedWorkflow.getModelElementById("catch");
     if (element instanceof IntermediateCatchEvent) {

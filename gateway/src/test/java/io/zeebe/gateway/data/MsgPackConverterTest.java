@@ -161,11 +161,11 @@ public class MsgPackConverterTest {
     byte[] msgPack = null;
 
     try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-      final MessagePacker payloadPacker = MessagePack.newDefaultPacker(outputStream);
+      final MessagePacker variablesPacker = MessagePack.newDefaultPacker(outputStream);
 
-      payloadPacker.packMapHeader(2).packString("key1").packInt(1).packString("key2").packInt(2);
+      variablesPacker.packMapHeader(2).packString("key1").packInt(1).packString("key2").packInt(2);
 
-      payloadPacker.flush();
+      variablesPacker.flush();
       msgPack = outputStream.toByteArray();
     } catch (Exception e) {
       LangUtil.rethrowUnchecked(e);

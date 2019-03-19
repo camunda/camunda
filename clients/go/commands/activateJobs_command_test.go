@@ -57,7 +57,7 @@ func TestActivateJobsCommand(t *testing.T) {
 					WorkflowDefinitionVersion: 12345,
 				},
 				CustomHeaders: "{\"foo\": \"bar\"}",
-				Payload:       "{\"foo\": \"bar\"}",
+				Variables:     "{\"foo\": \"bar\"}",
 			},
 		},
 	}
@@ -81,7 +81,7 @@ func TestActivateJobsCommand(t *testing.T) {
 					WorkflowDefinitionVersion: 12345,
 				},
 				CustomHeaders: "{\"foo\": \"bar\"}",
-				Payload:       "{\"foo\": \"bar\"}",
+				Variables:     "{\"foo\": \"bar\"}",
 			},
 			{
 				Key:           123,
@@ -91,7 +91,7 @@ func TestActivateJobsCommand(t *testing.T) {
 				Worker:        DefaultJobWorkerName,
 				JobHeaders:    &pb.JobHeaders{},
 				CustomHeaders: "{}",
-				Payload:       "{}",
+				Variables:     "{}",
 			},
 		},
 	}

@@ -46,17 +46,17 @@ func TestCompleteJobCommand(t *testing.T) {
 	}
 }
 
-func TestCompleteJobCommandWithPayloadFromString(t *testing.T) {
+func TestCompleteJobCommandWithVariablesFromString(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{\"foo\":\"bar\"}"
+	variables := "{\"foo\":\"bar\"}"
 
 	request := &pb.CompleteJobRequest{
-		JobKey:  123,
-		Payload: payload,
+		JobKey:    123,
+		Variables: variables,
 	}
 	stub := &pb.CompleteJobResponse{}
 
@@ -64,12 +64,12 @@ func TestCompleteJobCommandWithPayloadFromString(t *testing.T) {
 
 	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.JobKey(123).PayloadFromString(payload)
+	variablesCommand, err := command.JobKey(123).VariablesFromString(variables)
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -80,17 +80,17 @@ func TestCompleteJobCommandWithPayloadFromString(t *testing.T) {
 	}
 }
 
-func TestCompleteJobCommandWithPayloadFromStringer(t *testing.T) {
+func TestCompleteJobCommandWithVariablesFromStringer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{\"foo\":\"bar\"}"
+	variables := "{\"foo\":\"bar\"}"
 
 	request := &pb.CompleteJobRequest{
-		JobKey:  123,
-		Payload: payload,
+		JobKey:    123,
+		Variables: variables,
 	}
 	stub := &pb.CompleteJobResponse{}
 
@@ -98,12 +98,12 @@ func TestCompleteJobCommandWithPayloadFromStringer(t *testing.T) {
 
 	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.JobKey(123).PayloadFromStringer(DataType{Foo: "bar"})
+	variablesCommand, err := command.JobKey(123).VariablesFromStringer(DataType{Foo: "bar"})
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -114,17 +114,17 @@ func TestCompleteJobCommandWithPayloadFromStringer(t *testing.T) {
 	}
 }
 
-func TestCompleteJobCommandWithPayloadFromObject(t *testing.T) {
+func TestCompleteJobCommandWithVariablesFromObject(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{\"foo\":\"bar\"}"
+	variables := "{\"foo\":\"bar\"}"
 
 	request := &pb.CompleteJobRequest{
-		JobKey:  123,
-		Payload: payload,
+		JobKey:    123,
+		Variables: variables,
 	}
 	stub := &pb.CompleteJobResponse{}
 
@@ -132,12 +132,12 @@ func TestCompleteJobCommandWithPayloadFromObject(t *testing.T) {
 
 	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.JobKey(123).PayloadFromObject(DataType{Foo: "bar"})
+	variablesCommand, err := command.JobKey(123).VariablesFromObject(DataType{Foo: "bar"})
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -148,17 +148,17 @@ func TestCompleteJobCommandWithPayloadFromObject(t *testing.T) {
 	}
 }
 
-func TestCompleteJobCommandWithPayloadFromObjectOmitempty(t *testing.T) {
+func TestCompleteJobCommandWithVariablesFromObjectOmitempty(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{}"
+	variables := "{}"
 
 	request := &pb.CompleteJobRequest{
-		JobKey:  123,
-		Payload: payload,
+		JobKey:    123,
+		Variables: variables,
 	}
 	stub := &pb.CompleteJobResponse{}
 
@@ -166,12 +166,12 @@ func TestCompleteJobCommandWithPayloadFromObjectOmitempty(t *testing.T) {
 
 	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.JobKey(123).PayloadFromObject(DataType{Foo: ""})
+	variablesCommand, err := command.JobKey(123).VariablesFromObject(DataType{Foo: ""})
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -182,17 +182,17 @@ func TestCompleteJobCommandWithPayloadFromObjectOmitempty(t *testing.T) {
 	}
 }
 
-func TestCompleteJobCommandWithPayloadFromObjectIgnoreOmitempty(t *testing.T) {
+func TestCompleteJobCommandWithVariablesFromObjectIgnoreOmitempty(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{\"foo\":\"\"}"
+	variables := "{\"foo\":\"\"}"
 
 	request := &pb.CompleteJobRequest{
-		JobKey:  123,
-		Payload: payload,
+		JobKey:    123,
+		Variables: variables,
 	}
 	stub := &pb.CompleteJobResponse{}
 
@@ -200,12 +200,12 @@ func TestCompleteJobCommandWithPayloadFromObjectIgnoreOmitempty(t *testing.T) {
 
 	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.JobKey(123).PayloadFromObjectIgnoreOmitempty(DataType{Foo: ""})
+	variablesCommand, err := command.JobKey(123).VariablesFromObjectIgnoreOmitempty(DataType{Foo: ""})
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -216,19 +216,19 @@ func TestCompleteJobCommandWithPayloadFromObjectIgnoreOmitempty(t *testing.T) {
 	}
 }
 
-func TestCompleteJobCommandWithPayloadFromMap(t *testing.T) {
+func TestCompleteJobCommandWithVariablesFromMap(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{\"foo\":\"bar\"}"
-	payloadMap := make(map[string]interface{})
-	payloadMap["foo"] = "bar"
+	variables := "{\"foo\":\"bar\"}"
+	variableMaps := make(map[string]interface{})
+	variableMaps["foo"] = "bar"
 
 	request := &pb.CompleteJobRequest{
-		JobKey:  123,
-		Payload: payload,
+		JobKey:    123,
+		Variables: variables,
 	}
 	stub := &pb.CompleteJobResponse{}
 
@@ -236,12 +236,12 @@ func TestCompleteJobCommandWithPayloadFromMap(t *testing.T) {
 
 	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.JobKey(123).PayloadFromMap(payloadMap)
+	variablesCommand, err := command.JobKey(123).VariablesFromMap(variableMaps)
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")

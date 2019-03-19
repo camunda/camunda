@@ -22,9 +22,9 @@ var listWorkflowsBpmnProcessIdFlag string
 
 // listWorkflowsCmd represents the listWorkflows command
 var listWorkflowsCmd = &cobra.Command{
-	Use:   "workflows",
-	Short: "List deployed workflows",
-	Args: cobra.NoArgs,
+	Use:     "workflows",
+	Short:   "List deployed workflows",
+	Args:    cobra.NoArgs,
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		response, err := client.NewListWorkflowsCommand().BpmnProcessId(listWorkflowsBpmnProcessIdFlag).Send()

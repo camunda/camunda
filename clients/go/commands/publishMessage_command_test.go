@@ -107,18 +107,18 @@ func TestPublishMessageCommandWithTimeToLive(t *testing.T) {
 	}
 }
 
-func TestPublishMessageCommandWithPayloadFromString(t *testing.T) {
+func TestPublishMessageCommandWithVariablesFromString(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{\"foo\":\"bar\"}"
+	variables := "{\"foo\":\"bar\"}"
 
 	request := &pb.PublishMessageRequest{
 		Name:           "foo",
 		CorrelationKey: "bar",
-		Payload:        payload,
+		Variables:      variables,
 	}
 	stub := &pb.PublishMessageResponse{}
 
@@ -126,12 +126,12 @@ func TestPublishMessageCommandWithPayloadFromString(t *testing.T) {
 
 	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.MessageName("foo").CorrelationKey("bar").PayloadFromString(payload)
+	variablesCommand, err := command.MessageName("foo").CorrelationKey("bar").VariablesFromString(variables)
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -142,18 +142,18 @@ func TestPublishMessageCommandWithPayloadFromString(t *testing.T) {
 	}
 }
 
-func TestPublishMessageCommandWithPayloadFromStringer(t *testing.T) {
+func TestPublishMessageCommandWithVariablesFromStringer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{\"foo\":\"bar\"}"
+	variables := "{\"foo\":\"bar\"}"
 
 	request := &pb.PublishMessageRequest{
 		Name:           "foo",
 		CorrelationKey: "bar",
-		Payload:        payload,
+		Variables:      variables,
 	}
 	stub := &pb.PublishMessageResponse{}
 
@@ -161,12 +161,12 @@ func TestPublishMessageCommandWithPayloadFromStringer(t *testing.T) {
 
 	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.MessageName("foo").CorrelationKey("bar").PayloadFromStringer(DataType{Foo: "bar"})
+	variablesCommand, err := command.MessageName("foo").CorrelationKey("bar").VariablesFromStringer(DataType{Foo: "bar"})
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -177,18 +177,18 @@ func TestPublishMessageCommandWithPayloadFromStringer(t *testing.T) {
 	}
 }
 
-func TestPublishMessageCommandWithPayloadFromObject(t *testing.T) {
+func TestPublishMessageCommandWithVariablesFromObject(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{\"foo\":\"bar\"}"
+	variables := "{\"foo\":\"bar\"}"
 
 	request := &pb.PublishMessageRequest{
 		Name:           "foo",
 		CorrelationKey: "bar",
-		Payload:        payload,
+		Variables:      variables,
 	}
 	stub := &pb.PublishMessageResponse{}
 
@@ -196,12 +196,12 @@ func TestPublishMessageCommandWithPayloadFromObject(t *testing.T) {
 
 	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.MessageName("foo").CorrelationKey("bar").PayloadFromObject(DataType{Foo: "bar"})
+	variablesCommand, err := command.MessageName("foo").CorrelationKey("bar").VariablesFromObject(DataType{Foo: "bar"})
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -212,18 +212,18 @@ func TestPublishMessageCommandWithPayloadFromObject(t *testing.T) {
 	}
 }
 
-func TestPublishMessageCommandWithPayloadFromObjectOmitempty(t *testing.T) {
+func TestPublishMessageCommandWithVariablesFromObjectOmitempty(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{}"
+	variables := "{}"
 
 	request := &pb.PublishMessageRequest{
 		Name:           "foo",
 		CorrelationKey: "bar",
-		Payload:        payload,
+		Variables:      variables,
 	}
 	stub := &pb.PublishMessageResponse{}
 
@@ -231,12 +231,12 @@ func TestPublishMessageCommandWithPayloadFromObjectOmitempty(t *testing.T) {
 
 	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.MessageName("foo").CorrelationKey("bar").PayloadFromObject(DataType{Foo: ""})
+	variablesCommand, err := command.MessageName("foo").CorrelationKey("bar").VariablesFromObject(DataType{Foo: ""})
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -247,18 +247,18 @@ func TestPublishMessageCommandWithPayloadFromObjectOmitempty(t *testing.T) {
 	}
 }
 
-func TestPublishMessageCommandWithPayloadFromObjectIgnoreOmitempty(t *testing.T) {
+func TestPublishMessageCommandWithVariablesFromObjectIgnoreOmitEmpty(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{\"foo\":\"\"}"
+	variables := "{\"foo\":\"\"}"
 
 	request := &pb.PublishMessageRequest{
 		Name:           "foo",
 		CorrelationKey: "bar",
-		Payload:        payload,
+		Variables:      variables,
 	}
 	stub := &pb.PublishMessageResponse{}
 
@@ -266,12 +266,12 @@ func TestPublishMessageCommandWithPayloadFromObjectIgnoreOmitempty(t *testing.T)
 
 	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.MessageName("foo").CorrelationKey("bar").PayloadFromObjectIgnoreOmitempty(DataType{Foo: ""})
+	variablesCommand, err := command.MessageName("foo").CorrelationKey("bar").VariablesFromObjectIgnoreOmitempty(DataType{Foo: ""})
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -282,20 +282,20 @@ func TestPublishMessageCommandWithPayloadFromObjectIgnoreOmitempty(t *testing.T)
 	}
 }
 
-func TestPublishMessageCommandWithPayloadFromMap(t *testing.T) {
+func TestPublishMessageCommandWithVariablesFromMap(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	payload := "{\"foo\":\"bar\"}"
-	payloadMap := make(map[string]interface{})
-	payloadMap["foo"] = "bar"
+	variables := "{\"foo\":\"bar\"}"
+	variablesMap := make(map[string]interface{})
+	variablesMap["foo"] = "bar"
 
 	request := &pb.PublishMessageRequest{
 		Name:           "foo",
 		CorrelationKey: "bar",
-		Payload:        payload,
+		Variables:      variables,
 	}
 	stub := &pb.PublishMessageResponse{}
 
@@ -303,12 +303,12 @@ func TestPublishMessageCommandWithPayloadFromMap(t *testing.T) {
 
 	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout)
 
-	payloadCommand, err := command.MessageName("foo").CorrelationKey("bar").PayloadFromMap(payloadMap)
+	variablesCommand, err := command.MessageName("foo").CorrelationKey("bar").VariablesFromMap(variablesMap)
 	if err != nil {
-		t.Error("Failed to set payload: ", err)
+		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := payloadCommand.Send()
+	response, err := variablesCommand.Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
