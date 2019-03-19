@@ -7,10 +7,11 @@
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 import Dropdown from 'modules/components/Dropdown';
+import Button from 'modules/components/Button';
 
 export const FiltersWrapper = themed(styled.div`
   position: relative;
-  padding: 21px 20px 26px;
+  padding: 18px 20px 24px;
 
   background-color: ${themeStyle({
     dark: Colors.uiDark03,
@@ -35,6 +36,7 @@ export const FiltersWrapper = themed(styled.div`
 export const Content = styled.div`
   position: relative;
   left: -51px;
+  display: flex;
 `;
 
 export const FilterRow = styled.div`
@@ -152,3 +154,35 @@ export const MoreDropdown = themed(styled(Dropdown)`
     border-radius: 16px !important;
   }
 `);
+
+export const ButtonWrapper = themed(styled.div`
+  position: relative;
+  right: -71px;
+  width: 141px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  &:before {
+    content: '';
+    position: absolute;
+    top: calc(50% - 33px);
+    left: 0;
+    width: 1px;
+    height: 71px;
+
+    background-color: ${themeStyle({
+      dark: Colors.uiDark04,
+      light: Colors.uiLight05
+    })};
+  }
+`);
+
+export const PillsWrapper = styled.div`
+  flex-grow: 1;
+`;
+
+export const ClearButton = styled(Button)`
+  font-weight: bold;
+  font-size: 13px;
+`;
