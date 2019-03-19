@@ -6,7 +6,6 @@ import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
 import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
@@ -21,6 +20,7 @@ import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndex
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
+import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -210,7 +210,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   private String getAuthorizationCookieValue() {
-    return AuthenticationUtil.createOptimizeAuthCookieValue(getAuthenticationToken());
+    return AuthCookieService.createOptimizeAuthCookieValue(getAuthenticationToken());
   }
 
   public String getNewAuthenticationToken() {

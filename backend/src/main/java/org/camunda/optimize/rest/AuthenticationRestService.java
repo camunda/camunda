@@ -2,7 +2,6 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.AuthenticationService;
 import org.camunda.optimize.service.security.SessionService;
@@ -78,7 +77,7 @@ public class AuthenticationRestService {
   @GET
   @Path("logout")
   public Response logout(@Context ContainerRequestContext requestContext) {
-    AuthenticationUtil.getToken(requestContext).ifPresent(sessionService::invalidateAuthToken);
+    sessionService.invalidateSession(requestContext);
     return Response.status(200)
       .entity("OK")
       .cookie(authCookieService.createDeleteOptimizeAuthCookie())

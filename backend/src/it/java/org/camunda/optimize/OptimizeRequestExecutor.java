@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.security.AuthCookieService;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
@@ -35,8 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.camunda.optimize.AbstractAlertIT.ALERT;
-import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.rest.util.AuthenticationUtil.createOptimizeAuthCookieValue;
+import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -105,7 +105,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor withGivenAuthToken(String authToken) {
-    this.authCookie = createOptimizeAuthCookieValue(authToken);
+    this.authCookie = AuthCookieService.createOptimizeAuthCookieValue(authToken);
     return this;
   }
 
@@ -611,6 +611,6 @@ public class OptimizeRequestExecutor {
     Response response = client.path("authentication")
       .request()
       .post(Entity.json(entity));
-    return createOptimizeAuthCookieValue(response.readEntity(String.class));
+    return AuthCookieService.createOptimizeAuthCookieValue(response.readEntity(String.class));
   }
 }

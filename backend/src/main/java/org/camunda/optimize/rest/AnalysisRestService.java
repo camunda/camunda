@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
+import org.camunda.optimize.service.security.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -15,14 +16,15 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
-
 @Secured
 @Component
 @Path("/analysis")
 public class AnalysisRestService {
   @Autowired
   private BranchAnalysisReader branchAnalysisReader;
+
+  @Autowired
+  private SessionService sessionService;
 
   /**
    * Get the branch analysis from the given query information.
@@ -35,7 +37,7 @@ public class AnalysisRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public BranchAnalysisDto getBranchAnalysis(@Context ContainerRequestContext requestContext,
                                              BranchAnalysisQueryDto branchAnalysisDto) {
-    String userId = getRequestUserOrFailNotAuthorized(requestContext);
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return branchAnalysisReader.branchAnalysis(userId, branchAnalysisDto);
   }
 }

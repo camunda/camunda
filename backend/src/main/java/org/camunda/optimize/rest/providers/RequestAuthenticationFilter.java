@@ -1,6 +1,5 @@
 package org.camunda.optimize.rest.providers;
 
-import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -47,11 +46,7 @@ public class RequestAuthenticationFilter implements ContainerRequestFilter {
       return;
     }
     try {
-      boolean isValidToken = AuthenticationUtil.getToken(requestContext)
-        .map(sessionService::isValidAuthToken)
-        .orElse(false);
-
-      if (!isValidToken) {
+      if (!sessionService.hasValidSession(requestContext)) {
         handleInvalidToken(requestContext);
       }
     } catch (Exception e) {

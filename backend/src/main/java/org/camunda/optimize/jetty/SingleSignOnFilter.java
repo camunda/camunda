@@ -25,8 +25,7 @@ import javax.ws.rs.core.NewCookie;
 import java.io.IOException;
 import java.util.Optional;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.rest.util.AuthenticationUtil.extractTokenFromAuthorizationValueOrFailNotAuthorized;
+import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
 
 public class SingleSignOnFilter implements Filter {
 
@@ -93,22 +92,11 @@ public class SingleSignOnFilter implements Filter {
   }
 
   private void provideAuthentication(HttpServletResponse servletResponse, HttpServletRequest servletRequest) {
-    boolean hasCookieWithActiveToken = hasCookieWithActiveToken(servletRequest);
-    if (!hasCookieWithActiveToken) {
+    boolean hasValidSession = sessionService.hasValidSession(servletRequest);
+    if (!hasValidSession) {
       logger.trace("Creating new auth header for the Optimize cookie.");
       addTokenFromAuthenticationExtractorPlugins(servletRequest, servletResponse);
     }
-  }
-
-  private boolean hasCookieWithActiveToken(HttpServletRequest servletRequest) {
-    boolean hasCookieWithActiveToken =
-      retrieveOptimizeAuthCookie(servletRequest)
-        .map(authCookie -> {
-          String token = extractTokenFromAuthorizationValueOrFailNotAuthorized(authCookie.getValue());
-          return sessionService.isValidAuthToken(token);
-        })
-        .orElse(false);
-    return hasCookieWithActiveToken;
   }
 
   private void addTokenFromAuthenticationExtractorPlugins(HttpServletRequest servletRequest,

@@ -2,6 +2,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.export.ExportService;
+import org.camunda.optimize.service.security.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -20,8 +21,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
-
 
 @Path("/export")
 @Secured
@@ -31,6 +30,9 @@ public class ExportRestService {
   @Autowired
   private ExportService exportService;
 
+  @Autowired
+  private SessionService sessionService;
+
   @GET
   // octet stream on success, json on potential error
   @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
@@ -39,13 +41,13 @@ public class ExportRestService {
                                @PathParam("reportId") String reportId,
                                @PathParam("fileName") String fileName,
                                @QueryParam("excludedColumns") String excludedColumnsString) {
-    final String userId = getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final String resultFileName = fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
     final Set<String> excludedColumns = Optional.ofNullable(excludedColumnsString)
       .map(strings -> Arrays.stream(strings.split(",")).collect(Collectors.toSet()))
       .orElse(Collections.emptySet());
 
-    final Optional<byte[]> csvForReport = 
+    final Optional<byte[]> csvForReport =
       exportService.getCsvBytesForEvaluatedReportResult(userId, reportId, excludedColumns);
 
     return csvForReport

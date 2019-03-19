@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.security.SessionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +21,6 @@ import javax.ws.rs.core.MediaType;
 import java.util.Collection;
 import java.util.List;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
-
 
 @Secured
 @Path("/process-definition")
@@ -32,6 +31,9 @@ public class ProcessDefinitionRestService {
   @Autowired
   private ProcessDefinitionReader processDefinitionReader;
 
+  @Autowired
+  private SessionService sessionService;
+
   /**
    * Retrieves all process definition stored in Optimize.
    *
@@ -41,10 +43,10 @@ public class ProcessDefinitionRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public Collection<ProcessDefinitionOptimizeDto> getProcessDefinitions(
-      @Context ContainerRequestContext requestContext,
-      @QueryParam("includeXml") boolean includeXml) {
+    @Context ContainerRequestContext requestContext,
+    @QueryParam("includeXml") boolean includeXml) {
 
-    String userId = getRequestUserOrFailNotAuthorized(requestContext);
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return processDefinitionReader.fetchFullyImportedProcessDefinitions(userId, includeXml);
   }
 
@@ -58,7 +60,7 @@ public class ProcessDefinitionRestService {
   @Path("/groupedByKey")
   public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey(
     @Context ContainerRequestContext requestContext) {
-    String userId = getRequestUserOrFailNotAuthorized(requestContext);
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return processDefinitionReader.getProcessDefinitionsGroupedByKey(userId);
   }
 
@@ -66,7 +68,7 @@ public class ProcessDefinitionRestService {
    * Get the process definition xml to a given process definition key and version.
    * If the version is set to "ALL", the xml of the latest version is returned.
    *
-   * @param processDefinitionKey The process definition key of the desired process definition xml.
+   * @param processDefinitionKey     The process definition key of the desired process definition xml.
    * @param processDefinitionVersion The process definition version of the desired process definition xml.
    * @return the process definition xml requested or json error structure on failure
    */
@@ -74,10 +76,10 @@ public class ProcessDefinitionRestService {
   @Produces(value = {MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
   @Path("/xml")
   public String getProcessDefinitionXml(
-      @Context ContainerRequestContext requestContext,
-      @QueryParam("processDefinitionKey") String processDefinitionKey,
-      @QueryParam("processDefinitionVersion") String processDefinitionVersion) {
-    final String userId = getRequestUserOrFailNotAuthorized(requestContext);
+    @Context ContainerRequestContext requestContext,
+    @QueryParam("processDefinitionKey") String processDefinitionKey,
+    @QueryParam("processDefinitionVersion") String processDefinitionVersion) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return processDefinitionReader.getProcessDefinitionXml(userId, processDefinitionKey, processDefinitionVersion)
       .orElseThrow(() -> {
         String notFoundErrorMessage = "Could not find xml for process definition with key [" + processDefinitionKey +

@@ -17,6 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.container.ContainerRequestContext;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -65,7 +68,19 @@ public class SessionService implements ConfigurationReloadable {
     return token;
   }
 
-  public boolean isValidAuthToken(String token) {
+  public boolean hasValidSession(HttpServletRequest servletRequest) {
+    return AuthCookieService.getToken(servletRequest)
+      .map(this::isValidAuthToken)
+      .orElse(false);
+  }
+
+  public boolean hasValidSession(ContainerRequestContext requestContext) {
+    return AuthCookieService.getToken(requestContext)
+      .map(this::isValidAuthToken)
+      .orElse(false);
+  }
+
+  private boolean isValidAuthToken(String token) {
     boolean isValid = false;
 
     try {
@@ -99,7 +114,11 @@ public class SessionService implements ConfigurationReloadable {
     return Optional.ofNullable(newToken);
   }
 
-  public void invalidateAuthToken(final String token) {
+  public void invalidateSession(ContainerRequestContext requestContext) {
+    AuthCookieService.getToken(requestContext).ifPresent(this::invalidateAuthToken);
+  }
+
+  private void invalidateAuthToken(final String token) {
     try {
       final DecodedJWT decodedJwt = JWT.decode(token);
       terminatedSessionService.terminateUserSession(decodedJwt.getId());
@@ -119,6 +138,12 @@ public class SessionService implements ConfigurationReloadable {
       logger.debug("Invalid jwt token {}", token, e);
     }
     return Optional.ofNullable(decodedJWT).flatMap(this::getDynamicExpiresAtLocalDateTime);
+  }
+
+  public String getRequestUserOrFailNotAuthorized(ContainerRequestContext requestContext) {
+    return AuthCookieService.getToken(requestContext)
+      .flatMap(AuthCookieService::getTokenSubject)
+      .orElseThrow(() -> new NotAuthorizedException("Could not extract request user!"));
   }
 
   @Override

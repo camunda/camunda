@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto
 import org.camunda.optimize.dto.optimize.query.definition.DecisionDefinitionGroupOptimizeDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
+import org.camunda.optimize.service.security.SessionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +21,6 @@ import javax.ws.rs.core.MediaType;
 import java.util.Collection;
 import java.util.List;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
-
 
 @Secured
 @Path("/decision-definition")
@@ -30,10 +29,13 @@ public class DecisionDefinitionRestService {
   private static final Logger logger = LoggerFactory.getLogger(DecisionDefinitionRestService.class);
 
   private final DecisionDefinitionReader decisionDefinitionReader;
+  private final SessionService sessionService;
 
   @Autowired
-  public DecisionDefinitionRestService(final DecisionDefinitionReader decisionDefinitionReader) {
+  public DecisionDefinitionRestService(final DecisionDefinitionReader decisionDefinitionReader,
+                                       final SessionService sessionService) {
     this.decisionDefinitionReader = decisionDefinitionReader;
+    this.sessionService = sessionService;
   }
 
   /**
@@ -46,8 +48,7 @@ public class DecisionDefinitionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public Collection<DecisionDefinitionOptimizeDto> getDecisionDefinitions(@Context ContainerRequestContext requestContext,
                                                                           @QueryParam("includeXml") boolean includeXml) {
-
-    String userId = getRequestUserOrFailNotAuthorized(requestContext);
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return decisionDefinitionReader.fetchFullyImportedDecisionDefinitions(userId, includeXml);
   }
 
@@ -60,7 +61,7 @@ public class DecisionDefinitionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/groupedByKey")
   public List<DecisionDefinitionGroupOptimizeDto> getDecisionDefinitionsGroupedByKey(@Context ContainerRequestContext requestContext) {
-    String userId = getRequestUserOrFailNotAuthorized(requestContext);
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return decisionDefinitionReader.getDecisionDefinitionsGroupedByKey(userId);
   }
 
@@ -78,7 +79,7 @@ public class DecisionDefinitionRestService {
   public String getDecisionDefinitionXml(@Context ContainerRequestContext requestContext,
                                          @QueryParam("key") String decisionDefinitionKey,
                                          @QueryParam("version") String decisionDefinitionVersion) {
-    final String userId = getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return decisionDefinitionReader.getDecisionDefinitionXml(userId, decisionDefinitionKey, decisionDefinitionVersion)
       .orElseThrow(() -> {
         String notFoundErrorMessage = "Could not find xml for decision definition with key [" + decisionDefinitionKey +

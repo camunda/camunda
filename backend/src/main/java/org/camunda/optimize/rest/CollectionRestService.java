@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefi
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.collection.CollectionService;
+import org.camunda.optimize.service.security.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -21,8 +22,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
-
 
 @Secured
 @Path("/collection")
@@ -30,10 +29,13 @@ import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOr
 public class CollectionRestService {
 
   private final CollectionService collectionService;
+  private final SessionService sessionService;
 
   @Autowired
-  public CollectionRestService(final CollectionService collectionService) {
+  public CollectionRestService(final CollectionService collectionService,
+                               final SessionService sessionService) {
     this.collectionService = collectionService;
+    this.sessionService = sessionService;
   }
 
   /**
@@ -43,7 +45,7 @@ public class CollectionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewCollection(@Context ContainerRequestContext requestContext) {
-    String userId = getRequestUserOrFailNotAuthorized(requestContext);
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return collectionService.createNewCollectionAndReturnId(userId);
   }
 
@@ -52,7 +54,7 @@ public class CollectionRestService {
    *
    * @param collectionId      the id of the collection
    * @param updatedCollection collection that needs to be updated. Only the fields that are defined here are actually
-   *                         updated.
+   *                          updated.
    */
   @PUT
   @Path("/{id}")
@@ -62,7 +64,7 @@ public class CollectionRestService {
                                @PathParam("id") String collectionId,
                                SimpleCollectionDefinitionDto updatedCollection) {
     updatedCollection.setId(collectionId);
-    String userId = getRequestUserOrFailNotAuthorized(requestContext);
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionService.updateCollection(updatedCollection, userId);
   }
 

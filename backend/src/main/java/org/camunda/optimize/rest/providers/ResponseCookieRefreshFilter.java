@@ -1,6 +1,5 @@
 package org.camunda.optimize.rest.providers;
 
-import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -38,7 +37,7 @@ public class ResponseCookieRefreshFilter implements ContainerResponseFilter {
 
   @Override
   public void filter(final ContainerRequestContext requestContext, final ContainerResponseContext responseContext) {
-    AuthenticationUtil.getToken(requestContext)
+    AuthCookieService.getToken(requestContext)
       .filter(token -> sessionService.getExpiresAtLocalDateTime(token)
         .map(expiresAt -> {
           final LocalDateTime now = LocalDateUtil.getCurrentLocalDateTime();

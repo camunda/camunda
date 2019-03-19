@@ -1,21 +1,32 @@
 package org.camunda.optimize.service.security;
 
-import org.camunda.optimize.rest.util.AuthenticationUtil;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.NewCookie;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
 
 @Component
 public class AuthCookieService {
   private static final Logger logger = LoggerFactory.getLogger(AuthCookieService.class);
+  public static final String AUTH_COOKIE_TOKEN_VALUE_PREFIX = "Bearer ";
+
+  public static String OPTIMIZE_AUTHORIZATION = "X-Optimize-Authorization";
+
 
   private final ConfigurationService configurationService;
 
@@ -23,7 +34,6 @@ public class AuthCookieService {
   AuthCookieService(final ConfigurationService configurationService) {
     this.configurationService = configurationService;
   }
-
 
   public NewCookie createDeleteOptimizeAuthCookie() {
     logger.trace("Deleting Optimize authentication cookie.");
@@ -43,13 +53,13 @@ public class AuthCookieService {
     logger.trace("Creating Optimize authentication cookie.");
     return new NewCookie(
       OPTIMIZE_AUTHORIZATION,
-      AuthenticationUtil.createOptimizeAuthCookieValue(securityToken),
+      AuthCookieService.createOptimizeAuthCookieValue(securityToken),
       "/",
       null,
       1,
       null,
       -1,
-      AuthenticationUtil.getTokenIssuedAt(securityToken)
+      this.getTokenIssuedAt(securityToken)
         .map(Date::toInstant)
         .map(issuedAt -> issuedAt.plus(configurationService.getTokenLifeTimeMinutes(), ChronoUnit.MINUTES))
         .map(Date::from)
@@ -59,4 +69,73 @@ public class AuthCookieService {
     );
   }
 
+
+  public static Optional<String> getToken(ContainerRequestContext requestContext) {
+    return extractAuthorizationCookie(requestContext)
+      .map(AuthCookieService::extractTokenFromAuthorizationValueOrFailNotAuthorized);
+  }
+
+  public static Optional<String> getToken(HttpServletRequest servletRequest) {
+    return extractAuthorizationCookie(servletRequest)
+      .map(AuthCookieService::extractTokenFromAuthorizationValueOrFailNotAuthorized);
+  }
+
+  public static Optional<Date> getTokenIssuedAt(String token) {
+    return getTokenAttribute(token, DecodedJWT::getIssuedAt);
+  }
+
+  public static Optional<String> getTokenSubject(String token) {
+    return getTokenAttribute(token, DecodedJWT::getSubject);
+  }
+
+  private static <T> Optional<T> getTokenAttribute(final String token,
+                                                   final Function<DecodedJWT, T> getTokenAttributeFunction) {
+    try {
+      final DecodedJWT decoded = JWT.decode(token);
+      return Optional.of(getTokenAttributeFunction.apply(decoded));
+    } catch (Exception e) {
+      logger.debug("Could not decode security token to extract attribute!", e);
+    }
+    return Optional.empty();
+  }
+
+
+  private static Optional<String> extractAuthorizationCookie(ContainerRequestContext requestContext) {
+    // load just issued token if set by previous filter
+    String authorizationHeader = (String) requestContext.getProperty(OPTIMIZE_AUTHORIZATION);
+    if (authorizationHeader == null) {
+      /* Check cookies for optimize authorization header*/
+      for (Map.Entry<String, Cookie> c : requestContext.getCookies().entrySet()) {
+        if (OPTIMIZE_AUTHORIZATION.equals(c.getKey())) {
+          authorizationHeader = c.getValue().getValue();
+        }
+      }
+    }
+    return Optional.ofNullable(authorizationHeader);
+  }
+
+  private static Optional<String> extractAuthorizationCookie(HttpServletRequest servletRequest) {
+    if (servletRequest.getCookies() != null) {
+      for (javax.servlet.http.Cookie cookie : servletRequest.getCookies()) {
+        if (OPTIMIZE_AUTHORIZATION.equals(cookie.getName())) {
+          return Optional.of(cookie.getValue());
+        }
+      }
+    }
+    return Optional.empty();
+  }
+
+  private static String extractTokenFromAuthorizationValueOrFailNotAuthorized(String authorizationHeader) {
+    // Check if the HTTP Authorization header is present and formatted correctly
+    if (authorizationHeader == null || !authorizationHeader.startsWith(AUTH_COOKIE_TOKEN_VALUE_PREFIX)) {
+      throw new NotAuthorizedException("Authorization header must be provided");
+    }
+
+    // Extract the token from the HTTP Authorization header
+    return authorizationHeader.substring(AUTH_COOKIE_TOKEN_VALUE_PREFIX.length()).trim();
+  }
+
+  public static String createOptimizeAuthCookieValue(final String securityToken) {
+    return AUTH_COOKIE_TOKEN_VALUE_PREFIX + securityToken;
+  }
 }

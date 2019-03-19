@@ -7,6 +7,7 @@ import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
+import org.camunda.optimize.service.security.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -26,8 +27,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
 import java.util.List;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
-
 
 @Secured
 @Path("/dashboard")
@@ -38,6 +37,9 @@ public class DashboardRestService {
   @Autowired
   private DashboardService dashboardService;
 
+  @Autowired
+  private SessionService sessionService;
+
   /**
    * Creates an empty dashboard.
    *
@@ -47,7 +49,7 @@ public class DashboardRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewDashboard(@Context ContainerRequestContext requestContext) {
-    String userId = getRequestUserOrFailNotAuthorized(requestContext);
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return dashboardService.createNewDashboardAndReturnId(userId);
   }
 
@@ -55,7 +57,8 @@ public class DashboardRestService {
    * Updates the given fields of a dashboard to the given id.
    *
    * @param dashboardId      the id of the dashboard
-   * @param updatedDashboard dashboard that needs to be updated. Only the fields that are defined here are actually updated.
+   * @param updatedDashboard dashboard that needs to be updated. Only the fields that are defined here are actually
+   *                         updated.
    */
   @PUT
   @Path("/{id}")
@@ -65,14 +68,13 @@ public class DashboardRestService {
                               @PathParam("id") String dashboardId,
                               DashboardDefinitionDto updatedDashboard) {
     updatedDashboard.setId(dashboardId);
-    String userId = getRequestUserOrFailNotAuthorized(requestContext);
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     dashboardService.updateDashboard(updatedDashboard, userId);
   }
 
 
   /**
    * Get a list of all available dashboards.
-   *
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
@@ -82,7 +84,6 @@ public class DashboardRestService {
     dashboards = QueryParamAdjustmentUtil.adjustDashboardResultsToQueryParameters(dashboards, queryParameters);
     return dashboards;
   }
-
 
 
   /**

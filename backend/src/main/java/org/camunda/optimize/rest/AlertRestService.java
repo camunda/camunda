@@ -5,8 +5,8 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.EmailAlertEnabledDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.alert.AlertService;
+import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,8 +24,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
-
 @Path("/alert")
 @Component
 @Secured
@@ -34,10 +32,13 @@ public class AlertRestService {
   @Autowired
   private AlertService alertService;
 
+  @Autowired
+  private SessionService sessionService;
+
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<AlertDefinitionDto> getStoredAlerts(@Context ContainerRequestContext requestContext) {
-    String userId = getRequestUserOrFailNotAuthorized(requestContext);
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return alertService.getStoredAlerts(userId);
   }
 
@@ -45,11 +46,11 @@ public class AlertRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createAlert(
-      @Context ContainerRequestContext requestContext,
-      AlertCreationDto toCreate
+    @Context ContainerRequestContext requestContext,
+    AlertCreationDto toCreate
   ) {
     ValidationHelper.ensureNotNull("creation object", toCreate);
-    String user = AuthenticationUtil.getRequestUserOrFailNotAuthorized(requestContext);
+    String user = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return alertService.createAlert(toCreate, user);
   }
 
@@ -58,12 +59,12 @@ public class AlertRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateAlert(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("id") String alertId,
-      AlertCreationDto toCreate
+    @Context ContainerRequestContext requestContext,
+    @PathParam("id") String alertId,
+    AlertCreationDto toCreate
   ) {
     ValidationHelper.ensureNotNull("creation object", toCreate);
-    String user = AuthenticationUtil.getRequestUserOrFailNotAuthorized(requestContext);
+    String user = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     alertService.updateAlert(alertId, toCreate, user);
   }
 
