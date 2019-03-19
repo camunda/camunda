@@ -42,7 +42,6 @@ public class ActivityEventOccurredHandler<T extends ExecutableActivity>
   protected boolean handleState(BpmnStepContext<T> context) {
     final EventTrigger event = getTriggeredEvent(context, context.getRecord().getKey());
     final ExecutableBoundaryEvent boundaryEvent = getBoundaryEvent(context, event);
-
     if (boundaryEvent == null) {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
           "No boundary event found with ID {} for process {}",
@@ -61,7 +60,7 @@ public class ActivityEventOccurredHandler<T extends ExecutableActivity>
       publishEvent(context, context.getRecord().getKey(), eventRecord, event);
     }
 
-    return super.handleState(context);
+    return true;
   }
 
   private ExecutableBoundaryEvent getBoundaryEvent(BpmnStepContext<T> context, EventTrigger event) {

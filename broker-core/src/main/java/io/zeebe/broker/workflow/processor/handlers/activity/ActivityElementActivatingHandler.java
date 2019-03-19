@@ -19,37 +19,36 @@ package io.zeebe.broker.workflow.processor.handlers.activity;
 
 import io.zeebe.broker.workflow.model.element.ExecutableActivity;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
+import io.zeebe.broker.workflow.processor.handlers.CatchEventSubscriber;
 import io.zeebe.broker.workflow.processor.handlers.IOMappingHelper;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementActivatingHandler;
-import io.zeebe.broker.workflow.processor.message.MessageCorrelationKeyException;
-import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class ActivityElementActivatingHandler<T extends ExecutableActivity>
     extends ElementActivatingHandler<T> {
-  public ActivityElementActivatingHandler() {}
+  private final CatchEventSubscriber catchEventSubscriber;
 
-  public ActivityElementActivatingHandler(WorkflowInstanceIntent nextState) {
-    super(nextState);
+  public ActivityElementActivatingHandler(CatchEventSubscriber catchEventSubscriber) {
+    super();
+    this.catchEventSubscriber = catchEventSubscriber;
   }
 
   public ActivityElementActivatingHandler(
-      WorkflowInstanceIntent nextState, IOMappingHelper ioMappingHelper) {
+      WorkflowInstanceIntent nextState, CatchEventSubscriber catchEventSubscriber) {
+    super(nextState);
+    this.catchEventSubscriber = catchEventSubscriber;
+  }
+
+  public ActivityElementActivatingHandler(
+      WorkflowInstanceIntent nextState,
+      IOMappingHelper ioMappingHelper,
+      CatchEventSubscriber catchEventSubscriber) {
     super(nextState, ioMappingHelper);
+    this.catchEventSubscriber = catchEventSubscriber;
   }
 
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
-    if (super.handleState(context)) {
-      try {
-        context.getCatchEventBehavior().subscribeToEvents(context, context.getElement());
-        return true;
-      } catch (MessageCorrelationKeyException e) {
-        context.raiseIncident(
-            ErrorType.EXTRACT_VALUE_ERROR, e.getContext().getVariablesScopeKey(), e.getMessage());
-      }
-    }
-
-    return false;
+    return super.handleState(context) && catchEventSubscriber.subscribeToEvents(context);
   }
 }

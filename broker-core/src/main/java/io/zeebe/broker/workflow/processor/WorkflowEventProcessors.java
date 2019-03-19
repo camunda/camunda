@@ -70,10 +70,10 @@ public class WorkflowEventProcessors {
 
     addWorkflowInstanceCommandProcessor(typedProcessorBuilder, workflowEngineState, zeebeState);
 
-    final CatchEventBehavior catchEventOutput =
+    final CatchEventBehavior catchEventBehavior =
         new CatchEventBehavior(zeebeState, subscriptionCommandSender, partitionsCount);
     final BpmnStepProcessor bpmnStepProcessor =
-        new BpmnStepProcessor(workflowEngineState, zeebeState, catchEventOutput);
+        new BpmnStepProcessor(workflowEngineState, zeebeState, catchEventBehavior);
     addBpmnStepProcessor(typedProcessorBuilder, bpmnStepProcessor);
 
     addMessageStreamProcessors(
@@ -82,7 +82,7 @@ public class WorkflowEventProcessors {
         topologyManager,
         subscriptionCommandSender,
         zeebeState);
-    addTimerStreamProcessors(typedProcessorBuilder, timerChecker, zeebeState, catchEventOutput);
+    addTimerStreamProcessors(typedProcessorBuilder, timerChecker, zeebeState, catchEventBehavior);
     addVariableDocumentStreamProcessors(typedProcessorBuilder, zeebeState);
     addWorkflowInstanceCreationStreamProcessors(typedProcessorBuilder, zeebeState);
 

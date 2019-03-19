@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.processor.handlers.container;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.EventOutput;
+import io.zeebe.broker.workflow.processor.handlers.CatchEventSubscriber;
 import io.zeebe.broker.workflow.processor.handlers.activity.ActivityElementTerminatingHandler;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.ElementInstanceState;
@@ -29,12 +30,13 @@ import java.util.List;
 public class ContainerElementTerminatingHandler<T extends ExecutableFlowElementContainer>
     extends ActivityElementTerminatingHandler<T> {
 
-  public ContainerElementTerminatingHandler() {
-    this(null);
+  public ContainerElementTerminatingHandler(CatchEventSubscriber catchEventSubscriber) {
+    this(null, catchEventSubscriber);
   }
 
-  public ContainerElementTerminatingHandler(WorkflowInstanceIntent nextState) {
-    super(nextState);
+  public ContainerElementTerminatingHandler(
+      WorkflowInstanceIntent nextState, CatchEventSubscriber catchEventSubscriber) {
+    super(nextState, catchEventSubscriber);
   }
 
   @Override

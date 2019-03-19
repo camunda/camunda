@@ -28,7 +28,7 @@ import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
-public class ElementTerminatingHandlerTest extends ElementHandlerTestCase {
+public class ElementTerminatingHandlerTest extends ElementHandlerTestCase<ExecutableFlowNode> {
   private ElementTerminatingHandler<ExecutableFlowNode> handler;
 
   @Override

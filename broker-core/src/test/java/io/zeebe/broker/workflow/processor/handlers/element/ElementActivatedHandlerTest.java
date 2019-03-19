@@ -28,7 +28,7 @@ import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
-public class ElementActivatedHandlerTest extends ElementHandlerTestCase {
+public class ElementActivatedHandlerTest extends ElementHandlerTestCase<ExecutableFlowNode> {
   private final WorkflowInstanceIntent nextState = WorkflowInstanceIntent.ELEMENT_COMPLETING;
   private ElementActivatedHandler<ExecutableFlowNode> handler;
 

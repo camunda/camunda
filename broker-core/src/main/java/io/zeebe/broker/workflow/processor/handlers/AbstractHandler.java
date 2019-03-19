@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.processor.handlers;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
@@ -51,6 +52,11 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
       if (handled && shouldTransition()) {
         transitionToNext(context);
       }
+    } else {
+      Loggers.WORKFLOW_PROCESSOR_LOGGER.debug(
+          "Skipping record {} due to step guard; in-memory element is {}",
+          context.getRecord(),
+          context.getElementInstance());
     }
   }
 
