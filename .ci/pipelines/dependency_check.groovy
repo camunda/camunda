@@ -1,3 +1,8 @@
+#!/usr/bin/env groovy
+
+// general properties for CI execution
+def static NODE_POOL() { return "slaves" }
+
 static String mavenElasticsearchAgent() {
     return """
 apiVersion: v1
@@ -7,9 +12,9 @@ metadata:
     agent: optimize-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: slaves
+    cloud.google.com/gke-nodepool: ${NODE_POOL()}
   tolerations:
-    - key: "slaves"
+    - key: "${NODE_POOL()}"
       operator: "Exists"
       effect: "NoSchedule"
   containers:
