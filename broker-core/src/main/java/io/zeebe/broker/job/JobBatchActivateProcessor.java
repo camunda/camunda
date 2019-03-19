@@ -19,6 +19,7 @@ package io.zeebe.broker.job;
 
 import static io.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
@@ -44,13 +45,16 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
 
-  private final JobState state;
+  private final JobState jobState;
   private final VariablesState variablesState;
+  private final KeyGenerator keyGenerator;
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
 
-  public JobBatchActivateProcessor(JobState state, VariablesState variablesState) {
-    this.state = state;
+  public JobBatchActivateProcessor(
+      JobState jobState, VariablesState variablesState, KeyGenerator keyGenerator) {
+    this.jobState = jobState;
     this.variablesState = variablesState;
+    this.keyGenerator = keyGenerator;
   }
 
   @Override
@@ -79,7 +83,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
       final TypedStreamWriter streamWriter) {
     final JobBatchRecord value = record.getValue();
 
-    final long jobBatchKey = streamWriter.getKeyGenerator().nextKey();
+    final long jobBatchKey = keyGenerator.nextKey();
 
     final AtomicInteger amount = new AtomicInteger(value.getAmount());
     collectJobsToActivate(record, amount);
@@ -111,7 +115,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
           variableNames.add(nameCopy);
         });
 
-    state.forEachActivatableJobs(
+    jobState.forEachActivatableJobs(
         value.getType(),
         (key, jobRecord) -> {
           int remainingAmount = amount.get();
@@ -164,7 +168,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
 
       // first write follow up event as state.activate will clear the payload
       streamWriter.appendFollowUpEvent(key, JobIntent.ACTIVATED, copiedJob);
-      state.activate(key, copiedJob);
+      jobState.activate(key, copiedJob);
     }
   }
 

@@ -104,11 +104,7 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
     if (key >= 0) {
       event.key(key);
     } else {
-      if (type == RecordType.EVENT) {
-        event.positionAsKey();
-      } else {
-        event.keyNull();
-      }
+      event.keyNull();
     }
 
     event.metadataWriter(metadata).valueWriter(value).done();

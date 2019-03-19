@@ -34,13 +34,10 @@ public interface TypedStreamWriter extends TypedCommandWriter {
       String reason,
       Consumer<RecordMetadata> metadata);
 
-  /** @return the key of the event */
-  long appendNewEvent(Intent intent, UnpackedObject value);
+  void appendNewEvent(long key, Intent intent, UnpackedObject value);
 
   void appendFollowUpEvent(long key, Intent intent, UnpackedObject value);
 
   void appendFollowUpEvent(
       long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
-
-  KeyGenerator getKeyGenerator();
 }

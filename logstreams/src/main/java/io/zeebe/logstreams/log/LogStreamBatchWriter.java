@@ -27,10 +27,9 @@ import org.agrona.DirectBuffer;
 public interface LogStreamBatchWriter extends LogStreamWriter {
   /** Builder to add a log entry to the batch. */
   interface LogEntryBuilder {
-    /** Use the log entry position as key. */
-    LogEntryBuilder positionAsKey();
     /** Use the default values as key. */
     LogEntryBuilder keyNull();
+
     /** Set the log entry key. */
     LogEntryBuilder key(long key);
 
