@@ -70,6 +70,7 @@ public class StreamProcessorController extends Actor {
   private StreamProcessor streamProcessor;
   private final StreamProcessorContext streamProcessorContext;
   private final SnapshotController snapshotController;
+  private String partitionId;
 
   private final LogStreamReader logStreamReader;
   private final LogStreamRecordWriter logStreamWriter;
@@ -137,7 +138,7 @@ public class StreamProcessorController extends Actor {
     final LogStream logStream = streamProcessorContext.getLogStream();
 
     final MetricsManager metricsManager = actorScheduler.getMetricsManager();
-    final String partitionId = String.valueOf(logStream.getPartitionId());
+    partitionId = String.valueOf(logStream.getPartitionId());
     final String processorName = getName();
 
     metrics = new StreamProcessorMetrics(metricsManager, processorName, partitionId);
@@ -148,7 +149,14 @@ public class StreamProcessorController extends Actor {
     try {
 
       snapshotPosition = recoverFromSnapshot(logStream.getCommitPosition(), logStream.getTerm());
+      LOG.info(
+          "Recovering partition {} from snapshot at position {}", partitionId, snapshotPosition);
+
       lastSourceEventPosition = seekFromSnapshotPositionToLastSourceEvent();
+      LOG.info(
+          "Reprocessing partition {} until last source event position {}",
+          partitionId,
+          lastSourceEventPosition);
 
       zeebeDb = snapshotController.openDb();
       streamProcessor = streamProcessorFactory.createProcessor(zeebeDb);
@@ -287,6 +295,10 @@ public class StreamProcessorController extends Actor {
 
   private void onRecordReprocessed(final LoggedEvent currentEvent) {
     if (currentEvent.getPosition() == lastSourceEventPosition) {
+      LOG.info(
+          "Reprocessing partition {} finished at event position {}",
+          partitionId,
+          currentEvent.getPosition());
       onRecovered();
     } else {
       actor.submit(this::reprocessNextEvent);
