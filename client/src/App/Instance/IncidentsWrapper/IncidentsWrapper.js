@@ -34,13 +34,12 @@ function IncidentsWrapper(props) {
   }
 
   function handleSort(key) {
-    let newSorting = {sortBy: key, sortOrder: SORT_ORDER.DESC};
+    let newSortOrder =
+      sorting.sortBy === key && sorting.sortOrder === SORT_ORDER.DESC
+        ? SORT_ORDER.ASC
+        : SORT_ORDER.DESC;
 
-    if (sorting.sortBy === key && sorting.sortOrder === SORT_ORDER.DESC) {
-      newSorting.sortOrder = SORT_ORDER.ASC;
-    }
-
-    setSorting(newSorting);
+    setSorting({sortOrder: newSortOrder, sortBy: key});
   }
 
   const sortedIncidents = sortData(
