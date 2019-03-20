@@ -15,7 +15,8 @@ import {checkDeleteConflict} from 'services';
 export default class ReportView extends Component {
   state = {
     confirmModalVisible: false,
-    conflict: null
+    conflict: null,
+    deleteLoading: false
   };
 
   async componentDidMount() {
@@ -27,6 +28,7 @@ export default class ReportView extends Component {
   shouldShowCSVDownload = () => typeof this.props.report.result !== 'undefined';
 
   showDeleteModal = async () => {
+    this.setState({confirmModalVisible: true, deleteLoading: true});
     let conflictState = {};
     const response = await checkDeleteConflict(this.props.report.id, 'report');
     if (response && response.conflictedItems && response.conflictedItems.length) {
@@ -39,8 +41,8 @@ export default class ReportView extends Component {
     }
 
     this.setState({
-      confirmModalVisible: true,
-      ...conflictState
+      ...conflictState,
+      deleteLoading: false
     });
   };
 
@@ -59,6 +61,7 @@ export default class ReportView extends Component {
   };
 
   deleteReport = async evt => {
+    this.setState({deleteLoading: true});
     await remove(this.props.report.id);
 
     this.setState({
@@ -74,7 +77,7 @@ export default class ReportView extends Component {
   };
 
   render() {
-    const {confirmModalVisible, conflict, redirect, sharingEnabled} = this.state;
+    const {confirmModalVisible, conflict, redirect, sharingEnabled, deleteLoading} = this.state;
     const {report} = this.props;
     const {id, name, lastModifier, lastModified} = report;
 
@@ -90,6 +93,7 @@ export default class ReportView extends Component {
           onConfirm={this.deleteReport}
           conflict={conflict}
           entityName={name}
+          loading={deleteLoading}
         />
         <div className="Report">
           <div className="Report__header">

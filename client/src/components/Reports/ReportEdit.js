@@ -27,7 +27,8 @@ export default withErrorHandling(
       confirmModalVisible: false,
       conflict: null,
       originalData: this.props.report,
-      report: this.props.report
+      report: this.props.report,
+      saveLoading: false
     };
 
     getTheOnlyDefinition = async () => {
@@ -67,6 +68,7 @@ export default withErrorHandling(
     save = async (evt, updatedName) => {
       const {id, data, reportType, combined} = this.state.report;
       const name = updatedName || this.state.report.name;
+      this.setState({saveLoading: true});
       await this.props.mightFail(
         saveReport(id, {name, data, reportType, combined}, this.state.conflict !== null),
         () => {
@@ -80,7 +82,8 @@ export default withErrorHandling(
             report: update(this.state.report, {name: {$set: name}}),
             originalData: this.state.report,
             redirect: `/report/${id}`,
-            conflict: null
+            conflict: null,
+            saveLoading: false
           });
           this.props.updateOverview(this.state.report);
         },
@@ -90,6 +93,7 @@ export default withErrorHandling(
             this.setState({
               report: update(this.state.report, {name: {$set: name}}),
               confirmModalVisible: true,
+              saveLoading: false,
               conflict: {
                 type: 'Save',
                 items: conflictData.conflictedItems
@@ -154,7 +158,14 @@ export default withErrorHandling(
     };
 
     render() {
-      const {report, loadingReportData, confirmModalVisible, conflict, redirect} = this.state;
+      const {
+        report,
+        loadingReportData,
+        confirmModalVisible,
+        conflict,
+        redirect,
+        saveLoading
+      } = this.state;
       const {id, name, lastModifier, lastModified, data, combined, reportType} = report;
 
       if (redirect) {
@@ -169,6 +180,7 @@ export default withErrorHandling(
             onConfirm={this.save}
             conflict={conflict}
             entityName={name}
+            loading={saveLoading}
           />
           <div className="Report">
             <div className="Report__header">
@@ -181,6 +193,7 @@ export default withErrorHandling(
                 autofocus={this.props.isNew}
                 onSave={this.save}
                 onCancel={this.cancel}
+                disabledButtons={saveLoading}
               />
             </div>
 

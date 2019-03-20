@@ -54,13 +54,14 @@ export default class EntityNameForm extends Component {
         <div className="tools">
           <button
             className="Button tool-button save-button"
-            disabled={!name}
+            disabled={!name || this.props.disabledButtons}
             onClick={evt => this.props.onSave(evt, name)}
           >
             <Icon type="check" />
             Save
           </button>
           <Link
+            disabled={this.props.disabledButtons}
             className="Button tool-button cancel-button"
             to={`/${entity.toLowerCase()}/${id}`}
             onClick={this.props.onCancel}

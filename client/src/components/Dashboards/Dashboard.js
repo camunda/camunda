@@ -71,7 +71,8 @@ export default themed(
           serverError: null,
           isAuthorizedToShare: false,
           sharingEnabled: false,
-          conflicts: []
+          conflicts: [],
+          deleteLoading: false
         };
       }
 
@@ -116,6 +117,7 @@ export default themed(
       };
 
       deleteDashboard = async evt => {
+        this.setState({deleteLoading: true});
         await remove(this.id);
 
         this.setState({
@@ -189,12 +191,12 @@ export default themed(
       };
 
       showDeleteModal = async () => {
-        const {conflictedItems} = await checkDeleteConflict(this.id, 'dashboard');
-        this.setState({conflicts: conflictedItems});
-
         this.setState({
-          confirmModalVisible: true
+          confirmModalVisible: true,
+          deleteLoading: true
         });
+        const {conflictedItems} = await checkDeleteConflict(this.id, 'dashboard');
+        this.setState({conflicts: conflictedItems, deleteLoading: false});
       };
 
       closeConfirmModal = () => {
@@ -311,7 +313,8 @@ export default themed(
           confirmModalVisible,
           isAuthorizedToShare,
           sharingEnabled,
-          conflicts
+          conflicts,
+          deleteLoading
         } = state;
         return (
           <Fullscreen enabled={this.state.fullScreenActive} onChange={this.changeFullScreen}>
@@ -397,6 +400,7 @@ export default themed(
                 onConfirm={this.deleteDashboard}
                 conflict={{type: 'Delete', items: conflicts}}
                 entityName={name}
+                loading={deleteLoading}
               />
               <DashboardView
                 loadReport={loadReport}

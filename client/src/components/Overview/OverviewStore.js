@@ -17,7 +17,8 @@ class OverviewStore extends Component {
     reports: [],
     dashboards: [],
     updating: null,
-    conflicts: []
+    conflicts: [],
+    deleteLoading: false
   };
 
   async componentDidMount() {
@@ -66,10 +67,13 @@ class OverviewStore extends Component {
   deleteEntity = async () => {
     const {type, entity} = this.state.deleting;
 
+    this.setState({deleteLoading: true});
+
     await remove(type, entity.id);
 
     this.setState({
       deleting: false,
+      deleteLoading: false,
       conflicts: []
     });
     this.loadData();
@@ -100,12 +104,12 @@ class OverviewStore extends Component {
   setCollectionToUpdate = updating => this.setState({updating});
 
   showDeleteModalFor = deleting => async () => {
-    const deleteState = {deleting};
+    this.setState({deleting, deleteLoading: true});
     if (deleting.type !== 'collection') {
       const {conflictedItems} = await checkDeleteConflict(deleting.entity.id, deleting.type);
-      deleteState.conflicts = conflictedItems;
+      this.setState({conflicts: conflictedItems});
     }
-    this.setState(deleteState);
+    this.setState({deleteLoading: false});
   };
 
   hideDeleteModal = () => this.setState({deleting: false, conflicts: []});

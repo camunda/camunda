@@ -7,7 +7,7 @@ import Collections from './Collections';
 import {ConfirmationModal, Button, Dropdown, Icon, Message, LoadingIndicator} from 'components';
 import {StoreProvider, withStore} from './OverviewStore';
 
-function Overview({store: {loading, deleting, conflicts}, ...props}) {
+function Overview({store: {loading, deleting, conflicts, deleteLoading}, ...props}) {
   if (loading) {
     return <LoadingIndicator />;
   }
@@ -68,6 +68,7 @@ function Overview({store: {loading, deleting, conflicts}, ...props}) {
         onConfirm={props.deleteEntity}
         entityName={deleting && deleting.entity.name}
         conflict={{type: 'Delete', items: conflicts}}
+        loading={deleteLoading}
       />
     </div>
   );
