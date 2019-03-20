@@ -8,7 +8,7 @@ package org.camunda.operate.zeebe.operation;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.es.reader.DetailViewReader;
+import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.IdUtil;
@@ -29,7 +29,7 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
   private static final Logger logger = LoggerFactory.getLogger(ResolveIncidentHandler.class);
 
   @Autowired
-  private DetailViewReader detailViewReader;
+  private IncidentReader incidentReader;
 
   @Autowired
   private ZeebeClient zeebeClient;
@@ -44,7 +44,7 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
 
     IncidentEntity incident = null;
     try {
-      incident = detailViewReader.getIncidentById(operation.getIncidentId());
+      incident = incidentReader.getIncidentById(operation.getIncidentId());
     } catch (NotFoundException ex) {
       failOperation(operation, "No appropriate incidents found: " + ex.getMessage());
       return;

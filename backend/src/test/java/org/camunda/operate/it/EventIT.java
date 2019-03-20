@@ -12,8 +12,9 @@ import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.EventType;
 import org.camunda.operate.entities.IncidentEntity;
-import org.camunda.operate.es.reader.DetailViewReader;
+import org.camunda.operate.es.reader.ActivityInstanceReader;
 import org.camunda.operate.es.reader.EventReader;
+import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.rest.dto.EventQueryDto;
 import org.camunda.operate.util.IdTestUtil;
@@ -21,7 +22,6 @@ import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -63,7 +63,10 @@ public class EventIT extends OperateZeebeIntegrationTest {
   private Predicate<Object[]> activityIsTerminatedCheck;
 
   @Autowired
-  private DetailViewReader detailViewReader;
+  private ActivityInstanceReader activityInstanceReader;
+
+  @Autowired
+  private IncidentReader incidentReader;
 
   private OffsetDateTime testStartTime;
 
@@ -92,7 +95,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
     //update retries
     final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
-    List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(workflowInstanceId);
+    List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceId);
     assertThat(allIncidents).hasSize(1);
     ZeebeTestUtil.resolveIncident(zeebeClient, allIncidents.get(0).getJobId(), allIncidents.get(0).getKey());
     elasticsearchTestRule.processAllEventsAndWait(incidentIsResolvedCheck, workflowInstanceKey);

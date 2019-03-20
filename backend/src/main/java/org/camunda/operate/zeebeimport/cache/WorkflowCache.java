@@ -10,7 +10,7 @@ import java.util.LinkedHashMap;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.reader.WorkflowReader;
 import org.camunda.operate.rest.exception.NotFoundException;
-import org.camunda.operate.zeebeimport.processors.DeploymentZeebeRecordProcessor;
+import org.camunda.operate.zeebeimport.processors.WorkflowZeebeRecordProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
@@ -32,7 +32,7 @@ public class WorkflowCache {
   private WorkflowReader workflowReader;
 
   @Autowired
-  private DeploymentZeebeRecordProcessor deploymentZeebeRecordProcessor;
+  private WorkflowZeebeRecordProcessor deploymentZeebeRecordProcessor;
 
   public WorkflowEntity getWorkflow(String workflowId, String bpmnProcessId) {
     final WorkflowEntity cachedWorkflowData = cache.get(workflowId);

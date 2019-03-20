@@ -16,7 +16,7 @@ import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.es.reader.DetailViewReader;
+import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.OperationReader;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
@@ -65,7 +65,7 @@ public class BatchOperationWriter {
   private ListViewReader listViewReader;
 
   @Autowired
-  private DetailViewReader detailViewReader;
+  private IncidentReader incidentReader;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -253,7 +253,7 @@ public class BatchOperationWriter {
 
     final OperationType operationType = operationRequest.getOperationType();
     if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
-      final List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(workflowInstanceId);
+      final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceId);
       if (allIncidents.size() == 0) {
         //nothing to schedule
         return new OperationResponseDto(0, "No incidents found.");
@@ -314,7 +314,7 @@ public class BatchOperationWriter {
     for (SearchHit searchHit : hits.getHits()) {
       final OperationType operationType = operationRequest.getOperationType();
       if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
-        final List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(searchHit.getId());
+        final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(searchHit.getId());
         if (allIncidents.size() != 0) {
           for (IncidentEntity incident: allIncidents) {
             requests.add(getIndexOperationRequest(searchHit.getId(), incident.getId(), operationType));

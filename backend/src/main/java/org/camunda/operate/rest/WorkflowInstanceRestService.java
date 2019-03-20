@@ -9,13 +9,15 @@ import java.util.Collection;
 import java.util.List;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.VariableEntity;
-import org.camunda.operate.es.reader.DetailViewReader;
+import org.camunda.operate.es.reader.ActivityInstanceReader;
+import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.ListViewReader;
+import org.camunda.operate.es.reader.VariableReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
-import org.camunda.operate.rest.dto.detailview.VariableDto;
+import org.camunda.operate.rest.dto.VariableDto;
 import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
@@ -59,7 +61,13 @@ public class WorkflowInstanceRestService {
   private ListViewReader listViewReader;
 
   @Autowired
-  private DetailViewReader detailViewReader;
+  private ActivityInstanceReader activityInstanceReader;
+
+  @Autowired
+  private IncidentReader incidentReader;
+
+  @Autowired
+  private VariableReader variableReader;
 
   @ApiOperation("Query workflow instances by different parameters")
   @PostMapping
@@ -110,13 +118,13 @@ public class WorkflowInstanceRestService {
   @ApiOperation("Get incidents by workflow instance id")
   @GetMapping("/{id}/incidents")
   public IncidentResponseDto queryIncidentsByWorkflowInstanceId(@PathVariable String id) {
-    return detailViewReader.getIncidents(id);
+    return incidentReader.getIncidents(id);
   }
 
   @ApiOperation("Get variables by workflow instance id and scope id")
   @GetMapping("/{workflowInstanceId}/variables")
   public List<VariableDto> getVariables(@PathVariable String workflowInstanceId, @RequestParam String scopeId) {
-    final List<VariableEntity> variableEntities = detailViewReader.getVariables(workflowInstanceId, scopeId);
+    final List<VariableEntity> variableEntities = variableReader.getVariables(workflowInstanceId, scopeId);
     return VariableDto.createFrom(variableEntities);
   }
 

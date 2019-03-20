@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
-import org.camunda.operate.entities.detailview.ActivityInstanceForDetailViewEntity;
+import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.DateUtil;
@@ -39,9 +39,9 @@ import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
 
 @Component
-public class DetailViewZeebeRecordProcessor {
+public class ActivityInstanceZeebeRecordProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(DetailViewZeebeRecordProcessor.class);
+  private static final Logger logger = LoggerFactory.getLogger(ActivityInstanceZeebeRecordProcessor.class);
 
   private static final Set<String> AI_FINISH_STATES = new HashSet<>();
   private static final Set<String> AI_START_STATES = new HashSet<>();
@@ -85,7 +85,7 @@ public class DetailViewZeebeRecordProcessor {
   }
 
   private UpdateRequestBuilder persistActivityInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
-    ActivityInstanceForDetailViewEntity entity = new ActivityInstanceForDetailViewEntity();
+    ActivityInstanceEntity entity = new ActivityInstanceEntity();
     entity.setId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
     entity.setKey(recordValue.getElementInstanceKey());
     entity.setPartitionId(record.getMetadata().getPartitionId());
@@ -97,14 +97,11 @@ public class DetailViewZeebeRecordProcessor {
       entity.setIncidentKey(null);
     }
 
-    //set parent
-    String workflowInstanceId = IdUtil.getId(recordValue.getWorkflowInstanceKey(), record);
-
-    return getActivityInstanceFromIncidentQuery(entity, workflowInstanceId);
+    return getActivityInstanceFromIncidentQuery(entity);
   }
 
   private UpdateRequestBuilder persistActivityInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue) throws PersistenceException {
-    ActivityInstanceForDetailViewEntity entity = new ActivityInstanceForDetailViewEntity();
+    ActivityInstanceEntity entity = new ActivityInstanceEntity();
     entity.setId(IdUtil.getId(record.getKey(), record));
     entity.setPartitionId(record.getMetadata().getPartitionId());
     entity.setActivityId(recordValue.getElementId());
@@ -128,14 +125,11 @@ public class DetailViewZeebeRecordProcessor {
 
     entity.setType(ActivityType.fromZeebeBpmnElementType(recordValue.getBpmnElementType()));
 
-    //set parent
-    String workflowInstanceId = IdUtil.getId(recordValue.getWorkflowInstanceKey(), record);
-
     return getActivityInstanceQuery(entity);
 
   }
 
-  private UpdateRequestBuilder getActivityInstanceQuery(ActivityInstanceForDetailViewEntity entity) throws PersistenceException {
+  private UpdateRequestBuilder getActivityInstanceQuery(ActivityInstanceEntity entity) throws PersistenceException {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
@@ -168,7 +162,7 @@ public class DetailViewZeebeRecordProcessor {
     }
   }
 
-  private UpdateRequestBuilder getActivityInstanceFromIncidentQuery(ActivityInstanceForDetailViewEntity entity, String workflowInstanceId) throws PersistenceException {
+  private UpdateRequestBuilder getActivityInstanceFromIncidentQuery(ActivityInstanceEntity entity) throws PersistenceException {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
@@ -180,8 +174,7 @@ public class DetailViewZeebeRecordProcessor {
       return esClient
         .prepareUpdate(activityInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .setDoc(jsonMap)
-        .setRouting(workflowInstanceId);
+        .setDoc(jsonMap);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);

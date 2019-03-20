@@ -6,21 +6,18 @@
 package org.camunda.operate.entities;
 
 import java.time.OffsetDateTime;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class ActivityInstanceEntity extends OperateZeebeEntity {
 
   private String activityId;
-
   private OffsetDateTime startDate;
-
   private OffsetDateTime endDate;
-
   private ActivityState state;
-
   private ActivityType type;
-
+  private Long incidentKey;
   private String workflowInstanceId;
+  private String scopeId;
+  private Long position;
 
   public String getActivityId() {
     return activityId;
@@ -62,13 +59,36 @@ public class ActivityInstanceEntity extends OperateZeebeEntity {
     this.type = type;
   }
 
-  @JsonIgnore
+  public Long getIncidentKey() {
+    return incidentKey;
+  }
+
+  public void setIncidentKey(Long incidentKey) {
+    this.incidentKey = incidentKey;
+  }
+
+  public String getScopeId() {
+    return scopeId;
+  }
+
+  public void setScopeId(String scopeId) {
+    this.scopeId = scopeId;
+  }
+
   public String getWorkflowInstanceId() {
     return workflowInstanceId;
   }
 
   public void setWorkflowInstanceId(String workflowInstanceId) {
     this.workflowInstanceId = workflowInstanceId;
+  }
+
+  public Long getPosition() {
+    return position;
+  }
+
+  public void setPosition(Long position) {
+    this.position = position;
   }
 
   @Override
@@ -92,7 +112,13 @@ public class ActivityInstanceEntity extends OperateZeebeEntity {
       return false;
     if (type != that.type)
       return false;
-    return workflowInstanceId != null ? workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId == null;
+    if (incidentKey != null ? !incidentKey.equals(that.incidentKey) : that.incidentKey != null)
+      return false;
+    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
+      return false;
+    if (scopeId != null ? !scopeId.equals(that.scopeId) : that.scopeId != null)
+      return false;
+    return position != null ? position.equals(that.position) : that.position == null;
   }
 
   @Override
@@ -103,7 +129,10 @@ public class ActivityInstanceEntity extends OperateZeebeEntity {
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (type != null ? type.hashCode() : 0);
+    result = 31 * result + (incidentKey != null ? incidentKey.hashCode() : 0);
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
+    result = 31 * result + (scopeId != null ? scopeId.hashCode() : 0);
+    result = 31 * result + (position != null ? position.hashCode() : 0);
     return result;
   }
 }

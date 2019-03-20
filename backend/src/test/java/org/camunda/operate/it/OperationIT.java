@@ -15,9 +15,11 @@ import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.VariableEntity;
-import org.camunda.operate.entities.detailview.ActivityInstanceForDetailViewEntity;
-import org.camunda.operate.es.reader.DetailViewReader;
+import org.camunda.operate.entities.ActivityInstanceEntity;
+import org.camunda.operate.es.reader.ActivityInstanceReader;
+import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.OperationReader;
+import org.camunda.operate.es.reader.VariableReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.property.OperateProperties;
@@ -106,7 +108,13 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   private WorkflowInstanceReader workflowInstanceReader;
 
   @Autowired
-  private DetailViewReader detailViewReader;
+  private ActivityInstanceReader activityInstanceReader;
+
+  @Autowired
+  private IncidentReader incidentReader;
+
+  @Autowired
+  private VariableReader variableReader;
 
   @Autowired
   private OperationReader operationReader;
@@ -191,7 +199,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final long workflowInstanceKey = startDemoWorkflowInstanceWithIncidents();
     final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
     elasticsearchTestRule.processAllEventsAndWait(incidentsAreActiveCheck, workflowInstanceKey, 2);
-    final List<IncidentEntity> incidents = detailViewReader.getAllIncidents(workflowInstanceId);
+    final List<IncidentEntity> incidents = incidentReader.getAllIncidents(workflowInstanceId);
 
     //when
     final MvcResult mvcResult = postOperationWithOKResponse(workflowInstanceId, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));
@@ -276,7 +284,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getEndDate()).isNull();
 
     //check incidents
-    final List<IncidentDto> incidents = detailViewReader.getIncidents(workflowInstanceId).getIncidents();
+    final List<IncidentDto> incidents = incidentReader.getIncidents(workflowInstanceId).getIncidents();
     assertThat(incidents).hasSize(1);
     assertThat(incidents.get(0).isHasActiveOperation()).isEqualTo(true);
     final OperationDto lastOperation = incidents.get(0).getLastOperation();
@@ -341,7 +349,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getEndDate()).isNotNull();
 
     //check variables
-    final List<VariableEntity> variables = detailViewReader.getVariables(workflowInstanceId, workflowInstanceId);
+    final List<VariableEntity> variables = variableReader.getVariables(workflowInstanceId, workflowInstanceId);
     assertThat(variables).hasSize(1);
     assertThat(variables.get(0).getName()).isEqualTo("a");
     assertThat(variables.get(0).getValue()).isEqualTo("\"newValue\"");
@@ -389,15 +397,15 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getEndDate()).isNotNull();
 
     //check variables
-    final List<VariableEntity> variables = detailViewReader.getVariables(workflowInstanceId, taskAId);
+    final List<VariableEntity> variables = variableReader.getVariables(workflowInstanceId, taskAId);
     assertThat(variables).hasSize(1);
     assertThat(variables.get(0).getName()).isEqualTo("foo");
     assertThat(variables.get(0).getValue()).isEqualTo("\"newFooValue\"");
   }
 
   protected String getActivityInstanceId(String workflowInstanceId, String activityId) {
-    final List<ActivityInstanceForDetailViewEntity> allActivityInstances = detailViewReader.getAllActivityInstances(workflowInstanceId);
-    final Optional<ActivityInstanceForDetailViewEntity> first = allActivityInstances.stream().filter(ai -> ai.getActivityId().equals(activityId)).findFirst();
+    final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
+    final Optional<ActivityInstanceEntity> first = allActivityInstances.stream().filter(ai -> ai.getActivityId().equals(activityId)).findFirst();
     assertThat(first.isPresent()).isTrue();
     return first.get().getId();
   }
@@ -474,7 +482,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operations).filteredOn(op -> op.getState().equals(OperationState.FAILED)).hasSize(1);
 
     //check incidents
-    final List<IncidentDto> incidents = detailViewReader.getIncidents(workflowInstanceId).getIncidents();
+    final List<IncidentDto> incidents = incidentReader.getIncidents(workflowInstanceId).getIncidents();
     assertThat(incidents).hasSize(0);
 
   }
@@ -520,7 +528,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
     postOperationWithOKResponse(workflowInstanceId, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));
     //resolve the incident before the operation is executed
-    final IncidentEntity incident = detailViewReader.getAllIncidents(workflowInstanceId).get(0);
+    final IncidentEntity incident = incidentReader.getAllIncidents(workflowInstanceId).get(0);
     ZeebeTestUtil.resolveIncident(zeebeClient, incident.getJobId(), incident.getKey());
 
     //when
@@ -539,7 +547,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getStartDate()).isNotNull();
 
     //check incidents
-    final List<IncidentDto> incidents = detailViewReader.getIncidents(workflowInstanceId).getIncidents();
+    final List<IncidentDto> incidents = incidentReader.getIncidents(workflowInstanceId).getIncidents();
     assertThat(incidents).hasSize(1);
     assertThat(incidents.get(0).isHasActiveOperation()).isEqualTo(false);
     final OperationDto lastOperation = incidents.get(0).getLastOperation();

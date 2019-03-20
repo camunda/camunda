@@ -3,17 +3,22 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate.rest.dto;
+package org.camunda.operate.rest.dto.activity;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import org.camunda.operate.entities.ActivityInstanceEntity;
+import java.util.Map;
 import org.camunda.operate.entities.ActivityState;
+import org.camunda.operate.entities.ActivityType;
+import org.camunda.operate.entities.ActivityInstanceEntity;
 
 public class ActivityInstanceDto {
 
   private String id;
+
+  private ActivityType type;
 
   private ActivityState state;
 
@@ -22,6 +27,10 @@ public class ActivityInstanceDto {
   private OffsetDateTime startDate;
 
   private OffsetDateTime endDate;
+
+  private String parentId;
+
+  private List<ActivityInstanceDto> children = new ArrayList<>();
 
   public String getId() {
     return id;
@@ -63,6 +72,30 @@ public class ActivityInstanceDto {
     this.endDate = endDate;
   }
 
+  public ActivityType getType() {
+    return type;
+  }
+
+  public void setType(ActivityType type) {
+    this.type = type;
+  }
+
+  public String getParentId() {
+    return parentId;
+  }
+
+  public void setParentId(String parentId) {
+    this.parentId = parentId;
+  }
+
+  public List<ActivityInstanceDto> getChildren() {
+    return children;
+  }
+
+  public void setChildren(List<ActivityInstanceDto> children) {
+    this.children = children;
+  }
+
   public static ActivityInstanceDto createFrom(ActivityInstanceEntity activityInstanceEntity) {
     if (activityInstanceEntity == null) {
       return null;
@@ -72,7 +105,13 @@ public class ActivityInstanceDto {
     activity.setActivityId(activityInstanceEntity.getActivityId());
     activity.setStartDate(activityInstanceEntity.getStartDate());
     activity.setEndDate(activityInstanceEntity.getEndDate());
-    activity.setState(activityInstanceEntity.getState());
+    if (activityInstanceEntity.getIncidentKey() != null) {
+      activity.setState(ActivityState.INCIDENT);
+    } else {
+      activity.setState(activityInstanceEntity.getState());
+    }
+    activity.setType(activityInstanceEntity.getType());
+    activity.setParentId(activityInstanceEntity.getScopeId());
     return activity;
   }
 
@@ -82,6 +121,18 @@ public class ActivityInstanceDto {
       for (ActivityInstanceEntity activityInstanceEntity: activityInstanceEntities) {
         if (activityInstanceEntity != null) {
           result.add(createFrom(activityInstanceEntity));
+        }
+      }
+    }
+    return result;
+  }
+
+  public static Map<String, ActivityInstanceDto> createMapFrom(List<ActivityInstanceEntity> activityInstanceEntities) {
+    Map<String, ActivityInstanceDto> result = new LinkedHashMap<>();
+    if (activityInstanceEntities != null) {
+      for (ActivityInstanceEntity activityInstanceEntity: activityInstanceEntities) {
+        if (activityInstanceEntity != null) {
+          result.put(activityInstanceEntity.getId(), createFrom(activityInstanceEntity));
         }
       }
     }
@@ -99,22 +150,32 @@ public class ActivityInstanceDto {
 
     if (id != null ? !id.equals(that.id) : that.id != null)
       return false;
+    if (type != that.type)
+      return false;
     if (state != that.state)
       return false;
     if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null)
       return false;
     if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
       return false;
-    return endDate != null ? endDate.equals(that.endDate) : that.endDate == null;
+    if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null)
+      return false;
+    if (parentId != null ? !parentId.equals(that.parentId) : that.parentId != null)
+      return false;
+    return children != null ? children.equals(that.children) : that.children == null;
   }
 
   @Override
   public int hashCode() {
     int result = id != null ? id.hashCode() : 0;
+    result = 31 * result + (type != null ? type.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
+    result = 31 * result + (parentId != null ? parentId.hashCode() : 0);
+    result = 31 * result + (children != null ? children.hashCode() : 0);
     return result;
   }
+
 }

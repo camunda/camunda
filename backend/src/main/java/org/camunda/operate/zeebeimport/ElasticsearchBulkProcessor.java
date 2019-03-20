@@ -8,8 +8,8 @@ package org.camunda.operate.zeebeimport;
 import java.util.List;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.camunda.operate.zeebeimport.processors.DeploymentZeebeRecordProcessor;
-import org.camunda.operate.zeebeimport.processors.DetailViewZeebeRecordProcessor;
+import org.camunda.operate.zeebeimport.processors.WorkflowZeebeRecordProcessor;
+import org.camunda.operate.zeebeimport.processors.ActivityInstanceZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.EventZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.IncidentZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.ListViewZeebeRecordProcessor;
@@ -34,7 +34,7 @@ public class ElasticsearchBulkProcessor extends Thread {
   private ListViewZeebeRecordProcessor listViewZeebeRecordProcessor;
 
   @Autowired
-  private DetailViewZeebeRecordProcessor detailViewZeebeRecordProcessor;
+  private ActivityInstanceZeebeRecordProcessor activityInstanceZeebeRecordProcessor;
 
   @Autowired
   private VariableZeebeRecordProcessor variableZeebeRecordProcessor;
@@ -43,7 +43,7 @@ public class ElasticsearchBulkProcessor extends Thread {
   private IncidentZeebeRecordProcessor incidentZeebeRecordProcessor;
 
   @Autowired
-  private DeploymentZeebeRecordProcessor deploymentZeebeRecordProcessor;
+  private WorkflowZeebeRecordProcessor workflowZeebeRecordProcessor;
 
   @Autowired
   private EventZeebeRecordProcessor eventZeebeRecordProcessor;
@@ -57,21 +57,21 @@ public class ElasticsearchBulkProcessor extends Thread {
         switch (record.getMetadata().getValueType()) {
         case WORKFLOW_INSTANCE:
           listViewZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
-          detailViewZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
+          activityInstanceZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
           eventZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
           break;
         case INCIDENT:
           listViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
-          detailViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
+          activityInstanceZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
           incidentZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
           eventZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
           break;
         case VARIABLE:
-          variableZeebeRecordProcessor.processVariableRecord(record, bulkRequest);
           listViewZeebeRecordProcessor.processVariableRecord(record, bulkRequest);
+          variableZeebeRecordProcessor.processVariableRecord(record, bulkRequest);
           break;
         case DEPLOYMENT:
-          deploymentZeebeRecordProcessor.processDeploymentRecord(record, bulkRequest);
+          workflowZeebeRecordProcessor.processDeploymentRecord(record, bulkRequest);
           break;
         case JOB:
           eventZeebeRecordProcessor.processJobRecord(record, bulkRequest);

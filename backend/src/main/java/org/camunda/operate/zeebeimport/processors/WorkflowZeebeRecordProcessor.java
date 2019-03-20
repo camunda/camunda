@@ -44,9 +44,9 @@ import io.zeebe.exporter.record.value.deployment.ResourceType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 
 @Component
-public class DeploymentZeebeRecordProcessor {
+public class WorkflowZeebeRecordProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(DeploymentZeebeRecordProcessor.class);
+  private static final Logger logger = LoggerFactory.getLogger(WorkflowZeebeRecordProcessor.class);
 
   private static final Charset CHARSET = StandardCharsets.UTF_8;
 

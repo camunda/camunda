@@ -7,20 +7,10 @@ package org.camunda.operate.es.reader;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
-import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.IncidentEntity;
-import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
-import org.camunda.operate.entities.VariableEntity;
-import org.camunda.operate.entities.detailview.ActivityInstanceForDetailViewEntity;
-import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
-import org.camunda.operate.es.schema.templates.VariableTemplate;
-import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeDto;
-import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeRequestDto;
-import org.camunda.operate.rest.dto.detailview.DetailViewActivityInstanceDto;
 import org.camunda.operate.rest.dto.incidents.IncidentDto;
 import org.camunda.operate.rest.dto.incidents.IncidentErrorTypeDto;
 import org.camunda.operate.rest.dto.incidents.IncidentFlowNodeDto;
@@ -29,61 +19,28 @@ import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.sort.SortOrder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @Component
-public class DetailViewReader {
-
-  private static final Logger logger = LoggerFactory.getLogger(DetailViewReader.class);
-
-  @Autowired
-  private TransportClient esClient;
-
-  @Autowired
-  private ObjectMapper objectMapper;
-
-  @Autowired
-  private ActivityInstanceTemplate activityInstanceTemplate;
-
-  @Autowired
-  private VariableTemplate variableTemplate;
+public class IncidentReader extends AbstractReader {
 
   @Autowired
   private IncidentTemplate incidentTemplate;
 
   @Autowired
   private OperationReader operationReader;
-
-  public List<VariableEntity> getVariables(String workflowInstanceId, String scopeId) {
-    final TermQueryBuilder workflowInstanceIdQ = termQuery(VariableTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
-    final TermQueryBuilder scopeIdQ = termQuery(VariableTemplate.SCOPE_ID, scopeId);
-
-    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceIdQ, scopeIdQ));
-
-    final SearchRequestBuilder requestBuilder =
-      esClient.prepareSearch(variableTemplate.getAlias())
-        .setQuery(query)
-        .addSort(VariableTemplate.NAME, SortOrder.ASC);
-    return scroll(requestBuilder, VariableEntity.class);
-  }
 
   public List<IncidentEntity> getAllIncidents(String workflowInstanceId) {
     final TermQueryBuilder workflowInstanceIdQ = termQuery(IncidentTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
@@ -117,51 +74,6 @@ public class DetailViewReader {
 
   }
 
-  public ActivityInstanceTreeDto getActivityInstanceTree(ActivityInstanceTreeRequestDto requestDto) {
-
-    List<ActivityInstanceForDetailViewEntity> activityInstances = getAllActivityInstances(requestDto.getWorkflowInstanceId());
-
-    final Map<String, DetailViewActivityInstanceDto> nodes = DetailViewActivityInstanceDto.createMapFrom(activityInstances);
-
-    ActivityInstanceTreeDto tree = new ActivityInstanceTreeDto();
-
-    for (DetailViewActivityInstanceDto node: nodes.values()) {
-      if (node.getParentId() != null) {
-        if (node.getParentId().equals(requestDto.getWorkflowInstanceId())) {
-          tree.getChildren().add(node);
-        } else {
-          nodes.get(node.getParentId()).getChildren().add(node);
-        }
-        if (node.getState().equals(ActivityState.INCIDENT)) {
-          propagateState(node, nodes);
-        }
-      }
-    }
-
-    return tree;
-  }
-
-  private void propagateState(DetailViewActivityInstanceDto currentNode, Map<String, DetailViewActivityInstanceDto> allNodes) {
-    if (currentNode.getParentId() != null) {
-      final DetailViewActivityInstanceDto parent = allNodes.get(currentNode.getParentId());
-      if (parent != null) {
-        parent.setState(ActivityState.INCIDENT);
-        propagateState(parent, allNodes);
-      }
-    }
-  }
-
-  public List<ActivityInstanceForDetailViewEntity> getAllActivityInstances(String workflowInstanceId) {
-
-    final TermQueryBuilder workflowInstanceIdQ = termQuery(ActivityInstanceTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
-
-    final SearchRequestBuilder requestBuilder =
-      esClient.prepareSearch(activityInstanceTemplate.getAlias())
-        .setQuery(constantScoreQuery(workflowInstanceIdQ))
-        .addSort(ActivityInstanceTemplate.POSITION, SortOrder.ASC);
-    return scroll(requestBuilder, ActivityInstanceForDetailViewEntity.class);
-  }
-
   public IncidentResponseDto getIncidents(String workflowInstanceId) {
 
     final TermQueryBuilder workflowInstanceQ = termQuery(IncidentTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
@@ -182,9 +94,9 @@ public class DetailViewReader {
 
     final SearchRequestBuilder requestBuilder =
       esClient.prepareSearch(incidentTemplate.getAlias())
-      .setQuery(workflowInstanceQ)
-      .addAggregation(errorTypesAgg)
-      .addAggregation(flowNodesAgg);
+        .setQuery(workflowInstanceQ)
+        .addAggregation(errorTypesAgg)
+        .addAggregation(flowNodesAgg);
 
     IncidentResponseDto incidentResponse = new IncidentResponseDto();
 
@@ -205,12 +117,6 @@ public class DetailViewReader {
     return incidentResponse;
   }
 
-  protected <T extends OperateEntity> List<T> scroll(SearchRequestBuilder builder, Class<T> clazz) {
-    return ElasticsearchUtil.scroll(builder, clazz, objectMapper, esClient);
-  }
 
-  protected <T extends OperateEntity> List<T> scroll(SearchRequestBuilder builder, Class<T> clazz,
-    Consumer<Aggregations> aggsProcessor) {
-    return ElasticsearchUtil.scroll(builder, clazz, objectMapper, esClient, null, aggsProcessor);
-  }
+
 }

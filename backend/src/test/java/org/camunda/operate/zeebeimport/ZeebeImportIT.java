@@ -14,12 +14,13 @@ import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
-import org.camunda.operate.es.reader.DetailViewReader;
+import org.camunda.operate.es.reader.ActivityInstanceReader;
+import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeDto;
-import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeRequestDto;
-import org.camunda.operate.rest.dto.detailview.DetailViewActivityInstanceDto;
+import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeDto;
+import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeRequestDto;
+import org.camunda.operate.rest.dto.activity.ActivityInstanceDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
@@ -69,7 +70,10 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   private ListViewReader listViewReader;
 
   @Autowired
-  private DetailViewReader detailViewReader;
+  private IncidentReader incidentReader;
+
+  @Autowired
+  private ActivityInstanceReader activityInstanceReader;
 
   private ZeebeClient zeebeClient;
 
@@ -150,7 +154,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstanceEntity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(workflowInstanceEntity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
-    final List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
+    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
@@ -186,7 +190,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
 
   protected ActivityInstanceTreeDto getActivityInstanceTree(long workflowInstanceKey) {
-    return detailViewReader.getActivityInstanceTree(new ActivityInstanceTreeRequestDto(IdTestUtil.getId(workflowInstanceKey)));
+    return activityInstanceReader.getActivityInstanceTree(new ActivityInstanceTreeRequestDto(IdTestUtil.getId(workflowInstanceKey)));
   }
 
 
@@ -258,7 +262,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     processAllEvents(2, ZeebeESImporter.ImportValueType.INCIDENT);
 
     //then
-    final List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
+    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
     assertThat(allIncidents).hasSize(0);
 
     //assert list view data
@@ -312,7 +316,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     processAllEvents(2, ZeebeESImporter.ImportValueType.INCIDENT);
 
     //then
-    final List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
+    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
     assertThat(allIncidents).hasSize(0);
 
     //assert list view data
@@ -324,7 +328,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     //assert activity instance tree
     final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
     assertThat(tree.getChildren().size()).isGreaterThanOrEqualTo(2);
-    final DetailViewActivityInstanceDto activityInstance = tree.getChildren().get(1);
+    final ActivityInstanceDto activityInstance = tree.getChildren().get(1);
     assertThat(activityInstance.getActivityId()).isEqualTo(activityId);
     assertThat(activityInstance.getState()).isEqualTo(ActivityState.TERMINATED);
     assertThat(activityInstance.getEndDate()).isNotNull();
@@ -339,18 +343,18 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(operatePartitions).allMatch(id -> id < zeebePartitionsCount && id >= 0);
   }
 
-  private void assertStartActivityCompleted(DetailViewActivityInstanceDto activity) {
+  private void assertStartActivityCompleted(ActivityInstanceDto activity) {
     assertActivityIsCompleted(activity, "start");
   }
 
-  private void assertActivityIsInIncidentState(DetailViewActivityInstanceDto activity, String activityId) {
+  private void assertActivityIsInIncidentState(ActivityInstanceDto activity, String activityId) {
     assertThat(activity.getActivityId()).isEqualTo(activityId);
     assertThat(activity.getState()).isEqualTo(ActivityState.INCIDENT);
     assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
   }
 
-  private void assertActivityIsCompleted(DetailViewActivityInstanceDto activity, String activityId) {
+  private void assertActivityIsCompleted(ActivityInstanceDto activity, String activityId) {
     assertThat(activity.getActivityId()).isEqualTo(activityId);
     assertThat(activity.getState()).isEqualTo(ActivityState.COMPLETED);
     assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);

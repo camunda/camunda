@@ -5,9 +5,9 @@
  */
 package org.camunda.operate.rest;
 
-import org.camunda.operate.es.reader.DetailViewReader;
-import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeDto;
-import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeRequestDto;
+import org.camunda.operate.es.reader.ActivityInstanceReader;
+import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeDto;
+import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeRequestDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,7 +31,7 @@ public class ActivityInstanceRestService {
   public static final String ACTIVITY_INSTANCE_URL = "/api/activity-instances";
 
   @Autowired
-  private DetailViewReader detailViewReader;
+  private ActivityInstanceReader activityInstanceReader;
 
   @ApiOperation("Query activity instance tree")
   @PostMapping
@@ -40,7 +40,7 @@ public class ActivityInstanceRestService {
     if (request == null || request.getWorkflowInstanceId() == null) {
       throw new InvalidRequestException("Workflow instance id must be provided when requesting for activity instance tree.");
     }
-    return detailViewReader.getActivityInstanceTree(request);
+    return activityInstanceReader.getActivityInstanceTree(request);
   }
 
 }

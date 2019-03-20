@@ -3,20 +3,20 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate.rest.dto.detailview;
+package org.camunda.operate.rest.dto.activity;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ActivityInstanceTreeDto {
 
-  private List<DetailViewActivityInstanceDto> children = new ArrayList<>();
+  private List<ActivityInstanceDto> children = new ArrayList<>();
 
-  public List<DetailViewActivityInstanceDto> getChildren() {
+  public List<ActivityInstanceDto> getChildren() {
     return children;
   }
 
-  public void setChildren(List<DetailViewActivityInstanceDto> children) {
+  public void setChildren(List<ActivityInstanceDto> children) {
     this.children = children;
   }
 
