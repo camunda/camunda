@@ -98,39 +98,6 @@ describe('InstancesContainer', () => {
     jest.clearAllMocks();
   });
 
-  it.only('should register a listener for URL changes', async () => {
-    // given
-    const routerProps = getRouterProps();
-    const node = mount(
-      <InstancesContainerWrapped {...localStorageProps} {...routerProps} />
-    );
-
-    // when
-    await flushPromises();
-    node.update();
-
-    expect(node.instance().unlistenUrlChange).toEqual(listenMock);
-  });
-
-  it.only('should unregister a listener for URL changes when unmounting', async () => {
-    // given
-    const routerProps = getRouterProps();
-    const node = mount(
-      <InstancesContainerWrapped {...localStorageProps} {...routerProps} />
-    );
-
-    const unlistenUrlChangeSpy = jest.spyOn(
-      node.instance(),
-      'unlistenUrlChange'
-    );
-
-    // when
-    node.unmount();
-
-    // then
-    expect(unlistenUrlChangeSpy).toHaveBeenCalled();
-  });
-
   it('should fetch the groupedWorkflows', async () => {
     // given
     const node = mount(
@@ -392,6 +359,33 @@ describe('InstancesContainer', () => {
   });
 
   describe('reading url filter', () => {
+    it('should update filters on URL changes', async () => {
+      // given
+      const routerProps = getRouterProps();
+      const newRouterProps = getRouterProps(fullFilterWithWorkflow);
+
+      const node = mount(
+        <InstancesContainerWrapped {...localStorageProps} {...routerProps} />
+      );
+      const setFilterFromUrlSpy = jest.spyOn(
+        node.instance(),
+        'setFilterFromUrl'
+      );
+
+      // when
+      await flushPromises();
+      node.update();
+
+      // when componentDidMount
+      expect(setFilterFromUrlSpy).toHaveBeenCalledTimes(1);
+
+      node.setProps({...newRouterProps});
+      node.update();
+
+      // when componentDidUpdate & Url changed
+      expect(setFilterFromUrlSpy).toHaveBeenCalledTimes(2);
+    });
+
     describe('fixing an invalid filter in url', () => {
       it('should add the default filter to the url when no filter is present', async () => {
         const noFilterRouterProps = {

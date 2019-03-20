@@ -45,10 +45,6 @@ class InstancesContainer extends Component {
   constructor(props) {
     super(props);
 
-    this.unlistenUrlChange = this.props.history.listen(() => {
-      this.setFilterFromUrl();
-    });
-
     this.state = {
       diagramModel: {},
       statistics: [],
@@ -80,6 +76,11 @@ class InstancesContainer extends Component {
   }
 
   async componentDidUpdate(prevProps, prevState) {
+    if (prevProps.location.search !== this.props.location.search) {
+      console.log('changed');
+      return this.setFilterFromUrl();
+    }
+
     // if any of these change, re-fetch workflowInstances
     const hasFirstElementChanged =
       prevState.firstElement !== this.state.firstElement;
@@ -113,10 +114,6 @@ class InstancesContainer extends Component {
         this.setState({statistics});
       }
     }
-  }
-
-  componentWillUnmount() {
-    this.unlistenUrlChange();
   }
 
   fetchWorkflowInstances = async () => {
