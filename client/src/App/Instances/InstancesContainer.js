@@ -77,7 +77,6 @@ class InstancesContainer extends Component {
 
   async componentDidUpdate(prevProps, prevState) {
     if (prevProps.location.search !== this.props.location.search) {
-      console.log('changed');
       return this.setFilterFromUrl();
     }
 
