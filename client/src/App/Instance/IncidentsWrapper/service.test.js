@@ -5,44 +5,28 @@
  */
 
 import {sortData} from './service';
+import {createIncident} from 'modules/testUtils';
 
 const data = [
-  {
-    creationTime: '2017-03-14T15:17:21.296+0000',
-    errorMessage: 'No more retries left.',
-    errorType: 'No more retries left',
-    flowNodeId: 'taskB',
-    flowNodeInstanceId: '2251799813689601',
-    flowNodeName: 'Task B',
-    hasActiveOperation: false,
+  createIncident({
     id: '1',
-    jobId: '2251799813689609',
-    lastOperation: null
-  },
-  {
-    creationTime: '2018-12-14T15:17:32.919+0000',
-    errorMessage: 'I/O error',
-    errorType: 'I/O error',
-    flowNodeId: 'taskA',
-    flowNodeInstanceId: '2251799813689601',
-    flowNodeName: 'Task A',
-    hasActiveOperation: false,
+    creationTime: '2017-03-14T15:17:21.296+0000',
+    errorType: 'No more retries left',
+    flowNodeName: 'Task B'
+  }),
+  createIncident({
     id: '2',
-    jobId: '2251799813707976',
-    lastOperation: null
-  },
-  {
-    creationTime: '2018-03-14T15:17:32.919+0000',
-    errorMessage: 'I/O error',
+    creationTime: '2018-12-14T15:17:32.919+0000',
     errorType: 'I/O error',
-    flowNodeId: 'taskC',
-    flowNodeInstanceId: '2251799813689601',
-    flowNodeName: 'Task C',
-    hasActiveOperation: false,
+    flowNodeName: 'Task A'
+  }),
+
+  createIncident({
     id: '3',
-    jobId: '2251799813707976',
-    lastOperation: null
-  }
+    creationTime: '2018-03-14T15:17:32.919+0000',
+    errorType: 'I/O error',
+    flowNodeName: 'Task C'
+  })
 ];
 
 describe('sortData', () => {
