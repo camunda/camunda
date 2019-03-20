@@ -80,3 +80,26 @@ export function isDate(groupBy) {
     groupBy.type === 'startDate' || (groupBy.type === 'variable' && groupBy.value.type === 'Date')
   );
 }
+
+export function canBeInterpolated({type, value}, xml, decisionDefinitionKey) {
+  if (type === 'flowNodes') {
+    return false;
+  }
+  if (type === 'variable' && value.type === 'String') {
+    return false;
+  }
+  if (type === 'inputVariable' || type === 'outputVariable') {
+    return (
+      new DOMParser()
+        .parseFromString(xml, 'text/xml')
+        .querySelector(
+          `decision[id="${decisionDefinitionKey}"] [id="${value.id}"] ${
+            type === 'inputVariable' ? 'inputExpression' : ''
+          }`
+        )
+        .getAttribute('typeRef')
+        .toLowerCase() !== 'string'
+    );
+  }
+  return true;
+}

@@ -1,11 +1,11 @@
 import {createDurationFormattingOptions, getFormattedTargetValue} from './service';
-import {formatTooltip, getTooltipLabelColor} from '../service';
+import {formatTooltip, getTooltipLabelColor, canBeInterpolated} from '../service';
 import {isDurationReport} from 'services';
 import {getColorFor, createColors, determineBarColor} from '../colorsUtils';
 
 export default function createDefaultChartOptions({report, targetValue, theme, formatter}) {
   const {
-    data: {visualization, view, configuration},
+    data: {visualization, view, groupBy, configuration, decisionDefinitionKey},
     result,
     processInstanceCount,
     decisionInstanceCount
@@ -22,7 +22,14 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
       break;
     case 'line':
     case 'bar':
-      options = createBarOptions(targetValue, configuration, false, maxValue, isDark);
+      options = createBarOptions({
+        targetValue,
+        configuration,
+        stacked: false,
+        maxDuration: maxValue,
+        isDark,
+        autoSkip: canBeInterpolated(groupBy, configuration.xml, decisionDefinitionKey)
+      });
       break;
     default:
       options = {};
@@ -55,7 +62,14 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
   };
 }
 
-export function createBarOptions(targetValue, configuration, stacked, maxDuration, isDark) {
+export function createBarOptions({
+  targetValue,
+  configuration,
+  stacked,
+  maxDuration,
+  isDark,
+  autoSkip
+}) {
   const targetLine = targetValue && getFormattedTargetValue(targetValue);
   return {
     ...(configuration.pointMarkers === false ? {elements: {point: {radius: 0}}} : {}),
@@ -88,7 +102,8 @@ export function createBarOptions(targetValue, configuration, stacked, maxDuratio
             labelString: configuration.xLabel
           },
           ticks: {
-            fontColor: getColorFor('label', isDark)
+            fontColor: getColorFor('label', isDark),
+            autoSkip
           },
           stacked
         }
