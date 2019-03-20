@@ -22,6 +22,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.logstreams.log.LogStream;
@@ -36,7 +37,6 @@ import io.zeebe.util.ZbLogger;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.util.function.BiFunction;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -104,8 +104,7 @@ public class StreamProcessorRule implements TestRule {
     return control;
   }
 
-  public StreamProcessorControl runStreamProcessor(
-      BiFunction<TypedEventStreamProcessorBuilder, ZeebeDb, StreamProcessor> factory) {
+  public StreamProcessorControl runStreamProcessor(StreamProcessorTestFactory factory) {
     final StreamProcessorControl control = initStreamProcessor(factory);
     control.start();
     return control;
@@ -115,19 +114,18 @@ public class StreamProcessorRule implements TestRule {
     return streams.initStreamProcessor(STREAM_NAME, 0, zeebeDbFactory, factory);
   }
 
-  public StreamProcessorControl initStreamProcessor(
-      BiFunction<TypedEventStreamProcessorBuilder, ZeebeDb, StreamProcessor> factory) {
+  public StreamProcessorControl initStreamProcessor(StreamProcessorTestFactory factory) {
 
     return streams.initStreamProcessor(
         STREAM_NAME,
         0,
         zeebeDbFactory,
-        (db) -> {
-          zeebeState = new ZeebeState(db);
+        (db, dbContext) -> {
+          zeebeState = new ZeebeState(db, dbContext);
           final TypedEventStreamProcessorBuilder processorBuilder =
               streamEnvironment.newStreamProcessor().zeebeState(zeebeState);
 
-          return factory.apply(processorBuilder, db);
+          return factory.build(processorBuilder, db, dbContext);
         });
   }
 
@@ -224,5 +222,11 @@ public class StreamProcessorRule implements TestRule {
       LOG.info("Test failed, following records where exported:");
       printAllRecords();
     }
+  }
+
+  @FunctionalInterface
+  public interface StreamProcessorTestFactory {
+    StreamProcessor build(
+        TypedEventStreamProcessorBuilder builder, ZeebeDb zeebeDb, DbContext dbContext);
   }
 }

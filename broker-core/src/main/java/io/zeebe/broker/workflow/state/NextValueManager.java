@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.state;
 
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
@@ -33,17 +34,22 @@ public class NextValueManager {
   private final DbString nextValueKey;
   private final DbLong nextValue;
 
-  public NextValueManager(ZeebeDb<ZbColumnFamilies> zeebeDb, ZbColumnFamilies columnFamily) {
-    this(INITIAL_VALUE, zeebeDb, columnFamily);
+  public NextValueManager(
+      ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext, ZbColumnFamilies columnFamily) {
+    this(INITIAL_VALUE, zeebeDb, dbContext, columnFamily);
   }
 
   public NextValueManager(
-      long initialValue, ZeebeDb<ZbColumnFamilies> zeebeDb, ZbColumnFamilies columnFamily) {
+      long initialValue,
+      ZeebeDb<ZbColumnFamilies> zeebeDb,
+      DbContext dbContext,
+      ZbColumnFamilies columnFamily) {
     this.initialValue = initialValue;
 
     nextValueKey = new DbString();
     nextValue = new DbLong();
-    nextValueColumnFamily = zeebeDb.createColumnFamily(columnFamily, nextValueKey, nextValue);
+    nextValueColumnFamily =
+        zeebeDb.createColumnFamily(columnFamily, dbContext, nextValueKey, nextValue);
   }
 
   public long getNextValue(String key) {

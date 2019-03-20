@@ -46,7 +46,7 @@ public class ZeebeStateRule extends ExternalResource {
     tempFolder.create();
     db = createNewDb();
 
-    zeebeState = new ZeebeState(partition, db);
+    zeebeState = new ZeebeState(partition, db, db.createContext());
   }
 
   @Override

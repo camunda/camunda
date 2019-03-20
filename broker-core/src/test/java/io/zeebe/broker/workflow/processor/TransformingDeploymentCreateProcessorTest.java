@@ -54,8 +54,8 @@ public class TransformingDeploymentCreateProcessorTest {
     MockitoAnnotations.initMocks(this);
     streamProcessor =
         rule.initStreamProcessor(
-            (typedEventStreamProcessorBuilder, zeebeDb) -> {
-              final ZeebeState zeebeState = new ZeebeState(zeebeDb);
+            (typedEventStreamProcessorBuilder, zeebeDb, dbContext) -> {
+              final ZeebeState zeebeState = new ZeebeState(zeebeDb, dbContext);
               workflowState = zeebeState.getWorkflowState();
 
               final CatchEventBehavior catchEventBehavior = mock(CatchEventBehavior.class);

@@ -15,6 +15,7 @@
  */
 package io.zeebe.logstreams.processor;
 
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
@@ -69,7 +70,7 @@ public class StreamProcessorController extends Actor {
   private boolean suspended = false;
 
   private StreamProcessorMetrics metrics;
-  private ZeebeDb zeebeDb;
+  private DbContext dbContext;
   private ProcessingStateMachine processingStateMachine;
   private ReProcessingStateMachine reProcessingStateMachine;
 
@@ -128,8 +129,9 @@ public class StreamProcessorController extends Actor {
           partitionId,
           lastSourceEventPosition);
 
-      zeebeDb = snapshotController.openDb();
-      streamProcessor = streamProcessorFactory.createProcessor(zeebeDb);
+      final ZeebeDb zeebeDb = snapshotController.openDb();
+      dbContext = zeebeDb.createContext();
+      streamProcessor = streamProcessorFactory.createProcessor(zeebeDb, dbContext);
       streamProcessor.onOpen(streamProcessorContext);
     } catch (final Exception e) {
       onFailure();
@@ -141,7 +143,7 @@ public class StreamProcessorController extends Actor {
             .setStreamProcessorContext(streamProcessorContext)
             .setMetrics(metrics)
             .setStreamProcessor(streamProcessor)
-            .setZeebeDb(zeebeDb)
+            .setDbContext(dbContext)
             .setShouldProcessNext(() -> isOpened() && !isSuspended())
             .setAbortCondition(this::isClosed)
             .build();
@@ -150,7 +152,7 @@ public class StreamProcessorController extends Actor {
         ReProcessingStateMachine.builder()
             .setStreamProcessorContext(streamProcessorContext)
             .setStreamProcessor(streamProcessor)
-            .setZeebeDb(zeebeDb)
+            .setDbContext(dbContext)
             .setAbortCondition(this::isClosed)
             .build();
   }

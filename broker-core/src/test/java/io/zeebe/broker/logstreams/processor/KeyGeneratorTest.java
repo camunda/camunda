@@ -66,7 +66,7 @@ public class KeyGeneratorTest {
   public void shouldGetUniqueValuesOverPartitions() throws Exception {
     // given
     final ZeebeDb<ZbColumnFamilies> newDb = stateRule.createNewDb();
-    final ZeebeState otherZeebeState = new ZeebeState(1, newDb);
+    final ZeebeState otherZeebeState = new ZeebeState(1, newDb, newDb.createContext());
     final KeyGenerator keyGenerator2 = otherZeebeState.getKeyGenerator();
 
     final long keyOfFirstPartition = keyGenerator.nextKey();

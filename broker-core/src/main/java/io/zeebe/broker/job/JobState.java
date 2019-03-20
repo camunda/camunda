@@ -20,6 +20,7 @@ package io.zeebe.broker.job;
 import io.zeebe.broker.logstreams.state.UnpackedObjectValue;
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbByte;
 import io.zeebe.db.impl.DbCompositeKey;
@@ -32,6 +33,8 @@ import java.util.function.BiFunction;
 import org.agrona.DirectBuffer;
 
 public class JobState {
+
+  private final DbContext dbContext;
 
   // key => job record value
   // we need two separate wrapper to not interfere with get and put
@@ -55,36 +58,38 @@ public class JobState {
   private final DbLong deadlineKey;
   private final DbCompositeKey<DbLong, DbLong> deadlineJobKey;
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> deadlinesColumnFamily;
-  private final ZeebeDb<ZbColumnFamilies> zeebeDb;
 
-  public JobState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public JobState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+    this.dbContext = dbContext;
+
     jobRecordToRead = new UnpackedObjectValue();
     jobRecordToRead.wrapObject(new JobRecord());
 
     jobRecordToWrite = new UnpackedObjectValue();
     jobKey = new DbLong();
-    jobsColumnFamily = zeebeDb.createColumnFamily(ZbColumnFamilies.JOBS, jobKey, jobRecordToRead);
+    jobsColumnFamily =
+        zeebeDb.createColumnFamily(ZbColumnFamilies.JOBS, dbContext, jobKey, jobRecordToRead);
 
     jobState = new DbByte();
     statesJobColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.JOB_STATES, jobKey, jobState);
+        zeebeDb.createColumnFamily(ZbColumnFamilies.JOB_STATES, dbContext, jobKey, jobState);
 
     jobTypeKey = new DbString();
     typeJobKey = new DbCompositeKey<>(jobTypeKey, jobKey);
     activatableColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.JOB_ACTIVATABLE, typeJobKey, DbNil.INSTANCE);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.JOB_ACTIVATABLE, dbContext, typeJobKey, DbNil.INSTANCE);
 
     deadlineKey = new DbLong();
     deadlineJobKey = new DbCompositeKey<>(deadlineKey, jobKey);
     deadlinesColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.JOB_DEADLINES, deadlineJobKey, DbNil.INSTANCE);
-
-    this.zeebeDb = zeebeDb;
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.JOB_DEADLINES, dbContext, deadlineJobKey, DbNil.INSTANCE);
   }
 
   public void create(final long key, final JobRecord record) {
     final DirectBuffer type = record.getType();
-    zeebeDb.transaction(() -> createJob(key, record, type));
+    dbContext.runInTransaction(() -> createJob(key, record, type));
   }
 
   private void createJob(long key, JobRecord record, DirectBuffer type) {
@@ -105,7 +110,7 @@ public class JobState {
 
     validateParameters(type, deadline);
 
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           resetPayloadAndUpdateJobRecord(key, record);
 
@@ -123,7 +128,7 @@ public class JobState {
     final long deadline = record.getDeadline();
     validateParameters(type, deadline);
 
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           createJob(key, record, type);
 
@@ -135,7 +140,7 @@ public class JobState {
     final DirectBuffer type = record.getType();
     final long deadline = record.getDeadline();
 
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           jobKey.wrapLong(key);
           jobsColumnFamily.delete(jobKey);
@@ -154,7 +159,7 @@ public class JobState {
 
     validateParameters(type, deadline);
 
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           resetPayloadAndUpdateJobRecord(key, updatedValue);
 
@@ -177,7 +182,7 @@ public class JobState {
   public void resolve(long key, final JobRecord updatedValue) {
     final DirectBuffer type = updatedValue.getType();
 
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           resetPayloadAndUpdateJobRecord(key, updatedValue);
           updateJobState(State.ACTIVATABLE);

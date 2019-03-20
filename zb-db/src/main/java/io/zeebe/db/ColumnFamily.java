@@ -64,8 +64,6 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
    */
   void forEach(BiConsumer<KeyType, ValueType> consumer);
 
-  /** @param visitor */
-
   /**
    * Visits the key-value pairs, which are stored in the column family. The ordering depends on the
    * key. The visitor can indicate via the return value, whether the iteration should continue or

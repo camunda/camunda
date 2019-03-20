@@ -48,7 +48,9 @@ public class DbStringColumnFamilyTest {
 
     key = new DbString();
     value = new DbString();
-    columnFamily = zeebeDb.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+    columnFamily =
+        zeebeDb.createColumnFamily(
+            DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), key, value);
   }
 
   @Test

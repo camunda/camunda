@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.state;
 
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -38,29 +39,30 @@ public class TimerInstanceState {
       dueDateColumnFamily;
   private final DbLong dueDateKey;
   private final DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbLong>> dueDateCompositeKey;
-  private final ZeebeDb<ZbColumnFamilies> zeebeDb;
+  private final DbContext dbContext;
 
   private long nextDueDate;
 
-  public TimerInstanceState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
-    this.zeebeDb = zeebeDb;
+  public TimerInstanceState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+    this.dbContext = dbContext;
 
     timerInstance = new TimerInstance();
     timerKey = new DbLong();
     elementInstanceKey = new DbLong();
     elementAndTimerKey = new DbCompositeKey<>(elementInstanceKey, timerKey);
     timerInstanceColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.TIMERS, elementAndTimerKey, timerInstance);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.TIMERS, dbContext, elementAndTimerKey, timerInstance);
 
     dueDateKey = new DbLong();
     dueDateCompositeKey = new DbCompositeKey<>(dueDateKey, elementAndTimerKey);
     dueDateColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.TIMER_DUE_DATES, dueDateCompositeKey, DbNil.INSTANCE);
+            ZbColumnFamilies.TIMER_DUE_DATES, dbContext, dueDateCompositeKey, DbNil.INSTANCE);
   }
 
   public void put(TimerInstance timer) {
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           timerKey.wrapLong(timer.getKey());
           elementInstanceKey.wrapLong(timer.getElementInstanceKey());
@@ -119,7 +121,7 @@ public class TimerInstanceState {
 
   public void remove(TimerInstance timer) {
 
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           elementInstanceKey.wrapLong(timer.getElementInstanceKey());
           timerKey.wrapLong(timer.getKey());

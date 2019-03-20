@@ -41,8 +41,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     }
   }
 
-  protected void put(
-      long columnFamilyHandle, byte[] key, int keyLength, byte[] value, int valueLength)
+  public void put(long columnFamilyHandle, byte[] key, int keyLength, byte[] value, int valueLength)
       throws Exception {
     RocksDbInternal.putWithHandle.invoke(
         transaction, nativeHandle, key, keyLength, value, valueLength, columnFamilyHandle);
