@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: performance-optimize-camunda-cloud
+  namespace: performance-optimize
+spec:
+  progressDeadlineSeconds: 1800
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: optimize
+  template:
+    metadata:
+      labels:
+        app: optimize
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        cloud.google.com/gke-nodepool: slaves
+      tolerations:
+        - key: "slaves"
+          operator: "Exists"
+          effect: "NoSchedule"
+      volumes:
+      - name: configuration
+        configMap:
+          name: performance-optimize-camunda-cloud
+          defaultMode: 0744
+      containers:
+      - name: optimize
+        image: gcr.io/ci-30-162810/camunda-optimize:latest
+        imagePullPolicy: Always
+        env:
+        - name: JAVA_OPTS
+          value: |
+            -Xmx4g
+            -XX:MaxMetaspaceSize=128m
+        - name: WAIT_FOR
+          value: "elasticsearch.performance-optimize:9200"
+        - name: WAIT_FOR_TIMEOUT
+          value: "60"
+        ports:
+        - containerPort: 8090
+          name: optimize-http
+          protocol: TCP
+        tty: true
+        livenessProbe:
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          httpGet:
+            path: /api/meta/version
+            port: optimize-http
+        readinessProbe:
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          httpGet:
+            path: /api/meta/version
+            port: optimize-http
+        resources:
+          limits:
+            cpu: 4
+            memory: 5Gi
+          requests:
+            cpu: 4
+            memory: 5Gi
+        volumeMounts:
+          - name: configuration
+            mountPath: /optimize/environment/environment-config.yaml
+            subPath: environment-config.yaml
+          - name: configuration
+            mountPath: /optimize/environment/environment-logback.xml
+            subPath: environment-logback.xml
+          - name: configuration
+            mountPath: /optimize/environment/OptimizeLicense.txt
+            subPath: OptimizeLicense.txt

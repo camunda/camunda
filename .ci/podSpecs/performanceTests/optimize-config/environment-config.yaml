@@ -1,0 +1,19 @@
+container:
+  host: 0.0.0.0
+
+engines:
+  'camunda-bpm':
+    name: default
+    rest: 'http://cambpm.performance-optimize:8080/engine-rest'
+    authentication:
+      enabled: false
+    webapps:
+      endpoint: 'http://cambpm.performance-optimize:8080/camunda'
+      enabled: true
+    importEnabled: true
+
+es:
+  connection:
+    nodes:
+    - host: 'elasticsearch.performance-optimize'
+      httpPort: 9200

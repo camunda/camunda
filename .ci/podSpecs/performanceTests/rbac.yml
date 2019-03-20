@@ -1,0 +1,41 @@
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: performance-optimize-readonly
+  namespace: performance-optimize
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["get", "list", "watch", "create"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods/portforward"]
+    verbs: ["get", "list", "create"]
+  - apiGroups: ["", "apps", "extensions"]
+    resources: ["configmaps", "services", "deployments", "ingresses", "statefulsets"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: performance-optimize-readonly
+  namespace: performance-optimize
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: performance-optimize-readonly
+subjects:
+  - kind: ServiceAccount
+    name: johannes-heinemann
+    namespace: optimize
+  - kind: ServiceAccount
+    name: sebastian-bathke
+    namespace: optimize

@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: performance-optimize-camunda-cambpm-cloud
+  namespace: performance-optimize
+  labels:
+    app: cambpm
+spec:
+  progressDeadlineSeconds: 1800
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: cambpm
+  template:
+    metadata:
+      labels:
+        app: cambpm
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        cloud.google.com/gke-nodepool: slaves
+      tolerations:
+        - key: "slaves"
+          operator: "Exists"
+          effect: "NoSchedule"
+      imagePullSecrets:
+        - name: registry-camunda-cloud-secret
+      containers:
+        - name: cambpm
+          image: registry.camunda.cloud/camunda-bpm-platform-ee:7.10.3
+          env:
+            - name: JAVA_OPTS
+              value: "-Xms4g -Xmx4g -XX:MaxMetaspaceSize=256m"
+            - name: WAIT_FOR
+              value: postgres.performance-optimize:5432
+            - name: DB_DRIVER
+              value: "org.postgresql.Driver"
+            - name: DB_USERNAME
+              value: "camunda"
+            - name: DB_PASSWORD
+              value: "camunda"
+            - name: DB_URL
+              value: "jdbc:postgresql://postgres.performance-optimize:5432/engine"
+          ports:
+            - containerPort: 8080
+              name: cambpm-http
+          tty: true
+          livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            httpGet:
+              path: /engine-rest/engine
+              port: cambpm-http
+          readinessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            httpGet:
+              path: /engine-rest/engine
+              port: cambpm-http
+          resources:
+            limits:
+              cpu: 8
+              memory: 8Gi
+            requests:
+              cpu: 4
+              memory: 6Gi
