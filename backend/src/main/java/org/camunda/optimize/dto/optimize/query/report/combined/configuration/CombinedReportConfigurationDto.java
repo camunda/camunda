@@ -11,6 +11,8 @@ public class CombinedReportConfigurationDto {
   private Boolean hideAbsoluteValue = false;
   private String yLabel = "";
   private String xLabel = "";
+  private Boolean alwaysShowRelative = false;
+  private Boolean alwaysShowAbsolute = false;
   private CombinedReportTargetValueDto targetValue = new CombinedReportTargetValueDto();
 
 
@@ -54,6 +56,22 @@ public class CombinedReportConfigurationDto {
     this.xLabel = xLabel;
   }
 
+  public Boolean getAlwaysShowRelative() {
+    return alwaysShowRelative;
+  }
+
+  public void setAlwaysShowRelative(Boolean alwaysShowRelative) {
+    this.alwaysShowRelative = alwaysShowRelative;
+  }
+
+  public Boolean getAlwaysShowAbsolute() {
+    return alwaysShowAbsolute;
+  }
+
+  public void setAlwaysShowAbsolute(Boolean alwaysShowAbsolute) {
+    this.alwaysShowAbsolute = alwaysShowAbsolute;
+  }
+
   public CombinedReportTargetValueDto getTargetValue() {
     return targetValue;
   }
@@ -73,11 +91,13 @@ public class CombinedReportConfigurationDto {
     CombinedReportConfigurationDto that = (CombinedReportConfigurationDto) o;
     return
       Objects.equals(pointMarkers, that.pointMarkers) &&
-      Objects.equals(hideRelativeValue, that.hideRelativeValue) &&
-      Objects.equals(hideAbsoluteValue, that.hideAbsoluteValue) &&
-      Objects.equals(yLabel, that.yLabel) &&
-      Objects.equals(xLabel, that.xLabel) &&
-      Objects.equals(targetValue, that.targetValue);
+        Objects.equals(hideRelativeValue, that.hideRelativeValue) &&
+        Objects.equals(hideAbsoluteValue, that.hideAbsoluteValue) &&
+        Objects.equals(yLabel, that.yLabel) &&
+        Objects.equals(xLabel, that.xLabel) &&
+        Objects.equals(alwaysShowRelative, that.alwaysShowRelative) &&
+        Objects.equals(alwaysShowAbsolute, that.alwaysShowAbsolute) &&
+        Objects.equals(targetValue, that.targetValue);
   }
 
   @Override
@@ -88,6 +108,8 @@ public class CombinedReportConfigurationDto {
       hideAbsoluteValue,
       yLabel,
       xLabel,
+      alwaysShowRelative,
+      alwaysShowAbsolute,
       targetValue
     );
   }

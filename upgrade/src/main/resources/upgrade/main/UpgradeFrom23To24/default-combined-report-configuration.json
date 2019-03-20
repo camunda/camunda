@@ -15,5 +15,7 @@
   "hideRelativeValue": false,
   "pointMarkers": true,
   "xLabel": "",
-  "yLabel": ""
+  "yLabel": "",
+  "alwaysShowRelative": false,
+  "alwaysShowAbsolute": false
 }
