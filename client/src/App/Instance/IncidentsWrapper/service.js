@@ -34,7 +34,3 @@ export function sortData(data, key, order) {
 
   return arr;
 }
-
-export function isJobIdPresent(incidents) {
-  return !Boolean(incidents.find(item => Boolean(item.jobId)));
-}

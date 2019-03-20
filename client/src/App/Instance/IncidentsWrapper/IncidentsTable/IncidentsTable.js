@@ -13,7 +13,6 @@ import {IncidentAction} from 'modules/components/Actions';
 import ColumnHeader from '../../../Instances/ListView/List/ColumnHeader';
 import Modal from 'modules/components/Modal';
 import {formatDate} from 'modules/utils/date';
-import {isJobIdPresent} from './../service';
 
 import * as Styled from './styled';
 const {THead, TBody, TH, TR, TD} = Table;
@@ -31,7 +30,8 @@ export default class IncidentsTable extends React.Component {
   };
 
   static defaultProps = {
-    forceSpinner: false
+    forceSpinner: false,
+    selectedIncidents: []
   };
 
   state = {
@@ -46,7 +46,7 @@ export default class IncidentsTable extends React.Component {
     }));
   };
 
-  renderModal = message => {
+  renderModal = () => {
     return (
       <Modal onModalClose={this.toggleModal}>
         <Modal.Header>{this.state.modalTitle}</Modal.Header>
@@ -62,7 +62,7 @@ export default class IncidentsTable extends React.Component {
     );
   };
 
-  handleMoreButtonClick = (e, incident) => {
+  handleMoreButtonClick = (incident, e) => {
     e.stopPropagation();
     this.toggleModal({
       content: incident.errorMessage,
@@ -70,27 +70,27 @@ export default class IncidentsTable extends React.Component {
     });
   };
 
-  handleIncidentSelection = incident => {
+  handleIncidentSelection = ({flowNodeInstanceId, flowNodeId}) => {
+    const {selectedIncidents, onIncidentSelection, instanceId} = this.props;
+    let newSelection;
+
     const isTheOnlySelectedIncident =
-      this.props.selectedIncidents &&
-      this.props.selectedIncidents.length === 1 &&
-      this.props.selectedIncidents[0] === incident.flowNodeInstanceId;
+      selectedIncidents.length === 1 &&
+      selectedIncidents[0] === flowNodeInstanceId;
 
     if (isTheOnlySelectedIncident) {
-      this.props.onIncidentSelection({
-        id: this.props.instanceId,
-        activityId: null
-      });
+      newSelection = {id: instanceId, activityId: null};
     } else {
-      this.props.onIncidentSelection({
-        id: incident.flowNodeInstanceId,
-        activityId: incident.flowNodeId
-      });
+      newSelection = {id: flowNodeInstanceId, activityId: flowNodeId};
     }
+
+    onIncidentSelection(newSelection);
   };
 
   render() {
-    const {incidents} = this.props;
+    const {incidents, sorting, selectedIncidents} = this.props;
+    const isJobIdPresent = incidents =>
+      !Boolean(incidents.find(item => Boolean(item.jobId)));
 
     return (
       <>
@@ -102,7 +102,7 @@ export default class IncidentsTable extends React.Component {
                 <ColumnHeader
                   sortKey="errorType"
                   label="Incident Type"
-                  sorting={this.props.sorting}
+                  sorting={sorting}
                   onSort={this.props.onSort}
                 />
               </Styled.FirstTH>
@@ -110,7 +110,7 @@ export default class IncidentsTable extends React.Component {
                 <ColumnHeader
                   sortKey="flowNodeName"
                   label="Flow Node"
-                  sorting={this.props.sorting}
+                  sorting={sorting}
                   onSort={this.props.onSort}
                 />
               </TH>
@@ -118,7 +118,7 @@ export default class IncidentsTable extends React.Component {
                 <ColumnHeader
                   sortKey="jobId"
                   label="Job Id"
-                  sorting={this.props.sorting}
+                  sorting={sorting}
                   onSort={this.props.onSort}
                   disabled={isJobIdPresent(incidents)}
                 />
@@ -127,7 +127,7 @@ export default class IncidentsTable extends React.Component {
                 <ColumnHeader
                   sortKey="creationTime"
                   label="Creation Time"
-                  sorting={this.props.sorting}
+                  sorting={sorting}
                   onSort={this.props.onSort}
                 />
               </TH>
@@ -144,12 +144,9 @@ export default class IncidentsTable extends React.Component {
               return (
                 <Styled.IncidentTR
                   key={incident.id}
-                  isSelected={
-                    this.props.selectedIncidents &&
-                    this.props.selectedIncidents.includes(
-                      incident.flowNodeInstanceId
-                    )
-                  }
+                  isSelected={selectedIncidents.includes(
+                    incident.flowNodeInstanceId
+                  )}
                   onClick={this.handleIncidentSelection.bind(this, incident)}
                 >
                   <TD>
@@ -169,9 +166,10 @@ export default class IncidentsTable extends React.Component {
                       {incident.errorMessage.length >= 58 && (
                         <Button
                           size="small"
-                          onClick={e => {
-                            this.handleMoreButtonClick(e, incident);
-                          }}
+                          onClick={this.handleMoreButtonClick.bind(
+                            this,
+                            incident
+                          )}
                         >
                           More...
                         </Button>
