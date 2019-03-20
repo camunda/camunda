@@ -7,7 +7,7 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -74,7 +74,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getProperty(), is(getViewProperty()));
     assertThat(result.getResult(), is(notNullValue()));
 
-    final Map<String, OperationResultDto> byUserTaskIdResult = result.getResult();
+    final Map<String, AggregationResultDto> byUserTaskIdResult = result.getResult();
     assertThat(byUserTaskIdResult.size(), is(2));
     assertThat(byUserTaskIdResult.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(setDuration)));
     assertThat(byUserTaskIdResult.get(USER_TASK_2), is(calculateExpectedValueGivenDurations(setDuration)));
@@ -102,7 +102,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    final Map<String, OperationResultDto> byUserTaskIdResult = result.getResult();
+    final Map<String, AggregationResultDto> byUserTaskIdResult = result.getResult();
     assertThat(byUserTaskIdResult.size(), is(2));
     assertThat(byUserTaskIdResult.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(setDurations)));
     assertThat(byUserTaskIdResult.get(USER_TASK_2), is(calculateExpectedValueGivenDurations(setDurations)));
@@ -132,7 +132,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    final Map<String, OperationResultDto> byUserTaskIdResult = result.getResult();
+    final Map<String, AggregationResultDto> byUserTaskIdResult = result.getResult();
     assertThat(byUserTaskIdResult.size(), is(2));
     assertThat(byUserTaskIdResult.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(10L)));
     assertThat(byUserTaskIdResult.get(USER_TASK_2), is(calculateExpectedValueGivenDurations(20L)));
@@ -161,7 +161,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     //then
-    final Map<String, OperationResultDto> byUserTaskIdResult = result.getResult();
+    final Map<String, AggregationResultDto> byUserTaskIdResult = result.getResult();
     assertThat(byUserTaskIdResult.size(), is(2));
     assertThat(byUserTaskIdResult.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(20L, 40L)));
     assertThat(byUserTaskIdResult.get(USER_TASK_2), is(calculateExpectedValueGivenDurations(40L)));
@@ -190,7 +190,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     //then
-    final Map<String, OperationResultDto> byUserTaskIdResult = result.getResult();
+    final Map<String, AggregationResultDto> byUserTaskIdResult = result.getResult();
     assertThat(byUserTaskIdResult.size(), is(1));
     assertThat(byUserTaskIdResult.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(20L, 40L)));
   }
@@ -217,7 +217,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     //then
-    final Map<String, OperationResultDto> byUserTaskIdResult = result.getResult();
+    final Map<String, AggregationResultDto> byUserTaskIdResult = result.getResult();
     assertThat(byUserTaskIdResult.size(), is(1));
     assertThat(byUserTaskIdResult.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(20L, 40L)));
   }
@@ -251,11 +251,11 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result2 = evaluateReport(reportData2);
 
     // then
-    final Map<String, OperationResultDto> byUserTaskIdResult1 = result1.getResult();
+    final Map<String, AggregationResultDto> byUserTaskIdResult1 = result1.getResult();
     assertThat(byUserTaskIdResult1.size(), is(1));
     assertThat(byUserTaskIdResult1.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(40L)));
 
-    final Map<String, OperationResultDto> byUserTaskIdResult2 = result2.getResult();
+    final Map<String, AggregationResultDto> byUserTaskIdResult2 = result2.getResult();
     assertThat(byUserTaskIdResult2.size(), is(1));
     assertThat(byUserTaskIdResult2.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(20L)));
   }
@@ -282,7 +282,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    final Map<String, OperationResultDto> byUserTaskIdResult = result.getResult();
+    final Map<String, AggregationResultDto> byUserTaskIdResult = result.getResult();
     assertThat(byUserTaskIdResult.size(), is(1));
     assertThat(byUserTaskIdResult.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(100L, 300L, 600L)));
   }
@@ -296,7 +296,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    final Map<String, OperationResultDto> byUserTaskIdResult = result.getResult();
+    final Map<String, AggregationResultDto> byUserTaskIdResult = result.getResult();
     assertThat(byUserTaskIdResult.size(), is(0));
   }
 
@@ -317,7 +317,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    final Map<String, OperationResultDto> byUserTaskIdResult = result.getResult();
+    final Map<String, AggregationResultDto> byUserTaskIdResult = result.getResult();
     assertThat(byUserTaskIdResult.size(), is(1));
     assertThat(byUserTaskIdResult.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(100L)));
   }
@@ -349,7 +349,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    final Map<String, OperationResultDto> byUserTaskIdResult = result.getResult();
+    final Map<String, AggregationResultDto> byUserTaskIdResult = result.getResult();
     assertThat(byUserTaskIdResult.size(), is(1));
     assertThat(byUserTaskIdResult.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(10L)));
   }
@@ -373,7 +373,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    final Map<String, OperationResultDto> byUserTaskIdResult = result.getResult();
+    final Map<String, AggregationResultDto> byUserTaskIdResult = result.getResult();
     assertThat(byUserTaskIdResult.size(), is(1));
     assertThat(byUserTaskIdResult.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(10L)));
   }
@@ -398,7 +398,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, OperationResultDto> byUserTaskIdResult = result.getResult();
+    Map<String, AggregationResultDto> byUserTaskIdResult = result.getResult();
     assertThat(byUserTaskIdResult.size(), is(0));
 
     // when
@@ -470,11 +470,11 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     return createReport(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
   }
 
-  private OperationResultDto calculateExpectedValueGivenDurations(final Long... setDuration) {
+  private AggregationResultDto calculateExpectedValueGivenDurations(final Long... setDuration) {
     final DescriptiveStatistics statistics = new DescriptiveStatistics();
     Stream.of(setDuration).map(Long::doubleValue).forEach(statistics::addValue);
 
-    return new OperationResultDto(
+    return new AggregationResultDto(
       Math.round(statistics.getMin()),
       Math.round(statistics.getMax()),
       Math.round(statistics.getMean()),

@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.none;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberDurationReportResult;
@@ -75,7 +75,7 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
       .forEach(searchSourceBuilder::aggregation);
   }
 
-  protected abstract OperationResultDto processAggregationOperation(Aggregations aggregations);
+  protected abstract AggregationResultDto processAggregationOperation(Aggregations aggregations);
 
   protected abstract List<AggregationBuilder> createOperationsAggregations();
 

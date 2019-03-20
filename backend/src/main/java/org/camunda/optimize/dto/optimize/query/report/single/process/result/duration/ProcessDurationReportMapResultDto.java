@@ -8,13 +8,13 @@ import java.util.Map;
 
 public class ProcessDurationReportMapResultDto extends ProcessReportResultDto {
 
-  private Map<String, OperationResultDto> result = new LinkedHashMap<>();
+  private Map<String, AggregationResultDto> result = new LinkedHashMap<>();
 
-  public Map<String, OperationResultDto> getResult() {
+  public Map<String, AggregationResultDto> getResult() {
     return result;
   }
 
-  public void setResult(Map<String, OperationResultDto> result) {
+  public void setResult(Map<String, AggregationResultDto> result) {
     this.result = result;
   }
 

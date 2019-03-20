@@ -2,7 +2,7 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.d
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
@@ -30,7 +30,7 @@ public class ProcessPartQueryUtil {
   private static final String NESTED_AGGREGATION = "nestedAggregation";
   private static final String TERMS_AGGREGATIONS = "termsAggregations";
 
-  public static OperationResultDto processProcessPartAggregationOperations(Aggregations aggs) {
+  public static AggregationResultDto processProcessPartAggregationOperations(Aggregations aggs) {
     Terms agg = aggs.get(TERMS_AGGREGATIONS);
     DescriptiveStatistics stats = new DescriptiveStatistics();
     long sum = 0L;
@@ -43,7 +43,7 @@ public class ProcessPartQueryUtil {
         stats.addValue(scriptedResult);
       }
     }
-    return new OperationResultDto(
+    return new AggregationResultDto(
       Math.round(stats.getMin()),
       Math.round(stats.getMax()),
       Math.round(stats.getMean()),

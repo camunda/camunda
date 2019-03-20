@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -112,7 +112,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.START_DATE));
     assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultMap.keySet(), hasItem(localDateTimeToString(startOfToday)));
     assertThat(resultMap.get(localDateTimeToString(startOfToday)), is(calculateExpectedValueGivenDurations(1000L)));
@@ -159,7 +159,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.START_DATE));
     assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultMap.keySet(), hasItem(localDateTimeToString(startOfToday)));
     assertThat(resultMap.get(localDateTimeToString(startOfToday)), is(calculateExpectedValueGivenDurations(1000L)));
@@ -188,7 +188,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultMap.keySet(), hasItem(localDateTimeToString(startOfToday)));
     assertThat(
@@ -224,7 +224,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(2));
     ZonedDateTime startOfToday = truncateToStartOfUnit(procInstStartDate, ChronoUnit.DAYS);
     String expectedStringToday = localDateTimeToString(startOfToday);
@@ -262,7 +262,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultMap.keySet(), hasItem(localDateTimeToString(startOfToday)));
     assertThat(resultMap.get(localDateTimeToString(startOfToday)), is(calculateExpectedValueGivenDurations(2000L)));
@@ -385,7 +385,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultMap.keySet(), hasItem(localDateTimeToString(startOfToday)));
     assertThat(
@@ -433,7 +433,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultMap.keySet(), hasItem(localDateTimeToString(startOfToday)));
     assertThat(
@@ -473,7 +473,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultMap.keySet(), hasItem(localDateTimeToString(startOfToday)));
     assertThat(resultMap.get(localDateTimeToString(startOfToday)), is(calculateExpectedValueGivenDurations(1000L)));
@@ -530,7 +530,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(2));
     ZonedDateTime startOfToday = truncateToStartOfUnit(procInstStartDate, ChronoUnit.DAYS);
     String expectedStringToday = localDateTimeToString(startOfToday);
@@ -574,7 +574,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(3));
     assertThat(new ArrayList<>(resultMap.keySet()), isInDescendingOrdering());
   }
@@ -628,7 +628,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(3));
 
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
@@ -669,7 +669,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertDateResultMap(resultMap, 5, now, ChronoUnit.HOURS);
   }
 
@@ -698,7 +698,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertDateResultMap(resultMap, 8, now, ChronoUnit.DAYS);
   }
 
@@ -727,7 +727,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertDateResultMap(resultMap, 8, now, ChronoUnit.WEEKS);
   }
 
@@ -756,7 +756,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertDateResultMap(resultMap, 8, now, ChronoUnit.MONTHS);
   }
 
@@ -785,7 +785,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertDateResultMap(resultMap, 8, now, ChronoUnit.YEARS);
   }
 
@@ -801,7 +801,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .collect(Collectors.toList());
   }
 
-  private void assertDateResultMap(Map<String, OperationResultDto> resultMap, int size, OffsetDateTime now,
+  private void assertDateResultMap(Map<String, AggregationResultDto> resultMap, int size, OffsetDateTime now,
                                    ChronoUnit unit) {
     assertThat(resultMap.size(), is(size));
     final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
@@ -992,11 +992,11 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     engineDatabaseRule.updateActivityInstanceEndDates(endDatesToUpdate);
   }
 
-  private OperationResultDto calculateExpectedValueGivenDurations(final Long... setDuration) {
+  private AggregationResultDto calculateExpectedValueGivenDurations(final Long... setDuration) {
     final DescriptiveStatistics statistics = new DescriptiveStatistics();
     Stream.of(setDuration).map(Long::doubleValue).forEach(statistics::addValue);
 
-    return new OperationResultDto(
+    return new AggregationResultDto(
       Math.round(statistics.getMin()),
       Math.round(statistics.getMax()),
       Math.round(statistics.getMean()),

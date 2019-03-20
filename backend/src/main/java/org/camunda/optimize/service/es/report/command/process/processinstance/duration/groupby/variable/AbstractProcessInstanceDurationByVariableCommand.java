@@ -3,7 +3,7 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.d
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
@@ -131,20 +131,20 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     return aggregationBuilder;
   }
 
-  private Map<String, OperationResultDto> processAggregations(Aggregations aggregations) {
+  private Map<String, AggregationResultDto> processAggregations(Aggregations aggregations) {
     Nested nested = aggregations.get(NESTED_AGGREGATION);
     Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     Terms variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
-    Map<String, OperationResultDto> result = new HashMap<>();
+    Map<String, AggregationResultDto> result = new HashMap<>();
     for (Terms.Bucket b : variableTerms.getBuckets()) {
       ReverseNested reverseNested = b.getAggregations().get(REVERSE_NESTED_AGGREGATION);
-      OperationResultDto operationsResult = processAggregationOperation(reverseNested.getAggregations());
+      AggregationResultDto operationsResult = processAggregationOperation(reverseNested.getAggregations());
       result.put(b.getKeyAsString(), operationsResult);
     }
     return result;
   }
 
-  protected abstract OperationResultDto processAggregationOperation(Aggregations aggs);
+  protected abstract AggregationResultDto processAggregationOperation(Aggregations aggs);
 
   protected abstract List<AggregationBuilder> createOperationsAggregations();
 

@@ -5,13 +5,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
 public class ProcessDurationReportNumberResultDto extends ProcessReportResultDto {
 
-  private OperationResultDto result;
+  private AggregationResultDto result;
 
-  public OperationResultDto getResult() {
+  public AggregationResultDto getResult() {
     return result;
   }
 
-  public void setResult(OperationResultDto result) {
+  public void setResult(AggregationResultDto result) {
     this.result = result;
   }
 

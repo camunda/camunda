@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
@@ -365,6 +366,21 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     assertThat(configuration.getTargetValue().getDurationChart().getValue(), is("1"));
     assertThat(configuration.getTargetValue().getDurationChart().getBelow(), is(true));
     assertThat(configuration.getTargetValue().getDurationChart().getUnit(), is(TargetValueUnit.SECONDS));
+  }
+
+  @Test
+  public void operationViewParameterIsMovedToConfigForDurationReports() throws Exception {
+    //given
+    UpgradePlan upgradePlan = getReportConfigurationUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    final SingleReportConfigurationDto configuration =
+      getSingleProcessReportDefinitionConfigurationById(REPORT_230_222_ID_LINE_DURATION_TARGETVALUE);
+
+    assertThat(configuration.getAggregationType(), is(AggregationType.MIN));
   }
 
   @Test

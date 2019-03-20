@@ -7,7 +7,7 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -77,7 +77,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.FLOW_NODE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(3));
     assertThat(resultMap.get(SERVICE_TASK_ID), is(calculateExpectedValueGivenDurations(20L)));
     assertThat(resultMap.get(START_EVENT), is(calculateExpectedValueGivenDurations(20L)));
@@ -102,7 +102,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(3));
     assertThat(resultMap.get(SERVICE_TASK_ID), is(calculateExpectedValueGivenDurations(10L, 30L, 20L)));
   }
@@ -130,7 +130,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(4));
     assertThat(resultMap.get(SERVICE_TASK_ID), is(calculateExpectedValueGivenDurations(100L, 200L, 900L)));
     assertThat(resultMap.get(SERVICE_TASK_ID_2), is(calculateExpectedValueGivenDurations(20L, 10L, 90L)));
@@ -176,7 +176,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     //then
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(4));
     assertThat(resultMap.get(SERVICE_TASK_ID), is(calculateExpectedValueGivenDurations(20L, 30L, 50L, 120L, 100L)));
     assertThat(resultMap.get(SERVICE_TASK_ID_2), is(calculateExpectedValueGivenDurations(50L, 120L, 100L)));
@@ -210,7 +210,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     //then
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(3));
     assertThat(resultMap.get(SERVICE_TASK_ID), is(calculateExpectedValueGivenDurations(20L, 30L, 50L, 120L, 100L)));
   }
@@ -237,7 +237,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     //then
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(3));
     assertThat(resultMap.get(SERVICE_TASK_ID), is(calculateExpectedValueGivenDurations(10L, 20L, 90L)));
   }
@@ -269,10 +269,10 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessDurationReportMapResultDto result2 = evaluateReport(reportData2);
 
     // then
-    Map<String, OperationResultDto> resultMap = result1.getResult();
+    Map<String, AggregationResultDto> resultMap = result1.getResult();
     assertThat(resultMap.size(), is(3));
     assertThat(resultMap.get(SERVICE_TASK_ID), is(calculateExpectedValueGivenDurations(80L, 40L, 120L)));
-    Map<String, OperationResultDto> resultMap2 = result2.getResult();
+    Map<String, AggregationResultDto> resultMap2 = result2.getResult();
     assertThat(resultMap2.size(), is(3));
     assertThat(resultMap2.get(SERVICE_TASK_ID), is(calculateExpectedValueGivenDurations(20L, 100L, 1000L)));
   }
@@ -295,7 +295,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(3));
     assertThat(resultMap.get(SERVICE_TASK_ID), is(calculateExpectedValueGivenDurations(100L, 300L, 600L)));
   }
@@ -309,7 +309,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(0));
   }
 
@@ -331,7 +331,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.get(START_EVENT), is(calculateExpectedValueGivenDurations(100L)));
     assertThat(resultMap.get(USER_TASK), nullValue());
@@ -377,7 +377,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(3));
     assertThat(resultMap.get(SERVICE_TASK_ID), is(calculateExpectedValueGivenDurations(10L)));
   }
@@ -400,7 +400,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(3));
     Long[] durationSet = new Long[11];
     Arrays.fill(durationSet, 10L);
@@ -424,7 +424,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
-    Map<String, OperationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(0));
 
     // when
@@ -525,11 +525,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     );
   }
 
-  private OperationResultDto calculateExpectedValueGivenDurations(final Long... setDuration) {
+  private AggregationResultDto calculateExpectedValueGivenDurations(final Long... setDuration) {
     final DescriptiveStatistics statistics = new DescriptiveStatistics();
     Stream.of(setDuration).map(Long::doubleValue).forEach(statistics::addValue);
 
-    return new OperationResultDto(
+    return new AggregationResultDto(
       Math.round(statistics.getMin()),
       Math.round(statistics.getMax()),
       Math.round(statistics.getMean()),

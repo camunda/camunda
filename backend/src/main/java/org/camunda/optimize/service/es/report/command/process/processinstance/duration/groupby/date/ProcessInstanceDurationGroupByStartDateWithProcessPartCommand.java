@@ -3,7 +3,7 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.d
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.service.es.report.command.process.processinstance.duration.ProcessPartQueryUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -25,7 +25,7 @@ public class ProcessInstanceDurationGroupByStartDateWithProcessPartCommand
   }
 
   @Override
-  protected OperationResultDto processAggregationOperation(Aggregations aggs) {
+  protected AggregationResultDto processAggregationOperation(Aggregations aggs) {
     return processProcessPartAggregationOperations(aggs);
   }
 

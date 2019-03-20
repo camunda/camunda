@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.report.command.process.user_task.duration;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.process.UserTaskGroupingCommand;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
@@ -67,7 +67,7 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final Map<String, OperationResultDto> resultMap = processAggregations(response.getAggregations());
+      final Map<String, AggregationResultDto> resultMap = processAggregations(response.getAggregations());
       final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();
       resultDto.setResult(resultMap);
       return new SingleProcessMapDurationReportResult(resultDto);
@@ -110,23 +110,23 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
 
   protected abstract String getDurationFieldName();
 
-  private Map<String, OperationResultDto> processAggregations(final Aggregations aggregations) {
+  private Map<String, AggregationResultDto> processAggregations(final Aggregations aggregations) {
     ValidationHelper.ensureNotNull("aggregations", aggregations);
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms byTaskIdAggregation = filteredUserTasks.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
-    final Map<String, OperationResultDto> result = new HashMap<>();
+    final Map<String, AggregationResultDto> result = new HashMap<>();
     for (Terms.Bucket b : byTaskIdAggregation.getBuckets()) {
       ParsedStats statsAggregation = b.getAggregations().get(STATS_DURATION_AGGREGATION);
       ParsedTDigestPercentiles medianAggregation = b.getAggregations().get(MEDIAN_DURATION_AGGREGATION);
 
-      OperationResultDto operationResultDto = new OperationResultDto(
+      AggregationResultDto aggregationResultDto = new AggregationResultDto(
         mapToLong(statsAggregation.getMin()),
         mapToLong(statsAggregation.getMax()),
         mapToLong(statsAggregation.getAvg()),
         mapToLong(medianAggregation)
       );
-      result.put(b.getKeyAsString(), operationResultDto);
+      result.put(b.getKeyAsString(), aggregationResultDto);
     }
     return result;
   }

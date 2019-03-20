@@ -3,7 +3,7 @@ package org.camunda.optimize.service.export;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,12 +145,12 @@ public class CSVUtils {
     return result;
   }
 
-  public static List<String[]> mapOperationValues(Map<String, OperationResultDto> valuesMap, Integer limit,
+  public static List<String[]> mapOperationValues(Map<String, AggregationResultDto> valuesMap, Integer limit,
                                                   Integer offset) {
     List<String[]> result = new ArrayList<>();
 
     int currentPosition = 0;
-    for (Map.Entry<String, OperationResultDto> value : valuesMap.entrySet()) {
+    for (Map.Entry<String, AggregationResultDto> value : valuesMap.entrySet()) {
       boolean limitNotExceeded = isLimitNotExceeded(limit, result);
       boolean offsetPassed = isOffsetPassed(offset, currentPosition);
       if ((offset == null && limitNotExceeded) || (offsetPassed && limitNotExceeded)) {

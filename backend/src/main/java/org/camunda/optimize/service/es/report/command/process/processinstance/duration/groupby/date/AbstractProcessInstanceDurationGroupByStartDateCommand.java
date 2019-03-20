@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.StartDateGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
@@ -132,24 +132,24 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
     }
   }
 
-  private Map<String, OperationResultDto> processAggregations(Aggregations aggregations) {
+  private Map<String, AggregationResultDto> processAggregations(Aggregations aggregations) {
     if (!aggregations.getAsMap().containsKey(DATE_HISTOGRAM_AGGREGATION)) {
       return processAutomaticIntervalAggregations(aggregations);
     }
     Histogram agg = aggregations.get(DATE_HISTOGRAM_AGGREGATION);
-    Map<String, OperationResultDto> result = new LinkedHashMap<>();
+    Map<String, AggregationResultDto> result = new LinkedHashMap<>();
     // For each entry
     for (Histogram.Bucket entry : agg.getBuckets()) {
       DateTime key = (DateTime) entry.getKey();    // Key
       String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
 
-      OperationResultDto operationResult = processAggregationOperation(entry.getAggregations());
+      AggregationResultDto operationResult = processAggregationOperation(entry.getAggregations());
       result.put(formattedDate, operationResult);
     }
     return result;
   }
 
-  private Map<String, OperationResultDto> processAutomaticIntervalAggregations(Aggregations aggregations) {
+  private Map<String, AggregationResultDto> processAutomaticIntervalAggregations(Aggregations aggregations) {
     return intervalAggregationService.mapIntervalAggregationsToKeyBucketMap(aggregations)
       .entrySet()
       .stream()
@@ -171,7 +171,7 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
     return aggregationBuilder;
   }
 
-  protected abstract OperationResultDto processAggregationOperation(Aggregations aggs);
+  protected abstract AggregationResultDto processAggregationOperation(Aggregations aggs);
 
   protected abstract List<AggregationBuilder> createOperationsAggregations();
 

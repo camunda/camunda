@@ -1,18 +1,22 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.result.duration;
 
+import net.minidev.json.annotate.JsonIgnore;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+
 import java.util.Objects;
 
-public class OperationResultDto {
+public class AggregationResultDto {
 
   private Long min;
   private Long max;
   private Long avg;
   private Long median;
 
-  public OperationResultDto() {
+  public AggregationResultDto() {
   }
 
-  public OperationResultDto(Long min, Long max, Long avg, Long median) {
+  public AggregationResultDto(Long min, Long max, Long avg, Long median) {
     this.min = min;
     this.max = max;
     this.avg = avg;
@@ -51,15 +55,31 @@ public class OperationResultDto {
     this.median = median;
   }
 
+  @JsonIgnore
+  public Long getResultForGivenAggregationType(AggregationType aggregationType) {
+    switch (aggregationType) {
+      case MIN:
+        return getMin();
+      case MAX:
+        return getMax();
+      case AVERAGE:
+        return getAvg();
+      case MEDIAN:
+        return getMedian();
+      default:
+        throw new OptimizeRuntimeException(String.format("Unknown aggregation type [%s]", aggregationType));
+    }
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof OperationResultDto)) {
+    if (!(o instanceof AggregationResultDto)) {
       return false;
     }
-    OperationResultDto that = (OperationResultDto) o;
+    AggregationResultDto that = (AggregationResultDto) o;
     return Objects.equals(min, that.min) &&
       Objects.equals(max, that.max) &&
       Objects.equals(avg, that.avg) &&

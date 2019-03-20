@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.report.command.process.flownode.duration;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.process.FlowNodeDurationGroupingCommand;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
@@ -87,7 +87,7 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    Map<String, OperationResultDto> resultMap = processAggregations(response.getAggregations());
+    Map<String, AggregationResultDto> resultMap = processAggregations(response.getAggregations());
     ProcessDurationReportMapResultDto resultDto =
       new ProcessDurationReportMapResultDto();
     resultDto.setResult(resultMap);
@@ -124,24 +124,24 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
         );
   }
 
-  private Map<String, OperationResultDto> processAggregations(Aggregations aggregations) {
+  private Map<String, AggregationResultDto> processAggregations(Aggregations aggregations) {
     ValidationHelper.ensureNotNull("aggregations", aggregations);
     Nested activities = aggregations.get(EVENTS_AGGREGATION);
     Filter filteredActivities = activities.getAggregations().get(FILTERED_EVENTS_AGGREGATION);
     Terms terms = filteredActivities.getAggregations().get(ACTIVITY_ID_TERMS_AGGREGATION);
-    Map<String, OperationResultDto> result = new HashMap<>();
+    Map<String, AggregationResultDto> result = new HashMap<>();
     for (Terms.Bucket b : terms.getBuckets()) {
       ParsedStats statsAggregation = b.getAggregations().get(STATS_DURATION_AGGREGATION);
       ParsedTDigestPercentiles medianAggregation = b.getAggregations().get(MEDIAN_DURATION_AGGREGATION);
 
-      OperationResultDto operationResultDto = new OperationResultDto(
+      AggregationResultDto aggregationResultDto = new AggregationResultDto(
         mapToLong(statsAggregation.getMin()),
         mapToLong(statsAggregation.getMax()),
         mapToLong(statsAggregation.getAvg()),
         mapToLong(medianAggregation)
       );
 
-      result.put(b.getKeyAsString(), operationResultDto);
+      result.put(b.getKeyAsString(), aggregationResultDto);
     }
     return result;
   }

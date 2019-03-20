@@ -2,14 +2,9 @@ package org.camunda.optimize.dto.optimize;
 
 public class ReportConstants {
 
-  public static final String DEFAULT_CONFIGURATION_COLOR = "#1991c8";
-
+  // report data structure constants
   public static final String VIEW_RAW_DATA_OPERATION = "rawData";
   public static final String VIEW_COUNT_OPERATION = "count";
-  public static final String VIEW_AVERAGE_OPERATION = "avg";
-  public static final String VIEW_MIN_OPERATION = "min";
-  public static final String VIEW_MAX_OPERATION = "max";
-  public static final String VIEW_MEDIAN_OPERATION = "median";
 
   public static final String VIEW_FLOW_NODE_ENTITY = "flowNode";
   public static final String VIEW_USER_TASK_ENTITY = "userTask";
@@ -42,6 +37,7 @@ public class ReportConstants {
   public static final String DATE_UNIT_HOUR = "hour";
   public static final String DATE_UNIT_AUTOMATIC = "automatic";
 
+  // report configuration constants
   public static final String TABLE_VISUALIZATION = "table";
   public static final String HEAT_VISUALIZATION = "heat";
   public static final String SINGLE_NUMBER_VISUALIZATION = "number";
@@ -50,6 +46,14 @@ public class ReportConstants {
   public static final String BADGE_VISUALIZATION = "badge";
   public static final String PIE_VISUALIZATION = "pie";
 
+  public static final String DEFAULT_CONFIGURATION_COLOR = "#1991c8";
+
+  public static final String AVERAGE_AGGREGATION_TYPE = "avg";
+  public static final String MIN_AGGREGATION_TYPE = "min";
+  public static final String MAX_AGGREGATION_TYPE = "max";
+  public static final String MEDIAN_AGGREGATION_TYPE = "median";
+
+  // miscellaneous report constants
   public static final String ALL_VERSIONS = "ALL";
 
   public static final String FIXED_DATE_FILTER = "fixed";

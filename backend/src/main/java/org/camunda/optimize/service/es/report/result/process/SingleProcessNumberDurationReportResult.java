@@ -1,7 +1,8 @@
 package org.camunda.optimize.service.es.report.result.process;
 
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
 import org.camunda.optimize.service.es.report.result.ReportResult;
 
@@ -19,7 +20,7 @@ public class SingleProcessNumberDurationReportResult
   @Override
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, Set<String> excludedColumns) {
     final List<String[]> csvStrings = new LinkedList<>();
-    OperationResultDto result = reportResultDto.getResult();
+    AggregationResultDto result = reportResultDto.getResult();
     csvStrings.add(
       new String[]{
         result.getMin().toString(),
@@ -47,6 +48,7 @@ public class SingleProcessNumberDurationReportResult
 
   @Override
   public long getResultAsNumber() {
-    return reportResultDto.getResult().getAvg();
+    AggregationType aggregationType = reportResultDto.getData().getConfiguration().getAggregationType();
+    return reportResultDto.getResult().getResultForGivenAggregationType(aggregationType);
   }
 }

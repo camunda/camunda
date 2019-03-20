@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable;
 
 import com.google.common.collect.ImmutableList;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -21,11 +21,11 @@ public class ProcessInstanceDurationByVariableCommand
   private static final String MEDIAN_DURATION_AGGREGATION = "medianAggregatedDuration";
 
   @Override
-  protected OperationResultDto processAggregationOperation(Aggregations aggs) {
+  protected AggregationResultDto processAggregationOperation(Aggregations aggs) {
     ParsedStats statsAggregation = aggs.get(STATS_DURATION_AGGREGATION);
     ParsedTDigestPercentiles medianAggregation = aggs.get(MEDIAN_DURATION_AGGREGATION);
 
-    return new OperationResultDto(
+    return new AggregationResultDto(
       mapToLong(statsAggregation.getMin()),
       mapToLong(statsAggregation.getMax()),
       mapToLong(statsAggregation.getAvg()),

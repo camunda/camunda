@@ -3,7 +3,7 @@ package org.camunda.optimize.service.es.report.command.process;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
@@ -54,9 +54,9 @@ class LatestFlowNodesOnlyFilter {
                                                                final SingleProcessMapDurationReportResult evaluationResult) {
     if (ReportConstants.ALL_VERSIONS.equalsIgnoreCase(commandContext.getReportData().getProcessDefinitionVersion())) {
       final ProcessDefinitionOptimizeDto latestXml = fetchLatestDefinitionXml(commandContext);
-      final Map<String, OperationResultDto> filteredNodes = new HashMap<>();
+      final Map<String, AggregationResultDto> filteredNodes = new HashMap<>();
 
-      for (Map.Entry<String, OperationResultDto> node : evaluationResult.getResultAsDto().getResult().entrySet()) {
+      for (Map.Entry<String, AggregationResultDto> node : evaluationResult.getResultAsDto().getResult().entrySet()) {
         if (latestXml.getFlowNodeNames().containsKey(node.getKey())) {
           filteredNodes.put(node.getKey(), node.getValue());
         }

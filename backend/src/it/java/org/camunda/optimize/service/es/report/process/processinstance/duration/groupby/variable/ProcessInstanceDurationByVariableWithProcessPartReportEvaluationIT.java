@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -106,9 +106,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName(), is(DEFAULT_VARIABLE_NAME));
     assertThat(variableGroupByDto.getValue().getType(), is(DEFAULT_VARIABLE_TYPE));
-    Map<String, OperationResultDto> resultMap = resultDto.getResult();
+    Map<String, AggregationResultDto> resultMap = resultDto.getResult();
     assertThat(resultDto.getResult().size(), is(1));
-    OperationResultDto calculatedResult = resultMap.get(DEFAULT_VARIABLE_VALUE);
+    AggregationResultDto calculatedResult = resultMap.get(DEFAULT_VARIABLE_VALUE);
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult, is(calculateExpectedValueGivenDurations(1000L)));
   }
@@ -154,9 +154,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName(), is(DEFAULT_VARIABLE_NAME));
     assertThat(variableGroupByDto.getValue().getType(), is(DEFAULT_VARIABLE_TYPE));
-    Map<String, OperationResultDto> resultMap = resultDto.getResult();
+    Map<String, AggregationResultDto> resultMap = resultDto.getResult();
     assertThat(resultDto.getResult().size(), is(1));
-    OperationResultDto calculatedResult = resultMap.get(DEFAULT_VARIABLE_VALUE);
+    AggregationResultDto calculatedResult = resultMap.get(DEFAULT_VARIABLE_VALUE);
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult, is(calculateExpectedValueGivenDurations(1000L)));
   }
@@ -197,7 +197,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     // then
     assertThat(resultDto.getResult(), is(notNullValue()));
-    Map<String, OperationResultDto> resultMap = resultDto.getResult();
+    Map<String, AggregationResultDto> resultMap = resultDto.getResult();
     assertThat(resultDto.getResult().size(), is(2));
     assertThat(resultMap.get(DEFAULT_VARIABLE_VALUE), is(calculateExpectedValueGivenDurations(1000L, 2000L, 9000L)));
     assertThat(resultMap.get(DEFAULT_VARIABLE_VALUE + 2), is(calculateExpectedValueGivenDurations(1000L)));
@@ -554,7 +554,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
       // then
       assertThat(result.getResult(), is(notNullValue()));
-      Map<String, OperationResultDto> variableValueToCount = result.getResult();
+      Map<String, AggregationResultDto> variableValueToCount = result.getResult();
       assertThat(variableValueToCount.size(), is(1));
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
@@ -751,11 +751,11 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     engineDatabaseRule.updateActivityInstanceEndDates(endDatesToUpdate);
   }
 
-  private OperationResultDto calculateExpectedValueGivenDurations(final Long... setDuration) {
+  private AggregationResultDto calculateExpectedValueGivenDurations(final Long... setDuration) {
     final DescriptiveStatistics statistics = new DescriptiveStatistics();
     Stream.of(setDuration).map(Long::doubleValue).forEach(statistics::addValue);
 
-    return new OperationResultDto(
+    return new AggregationResultDto(
       Math.round(statistics.getMin()),
       Math.round(statistics.getMax()),
       Math.round(statistics.getMean()),

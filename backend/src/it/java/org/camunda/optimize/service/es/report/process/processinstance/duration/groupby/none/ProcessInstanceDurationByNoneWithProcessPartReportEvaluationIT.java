@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.OperationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -103,7 +103,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
     assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
-    OperationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getResult();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(1000L));
     assertThat(calculatedResult.getMax(), is(1000L));
@@ -148,7 +148,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
     assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
-    OperationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getResult();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(1000L));
     assertThat(calculatedResult.getMax(), is(1000L));
@@ -190,7 +190,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
 
     // then
-    OperationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getResult();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(4000L));
     assertThat(calculatedResult.getMax(), is(9000L));
@@ -221,7 +221,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
 
     // then
-    OperationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getResult();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(2000L));
     assertThat(calculatedResult.getMax(), is(2000L));
@@ -255,7 +255,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
 
     // then
-    OperationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getResult();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(0L));
     assertThat(calculatedResult.getMax(), is(0L));
@@ -307,7 +307,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
 
     // then
-    OperationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getResult();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(0L));
     assertThat(calculatedResult.getMax(), is(0L));
@@ -339,7 +339,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
 
     // then
-    OperationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getResult();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(0L));
     assertThat(calculatedResult.getMax(), is(0L));
@@ -371,7 +371,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
 
     // then
-    OperationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getResult();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(0L));
     assertThat(calculatedResult.getMax(), is(0L));
@@ -394,7 +394,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
 
     // then
-    OperationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getResult();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(0L));
     assertThat(calculatedResult.getMax(), is(0L));
@@ -432,7 +432,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
 
     // then
-    OperationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getResult();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(4000L));
     assertThat(calculatedResult.getMax(), is(9000L));
@@ -474,7 +474,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
 
     // then
-    OperationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getResult();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(4000L));
     assertThat(calculatedResult.getMax(), is(9000L));
@@ -510,7 +510,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
 
     // then
-    OperationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getResult();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(1000L));
     assertThat(calculatedResult.getMax(), is(1000L));
