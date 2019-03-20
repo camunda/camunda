@@ -1,0 +1,38 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render an aggregation selection for duration reports 1`] = `
+<fieldset
+  className="AggregationType"
+>
+  <legend>
+    Aggregation
+  </legend>
+  <Select
+    onChange={[Function]}
+    value="median"
+  >
+    <Option
+      value="min"
+    >
+      Minimum
+    </Option>
+    <Option
+      value="avg"
+    >
+      Average
+    </Option>
+    <Option
+      value="median"
+    >
+      Median
+    </Option>
+    <Option
+      value="max"
+    >
+      Maxmimum
+    </Option>
+  </Select>
+</fieldset>
+`;
+
+exports[`should render nothing if the current result does is no duration 1`] = `""`;

@@ -3,6 +3,7 @@ import React from 'react';
 import {Popover, Icon, Button, ColorPicker} from 'components';
 import * as visualizations from './visualizations';
 import ShowInstanceCount from './ShowInstanceCount';
+import AggregationType from './AggregationType';
 
 import './Configuration.scss';
 
@@ -20,6 +21,7 @@ export default class Configuration extends React.Component {
   resetToDefaults = () => {
     this.updateConfiguration(
       convertToChangeset({
+        aggregationType: 'avg',
         precision: null,
         targetValue: {
           active: false,
@@ -87,6 +89,7 @@ export default class Configuration extends React.Component {
                 label={report.reportType === 'decision' ? 'Evaluation' : 'Instance'}
               />
             )}
+            <AggregationType report={report} onChange={this.updateConfiguration} />
             {Component && <Component report={report} onChange={this.updateConfiguration} />}
             <Button className="resetButton" onClick={this.resetToDefaults}>
               Reset to Defaults

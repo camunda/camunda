@@ -217,7 +217,7 @@ it('should process duration reports', () => {
             unit: 'day'
           },
           visualization: 'table',
-          configuration: {}
+          configuration: {aggregationType: 'max'}
         },
         result: {
           '2015-03-25T12:00:00Z': {min: 1, median: 2, avg: 3, max: 4},
@@ -234,7 +234,7 @@ it('should process duration reports', () => {
   const passedReport = node.find(Table).prop('report');
 
   expect(passedReport.result).toEqual({
-    '2015-03-25T12:00:00Z': 3,
-    '2015-03-26T12:00:00Z': 7
+    '2015-03-25T12:00:00Z': 4,
+    '2015-03-26T12:00:00Z': 8
   });
 });

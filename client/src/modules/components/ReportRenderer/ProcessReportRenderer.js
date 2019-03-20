@@ -115,17 +115,24 @@ export default class ProcessReportRenderer extends React.Component {
   };
 }
 
-function processResult(report) {
-  if (report.data.view.property.toLowerCase().includes('duration')) {
-    if (report.resultType === 'durationNumber') {
-      return report.result.avg;
+function processResult({
+  data: {
+    view,
+    configuration: {aggregationType}
+  },
+  resultType,
+  result
+}) {
+  if (view.property.toLowerCase().includes('duration')) {
+    if (resultType === 'durationNumber') {
+      return result[aggregationType];
     }
-    if (report.resultType === 'durationMap') {
-      return Object.entries(report.result).reduce((result, [key, {avg}]) => {
-        result[key] = avg;
+    if (resultType === 'durationMap') {
+      return Object.entries(result).reduce((result, [key, value]) => {
+        result[key] = value[aggregationType];
         return result;
       }, {});
     }
   }
-  return report.result;
+  return result;
 }
