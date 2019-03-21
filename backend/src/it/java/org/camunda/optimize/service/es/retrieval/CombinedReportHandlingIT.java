@@ -8,7 +8,6 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessRe
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -44,7 +43,9 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeHeatmapReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -130,7 +131,7 @@ public class CombinedReportHandlingIT {
     String singleReportId = createNewSingleNumberReport(engineDto);
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
     report.setData(createCombinedReport(singleReportId));
-    report.getData().getConfiguration().setxLabel("FooXLabel");;
+    report.getData().getConfiguration().setxLabel("FooXLabel");
     report.setId("shouldNotBeUpdated");
     report.setLastModifier("shouldNotBeUpdatedManually");
     report.setName("MyReport");
@@ -491,6 +492,46 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
+  public void combineProcessDurationNumberReports() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    String singleReportId = createNewSingleDurationNumberReport(engineDto);
+    String singleReportId2 = createNewSingleDurationNumberReport(engineDto);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    CombinedProcessReportResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
+      createCombinedReport(singleReportId, singleReportId2)
+    );
+
+    // then
+    Map<String, ProcessReportNumberResultDto> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(2));
+    assertThat(resultMap.keySet(), contains(singleReportId, singleReportId2));
+  }
+
+  @Test
+  public void combineProcessDurationMapReports() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    String singleReportId = createNewSingleDurationMapReport(engineDto);
+    String singleReportId2 = createNewSingleDurationMapReport(engineDto);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    CombinedProcessReportResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
+      createCombinedReport(singleReportId, singleReportId2)
+    );
+
+    // then
+    Map<String, ProcessReportNumberResultDto> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(2));
+    assertThat(resultMap.keySet(), contains(singleReportId, singleReportId2));
+  }
+
+  @Test
   public void combinedReportWithSingleNumberAndMapReport_firstWins() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
@@ -555,6 +596,24 @@ public class CombinedReportHandlingIT {
     return createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
   }
 
+  private String createNewSingleDurationNumberReport(ProcessInstanceEngineDto engineDto) {
+    ProcessReportDataDto durationReportData =
+      createProcessInstanceDurationGroupByNone(
+        engineDto.getProcessDefinitionKey(),
+        engineDto.getProcessDefinitionVersion()
+      );
+    return createNewSingleNumberReport(durationReportData);
+  }
+
+  private String createNewSingleDurationMapReport(ProcessInstanceEngineDto engineDto) {
+    ProcessReportDataDto durationMapReportData =
+      createFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        engineDto.getProcessDefinitionKey(),
+        engineDto.getProcessDefinitionVersion()
+      );
+    return createNewSingleMapReport(durationMapReportData);
+  }
+
   private String createNewSingleMapReport(ProcessReportDataDto data) {
     String singleReportId = createNewSingleReport();
     SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
@@ -564,16 +623,20 @@ public class CombinedReportHandlingIT {
     return singleReportId;
   }
 
-
   private String createNewSingleNumberReport(ProcessInstanceEngineDto engineDto) {
-    String singleReportId = createNewSingleReport();
     ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode =
       createPiFrequencyCountGroupedByNone(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
+    return createNewSingleNumberReport(countFlowNodeFrequencyGroupByFlowNode);
+  }
+
+  private String createNewSingleNumberReport(ProcessReportDataDto data) {
+    String singleReportId = createNewSingleReport();
     SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
-    definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
+    definitionDto.setData(data);
     updateReport(singleReportId, definitionDto);
     return singleReportId;
   }
+
 
   private String createNewSingleRawReport(ProcessInstanceEngineDto engineDto) {
     String singleReportId = createNewSingleReport();

@@ -12,6 +12,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.result.ReportResult;
 import org.camunda.optimize.service.es.report.result.process.CombinedProcessReportResult;
@@ -79,7 +81,7 @@ public abstract class ReportEvaluationHandler {
   }
 
   private CombinedProcessReportResult evaluateCombinedReport(String userId,
-                                                                CombinedReportDefinitionDto combinedReportDefinition) {
+                                                             CombinedReportDefinitionDto combinedReportDefinition) {
 
     ValidationHelper.validateCombinedReportDefinition(combinedReportDefinition);
     List<ReportResult> resultList = evaluateListOfReportIds(
@@ -95,7 +97,7 @@ public abstract class ReportEvaluationHandler {
     final Map<String, ProcessReportResultDto> reportIdToMapResult = singleReportResultList
       .stream()
       .map(ReportResult::getResultAsDto)
-      .filter(t -> t instanceof ProcessReportNumberResultDto || t instanceof ProcessReportMapResultDto)
+      .filter(this::isProcessMapOrNumberResult)
       .map(t -> (ProcessReportResultDto) t)
       .filter(singleReportResult -> singleReportResult.getClass().equals(singleReportType.get())
         || singleReportType.compareAndSet(null, singleReportResult.getClass()))
@@ -114,6 +116,13 @@ public abstract class ReportEvaluationHandler {
     result.copyMetaData(combinedReportDefinition);
     result.copyReportData(combinedReportDefinition.getData());
     return result;
+  }
+
+  private boolean isProcessMapOrNumberResult(Object reportResult) {
+    return reportResult instanceof ProcessReportNumberResultDto ||
+      reportResult instanceof ProcessReportMapResultDto ||
+      reportResult instanceof ProcessDurationReportNumberResultDto ||
+      reportResult instanceof ProcessDurationReportMapResultDto;
   }
 
   private List<ReportResult> evaluateListOfReportIds(final String userId, List<String> singleReportIds) {
@@ -161,7 +170,7 @@ public abstract class ReportEvaluationHandler {
   }
 
   private ReportResult evaluateSingleDecisionReport(final String userId,
-                                                       final SingleDecisionReportDefinitionDto reportDefinition) {
+                                                    final SingleDecisionReportDefinitionDto reportDefinition) {
 
     if (!isAuthorizedToSeeReport(userId, reportDefinition)) {
       DecisionReportDataDto reportData = reportDefinition.getData();
