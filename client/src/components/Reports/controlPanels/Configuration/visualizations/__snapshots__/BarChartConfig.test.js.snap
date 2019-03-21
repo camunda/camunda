@@ -15,6 +15,15 @@ exports[`it should display correct configuration for barchart 1`] = `
       selectedColor="#1991c8"
     />
   </fieldset>
+  <fieldset>
+    <legend>
+      Always show tooltips
+    </legend>
+    <RelativeAbsoluteSelection
+      hideRelative={false}
+      onChange={[Function]}
+    />
+  </fieldset>
   <fieldset
     className="axisConfig"
   >

@@ -9,6 +9,7 @@ export {default as reportConfig} from './reportConfig';
 export {getDiagramElementsBetween} from './diagramServices';
 export {default as getDataKeys} from './getDataKeys';
 export {flatten} from './tableServices';
+export {default as getTooltipText} from './getTooltipText';
 export {
   extractDefinitionName,
   loadDefinitions,

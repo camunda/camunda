@@ -1,13 +1,16 @@
 import React from 'react';
 import {ColorPicker, Switch, LabeledInput} from 'components';
 import ChartTargetInput from './subComponents/ChartTargetInput';
+import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
+import {isDurationReport} from 'services';
 
 import './BarChartConfig.scss';
 
 export default function BarChartConfig({onChange, report}) {
   const {
     combined,
-    data: {configuration}
+    data: {configuration},
+    result
   } = report;
 
   return (
@@ -21,6 +24,21 @@ export default function BarChartConfig({onChange, report}) {
           />
         </fieldset>
       )}
+      <fieldset>
+        <legend>Always show tooltips</legend>
+        <RelativeAbsoluteSelection
+          hideRelative={isDurationReport(combined ? Object.values(result)[0] : report)}
+          absolute={configuration.alwaysShowAbsolute}
+          relative={configuration.alwaysShowRelative}
+          onChange={(type, value) => {
+            if (type === 'absolute') {
+              onChange({alwaysShowAbsolute: {$set: value}});
+            } else {
+              onChange({alwaysShowRelative: {$set: value}});
+            }
+          }}
+        />
+      </fieldset>
       <fieldset className="axisConfig">
         <legend>Axis Labels</legend>
         <LabeledInput

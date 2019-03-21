@@ -13,7 +13,7 @@ it('should include the relative value in tooltips', () => {
     false
   );
 
-  expect(response).toBe('2.5 (50%)');
+  expect(response).toBe('2.5\u00A0(50%)');
 });
 
 it('should generate correct colors in label tooltips for pie charts ', () => {

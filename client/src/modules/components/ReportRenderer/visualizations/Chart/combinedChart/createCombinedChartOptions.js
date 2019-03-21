@@ -17,9 +17,11 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
   const isDark = theme === 'dark';
   const stacked = visualization === 'number';
   const instanceCountArr = Object.values(result).map(report => report.processInstanceCount);
-  const maxDuration = isDurationReport(Object.values(result)[0])
-    ? findMaxDurationAcrossReports(result)
-    : 0;
+  const isDuration = isDurationReport(Object.values(result)[0]);
+  const maxDuration = isDuration ? findMaxDurationAcrossReports(result) : 0;
+  const isPersistedTooltips = isDuration
+    ? configuration.alwaysShowAbsolute
+    : configuration.alwaysShowAbsolute || configuration.alwaysShowRelative;
 
   return {
     ...createBarOptions({
@@ -28,6 +30,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
       stacked,
       maxDuration,
       isDark,
+      isPersistedTooltips,
       autoSkip: canBeInterpolated(groupBy)
     }),
     legend: {
@@ -41,8 +44,16 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
     responsive: true,
     maintainAspectRatio: false,
     animation: false,
+    // plugin property
+    showAllTooltips: isPersistedTooltips,
     tooltips: {
+      ...(isPersistedTooltips && {
+        yAlign: 'bottom',
+        xAlign: 'center',
+        displayColors: false
+      }),
       callbacks: {
+        ...(isPersistedTooltips && {title: () => ''}),
         label: (tooltipItem, data) => {
           return formatTooltip(
             tooltipItem,

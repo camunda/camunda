@@ -1,0 +1,34 @@
+export default function getTooltipText(
+  data,
+  formatter,
+  processInstanceCount,
+  alwaysShowAbsolute,
+  alwaysShowRelative,
+  property
+) {
+  const absolute = formatter(data);
+  const relative = getRelativeValue(data, processInstanceCount);
+
+  if (property.toLowerCase().includes('duration')) {
+    return absolute;
+  }
+
+  if (alwaysShowAbsolute && alwaysShowRelative) {
+    return absolute + `\u00A0(${relative})`;
+  }
+
+  if (alwaysShowAbsolute) {
+    return absolute;
+  }
+
+  if (alwaysShowRelative) {
+    return relative;
+  }
+
+  return absolute + `\u00A0(${relative})`;
+}
+
+function getRelativeValue(data, total) {
+  if (data === null) return '';
+  return Math.round((data / total) * 1000) / 10 + '%';
+}

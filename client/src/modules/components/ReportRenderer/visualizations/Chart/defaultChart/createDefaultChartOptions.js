@@ -13,7 +13,11 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
 
   const isDark = theme === 'dark';
   const instanceCountArr = [processInstanceCount || decisionInstanceCount || 0];
-  const maxValue = isDurationReport(report) ? Math.max(...Object.values(result)) : 0;
+  const isDuration = isDurationReport(report);
+  const maxValue = isDuration ? Math.max(...Object.values(result)) : 0;
+  const isPersistedTooltips = isDuration
+    ? configuration.alwaysShowAbsolute
+    : configuration.alwaysShowAbsolute || configuration.alwaysShowRelative;
 
   let options;
   switch (visualization) {
@@ -28,6 +32,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
         stacked: false,
         maxDuration: maxValue,
         isDark,
+        isPersistedTooltips,
         autoSkip: canBeInterpolated(groupBy, configuration.xml, decisionDefinitionKey)
       });
       break;
@@ -40,10 +45,20 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
     responsive: true,
     maintainAspectRatio: false,
     animation: false,
+    // plugin property
+    showAllTooltips: isPersistedTooltips,
     tooltips: {
+      ...(isPersistedTooltips && {
+        yAlign: 'bottom',
+        xAlign: 'center',
+        displayColors: false
+      }),
       callbacks: {
+        ...(isPersistedTooltips && {title: () => ''}),
         // if pie chart then manually append labels to tooltips
-        ...(visualization === 'pie' ? {beforeLabel: ({index}, {labels}) => labels[index]} : {}),
+        ...(visualization === 'pie' &&
+          !isPersistedTooltips && {beforeLabel: ({index}, {labels}) => labels[index]}),
+
         label: (tooltipItem, data) => {
           return formatTooltip(
             tooltipItem,
@@ -68,12 +83,17 @@ export function createBarOptions({
   stacked,
   maxDuration,
   isDark,
-  autoSkip
+  autoSkip,
+  isPersistedTooltips
 }) {
   const targetLine = targetValue && getFormattedTargetValue(targetValue);
+
   return {
     ...(configuration.pointMarkers === false ? {elements: {point: {radius: 0}}} : {}),
     legend: {display: false},
+    layout: {
+      padding: {top: isPersistedTooltips ? 30 : 0}
+    },
     scales: {
       yAxes: [
         {

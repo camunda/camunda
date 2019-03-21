@@ -2,12 +2,14 @@ import moment from 'moment';
 
 import {drawHorizentalLine} from './service';
 import zoomIn from './zoomIn';
+import showAllTooltips from './showAllTooltips';
 
 export default function createPlugins({updateReport, report: {combined, data, result}}) {
   const plugins = [
     {
       afterDatasetsDraw: drawHorizentalLine
-    }
+    },
+    showAllTooltips
   ];
 
   if (

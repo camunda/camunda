@@ -4,8 +4,7 @@ import {BPMNDiagram, TargetValueBadge, LoadingIndicator} from 'components';
 import HeatmapOverlay from './HeatmapOverlay';
 
 import {calculateTargetValueHeat} from './service';
-import {getRelativeValue} from '../service';
-import {formatters, isDurationReport} from 'services';
+import {formatters, getTooltipText} from 'services';
 
 import './Heatmap.scss';
 
@@ -13,6 +12,7 @@ const Heatmap = ({report, formatter, errorMessage}) => {
   const {
     result,
     data: {
+      view: {property},
       configuration: {alwaysShowAbsolute, alwaysShowRelative, heatmapTargetValue: targetValue, xml}
     },
     processInstanceCount
@@ -70,27 +70,16 @@ const Heatmap = ({report, formatter, errorMessage}) => {
         data={result}
         alwaysShowAbsolute={alwaysShowAbsolute}
         alwaysShowRelative={alwaysShowRelative}
-        formatter={data => {
-          const absolute = formatter(data);
-          const relative = getRelativeValue(data, processInstanceCount);
-
-          if (isDurationReport(report)) {
-            return absolute;
-          }
-
-          if (alwaysShowAbsolute && alwaysShowRelative) {
-            return absolute + `\u00A0(${relative})`;
-          }
-
-          if (alwaysShowAbsolute) {
-            return absolute;
-          }
-          if (alwaysShowRelative) {
-            return relative;
-          }
-
-          return absolute + `\u00A0(${relative})`;
-        }}
+        formatter={data =>
+          getTooltipText(
+            data,
+            formatter,
+            processInstanceCount,
+            alwaysShowAbsolute,
+            alwaysShowRelative,
+            property
+          )
+        }
       />
     );
   }

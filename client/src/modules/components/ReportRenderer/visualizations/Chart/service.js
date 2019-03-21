@@ -1,38 +1,31 @@
 import {getColorFor} from './colorsUtils';
+import {getTooltipText} from 'services';
 
 export function formatTooltip(
   {index, datasetIndex},
   {datasets},
   targetValue,
-  configuration,
+  {alwaysShowAbsolute, alwaysShowRelative},
   formatter,
-  processInstanceCountData,
+  processInstanceCountData = [],
   property,
   type
 ) {
-  const {hideAbsoluteValue, hideRelativeValue} = configuration;
-  let formatted = '';
-  if (!hideAbsoluteValue) formatted = formatter(datasets[datasetIndex].data[index]);
-
-  if (property === 'frequency' && processInstanceCountData && !hideRelativeValue) {
-    let processInstanceCount = processInstanceCountData[datasetIndex];
-    // in the case of the line with target value we have 2 datasets for each report
-    // we have to divide by 2 to get the right index
-    if (type === 'line' && targetValue) {
-      processInstanceCount = processInstanceCountData[~~(datasetIndex / 2)];
-    }
-    return `${formatted} (${getRelativeValue(
-      datasets[datasetIndex].data[index],
-      processInstanceCount
-    )})`;
-  } else {
-    return formatted;
+  let processInstanceCount = processInstanceCountData[datasetIndex];
+  // in the case of the line with target value we have 2 datasets for each report
+  // we have to divide by 2 to get the right index
+  if (type === 'line' && targetValue) {
+    processInstanceCount = processInstanceCountData[~~(datasetIndex / 2)];
   }
-}
 
-function getRelativeValue(data, total) {
-  if (data === null) return '';
-  return Math.round((data / total) * 1000) / 10 + '%';
+  return getTooltipText(
+    datasets[datasetIndex].data[index],
+    formatter,
+    processInstanceCount,
+    alwaysShowAbsolute,
+    alwaysShowRelative,
+    property
+  );
 }
 
 export function getTooltipLabelColor(tooltipItem, chart, type) {
