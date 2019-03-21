@@ -8,6 +8,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -20,13 +22,18 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
+import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 
@@ -279,6 +286,59 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
     assertThat(flowNodeIdToExecutionFrequency.size(), is(13));
     assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY + 0), is(1L));
+  }
+
+  @Test
+  public void testCustomOrderOnResultKeyIsApplied() {
+    // given
+    final ProcessInstanceEngineDto processInstanceDto = deployProcessWithTwoTasks();
+    deployAndStartSimpleServiceTaskProcess();
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+      processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
+    );
+    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
+    final ProcessReportMapResultDto result = evaluateReport(reportData);
+
+    // then
+    final Map<String, Long> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(4));
+    assertThat(
+      new ArrayList<>(resultMap.keySet()),
+      // expect ascending order
+      contains(new ArrayList<>(resultMap.keySet()).stream().sorted(Comparator.naturalOrder()).toArray())
+    );
+  }
+
+  @Test
+  public void testCustomOrderOnResultValueIsApplied() {
+    // given
+    final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
+    engineRule.completeUserTaskWithoutClaim(processInstanceDto.getId());
+    engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+      processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
+    );
+    reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+    final ProcessReportMapResultDto result = evaluateReport(reportData);
+
+    // then
+    final Map<String, Long> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(3));
+    final List<Long> bucketValues = new ArrayList<>(resultMap.values());
+    assertThat(
+      new ArrayList<>(bucketValues),
+      contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
+    );
   }
 
   @Test

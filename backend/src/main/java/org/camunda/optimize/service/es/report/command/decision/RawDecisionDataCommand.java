@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.command.decision;
 
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionParametersDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
@@ -83,13 +84,19 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
     return new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto);
   }
 
+  @Override
+  protected SingleDecisionRawDataReportResult sortResultData(final SingleDecisionRawDataReportResult evaluationResult) {
+    // noop, ordering is done on querytime already
+    return evaluationResult;
+  }
+
   private void addSortingToQuery(final DecisionReportDataDto decisionReportData,
                                  final SearchSourceBuilder searchRequestBuilder) {
     final Optional<SortingDto> customSorting = Optional.ofNullable(decisionReportData.getParameters())
-      .flatMap(parameters -> Optional.ofNullable(parameters.getSorting()));
-    final String sortByField = customSorting.flatMap(sorting -> Optional.ofNullable(sorting.getBy()))
+      .flatMap(DecisionParametersDto::getSorting);
+    final String sortByField = customSorting.flatMap(SortingDto::getBy)
       .orElse(DecisionInstanceType.EVALUATION_DATE_TIME);
-    final SortOrder sortOrder = customSorting.flatMap(sorting -> Optional.ofNullable(sorting.getOrder()))
+    final SortOrder sortOrder = customSorting.flatMap(SortingDto::getOrder)
       .map(order -> SortOrder.valueOf(order.name()))
       .orElse(SortOrder.DESC);
 

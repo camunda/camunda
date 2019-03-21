@@ -7,6 +7,8 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.DecisionReportDataType;
@@ -15,11 +17,17 @@ import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
+import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
+import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DecisionFilterUtilHelper.createBooleanOutputVariableFilter;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsNull.notNullValue;
 
@@ -152,7 +160,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
   }
 
   @Test
-  public void reportEvaluationSingleBucketAllVersionsGroupByStringInputVariable() {
+  public void reportEvaluationSingleBucketAllVersionsGroupByStringOutputVariable() {
     // given
     final String expectedClassificationOutputValue = "day-to-day expense";
     DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
@@ -260,6 +268,106 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     assertThat(result.getResult().size(), is(1));
     assertThat(result.getResult().keySet().stream().findFirst().get(), is(auditValue));
     assertThat(result.getResult().values().stream().findFirst().get(), is(2L));
+  }
+
+  @Test
+  public void testCustomOrderOnStringOutputResultKeyIsApplied() {
+    // given
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
+    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
+    // classification: day-to-day expense
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
+    );
+    // classification: budget
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(250.0, "Misc")
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(300.0, "Misc")
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(900.0, "Misc")
+    );
+    // classification: exceptional
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(25000.0, "Misc")
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
+      .setDecisionDefinitionVersion(decisionDefinitionVersion1)
+      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
+      .setVariableId(OUTPUT_CLASSIFICATION_ID)
+      .build();
+    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
+    final DecisionReportMapResultDto result = evaluateMapReport(reportData);
+
+    // then
+    final Map<String, Long> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(3));
+    assertThat(
+      new ArrayList<>(resultMap.keySet()),
+      // expect ascending order
+      contains(new ArrayList<>(resultMap.keySet()).stream().sorted(Comparator.reverseOrder()).toArray())
+    );
+  }
+
+  @Test
+  public void testCustomOrderOnNumberResultValueIsApplied() {
+    // given
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
+    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
+    // classification: day-to-day expense
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
+    );
+    // classification: budget
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(250.0, "Misc")
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(300.0, "Misc")
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(900.0, "Misc")
+    );
+    // classification: exceptional
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(25000.0, "Misc")
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
+      .setDecisionDefinitionVersion(decisionDefinitionVersion1)
+      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
+      .setVariableId(OUTPUT_CLASSIFICATION_ID)
+      .build();
+    reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+    final DecisionReportMapResultDto result = evaluateMapReport(reportData);
+
+    // then
+    final Map<String, Long> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(3));
+    final List<Long> bucketValues = new ArrayList<>(resultMap.values());
+    assertThat(
+      new ArrayList<>(bucketValues),
+      contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
+    );
   }
 
   @Test

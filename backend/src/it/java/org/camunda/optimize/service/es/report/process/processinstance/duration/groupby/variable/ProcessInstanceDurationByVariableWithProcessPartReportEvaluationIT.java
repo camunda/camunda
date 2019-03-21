@@ -1,11 +1,14 @@
 package org.camunda.optimize.service.es.report.process.processinstance.duration.groupby.variable;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
@@ -15,6 +18,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.dura
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -25,24 +30,32 @@ import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
+import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
+@RunWith(JUnitParamsRunner.class)
 public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT {
 
   private static final String PROCESS_DEFINITION_KEY = "123";
@@ -169,16 +182,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     startThreeProcessInstances(startDate, processEngineDto, Arrays.asList(1, 2, 9));
     Map<String, Object> variables = new HashMap<>();
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 2);
-    ProcessInstanceEngineDto processInstanceDto =
-      engineRule.startProcessInstance(processEngineDto.getId(), variables);
-    engineDatabaseRule.changeActivityInstanceStartDate(
-      processInstanceDto.getId(),
-      startDate
-    );
-    engineDatabaseRule.changeActivityInstanceEndDate(
-      processInstanceDto.getId(),
-      startDate.plusSeconds(1)
-    );
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processEngineDto.getId(), variables);
+    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
@@ -201,6 +207,104 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(resultDto.getResult().size(), is(2));
     assertThat(resultMap.get(DEFAULT_VARIABLE_VALUE), is(calculateExpectedValueGivenDurations(1000L, 2000L, 9000L)));
     assertThat(resultMap.get(DEFAULT_VARIABLE_VALUE + 2), is(calculateExpectedValueGivenDurations(1000L)));
+  }
+
+  @Test
+  public void testCustomOrderOnResultKeyIsApplied() throws SQLException {
+    // given
+    OffsetDateTime startDate = OffsetDateTime.now();
+    ProcessDefinitionEngineDto processEngineDto = deploySimpleServiceTaskProcess();
+    startThreeProcessInstances(startDate, processEngineDto, Arrays.asList(1, 2, 9));
+
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 2);
+    ProcessInstanceEngineDto processInstanceDto4 = engineRule.startProcessInstance(processEngineDto.getId(), variables);
+    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto4.getId(), startDate);
+    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto4.getId(), startDate.plusSeconds(1));
+
+    variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 3);
+    ProcessInstanceEngineDto processInstanceDto5 = engineRule.startProcessInstance(processEngineDto.getId(), variables);
+    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto5.getId(), startDate);
+    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto5.getId(), startDate.plusSeconds(1));
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART)
+      .setProcessDefinitionKey(processEngineDto.getKey())
+      .setProcessDefinitionVersion(processEngineDto.getVersionAsString())
+      .setVariableName(DEFAULT_VARIABLE_NAME)
+      .setVariableType(DEFAULT_VARIABLE_TYPE)
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .build();
+    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
+    final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+
+    // then
+    Map<String, AggregationResultDto> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(3));
+    assertThat(
+      new ArrayList<>(resultMap.keySet()),
+      // expect ascending order
+      contains(new ArrayList<>(resultMap.keySet()).stream().sorted(Comparator.reverseOrder()).toArray())
+    );
+  }
+
+  private static Object[] aggregationTypes() {
+    return AggregationType.values();
+  }
+
+  @Test
+  @Parameters(method = "aggregationTypes")
+  public void testCustomOrderOnResultValueIsApplied(final AggregationType aggregationType) throws SQLException {
+    // given
+    OffsetDateTime startDate = OffsetDateTime.now();
+    ProcessDefinitionEngineDto processEngineDto = deploySimpleServiceTaskProcess();
+    startThreeProcessInstances(startDate, processEngineDto, Arrays.asList(1, 2, 9));
+
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 2);
+    ProcessInstanceEngineDto processInstanceDto4 = engineRule.startProcessInstance(processEngineDto.getId(), variables);
+    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto4.getId(), startDate);
+    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto4.getId(), startDate.plusSeconds(1));
+
+    variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 3);
+    ProcessInstanceEngineDto processInstanceDto5 = engineRule.startProcessInstance(processEngineDto.getId(), variables);
+    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto5.getId(), startDate);
+    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto5.getId(), startDate.plusSeconds(1));
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART)
+      .setProcessDefinitionKey(processEngineDto.getKey())
+      .setProcessDefinitionVersion(processEngineDto.getVersionAsString())
+      .setVariableName(DEFAULT_VARIABLE_NAME)
+      .setVariableType(DEFAULT_VARIABLE_TYPE)
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .build();
+    reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+    reportData.getConfiguration().setAggregationType(aggregationType);
+    final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+
+    // then
+    Map<String, AggregationResultDto> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(3));
+    final List<Long> bucketValues = resultMap.values().stream()
+      .map(bucketResult -> bucketResult.getResultForGivenAggregationType(aggregationType))
+      .collect(Collectors.toList());
+    assertThat(
+      new ArrayList<>(bucketValues),
+      contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
+    );
   }
 
   @Test

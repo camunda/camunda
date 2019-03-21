@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.process.UserTaskGroupingCommand;
+import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ValidationHelper;
@@ -80,6 +81,14 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
+  }
+
+  @Override
+  protected SingleProcessMapDurationReportResult sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
+    getReportData().getParameters().getSorting().ifPresent(
+      sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
+    );
+    return evaluationResult;
   }
 
   private AggregationBuilder createAggregation() {

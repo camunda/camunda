@@ -70,6 +70,13 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
     return new SingleProcessNumberDurationReportResult(numberResultDto);
   }
 
+  @Override
+  protected SingleProcessNumberDurationReportResult sortResultData(
+    final SingleProcessNumberDurationReportResult evaluationResult) {
+    // no ordering for single result
+    return evaluationResult;
+  }
+
   private void addAggregation(SearchSourceBuilder searchSourceBuilder) {
     createOperationsAggregations()
       .forEach(searchSourceBuilder::aggregation);

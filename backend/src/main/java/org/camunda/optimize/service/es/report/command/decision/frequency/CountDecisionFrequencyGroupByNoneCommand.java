@@ -65,4 +65,9 @@ public class CountDecisionFrequencyGroupByNoneCommand extends DecisionReportComm
     return new SingleDecisionNumberReportResult(numberResultDto);
   }
 
+  @Override
+  protected SingleDecisionNumberReportResult sortResultData(final SingleDecisionNumberReportResult evaluationResult) {
+    // no ordering for single result
+    return evaluationResult;
+  }
 }

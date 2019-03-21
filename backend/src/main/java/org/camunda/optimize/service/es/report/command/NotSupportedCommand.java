@@ -24,7 +24,13 @@ public class NotSupportedCommand extends ReportCommand {
   }
 
   @Override
-  protected void beforeEvaluate(final CommandContext commandContext) {
+  protected ReportResult sortResultData(final ReportResult evaluationResult) {
+    // noop
+    return evaluationResult;
+  }
 
+  @Override
+  protected void beforeEvaluate(final CommandContext commandContext) {
+    // noop
   }
 }

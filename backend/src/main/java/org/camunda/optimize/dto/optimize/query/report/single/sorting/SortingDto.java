@@ -1,6 +1,11 @@
 package org.camunda.optimize.dto.optimize.query.report.single.sorting;
 
+import java.util.Optional;
+
 public class SortingDto {
+  public static final String SORT_BY_KEY = "key";
+  public static final String SORT_BY_VALUE = "value";
+
   private String by;
   private SortOrder order;
 
@@ -12,12 +17,12 @@ public class SortingDto {
     this.order = order;
   }
 
-  public String getBy() {
-    return by;
+  public Optional<String> getBy() {
+    return Optional.ofNullable(by);
   }
 
-  public SortOrder getOrder() {
-    return order;
+  public Optional<SortOrder> getOrder() {
+    return Optional.ofNullable(order);
   }
 
   @Override

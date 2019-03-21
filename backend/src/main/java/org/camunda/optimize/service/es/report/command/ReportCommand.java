@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.OffsetDateTime;
 
-public abstract class ReportCommand <R extends ReportResult, RD extends ReportDataDto>  implements Command<RD> {
+public abstract class ReportCommand<R extends ReportResult, RD extends ReportDataDto> implements Command<RD> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -32,14 +32,18 @@ public abstract class ReportCommand <R extends ReportResult, RD extends ReportDa
     dateIntervalRange = commandContext.getDateIntervalRange();
     beforeEvaluate(commandContext);
 
-    R evaluationResult = evaluate();
+    final R evaluationResult = evaluate();
     evaluationResult.copyReportData(reportData);
-    return filterResultData(commandContext, evaluationResult);
+    final R filteredResultData = filterResultData(commandContext, evaluationResult);
+    final R sortedResultData = sortResultData(filteredResultData);
+    return sortedResultData;
   }
 
   protected abstract void beforeEvaluate(CommandContext<RD> commandContext);
 
   protected abstract R evaluate() throws OptimizeException;
+
+  protected abstract R sortResultData(R evaluationResult);
 
   protected R filterResultData(CommandContext<RD> commandContext, R evaluationResult) {
     return evaluationResult;

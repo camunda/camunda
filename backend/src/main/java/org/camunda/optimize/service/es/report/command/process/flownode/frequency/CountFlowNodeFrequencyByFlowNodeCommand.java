@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.report.command.process.flownode.frequenc
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.process.FlowNodeGroupingCommand;
+import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ValidationHelper;
@@ -77,6 +78,14 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCom
     resultDto.setResult(resultMap);
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
     return new SingleProcessMapReportResult(resultDto);
+  }
+
+  @Override
+  protected SingleProcessMapReportResult sortResultData(final SingleProcessMapReportResult evaluationResult) {
+    getReportData().getParameters().getSorting().ifPresent(
+      sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
+    );
+    return evaluationResult;
   }
 
   private AggregationBuilder createAggregation() {

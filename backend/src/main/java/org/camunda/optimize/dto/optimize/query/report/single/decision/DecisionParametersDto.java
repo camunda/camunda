@@ -2,6 +2,8 @@ package org.camunda.optimize.dto.optimize.query.report.single.decision;
 
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 
+import java.util.Optional;
+
 public class DecisionParametersDto {
   // nullable
   private SortingDto sorting;
@@ -13,8 +15,8 @@ public class DecisionParametersDto {
     this.sorting = sorting;
   }
 
-  public SortingDto getSorting() {
-    return sorting;
+  public Optional<SortingDto> getSorting() {
+    return Optional.ofNullable(sorting);
   }
 
 

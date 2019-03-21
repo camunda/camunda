@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.process.FlowNodeDurationGroupingCommand;
+import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ValidationHelper;
@@ -93,6 +94,14 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
     resultDto.setResult(resultMap);
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
     return new SingleProcessMapDurationReportResult(resultDto);
+  }
+
+  @Override
+  protected SingleProcessMapDurationReportResult sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
+    getReportData().getParameters().getSorting().ifPresent(
+      sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
+    );
+    return evaluationResult;
   }
 
   private AggregationBuilder createAggregation() {

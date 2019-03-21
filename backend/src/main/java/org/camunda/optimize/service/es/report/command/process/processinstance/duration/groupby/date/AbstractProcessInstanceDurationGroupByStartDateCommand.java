@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.dura
 import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
+import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -33,6 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
@@ -99,6 +101,18 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
   @Override
   public BoolQueryBuilder setupBaseQuery(final ProcessReportDataDto reportDataDto) {
     return super.setupBaseQuery(reportDataDto);
+  }
+
+  @Override
+  protected SingleProcessMapDurationReportResult sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
+    getReportData().getParameters().getSorting().ifPresent(
+      sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
+    );
+    return evaluationResult;
+  }
+
+  private static Collector<Map.Entry<String, AggregationResultDto>, ?, LinkedHashMap<String, AggregationResultDto>> toLinkedHashMapCollector() {
+    return Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (x, y) -> y, LinkedHashMap::new);
   }
 
   private AggregationBuilder createAggregation(GroupByDateUnit unit, QueryBuilder query) throws OptimizeException {

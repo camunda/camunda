@@ -7,6 +7,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.dura
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
+import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -91,6 +92,14 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     mapResultDto.setResult(processAggregations(response.getAggregations()));
     mapResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
     return new SingleProcessMapDurationReportResult(mapResultDto);
+  }
+
+  @Override
+  protected SingleProcessMapDurationReportResult sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
+    getReportData().getParameters().getSorting().ifPresent(
+      sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
+    );
+    return evaluationResult;
   }
 
   private AggregationBuilder createAggregation(String variableName, VariableType variableType) {

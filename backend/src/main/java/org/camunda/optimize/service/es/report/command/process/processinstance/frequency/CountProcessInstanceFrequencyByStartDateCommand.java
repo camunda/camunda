@@ -8,6 +8,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
+import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -41,7 +42,6 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
   implements AutomaticGroupByDateCommand {
 
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
-  private static final String RANGE_AGGREGATION = "rangeAggregation";
 
   @Override
   public IntervalAggregationService getIntervalAggregationService() {
@@ -97,6 +97,14 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
   @Override
   public BoolQueryBuilder setupBaseQuery(final ProcessReportDataDto reportDataDto) {
     return super.setupBaseQuery(reportDataDto);
+  }
+
+  @Override
+  protected SingleProcessMapReportResult sortResultData(final SingleProcessMapReportResult evaluationResult) {
+    getReportData().getParameters().getSorting().ifPresent(
+      sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
+    );
+    return evaluationResult;
   }
 
   private AggregationBuilder createAggregation(GroupByDateUnit unit, QueryBuilder query) throws OptimizeException {

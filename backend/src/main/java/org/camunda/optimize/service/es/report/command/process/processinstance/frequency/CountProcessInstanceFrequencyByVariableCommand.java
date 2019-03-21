@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.value
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
+import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -86,6 +87,14 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
     mapResultDto.setResult(processAggregations(response.getAggregations()));
     mapResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
     return new SingleProcessMapReportResult(mapResultDto);
+  }
+
+  @Override
+  protected SingleProcessMapReportResult sortResultData(final SingleProcessMapReportResult evaluationResult) {
+    getReportData().getParameters().getSorting().ifPresent(
+      sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
+    );
+    return evaluationResult;
   }
 
   private AggregationBuilder createAggregation(String variableName, VariableType variableType) {

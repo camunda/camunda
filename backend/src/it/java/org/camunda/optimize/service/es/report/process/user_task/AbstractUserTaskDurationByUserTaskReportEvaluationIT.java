@@ -1,16 +1,21 @@
 package org.camunda.optimize.service.es.report.process.user_task;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -20,18 +25,25 @@ import org.camunda.optimize.test.util.DateUtilHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
+import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-
+@RunWith(JUnitParamsRunner.class)
 public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
   private static final String START_EVENT = "startEvent";
@@ -127,8 +139,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final ProcessReportDataDto reportData =
-      createReport(processDefinition);
+    final ProcessReportDataDto reportData = createReport(processDefinition);
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
 
     // then
@@ -136,6 +147,80 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     assertThat(byUserTaskIdResult.size(), is(2));
     assertThat(byUserTaskIdResult.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(10L)));
     assertThat(byUserTaskIdResult.get(USER_TASK_2), is(calculateExpectedValueGivenDurations(20L)));
+  }
+
+  @Test
+  public void testCustomOrderOnResultKeyIsApplied() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+
+    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
+    finishAllUserTasks(processInstanceDto1);
+    changeDuration(processInstanceDto1, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto1, USER_TASK_2, 20L);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
+    finishAllUserTasks(processInstanceDto2);
+    changeDuration(processInstanceDto2, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto2, USER_TASK_2, 20L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
+    final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+
+    // then
+    final Map<String, AggregationResultDto> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(2));
+    assertThat(
+      new ArrayList<>(resultMap.keySet()),
+      // expect ascending order
+      contains(new ArrayList<>(resultMap.keySet()).stream().sorted(Comparator.reverseOrder()).toArray())
+    );
+  }
+
+  private static Object[] aggregationTypes() {
+    return AggregationType.values();
+  }
+
+  @Test
+  @Parameters(method = "aggregationTypes")
+  public void testCustomOrderOnResultValueIsApplied(final AggregationType aggregationType) {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+
+    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
+    finishAllUserTasks(processInstanceDto1);
+    changeDuration(processInstanceDto1, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto1, USER_TASK_2, 20L);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
+    finishAllUserTasks(processInstanceDto2);
+    changeDuration(processInstanceDto2, USER_TASK_1, 100L);
+    changeDuration(processInstanceDto2, USER_TASK_2, 2L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    reportData.getConfiguration().setAggregationType(aggregationType);
+    reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+    final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+
+    // then
+    final Map<String, AggregationResultDto> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(2));
+    final List<Long> bucketValues = resultMap.values().stream()
+      .map(bucketResult -> bucketResult.getResultForGivenAggregationType(aggregationType))
+      .collect(Collectors.toList());
+    assertThat(
+      new ArrayList<>(bucketValues),
+      contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
+    );
   }
 
   @Test
@@ -386,7 +471,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     engineRule.finishAllUserTasks(processInstanceDto.getId());
     changeDuration(processInstanceDto, 10L);
 
-    final OffsetDateTime processStartTime = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
+    final OffsetDateTime processStartTime = engineRule.getHistoricProcessInstance(processInstanceDto.getId())
+      .getStartTime();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -410,7 +496,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     assertThat(result.getResult(), is(notNullValue()));
     byUserTaskIdResult = result.getResult();
     assertThat(byUserTaskIdResult.size(), is(1));
-    assertThat(byUserTaskIdResult.get(USER_TASK_1 ), is(calculateExpectedValueGivenDurations(10L)));
+    assertThat(byUserTaskIdResult.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(10L)));
   }
 
   private List<ProcessFilterDto> createStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {

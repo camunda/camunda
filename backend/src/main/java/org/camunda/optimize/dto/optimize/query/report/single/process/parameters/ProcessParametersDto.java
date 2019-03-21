@@ -2,6 +2,8 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.parameters
 
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 
+import java.util.Optional;
+
 public class ProcessParametersDto {
   // nullable
   private ProcessPartDto processPart;
@@ -28,8 +30,8 @@ public class ProcessParametersDto {
     return processPart;
   }
 
-  public SortingDto getSorting() {
-    return sorting;
+  public Optional<SortingDto> getSorting() {
+    return Optional.ofNullable(sorting);
   }
 
   public void setProcessPart(ProcessPartDto processPart) {

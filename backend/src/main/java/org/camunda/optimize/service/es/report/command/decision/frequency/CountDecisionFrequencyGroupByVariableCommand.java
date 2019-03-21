@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.Deci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
+import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -93,6 +94,14 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
     mapResultDto.setResult(mapAggregationsToMapResult(response.getAggregations()));
     mapResultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
     return new SingleDecisionMapReportResult(mapResultDto);
+  }
+
+  @Override
+  protected SingleDecisionMapReportResult sortResultData(final SingleDecisionMapReportResult evaluationResult) {
+    getReportData().getParameters().getSorting().ifPresent(
+      sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
+    );
+    return evaluationResult;
   }
 
   private AggregationBuilder createAggregation(final String variableId) {

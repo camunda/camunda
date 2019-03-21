@@ -7,6 +7,8 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.service.es.filter.FilterOperatorConstants;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
@@ -20,9 +22,13 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
+import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DecisionFilterUtilHelper.createDoubleInputVariableFilter;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -141,6 +147,111 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       )
     );
     assertThat(new ArrayList<>(resultMap.values()), contains(2L, 2L, 3L));
+  }
+
+  @Test
+  public void testCustomOrderOnResultKeyIsApplied() throws SQLException {
+    // given
+    final OffsetDateTime beforeStart = OffsetDateTime.now();
+    OffsetDateTime lastEvaluationDateFilter = beforeStart;
+
+    // third bucket
+    final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
+    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+
+    final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minusDays(2);
+    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
+
+    // second bucket
+    lastEvaluationDateFilter = OffsetDateTime.now();
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+
+    final OffsetDateTime secondBucketEvaluationDate = beforeStart.minusDays(1);
+    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
+
+    // first bucket
+    lastEvaluationDateFilter = OffsetDateTime.now();
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
+      .setDecisionDefinitionVersion(decisionDefinitionVersion1)
+      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
+      .setDateInterval(GroupByDateUnit.DAY)
+      .build();
+    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
+    final DecisionReportMapResultDto result = evaluateMapReport(reportData);
+
+    // then
+    final Map<String, Long> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(3));
+    assertThat(
+      new ArrayList<>(resultMap.keySet()),
+      contains(
+        formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS),
+        formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS),
+        formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS)
+      )
+    );
+  }
+
+  @Test
+  public void testCustomOrderOnResultValueIsApplied() throws SQLException {
+    // given
+    final OffsetDateTime beforeStart = OffsetDateTime.now();
+    OffsetDateTime lastEvaluationDateFilter = beforeStart;
+
+    // third bucket
+    final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
+    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+
+    final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minusDays(2);
+    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
+
+    // second bucket
+    lastEvaluationDateFilter = OffsetDateTime.now();
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+
+    final OffsetDateTime secondBucketEvaluationDate = beforeStart.minusDays(1);
+    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
+
+    // first bucket
+    lastEvaluationDateFilter = OffsetDateTime.now();
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
+      .setDecisionDefinitionVersion(decisionDefinitionVersion1)
+      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
+      .setDateInterval(GroupByDateUnit.DAY)
+      .build();
+    reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+    final DecisionReportMapResultDto result = evaluateMapReport(reportData);
+
+    // then
+    final Map<String, Long> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(3));
+    final List<Long> bucketValues = new ArrayList<>(resultMap.values());
+    assertThat(
+      new ArrayList<>(bucketValues),
+      contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
+    );
   }
 
   @Test

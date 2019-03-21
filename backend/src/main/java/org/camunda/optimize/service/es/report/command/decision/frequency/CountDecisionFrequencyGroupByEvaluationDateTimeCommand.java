@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.valu
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
+import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -80,7 +81,7 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
           "Could not evaluate count decision instance frequency grouped by evaluation date report " +
             "for decision definition with key [%s] and version [%s]",
           reportData.getDecisionDefinitionKey(),
-      reportData.getDecisionDefinitionVersion()
+          reportData.getDecisionDefinitionVersion()
         );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -90,6 +91,14 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     mapResultDto.setResult(processAggregations(response.getAggregations()));
     mapResultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
     return new SingleDecisionMapReportResult(mapResultDto);
+  }
+
+  @Override
+  protected SingleDecisionMapReportResult sortResultData(final SingleDecisionMapReportResult evaluationResult) {
+    getReportData().getParameters().getSorting().ifPresent(
+      sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
+    );
+    return evaluationResult;
   }
 
   private AggregationBuilder createAggregation(GroupByDateUnit unit, QueryBuilder query) throws OptimizeException {
@@ -110,10 +119,10 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     Optional<AggregationBuilder> automaticIntervalAggregation =
       intervalAggregationService.createIntervalAggregation(
         dateIntervalRange,
-      query,
-      DECISION_INSTANCE_TYPE,
-      EVALUATION_DATE_TIME
-    );
+        query,
+        DECISION_INSTANCE_TYPE,
+        EVALUATION_DATE_TIME
+      );
 
     if (automaticIntervalAggregation.isPresent()) {
       return automaticIntervalAggregation.get();

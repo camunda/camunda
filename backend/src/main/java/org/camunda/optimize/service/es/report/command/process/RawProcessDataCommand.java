@@ -18,7 +18,6 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 
 import java.io.IOException;
-import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
@@ -45,11 +44,11 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
 
     BoolQueryBuilder query = setupBaseQuery(processReportData);
 
-    final Optional<SortingDto> customSorting = Optional.ofNullable(processReportData.getParameters())
-      .flatMap(parameters -> Optional.ofNullable(parameters.getSorting()));
-    final String sortByField = customSorting.flatMap(sorting -> Optional.ofNullable(sorting.getBy()))
+    final String sortByField = processReportData.getParameters().getSorting()
+      .flatMap(SortingDto::getBy)
       .orElse(ProcessInstanceType.START_DATE);
-    final SortOrder sortOrder = customSorting.flatMap(sorting -> Optional.ofNullable(sorting.getOrder()))
+    final SortOrder sortOrder = processReportData.getParameters().getSorting()
+      .flatMap(SortingDto::getOrder)
       .map(order -> SortOrder.valueOf(order.name()))
       .orElse(SortOrder.DESC);
 
@@ -81,6 +80,12 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
     RawDataProcessReportResultDto rawDataProcessReportResultDto =
       rawDataSingleReportResultDtoMapper.mapFrom(response, objectMapper);
     return new SingleProcessRawDataReportResult(rawDataProcessReportResultDto);
+  }
+
+  @Override
+  protected SingleProcessRawDataReportResult sortResultData(final SingleProcessRawDataReportResult evaluationResult) {
+    // noop, ordering is done on querytime already
+    return evaluationResult;
   }
 
   private void addSorting(String sortByField, SortOrder sortOrder, SearchSourceBuilder searchSourceBuilder) {

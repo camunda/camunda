@@ -62,4 +62,10 @@ public class CountProcessInstanceFrequencyGroupByNoneCommand
     return new SingleProcessNumberReportResult(numberResultDto);
   }
 
+  @Override
+  protected SingleProcessNumberReportResult sortResultData(final SingleProcessNumberReportResult evaluationResult) {
+    // no ordering for single result
+    return evaluationResult;
+  }
+
 }
