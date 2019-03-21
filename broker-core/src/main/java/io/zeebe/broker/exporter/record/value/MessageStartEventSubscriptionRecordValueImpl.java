@@ -19,7 +19,7 @@ package io.zeebe.broker.exporter.record.value;
 
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueImpl;
-import io.zeebe.exporter.record.value.MessageStartEventSubscriptionRecordValue;
+import io.zeebe.exporter.api.record.value.MessageStartEventSubscriptionRecordValue;
 import java.util.Objects;
 
 public class MessageStartEventSubscriptionRecordValueImpl extends RecordValueImpl

@@ -45,7 +45,7 @@
         </executions>
         <configuration>
           <packages>
-            <param>io.zeebe.exporter.record</param>
+            <param>io.zeebe.exporter.api.record</param>
           </packages>
           <generatedSourcesScope>compile</generatedSourcesScope>
           <targetDir>${project.build.directory}/generated-sources/assertj-assertions</targetDir>
@@ -71,7 +71,7 @@
         </executions>
         <configuration>
           <file>
-            ${project.build.directory}/generated-sources/assertj-assertions/io/zeebe/exporter/record/AbstractRecordAssert.java
+            ${project.build.directory}/generated-sources/assertj-assertions/io/zeebe/exporter/api/record/AbstractRecordAssert.java
           </file>
           <replacements>
             <replacement>

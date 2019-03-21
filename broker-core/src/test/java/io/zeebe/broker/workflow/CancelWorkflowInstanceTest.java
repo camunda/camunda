@@ -20,16 +20,16 @@ package io.zeebe.broker.workflow;
 import static io.zeebe.broker.workflow.JobAssert.assertJobHeaders;
 import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstanceRecord;
 import static io.zeebe.broker.workflow.gateway.ParallelGatewayStreamProcessorTest.PROCESS_ID;
-import static io.zeebe.exporter.record.Assertions.assertThat;
+import static io.zeebe.exporter.api.record.Assertions.assertThat;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CANCEL;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.JobRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
@@ -394,7 +394,7 @@ public class CancelWorkflowInstanceTest {
     testClient.deploy(WORKFLOW);
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
-    final io.zeebe.exporter.record.Record<WorkflowInstanceRecordValue> activatedEvent =
+    final Record<WorkflowInstanceRecordValue> activatedEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
             .withElementId(PROCESS_ID)
             .getFirst();
@@ -406,7 +406,7 @@ public class CancelWorkflowInstanceTest {
     MsgPackUtil.assertEqualityExcluding(
         response.getRawValue(), activatedEvent.getValue().toJson(), "payload");
 
-    final io.zeebe.exporter.record.Record<WorkflowInstanceRecordValue> cancelingEvent =
+    final Record<WorkflowInstanceRecordValue> cancelingEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_TERMINATING)
             .withElementId(PROCESS_ID)
             .getFirst();

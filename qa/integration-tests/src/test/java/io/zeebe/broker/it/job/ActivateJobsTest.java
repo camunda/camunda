@@ -24,7 +24,7 @@ import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.exporter.record.Assertions;
+import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;

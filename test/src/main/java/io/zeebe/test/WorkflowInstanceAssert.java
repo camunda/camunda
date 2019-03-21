@@ -17,8 +17,8 @@ package io.zeebe.test;
 
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.impl.ZeebeObjectMapper;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
