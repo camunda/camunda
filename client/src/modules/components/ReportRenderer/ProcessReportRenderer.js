@@ -4,7 +4,7 @@ import {LoadingIndicator} from 'components';
 import {getFlowNodeNames} from 'services';
 import ReportBlankSlate from './ReportBlankSlate';
 
-import {isEmpty, getFormatter} from './service';
+import {isEmpty, getFormatter, processResult} from './service';
 
 import {Number, Table, Heatmap, Chart} from './visualizations';
 
@@ -113,26 +113,4 @@ export default class ProcessReportRenderer extends React.Component {
         return ReportBlankSlate;
     }
   };
-}
-
-function processResult({
-  data: {
-    view,
-    configuration: {aggregationType}
-  },
-  resultType,
-  result
-}) {
-  if (view.property.toLowerCase().includes('duration')) {
-    if (resultType === 'durationNumber') {
-      return result[aggregationType];
-    }
-    if (resultType === 'durationMap') {
-      return Object.entries(result).reduce((result, [key, value]) => {
-        result[key] = value[aggregationType];
-        return result;
-      }, {});
-    }
-  }
-  return result;
 }

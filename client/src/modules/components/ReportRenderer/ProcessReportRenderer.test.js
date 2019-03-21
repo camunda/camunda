@@ -4,6 +4,8 @@ import {shallow} from 'enzyme';
 import ProcessReportRenderer from './ProcessReportRenderer';
 import {Number, Table} from './visualizations';
 
+import {processResult} from './service';
+
 import {getFlowNodeNames} from 'services';
 
 jest.mock('services', () => {
@@ -21,7 +23,8 @@ jest.mock('services', () => {
 jest.mock('./service', () => {
   return {
     isEmpty: str => !str,
-    getFormatter: view => v => v
+    getFormatter: view => v => v,
+    processResult: jest.fn().mockImplementation(({result}) => result)
   };
 });
 
@@ -198,43 +201,8 @@ it('should pass the report to the visualization component', () => {
   expect(node.find(Table)).toHaveProp('report', exampleDurationReport);
 });
 
-it('should process duration reports', () => {
-  const node = shallow(
-    <ProcessReportRenderer
-      report={{
-        combined: false,
-        reportType: 'process',
-        resultType: 'durationMap',
-        data: {
-          processDefinitionKey: 'aKey',
-          processDefinitionVersion: '1',
-          view: {
-            property: 'duration',
-            entity: 'processInstance'
-          },
-          groupBy: {
-            type: 'processInstance',
-            unit: 'day'
-          },
-          visualization: 'table',
-          configuration: {aggregationType: 'max'}
-        },
-        result: {
-          '2015-03-25T12:00:00Z': {min: 1, median: 2, avg: 3, max: 4},
-          '2015-03-26T12:00:00Z': {min: 5, median: 6, avg: 7, max: 8}
-        }
-      }}
-    />
-  );
+it('should process the report result', () => {
+  const node = shallow(<ProcessReportRenderer report={exampleDurationReport} />);
 
-  node.setState({
-    loaded: true
-  });
-
-  const passedReport = node.find(Table).prop('report');
-
-  expect(passedReport.result).toEqual({
-    '2015-03-25T12:00:00Z': 4,
-    '2015-03-26T12:00:00Z': 8
-  });
+  expect(processResult).toHaveBeenCalledWith(exampleDurationReport);
 });

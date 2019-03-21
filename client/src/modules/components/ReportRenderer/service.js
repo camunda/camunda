@@ -16,3 +16,25 @@ export function getFormatter(viewProperty) {
       return v => v;
   }
 }
+
+export function processResult({
+  data: {
+    view,
+    configuration: {aggregationType}
+  },
+  resultType,
+  result
+}) {
+  if (view.property.toLowerCase().includes('duration')) {
+    if (resultType === 'durationNumber') {
+      return result[aggregationType];
+    }
+    if (resultType === 'durationMap') {
+      return Object.entries(result).reduce((result, [key, value]) => {
+        result[key] = value[aggregationType];
+        return result;
+      }, {});
+    }
+  }
+  return result;
+}

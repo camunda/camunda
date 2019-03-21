@@ -18,3 +18,7 @@ it('should render an aggregation selection for duration reports', () => {
 
   expect(node).toMatchSnapshot();
 });
+
+it('should not crash when no resultType is set (e.g. for combined reports)', () => {
+  shallow(<AggregationType report={{}} />);
+});

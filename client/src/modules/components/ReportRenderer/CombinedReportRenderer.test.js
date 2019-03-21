@@ -4,10 +4,13 @@ import {shallow} from 'enzyme';
 import CombinedReportRenderer from './CombinedReportRenderer';
 import {Chart, Table} from './visualizations';
 
+import {processResult} from './service';
+
 jest.mock('./service', () => {
   return {
     isEmpty: str => !str,
-    getFormatter: view => v => v
+    getFormatter: view => v => v,
+    processResult: jest.fn().mockImplementation(({result}) => result)
   };
 });
 
@@ -98,4 +101,22 @@ it('should pass the report to the visualization component', () => {
   const node = shallow(<CombinedReportRenderer report={CombinedReport} />);
 
   expect(node.find(Table)).toHaveProp('report', CombinedReport);
+});
+
+it('should process the result of every report it combined', () => {
+  processResult.mockClear();
+
+  const report = {...CombinedReport};
+  report.result = {
+    a: reportA,
+    b: 'reportB',
+    c: 'reportC'
+  };
+
+  shallow(<CombinedReportRenderer report={report} />);
+
+  expect(processResult).toHaveBeenCalledTimes(3);
+  expect(processResult).toHaveBeenCalledWith(reportA);
+  expect(processResult).toHaveBeenCalledWith('reportB');
+  expect(processResult).toHaveBeenCalledWith('reportC');
 });

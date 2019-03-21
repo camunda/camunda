@@ -5,7 +5,7 @@ import {Select} from 'components';
 import './AggregationType.scss';
 
 export default function AggregationType({report: {resultType, data}, onChange}) {
-  if (resultType.toLowerCase().includes('duration')) {
+  if (resultType && resultType.toLowerCase().includes('duration')) {
     return (
       <fieldset className="AggregationType">
         <legend>Aggregation</legend>
