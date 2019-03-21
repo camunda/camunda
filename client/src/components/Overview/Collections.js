@@ -79,7 +79,7 @@ class Collections extends React.Component {
                     collection.data.entities.length > 5 &&
                     (this.state.showAllId !== collection.id ? (
                       <>
-                        {collection.data.entities.length} Reports.{' '}
+                        {collection.data.entities.length} Items.{' '}
                         <Button
                           type="link"
                           onClick={() => this.setState({showAllId: collection.id})}
