@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.es.reader;
 
+import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,9 +16,10 @@ import java.util.Set;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperationEntity;
-import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
+import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.rest.dto.SortingDto;
@@ -28,9 +30,10 @@ import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.dto.listview.VariablesQueryDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -43,6 +46,7 @@ import org.elasticsearch.join.aggregations.Parent;
 import org.elasticsearch.join.query.HasChildQueryBuilder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +88,7 @@ public class ListViewReader {
   private static final Logger logger = LoggerFactory.getLogger(ListViewReader.class);
 
   @Autowired
-  private TransportClient esClient;
+  private RestHighLevelClient esClient;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -109,28 +113,43 @@ public class ListViewReader {
    * @return
    */
   public ListViewResponseDto queryWorkflowInstances(ListViewRequestDto workflowInstanceRequest, Integer firstResult, Integer maxResults) {
-    SearchRequestBuilder searchRequest = createSearchRequest(workflowInstanceRequest);
+    ListViewResponseDto result = new ListViewResponseDto();
 
-    SearchResponse response = searchRequest
-      .setFrom(firstResult)
-      .setSize(maxResults)
-      .get();
-
-    final List<WorkflowInstanceForListViewEntity> workflowInstanceEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, WorkflowInstanceForListViewEntity.class);
-
+    List<WorkflowInstanceForListViewEntity> workflowInstanceEntities = queryListView(workflowInstanceRequest, firstResult, maxResults, result);
     List<String> ids = workflowInstanceEntities.stream().collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2));
 
     final Set<String> instancesWithIncidentsIds = findInstancesWithIncidents(ids);
 
     final Map<String, List<OperationEntity>> operationsPerWorfklowInstance = operationReader.getOperationsPerWorkflowInstanceId(ids);
 
-    ListViewResponseDto responseDto = new ListViewResponseDto();
-    responseDto.setWorkflowInstances(ListViewWorkflowInstanceDto.createFrom(workflowInstanceEntities, instancesWithIncidentsIds, operationsPerWorfklowInstance));
-    responseDto.setTotalCount(response.getHits().getTotalHits());
-    return responseDto;
+    final List<ListViewWorkflowInstanceDto> workflowInstanceDtoList = ListViewWorkflowInstanceDto
+      .createFrom(workflowInstanceEntities, instancesWithIncidentsIds, operationsPerWorfklowInstance);
+    result.setWorkflowInstances(workflowInstanceDtoList);
+    return result;
+
   }
 
-  public SearchRequestBuilder createSearchRequest(ListViewRequestDto request) {
+  protected List<WorkflowInstanceForListViewEntity> queryListView(ListViewRequestDto workflowInstanceRequest,
+    Integer firstResult, Integer maxResults, ListViewResponseDto result) {
+    SearchSourceBuilder searchSourceBuilder = createSearchSourceBuilder(workflowInstanceRequest);
+    searchSourceBuilder
+      .from(firstResult)
+      .size(maxResults);
+    SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
+    searchRequest.source(searchSourceBuilder);
+    try {
+      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      result.setTotalCount(response.getHits().getTotalHits());
+      return ElasticsearchUtil
+        .mapSearchHits(response.getHits().getHits(), objectMapper, WorkflowInstanceForListViewEntity.class);
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining instances list: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  public SearchSourceBuilder createSearchSourceBuilder(ListViewRequestDto request) {
 
     final QueryBuilder query = createRequestQuery(request);
 
@@ -138,19 +157,20 @@ public class ListViewReader {
 
     logger.debug("Workflow instance search request: \n{}", constantScoreQuery.toString());
 
-    final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(listViewTemplate.getAlias());
-    applySorting(searchRequestBuilder, request.getSorting());
-    return searchRequestBuilder.setQuery(constantScoreQuery);
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(constantScoreQuery);
+    applySorting(searchSourceBuilder, request.getSorting());
+    return searchSourceBuilder;
   }
 
-  private void applySorting(SearchRequestBuilder searchRequestBuilder, SortingDto sorting) {
+  private void applySorting(SearchSourceBuilder searchSourceBuilder, SortingDto sorting) {
     if (sorting == null) {
       //apply default sorting
-      searchRequestBuilder.addSort(ListViewTemplate.ID, SortOrder.ASC);
+      searchSourceBuilder.sort(ListViewTemplate.ID, SortOrder.ASC);
     } else {
-      searchRequestBuilder
-        .addSort(sorting.getSortBy(), SortOrder.fromString(sorting.getSortOrder()))
-        .addSort(ListViewTemplate.ID, SortOrder.ASC);     //we always sort by id, to make the order always determined
+      searchSourceBuilder
+        .sort(sorting.getSortBy(), SortOrder.fromString(sorting.getSortOrder()))
+        .sort(ListViewTemplate.ID, SortOrder.ASC);     //we always sort by id, to make the order always determined
     }
   }
 
@@ -278,11 +298,17 @@ public class ListViewReader {
     final TermsQueryBuilder workflowInstanceIdsQ = termsQuery(ListViewTemplate.ID, ids);
     final HasChildQueryBuilder hasIncidentQ = hasChildQuery(ACTIVITIES_JOIN_RELATION, existsQuery(ListViewTemplate.INCIDENT_KEY), None);
 
-    //request incidents
-    final SearchRequestBuilder instancesWithIncidentsSearchBuilder =
-      esClient.prepareSearch(listViewTemplate.getAlias())
-      .setQuery(constantScoreQuery(joinWithAnd(isWorkflowInstanceQ, workflowInstanceIdsQ, hasIncidentQ)));
-    return ElasticsearchUtil.scrollIdsToSet(instancesWithIncidentsSearchBuilder, esClient);
+    SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
+    searchRequest.source(new SearchSourceBuilder()
+      .query(constantScoreQuery(joinWithAnd(isWorkflowInstanceQ, workflowInstanceIdsQ, hasIncidentQ))));
+
+    try {
+      return ElasticsearchUtil.scrollIdsToSet(searchRequest, esClient);
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining instances with incidents: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
   }
 
   private QueryBuilder createRunningFinishedQuery(ListViewQueryDto query) {
@@ -424,7 +450,7 @@ public class ListViewReader {
       getStatisticsForActiveActivities(query, WorkflowInstanceState.ACTIVE, ActivityStatisticsDto::setActive, statisticsMap);
     }
     if (query.isCanceled()) {
-      getStatisticsForActivities(query, WorkflowInstanceState.CANCELED, ActivityState.TERMINATED, ActivityStatisticsDto::setCanceled, statisticsMap);
+      getStatisticsForActivities(query, ActivityState.TERMINATED, ActivityStatisticsDto::setCanceled, statisticsMap);
     }
     if (query.isIncidents()) {
       getStatisticsForIncidentsActivities(query, WorkflowInstanceState.ACTIVE, ActivityStatisticsDto::setIncidents, statisticsMap);
@@ -437,7 +463,7 @@ public class ListViewReader {
     /**
      * Attention! This method updates the map, passed as a parameter.
      */
-  private void getStatisticsForActivities(ListViewQueryDto query, WorkflowInstanceState workflowInstanceState, ActivityState activityState,
+  private void getStatisticsForActivities(ListViewQueryDto query, ActivityState activityState,
         StatisticsMapEntryUpdater entryUpdater,
         Map<String, ActivityStatisticsDto> statisticsMap) {
 
@@ -455,27 +481,32 @@ public class ListViewReader {
              .subAggregation(parent(activityToWorkflowAggName, ACTIVITIES_JOIN_RELATION))    //we need this to count workflow instances, not the activity instances
             ));
 
-    final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(listViewTemplate.getAlias())
-        .setSize(0)
-        .setQuery(q)
-        .addAggregation(agg);
-
     logger.debug("Activities statistics request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
 
-    final SearchResponse searchResponse = searchRequestBuilder.get();
+    SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
+    searchRequest.source(new SearchSourceBuilder()
+      .query(q)
+      .size(0)
+      .aggregation(agg));
 
-    ((Terms)
-      ((Filter)
-        ((Children)(searchResponse.getAggregations().get(activities)))
-          .getAggregations().get(activeActivitiesAggName))
-      .getAggregations().get(uniqueActivitiesAggName))
-    .getBuckets().stream().forEach(b -> {
-      String activityId = b.getKeyAsString();
-      final Parent aggregation = b.getAggregations().get(activityToWorkflowAggName);
-      final long docCount = aggregation.getDocCount();  //number of workflow instances
-      addToMap(statisticsMap, activityId, docCount, entryUpdater);
-    });
+    try {
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      ((Terms)
+        ((Filter)
+          ((Children)(searchResponse.getAggregations().get(activities)))
+            .getAggregations().get(activeActivitiesAggName))
+          .getAggregations().get(uniqueActivitiesAggName))
+        .getBuckets().stream().forEach(b -> {
+        String activityId = b.getKeyAsString();
+        final Parent aggregation = b.getAggregations().get(activityToWorkflowAggName);
+        final long docCount = aggregation.getDocCount();  //number of workflow instances
+        addToMap(statisticsMap, activityId, docCount, entryUpdater);
+      });
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining statistics for activities: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
 
   }
 
@@ -500,27 +531,32 @@ public class ListViewReader {
              .subAggregation(parent(activityToWorkflowAggName, ACTIVITIES_JOIN_RELATION))    //we need this to count workflow instances, not the activity instances
             ));
 
-    final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(listViewTemplate.getAlias())
-        .setSize(0)
-        .setQuery(q)
-        .addAggregation(agg);
-
     logger.debug("Activities statistics request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
 
-    final SearchResponse searchResponse = searchRequestBuilder.get();
+    SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
+    searchRequest.source(new SearchSourceBuilder()
+      .query(q)
+      .size(0)
+      .aggregation(agg));
 
-    ((Terms)
-      ((Filter)
-        ((Children)(searchResponse.getAggregations().get(activities)))
-          .getAggregations().get(activeActivitiesAggName))
-      .getAggregations().get(uniqueActivitiesAggName))
-    .getBuckets().stream().forEach(b -> {
-      String activityId = b.getKeyAsString();
-      final Parent aggregation = b.getAggregations().get(activityToWorkflowAggName);
-      final long docCount = aggregation.getDocCount();  //number of workflow instances
-      addToMap(statisticsMap, activityId, docCount, entryUpdater);
-    });
+    try {
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      ((Terms)
+        ((Filter)
+          ((Children)(searchResponse.getAggregations().get(activities)))
+            .getAggregations().get(activeActivitiesAggName))
+        .getAggregations().get(uniqueActivitiesAggName))
+      .getBuckets().stream().forEach(b -> {
+        String activityId = b.getKeyAsString();
+        final Parent aggregation = b.getAggregations().get(activityToWorkflowAggName);
+        final long docCount = aggregation.getDocCount();  //number of workflow instances
+        addToMap(statisticsMap, activityId, docCount, entryUpdater);
+      });
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining statistics for activities: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
 
   }
 
@@ -545,27 +581,32 @@ public class ListViewReader {
              .subAggregation(parent(activityToWorkflowAggName, ACTIVITIES_JOIN_RELATION))    //we need this to count workflow instances, not the activity instances
             ));
 
-    final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(listViewTemplate.getAlias())
-        .setSize(0)
-        .setQuery(q)
-        .addAggregation(agg);
-
     logger.debug("Activities statistics request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
 
-    final SearchResponse searchResponse = searchRequestBuilder.get();
+    SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
+    searchRequest.source(new SearchSourceBuilder()
+      .query(q)
+      .size(0)
+      .aggregation(agg));
 
-    ((Terms)
-      ((Filter)
-        ((Children)(searchResponse.getAggregations().get(activities)))
-          .getAggregations().get(incidentActivitiesAggName))
-      .getAggregations().get(uniqueActivitiesAggName))
-    .getBuckets().stream().forEach(b -> {
-      String activityId = b.getKeyAsString();
-      final Parent aggregation = b.getAggregations().get(activityToWorkflowAggName);
-      final long docCount = aggregation.getDocCount();  //number of workflow instances
-      addToMap(statisticsMap, activityId, docCount, entryUpdater);
-    });
+    try {
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      ((Terms)
+        ((Filter)
+          ((Children)(searchResponse.getAggregations().get(activities)))
+            .getAggregations().get(incidentActivitiesAggName))
+        .getAggregations().get(uniqueActivitiesAggName))
+      .getBuckets().stream().forEach(b -> {
+        String activityId = b.getKeyAsString();
+        final Parent aggregation = b.getAggregations().get(activityToWorkflowAggName);
+        final long docCount = aggregation.getDocCount();  //number of workflow instances
+        addToMap(statisticsMap, activityId, docCount, entryUpdater);
+      });
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining statistics for activities: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
 
   }
 
@@ -588,28 +629,32 @@ public class ListViewReader {
             .size(ElasticsearchUtil.TERMS_AGG_SIZE)
             .subAggregation(parent(activityToWorkflowAggName, ACTIVITIES_JOIN_RELATION))     //we need this to count workflow instances, not the activity instances
           ));
-
-    final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(listViewTemplate.getAlias())
-        .setSize(0)
-        .setQuery(q)
-        .addAggregation(agg);
-
     logger.debug("Finished activities statistics request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
 
-    final SearchResponse searchResponse = searchRequestBuilder.get();
+    SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
+    searchRequest.source(new SearchSourceBuilder()
+      .query(q)
+      .size(0)
+      .aggregation(agg));
 
-    ((Terms)
-      ((Filter)
-        ((Children)(searchResponse.getAggregations().get(activities)))
-          .getAggregations().get(activeActivitiesAggName))
-        .getAggregations().get(uniqueActivitiesAggName))
-      .getBuckets().stream().forEach(b -> {
-      String activityId = b.getKeyAsString();
-      final Parent aggregation = b.getAggregations().get(activityToWorkflowAggName);
-      final long docCount = aggregation.getDocCount();  //number of workflow instances
-      addToMap(statisticsMap, activityId, docCount, entryUpdater);
-    });
+    try {
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      ((Terms)
+        ((Filter)
+          ((Children)(searchResponse.getAggregations().get(activities)))
+            .getAggregations().get(activeActivitiesAggName))
+          .getAggregations().get(uniqueActivitiesAggName))
+        .getBuckets().stream().forEach(b -> {
+        String activityId = b.getKeyAsString();
+        final Parent aggregation = b.getAggregations().get(activityToWorkflowAggName);
+        final long docCount = aggregation.getDocCount();  //number of workflow instances
+        addToMap(statisticsMap, activityId, docCount, entryUpdater);
+      });
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining statistics for activities: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
 
   }
 

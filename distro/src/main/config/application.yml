@@ -8,7 +8,7 @@ camunda.bpm.operate:
     # Host
     host: localhost
     # Transport port
-    port: 9300
+    port: 9200
   # Zeebe instance
   zeebe:
     # Broker contact point
@@ -20,7 +20,7 @@ camunda.bpm.operate:
     # Host
     host: localhost
     # Transport port
-    port: 9300
+    port: 9200
     # Index prefix, configured in Zeebe Elasticsearch exporter
     prefix: zeebe-record
 logging:

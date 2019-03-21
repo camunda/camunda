@@ -5,14 +5,17 @@
  */
 package org.camunda.operate.es.archiver;
 
+import java.io.IOException;
 import java.util.List;
+import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryAction;
-import org.elasticsearch.index.reindex.ReindexAction;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.index.reindex.ReindexRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +29,7 @@ public class ArchiverHelper {
   private static final Logger logger = LoggerFactory.getLogger(ArchiverHelper.class);
 
   @Autowired
-  private TransportClient esClient;
+  private RestHighLevelClient esClient;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -45,23 +48,36 @@ public class ArchiverHelper {
   }
 
   private void deleteDocuments(String sourceIndexName, String idFieldName, List<String> workflowInstanceIds) throws ReindexException {
-    final BulkByScrollResponse response =
-      DeleteByQueryAction.INSTANCE.newRequestBuilder(esClient)
-        .source(sourceIndexName)
-        .filter(termsQuery(idFieldName, workflowInstanceIds))
-        .refresh(true)
-        .get();
-    checkResponse(response, sourceIndexName, "delete");
+    final DeleteByQueryRequest request = new DeleteByQueryRequest(sourceIndexName)
+      .setQuery(termsQuery(idFieldName, workflowInstanceIds))
+      .setRefresh(true);
+    try {
+      final BulkByScrollResponse response = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
+      checkResponse(response, sourceIndexName, "delete");
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while deleting the documents: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
   }
 
   private void reindexDocuments(String sourceIndexName, String destinationIndexName, String idFieldName, List<String> workflowInstanceIds)
     throws ReindexException {
-    BulkByScrollResponse response = ReindexAction.INSTANCE.newRequestBuilder(esClient)
-      .source(sourceIndexName)
-      .destination(destinationIndexName)
-      .filter(termsQuery(idFieldName, workflowInstanceIds))
-      .get();
-    checkResponse(response, sourceIndexName, "reindex");
+
+    final ReindexRequest reindexRequest = new ReindexRequest()
+      .setSourceIndices(sourceIndexName)
+      .setDestIndex(destinationIndexName)
+      .setSourceQuery(termsQuery(idFieldName, workflowInstanceIds));
+
+    try {
+      BulkByScrollResponse response = esClient.reindex(reindexRequest, RequestOptions.DEFAULT);
+
+      checkResponse(response, sourceIndexName, "reindex");
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while reindexing the documents: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
   }
 
   private void checkResponse(BulkByScrollResponse response, String sourceIndexName, String operation) throws ReindexException {

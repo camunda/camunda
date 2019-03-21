@@ -10,9 +10,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
-import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.DateUtil;
@@ -22,9 +22,8 @@ import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.camunda.operate.zeebeimport.record.Intent;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.update.UpdateRequestBuilder;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,34 +56,31 @@ public class ActivityInstanceZeebeRecordProcessor {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private TransportClient esClient;
-
-  @Autowired
   private ActivityInstanceTemplate activityInstanceTemplate;
 
   @Autowired
   private WorkflowCache workflowCache;
 
-  public void processIncidentRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     final String intentStr = record.getMetadata().getIntent().name();
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
 
     //update activity instance
-    bulkRequestBuilder.add(persistActivityInstanceFromIncident(record, intentStr, recordValue));
+    bulkRequest.add(persistActivityInstanceFromIncident(record, intentStr, recordValue));
 
   }
 
-  public void processWorkflowInstanceRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  public void processWorkflowInstanceRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
 
     final String intentStr = record.getMetadata().getIntent().name();
     WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
 
     if (!isProcessEvent(recordValue) && !intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())){
-      bulkRequestBuilder.add(persistActivityInstance(record, intentStr, recordValue));
+      bulkRequest.add(persistActivityInstance(record, intentStr, recordValue));
     }
   }
 
-  private UpdateRequestBuilder persistActivityInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
+  private UpdateRequest persistActivityInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
     ActivityInstanceEntity entity = new ActivityInstanceEntity();
     entity.setId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
     entity.setKey(recordValue.getElementInstanceKey());
@@ -100,7 +96,7 @@ public class ActivityInstanceZeebeRecordProcessor {
     return getActivityInstanceFromIncidentQuery(entity);
   }
 
-  private UpdateRequestBuilder persistActivityInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue) throws PersistenceException {
+  private UpdateRequest persistActivityInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue) throws PersistenceException {
     ActivityInstanceEntity entity = new ActivityInstanceEntity();
     entity.setId(IdUtil.getId(record.getKey(), record));
     entity.setPartitionId(record.getMetadata().getPartitionId());
@@ -129,7 +125,7 @@ public class ActivityInstanceZeebeRecordProcessor {
 
   }
 
-  private UpdateRequestBuilder getActivityInstanceQuery(ActivityInstanceEntity entity) throws PersistenceException {
+  private UpdateRequest getActivityInstanceQuery(ActivityInstanceEntity entity) throws PersistenceException {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
@@ -151,10 +147,9 @@ public class ActivityInstanceZeebeRecordProcessor {
       //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
 
-      return esClient
-        .prepareUpdate(activityInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-        .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .setDoc(jsonMap);
+      return new UpdateRequest(activityInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+        .doc(jsonMap);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);
@@ -162,7 +157,7 @@ public class ActivityInstanceZeebeRecordProcessor {
     }
   }
 
-  private UpdateRequestBuilder getActivityInstanceFromIncidentQuery(ActivityInstanceEntity entity) throws PersistenceException {
+  private UpdateRequest getActivityInstanceFromIncidentQuery(ActivityInstanceEntity entity) throws PersistenceException {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
@@ -171,10 +166,9 @@ public class ActivityInstanceZeebeRecordProcessor {
       //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
 
-      return esClient
-        .prepareUpdate(activityInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-        .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .setDoc(jsonMap);
+      return new UpdateRequest(activityInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+        .doc(jsonMap);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);

@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.es.reader;
 
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -15,24 +16,25 @@ import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
+import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.rest.dto.incidents.IncidentByWorkflowStatisticsDto;
 import org.camunda.operate.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import org.camunda.operate.rest.dto.incidents.IncidentsByWorkflowGroupStatisticsDto;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.join.aggregations.Children;
 import org.elasticsearch.join.aggregations.Parent;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.apache.lucene.search.join.ScoreMode.None;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.INCIDENT_KEY;
@@ -45,15 +47,9 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @Component
-public class IncidentStatisticsReader {
+public class IncidentStatisticsReader extends AbstractReader {
 
   private static final Logger logger = LoggerFactory.getLogger(IncidentStatisticsReader.class);
-
-  @Autowired
-  private TransportClient esClient;
-
-  @Autowired
-  private ObjectMapper objectMapper;
 
   @Autowired
   private ListViewTemplate workflowInstanceTemplate;
@@ -143,31 +139,36 @@ public class IncidentStatisticsReader {
 
     logger.debug("Incident by workflow statistics query: \n{}\n and aggregation: \n{}", activeInstancesQ.toString(), agg.toString());
 
-    final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(workflowInstanceTemplate.getAlias())
-        .setSize(0)
-        .setQuery(activeInstancesQ)
-        .addAggregation(agg);
+    final SearchRequest searchRequest = new SearchRequest(workflowInstanceTemplate.getAlias())
+      .source(new SearchSourceBuilder()
+        .query(activeInstancesQ)
+        .aggregation(agg)
+        .size(0));
+    try {
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
-    final SearchResponse searchResponse = searchRequestBuilder.get();
+      ((Terms)searchResponse.getAggregations().get(workflowIdsAggName))
+        .getBuckets().forEach(b -> {
+          String workflowId = (String)b.getKey();
+          final long runningInstancesCount = b.getDocCount();
 
-    ((Terms)searchResponse.getAggregations().get(workflowIdsAggName))
-      .getBuckets().forEach(b -> {
-        String workflowId = (String)b.getKey();
-        final long runningInstancesCount = b.getDocCount();
+          final long instancesWithIncidentsCount =
+            ((Parent)
+              ((Filter)
+                ((Children) b.getAggregations().get(activitiesAggName)).getAggregations()
+                  .get(incidentActivitiesAggName)).getAggregations()
+                    .get(activityToInstanceAggName)).getDocCount();
 
-        final long instancesWithIncidentsCount =
-          ((Parent)
-            ((Filter)
-              ((Children) b.getAggregations().get(activitiesAggName)).getAggregations()
-                .get(incidentActivitiesAggName)).getAggregations()
-                  .get(activityToInstanceAggName)).getDocCount();
-
-        final IncidentByWorkflowStatisticsDto incidentByWorkflowStat = new IncidentByWorkflowStatisticsDto(workflowId, instancesWithIncidentsCount,
-          runningInstancesCount - instancesWithIncidentsCount);
-      statByWorkflowIdMap.put(workflowId, incidentByWorkflowStat);
-    });
-    return statByWorkflowIdMap;
+          final IncidentByWorkflowStatisticsDto incidentByWorkflowStat = new IncidentByWorkflowStatisticsDto(workflowId, instancesWithIncidentsCount,
+            runningInstancesCount - instancesWithIncidentsCount);
+        statByWorkflowIdMap.put(workflowId, incidentByWorkflowStat);
+      });
+      return statByWorkflowIdMap;
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining incidents by workflow id: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
   }
 
   public Set<IncidentsByErrorMsgStatisticsDto> getIncidentStatisticsByError() {
@@ -200,42 +201,47 @@ public class IncidentStatisticsReader {
 
     logger.debug("Incident by error message statistics query: \n{}\n and aggregation: \n{}", withIncidentsQ.toString(), agg.toString());
 
-    final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(workflowInstanceTemplate.getAlias())
-        .setSize(0)
-        .setQuery(withIncidentsQ)
-        .addAggregation(agg);
+    final SearchRequest searchRequest = new SearchRequest(workflowInstanceTemplate.getAlias())
+      .source(new SearchSourceBuilder()
+        .query(withIncidentsQ)
+        .aggregation(agg)
+        .size(0));
 
-    final SearchResponse searchResponse = searchRequestBuilder.get();
+    try {
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
+      Set<IncidentsByErrorMsgStatisticsDto> result = new TreeSet<>(new StatByErrorMsgComparator());
 
-    Set<IncidentsByErrorMsgStatisticsDto> result = new TreeSet<>(new StatByErrorMsgComparator());
+      ((Terms)
+        ((Filter)
+          ((Children)searchResponse.getAggregations().get(activitiesAggName))
+            .getAggregations().get(incidentActivitiesAggName))
+              .getAggregations().get(errorMessagesAggName)).getBuckets().forEach(o -> {
 
-    ((Terms)
-      ((Filter)
-        ((Children)searchResponse.getAggregations().get(activitiesAggName))
-          .getAggregations().get(incidentActivitiesAggName))
-            .getAggregations().get(errorMessagesAggName)).getBuckets().forEach(o -> {
+          IncidentsByErrorMsgStatisticsDto incidentsByErrorMsgStat = new IncidentsByErrorMsgStatisticsDto(o.getKeyAsString());
+          ((Terms)
+            ((Parent)o.getAggregations().get(activityToInstanceAggName))
+              .getAggregations().get(workflowIdsAggName)).getBuckets().forEach(w -> {
 
-        IncidentsByErrorMsgStatisticsDto incidentsByErrorMsgStat = new IncidentsByErrorMsgStatisticsDto(o.getKeyAsString());
-        ((Terms)
-          ((Parent)o.getAggregations().get(activityToInstanceAggName))
-            .getAggregations().get(workflowIdsAggName)).getBuckets().forEach(w -> {
+              final String workflowId = w.getKeyAsString();
+              IncidentByWorkflowStatisticsDto statForWorkflowId = new IncidentByWorkflowStatisticsDto(workflowId, o.getKeyAsString(), w.getDocCount());
+              statForWorkflowId.setName(workflows.get(workflowId).getName());
+              statForWorkflowId.setBpmnProcessId(workflows.get(workflowId).getBpmnProcessId());
+              statForWorkflowId.setVersion(workflows.get(workflowId).getVersion());
+              incidentsByErrorMsgStat.getWorkflows().add(statForWorkflowId);
+              incidentsByErrorMsgStat.recordInstancesCount(w.getDocCount());
+            }
+          );
+        result.add(incidentsByErrorMsgStat);
 
-            final String workflowId = w.getKeyAsString();
-            IncidentByWorkflowStatisticsDto statForWorkflowId = new IncidentByWorkflowStatisticsDto(workflowId, o.getKeyAsString(), w.getDocCount());
-            statForWorkflowId.setName(workflows.get(workflowId).getName());
-            statForWorkflowId.setBpmnProcessId(workflows.get(workflowId).getBpmnProcessId());
-            statForWorkflowId.setVersion(workflows.get(workflowId).getVersion());
-            incidentsByErrorMsgStat.getWorkflows().add(statForWorkflowId);
-            incidentsByErrorMsgStat.recordInstancesCount(w.getDocCount());
-          }
-        );
-      result.add(incidentsByErrorMsgStat);
+      });
 
-    });
-
-    return result;
+      return result;
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining incidents by error message: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
   }
 
   public static class StatByErrorMsgComparator implements Comparator<IncidentsByErrorMsgStatisticsDto> {

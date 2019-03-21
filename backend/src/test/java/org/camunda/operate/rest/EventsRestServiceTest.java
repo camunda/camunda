@@ -56,10 +56,10 @@ public class EventsRestServiceTest extends OperateIntegrationTest {
     final ArrayList<EventEntity> eventEntities = new ArrayList<>();
     eventEntities.add(MockUtil.createEventEntity(testWorkflowId, testWorkflowInstanceId, testEventSourceType, testEventType));
 
-    given(eventReader.queryEvents(eventQuery, 0, 100)).willReturn(eventEntities);
+    given(eventReader.queryEvents(eventQuery)).willReturn(eventEntities);
 
     //when
-    MockHttpServletRequestBuilder request = post(query(0, 100))
+    MockHttpServletRequestBuilder request = post(EventRestService.EVENTS_URL)
       .content(mockMvcTestRule.json(eventQuery))
       .contentType(mockMvcTestRule.getContentType());
 
@@ -79,13 +79,8 @@ public class EventsRestServiceTest extends OperateIntegrationTest {
     assertThat(eventDto.getEventSourceType()).isEqualTo(testEventSourceType);
     assertThat(eventDto.getEventType()).isEqualTo(testEventType);
 
-    verify(eventReader).queryEvents(eventQuery, 0, 100);
+    verify(eventReader).queryEvents(eventQuery);
     verifyNoMoreInteractions(eventReader);
-  }
-
-
-  private String query(int firstResult, int maxResults) {
-    return String.format("%s?firstResult=%d&maxResults=%d", EventRestService.EVENTS_URL, firstResult, maxResults);
   }
 
 }

@@ -6,21 +6,24 @@
 package org.camunda.operate.es.archiver;
 
 import javax.annotation.PreDestroy;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.es.schema.templates.EventTemplate;
-import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
+import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.ElasticsearchUtil;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
@@ -29,6 +32,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -50,7 +54,7 @@ public class Archiver extends Thread {
   private boolean shutdown = false;
 
   @Autowired
-  private TransportClient esClient;
+  private RestHighLevelClient esClient;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -171,31 +175,36 @@ public class Archiver extends Thread {
             .fetchSource(ListViewTemplate.ID, null)
         );
 
-    final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(workflowInstanceTemplate.getMainIndexName())
-        .setQuery(q)
-        .addAggregation(agg)
-        .setFetchSource(false)
-        .setSize(0)
-        .addSort(ListViewTemplate.END_DATE, SortOrder.ASC);
+    final SearchRequest searchRequest = new SearchRequest(workflowInstanceTemplate.getMainIndexName())
+      .source(new SearchSourceBuilder()
+        .query(q)
+        .aggregation(agg)
+        .fetchSource(false)
+        .size(0)
+        .sort(ListViewTemplate.END_DATE, SortOrder.ASC));
 
     logger.debug("Finished workflow instances for archiving request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
 
-    final SearchResponse searchResponse = searchRequestBuilder.get();
+    try {
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final List<? extends Histogram.Bucket> buckets =
+        ((Histogram) searchResponse.getAggregations().get(datesAgg))
+          .getBuckets();
 
-    final List<? extends Histogram.Bucket> buckets =
-      ((Histogram) searchResponse.getAggregations().get(datesAgg))
-        .getBuckets();
-
-    if (buckets.size() > 0) {
-      final Histogram.Bucket bucket = buckets.get(0);
-      final String finishDate = bucket.getKeyAsString();
-      SearchHits hits = ((TopHits)bucket.getAggregations().get(instancesAgg)).getHits();
-      final ArrayList<String> ids = Arrays.stream(hits.getHits())
-        .collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2));
-      return new FinishedAtDateIds(finishDate, ids);
-    } else {
-      return null;
+      if (buckets.size() > 0) {
+        final Histogram.Bucket bucket = buckets.get(0);
+        final String finishDate = bucket.getKeyAsString();
+        SearchHits hits = ((TopHits)bucket.getAggregations().get(instancesAgg)).getHits();
+        final ArrayList<String> ids = Arrays.stream(hits.getHits())
+          .collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2));
+        return new FinishedAtDateIds(finishDate, ids);
+      } else {
+        return null;
+      }
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining finished workflow instances: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
     }
   }
 

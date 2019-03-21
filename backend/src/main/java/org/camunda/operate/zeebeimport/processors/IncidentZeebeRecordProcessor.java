@@ -17,11 +17,10 @@ import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.delete.DeleteRequestBuilder;
-import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,22 +40,19 @@ public class IncidentZeebeRecordProcessor {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private TransportClient esClient;
-
-  @Autowired
   private IncidentTemplate incidentTemplate;
 
   @Autowired
   private BatchOperationWriter batchOperationWriter;
 
-  public void processIncidentRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
 
-    persistIncident(record, recordValue, bulkRequestBuilder);
+    persistIncident(record, recordValue, bulkRequest);
 
   }
 
-  private void persistIncident(Record record, IncidentRecordValueImpl recordValue, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  private void persistIncident(Record record, IncidentRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
     final String intentStr = record.getMetadata().getIntent().name();
     final String incidentId = IdUtil.getId(record.getKey(), record);
     if (intentStr.equals(RESOLVED.toString())) {
@@ -66,9 +62,9 @@ public class IncidentZeebeRecordProcessor {
       //not possible to include UpdateByQueryRequestBuilder in bulk query -> executing at once
       batchOperationWriter.completeOperation(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record), incidentId, OperationType.RESOLVE_INCIDENT);
       //if we update smth, we need it to have affect at once
-      bulkRequestBuilder.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+      bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
-      bulkRequestBuilder.add(getIncidentDeleteQuery(incidentId));
+      bulkRequest.add(getIncidentDeleteQuery(incidentId));
     } else if (intentStr.equals(CREATED.toString())) {
       IncidentEntity incident = new IncidentEntity();
       incident.setId(incidentId);
@@ -87,25 +83,24 @@ public class IncidentZeebeRecordProcessor {
       }
       incident.setState(IncidentState.ACTIVE);
       incident.setCreationTime(DateUtil.toOffsetDateTime(record.getTimestamp()));
-      bulkRequestBuilder.add(getIncidentInsertQuery(incident));
+      bulkRequest.add(getIncidentInsertQuery(incident));
     }
   }
 
-  private IndexRequestBuilder getIncidentInsertQuery(IncidentEntity incident) throws PersistenceException {
+  private IndexRequest getIncidentInsertQuery(IncidentEntity incident) throws PersistenceException {
     try {
       logger.debug("Index incident: id {}", incident.getId());
-      return esClient
-        .prepareIndex(incidentTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, incident.getId())
-        .setSource(objectMapper.writeValueAsString(incident), XContentType.JSON);
+      return new IndexRequest(incidentTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, incident.getId())
+        .source(objectMapper.writeValueAsString(incident), XContentType.JSON);
     } catch (IOException e) {
       logger.error("Error preparing the query to index incident", e);
       throw new PersistenceException(String.format("Error preparing the query to index incident [%s]", incident), e);
     }
   }
 
-  private DeleteRequestBuilder getIncidentDeleteQuery(String incidentId) throws PersistenceException {
+  private DeleteRequest getIncidentDeleteQuery(String incidentId) throws PersistenceException {
     logger.debug("Delete incident: id {}", incidentId);
-    return esClient.prepareDelete(incidentTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, incidentId);
+    return new DeleteRequest(incidentTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, incidentId);
   }
 
 }

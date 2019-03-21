@@ -3,7 +3,7 @@ camunda.bpm.operate:
   elasticsearch:
     clusterName: docker-cluster
     host: localhost
-    port: 9300
+    port: 9200
     dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
   zeebe:
     brokerContactPoint: localhost:26500
@@ -13,7 +13,7 @@ camunda.bpm.operate:
   zeebeElasticsearch:
     clusterName: docker-cluster
     host: localhost
-    port: 9300
+    port: 9200
     prefix: test-record
 logging:
   level:

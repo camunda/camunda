@@ -8,9 +8,9 @@ package org.camunda.operate.util;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.es.reader.ActivityInstanceReader;
@@ -20,7 +20,6 @@ import org.camunda.operate.es.reader.WorkflowReader;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.exception.NotFoundException;
-import org.elasticsearch.client.transport.TransportClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,9 +27,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Configuration
 public class ElasticsearchChecks {
-
-  @Autowired
-  private TransportClient esClient;
 
   @Autowired
   private WorkflowReader workflowReader;

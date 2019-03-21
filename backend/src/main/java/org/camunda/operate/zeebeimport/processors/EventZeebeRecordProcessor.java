@@ -21,8 +21,8 @@ import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.JobRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,45 +74,42 @@ public class EventZeebeRecordProcessor {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private TransportClient esClient;
-
-  @Autowired
   private EventTemplate eventTemplate;
 
   @Autowired
   private BatchOperationWriter batchOperationWriter;
 
-  public void processIncidentRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
     final String intentStr = record.getMetadata().getIntent().name();
 
     if (INCIDENT_EVENTS.contains(intentStr)) {
-      processIncident(record, recordValue, bulkRequestBuilder);
+      processIncident(record, recordValue, bulkRequest);
     }
 
   }
 
-  public void processJobRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  public void processJobRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     JobRecordValueImpl recordValue = (JobRecordValueImpl)record.getValue();
     final String intentStr = record.getMetadata().getIntent().name();
 
     if (JOB_EVENTS.contains(intentStr)) {
-      processJob(record, recordValue, bulkRequestBuilder);
+      processJob(record, recordValue, bulkRequest);
     }
 
   }
 
-  public void processWorkflowInstanceRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  public void processWorkflowInstanceRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
     final String intentStr = record.getMetadata().getIntent().name();
 
     if (WORKFLOW_INSTANCE_STATES.contains(intentStr)) {
-      processWorkflowInstance(record, recordValue, bulkRequestBuilder);
+      processWorkflowInstance(record, recordValue, bulkRequest);
     }
 
   }
 
-  private void processWorkflowInstance(Record record, WorkflowInstanceRecordValueImpl recordValue, BulkRequestBuilder bulkRequestBuilder)
+  private void processWorkflowInstance(Record record, WorkflowInstanceRecordValueImpl recordValue, BulkRequest bulkRequest)
     throws PersistenceException {
     EventEntity eventEntity = new EventEntity();
 
@@ -130,10 +127,10 @@ public class EventZeebeRecordProcessor {
       eventEntity.setActivityInstanceId(IdUtil.getId(record));
     }
 
-    persistEvent(eventEntity, bulkRequestBuilder);
+    persistEvent(eventEntity, bulkRequest);
   }
 
-  private void processJob(Record record, JobRecordValueImpl recordValue, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  private void processJob(Record record, JobRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
     EventEntity eventEntity = new EventEntity();
 
     loadEventGeneralData(record, eventEntity);
@@ -177,11 +174,11 @@ public class EventZeebeRecordProcessor {
 
     eventEntity.setMetadata(eventMetadata);
 
-    persistEvent(eventEntity, bulkRequestBuilder);
+    persistEvent(eventEntity, bulkRequest);
 
   }
 
-  private void processIncident(Record record, IncidentRecordValueImpl recordValue, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  private void processIncident(Record record, IncidentRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
     EventEntity eventEntity = new EventEntity();
 
     loadEventGeneralData(record, eventEntity);
@@ -203,7 +200,7 @@ public class EventZeebeRecordProcessor {
     }
     eventEntity.setMetadata(eventMetadata);
 
-    persistEvent(eventEntity, bulkRequestBuilder);
+    persistEvent(eventEntity, bulkRequest);
   }
 
 
@@ -218,14 +215,14 @@ public class EventZeebeRecordProcessor {
     eventEntity.setEventType(EventType.fromZeebeIntent(record.getMetadata().getIntent().name()));
   }
 
-  private void persistEvent(EventEntity entity, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  private void persistEvent(EventEntity entity, BulkRequest bulkRequest) throws PersistenceException {
     try {
       logger.debug("Event: id {}, eventSourceType {}, eventType {}, workflowInstanceId {}", entity.getId(), entity.getEventSourceType(), entity.getEventType(),
         entity.getWorkflowInstanceId());
 
       //write event
-      bulkRequestBuilder.add(esClient.prepareIndex(eventTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-        .setSource(objectMapper.writeValueAsString(entity), XContentType.JSON));
+      bulkRequest.add(new IndexRequest(eventTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+        .source(objectMapper.writeValueAsString(entity), XContentType.JSON));
 
     } catch (JsonProcessingException e) {
       logger.error("Error preparing the query to insert event", e);

@@ -114,7 +114,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     //when
     EventQueryDto eventQueryDto = new EventQueryDto();
     eventQueryDto.setWorkflowInstanceId(IdTestUtil.getId(workflowInstanceKey));
-    final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto, 0, 1000);
+    final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto);
 
     assertThat(eventEntities).isSortedAccordingTo((e1, e2) -> {
       final int compareDateTime = e1.getDateTime().compareTo(e2.getDateTime());
@@ -179,7 +179,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     //when
     EventQueryDto eventQueryDto = new EventQueryDto();
     eventQueryDto.setWorkflowInstanceId(IdTestUtil.getId(workflowInstanceKey));
-    final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto, 0, 1000);
+    final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto);
 
     //then
     assertEvent(eventEntities, EventSourceType.INCIDENT, EventType.RESOLVED, 1, processId, null, workflowInstanceKey, activityId);
@@ -207,7 +207,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     //when
     EventQueryDto eventQueryDto = new EventQueryDto();
     eventQueryDto.setWorkflowInstanceId(IdTestUtil.getId(workflowInstanceKey));
-    final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto, 0, 1000);
+    final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto);
 
     //then last event does not have a jobId
     final EventEntity lastEvent = eventEntities.get(eventEntities.size() - 1);

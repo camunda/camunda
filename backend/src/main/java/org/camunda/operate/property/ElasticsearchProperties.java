@@ -13,7 +13,7 @@ public class ElasticsearchProperties {
 
   private String host = "localhost";
 
-  private int port = 9300;
+  private int port = 9200;
 
   private String dateFormat = DATE_FORMAT_DEFAULT;
 

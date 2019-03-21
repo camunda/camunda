@@ -18,9 +18,8 @@ import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.camunda.operate.zeebeimport.record.value.VariableRecordValueImpl;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.update.UpdateRequestBuilder;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,9 +46,6 @@ public class VariableZeebeRecordProcessor {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private TransportClient esClient;
-
-  @Autowired
   private VariableTemplate variableTemplate;
 
   @Autowired
@@ -58,15 +54,15 @@ public class VariableZeebeRecordProcessor {
   @Autowired
   private BatchOperationWriter batchOperationWriter;
 
-  public void processVariableRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  public void processVariableRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     VariableRecordValueImpl recordValue = (VariableRecordValueImpl)record.getValue();
 
     //update variable
-    bulkRequestBuilder.add(persistVariable(record, recordValue));
+    bulkRequest.add(persistVariable(record, recordValue));
 
   }
 
-  private UpdateRequestBuilder persistVariable(Record record, VariableRecordValueImpl recordValue) throws PersistenceException {
+  private UpdateRequest persistVariable(Record record, VariableRecordValueImpl recordValue) throws PersistenceException {
     VariableEntity entity = new VariableEntity();
     entity.setId(IdUtil.getVariableId(recordValue.getScopeKey(), recordValue.getName()));
     entity.setKey(record.getKey());
@@ -78,7 +74,7 @@ public class VariableZeebeRecordProcessor {
     return getVariableQuery(entity);
   }
 
-  private UpdateRequestBuilder getVariableQuery(VariableEntity entity) throws PersistenceException {
+  private UpdateRequest getVariableQuery(VariableEntity entity) throws PersistenceException {
     try {
 
       //complete operation
@@ -88,10 +84,9 @@ public class VariableZeebeRecordProcessor {
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(VariableTemplate.VALUE, entity.getValue());
 
-      return esClient
-        .prepareUpdate(variableTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-        .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .setDoc(updateFields);
+      return new UpdateRequest(variableTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+        .doc(updateFields);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert variable instance for list view", e);

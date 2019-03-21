@@ -5,23 +5,22 @@
  */
 package org.camunda.operate.es;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import org.apache.http.HttpHost;
 import org.camunda.operate.property.OperateProperties;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.transport.NoNodeAvailableException;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.TransportAddress;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,56 +45,57 @@ public class ElasticsearchConnector {
   private OperateProperties operateProperties;
 
   @Bean
-  public TransportClient esClient() {
+  public RestHighLevelClient esClient() {
     //some weird error when ELS sets available processors number for Netty - see https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
     System.setProperty("es.set.netty.runtime.available.processors", "false");
-    return createEsClient(operateProperties.getElasticsearch().getHost(), operateProperties.getElasticsearch().getPort(),
-      operateProperties.getElasticsearch().getClusterName());
+    return createEsClient(operateProperties.getElasticsearch().getHost(), operateProperties.getElasticsearch().getPort());
   }
 
   @Bean("zeebeEsClient")
-  public TransportClient zeebeEsClient() {
+  public RestHighLevelClient zeebeEsClient() {
     //some weird error when ELS sets available processors number for Netty - see https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
     System.setProperty("es.set.netty.runtime.available.processors", "false");
-    return createEsClient(operateProperties.getZeebeElasticsearch().getHost(), operateProperties.getZeebeElasticsearch().getPort(),
-      operateProperties.getZeebeElasticsearch().getClusterName());
+    return createEsClient(operateProperties.getZeebeElasticsearch().getHost(), operateProperties.getZeebeElasticsearch().getPort());
   }
 
-  public TransportClient createEsClient(String host, int port, String clusterName) {
-    logger.debug("Creating Elasticsearch connection...");
-    TransportClient transportClient = null;
-    try {
-      transportClient = new PreBuiltTransportClient(getElasticSearchSettings(clusterName)).addTransportAddress(
-        new TransportAddress(InetAddress.getByName(host), port));
-      if (!checkHealth(transportClient, true)) {
-        logger.warn("Elasticsearch cluster [{}] is not accessible", clusterName);
-      } else {
-        logger.debug("Elasticsearch connection was successfully created.");
+  @PreDestroy
+  public void closeEsClients() {
+    closeEsClient(esClient());
+    closeEsClient(zeebeEsClient());
+  }
+
+  private void closeEsClient(RestHighLevelClient esClient) {
+    if (esClient != null) {
+      try {
+        esClient.close();
+      } catch (IOException e) {
+        //
       }
-    } catch (UnknownHostException ex) {
-      logger.error(String
-          .format("Unable to connect to Elasticsearch [%s:%s]", host, port),
-        ex);
-      //TODO OPE-36
     }
-    return transportClient;
   }
 
-  private Settings getElasticSearchSettings(String clusterName) {
-    return Settings.builder()
-      .put("cluster.name", clusterName)
-      .build();
+  public RestHighLevelClient createEsClient(String host, int port) {
+    logger.debug("Creating Elasticsearch connection...");
+    RestHighLevelClient esClient;
+    esClient = new RestHighLevelClient(RestClient.builder(new HttpHost(host, port, "http")));
+    if (!checkHealth(esClient, true)) {
+      logger.warn("Elasticsearch cluster is not accessible");
+    } else {
+      logger.debug("Elasticsearch connection was successfully created.");
+    }
+    return esClient;
   }
 
-  public boolean checkHealth(TransportClient transportClient, boolean reconnect) {
+  public boolean checkHealth(RestHighLevelClient esClient, boolean reconnect) {
     //TODO temporary solution
     int attempts = 0;
     boolean successfullyConnected = false;
     while (attempts == 0 || (reconnect && attempts < 10 && !successfullyConnected)) {
       try {
-        final ClusterHealthResponse clusterHealthResponse = transportClient.admin().cluster().prepareHealth().get();
+        final ClusterHealthResponse clusterHealthResponse = esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
+        //TODO do we need this?
         successfullyConnected = clusterHealthResponse.getClusterName().equals(operateProperties.getElasticsearch().getClusterName());
-      } catch (NoNodeAvailableException ex) {
+      } catch (IOException ex) {
         logger.warn("Unable to connect to Elasticsearch cluster [{}]. Will try again...", operateProperties.getElasticsearch().getClusterName());
         try {
           Thread.sleep(3000);

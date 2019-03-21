@@ -6,6 +6,7 @@
 package org.camunda.operate.zeebeimport;
 
 import javax.annotation.PreDestroy;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.meta.ImportPositionEntity;
 import org.camunda.operate.es.schema.indices.ImportPositionIndex;
+import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.ElasticsearchUtil;
@@ -23,14 +25,20 @@ import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.JobRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.VariableRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchPhaseExecutionException;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,10 +80,10 @@ public class ZeebeESImporter extends Thread {
 
   @Autowired
   @Qualifier("zeebeEsClient")
-  private TransportClient zeebeEsClient;
+  private RestHighLevelClient zeebeEsClient;
 
   @Autowired
-  private TransportClient esClient;
+  private RestHighLevelClient esClient;
 
   @Autowired
   private ImportPositionIndex importPositionType;
@@ -91,18 +99,18 @@ public class ZeebeESImporter extends Thread {
     shutdown = true;
   }
 
-  public long getLatestLoadedPosition(String aliasName, int partitionId) {
+  public long getLatestLoadedPosition(String aliasName, int partitionId) throws IOException {
 
     final QueryBuilder queryBuilder = joinWithAnd(termQuery(ImportPositionIndex.ALIAS_NAME, aliasName),
       termQuery(ImportPositionIndex.PARTITION_ID, partitionId));
 
-    final SearchResponse searchResponse =
-      esClient
-        .prepareSearch(importPositionType.getAlias())
-        .setQuery(queryBuilder)
-        .setSize(10)
-        .setFetchSource(ImportPositionIndex.POSITION, null)
-        .get();
+    final SearchRequest searchRequest = new SearchRequest(importPositionType.getAlias())
+      .source(new SearchSourceBuilder()
+      .query(queryBuilder)
+      .size(10)
+      .fetchSource(ImportPositionIndex.POSITION, null));
+
+    final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
     final Iterator<SearchHit> hitIterator = searchResponse.getHits().iterator();
 
@@ -122,15 +130,14 @@ public class ZeebeESImporter extends Thread {
     Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(ImportPositionIndex.POSITION, entity.getPosition());
     try {
-      esClient
-        .prepareUpdate(importPositionType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-        .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .setDoc(updateFields)
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-      .execute().get();
+      final UpdateRequest request = new UpdateRequest(importPositionType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+        .doc(updateFields)
+        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+      esClient.update(request, RequestOptions.DEFAULT);;
     } catch (Exception e) {
       logger.error(String.format("Error occurred while persisting latest loaded position for %s",aliasName), e);
-      throw new RuntimeException(e);
+      throw new OperateRuntimeException(e);
     }
   }
 
@@ -150,18 +157,25 @@ public class ZeebeESImporter extends Thread {
       positionBeforeQ,
       termQuery("metadata." + ImportPositionIndex.PARTITION_ID, partitionId));
 
-    final SearchResponse searchResponse =
-      zeebeEsClient
-        .prepareSearch(aliasName)
-        .addSort(ImportPositionIndex.POSITION, SortOrder.ASC)
-        .setQuery(queryBuilder)
-        .setSize(operateProperties.getZeebeElasticsearch().getBatchSize())
-        .get();
+    final SearchRequest searchRequest = new SearchRequest(aliasName)
+      .source(new SearchSourceBuilder()
+        .query(queryBuilder)
+        .sort(ImportPositionIndex.POSITION, SortOrder.ASC)
+       .size(operateProperties.getZeebeElasticsearch().getBatchSize()));
 
-    JavaType valueType = objectMapper.getTypeFactory().constructParametricType(RecordImpl.class, recordValueClass);
-    final List<RecordImpl> result = ElasticsearchUtil.mapSearchHits(searchResponse.getHits().getHits(), objectMapper, valueType);
+    try {
+      final SearchResponse searchResponse =
+        zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT);
 
-    return result;
+      JavaType valueType = objectMapper.getTypeFactory().constructParametricType(RecordImpl.class, recordValueClass);
+      final List<RecordImpl> result = ElasticsearchUtil.mapSearchHits(searchResponse.getHits().getHits(), objectMapper, valueType);
+
+      return result;
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
   }
 
   public void startImportingData() {
@@ -221,7 +235,7 @@ public class ZeebeESImporter extends Thread {
     }
   }
 
-  public int processNextEntitiesBatch() throws PersistenceException {
+  public int processNextEntitiesBatch() throws PersistenceException, IOException {
 
     Integer processedEntities = 0;
 
@@ -232,7 +246,7 @@ public class ZeebeESImporter extends Thread {
     return processedEntities;
   }
 
-  public Integer processNextEntitiesBatch(Integer processedEntities, ImportValueType importValueType) throws PersistenceException {
+  public Integer processNextEntitiesBatch(Integer processedEntities, ImportValueType importValueType) throws PersistenceException, IOException {
     String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
     try {
 
@@ -248,8 +262,12 @@ public class ZeebeESImporter extends Thread {
           processedEntities += nextBatch.size();
         }
       }
-    } catch (IndexNotFoundException ex) {
-      logger.info("Elasticsearch index for ValueType {} was not found, alias {}. Skipping.", importValueType.getValueType(), aliasName);
+    } catch (ElasticsearchStatusException ex) {
+      if (ex.status().equals(RestStatus.NOT_FOUND)) {
+        logger.info("Elasticsearch index for ValueType {} was not found, alias {}. Skipping.", importValueType.getValueType(), aliasName);
+      } else {
+        throw ex;
+      }
     } catch (SearchPhaseExecutionException ex) {
       logger.error(ex.getMessage(), ex);
     }

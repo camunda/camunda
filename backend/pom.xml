@@ -64,6 +64,10 @@
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-starter-logging</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>org.elasticsearch.client</groupId>
+          <artifactId>transport</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -81,12 +85,7 @@
 
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
-      <artifactId>transport</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-high-level-client</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->

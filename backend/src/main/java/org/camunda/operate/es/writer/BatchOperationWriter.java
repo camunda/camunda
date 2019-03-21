@@ -20,6 +20,7 @@ import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.OperationReader;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
+import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
@@ -30,28 +31,32 @@ import org.camunda.operate.rest.exception.InvalidRequestException;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.action.update.UpdateRequestBuilder;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.UpdateByQueryAction;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.camunda.operate.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -71,7 +76,7 @@ public class BatchOperationWriter {
   private OperateProperties operateProperties;
 
   @Autowired
-  private TransportClient esClient;
+  private RestHighLevelClient esClient;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -97,7 +102,7 @@ public class BatchOperationWriter {
     //select workflow instances, which has scheduled operations, or locked with expired lockExpirationTime
     final List<OperationEntity> operationEntities = operationReader.acquireOperations(batchSize);
 
-    BulkRequestBuilder bulkRequest = esClient.prepareBulk();
+    BulkRequest bulkRequest = new BulkRequest();
 
     //lock the operations
     for (OperationEntity operation: operationEntities) {
@@ -113,23 +118,22 @@ public class BatchOperationWriter {
 
       }
     }
-    ElasticsearchUtil.processBulkRequest(bulkRequest, true);
+    ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true);
     logger.debug("{} operations locked", result.entrySet().stream().mapToLong(e -> e.getValue().size()).sum());
     return result;
   }
 
-  private UpdateRequestBuilder createUpdateByIdRequest(OperationEntity operation, boolean refreshImmediately) throws PersistenceException {
+  private UpdateRequest createUpdateByIdRequest(OperationEntity operation, boolean refreshImmediately) throws PersistenceException {
     try {
 
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(operation), HashMap.class);
 
-      UpdateRequestBuilder updateRequestBuilder = esClient
-        .prepareUpdate(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operation.getId())
-        .setDoc(jsonMap);
+      UpdateRequest updateRequest = new UpdateRequest(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operation.getId())
+        .doc(jsonMap);
       if (refreshImmediately) {
-        updateRequestBuilder = updateRequestBuilder.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+        updateRequest = updateRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
       }
-      return updateRequestBuilder;
+      return updateRequest;
     } catch (IOException e) {
       logger.error("Error preparing the query to update operation", e);
       throw new PersistenceException(String.format("Error preparing the query to update operation [%s] for workflow instance id [%s]",
@@ -165,14 +169,13 @@ public class BatchOperationWriter {
           termQuery(OperationTemplate.TYPE, operationType.name())
           );
 
-      BulkByScrollResponse response =
-        UpdateByQueryAction.INSTANCE.newRequestBuilder(esClient)
-          .source(operationTemplate.getMainIndexName())
-          .filter(query)
-          .size(1)
-          .script(updateScript)
-          .refresh(true)
-          .get();
+      UpdateByQueryRequest request = new UpdateByQueryRequest(operationTemplate.getMainIndexName())
+        .setQuery(query)
+        .setSize(1)
+        .setScript(updateScript)
+        .setRefresh(true);
+
+      final BulkByScrollResponse response = esClient.updateByQuery(request, RequestOptions.DEFAULT);
       for (BulkItemResponse.Failure failure: response.getBulkFailures()) {
         logger.error(String.format("Complete operation failed for operation id [%s]: %s", failure.getId(),
           failure.getMessage()), failure.getCause());
@@ -203,7 +206,6 @@ public class BatchOperationWriter {
       TermQueryBuilder scopeIdQ = termQuery(OperationTemplate.SCOPE_ID, scopeId);
       TermQueryBuilder variableNameIdQ = termQuery(OperationTemplate.VARIABLE_NAME, variableName);
 
-
       QueryBuilder query =
         joinWithAnd(
           termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId),
@@ -213,14 +215,13 @@ public class BatchOperationWriter {
           termQuery(OperationTemplate.TYPE, OperationType.UPDATE_VARIABLE.name())
           );
 
-      BulkByScrollResponse response =
-        UpdateByQueryAction.INSTANCE.newRequestBuilder(esClient)
-          .source(operationTemplate.getMainIndexName())
-          .filter(query)
-          .size(1)
-          .script(updateScript)
-          .refresh(true)
-          .get();
+      UpdateByQueryRequest request = new UpdateByQueryRequest(operationTemplate.getMainIndexName())
+        .setQuery(query)
+        .setSize(1)
+        .setScript(updateScript)
+        .setRefresh(true);
+
+      final BulkByScrollResponse response = esClient.updateByQuery(request, RequestOptions.DEFAULT);
       for (BulkItemResponse.Failure failure: response.getBulkFailures()) {
         logger.error(String.format("Complete operation failed for operation id [%s]: %s", failure.getId(),
           failure.getMessage()), failure.getCause());
@@ -235,8 +236,8 @@ public class BatchOperationWriter {
   }
 
   public void updateOperation(OperationEntity operation) throws PersistenceException {
-    final UpdateRequestBuilder updateRequest = createUpdateByIdRequest(operation, true);
-    ElasticsearchUtil.executeUpdate(updateRequest);
+    final UpdateRequest updateRequest = createUpdateByIdRequest(operation, true);
+    ElasticsearchUtil.executeUpdate(esClient, updateRequest);
   }
 
   /**
@@ -249,7 +250,7 @@ public class BatchOperationWriter {
   public OperationResponseDto scheduleOperation(String workflowInstanceId, OperationRequestDto operationRequest) throws PersistenceException {
     logger.debug("Creating operation: workflowInstanceId [{}], operation type [{}]", workflowInstanceId, operationRequest.getOperationType());
 
-    final List<IndexRequestBuilder> requests = new ArrayList<>();
+    final List<IndexRequest> requests = new ArrayList<>();
 
     final OperationType operationType = operationRequest.getOperationType();
     if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
@@ -283,34 +284,39 @@ public class BatchOperationWriter {
 
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 
-    final SearchRequestBuilder searchRequest = listViewReader.createSearchRequest(new ListViewRequestDto(batchOperationRequest.getQueries()));
-    TimeValue keepAlive = new TimeValue(60000);
+    final SearchSourceBuilder searchSourceBuilder = listViewReader.createSearchSourceBuilder(new ListViewRequestDto(batchOperationRequest.getQueries()));
+    final SearchRequest searchRequest = new SearchRequest()
+      .source(searchSourceBuilder.size(batchSize))
+      .scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+    try {
+      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      validateTotalHits(response.getHits());
 
-    SearchResponse scrollResp = searchRequest.setScroll(keepAlive).setSize(batchSize).get();
+      int operationsCount = 0;
 
-    SearchHits hits = scrollResp.getHits();
-    validateTotalHits(hits);
+      while (response.getHits().getHits().length != 0) {
+        SearchHits hits = response.getHits();
+        String scrollId = response.getScrollId();
 
-    int operationsCount = 0;
+        operationsCount += persistOperations(hits, batchOperationRequest);
 
-    do {
-      operationsCount += persistOperations(hits, batchOperationRequest);
+        SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+        scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
 
-      scrollResp = esClient.prepareSearchScroll(scrollResp.getScrollId()).setScroll(keepAlive).get();
-      hits = scrollResp.getHits();
-
-    } while (hits.getHits().length != 0);
-
-    if (operationsCount == 0) {
-      return new OperationResponseDto(0, "No operations were scheduled.");
-    } else {
-      return new OperationResponseDto(operationsCount);
+        response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+      }
+      if (operationsCount == 0) {
+        return new OperationResponseDto(0, "No operations were scheduled.");
+      } else {
+        return new OperationResponseDto(operationsCount);
+      }
+    } catch (IOException ex) {
+      throw new OperateRuntimeException(String.format("Exception occurred, while scheduling operation: %s", ex.getMessage()), ex);
     }
-
   }
 
   private int persistOperations(SearchHits hits, OperationRequestDto operationRequest) throws PersistenceException {
-    final List<IndexRequestBuilder> requests = new ArrayList<>();
+    final List<IndexRequest> requests = new ArrayList<>();
     for (SearchHit searchHit : hits.getHits()) {
       final OperationType operationType = operationRequest.getOperationType();
       if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
@@ -328,7 +334,7 @@ public class BatchOperationWriter {
     return requests.size();
   }
 
-  private IndexRequestBuilder getIndexUpdateVariableOperationRequest(String workflowInstanceId, String scopeId, String name, String value) throws PersistenceException {
+  private IndexRequest getIndexUpdateVariableOperationRequest(String workflowInstanceId, String scopeId, String name, String value) throws PersistenceException {
     OperationEntity operationEntity = new OperationEntity();
     operationEntity.generateId();
     operationEntity.setWorkflowInstanceId(workflowInstanceId);
@@ -340,9 +346,8 @@ public class BatchOperationWriter {
     operationEntity.setState(OperationState.SCHEDULED);
 
     try {
-      return esClient
-        .prepareIndex(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operationEntity.getId())
-        .setSource(objectMapper.writeValueAsString(operationEntity), XContentType.JSON);
+      return new IndexRequest(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operationEntity.getId())
+        .source(objectMapper.writeValueAsString(operationEntity), XContentType.JSON);
     } catch (IOException e) {
       logger.error("Error preparing the query to insert operation", e);
       throw new PersistenceException(String.format("Error preparing the query to insert operation [%s] for workflow instance id [%s]",
@@ -350,7 +355,7 @@ public class BatchOperationWriter {
     }
   }
 
-  private IndexRequestBuilder getIndexOperationRequest(String workflowInstanceId, String incidentId, OperationType operationType) throws PersistenceException {
+  private IndexRequest getIndexOperationRequest(String workflowInstanceId, String incidentId, OperationType operationType) throws PersistenceException {
     OperationEntity operationEntity = new OperationEntity();
     operationEntity.generateId();
     operationEntity.setIncidentId(incidentId);
@@ -360,9 +365,8 @@ public class BatchOperationWriter {
     operationEntity.setState(OperationState.SCHEDULED);
 
     try {
-      return esClient
-        .prepareIndex(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operationEntity.getId())
-        .setSource(objectMapper.writeValueAsString(operationEntity), XContentType.JSON);
+      return new IndexRequest(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operationEntity.getId())
+        .source(objectMapper.writeValueAsString(operationEntity), XContentType.JSON);
     } catch (IOException e) {
       logger.error("Error preparing the query to insert operation", e);
       throw new PersistenceException(String.format("Error preparing the query to insert operation [%s] for workflow instance id [%s]",

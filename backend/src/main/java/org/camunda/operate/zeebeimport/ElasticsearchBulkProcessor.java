@@ -8,15 +8,15 @@ package org.camunda.operate.zeebeimport;
 import java.util.List;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.camunda.operate.zeebeimport.processors.WorkflowZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.ActivityInstanceZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.EventZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.IncidentZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.ListViewZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.VariableZeebeRecordProcessor;
+import org.camunda.operate.zeebeimport.processors.WorkflowZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.record.RecordImpl;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,7 @@ public class ElasticsearchBulkProcessor extends Thread {
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchBulkProcessor.class);
 
   @Autowired
-  private TransportClient esClient;
+  private RestHighLevelClient esClient;
 
   @Autowired
   private ListViewZeebeRecordProcessor listViewZeebeRecordProcessor;
@@ -52,7 +52,7 @@ public class ElasticsearchBulkProcessor extends Thread {
 
       logger.debug("Writing [{}] Zeebe records to Elasticsearch", zeebeRecords.size());
 
-      BulkRequestBuilder bulkRequest = esClient.prepareBulk();
+      BulkRequest bulkRequest = new BulkRequest();
       for (RecordImpl record : zeebeRecords) {
         switch (record.getMetadata().getValueType()) {
         case WORKFLOW_INSTANCE:
@@ -78,7 +78,7 @@ public class ElasticsearchBulkProcessor extends Thread {
           break;
         }
       }
-      ElasticsearchUtil.processBulkRequest(bulkRequest, true);
+      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true);
 
   }
 

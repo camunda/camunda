@@ -27,10 +27,9 @@ import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.VariableRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.action.update.UpdateRequestBuilder;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,9 +60,6 @@ public class ListViewZeebeRecordProcessor {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private TransportClient esClient;
-
-  @Autowired
   private ListViewTemplate listViewTemplate;
 
   @Autowired
@@ -72,23 +68,23 @@ public class ListViewZeebeRecordProcessor {
   @Autowired
   private BatchOperationWriter batchOperationWriter;
 
-  public void processIncidentRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     final String intentStr = record.getMetadata().getIntent().name();
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
 
     //update activity instance
-    bulkRequestBuilder.add(persistActivityInstanceFromIncident(record, intentStr, recordValue));
+    bulkRequest.add(persistActivityInstanceFromIncident(record, intentStr, recordValue));
 
   }
 
-  public void processVariableRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  public void processVariableRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     VariableRecordValueImpl recordValue = (VariableRecordValueImpl)record.getValue();
 
-    bulkRequestBuilder.add(persistVariable(record, recordValue));
+    bulkRequest.add(persistVariable(record, recordValue));
 
   }
 
-  public void processWorkflowInstanceRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  public void processWorkflowInstanceRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
 
     final String intentStr = record.getMetadata().getIntent().name();
     WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
@@ -101,16 +97,16 @@ public class ListViewZeebeRecordProcessor {
         //not possible to include UpdateByQueryRequestBuilder in bulk query -> executing at once
         batchOperationWriter.completeOperation(IdUtil.getId(record.getKey(), record), null, OperationType.CANCEL_WORKFLOW_INSTANCE);
         //if we update smth, we need it to have affect at once
-        bulkRequestBuilder.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+        bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
       }
 
-      bulkRequestBuilder.add(persistWorkflowInstance(record, intentStr, recordValue));
+      bulkRequest.add(persistWorkflowInstance(record, intentStr, recordValue));
     } else if (!intentStr.equals(SEQUENCE_FLOW_TAKEN.name())){
-      bulkRequestBuilder.add(persistActivityInstance(record, intentStr, recordValue));
+      bulkRequest.add(persistActivityInstance(record, intentStr, recordValue));
     }
   }
 
-  private UpdateRequestBuilder persistActivityInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
+  private UpdateRequest persistActivityInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
     ActivityInstanceForListViewEntity entity = new ActivityInstanceForListViewEntity();
     entity.setId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
     entity.setKey(recordValue.getElementInstanceKey());
@@ -134,7 +130,7 @@ public class ListViewZeebeRecordProcessor {
     return getActivityInstanceFromIncidentQuery(entity, workflowInstanceId);
   }
 
-  private UpdateRequestBuilder persistActivityInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue) throws PersistenceException {
+  private UpdateRequest persistActivityInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue) throws PersistenceException {
     ActivityInstanceForListViewEntity entity = new ActivityInstanceForListViewEntity();
     entity.setId(IdUtil.getId(record.getKey(), record));
     entity.setPartitionId(record.getMetadata().getPartitionId());
@@ -161,7 +157,7 @@ public class ListViewZeebeRecordProcessor {
 
   }
 
-  private UpdateRequestBuilder persistVariable(Record record, VariableRecordValueImpl recordValue) throws PersistenceException {
+  private UpdateRequest persistVariable(Record record, VariableRecordValueImpl recordValue) throws PersistenceException {
     VariableForListViewEntity entity = new VariableForListViewEntity();
     entity.setId(IdUtil.getVariableId(recordValue.getScopeKey(), recordValue.getName()));
     entity.setKey(record.getKey());
@@ -179,7 +175,7 @@ public class ListViewZeebeRecordProcessor {
 
   }
 
-  private UpdateRequestBuilder getActivityInstanceQuery(ActivityInstanceForListViewEntity entity, String workflowInstanceId) throws PersistenceException {
+  private UpdateRequest getActivityInstanceQuery(ActivityInstanceForListViewEntity entity, String workflowInstanceId) throws PersistenceException {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
@@ -191,11 +187,10 @@ public class ListViewZeebeRecordProcessor {
       //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
 
-      return esClient
-        .prepareUpdate(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-        .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .setDoc(jsonMap)
-        .setRouting(workflowInstanceId);
+      return new UpdateRequest(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+        .doc(jsonMap)
+        .routing(workflowInstanceId);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);
@@ -203,7 +198,7 @@ public class ListViewZeebeRecordProcessor {
     }
   }
 
-  private UpdateRequestBuilder getVariableQuery(VariableForListViewEntity entity, String workflowInstanceId) throws PersistenceException {
+  private UpdateRequest getVariableQuery(VariableForListViewEntity entity, String workflowInstanceId) throws PersistenceException {
     try {
       logger.debug("Variable for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
@@ -213,11 +208,10 @@ public class ListViewZeebeRecordProcessor {
       //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
 
-      return esClient
-        .prepareUpdate(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-        .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .setDoc(jsonMap)
-        .setRouting(workflowInstanceId);
+      return new UpdateRequest(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+        .doc(jsonMap)
+        .routing(workflowInstanceId);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert variable for list view", e);
@@ -225,7 +219,7 @@ public class ListViewZeebeRecordProcessor {
     }
   }
 
-  private UpdateRequestBuilder getActivityInstanceFromIncidentQuery(ActivityInstanceForListViewEntity entity, String workflowInstanceId) throws PersistenceException {
+  private UpdateRequest getActivityInstanceFromIncidentQuery(ActivityInstanceForListViewEntity entity, String workflowInstanceId) throws PersistenceException {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
@@ -236,11 +230,10 @@ public class ListViewZeebeRecordProcessor {
       //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
 
-      return esClient
-        .prepareUpdate(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-        .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .setDoc(jsonMap)
-        .setRouting(workflowInstanceId);
+      return new UpdateRequest(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+        .doc(jsonMap)
+        .routing(workflowInstanceId);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);
@@ -248,7 +241,7 @@ public class ListViewZeebeRecordProcessor {
     }
   }
 
-  private UpdateRequestBuilder persistWorkflowInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue) throws PersistenceException {
+  private UpdateRequest persistWorkflowInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue) throws PersistenceException {
     WorkflowInstanceForListViewEntity wiEntity = new WorkflowInstanceForListViewEntity();
     wiEntity.setId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
     wiEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
@@ -278,7 +271,7 @@ public class ListViewZeebeRecordProcessor {
     return getWorfklowInstanceQuery(wiEntity);
   }
 
-  private UpdateRequestBuilder getWorfklowInstanceQuery(WorkflowInstanceForListViewEntity wiEntity) throws PersistenceException {
+  private UpdateRequest getWorfklowInstanceQuery(WorkflowInstanceForListViewEntity wiEntity) throws PersistenceException {
     try {
       logger.debug("Workflow instance for list view: id {}", wiEntity.getId());
       Map<String, Object> updateFields = new HashMap<>();
@@ -296,11 +289,9 @@ public class ListViewZeebeRecordProcessor {
 
       //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-
-      return esClient
-        .prepareUpdate(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, wiEntity.getId())
-        .setUpsert(objectMapper.writeValueAsString(wiEntity), XContentType.JSON)
-        .setDoc(jsonMap);
+      return new UpdateRequest(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, wiEntity.getId())
+        .upsert(objectMapper.writeValueAsString(wiEntity), XContentType.JSON)
+        .doc(jsonMap);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert workflow instance for list view", e);

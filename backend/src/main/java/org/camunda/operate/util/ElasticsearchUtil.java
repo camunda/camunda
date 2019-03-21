@@ -13,17 +13,20 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.camunda.operate.entities.OperateEntity;
+import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.action.update.UpdateRequestBuilder;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -128,7 +131,7 @@ public abstract class ElasticsearchUtil {
       workflowInstance = objectMapper.readValue(searchHitString, clazz);
     } catch (IOException e) {
       logger.error(String.format("Error while reading entity of type %s from Elasticsearch!", clazz.getName()), e);
-      throw new RuntimeException(String.format("Error while reading entity of type %s from Elasticsearch!", clazz.getName()), e);
+      throw new OperateRuntimeException(String.format("Error while reading entity of type %s from Elasticsearch!", clazz.getName()), e);
     }
     return workflowInstance;
   }
@@ -148,23 +151,23 @@ public abstract class ElasticsearchUtil {
       workflowInstance = objectMapper.readValue(searchHitString, valueType);
     } catch (IOException e) {
       logger.error(String.format("Error while reading entity of type %s from Elasticsearch!", valueType.toString()), e);
-      throw new RuntimeException(String.format("Error while reading entity of type %s from Elasticsearch!", valueType.toString()), e);
+      throw new OperateRuntimeException(String.format("Error while reading entity of type %s from Elasticsearch!", valueType.toString()), e);
     }
     return workflowInstance;
   }
 
-  public static void processBulkRequest(BulkRequestBuilder bulkRequest) throws PersistenceException {
-    processBulkRequest(bulkRequest, false);
+  public static void processBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest) throws PersistenceException {
+    processBulkRequest(esClient, bulkRequest, false);
   }
 
-  public static void processBulkRequest(BulkRequestBuilder bulkRequest, boolean refreshImmediately) throws PersistenceException {
-    if (bulkRequest.request().requests().size() > 0) {
+  public static void processBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest, boolean refreshImmediately) throws PersistenceException {
+    if (bulkRequest.requests().size() > 0) {
       try {
         logger.debug("************* FLUSH BULK *************");
         if (refreshImmediately) {
           bulkRequest = bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
         }
-        final BulkResponse bulkItemResponses = bulkRequest.execute().get();
+        final BulkResponse bulkItemResponses = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
         final BulkItemResponse[] items = bulkItemResponses.getItems();
         for (BulkItemResponse responseItem : items) {
           if (responseItem.isFailed()) {
@@ -173,57 +176,57 @@ public abstract class ElasticsearchUtil {
             throw new PersistenceException("Operation failed: " + responseItem.getFailureMessage(), responseItem.getFailure().getCause(), responseItem.getItemId());
           }
         }
-      } catch (InterruptedException | java.util.concurrent.ExecutionException ex) {
+      } catch (IOException ex) {
         throw new PersistenceException("Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
       }
     }
   }
 
-  public static void executeUpdate(UpdateRequestBuilder updateRequest) throws PersistenceException {
+  public static void executeUpdate(RestHighLevelClient esClient, UpdateRequest updateRequest) throws PersistenceException {
       try {
-        updateRequest.get();
-      } catch (ElasticsearchException e)  {
+        esClient.update(updateRequest, RequestOptions.DEFAULT);
+      } catch (ElasticsearchException | IOException e)  {
         final String errorMessage = String.format("Update request failed for type [%s] and id [%s] with the message [%s].",
-          updateRequest.request().type(), updateRequest.request().id(), e.getMessage());
+          updateRequest.type(), updateRequest.id(), e.getMessage());
         logger.error(errorMessage, e);
         throw new PersistenceException(errorMessage, e);
       }
   }
 
-  public static void executeIndex(TransportClient esClient, List<IndexRequestBuilder> indexRequests) throws PersistenceException {
+  public static void executeIndex(RestHighLevelClient esClient, List<IndexRequest> indexRequests) throws PersistenceException {
     if (indexRequests.size() == 1) {
-      executeIndex(indexRequests.get(0));
+      executeIndex(esClient, indexRequests.get(0));
     } else if (indexRequests.size() > 1) {
-      BulkRequestBuilder bulkRequest = esClient.prepareBulk();
-      for (IndexRequestBuilder indexRequest: indexRequests) {
+      BulkRequest bulkRequest = new BulkRequest();
+      for (IndexRequest indexRequest: indexRequests) {
         bulkRequest.add(indexRequest);
       }
-      processBulkRequest(bulkRequest);
+      processBulkRequest(esClient, bulkRequest);
     }
   }
 
-  public static void executeIndex(IndexRequestBuilder indexRequest) throws PersistenceException {
+  public static void executeIndex(RestHighLevelClient esClient, IndexRequest indexRequest) throws PersistenceException {
       try {
-        indexRequest.get();
-      } catch (ElasticsearchException e)  {
+        esClient.index(indexRequest, RequestOptions.DEFAULT);
+      } catch (ElasticsearchException | IOException e)  {
         final String errorMessage = String.format("Index request failed for type [%s] and id [%s] with the message [%s].",
-          indexRequest.request().type(), indexRequest.request().id(), e.getMessage());
+          indexRequest.type(), indexRequest.id(), e.getMessage());
         logger.error(errorMessage, e);
         throw new PersistenceException(errorMessage, e);
       }
   }
 
-  public static <T extends OperateEntity> List<T> scroll(SearchRequestBuilder builder, Class<T> clazz, ObjectMapper objectMapper, TransportClient esClient) {
-    return scroll(builder, clazz, objectMapper, esClient, null, null);
+  public static <T extends OperateEntity> List<T> scroll(SearchRequest searchRequest, Class<T> clazz, ObjectMapper objectMapper, RestHighLevelClient esClient)
+    throws IOException {
+    return scroll(searchRequest, clazz, objectMapper, esClient, null, null);
   }
 
 
-  public static <T extends OperateEntity> List<T> scroll(SearchRequestBuilder builder, Class<T> clazz, ObjectMapper objectMapper, TransportClient esClient,
-    Consumer<SearchHits> searchHitsProcessor, Consumer<Aggregations> aggsProcessor) {
-    TimeValue keepAlive = new TimeValue(SCROLL_KEEP_ALIVE_MS);
-    SearchResponse response = builder
-      .setScroll(keepAlive)
-      .get();
+  public static <T extends OperateEntity> List<T> scroll(SearchRequest searchRequest, Class<T> clazz, ObjectMapper objectMapper, RestHighLevelClient esClient,
+    Consumer<SearchHits> searchHitsProcessor, Consumer<Aggregations> aggsProcessor) throws IOException {
+
+    searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+    SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
     //call aggregations processor
     if (aggsProcessor != null) {
@@ -231,7 +234,7 @@ public abstract class ElasticsearchUtil {
     }
 
     List<T> result = new ArrayList<>();
-    do {
+    while (response.getHits().getHits().length != 0) {
       SearchHits hits = response.getHits();
       String scrollId = response.getScrollId();
 
@@ -242,76 +245,76 @@ public abstract class ElasticsearchUtil {
         searchHitsProcessor.accept(response.getHits());
       }
 
-      response = esClient
-        .prepareSearchScroll(scrollId)
-        .setScroll(keepAlive)
-        .get();
+      SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+      scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
 
-    } while (response.getHits().getHits().length != 0);
+      response = esClient
+        .scroll(scrollRequest, RequestOptions.DEFAULT);
+
+    };
 
     return result;
   }
 
-  public static List<String> scrollIdsToList(SearchRequestBuilder builder, TransportClient esClient) {
+  public static List<String> scrollIdsToList(SearchRequest request, RestHighLevelClient esClient) throws IOException {
     List<String> result = new ArrayList<>();
-    TimeValue keepAlive = new TimeValue(5000);
-    SearchResponse response = builder
-      .setScroll(keepAlive)
-      .get();
-    do {
+
+    request.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+    SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+
+    while (response.getHits().getHits().length != 0) {
       SearchHits hits = response.getHits();
       String scrollId = response.getScrollId();
 
-      result.addAll(Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2)));
+      result.addAll(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2)));      result.addAll(Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2)));
+
+      SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+      scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
 
       response = esClient
-          .prepareSearchScroll(scrollId)
-          .setScroll(keepAlive)
-          .get();
-
-    } while (response.getHits().getHits().length != 0);
+        .scroll(scrollRequest, RequestOptions.DEFAULT);
+    }
     return result;
   }
-
-  public static List<String> scrollFieldToList(SearchRequestBuilder builder, String fieldName, TransportClient esClient) {
+  public static List<String> scrollFieldToList(SearchRequest request, String fieldName, RestHighLevelClient esClient) throws IOException {
     List<String> result = new ArrayList<>();
-    TimeValue keepAlive = new TimeValue(5000);
-    SearchResponse response = builder
-      .setScroll(keepAlive)
-      .get();
-    do {
+
+    request.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+    SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+
+    while (response.getHits().getHits().length != 0) {
       SearchHits hits = response.getHits();
       String scrollId = response.getScrollId();
 
       result.addAll(Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getSourceAsMap().get(fieldName).toString()), (list1, list2) -> list1.addAll(list2)));
 
-      response = esClient
-          .prepareSearchScroll(scrollId)
-          .setScroll(keepAlive)
-          .get();
+      SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+      scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
 
-    } while (response.getHits().getHits().length != 0);
+      response = esClient
+        .scroll(scrollRequest, RequestOptions.DEFAULT);
+    }
     return result;
   }
 
-  public static Set<String> scrollIdsToSet(SearchRequestBuilder builder, TransportClient esClient) {
+  public static Set<String> scrollIdsToSet(SearchRequest request, RestHighLevelClient esClient) throws IOException {
     Set<String> result = new HashSet<>();
-    TimeValue keepAlive = new TimeValue(5000);
-    SearchResponse response = builder
-      .setScroll(keepAlive)
-      .get();
-    do {
+
+    request.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+    SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+
+    while (response.getHits().getHits().length != 0) {
       SearchHits hits = response.getHits();
       String scrollId = response.getScrollId();
 
       result.addAll(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2)));
 
-      response = esClient
-          .prepareSearchScroll(scrollId)
-          .setScroll(keepAlive)
-          .get();
+      SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+      scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
 
-    } while (response.getHits().getHits().length != 0);
+      response = esClient
+          .scroll(scrollRequest, RequestOptions.DEFAULT);
+    }
     return result;
   }
 }

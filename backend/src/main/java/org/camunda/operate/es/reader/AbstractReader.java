@@ -5,12 +5,13 @@
  */
 package org.camunda.operate.es.reader;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,18 +19,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class AbstractReader {
 
   @Autowired
-  protected TransportClient esClient;
+  protected RestHighLevelClient esClient;
 
   @Autowired
   protected ObjectMapper objectMapper;
 
-  protected <T extends OperateEntity> List<T> scroll(SearchRequestBuilder builder, Class<T> clazz) {
-    return ElasticsearchUtil.scroll(builder, clazz, objectMapper, esClient);
+  protected <T extends OperateEntity> List<T> scroll(SearchRequest searchRequest, Class<T> clazz) throws IOException {
+    return ElasticsearchUtil.scroll(searchRequest, clazz, objectMapper, esClient);
   }
 
-  protected <T extends OperateEntity> List<T> scroll(SearchRequestBuilder builder, Class<T> clazz,
-    Consumer<Aggregations> aggsProcessor) {
-    return ElasticsearchUtil.scroll(builder, clazz, objectMapper, esClient, null, aggsProcessor);
+  protected <T extends OperateEntity> List<T> scroll(SearchRequest searchRequest, Class<T> clazz,
+    Consumer<Aggregations> aggsProcessor) throws IOException {
+    return ElasticsearchUtil.scroll(searchRequest, clazz, objectMapper, esClient, null, aggsProcessor);
   }
 
 }

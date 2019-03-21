@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.util;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -27,9 +28,11 @@ import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
 import org.camunda.operate.zeebeimport.ZeebeESImporter;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.IndexNotFoundException;
 import org.junit.rules.ExternalResource;
@@ -45,11 +48,11 @@ public class ElasticsearchTestRule extends ExternalResource {
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchTestRule.class);
 
   @Autowired
-  protected TransportClient esClient;
+  protected RestHighLevelClient esClient;
 
   @Autowired
   @Qualifier("zeebeEsClient")
-  protected TransportClient zeebeEsClient;
+  protected RestHighLevelClient zeebeEsClient;
 
   @Autowired
   private List<IndexCreator> typeMappingCreators;
@@ -131,14 +134,12 @@ public class ElasticsearchTestRule extends ExternalResource {
 //
   public void refreshIndexesInElasticsearch() {
     try {
-      esClient.admin().indices()
-        .prepareRefresh()
-        .get();
+      esClient.indices()
+        .refresh(new RefreshRequest(), RequestOptions.DEFAULT);
 
-      zeebeEsClient.admin().indices()
-        .prepareRefresh()
-        .get();
-    } catch (IndexNotFoundException e) {
+      zeebeEsClient.indices()
+        .refresh(new RefreshRequest(), RequestOptions.DEFAULT);
+    } catch (IndexNotFoundException | IOException e) {
       logger.error(e.getMessage(), e);
       //      nothing to do
     }
@@ -246,25 +247,24 @@ public class ElasticsearchTestRule extends ExternalResource {
 
   public void persistOperateEntitiesNew(List<? extends OperateEntity> operateEntities) throws PersistenceException {
     try {
-      BulkRequestBuilder bulkRequest = esClient.prepareBulk();
+      BulkRequest bulkRequest = new BulkRequest();
       for (OperateEntity entity : operateEntities) {
         final String alias = getEntityToESAliasMap().get(entity.getClass());
         if (alias == null) {
           throw new RuntimeException("Index not configured for " + entity.getClass().getName());
         }
-        final IndexRequestBuilder indexRequestBuilder =
-          esClient
-            .prepareIndex(alias, ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-            .setSource(objectMapper.writeValueAsString(entity), XContentType.JSON);
+        final IndexRequest indexRequest =
+          new IndexRequest(alias, ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+            .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
         if (entity instanceof ActivityInstanceForListViewEntity) {
-          indexRequestBuilder.setRouting(((ActivityInstanceForListViewEntity)entity).getWorkflowInstanceId());
+          indexRequest.routing(((ActivityInstanceForListViewEntity)entity).getWorkflowInstanceId());
         }
         if (entity instanceof VariableForListViewEntity) {
-          indexRequestBuilder.setRouting(((VariableForListViewEntity)entity).getWorkflowInstanceId());
+          indexRequest.routing(((VariableForListViewEntity)entity).getWorkflowInstanceId());
         }
-        bulkRequest.add(indexRequestBuilder);
+        bulkRequest.add(indexRequest);
       }
-      ElasticsearchUtil.processBulkRequest(bulkRequest, true);
+      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true);
     } catch (Exception ex) {
       throw new PersistenceException(ex);
     }

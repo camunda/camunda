@@ -5,16 +5,19 @@
  */
 package org.camunda.operate.es.reader;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
+import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceDto;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeDto;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeRequestDto;
-import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,14 +70,18 @@ public class ActivityInstanceReader extends AbstractReader {
   }
 
   public List<ActivityInstanceEntity> getAllActivityInstances(String workflowInstanceId) {
-
     final TermQueryBuilder workflowInstanceIdQ = termQuery(ActivityInstanceTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
-
-    final SearchRequestBuilder requestBuilder =
-      esClient.prepareSearch(activityInstanceTemplate.getAlias())
-        .setQuery(constantScoreQuery(workflowInstanceIdQ))
-        .addSort(ActivityInstanceTemplate.POSITION, SortOrder.ASC);
-    return scroll(requestBuilder, ActivityInstanceEntity.class);
+    final SearchRequest searchRequest = new SearchRequest(activityInstanceTemplate.getAlias())
+      .source(new SearchSourceBuilder()
+        .query(constantScoreQuery(workflowInstanceIdQ))
+        .sort(ActivityInstanceTemplate.POSITION, SortOrder.ASC));
+    try {
+      return scroll(searchRequest, ActivityInstanceEntity.class);
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining all activity instances: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
   }
 
 }

@@ -3,13 +3,13 @@ camunda.bpm.operate:
   elasticsearch:
     clusterName: docker-cluster
     host: localhost
-    port: 9300
+    port: 9200
   zeebe:
     brokerContactPoint: localhost:26500
   zeebeElasticsearch:
     clusterName: docker-cluster
     host: localhost
-    port: 9300
+    port: 9200
     prefix: zeebe-record
 logging:
   level:
@@ -23,13 +23,13 @@ camunda.bpm.operate:
   elasticsearch:
     clusterName: docker-cluster
     host: elasticsearch
-    port: 9300
+    port: 9200
   zeebe:
     brokerContactPoint: zeebe:26500
   zeebeElasticsearch:
     clusterName: docker-cluster
     host: elasticsearch
-    port: 9300
+    port: 9200
     prefix: zeebe-record
 logging:
   level:

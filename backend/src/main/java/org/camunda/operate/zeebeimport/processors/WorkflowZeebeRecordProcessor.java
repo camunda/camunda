@@ -24,8 +24,8 @@ import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.record.value.DeploymentRecordValueImpl;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,25 +59,22 @@ public class WorkflowZeebeRecordProcessor {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private TransportClient esClient;
-
-  @Autowired
   private WorkflowIndex workflowIndex;
 
-  public void processDeploymentRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  public void processDeploymentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     final String intentStr = record.getMetadata().getIntent().name();
 
     if (STATES.contains(intentStr)) {
       DeploymentRecordValueImpl recordValue = (DeploymentRecordValueImpl)record.getValue();
       Map<String, DeploymentResource> resources = resourceToMap(recordValue.getResources());
       for (DeployedWorkflow workflow : recordValue.getDeployedWorkflows()) {
-        persistWorkflow(workflow, resources, record, bulkRequestBuilder);
+        persistWorkflow(workflow, resources, record, bulkRequest);
       }
     }
 
   }
 
-  private void persistWorkflow(DeployedWorkflow workflow, Map<String, DeploymentResource> resources, Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
+  private void persistWorkflow(DeployedWorkflow workflow, Map<String, DeploymentResource> resources, Record record, BulkRequest bulkRequest) throws PersistenceException {
     String resourceName = workflow.getResourceName();
     DeploymentResource resource = resources.get(resourceName);
 
@@ -99,10 +96,9 @@ public class WorkflowZeebeRecordProcessor {
       //            .setDoc(updateFields));
       //        }
 
-      bulkRequestBuilder.add(
-        esClient
-          .prepareIndex(workflowIndex.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowEntity.getId())
-          .setSource(objectMapper.writeValueAsString(workflowEntity), XContentType.JSON)
+      bulkRequest.add(
+        new IndexRequest(workflowIndex.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowEntity.getId())
+          .source(objectMapper.writeValueAsString(workflowEntity), XContentType.JSON)
       );
     } catch (JsonProcessingException e) {
       logger.error("Error preparing the query to insert workflow", e);

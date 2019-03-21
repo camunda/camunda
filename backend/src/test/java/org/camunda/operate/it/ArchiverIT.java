@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.it;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -27,20 +28,22 @@ import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
+import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,7 +76,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private OperateProperties operateProperties;
 
   @Autowired
-  private TransportClient esClient;
+  private RestHighLevelClient esClient;
 
   @Autowired
   @Qualifier("activityIsActiveCheck")
@@ -120,7 +123,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testArchiving() throws ReindexException, PersistenceException {
+  public void testArchiving() throws ReindexException, PersistenceException, IOException {
     brokerRule.getClock().pinCurrentTime();
     final Instant currentTime = brokerRule.getClock().getCurrentTime();
 
@@ -185,7 +188,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testArchivingOnlyOneHourOldData() throws ReindexException, PersistenceException {
+  public void testArchivingOnlyOneHourOldData() throws ReindexException, PersistenceException, IOException {
     brokerRule.getClock().pinCurrentTime();
     final Instant currentTime = brokerRule.getClock().getCurrentTime();
 
@@ -236,7 +239,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     deployWorkflow(workflow, processId + ".bpmn");
   }
 
-  private void assertInstancesInCorrectIndex(int instancesCount, List<String> ids, Instant endDate) {
+  private void assertInstancesInCorrectIndex(int instancesCount, List<String> ids, Instant endDate) throws IOException {
     assertWorkflowInstanceIndex(instancesCount, ids, endDate);
     for (WorkflowInstanceDependant template : workflowInstanceDependantTemplates) {
       if (! (template instanceof IncidentTemplate || template instanceof SequenceFlowTemplate)) {
@@ -245,7 +248,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     }
   }
 
-  private void assertWorkflowInstanceIndex(int instancesCount, List<String> ids, Instant endDate) {
+  private void assertWorkflowInstanceIndex(int instancesCount, List<String> ids, Instant endDate) throws IOException {
     final String destinationIndexName;
     if (endDate != null) {
       destinationIndexName = reindexHelper.getDestinationIndexName(workflowInstanceTemplate.getMainIndexName(), dateTimeFormatter.format(endDate));
@@ -255,10 +258,13 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     final IdsQueryBuilder idsQ = idsQuery().addIds(ids.toArray(new String[]{}));
     final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
 
-    final SearchResponse response = esClient.prepareSearch(destinationIndexName)
-      .setQuery(constantScoreQuery(joinWithAnd(idsQ, isWorkflowInstanceQuery)))
-      .setSize(100)
-      .get();
+    final SearchRequest searchRequest = new SearchRequest(destinationIndexName)
+      .source(new SearchSourceBuilder()
+        .query(constantScoreQuery(joinWithAnd(idsQ, isWorkflowInstanceQuery)))
+        .size(100));
+
+    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
     final List<WorkflowInstanceForListViewEntity> workflowInstances = ElasticsearchUtil
       .mapSearchHits(response.getHits().getHits(), objectMapper, WorkflowInstanceForListViewEntity.class);
     assertThat(workflowInstances).hasSize(instancesCount);
@@ -269,7 +275,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     //TODO assert children records - activities
   }
 
-  private void assertDependentIndex(String mainIndexName, String idFieldName, List<String> ids, Instant endDate) {
+  private void assertDependentIndex(String mainIndexName, String idFieldName, List<String> ids, Instant endDate) throws IOException {
     final String destinationIndexName;
     if (endDate != null) {
       destinationIndexName = reindexHelper.getDestinationIndexName(mainIndexName, dateTimeFormatter.format(endDate));
@@ -277,10 +283,11 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
       destinationIndexName = reindexHelper.getDestinationIndexName(mainIndexName, "");
     }
     final TermsQueryBuilder q = termsQuery(idFieldName, ids.toArray(new String[] {}));
-    final SearchRequestBuilder queryBuilder = esClient.prepareSearch(destinationIndexName)
-      .setQuery(q)
-      .setSize(100);
-    final List<String> idsFromEls = ElasticsearchUtil.scrollFieldToList(queryBuilder, idFieldName, esClient);
+    final SearchRequest request = new SearchRequest(destinationIndexName)
+      .source(new SearchSourceBuilder()
+        .query(q)
+        .size(100));
+    final List<String> idsFromEls = ElasticsearchUtil.scrollFieldToList(request, idFieldName, esClient);
     assertThat(idsFromEls).as(mainIndexName).isSubsetOf(ids);
   }
 
