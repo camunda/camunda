@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
+import io.zeebe.db.ZeebeDbTransaction;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -98,6 +99,149 @@ public class DbTransactionTest {
     assertThat(oneColumnFamily.exists(oneKey)).isTrue();
     assertThat(twoColumnFamily.exists(twoKey)).isTrue();
     assertThat(threeColumnFamily.exists(threeKey)).isTrue();
+  }
+
+  @Test
+  public void shouldStartNewTransaction() {
+    // given
+    oneKey.wrapLong(1);
+    oneValue.wrapLong(-1);
+
+    twoKey.wrapLong(52000);
+    twoValue.wrapLong(192313);
+
+    threeKey.wrapLong(Short.MAX_VALUE);
+    threeValue.wrapLong(Integer.MAX_VALUE);
+
+    final ZeebeDbTransaction transaction = zeebeDb.transaction();
+    transaction.run(
+        () -> {
+          oneColumnFamily.put(oneKey, oneValue);
+          twoColumnFamily.put(twoKey, twoValue);
+          threeColumnFamily.put(threeKey, threeValue);
+        });
+
+    // when
+    transaction.commit();
+
+    // then
+    assertThat(oneColumnFamily.exists(oneKey)).isTrue();
+    assertThat(twoColumnFamily.exists(twoKey)).isTrue();
+    assertThat(threeColumnFamily.exists(threeKey)).isTrue();
+  }
+
+  @Test
+  public void shouldAccessOnOpenTransaction() {
+    // given
+    oneKey.wrapLong(1);
+    oneValue.wrapLong(-1);
+
+    twoKey.wrapLong(52000);
+    twoValue.wrapLong(192313);
+
+    threeKey.wrapLong(Short.MAX_VALUE);
+    threeValue.wrapLong(Integer.MAX_VALUE);
+
+    final ZeebeDbTransaction transaction = zeebeDb.transaction();
+    transaction.run(
+        () -> {
+          oneColumnFamily.put(oneKey, oneValue);
+          twoColumnFamily.put(twoKey, twoValue);
+          threeColumnFamily.put(threeKey, threeValue);
+        });
+
+    // when
+    // no commit
+
+    // then
+    // uses the same transaction
+    assertThat(oneColumnFamily.exists(oneKey)).isTrue();
+    assertThat(twoColumnFamily.exists(twoKey)).isTrue();
+    assertThat(threeColumnFamily.exists(threeKey)).isTrue();
+  }
+
+  @Test
+  public void shouldNotReopenTransaction() {
+    // given
+    final ZeebeDbTransaction transaction = zeebeDb.transaction();
+
+    transaction.run(
+        () -> {
+
+          // when
+          final ZeebeDbTransaction sameTransaction = zeebeDb.transaction();
+
+          // then
+          assertThat(transaction).isEqualTo(sameTransaction);
+        });
+  }
+
+  @Test
+  public void shouldNotReopenTransactionWithOperations() {
+    // given
+    oneKey.wrapLong(1);
+    oneValue.wrapLong(-1);
+
+    twoKey.wrapLong(52000);
+    twoValue.wrapLong(192313);
+
+    threeKey.wrapLong(Short.MAX_VALUE);
+    threeValue.wrapLong(Integer.MAX_VALUE);
+
+    zeebeDb.transaction(
+        () -> {
+
+          // when
+          final ZeebeDbTransaction sameTransaction = zeebeDb.transaction();
+          sameTransaction.run(
+              () -> {
+                oneColumnFamily.put(oneKey, oneValue);
+                twoColumnFamily.put(twoKey, twoValue);
+                threeColumnFamily.put(threeKey, threeValue);
+              });
+          sameTransaction.commit();
+
+          // then it is committed but available in this transaction
+          assertThat(oneColumnFamily.exists(oneKey)).isTrue();
+          oneColumnFamily.delete(oneKey);
+
+          assertThat(twoColumnFamily.exists(twoKey)).isTrue();
+          assertThat(threeColumnFamily.exists(threeKey)).isTrue();
+        });
+
+    // then it is committed but available in this transaction
+    assertThat(oneColumnFamily.exists(oneKey)).isFalse();
+    assertThat(twoColumnFamily.exists(twoKey)).isTrue();
+    assertThat(threeColumnFamily.exists(threeKey)).isTrue();
+  }
+
+  @Test
+  public void shouldRollbackTransaction() {
+    // given
+    oneKey.wrapLong(1);
+    oneValue.wrapLong(-1);
+
+    twoKey.wrapLong(52000);
+    twoValue.wrapLong(192313);
+
+    threeKey.wrapLong(Short.MAX_VALUE);
+    threeValue.wrapLong(Integer.MAX_VALUE);
+
+    final ZeebeDbTransaction transaction = zeebeDb.transaction();
+    transaction.run(
+        () -> {
+          oneColumnFamily.put(oneKey, oneValue);
+          twoColumnFamily.put(twoKey, twoValue);
+          threeColumnFamily.put(threeKey, threeValue);
+        });
+
+    // when
+    transaction.rollback();
+
+    // then
+    assertThat(oneColumnFamily.exists(oneKey)).isFalse();
+    assertThat(twoColumnFamily.exists(twoKey)).isFalse();
+    assertThat(threeColumnFamily.exists(threeKey)).isFalse();
   }
 
   @Test

@@ -15,15 +15,8 @@
  */
 package io.zeebe.db.impl.rocksdb.transaction;
 
+import static io.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRocksDbExceptionRecoverable;
 import static io.zeebe.util.buffer.BufferUtil.startsWith;
-import static org.rocksdb.Status.Code.Aborted;
-import static org.rocksdb.Status.Code.Busy;
-import static org.rocksdb.Status.Code.Expired;
-import static org.rocksdb.Status.Code.IOError;
-import static org.rocksdb.Status.Code.MergeInProgress;
-import static org.rocksdb.Status.Code.Ok;
-import static org.rocksdb.Status.Code.TimedOut;
-import static org.rocksdb.Status.Code.TryAgain;
 
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.DbKey;
@@ -32,12 +25,12 @@ import io.zeebe.db.KeyValuePairVisitor;
 import io.zeebe.db.TransactionOperation;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbException;
+import io.zeebe.db.ZeebeDbTransaction;
 import io.zeebe.db.impl.rocksdb.Loggers;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -55,8 +48,6 @@ import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.RocksObject;
-import org.rocksdb.Status;
-import org.rocksdb.Status.Code;
 import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
@@ -67,8 +58,6 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   private static final Logger LOG = Loggers.DB_LOGGER;
   private static final String ERROR_MESSAGE_CLOSE_RESOURCE =
       "Expected to close RocksDB resource successfully, but exception was thrown. Will continue to close remaining resources.";
-  private static final EnumSet<Code> RECOVERABLE_ERROR_CODES =
-      EnumSet.of(Ok, Aborted, Expired, IOError, Busy, TimedOut, TryAgain, MergeInProgress);
 
   private static final byte[] ZERO_SIZE_ARRAY = new byte[0];
 
@@ -138,7 +127,6 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   private final ReadOptions prefixReadOptions;
   private final ReadOptions defaultReadOptions;
 
-  private boolean inTransaction;
   private final ZeebeTransaction currentTransaction;
 
   protected ZeebeTransactionDb(
@@ -196,7 +184,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   }
 
   private boolean isInCurrentTransaction() {
-    return inTransaction;
+    return currentTransaction.isInCurrentTransaction();
   }
 
   @Override
@@ -214,27 +202,28 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
       } else {
         throw new RuntimeException(errorMessage, rdbex);
       }
-
     } catch (Exception ex) {
       throw new RuntimeException(
           "Unexpected error occurred during zeebe db transaction operation.", ex);
     }
   }
 
-  private boolean isRocksDbExceptionRecoverable(RocksDBException rdbex) {
-    final Status status = rdbex.getStatus();
-    return RECOVERABLE_ERROR_CODES.contains(status.getCode());
-  }
-
   private void runInNewTransaction(TransactionOperation operations) throws Exception {
     try {
-      inTransaction = true;
+      currentTransaction.resetTransaction();
       operations.run();
-      currentTransaction.commit();
+      currentTransaction.commitInternal();
     } finally {
-      inTransaction = false;
-      currentTransaction.rollback();
+      currentTransaction.rollbackInternal();
     }
+  }
+
+  @Override
+  public ZeebeDbTransaction transaction() {
+    if (!isInCurrentTransaction()) {
+      currentTransaction.resetTransaction();
+    }
+    return currentTransaction;
   }
 
   ////////////////////////////////////////////////////////////////////
