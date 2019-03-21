@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -141,6 +142,85 @@ public class CollectionRestServiceIT {
     assertThat(collection.getId(), is(id));
   }
 
+
+  @Test
+  public void getAllCollectionsOrderedByName() {
+    //given
+    addCollectionToOptimize("B Collection");
+    addCollectionToOptimize("A Collection");
+    addCollectionToOptimize("C Collection");
+
+    // when
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+
+    // then
+    assertThat(collections.size(), is(3));
+    assertThat(collections.get(0).getName(), is("A Collection"));
+    assertThat(collections.get(1).getName(), is("B Collection"));
+    assertThat(collections.get(2).getName(), is("C Collection"));
+  }
+
+  @Test
+  public void getAllCollectionsOrderedByCreated() {
+    //given
+    addCollectionToOptimize("B Collection");
+    addCollectionToOptimize("A Collection");
+    addCollectionToOptimize("C Collection");
+
+    // when
+    List<ResolvedCollectionDefinitionDto> collections = embeddedOptimizeRule
+      .getRequestExecutor()
+      .addSingleQueryParam("orderBy", "created")
+      .buildGetAllCollectionsRequest()
+      .executeAndReturnList(ResolvedCollectionDefinitionDto.class, 200);
+
+    // then
+    assertThat(collections.size(), is(3));
+    assertThat(collections.get(0).getName(), is("C Collection"));
+    assertThat(collections.get(1).getName(), is("A Collection"));
+    assertThat(collections.get(2).getName(), is("B Collection"));
+  }
+
+  @Test
+  public void getAllCollectionsOrderedByCreatedAndSortOrder() {
+    //given
+    addCollectionToOptimize("B Collection");
+    addCollectionToOptimize("A Collection");
+    addCollectionToOptimize("C Collection");
+
+    // when
+    HashMap<String, Object> queryParams = new HashMap<>();
+    queryParams.put("orderBy", "created");
+    queryParams.put("sortOrder", "desc");
+    List<ResolvedCollectionDefinitionDto> collections = embeddedOptimizeRule
+      .getRequestExecutor()
+      .addQueryParams(queryParams)
+      .buildGetAllCollectionsRequest()
+      .executeAndReturnList(ResolvedCollectionDefinitionDto.class, 200);
+
+    // then
+    assertThat(collections.size(), is(3));
+    assertThat(collections.get(0).getName(), is("B Collection"));
+    assertThat(collections.get(1).getName(), is("A Collection"));
+    assertThat(collections.get(2).getName(), is("C Collection"));
+
+
+    // when
+    queryParams.put("sortOrder", "asc");
+    collections = embeddedOptimizeRule
+      .getRequestExecutor()
+      .addQueryParams(queryParams)
+      .buildGetAllCollectionsRequest()
+      .executeAndReturnList(ResolvedCollectionDefinitionDto.class, 200);
+
+    // then
+    assertThat(collections.size(), is(3));
+    assertThat(collections.get(0).getName(), is("C Collection"));
+    assertThat(collections.get(1).getName(), is("A Collection"));
+    assertThat(collections.get(2).getName(), is("B Collection"));
+  }
+
+
   @Test
   public void getCollectionForNonExistingIdThrowsError() {
     // when
@@ -193,6 +273,20 @@ public class CollectionRestServiceIT {
     // then
     assertThat(response.getStatus(), is(404));
   }
+
+
+  private void addCollectionToOptimize(String name) {
+    String id = addEmptyCollectionToOptimize();
+
+    final SimpleCollectionDefinitionDto collection = new SimpleCollectionDefinitionDto();
+    collection.setName(name);
+
+    embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateCollectionRequest(id, collection)
+      .execute();
+  }
+
 
   private String addEmptyCollectionToOptimize() {
     return embeddedOptimizeRule
