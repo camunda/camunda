@@ -101,6 +101,7 @@ export default class Instances extends Component {
                 active="instances"
                 filter={this.props.filter}
                 filterCount={this.props.filterCount}
+                setFilterFromInput={this.props.onFilterChange}
               />
               <Styled.Instances>
                 <VisuallyHiddenH1>Camunda Operate Instances</VisuallyHiddenH1>

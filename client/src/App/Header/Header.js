@@ -43,7 +43,8 @@ class Header extends React.Component {
     isFiltersCollapsed: PropTypes.bool.isRequired,
     isSelectionsCollapsed: PropTypes.bool.isRequired,
     expandFilters: PropTypes.func.isRequired,
-    expandSelections: PropTypes.func.isRequired
+    expandSelections: PropTypes.func.isRequired,
+    setFilterFromInput: PropTypes.func
   };
 
   state = {
@@ -122,12 +123,36 @@ class Header extends React.Component {
     this.setState({forceRedirect: true});
   };
 
+  getListLinksProps = key => {
+    if (!this.props.setFilterFromInput) {
+      const urls = {
+        instances: this.state.filter
+          ? getFilterQueryString(this.state.filter)
+          : '',
+        filters: getFilterQueryString(FILTER_SELECTION.running),
+        incidents: getFilterQueryString(FILTER_SELECTION.incidents)
+      };
+      return {to: `/instances${urls[key]}`, onClick: this.props.expandFilters};
+    }
+    const filters = {
+      instances: FILTER_SELECTION.running,
+      filters: this.state.filter || {},
+      incidents: FILTER_SELECTION.incidents
+    };
+
+    const onClick = e => {
+      e.preventDefault();
+      this.props.expandFilters();
+      this.props.setFilterFromInput(filters[key]);
+    };
+
+    return {onClick, to: ' '};
+  };
+
   render() {
     const {active, detail} = this.props;
     const {firstname, lastname} = this.state.user || {};
 
-    const incidentsQuery = getFilterQueryString(FILTER_SELECTION.incidents);
-    const runningQuery = getFilterQueryString(FILTER_SELECTION.running);
     const filterQuery = this.state.filter
       ? getFilterQueryString(this.state.filter)
       : '';
@@ -159,11 +184,10 @@ class Header extends React.Component {
           <li data-test="header-link-instances">
             <Styled.ListLink
               isActive={active === 'instances' && isRunningInstanceFilter}
-              to={`/instances${runningQuery}`}
               title={`View ${
                 this.state.runningInstancesCount
               } Running Instances`}
-              onClick={this.props.expandFilters}
+              {...this.getListLinksProps('instances')}
             >
               <span>Running Instances</span>
               <Badge
@@ -179,9 +203,8 @@ class Header extends React.Component {
               isActive={
                 active === 'instances' && !this.props.isFiltersCollapsed
               }
-              to={`/instances${filterQuery}`}
               title={`View ${this.state.filterCount} Instances in Filters`}
-              onClick={this.props.expandFilters}
+              {...this.getListLinksProps('filters')}
             >
               <span>Filters</span>
               <Badge
@@ -199,9 +222,8 @@ class Header extends React.Component {
           <li data-test="header-link-incidents">
             <Styled.ListLink
               isActive={active === 'instances' && isIncidentsFilter}
-              to={`/instances${incidentsQuery}`}
               title={`View ${this.state.incidentsCount} Incidents`}
-              onClick={this.props.expandFilters}
+              {...this.getListLinksProps('incidents')}
             >
               <span>Incidents</span>
               <Badge

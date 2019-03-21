@@ -77,7 +77,7 @@ class InstancesContainer extends Component {
 
   async componentDidUpdate(prevProps, prevState) {
     if (prevProps.location.search !== this.props.location.search) {
-      return this.setFilterFromUrl();
+      this.setFilterFromUrl();
     }
 
     // if any of these change, re-fetch workflowInstances
