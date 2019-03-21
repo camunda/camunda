@@ -90,6 +90,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     assertThat(byUserTaskIdResult.size(), is(2));
     assertThat(byUserTaskIdResult.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(setDuration)));
     assertThat(byUserTaskIdResult.get(USER_TASK_2), is(calculateExpectedValueGivenDurations(setDuration)));
+
+    assertThat(result.getProcessInstanceCount(), is(1L));
   }
 
   @Test
@@ -118,6 +120,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     assertThat(byUserTaskIdResult.size(), is(2));
     assertThat(byUserTaskIdResult.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(setDurations)));
     assertThat(byUserTaskIdResult.get(USER_TASK_2), is(calculateExpectedValueGivenDurations(setDurations)));
+
+    assertThat(result.getProcessInstanceCount(), is(2L));
   }
 
   @Test

@@ -71,6 +71,7 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
       final Map<String, AggregationResultDto> resultMap = processAggregations(response.getAggregations());
       final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();
       resultDto.setResult(resultMap);
+      resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
       return new SingleProcessMapDurationReportResult(resultDto);
     } catch (IOException e) {
       final String reason = String.format(
