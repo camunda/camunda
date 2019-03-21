@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.logstreams.state;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.job.JobState;
 import io.zeebe.broker.logstreams.processor.KeyGenerator;
@@ -31,8 +32,14 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.WorkflowInstanceRelated;
+import org.slf4j.Logger;
 
 public class ZeebeState {
+
+  public static final String BLACKLIST_INSTANCE_MESSAGE =
+      "Blacklist workflow instance {}, due to previous errors.";
+
+  private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final KeyState keyState;
   private final WorkflowState workflowState;
@@ -103,6 +110,7 @@ public class ZeebeState {
     if (value instanceof WorkflowInstanceRelated) {
       final long workflowInstanceKey = ((WorkflowInstanceRelated) value).getWorkflowInstanceKey();
       if (workflowInstanceKey >= 0) {
+        LOG.warn(BLACKLIST_INSTANCE_MESSAGE, workflowInstanceKey);
         blackList.blacklist(workflowInstanceKey);
       }
     }

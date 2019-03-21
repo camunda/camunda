@@ -37,11 +37,21 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
    * <p>Reading key-value pairs via get or an iterator is also possible and will reflect changes,
    * which are made during the transaction.
    *
+   * <p><b>NOTE</b>: This will automatically commit the transaction and rollback on error
+   *
    * @param operations the operations
    * @throws ZeebeDbException is thrown on an unexpected error in the database layer
    * @throws RuntimeException is thrown on an unexpected error in executing the operations
    */
   void transaction(TransactionOperation operations);
+
+  /**
+   * This will return an transaction object, on which the caller can operate on. The caller is free
+   * to decide when to commit or rollback the transaction.
+   *
+   * @return the transaction object
+   */
+  ZeebeDbTransaction transaction();
 
   /**
    * Creates an instance of a specific column family to access and store key-value pairs in that

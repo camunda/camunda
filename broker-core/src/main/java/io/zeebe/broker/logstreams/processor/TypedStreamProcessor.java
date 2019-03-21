@@ -132,7 +132,7 @@ public class TypedStreamProcessor implements StreamProcessor {
   protected static class DelegatingEventProcessor implements EventProcessor {
 
     public static final String PROCESSING_ERROR_MESSAGE =
-        "Expected to process event %s without errors, but exception occurred with message %s .";
+        "Expected to process event '%s' without errors, but exception occurred with message '%s' .";
 
     protected final int streamProcessorId;
     protected final LogStream logStream;
@@ -182,7 +182,7 @@ public class TypedStreamProcessor implements StreamProcessor {
     }
 
     @Override
-    public void processingFailed(Exception exception) {
+    public void onError(Throwable exception) {
       resetOutput();
 
       final String errorMessage =
@@ -194,6 +194,10 @@ public class TypedStreamProcessor implements StreamProcessor {
         writeCommandRejectionOnException(errorMessage);
       }
 
+      blacklist();
+    }
+
+    private void blacklist() {
       final Intent intent = event.getMetadata().getIntent();
       if (shouldBeBlacklisted(intent)) {
         zeebeState.blacklist(event);

@@ -123,8 +123,8 @@ public class StreamProcessorControllerTest {
     inOrder.verify(streamProcessor, times(1)).onEvent(any());
 
     inOrder.verify(eventProcessor, times(1)).processEvent();
-    inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
+    inOrder.verify(eventProcessor, times(1)).executeSideEffects();
 
     inOrder.verify(streamProcessor, times(1)).onClose();
     inOrder.verify(snapshotController, times(1)).takeSnapshot(any());
@@ -147,7 +147,7 @@ public class StreamProcessorControllerTest {
 
     doThrow(new RecoverableException("expected", new RuntimeException("expected")))
         .when(zeebeDb)
-        .transaction(any());
+        .transaction();
 
     // when
     writer.writeEvent(EVENT_1, true);
@@ -182,9 +182,9 @@ public class StreamProcessorControllerTest {
     inOrder.verify(streamProcessor, times(1)).onEvent(any());
 
     inOrder.verify(eventProcessor, times(1)).processEvent();
-    inOrder.verify(eventProcessor, times(1)).processingFailed(any());
-    inOrder.verify(eventProcessor, times(1)).executeSideEffects();
+    inOrder.verify(eventProcessor, times(1)).onError(any());
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
+    inOrder.verify(eventProcessor, times(1)).executeSideEffects();
 
     inOrder.verify(streamProcessor, times(1)).onClose();
     inOrder.verify(snapshotController, times(1)).takeSnapshot(any());
@@ -216,8 +216,8 @@ public class StreamProcessorControllerTest {
     // then
     final InOrder inOrder = inOrder(eventProcessor);
     inOrder.verify(eventProcessor, times(1)).processEvent();
-    inOrder.verify(eventProcessor, times(3)).executeSideEffects();
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
+    inOrder.verify(eventProcessor, times(3)).executeSideEffects();
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -230,8 +230,8 @@ public class StreamProcessorControllerTest {
     // then
     final InOrder inOrder = inOrder(eventProcessor);
     inOrder.verify(eventProcessor, times(1)).processEvent();
-    inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verify(eventProcessor, times(3)).writeEvent(any());
+    inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -548,12 +548,12 @@ public class StreamProcessorControllerTest {
 
     final InOrder inOrder = inOrder(eventProcessor);
     inOrder.verify(eventProcessor).processEvent();
-    inOrder.verify(eventProcessor).executeSideEffects();
     inOrder.verify(eventProcessor).writeEvent(any());
+    inOrder.verify(eventProcessor).executeSideEffects();
 
     inOrder.verify(eventProcessor).processEvent();
-    inOrder.verify(eventProcessor).executeSideEffects();
     inOrder.verify(eventProcessor).writeEvent(any());
+    inOrder.verify(eventProcessor).executeSideEffects();
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -583,52 +583,112 @@ public class StreamProcessorControllerTest {
 
     final InOrder inOrder = inOrder(eventProcessor);
     inOrder.verify(eventProcessor).processEvent();
-    inOrder.verify(eventProcessor).executeSideEffects();
     inOrder.verify(eventProcessor).writeEvent(any());
+    inOrder.verify(eventProcessor).executeSideEffects();
     // includes skip
     inOrder.verify(eventProcessor, times(2)).processEvent();
 
-    inOrder.verify(eventProcessor).executeSideEffects();
     inOrder.verify(eventProcessor).writeEvent(any());
+    inOrder.verify(eventProcessor).executeSideEffects();
     inOrder.verifyNoMoreInteractions();
   }
 
   @Test
-  public void shouldFailOnExecuteSideEffects() {
+  public void shouldNotRetryExecuteSideEffectsOnException() throws Exception {
     // when
+    final CountDownLatch latch = new CountDownLatch(2);
+    changeMockInActorContext(
+        () ->
+            doAnswer(
+                    (invocationOnMock) -> {
+                      latch.countDown();
+                      throw new RecoverableException("expected");
+                    })
+                .when(eventProcessor)
+                .executeSideEffects());
+    writer.writeEvents(2, EVENT_1, true);
+
+    // then
+    latch.await();
+
+    final InOrder inOrder = inOrder(eventProcessor);
+    inOrder.verify(eventProcessor, times(1)).processEvent();
+    inOrder.verify(eventProcessor, times(1)).writeEvent(any());
+    inOrder.verify(eventProcessor, times(1)).executeSideEffects();
+    inOrder.verify(eventProcessor, times(1)).processEvent();
+    inOrder.verify(eventProcessor, times(1)).writeEvent(any());
+    inOrder.verify(eventProcessor, times(1)).executeSideEffects();
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldNotRetryOnNonRecoverableException() throws Exception {
+    // when
+    final CountDownLatch latch = new CountDownLatch(2);
+    changeMockInActorContext(
+        () ->
+            doAnswer(
+                    (invocationOnMock) -> {
+                      latch.countDown();
+                      return invocationOnMock.callRealMethod();
+                    })
+                .when(eventProcessor)
+                .writeEvent(any()));
     changeMockInActorContext(
         () -> doThrow(new RuntimeException("expected")).when(eventProcessor).executeSideEffects());
     writer.writeEvents(2, EVENT_1, true);
 
     // then
-    waitUntil(() -> streamProcessorController.isFailed());
+    latch.await();
 
     final InOrder inOrder = inOrder(eventProcessor);
     inOrder.verify(eventProcessor, times(1)).processEvent();
+    inOrder.verify(eventProcessor, times(1)).writeEvent(any());
+    inOrder.verify(eventProcessor, times(1)).executeSideEffects();
+    inOrder.verify(eventProcessor, times(1)).processEvent();
+    inOrder.verify(eventProcessor, times(1)).writeEvent(any());
     inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verifyNoMoreInteractions();
   }
 
   @Test
-  public void shouldFailOnWriteEvent() {
+  public void shouldNotRetryWhenWriteEventFailed() throws Exception {
     // when
+    final CountDownLatch latch = new CountDownLatch(2);
     changeMockInActorContext(
-        () -> doThrow(new RuntimeException("expected")).when(eventProcessor).writeEvent(any()));
+        () ->
+            doAnswer(
+                    (invocationOnMock) -> {
+                      latch.countDown();
+                      if (latch.getCount() == 1) {
+                        throw new RuntimeException("expected");
+                      }
+                      return invocationOnMock.callRealMethod();
+                    })
+                .when(eventProcessor)
+                .writeEvent(any()));
     writer.writeEvents(2, EVENT_1, true);
 
     // then
-    waitUntil(() -> streamProcessorController.isFailed());
+    latch.await();
 
     final InOrder inOrder = inOrder(eventProcessor);
-    inOrder.verify(eventProcessor, times(1)).processEvent();
-    inOrder.verify(eventProcessor, times(1)).executeSideEffects();
-    inOrder.verify(eventProcessor, times(1)).writeEvent(any());
+    inOrder.verify(eventProcessor, timeout(500L).times(1)).processEvent();
+    inOrder.verify(eventProcessor, timeout(500L).times(1)).writeEvent(any());
+    inOrder.verify(eventProcessor, timeout(500L).times(1)).onError(any(RuntimeException.class));
+    inOrder.verify(eventProcessor, timeout(500L).times(1)).writeEvent(any());
+    inOrder.verify(eventProcessor, timeout(500L).times(1)).executeSideEffects();
+
+    inOrder.verify(eventProcessor, timeout(500L).times(1)).processEvent();
+    inOrder.verify(eventProcessor, timeout(500L).times(1)).writeEvent(any());
+    inOrder.verify(eventProcessor, timeout(500L).times(1)).executeSideEffects();
     inOrder.verifyNoMoreInteractions();
   }
 
   @Test
-  public void shouldFailToWriteEventIfReadOnly() {
+  public void shouldFailToWriteEventIfReadOnly() throws Exception {
     // when
+    final CountDownLatch latch = new CountDownLatch(1);
     streamProcessorController.closeAsync().join();
 
     streamProcessorController =
@@ -644,7 +704,6 @@ public class StreamProcessorControllerTest {
             .getController();
 
     // given
-
     changeMockInActorContext(
         () ->
             when(eventProcessor.writeEvent(any()))
@@ -655,41 +714,65 @@ public class StreamProcessorControllerTest {
                       return writer.key(2L).metadata(wrapString("META")).value(EVENT_2).tryWrite();
                     }));
 
+    changeMockInActorContext(
+        () ->
+            doAnswer(
+                    invocationOnMock -> {
+                      latch.countDown();
+                      return invocationOnMock.callRealMethod();
+                    })
+                .when(eventProcessor)
+                .onError(any()));
+
     // when
     writer.writeEvent(EVENT_1, true);
 
     // then
-    waitUntil(() -> streamProcessorController.isFailed());
+    latch.await();
 
     final InOrder inOrder = inOrder(eventProcessor);
     inOrder.verify(eventProcessor, times(1)).processEvent();
-    inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
-    inOrder.verifyNoMoreInteractions();
+    // loop
+    inOrder.verify(eventProcessor, times(1)).onError(any(RuntimeException.class));
+    inOrder.verify(eventProcessor, times(1)).writeEvent(any());
   }
 
   @Test
   public void shouldTakeStateSnapshotEvenIfLastWrittenEventIsUncommitted() throws Exception {
     // given
+    final CountDownLatch latch = new CountDownLatch(1);
     final ArgumentCaptor<StateSnapshotMetadata> args =
         ArgumentCaptor.forClass(StateSnapshotMetadata.class);
     final MutableStateSnapshotMetadata expectedState =
         new MutableStateSnapshotMetadata(-1, -1, -1, true);
     // when
     changeMockInActorContext(
-        () ->
-            doAnswer(
-                    i -> {
-                      expectedState.setLastWrittenEventPosition(writer.writeEvent(EVENT_2, false));
-                      expectedState.setLastWrittenEventTerm(logStreamRule.getLogStream().getTerm());
-                      return expectedState.getLastWrittenEventPosition();
-                    })
-                .when(eventProcessor)
-                .writeEvent(any()));
+        () -> {
+          doAnswer(
+                  i -> {
+                    expectedState.setLastWrittenEventPosition(writer.writeEvent(EVENT_2, false));
+                    expectedState.setLastWrittenEventTerm(logStreamRule.getLogStream().getTerm());
+                    return expectedState.getLastWrittenEventPosition();
+                  })
+              .when(eventProcessor)
+              .writeEvent(any());
+
+          doAnswer(
+                  i -> {
+                    latch.countDown();
+                    return true;
+                  })
+              .when(eventProcessor)
+              .executeSideEffects();
+        });
     expectedState.setLastSuccessfulProcessedEventPosition(writeEventAndWaitUntilProcessed(EVENT_1));
+
     // when
+    latch.await();
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
     streamProcessorController.closeAsync().join();
+
     // then
     verify(snapshotController, timeout(5000).times(1)).takeSnapshot(args.capture());
     assertThat(args.getValue()).isEqualTo(expectedState);

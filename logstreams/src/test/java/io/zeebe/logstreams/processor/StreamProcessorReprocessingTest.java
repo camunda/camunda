@@ -225,7 +225,7 @@ public class StreamProcessorReprocessingTest {
         .containsExactly(eventPosition1, eventPosition2, eventPosition3);
 
     verify(eventProcessor, times(3)).processEvent();
-    verify(eventProcessor, times(1)).processingFailed(any());
+    verify(eventProcessor, times(1)).onError(any());
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
   }
@@ -251,7 +251,7 @@ public class StreamProcessorReprocessingTest {
 
           doThrow(new RecoverableException("expected", new RuntimeException("expected")))
               .when(zeebeDb)
-              .transaction(any());
+              .transaction();
         });
     latch.await();
 
@@ -401,7 +401,7 @@ public class StreamProcessorReprocessingTest {
 
     verify(streamProcessor, times(1)).onRecovered();
     verify(eventProcessor, times(3)).processEvent();
-    verify(eventProcessor, times(3)).processingFailed(any());
+    verify(eventProcessor, times(3)).onError(any());
   }
 
   @Test

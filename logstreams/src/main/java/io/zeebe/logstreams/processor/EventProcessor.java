@@ -25,11 +25,14 @@ public interface EventProcessor {
    */
   default void processEvent() {}
   /**
-   * Is called when processing failed due to an unexpected exception. Do clean up work.
+   * Is called when during the execution of {@link #processEvent()} or {@link
+   * #writeEvent(LogStreamRecordWriter)} an unexpected exception was thrown.
    *
-   * @param exception the exception which was catched during processing
+   * <p>The implementation should do clean up work.
+   *
+   * @param throwable the throwable which was catched during execution
    */
-  default void processingFailed(Exception exception) {}
+  default void onError(Throwable throwable) {}
 
   /**
    * (Optional) Execute the side effects which are caused by the processed event. A side effect can
