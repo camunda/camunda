@@ -16,21 +16,19 @@ You can think of Zeebe's workflow orchestration as a state machine. A workflow i
 
 ## Data Flow
 
-As Zeebe progresses from one task to the next in a workflow, it can move custom data in the form of a JSON document. This data is called the *workflow payload* and is created whenever a workflow is started.
+As Zeebe progresses from one task to the next in a workflow, it can move custom data in the form of variables. Variables are key-value-pairs and part of the workflow instance.
 
-![data-flow](/basics/workflows-data-flow.png)
+![data-flow](/basics/workflow-data-flow.png)
 
-Every job worker can read the current payload and modify it when completing a job so that data can be shared between different tasks in a workflow. A workflow model can contain simple yet powerful payload transformation instructions to keep workers decoupled from each other.
+Every job worker can read the variables and modify them when completing a job so that data can be shared between different tasks in a workflow.
 
 ## Data-based Conditions
 
-Some workflows do not always execute the same tasks but need to choose different tasks based on payload and conditions:
+Some workflows do not always execute the same tasks but need to choose different tasks based on variables and conditions:
 
 ![data-conditions](/basics/workflows-data-based-conditions.png)
 
 The diamond shape with the "X" in the middle is an element indicating that the workflow decides to take one of many paths.
-
-Conditions use [JSON Path](reference/json-conditions.html) to extract properties and values from the current payload document.
 
 ## Events
 
@@ -38,7 +36,7 @@ Events represent things that happen. A workflow can react to events (catching ev
 
 ![workflow](/basics/workflow-events.png)
 
-There are different types of events such as message or timer. We cover events in more detail [in the "BPMN Workflows" section of the docs](bpmn-workflows/events.html).
+There are different types of events such as message or timer.
 
 ## Fork / Join Concurrency
 
