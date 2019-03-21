@@ -16,7 +16,7 @@ You can think of Zeebe's workflow orchestration as a state machine. A workflow i
 
 ## Data Flow
 
-As Zeebe progresses from one task to the next in a workflow, it can move custom data in the form of variables. Variables are key-value-pairs and part of the workflow.
+As Zeebe progresses from one task to the next in a workflow, it can move custom data in the form of variables. Variables are key-value-pairs and part of the workflow instance.
 
 ![data-flow](/basics/workflow-data-flow.png)
 

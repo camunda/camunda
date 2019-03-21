@@ -8,7 +8,7 @@ Every BPMN workflow instance can have one or more variables. Variables are key-v
 
 By default, a job worker gets all variables of a workflow instance. It can limit the data by providing a list of required variables as *fetchVariables*.
 
-The worker uses the variables to do its work. When the work is done, it completes the job. If the result of the work is needed by follow-up tasks then it is set as variables while completing the job. These variables are merged into the workflow instance.
+The worker uses the variables to do its work. When the work is done, it completes the job. If the result of the work is needed by follow-up tasks, then the worker set the variables while completing the job. These variables are merged into the workflow instance.
 
 ![job-worker](/bpmn-workflows/data-flow-job-worker.png)
 

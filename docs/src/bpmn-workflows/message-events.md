@@ -73,7 +73,7 @@ If it is non-interrupting, it will spawn a new token which will take the outgoin
 
 ## Variable Mappings
 
-By default, all message variables are merged into the workflow instance. This behavior can be customized by defining an output mapping at the  intermediate catch event.
+By default, all message variables are merged into the workflow instance. This behavior can be customized by defining an output mapping at the message catch event.
 
 XML representation:
 

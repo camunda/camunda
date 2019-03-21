@@ -68,7 +68,7 @@ Example:
 
 ![variable-scopes](/reference/variable-scopes.png)
 
-This workflow has the following variables:
+This workflow instance has the following variables:
 
 * `a` and `b` are defined on the root scope and can be seen by *Task A*, *Task B*, and *Task C*.
 * `c` is defined in the sub process scope and can be seen by *Task A* and *Task B*.
