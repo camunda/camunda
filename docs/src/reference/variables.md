@@ -4,7 +4,7 @@ Variables are part of a workflow instance and represent the data of the instance
 
 ## Variable Values
 
-The value of a variable is stored as a JSON object. It must have one of the following types:
+The value of a variable is stored as a JSON value. It must have one of the following types:
 
 * String
 * Number
@@ -58,7 +58,7 @@ order: {"items": ["item-1", "item-2"]}</pre></td>
 
 Variable scopes define the visibility of variables. The root scope is the workflow instance itself. Variables in this scope are visible everywhere in the workflow.
 
-When the workflow instance enters a sub process or an activity then a new scope is created. Activities in this scope can see all variables of this and of higher scopes (e.g. the root scope). But activities outside of this scope can not see the variables which are defined in this scopes.  
+When the workflow instance enters a sub process or an activity then a new scope is created. Activities in this scope can see all variables of this and of higher scopes (i.e. parent scopes). But activities outside of this scope can not see the variables which are defined in this scopes.  
 
 If a variable has the same name as a variable from a higher scope then it covers this variable. Activities in this scope see only the value of this variable and not the one from the higher scope.
 
@@ -172,11 +172,13 @@ sender: {"name": "John",
 
 ### Output Mappings
 
-Output mappings can be used to customize how job/message variables are merged into the workflow instance. They can be defined on service tasks, receive tasks and message catch events.
+Output mappings can be used to customize how job/message variables are merged into the workflow instance. They can be defined on service tasks, receive tasks, message catch events and sub processes.
 
 If one or more output mappings are defined then the job/message variables are set as *local variables* in the scope where the mapping is defined. Then, the output mappings are applied to the variables and create new variables in this scope. The new variables are merged into the parent scope. If there is no mapping for a job/message variable then the variable is not merged.  
 
 If no output mappings are defined then all job/message variables are merged into the workflow instance.
+
+In case of a sub process, the behavior is different. There are no job/message variables to be merged. But output mappings can be used to propagate *local variables* of the sub process to higher scopes. By default, all *local variables* are removed when the scope is left. 
 
 Examples:
 

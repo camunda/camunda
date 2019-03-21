@@ -21,12 +21,14 @@ XML representation:
 
 Input mappings can be used to create new variables in the scope of the sub process. These variables are only visible within the sub process.
 
+By default, the variables of the sub process are not propagated (i.e. they are removed with the scope). This behavior can be customized by defining output mappings at the sub process. The output mappings are applied when the sub process is completed.
+
 ```xml
 <bpmn:subProcess id="shipping" name="Shipping">
   <bpmn:extensionElements>
     <zeebe:ioMapping>
       <zeebe:input source="order.id" target="trackingId"/>
-     </zeebe:ioMapping>
+    </zeebe:ioMapping>
   </bpmn:extensionElements>
 </bpmn:subProcess>
 ```
