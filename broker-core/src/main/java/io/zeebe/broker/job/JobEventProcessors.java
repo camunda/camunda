@@ -46,7 +46,9 @@ public class JobEventProcessors {
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
             new JobBatchActivateProcessor(
-                jobState, workflowState.getElementInstanceState().getVariablesState()))
+                jobState,
+                workflowState.getElementInstanceState().getVariablesState(),
+                zeebeState.getKeyGenerator()))
         .withListener(new JobTimeoutTrigger(jobState));
   }
 }

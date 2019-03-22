@@ -18,6 +18,8 @@
 package io.zeebe.broker.workflow.processor.handlers.catchevent;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.handlers.element.EventOccurredHandler;
@@ -36,14 +38,16 @@ public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElemen
 
   private final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
   private final WorkflowState state;
+  private KeyGenerator keyGenerator;
 
-  public StartEventEventOccurredHandler(WorkflowState state) {
-    this(null, state);
+  public StartEventEventOccurredHandler(ZeebeState zeebeState) {
+    this(null, zeebeState);
   }
 
-  public StartEventEventOccurredHandler(WorkflowInstanceIntent nextState, WorkflowState state) {
+  public StartEventEventOccurredHandler(WorkflowInstanceIntent nextState, ZeebeState zeebeState) {
     super(nextState);
-    this.state = state;
+    this.state = zeebeState.getWorkflowState();
+    keyGenerator = zeebeState.getKeyGenerator();
   }
 
   @Override
@@ -55,8 +59,7 @@ public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElemen
     final WorkflowInstanceRecord event = context.getRecord().getValue();
     final long workflowKey = event.getWorkflowKey();
     final DeployedWorkflow workflow = state.getWorkflowByKey(workflowKey);
-    final long workflowInstanceKey =
-        context.getOutput().getStreamWriter().getKeyGenerator().nextKey();
+    final long workflowInstanceKey = keyGenerator.nextKey();
 
     // this should never happen because workflows are never deleted.
     if (workflow == null) {

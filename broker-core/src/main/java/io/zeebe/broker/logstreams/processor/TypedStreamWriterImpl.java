@@ -29,21 +29,14 @@ import java.util.function.Consumer;
 
 public class TypedStreamWriterImpl extends TypedCommandWriterImpl implements TypedStreamWriter {
 
-  private final KeyGenerator keyGenerator;
-
   public TypedStreamWriterImpl(
-      final LogStream stream,
-      final Map<ValueType, Class<? extends UnpackedObject>> eventRegistry,
-      final KeyGenerator keyGenerator) {
+      final LogStream stream, final Map<ValueType, Class<? extends UnpackedObject>> eventRegistry) {
     super(stream, eventRegistry);
-    this.keyGenerator = keyGenerator;
   }
 
   @Override
-  public long appendNewEvent(final Intent intent, final UnpackedObject value) {
-    final long key = keyGenerator.nextKey();
+  public void appendNewEvent(final long key, final Intent intent, final UnpackedObject value) {
     appendRecord(key, RecordType.EVENT, intent, value, noop);
-    return key;
   }
 
   @Override
@@ -89,10 +82,5 @@ public class TypedStreamWriterImpl extends TypedCommandWriterImpl implements Typ
         reason,
         command.getValue(),
         metadata);
-  }
-
-  @Override
-  public KeyGenerator getKeyGenerator() {
-    return keyGenerator;
   }
 }

@@ -86,7 +86,7 @@ public class TypedStreamProcessor implements StreamProcessor {
   @Override
   public void onOpen(final StreamProcessorContext context) {
     final LogStream logStream = context.getLogStream();
-    this.streamWriter = new TypedStreamWriterImpl(logStream, eventRegistry, getKeyGenerator());
+    this.streamWriter = new TypedStreamWriterImpl(logStream, eventRegistry);
 
     this.eventProcessorWrapper =
         new DelegatingEventProcessor(context.getId(), output, logStream, streamWriter, zeebeState);

@@ -131,8 +131,7 @@ public class BpmnStepHandlers {
         new ServiceTaskElementTerminatingHandler<>(state.getIncidentState(), state.getJobState()));
 
     stepHandlers.put(
-        BpmnStep.START_EVENT_EVENT_OCCURRED,
-        new StartEventEventOccurredHandler<>(state.getWorkflowState()));
+        BpmnStep.START_EVENT_EVENT_OCCURRED, new StartEventEventOccurredHandler<>(state));
 
     stepHandlers.put(
         BpmnStep.PARALLEL_MERGE_SEQUENCE_FLOW_TAKEN, new ParallelMergeSequenceFlowTaken<>());

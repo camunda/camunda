@@ -17,11 +17,13 @@
  */
 package io.zeebe.broker.workflow.processor.timer;
 
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -34,11 +36,12 @@ public class CreateTimerProcessor implements TypedRecordProcessor<TimerRecord> {
 
   private final WorkflowState workflowState;
   private final TimerInstance timerInstance = new TimerInstance();
+  private final KeyGenerator keyGenerator;
 
-  public CreateTimerProcessor(
-      final DueDateTimerChecker timerChecker, final WorkflowState workflowState) {
+  public CreateTimerProcessor(final ZeebeState zeebeState, final DueDateTimerChecker timerChecker) {
     this.timerChecker = timerChecker;
-    this.workflowState = workflowState;
+    this.workflowState = zeebeState.getWorkflowState();
+    this.keyGenerator = zeebeState.getKeyGenerator();
   }
 
   @Override
@@ -50,7 +53,7 @@ public class CreateTimerProcessor implements TypedRecordProcessor<TimerRecord> {
 
     final TimerRecord timer = record.getValue();
 
-    final long timerKey = streamWriter.getKeyGenerator().nextKey();
+    final long timerKey = keyGenerator.nextKey();
 
     timerInstance.setElementInstanceKey(timer.getElementInstanceKey());
     timerInstance.setDueDate(timer.getDueDate());

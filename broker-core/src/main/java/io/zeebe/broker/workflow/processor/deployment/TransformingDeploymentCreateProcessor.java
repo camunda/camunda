@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.processor.deployment;
 
 import static io.zeebe.broker.workflow.state.TimerInstance.NO_ELEMENT_INSTANCE;
 
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
@@ -47,10 +48,12 @@ public class TransformingDeploymentCreateProcessor
   private final DeploymentTransformer deploymentTransformer;
   private final WorkflowState workflowState;
   private final CatchEventBehavior catchEventBehavior;
+  private final KeyGenerator keyGenerator;
 
   public TransformingDeploymentCreateProcessor(
       final ZeebeState zeebeState, CatchEventBehavior catchEventBehavior) {
     this.workflowState = zeebeState.getWorkflowState();
+    this.keyGenerator = zeebeState.getKeyGenerator();
     this.deploymentTransformer = new DeploymentTransformer(zeebeState);
     this.catchEventBehavior = catchEventBehavior;
   }
@@ -65,7 +68,7 @@ public class TransformingDeploymentCreateProcessor
 
     final boolean accepted = deploymentTransformer.transform(deploymentEvent);
     if (accepted) {
-      final long key = streamWriter.getKeyGenerator().nextKey();
+      final long key = keyGenerator.nextKey();
       if (workflowState.putDeployment(key, deploymentEvent)) {
         responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
         streamWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);

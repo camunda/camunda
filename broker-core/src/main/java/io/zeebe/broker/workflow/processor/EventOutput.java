@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.processor;
 
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
@@ -29,11 +30,13 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class EventOutput {
   private final WorkflowEngineState materializedState;
+  private final KeyGenerator keyGenerator;
 
   private TypedStreamWriter streamWriter;
 
-  public EventOutput(final WorkflowEngineState materializedState) {
+  public EventOutput(final WorkflowEngineState materializedState, final KeyGenerator keyGenerator) {
     this.materializedState = materializedState;
+    this.keyGenerator = keyGenerator;
   }
 
   public void setStreamWriter(final TypedStreamWriter streamWriter) {
@@ -55,8 +58,8 @@ public class EventOutput {
       value.setBpmnElementType(element.getElementType());
     }
 
-    final long key = streamWriter.appendNewEvent(state, value);
-
+    final long key = keyGenerator.nextKey();
+    streamWriter.appendNewEvent(key, state, value);
     materializedState.onEventProduced(key, state, value);
 
     return key;
@@ -96,7 +99,7 @@ public class EventOutput {
 
   public long deferRecord(
       long scopeKey, WorkflowInstanceRecord value, WorkflowInstanceIntent intent) {
-    final long elementInstanceKey = getStreamWriter().getKeyGenerator().nextKey();
+    final long elementInstanceKey = keyGenerator.nextKey();
     materializedState.deferRecord(elementInstanceKey, scopeKey, value, intent);
 
     return elementInstanceKey;
