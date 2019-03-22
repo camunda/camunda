@@ -79,11 +79,10 @@ public class CountDecisionFrequencyGroupByMatchedRuleCommand
   }
 
   @Override
-  protected SingleDecisionMapReportResult sortResultData(final SingleDecisionMapReportResult evaluationResult) {
+  protected void sortResultData(final SingleDecisionMapReportResult evaluationResult) {
     getReportData().getParameters().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
-    return evaluationResult;
   }
 
   private AggregationBuilder createAggregation() {

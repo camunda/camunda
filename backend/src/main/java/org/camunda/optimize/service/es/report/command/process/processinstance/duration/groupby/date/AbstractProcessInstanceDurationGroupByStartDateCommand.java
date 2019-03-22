@@ -104,11 +104,10 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
   }
 
   @Override
-  protected SingleProcessMapDurationReportResult sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
+  protected void sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
     getReportData().getParameters().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
-    return evaluationResult;
   }
 
   private static Collector<Map.Entry<String, AggregationResultDto>, ?, LinkedHashMap<String, AggregationResultDto>> toLinkedHashMapCollector() {

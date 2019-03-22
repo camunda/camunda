@@ -66,8 +66,7 @@ public class CountDecisionFrequencyGroupByNoneCommand extends DecisionReportComm
   }
 
   @Override
-  protected SingleDecisionNumberReportResult sortResultData(final SingleDecisionNumberReportResult evaluationResult) {
+  protected void sortResultData(final SingleDecisionNumberReportResult evaluationResult) {
     // no ordering for single result
-    return evaluationResult;
   }
 }

@@ -35,15 +35,15 @@ public abstract class ReportCommand<R extends ReportResult, RD extends ReportDat
     final R evaluationResult = evaluate();
     evaluationResult.copyReportData(reportData);
     final R filteredResultData = filterResultData(commandContext, evaluationResult);
-    final R sortedResultData = sortResultData(filteredResultData);
-    return sortedResultData;
+    sortResultData(filteredResultData);
+    return filteredResultData;
   }
 
   protected abstract void beforeEvaluate(CommandContext<RD> commandContext);
 
   protected abstract R evaluate() throws OptimizeException;
 
-  protected abstract R sortResultData(R evaluationResult);
+  protected abstract void sortResultData(R evaluationResult);
 
   protected R filterResultData(CommandContext<RD> commandContext, R evaluationResult) {
     return evaluationResult;

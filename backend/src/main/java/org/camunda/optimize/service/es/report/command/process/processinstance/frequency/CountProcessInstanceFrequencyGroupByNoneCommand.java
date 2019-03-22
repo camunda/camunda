@@ -63,9 +63,8 @@ public class CountProcessInstanceFrequencyGroupByNoneCommand
   }
 
   @Override
-  protected SingleProcessNumberReportResult sortResultData(final SingleProcessNumberReportResult evaluationResult) {
+  protected void sortResultData(final SingleProcessNumberReportResult evaluationResult) {
     // no ordering for single result
-    return evaluationResult;
   }
 
 }

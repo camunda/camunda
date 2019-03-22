@@ -85,11 +85,10 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
   }
 
   @Override
-  protected SingleProcessMapDurationReportResult sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
+  protected void sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
     getReportData().getParameters().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
-    return evaluationResult;
   }
 
   private AggregationBuilder createAggregation() {

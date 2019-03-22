@@ -71,10 +71,9 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
   }
 
   @Override
-  protected SingleProcessNumberDurationReportResult sortResultData(
+  protected void sortResultData(
     final SingleProcessNumberDurationReportResult evaluationResult) {
     // no ordering for single result
-    return evaluationResult;
   }
 
   private void addAggregation(SearchSourceBuilder searchSourceBuilder) {

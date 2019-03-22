@@ -85,9 +85,8 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
   }
 
   @Override
-  protected SingleDecisionRawDataReportResult sortResultData(final SingleDecisionRawDataReportResult evaluationResult) {
+  protected void sortResultData(final SingleDecisionRawDataReportResult evaluationResult) {
     // noop, ordering is done on querytime already
-    return evaluationResult;
   }
 
   private void addSortingToQuery(final DecisionReportDataDto decisionReportData,

@@ -81,11 +81,10 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCom
   }
 
   @Override
-  protected SingleProcessMapReportResult sortResultData(final SingleProcessMapReportResult evaluationResult) {
+  protected void sortResultData(final SingleProcessMapReportResult evaluationResult) {
     getReportData().getParameters().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
-    return evaluationResult;
   }
 
   private AggregationBuilder createAggregation() {

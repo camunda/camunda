@@ -24,9 +24,8 @@ public class NotSupportedCommand extends ReportCommand {
   }
 
   @Override
-  protected ReportResult sortResultData(final ReportResult evaluationResult) {
+  protected void sortResultData(final ReportResult evaluationResult) {
     // noop
-    return evaluationResult;
   }
 
   @Override

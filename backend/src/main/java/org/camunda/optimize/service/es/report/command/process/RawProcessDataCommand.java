@@ -83,9 +83,8 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
   }
 
   @Override
-  protected SingleProcessRawDataReportResult sortResultData(final SingleProcessRawDataReportResult evaluationResult) {
+  protected void sortResultData(final SingleProcessRawDataReportResult evaluationResult) {
     // noop, ordering is done on querytime already
-    return evaluationResult;
   }
 
   private void addSorting(String sortByField, SortOrder sortOrder, SearchSourceBuilder searchSourceBuilder) {

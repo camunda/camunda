@@ -90,11 +90,10 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
   }
 
   @Override
-  protected SingleProcessMapReportResult sortResultData(final SingleProcessMapReportResult evaluationResult) {
+  protected void sortResultData(final SingleProcessMapReportResult evaluationResult) {
     getReportData().getParameters().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
-    return evaluationResult;
   }
 
   private AggregationBuilder createAggregation(String variableName, VariableType variableType) {
