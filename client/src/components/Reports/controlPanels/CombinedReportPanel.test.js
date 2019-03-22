@@ -19,7 +19,6 @@ const singleReportData = {
   processDefinitionKey: 'leadQualification',
   processDefinitionVersion: '1',
   view: {
-    operation: 'median',
     entity: 'flowNode',
     property: 'duration'
   },
@@ -61,7 +60,6 @@ const reportsList = [
       processDefinitionKey: 'leadQualification',
       processDefinitionVersion: '1',
       view: {
-        operation: 'median',
         entity: 'flowNode',
         property: 'duration'
       },
@@ -147,7 +145,6 @@ describe('isCompatible', () => {
       data: {
         ...reportsList[0].data,
         view: {
-          operation: 'avg',
           entity: 'flowNode',
           property: 'duration'
         }
@@ -157,13 +154,12 @@ describe('isCompatible', () => {
     expect(node.instance().isCompatible(reportSameOperation)).toBeTruthy();
   });
 
-  it('should only allow to combine if both reports has the same view entity and proberty', async () => {
+  it('should only allow to combine if both reports has the same view entity and property', async () => {
     const reportSameOperation = {
       ...reportsList[0],
       data: {
         ...reportsList[0].data,
         view: {
-          operation: 'median',
           entity: 'process instance',
           property: 'frequency'
         }
@@ -171,6 +167,21 @@ describe('isCompatible', () => {
     };
 
     expect(node.instance().isCompatible(reportSameOperation)).toBeFalsy();
+  });
+
+  it('should allow to combined a userTask duration report with a flowNode duration report', async () => {
+    const report = {
+      ...reportsList[0],
+      data: {
+        ...reportsList[0].data,
+        view: {
+          entity: 'userTask',
+          property: 'workDuration'
+        }
+      }
+    };
+
+    expect(node.instance().isCompatible(report)).toBeTruthy();
   });
 });
 

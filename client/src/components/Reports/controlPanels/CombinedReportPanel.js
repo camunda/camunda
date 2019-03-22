@@ -100,10 +100,23 @@ export default class CombinedReportPanel extends React.Component {
     return (
       !referenceReportData ||
       (this.checkSameGroupBy(referenceReportData, report.data) &&
-        report.data.visualization === referenceReportData.visualization &&
-        report.data.view.property === referenceReportData.view.property &&
-        report.data.view.entity === referenceReportData.view.entity)
+        this.checkSameView(referenceReportData, report.data) &&
+        report.data.visualization === referenceReportData.visualization)
     );
+  };
+
+  checkSameView = (referenceReport, data) => {
+    const sameEntity =
+      data.view.entity === referenceReport.view.entity ||
+      (data.view.entity === 'flowNode' && referenceReport.view.entity === 'userTask') ||
+      (data.view.entity === 'userTask' && referenceReport.view.entity === 'flowNode');
+
+    const sameProperty =
+      data.view.property === referenceReport.view.property ||
+      (data.view.property.toLowerCase().includes('duration') &&
+        referenceReport.view.property.toLowerCase().includes('duration'));
+
+    return sameEntity && sameProperty;
   };
 
   checkSameGroupBy = (referenceReport, data) => {
