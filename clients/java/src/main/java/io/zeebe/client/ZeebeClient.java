@@ -223,7 +223,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * </pre>
    *
    * <p>If the given retries are greater than zero then this job will be picked up again by a job
-   * subscription and a related incident will be marked as resolved.
+   * worker. This will not close a related incident, which still has to be marked as resolved with
+   * {@link #newResolveIncidentCommand newResolveIncidentCommand(long incidentKey)} .
    *
    * @param jobKey the key of the job to update
    * @return a builder for the command
