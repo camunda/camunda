@@ -81,11 +81,14 @@ Issues may enter the _review_ stage once their implementation conforms to our de
     * sufficiently and well tested (cf. [good unit tests](https://gist.github.com/nikku/1dc2edb553565238c7bf))
     * code is _clean_
     * satisfies our code standards
+    * semantic HTML markup is used
 * signed-off by you from _product design perspective_
+    * behaves as designed
+    * is accessible with keyboard as designed
     * follows the style guidelines
     * correct colors are used
     * correct font and font size is used
-* signed-off by you from _QA engineer perspective__
+* signed-off by you from _QA engineer perspective_
     * works with "production" build
     * works on supported browsers (latest Chrome, Firefox, Edge)
     * does not break existing functionality
