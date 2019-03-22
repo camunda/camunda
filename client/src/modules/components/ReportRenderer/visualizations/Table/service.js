@@ -48,7 +48,8 @@ export function getBodyRows(
     const row = [key];
     unitedResults.forEach((result, i) => {
       const value = result[key];
-      if (displayAbsoluteValue) row.push(formatter(typeof value !== 'undefined' ? value : ''));
+      if (displayAbsoluteValue)
+        row.push(formatter(typeof value !== 'undefined' && value !== null ? value : ''));
       if (displayRelativeValue) row.push(getRelativeValue(value, processInstanceCount[i]));
     });
     return row;

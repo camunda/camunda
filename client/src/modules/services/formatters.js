@@ -39,7 +39,7 @@ export function duration(timeObject, precision) {
       : timeObject;
 
   if (time >= 0 && time < 1) {
-    return `${time}ms`;
+    return `${time || 0}ms`;
   }
 
   const timeSegments = [];
