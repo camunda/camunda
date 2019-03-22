@@ -1,8 +1,12 @@
 # Camunda Operate
 
-**[Backend Documentation](./backend)**
+## Documentation
 
-**[Frontend Documentation](./client)**
+* [Backend Documentation](./backend)
+* [Frontend Documentation](./client)
+* [Contribution Guidelines](/CONTRIBUTING.md)
+* [Issue Tracker](https://app.camunda.com/jira/secure/RapidBoard.jspa?rapidView=61)
+* [Zeebe](https://zeebe.io)
 
 ## Running locally
 
