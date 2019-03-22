@@ -22,8 +22,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.util.ZeebeStateRule;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
+import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -262,6 +264,23 @@ public class EventScopeInstanceStateTest {
     // then
     final EventScopeInstance instance = state.getInstance(key);
     assertThat(instance).isNull();
+  }
+
+  @Test
+  public void shouldResetElementInstance() {
+    // given
+    final long firstKey = 123;
+    final long secondKey = 345;
+    final DirectBuffer firstId = wrapString("a");
+    final Collection<DirectBuffer> firstIds = Collections.singletonList(firstId);
+
+    // when
+    state.createIfNotExists(firstKey, firstIds);
+    state.createIfNotExists(secondKey, Collections.emptyList());
+
+    // then
+    assertThat(state.getInstance(firstKey).isInterrupting(firstId)).isTrue();
+    assertThat(state.getInstance(secondKey).isInterrupting(firstId)).isFalse();
   }
 
   private boolean triggerEvent(long eventScopeKey, long eventKey, EventTrigger eventTrigger) {
