@@ -21,7 +21,7 @@ it('should render relative abolute selection for count views', () => {
     <TableConfig
       report={{
         combined: false,
-        data: {view: {operation: 'count'}, groupBy: {type: 'startDate'}, configuration: {}}
+        data: {view: {property: 'frequency'}, groupBy: {type: 'startDate'}, configuration: {}}
       }}
     />
   );
@@ -34,20 +34,10 @@ it('should render GradientBarsSwitch for group by rules', () => {
     <TableConfig
       report={{
         combined: false,
-        data: {view: {operation: 'count'}, groupBy: {type: 'matchedRule'}, configuration: {}}
+        data: {view: {property: 'frequency'}, groupBy: {type: 'matchedRule'}, configuration: {}}
       }}
     />
   );
 
   expect(node.find('GradientBarsSwitch')).toBePresent();
-});
-
-it('should not display show instance count for combined reports', () => {
-  const node = shallow(
-    <TableConfig
-      report={{combined: true, result: {test: {data: {view: {property: 'frequency'}}}}}}
-    />
-  );
-
-  expect(node.find('ShowInstanceCount')).not.toBePresent();
 });

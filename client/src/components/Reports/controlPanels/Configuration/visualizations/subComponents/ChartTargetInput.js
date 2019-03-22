@@ -10,7 +10,7 @@ export default function ChartTargetInput({onChange, report}) {
     configuration: {targetValue}
   } = report.data;
   const referenceReport = report.combined ? Object.values(report.result)[0] : report;
-  const type = referenceReport.data.view.operation === 'count' ? 'countChart' : 'durationChart';
+  const type = referenceReport.data.view.property === 'frequency' ? 'countChart' : 'durationChart';
 
   function setValues(prop, value) {
     onChange({

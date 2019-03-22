@@ -131,11 +131,16 @@ export default class DurationHeatmapModal extends React.Component {
       const settings = this.state.values[id] || {value: '', unit: 'hours'};
       return [
         this.state.nodeNames[id],
-        formatters.duration(this.props.report.result[id] || 0),
+        formatters.duration(
+          (this.props.report.result[id] &&
+            this.props.report.result[id][this.props.report.data.configuration.aggregationType]) ||
+            0
+        ),
         <React.Fragment>
           <div className="DurationHeatmapModal__selection">
             <Input
               value={settings.value}
+              type="number"
               ref={this.storeInputReferenceFor(id)}
               onChange={this.setTarget('value', id)}
               onFocus={() => {

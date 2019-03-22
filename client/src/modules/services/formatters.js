@@ -132,7 +132,7 @@ export function formatReportResult(data, result) {
     unit = 'second';
   }
 
-  if (!unit || !result || data.view.operation === 'rawData') {
+  if (!unit || !result) {
     // the result data is no time series
     return result;
   }

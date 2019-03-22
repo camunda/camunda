@@ -18,7 +18,6 @@ function createFlowNodeFrequencyReport(processDefinitionKey, processDefinitionVe
       processDefinitionVersion,
       filter,
       view: {
-        operation: 'count',
         entity: 'flowNode',
         property: 'frequency'
       },

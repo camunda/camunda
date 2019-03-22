@@ -24,7 +24,7 @@ const report = {
       targetValue: {active: false}
     },
     view: {
-      operation: 'count'
+      property: 'frequency'
     },
     visualization: 'Number'
   },

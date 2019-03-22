@@ -7,9 +7,12 @@ import {isDurationReport} from 'services';
 
 export default function TableConfig({report, onChange}) {
   let typeSpecificComponent = null;
-  const viewType = !report.combined
-    ? report.data.view.operation
-    : Object.values(report.result)[0].data.view.operation;
+
+  const {property, operation} = (report.combined
+    ? Object.values(report.result)[0]
+    : report
+  ).data.view;
+  const viewType = property || operation;
 
   const groupBy = !report.combined && report.data.groupBy.type;
 
@@ -17,7 +20,7 @@ export default function TableConfig({report, onChange}) {
     case 'rawData':
       typeSpecificComponent = <ColumnSelection report={report} onChange={onChange} />;
       break;
-    case 'count':
+    case 'frequency':
       typeSpecificComponent = (
         <>
           <RelativeAbsoluteSelection

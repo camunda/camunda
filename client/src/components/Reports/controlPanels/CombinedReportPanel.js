@@ -23,7 +23,7 @@ export default class CombinedReportPanel extends React.Component {
         !report.combined &&
         report.reportType === 'process' &&
         acceptedVisualizations.includes(report.data.visualization) &&
-        report.data.view.operation !== 'rawData'
+        report.data.view.property !== 'rawData'
     );
 
     this.setState({reports});

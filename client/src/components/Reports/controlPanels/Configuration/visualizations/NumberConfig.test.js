@@ -6,7 +6,7 @@ import NumberConfig from './NumberConfig';
 const props = {
   report: {
     data: {
-      view: {operation: 'count'},
+      view: {property: 'frequency'},
       configuration: {
         precision: null,
         targetValue: {
@@ -61,7 +61,7 @@ it('should contain a target input for count operations', () => {
 });
 
 it('should contain a target input for duration operations', () => {
-  props.report.data.view.operation = 'avg';
+  props.report.data.view.property = 'duration';
   const node = shallow(<NumberConfig {...props} />);
 
   expect(node.find('CountTargetInput')).not.toBePresent();

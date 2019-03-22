@@ -145,7 +145,7 @@ export default withErrorHandling(
         data &&
         data.visualization === 'table' &&
         data.view &&
-        data.view.operation === 'rawData' &&
+        (data.view.operation === 'rawData' || data.view.property === 'rawData') &&
         (processInstanceCount > result.length || decisionInstanceCount > result.length)
       );
     };
