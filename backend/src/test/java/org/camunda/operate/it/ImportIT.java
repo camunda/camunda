@@ -406,7 +406,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
+    elasticsearchTestRule.processAllEventsAndWait(incidentIsActiveCheck, workflowInstanceKey);
 
     //then incident created, activity in INCIDENT state
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));

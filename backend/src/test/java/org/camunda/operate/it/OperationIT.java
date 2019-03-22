@@ -105,6 +105,10 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   private Predicate<Object[]> workflowInstanceIsCanceledCheck;
 
   @Autowired
+  @Qualifier("workflowInstanceIsCompletedCheck")
+  private Predicate<Object[]> workflowInstanceIsCompletedCheck;
+
+  @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
 
   @Autowired
@@ -564,7 +568,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     // given
     final long workflowInstanceKey = startDemoWorkflowInstance();
     ZeebeTestUtil.cancelWorkflowInstance(super.getClient(), workflowInstanceKey);
-    elasticsearchTestRule.processAllEvents(10);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
 
     //when
     //we call CANCEL_WORKFLOW_INSTANCE operation on instance
@@ -599,7 +603,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
         .done();
     deployWorkflow(startEndProcess, "startEndProcess.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), bpmnProcessId, null);
-    elasticsearchTestRule.processAllEvents(20);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when

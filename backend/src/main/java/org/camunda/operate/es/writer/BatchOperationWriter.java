@@ -19,6 +19,7 @@ import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.OperationReader;
+import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
@@ -86,6 +87,9 @@ public class BatchOperationWriter {
 
   @Autowired
   private OperationReader operationReader;
+
+  @Autowired
+  private ListViewTemplate listViewTemplate;
 
   /**
    * Finds operation, which are scheduled or locked with expired timeout, in the amount of configured batch size, and locks them.
@@ -285,7 +289,7 @@ public class BatchOperationWriter {
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 
     final SearchSourceBuilder searchSourceBuilder = listViewReader.createSearchSourceBuilder(new ListViewRequestDto(batchOperationRequest.getQueries()));
-    final SearchRequest searchRequest = new SearchRequest()
+    final SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
       .source(searchSourceBuilder.size(batchSize))
       .scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
     try {

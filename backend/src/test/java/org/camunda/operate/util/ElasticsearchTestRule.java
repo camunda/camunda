@@ -6,6 +6,8 @@
 package org.camunda.operate.util;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -204,14 +206,24 @@ public class ElasticsearchTestRule extends ExternalResource {
       int emptyAttempts = 0;
       boolean found;
       do {
-        Thread.sleep(200L);
-        zeebeESImporter.processNextEntitiesBatch();
+        Thread.sleep(300L);
+        try {
+          zeebeESImporter.processNextEntitiesBatch();
+        } catch (Exception e) {
+          logger.error(e.getMessage(), e);
+        }
         found = waitTill.test(arguments);
         if (!found) {
           emptyAttempts++;
           Thread.sleep(1000L);
         }
       } while(!found && emptyAttempts < 5);
+      if (emptyAttempts == 5) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        new Throwable().printStackTrace(pw);
+        logger.error("Condition not reached: " + pw.toString());
+      }
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
     }
