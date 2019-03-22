@@ -40,6 +40,8 @@ import org.junit.Test;
 
 public class ElementInstanceStateTest {
 
+  private static final long WORKFLOW_KEY = 123;
+
   @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private ElementInstanceState elementInstanceState;
@@ -405,16 +407,12 @@ public class ElementInstanceStateTest {
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
             parent, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    elementInstanceState
-        .getVariablesState()
-        .setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
 
     workflowInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
         parentInstance, child, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    elementInstanceState
-        .getVariablesState()
-        .setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
+    setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
 
     elementInstanceState.flushDirtyState();
 
@@ -496,5 +494,12 @@ public class ElementInstanceStateTest {
     assertThat(record.getVersion()).isEqualTo(1);
     assertThat(record.getWorkflowKey()).isEqualTo(2);
     assertThat(record.getBpmnElementType()).isEqualTo(BpmnElementType.START_EVENT);
+  }
+
+  public void setVariableLocal(long scopeKey, DirectBuffer name, DirectBuffer value) {
+    elementInstanceState
+        .getVariablesState()
+        .setVariableLocal(
+            scopeKey, WORKFLOW_KEY, name, 0, name.capacity(), value, 0, value.capacity());
   }
 }

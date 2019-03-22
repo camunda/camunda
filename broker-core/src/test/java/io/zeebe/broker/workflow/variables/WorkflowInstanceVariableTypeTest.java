@@ -77,7 +77,7 @@ public class WorkflowInstanceVariableTypeTest {
 
   @BeforeClass
   public static void deployWorkflow() {
-    apiRule.deployWorkflow(WORKFLOW);
+    apiRule.deployWorkflow(WORKFLOW).getValue().getDeployedWorkflows().get(0).getWorkflowKey();
   }
 
   @Test

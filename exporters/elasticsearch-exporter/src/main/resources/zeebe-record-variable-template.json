@@ -23,6 +23,9 @@
             },
             "workflowInstanceKey": {
               "type": "long"
+            },
+            "workflowKey": {
+              "type": "long"
             }
           }
         }
