@@ -92,6 +92,8 @@ public class EventScopeInstanceState {
    * @param interruptingIds list of element IDs which should set accepting to false
    */
   public void createInstance(long eventScopeKey, Collection<DirectBuffer> interruptingIds) {
+    eventScopeInstance.reset();
+
     this.eventScopeKey.wrapLong(eventScopeKey);
     eventScopeInstance.setAccepting(true);
     for (DirectBuffer interruptingId : interruptingIds) {
