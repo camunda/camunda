@@ -50,7 +50,7 @@ def githubRelease = '''\
 ARTIFACT="camunda-operate"
 ZEEBE_VERSION=$(mvn help:evaluate -Dexpression=version.zeebe -q -DforceStdout)
 
-cd distro/target
+cd target/checkout/distro/target
 
 # create checksums
 sha1sum ${ARTIFACT}-${RELEASE_VERSION}.tar.gz > ${ARTIFACT}-${RELEASE_VERSION}.tar.gz.sha1sum
