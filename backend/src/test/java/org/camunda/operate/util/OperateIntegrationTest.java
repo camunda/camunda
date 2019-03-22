@@ -9,6 +9,7 @@ import org.camunda.operate.TestApplication;
 import org.camunda.operate.property.OperateProperties;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -21,5 +22,6 @@ import org.springframework.test.context.web.WebAppConfiguration;
     OperateProperties.PREFIX + ".elasticsearch.rolloverEnabled = false"})
 @WebAppConfiguration
 @TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
+@ActiveProfiles("test")
 public abstract class OperateIntegrationTest {
 }
