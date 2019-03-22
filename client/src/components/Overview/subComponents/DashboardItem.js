@@ -4,6 +4,7 @@ import LastModified from './LastModified';
 import {Link} from 'react-router-dom';
 import entityIcons from '../entityIcons';
 import CollectionsDropdown from './CollectionsDropdown';
+import {formatters} from 'services';
 
 const EntityIcon = entityIcons.dashboard.generic.Component;
 
@@ -11,7 +12,8 @@ export default function DashboardItem({
   dashboard,
   duplicateEntity,
   showDeleteModalFor,
-  collection
+  collection,
+  searchQuery
 }) {
   return (
     <li className="DashboardItem listItem">
@@ -21,7 +23,7 @@ export default function DashboardItem({
         </span>
         <div className="textInfo">
           <div className="data dataTitle">
-            <h3>{dashboard.name}</h3>
+            <h3>{formatters.getHighlightedText(dashboard.name, searchQuery)}</h3>
           </div>
           <div className="extraInfo">
             <span className="data custom">

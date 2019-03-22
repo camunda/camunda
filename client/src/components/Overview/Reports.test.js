@@ -63,7 +63,8 @@ const reports = [
 const props = {
   store: {
     reports: [processReport],
-    collections: [collection]
+    collections: [collection],
+    searchQuery: ''
   },
   duplicateEntity: jest.fn(),
   createProcessReport: jest.fn(),
@@ -73,7 +74,7 @@ const props = {
 };
 
 it('should show no data indicator', () => {
-  const node = shallow(<Reports {...props} store={{reports: []}} />);
+  const node = shallow(<Reports {...props} store={{reports: [], searchQuery: ''}} />);
 
   expect(node.find('NoEntities')).toBePresent();
 });
@@ -104,17 +105,23 @@ it('should not show a button to show all entities if the number of entities is l
 });
 
 it('should show a button to show all entities if the number of entities is greater than 5', () => {
-  const node = shallow(<Reports {...props} store={{reports}} />);
+  const node = shallow(<Reports {...props} store={{reports, searchQuery: ''}} />);
 
   expect(node).toIncludeText('Show all');
 });
 
 it('should show a button to show all entities if the number of entities is greater than 5', () => {
-  const node = shallow(<Reports {...props} store={{reports}} />);
+  const node = shallow(<Reports {...props} store={{reports, searchQuery: ''}} />);
 
   const button = node.find(Button).filter('[type="link"]');
 
   button.simulate('click');
 
   expect(node).toIncludeText('Show less...');
+});
+
+it('should show no result found text when no matching reports were found', () => {
+  const node = shallow(<Reports {...props} store={{...props.store, searchQuery: 'test'}} />);
+
+  expect(node.find('.empty')).toMatchSnapshot();
 });

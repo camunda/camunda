@@ -18,7 +18,8 @@ class OverviewStore extends Component {
     dashboards: [],
     updating: null,
     conflicts: [],
-    deleteLoading: false
+    deleteLoading: false,
+    searchQuery: ''
   };
 
   async componentDidMount() {
@@ -32,6 +33,10 @@ class OverviewStore extends Component {
         this.setState({collections, reports, dashboards, loading: false});
       }
     );
+  };
+
+  filter = searchQuery => {
+    this.setState({searchQuery});
   };
 
   createCombinedReport = async () =>
@@ -148,6 +153,7 @@ class OverviewStore extends Component {
       showDeleteModalFor,
       hideDeleteModal,
       toggleEntityCollection,
+      filter,
       state
     } = this;
 
@@ -163,6 +169,7 @@ class OverviewStore extends Component {
       hideDeleteModal,
       setCollectionToUpdate,
       toggleEntityCollection,
+      filter,
       store: state,
       entitiesCollections,
       error: this.props.error

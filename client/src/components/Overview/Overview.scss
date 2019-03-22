@@ -11,6 +11,13 @@
   width: 100%;
   margin-bottom: 48px;
   position: relative;
+  padding-top: 50px;
+
+  .empty {
+    text-align: center;
+    padding: 50px 0;
+    font-style: italic;
+  }
 
   .ToggleCollapse {
     background: none;
@@ -19,14 +26,33 @@
     padding: 0;
     text-align: left;
     color: inherit;
+    display: flex;
 
     .collapseIcon {
-      position: absolute;
-      left: -25px;
       margin-top: 10px;
       &.right {
         transform: rotate(-90deg);
       }
+    }
+  }
+
+  .fixed {
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    position: fixed;
+    padding-top: 48px;
+    background: #fff;
+    z-index: 1;
+
+    .header {
+      max-width: 1024px;
+      margin: 0px auto;
+      margin-top: 40px;
+    }
+
+    :after {
+      clear: both;
     }
   }
 
@@ -43,8 +69,51 @@
       }
     }
 
-    .searchInput {
-      width: 100%;
+    .searchContainer {
+      display: inline-block;
+      width: 360px;
+      position: relative;
+
+      .searchIcon {
+        position: absolute;
+        left: 10px;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+        color: #c2c8d1;
+      }
+
+      .searchClear {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+        cursor: pointer;
+        border: none;
+        background: none;
+        border-radius: 100%;
+        color: #6a727e;
+        &:focus {
+          outline: none;
+          box-shadow: 0 0 5px #00a8ff;
+        }
+
+        &:hover {
+          color: #2c3139;
+        }
+      }
+
+      .searchInput {
+        width: 100%;
+        border-radius: 15px;
+        padding-left: 35px;
+        box-shadow: none;
+
+        &:not(:valid) ~ .searchClear {
+          display: none;
+        }
+      }
     }
   }
 

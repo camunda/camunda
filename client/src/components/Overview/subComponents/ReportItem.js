@@ -4,8 +4,15 @@ import {getReportInfo, getReportIcon} from '../service';
 import LastModified from './LastModified';
 import {Link} from 'react-router-dom';
 import CollectionsDropdown from './CollectionsDropdown';
+import {formatters} from 'services';
 
-export default function ReportItem({report, duplicateEntity, showDeleteModalFor, collection}) {
+export default function ReportItem({
+  report,
+  searchQuery,
+  duplicateEntity,
+  showDeleteModalFor,
+  collection
+}) {
   const {Icon: ReportIcon, label} = getReportIcon(report);
 
   return (
@@ -16,7 +23,7 @@ export default function ReportItem({report, duplicateEntity, showDeleteModalFor,
         </span>
         <div className="textInfo">
           <div className="data dataTitle">
-            <h3>{report.name}</h3>
+            <h3>{formatters.getHighlightedText(report.name, searchQuery)}</h3>
             {report.combined && <span>Combined</span>}
             {report.reportType && report.reportType === 'decision' && <span>Decision</span>}
           </div>

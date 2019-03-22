@@ -10,7 +10,8 @@ const props = {
   store: {
     loading: false
   },
-  createProcessReport: jest.fn()
+  createProcessReport: jest.fn(),
+  filter: jest.fn()
 };
 
 it('should show a loading indicator', () => {
@@ -47,4 +48,20 @@ it('should display error messages', async () => {
   const node = shallow(<Overview {...props} error="Something went wrong" />);
 
   expect(node.find('Message')).toBePresent();
+});
+
+it('Should invoke filter function on search input change', () => {
+  const node = shallow(<Overview {...props} />);
+
+  node.find('.searchInput').simulate('change', {target: {value: 'test'}});
+
+  expect(props.filter).toHaveBeenCalledWith('test');
+});
+
+it('Should invoke filter function with empty string on form reset', async () => {
+  const node = shallow(<Overview {...props} />);
+
+  node.find('.searchClear').simulate('click');
+
+  expect(props.filter).toHaveBeenCalledWith('');
 });

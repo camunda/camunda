@@ -17,7 +17,7 @@ class Reports extends React.Component {
   };
 
   render() {
-    const {reports} = this.props.store;
+    const {reports, searchQuery} = this.props.store;
     const empty = reports.length === 0 && (
       <NoEntities label="Report" createFunction={this.props.createProcessReport} />
     );
@@ -32,6 +32,14 @@ class Reports extends React.Component {
         children
       );
 
+    const filteredReports = reports.filter(collection =>
+      collection.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const noSearchResult = !empty && filteredReports.length === 0 && (
+      <p className="empty">No Reports matching '{searchQuery}'</p>
+    );
+
     return (
       <div className="Reports">
         <div className="header">
@@ -45,16 +53,21 @@ class Reports extends React.Component {
           <>
             <ul className="entityList">
               {empty}
-              {reports.slice(0, this.state.limit ? 5 : undefined).map(report => (
-                <ReportItem
-                  key={report.id}
-                  report={report}
-                  duplicateEntity={this.props.duplicateEntity}
-                  showDeleteModalFor={this.props.showDeleteModalFor}
-                />
-              ))}
+              {noSearchResult}
+              {filteredReports
+                .slice(0, this.state.limit && !searchQuery ? 5 : undefined)
+                .map(report => (
+                  <ReportItem
+                    key={report.id}
+                    searchQuery={searchQuery}
+                    report={report}
+                    duplicateEntity={this.props.duplicateEntity}
+                    showDeleteModalFor={this.props.showDeleteModalFor}
+                  />
+                ))}
             </ul>
-            {reports.length > 5 &&
+            {filteredReports.length > 5 &&
+              !searchQuery &&
               (this.state.limit ? (
                 <>
                   {reports.length} Reports.{' '}

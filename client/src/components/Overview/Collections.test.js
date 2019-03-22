@@ -50,12 +50,13 @@ const collectionWithManyReports = {
 const props = {
   store: {
     updating: null,
-    collections: [collection]
+    collections: [collection],
+    searchQuery: ''
   }
 };
 
 it('should show no data indicator', () => {
-  const node = shallow(<Collections {...props} store={{collections: []}} />);
+  const node = shallow(<Collections {...props} store={{collections: [], searchQuery: ''}} />);
 
   expect(node.find('.collectionBlankSlate')).toBePresent();
 });
@@ -76,9 +77,8 @@ it('should not show a button to show all reports if the number of reports is les
 });
 
 it('should show a button to show all reports if the number of reports is greater than 5', () => {
-  const node = shallow(
-    <Collections {...props} store={{collections: [collectionWithManyReports]}} />
-  );
+  const store = {collections: [collectionWithManyReports], searchQuery: ''};
+  const node = shallow(<Collections {...props} store={store} />);
 
   node.setState({[collection.id]: true});
 
@@ -86,9 +86,8 @@ it('should show a button to show all reports if the number of reports is greater
 });
 
 it('should show a button to show less reports if the number of reports is greater than 5', () => {
-  const node = shallow(
-    <Collections {...props} store={{collections: [collectionWithManyReports]}} />
-  );
+  const store = {collections: [collectionWithManyReports], searchQuery: ''};
+  const node = shallow(<Collections {...props} store={store} />);
   node.setState({[collection.id]: true});
 
   node.find(Button).simulate('click');
@@ -102,4 +101,10 @@ it('should render dashboard and report list items', () => {
 
   expect(node.find('ReportItem')).toBePresent();
   expect(node.find('DashboardItem')).toBePresent();
+});
+
+it('should show no result found text when no matching reports were found', () => {
+  const node = shallow(<Collections {...props} store={{...props.store, searchQuery: 'test'}} />);
+
+  expect(node.find('.empty')).toMatchSnapshot();
 });

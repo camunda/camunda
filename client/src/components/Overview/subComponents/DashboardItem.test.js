@@ -4,7 +4,14 @@ import {shallow} from 'enzyme';
 import {Button} from 'components';
 
 import DashboardItem from './DashboardItem';
+import {formatters} from 'services';
+
 jest.mock('../service');
+
+jest.mock('services', () => {
+  const rest = jest.requireActual('services');
+  return {...rest, formatters: {getHighlightedText: jest.fn()}};
+});
 
 const dashboard = {
   id: 'dashboardID',
@@ -22,6 +29,7 @@ const props = {
 };
 
 it('should show information about dashboards', () => {
+  formatters.getHighlightedText.mockReturnValue('Some Dashboard');
   const node = shallow(<DashboardItem {...props} />);
 
   expect(node.find('.dataTitle')).toIncludeText('Some Dashboard');
@@ -49,4 +57,10 @@ it('should invok duplicate dashboards when clicking duplicate icon', () => {
     .simulate('click', {target: {blur: jest.fn()}});
 
   expect(props.duplicateEntity).toHaveBeenCalledWith('dashboard', dashboard, undefined);
+});
+
+it('should invoke getHighlightedText with the name and the searchQuery', () => {
+  shallow(<DashboardItem {...props} searchQuery="some" />);
+
+  expect(formatters.getHighlightedText).toHaveBeenCalledWith('Some Dashboard', 'some');
 });

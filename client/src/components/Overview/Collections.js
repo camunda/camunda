@@ -20,7 +20,7 @@ class Collections extends React.Component {
   };
 
   render() {
-    const {updating, collections} = this.props.store;
+    const {updating, collections, searchQuery} = this.props.store;
 
     const empty = collections.length === 0 && (
       <div className="collectionBlankSlate">
@@ -35,66 +35,72 @@ class Collections extends React.Component {
       </div>
     );
 
+    const filteredCollections = collections.filter(collection =>
+      collection.name.toLowerCase().includes(searchQuery)
+    );
+
+    const noSearchResult = !empty && filteredCollections.length === 0 && (
+      <p className="empty">No Collections matching '{searchQuery}'</p>
+    );
+
     return (
       <div className="Collections">
         <ul className="entityList">
           {empty}
-          {!empty &&
-            collections.map(collection => (
-              <CollectionItem
-                key={collection.id}
-                collection={collection}
-                setCollectionToUpdate={this.props.setCollectionToUpdate}
-                showDeleteModalFor={this.props.showDeleteModalFor}
-              >
-                {collection.data.entities.length > 0 ? (
-                  <ul className="entityList">
-                    {collection.data.entities
-                      .slice(0, this.state.showAllId === collection.id ? undefined : 5)
-                      .map(entity =>
-                        this.isDashboard(entity) ? (
-                          <DashboardItem
-                            key={entity.id}
-                            dashboard={entity}
-                            collection={collection}
-                            duplicateEntity={this.props.duplicateEntity}
-                            showDeleteModalFor={this.props.showDeleteModalFor}
-                          />
-                        ) : (
-                          <ReportItem
-                            key={entity.id}
-                            report={entity}
-                            collection={collection}
-                            showDeleteModalFor={this.props.showDeleteModalFor}
-                            duplicateEntity={this.props.duplicateEntity}
-                          />
-                        )
-                      )}
-                  </ul>
-                ) : (
-                  <p className="emptyCollection">There are no items in this Collection.</p>
-                )}
-                <div className="showAll">
-                  {!this.state.loading &&
-                    collection.data.entities.length > 5 &&
-                    (this.state.showAllId !== collection.id ? (
-                      <>
-                        {collection.data.entities.length} Items.{' '}
-                        <Button
-                          type="link"
-                          onClick={() => this.setState({showAllId: collection.id})}
-                        >
-                          Show all...
-                        </Button>
-                      </>
-                    ) : (
-                      <Button type="link" onClick={() => this.setState({showAllId: null})}>
-                        Show less...
+          {noSearchResult}
+          {filteredCollections.map(collection => (
+            <CollectionItem
+              key={collection.id}
+              searchQuery={searchQuery}
+              collection={collection}
+              setCollectionToUpdate={this.props.setCollectionToUpdate}
+              showDeleteModalFor={this.props.showDeleteModalFor}
+            >
+              {collection.data.entities.length > 0 ? (
+                <ul className="entityList">
+                  {collection.data.entities
+                    .slice(0, this.state.showAllId === collection.id ? undefined : 5)
+                    .map(entity =>
+                      this.isDashboard(entity) ? (
+                        <DashboardItem
+                          key={entity.id}
+                          dashboard={entity}
+                          collection={collection}
+                          duplicateEntity={this.props.duplicateEntity}
+                          showDeleteModalFor={this.props.showDeleteModalFor}
+                        />
+                      ) : (
+                        <ReportItem
+                          key={entity.id}
+                          report={entity}
+                          collection={collection}
+                          showDeleteModalFor={this.props.showDeleteModalFor}
+                          duplicateEntity={this.props.duplicateEntity}
+                        />
+                      )
+                    )}
+                </ul>
+              ) : (
+                <p className="empty">There are no items in this Collection.</p>
+              )}
+              <div className="showAll">
+                {!this.state.loading &&
+                  collection.data.entities.length > 5 &&
+                  (this.state.showAllId !== collection.id ? (
+                    <>
+                      {collection.data.entities.length} Items.{' '}
+                      <Button type="link" onClick={() => this.setState({showAllId: collection.id})}>
+                        Show all...
                       </Button>
-                    ))}
-                </div>
-              </CollectionItem>
-            ))}
+                    </>
+                  ) : (
+                    <Button type="link" onClick={() => this.setState({showAllId: null})}>
+                      Show less...
+                    </Button>
+                  ))}
+              </div>
+            </CollectionItem>
+          ))}
         </ul>
         {updating && (
           <UpdateCollectionModal

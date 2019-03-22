@@ -5,7 +5,14 @@ import {Button} from 'components';
 
 import CollectionItem from './CollectionItem';
 import {getReportIcon} from '../service';
+import {formatters} from 'services';
+
 jest.mock('../service');
+
+jest.mock('services', () => {
+  const rest = jest.requireActual('services');
+  return {...rest, formatters: {getHighlightedText: jest.fn()}};
+});
 
 const processReport = {
   id: 'reportID',
@@ -40,6 +47,7 @@ const props = {
 };
 
 it('should show information about collections', () => {
+  formatters.getHighlightedText.mockReturnValue('aCollectionName');
   const node = shallow(<CollectionItem {...props} />);
 
   expect(node.find('.dataTitle')).toIncludeText('aCollectionName');
@@ -83,4 +91,10 @@ it('should render children component if item is opened', () => {
 
   node.setState({expanded: true});
   expect(node.find('.test')).toBePresent();
+});
+
+it('should invoke getHighlightedText with the name and the searchQuery', () => {
+  shallow(<CollectionItem {...props} searchQuery="name" />);
+
+  expect(formatters.getHighlightedText).toHaveBeenCalledWith('aCollectionName', 'name');
 });

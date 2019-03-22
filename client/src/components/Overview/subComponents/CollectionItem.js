@@ -4,6 +4,7 @@ import classnames from 'classnames';
 
 import entityIcons from '../entityIcons';
 import LastModified from './LastModified';
+import {formatters} from 'services';
 
 const EntityIcon = entityIcons.collection.generic.Component;
 const OpenCloseIcon = entityIcons.entityOpenClose;
@@ -28,6 +29,7 @@ export default class CollectionItem extends React.Component {
       },
       setCollectionToUpdate,
       showDeleteModalFor,
+      searchQuery,
       children
     } = this.props;
 
@@ -41,11 +43,13 @@ export default class CollectionItem extends React.Component {
             </span>
             <div className="textInfo">
               <div className="dataTitle">
-                <h2>{name}</h2>
+                <h2>{formatters.getHighlightedText(name, searchQuery)}</h2>
               </div>
               <div className="extraInfo">
                 <div className="custom">
-                  <span>{entities.length} Items</span>
+                  <span>
+                    {entities.length} Item{entities.length !== 1 ? 's' : ''}
+                  </span>
                 </div>
                 <LastModified label="Created" date={created} author={owner} />
               </div>

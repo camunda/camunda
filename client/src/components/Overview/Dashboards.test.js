@@ -20,13 +20,14 @@ const dashboards = new Array(7).fill(dashboard);
 
 const props = {
   store: {
-    dashboards: [dashboard]
+    dashboards: [dashboard],
+    searchQuery: ''
   },
   createDashboard: jest.fn()
 };
 
 it('should show no data indicator', () => {
-  const node = shallow(<Dashboards {...props} store={{dashboards: []}} />);
+  const node = shallow(<Dashboards {...props} store={{dashboards: [], searchQuery: ''}} />);
 
   expect(node.find('NoEntities')).toBePresent();
 });
@@ -57,17 +58,23 @@ it('should not show a button to show all entities if the number of entities is l
 });
 
 it('should show a button to show all entities if the number of entities is greater than 5', () => {
-  const node = shallow(<Dashboards {...props} store={{dashboards}} />);
+  const node = shallow(<Dashboards {...props} store={{dashboards, searchQuery: ''}} />);
 
   expect(node).toIncludeText('Show all');
 });
 
 it('should show a button to show all entities if the number of entities is greater than 5', () => {
-  const node = shallow(<Dashboards {...props} store={{dashboards}} />);
+  const node = shallow(<Dashboards {...props} store={{dashboards, searchQuery: ''}} />);
 
   const button = node.find(Button).filter('[type="link"]');
 
   button.simulate('click');
 
   expect(node).toIncludeText('Show less...');
+});
+
+it('should show no result found text when no matching reports were found', () => {
+  const node = shallow(<Dashboards {...props} store={{...props.store, searchQuery: 'test'}} />);
+
+  expect(node.find('.empty')).toMatchSnapshot();
 });

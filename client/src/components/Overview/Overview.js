@@ -1,13 +1,20 @@
 import React from 'react';
-
 import './Overview.scss';
 import Reports from './Reports';
 import Dashboards from './Dashboards';
 import Collections from './Collections';
-import {ConfirmationModal, Button, Dropdown, Icon, Message, LoadingIndicator} from 'components';
+import {
+  Input,
+  ConfirmationModal,
+  Button,
+  Dropdown,
+  Icon,
+  Message,
+  LoadingIndicator
+} from 'components';
 import {StoreProvider, withStore} from './OverviewStore';
 
-function Overview({store: {loading, deleting, conflicts, deleteLoading}, ...props}) {
+function Overview({store: {loading, deleting, conflicts, deleteLoading, searchQuery}, ...props}) {
   if (loading) {
     return <LoadingIndicator />;
   }
@@ -19,25 +26,41 @@ function Overview({store: {loading, deleting, conflicts, deleteLoading}, ...prop
   return (
     <div className="Overview">
       {error}
-      <div className="header">
-        <div className="createAllButton">
-          <Dropdown label="Create New">
-            <Dropdown.Option onClick={() => props.setCollectionToUpdate({})}>
-              Create Collection
-            </Dropdown.Option>
-            <Dropdown.Option onClick={props.createDashboard}>Create Dashboard</Dropdown.Option>
-            <Dropdown.Submenu label="New Report">
-              <Dropdown.Option onClick={props.createProcessReport}>
-                Create Process Report
+      <div className="fixed">
+        <div className="header">
+          <div className="searchContainer">
+            <Icon className="searchIcon" type="search" />
+            <Input
+              required
+              type="text"
+              className="searchInput"
+              placeholder="Find..."
+              value={searchQuery}
+              onChange={({target: {value}}) => props.filter(value)}
+            />
+            <button className="searchClear" onClick={() => props.filter('')}>
+              <Icon type="clear" />
+            </button>
+          </div>
+          <div className="createAllButton">
+            <Dropdown label="Create New">
+              <Dropdown.Option onClick={() => props.setCollectionToUpdate({})}>
+                Create Collection
               </Dropdown.Option>
-              <Dropdown.Option onClick={props.createCombinedReport}>
-                Create Combined Process Report
-              </Dropdown.Option>
-              <Dropdown.Option onClick={props.createDecisionReport}>
-                Create Decision Report
-              </Dropdown.Option>
-            </Dropdown.Submenu>
-          </Dropdown>
+              <Dropdown.Option onClick={props.createDashboard}>Create Dashboard</Dropdown.Option>
+              <Dropdown.Submenu label="New Report">
+                <Dropdown.Option onClick={props.createProcessReport}>
+                  Create Process Report
+                </Dropdown.Option>
+                <Dropdown.Option onClick={props.createCombinedReport}>
+                  Create Combined Process Report
+                </Dropdown.Option>
+                <Dropdown.Option onClick={props.createDecisionReport}>
+                  Create Decision Report
+                </Dropdown.Option>
+              </Dropdown.Submenu>
+            </Dropdown>
+          </div>
         </div>
       </div>
       <Collections />

@@ -19,7 +19,7 @@ class Dashboards extends React.Component {
   componentDidMount = this.loadDashboards;
 
   render() {
-    const {dashboards} = this.props.store;
+    const {dashboards, searchQuery} = this.props.store;
     const empty = dashboards.length === 0 && (
       <NoEntities label="Dashboard" createFunction={this.props.createDashboard} />
     );
@@ -34,6 +34,14 @@ class Dashboards extends React.Component {
         children
       );
 
+    const filteredDashboards = dashboards.filter(dashboard =>
+      dashboard.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const noSearchResult = !empty && filteredDashboards.length === 0 && (
+      <p className="empty">No Dashboards matching '{searchQuery}'</p>
+    );
+
     return (
       <div className="Dashboards">
         <div className="header">
@@ -47,16 +55,21 @@ class Dashboards extends React.Component {
           <>
             <ul className="entityList">
               {empty}
-              {dashboards.slice(0, this.state.limit ? 5 : undefined).map(dashboard => (
-                <DashboardItem
-                  key={dashboard.id}
-                  dashboard={dashboard}
-                  duplicateEntity={this.props.duplicateEntity}
-                  showDeleteModalFor={this.props.showDeleteModalFor}
-                />
-              ))}
+              {noSearchResult}
+              {filteredDashboards
+                .slice(0, this.state.limit && !searchQuery ? 5 : undefined)
+                .map(dashboard => (
+                  <DashboardItem
+                    key={dashboard.id}
+                    searchQuery={searchQuery}
+                    dashboard={dashboard}
+                    duplicateEntity={this.props.duplicateEntity}
+                    showDeleteModalFor={this.props.showDeleteModalFor}
+                  />
+                ))}
             </ul>
-            {dashboards.length > 5 &&
+            {filteredDashboards.length > 5 &&
+              !searchQuery &&
               (this.state.limit ? (
                 <>
                   {dashboards.length} Dashboards.{' '}
