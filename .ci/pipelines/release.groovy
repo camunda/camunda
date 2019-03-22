@@ -122,13 +122,16 @@ pipeline {
 
   environment {
     NODE_ENV = "ci"
-    NEXUS = credentials("camunda-nexus")
   }
 
   options {
     buildDiscarder(logRotator(numToKeepStr:'50', artifactNumToKeepStr: '3'))
     timestamps()
     timeout(time: 30, unit: 'MINUTES')
+    withCredentials([
+      usernamePassword(passwordVariable: 'NEXUS_PSW', usernameVariable: 'NEXUS_USR', credentialsId: 'camunda-nexus'),
+      usernamePassword(passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME', credentialsId: 'camunda-jenkins-github'),
+    ])
   }
 
   stages {
@@ -167,9 +170,7 @@ pipeline {
       when { expression { return params.PUSH_CHANGES } }
       steps {
         container('maven') {
-          sshagent(['camunda-jenkins-github-ssh']) {
-            sh githubRelease
-          }
+          sh githubRelease
         }
       }
     }
