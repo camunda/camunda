@@ -160,11 +160,8 @@ public class ActivityInstanceZeebeRecordProcessor {
   private UpdateRequest getActivityInstanceFromIncidentQuery(ActivityInstanceEntity entity) throws PersistenceException {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());
-      Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(ActivityInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
-
-      //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
-      Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+      Map<String, Object> jsonMap = new HashMap<>();
+      jsonMap.put(ActivityInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
 
       return new UpdateRequest(activityInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
