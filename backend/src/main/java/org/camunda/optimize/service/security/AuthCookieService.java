@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.NewCookie;
@@ -23,10 +22,9 @@ import java.util.function.Function;
 @Component
 public class AuthCookieService {
   private static final Logger logger = LoggerFactory.getLogger(AuthCookieService.class);
+
   public static final String AUTH_COOKIE_TOKEN_VALUE_PREFIX = "Bearer ";
-
   public static String OPTIMIZE_AUTHORIZATION = "X-Optimize-Authorization";
-
 
   private final ConfigurationService configurationService;
 
@@ -59,7 +57,7 @@ public class AuthCookieService {
       1,
       null,
       -1,
-      this.getTokenIssuedAt(securityToken)
+      getTokenIssuedAt(securityToken)
         .map(Date::toInstant)
         .map(issuedAt -> issuedAt.plus(configurationService.getTokenLifeTimeMinutes(), ChronoUnit.MINUTES))
         .map(Date::from)
@@ -72,12 +70,12 @@ public class AuthCookieService {
 
   public static Optional<String> getToken(ContainerRequestContext requestContext) {
     return extractAuthorizationCookie(requestContext)
-      .map(AuthCookieService::extractTokenFromAuthorizationValueOrFailNotAuthorized);
+      .flatMap(AuthCookieService::extractTokenFromAuthorizationValue);
   }
 
   public static Optional<String> getToken(HttpServletRequest servletRequest) {
     return extractAuthorizationCookie(servletRequest)
-      .map(AuthCookieService::extractTokenFromAuthorizationValueOrFailNotAuthorized);
+      .flatMap(AuthCookieService::extractTokenFromAuthorizationValue);
   }
 
   public static Optional<Date> getTokenIssuedAt(String token) {
@@ -125,14 +123,11 @@ public class AuthCookieService {
     return Optional.empty();
   }
 
-  private static String extractTokenFromAuthorizationValueOrFailNotAuthorized(String authorizationHeader) {
-    // Check if the HTTP Authorization header is present and formatted correctly
-    if (authorizationHeader == null || !authorizationHeader.startsWith(AUTH_COOKIE_TOKEN_VALUE_PREFIX)) {
-      throw new NotAuthorizedException("Authorization header must be provided");
-    }
-
-    // Extract the token from the HTTP Authorization header
-    return authorizationHeader.substring(AUTH_COOKIE_TOKEN_VALUE_PREFIX.length()).trim();
+  private static Optional<String> extractTokenFromAuthorizationValue(final String authCookieValue) {
+    return Optional.ofNullable(authCookieValue)
+      .filter(value -> value.length() > AUTH_COOKIE_TOKEN_VALUE_PREFIX.length())
+      .map(value -> value.substring(AUTH_COOKIE_TOKEN_VALUE_PREFIX.length()).trim())
+      .filter(token -> !token.isEmpty());
   }
 
   public static String createOptimizeAuthCookieValue(final String securityToken) {

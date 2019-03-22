@@ -17,6 +17,7 @@ import javax.ws.rs.ext.Provider;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
+@Secured
 @Provider
 @Priority(Priorities.AUTHENTICATION)
 @Component

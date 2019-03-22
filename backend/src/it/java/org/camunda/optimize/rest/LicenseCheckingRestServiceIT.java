@@ -2,6 +2,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
 import org.camunda.optimize.service.license.LicenseManager;
+import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.BeforeClass;
@@ -24,7 +25,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 
-
 public class LicenseCheckingRestServiceIT {
 
   public static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -37,7 +37,7 @@ public class LicenseCheckingRestServiceIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   @BeforeClass
   public static void init() {
@@ -52,9 +52,27 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     Response response =
-            embeddedOptimizeRule.getRequestExecutor()
-                    .buildValidateAndStoreLicenseRequest(license)
-                    .execute();
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .execute();
+
+    // then
+    assertThat(response.getStatus(), is(200));
+    assertResult(response, CUSTOMER_ID, VALID_UNTIL, false);
+  }
+
+  @Test
+  public void unsecuredLicenseEndpointsIgnoresInvalidAuthCookie() throws IOException, URISyntaxException {
+
+    // given
+    String license = readFileToString("/license/ValidTestLicense.txt");
+
+    // when
+    Response response = embeddedOptimizeRule.getRequestExecutor()
+      .withoutAuthentication()
+      .addSingleCookie(AuthCookieService.OPTIMIZE_AUTHORIZATION, "invalid")
+      .buildValidateAndStoreLicenseRequest(license)
+      .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -69,9 +87,9 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     Response response =
-            embeddedOptimizeRule.getRequestExecutor()
-                    .buildValidateAndStoreLicenseRequest(license)
-                    .execute();
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -84,16 +102,16 @@ public class LicenseCheckingRestServiceIT {
     // given
     String license = readFileToString("/license/ValidTestLicense.txt");
     Response response =
-            embeddedOptimizeRule.getRequestExecutor()
-                    .buildValidateAndStoreLicenseRequest(license)
-                    .execute();
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .execute();
     assertThat(response.getStatus(), is(200));
 
     // when
     response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildValidateLicenseRequest()
-            .execute();
+      .getRequestExecutor()
+      .buildValidateLicenseRequest()
+      .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -106,9 +124,9 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     String errorMessage =
-            embeddedOptimizeRule.getRequestExecutor()
-                    .buildValidateAndStoreLicenseRequest(license)
-                    .execute(String.class, 500);
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .execute(String.class, 500);
 
     // then
     assertThat(errorMessage.contains("Cannot verify signature"), is(true));
@@ -121,9 +139,9 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     String errorMessage =
-            embeddedOptimizeRule.getRequestExecutor()
-                    .buildValidateAndStoreLicenseRequest(license)
-                    .execute(String.class, 400);
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .execute(String.class, 400);
 
     // then
     assertThat(errorMessage.contains("Your license has expired."), is(true));
@@ -135,12 +153,15 @@ public class LicenseCheckingRestServiceIT {
     embeddedOptimizeRule.getApplicationContext().getBean(LicenseManager.class).init();
     // when
     String errorMessage = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildValidateLicenseRequest()
-            .execute(String.class, 400);
+      .getRequestExecutor()
+      .buildValidateLicenseRequest()
+      .execute(String.class, 400);
 
     // then
-    assertThat(errorMessage.contains("No license stored in Optimize. Please provide a valid Optimize license"), is(true));
+    assertThat(
+      errorMessage.contains("No license stored in Optimize. Please provide a valid Optimize license"),
+      is(true)
+    );
   }
 
   @Test
@@ -151,9 +172,9 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     Response response =
-        embeddedOptimizeRule.getRequestExecutor()
-            .buildValidateAndStoreLicenseRequest(license)
-            .execute();
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -165,7 +186,8 @@ public class LicenseCheckingRestServiceIT {
 
   private void assertResult(Response response, String customerId, OffsetDateTime validUntil, boolean isUnlimited) {
     LicenseInformationDto licenseInfo =
-      response.readEntity(new GenericType<LicenseInformationDto>() { });
+      response.readEntity(new GenericType<LicenseInformationDto>() {
+      });
     assertThat(licenseInfo.getCustomerId(), is(customerId));
     assertThat(licenseInfo.getValidUntil(), is(validUntil));
     assertThat(licenseInfo.isUnlimited(), is(isUnlimited));
