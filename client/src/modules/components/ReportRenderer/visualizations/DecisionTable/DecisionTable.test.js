@@ -1,9 +1,11 @@
 import React from 'react';
 
-import DecisionTable from './DecisionTable';
+import ThemedDecisionTable from './DecisionTable';
 import Viewer from 'dmn-js';
 
 import {shallow} from 'enzyme';
+
+const DecisionTable = ThemedDecisionTable.WrappedComponent;
 
 jest.mock('dmn-js', () =>
   jest.fn().mockImplementation(() => ({

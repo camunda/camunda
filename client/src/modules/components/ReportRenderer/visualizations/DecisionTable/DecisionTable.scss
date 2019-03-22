@@ -24,3 +24,20 @@
     }
   }
 }
+
+.dark {
+  .dmn-decision-table-container {
+    color: inherit;
+
+    .decision-table-properties {
+      color: inherit;
+      background-color: inherit;
+    }
+
+    .CustomCell,
+    .hit.header,
+    tfoot td {
+      border: inherit;
+    }
+  }
+}
