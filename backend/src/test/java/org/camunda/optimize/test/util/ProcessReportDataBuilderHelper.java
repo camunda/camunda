@@ -237,6 +237,23 @@ public class ProcessReportDataBuilderHelper {
     );
   }
 
+  public static ProcessReportDataDto createFlowNodeDurationGroupByFlowNodeTableReport(
+    String processDefinitionKey,
+    String processDefinitionVersion
+  ) {
+    ProcessViewDto view = ProcessViewDtoCreator.createFlowNodeDurationView();
+
+    ProcessGroupByDto groupByDto = createGroupByFlowNode();
+
+    return createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+  }
+
   public static ProcessReportDataDto createFlowNodeDurationGroupByFlowNodeHeatmapReport(
     String processDefinitionKey,
     String processDefinitionVersion

@@ -1,11 +1,19 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.view;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableSet;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 
 import java.util.Objects;
+import java.util.Set;
 
 public class ProcessViewDto implements Combinable {
+  private static final Set<ProcessViewProperty> DURATION_PROPERTIES = ImmutableSet.of(
+    ProcessViewProperty.DURATION, ProcessViewProperty.IDLE_DURATION, ProcessViewProperty.WORK_DURATION
+  );
+  private static final Set<ProcessViewEntity> FLOW_NODE_ENTITIES = ImmutableSet.of(
+    ProcessViewEntity.FLOW_NODE, ProcessViewEntity.USER_TASK
+  );
 
   protected ProcessViewEntity entity;
   protected ProcessViewProperty property;
@@ -49,10 +57,19 @@ public class ProcessViewDto implements Combinable {
       return false;
     }
     ProcessViewDto viewDto = (ProcessViewDto) o;
-    // note: different view operations are okay, since users might want to
-    // compare the results of those in a combined report.
-    return Objects.equals(entity, viewDto.entity) &&
-      Objects.equals(property, viewDto.property);
+    return isEntityCombinable(viewDto) && isPropertyCombinable(viewDto);
+  }
+
+  private boolean isEntityCombinable(final ProcessViewDto viewDto) {
+    // note: user tasks are combinable with flow nodes as they are a subset of flow nodes
+    return Objects.equals(entity, viewDto.entity)
+      || (FLOW_NODE_ENTITIES.contains(entity) && FLOW_NODE_ENTITIES.contains(viewDto.entity));
+  }
+
+  private boolean isPropertyCombinable(final ProcessViewDto viewDto) {
+    // note: different duration properties are combinable
+    return Objects.equals(property, viewDto.property)
+      || (DURATION_PROPERTIES.contains(property) && DURATION_PROPERTIES.contains(viewDto.property));
   }
 
   @JsonIgnore

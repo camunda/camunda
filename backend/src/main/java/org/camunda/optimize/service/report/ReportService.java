@@ -150,27 +150,27 @@ public class ReportService {
                                                                 String userId,
                                                                 boolean force) {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
-    ReportDefinitionDto currentReportVersion = getReportWithAuthorizationCheck(reportId, userId);
-    CombinedProcessReportDefinitionUpdateDto reportUpdate =
-      convertToCombinedProcessReportUpdate(updatedReport);
 
-    CombinedReportDataDto data = reportUpdate.getData();
+    final CombinedProcessReportDefinitionUpdateDto reportUpdate = convertToCombinedProcessReportUpdate(updatedReport);
+    final CombinedReportDataDto data = reportUpdate.getData();
     if (data.getReportIds() != null && !data.getReportIds().isEmpty()) {
-      List<SingleProcessReportDefinitionDto> reportsOfCombinedReport =
-        reportReader.getAllSingleProcessReportsForIds(data.getReportIds());
+      final List<SingleProcessReportDefinitionDto> reportsOfCombinedReport = reportReader
+        .getAllSingleProcessReportsForIds(data.getReportIds());
 
-      SingleProcessReportDefinitionDto firstReport = reportsOfCombinedReport.get(0);
-      boolean allReportsCanBeCombined =
-        reportsOfCombinedReport.stream().noneMatch(r -> semanticsForCombinedReportChanged(firstReport, r));
+      final SingleProcessReportDefinitionDto firstReport = reportsOfCombinedReport.get(0);
+      final boolean allReportsCanBeCombined = reportsOfCombinedReport.stream()
+        .noneMatch(r -> semanticsForCombinedReportChanged(firstReport, r));
       if (allReportsCanBeCombined) {
-        ProcessVisualization visualization =
-          firstReport.getData() == null ? null : firstReport.getData().getVisualization();
+        final ProcessVisualization visualization = firstReport.getData() == null
+          ? null
+          : firstReport.getData().getVisualization();
         data.setVisualization(visualization);
       } else {
-        String errorMessage =
-          String.format("Can't update combined report with id [%s] and name [%s]. " +
-                          "The following report ids are not combinable: [%s]",
-                        reportId, updatedReport.getName(), data.getReportIds()
+        final String errorMessage =
+          String.format(
+            "Can't update combined report with id [%s] and name [%s]. " +
+              "The following report ids are not combinable: [%s]",
+            reportId, updatedReport.getName(), data.getReportIds()
           );
         logger.error(errorMessage);
         throw new OptimizeRuntimeException(errorMessage);
@@ -261,12 +261,13 @@ public class ReportService {
 
   private boolean semanticsForCombinedReportChanged(SingleProcessReportDefinitionDto firstReport,
                                                     SingleProcessReportDefinitionDto secondReport) {
+    boolean result = false;
     if (firstReport.getData() != null) {
       ProcessReportDataDto oldData = firstReport.getData();
       SingleReportDataDto newData = secondReport.getData();
-      return !newData.isCombinable(oldData);
+      result = !newData.isCombinable(oldData);
     }
-    return false;
+    return result;
   }
 
   private SingleProcessReportDefinitionUpdateDto convertToSingleProcessReportUpdate(SingleProcessReportDefinitionDto updatedReport) {

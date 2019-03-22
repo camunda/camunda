@@ -14,6 +14,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -43,10 +45,12 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeHeatmapReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeTableReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskIdleDurationMapGroupByUserTaskReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskTotalDurationMapGroupByUserTaskReport;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -61,9 +65,6 @@ public class CombinedReportHandlingIT {
   private static final String START_EVENT = "startEvent";
   private static final String END_EVENT = "endEvent";
   private static final String SERVICE_TASK_ID = "aSimpleServiceTask";
-
-  private static final String FOO_PROCESS_DEFINITION_KEY = "fooProcessDefinitionKey";
-  private static final String FOO_PROCESS_DEFINITION_VERSION = "1";
   private static final String TEST_REPORT_NAME = "My foo report";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
@@ -228,7 +229,7 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
-  public void canCombineReports() {
+  public void canSaveAndEvaluateCombinedReports() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleMapReport(engineDto);
@@ -247,7 +248,55 @@ public class CombinedReportHandlingIT {
     Map<String, Long> flowNodeToCount = resultMap.get(singleReportId).getResult();
     assertThat(flowNodeToCount.size(), is(3));
     Map<String, Long> flowNodeToCount2 = resultMap.get(singleReportId2).getResult();
-    assertThat(flowNodeToCount.size(), is(3));
+    assertThat(flowNodeToCount2.size(), is(3));
+  }
+
+  @Test
+  public void canSaveAndEvaluateCombinedReportsWithUserTaskDurationReportsOfDifferentDurationViewProperties() {
+    // given
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
+    engineRule.finishAllUserTasks();
+    String totalDurationReportId = createNewSingleUserTaskTotalDurationMapReport(engineDto);
+    String idleDurationReportId = createNewSingleUserTaskIdleDurationMapReport(engineDto);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    String reportId = createNewCombinedReport(totalDurationReportId, idleDurationReportId);
+    CombinedProcessReportResultDto<ProcessDurationReportMapResultDto> result = evaluateCombinedReportById(reportId);
+
+    // then
+    assertThat(result.getId(), is(reportId));
+    Map<String, ProcessDurationReportMapResultDto> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(2));
+    Map<String, AggregationResultDto> userTaskCount1 = resultMap.get(totalDurationReportId).getResult();
+    assertThat(userTaskCount1.size(), is(1));
+    Map<String, AggregationResultDto> userTaskCount2 = resultMap.get(idleDurationReportId).getResult();
+    assertThat(userTaskCount2.size(), is(1));
+  }
+
+  @Test
+  public void canSaveAndEvaluateCombinedReportsWithUserTaskDurationAndProcessDurationReports() {
+    // given
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
+    engineRule.finishAllUserTasks();
+    String userTaskTotalDurationReportId = createNewSingleUserTaskTotalDurationMapReport(engineDto);
+    String flowNodeDurationReportId = createNewSingleDurationMapReport(engineDto);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    String reportId = createNewCombinedReport(userTaskTotalDurationReportId, flowNodeDurationReportId);
+    CombinedProcessReportResultDto<ProcessDurationReportMapResultDto> result = evaluateCombinedReportById(reportId);
+
+    // then
+    assertThat(result.getId(), is(reportId));
+    Map<String, ProcessDurationReportMapResultDto> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(2));
+    Map<String, AggregationResultDto> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId).getResult();
+    assertThat(userTaskCount1.size(), is(1));
+    Map<String, AggregationResultDto> userTaskCount2 = resultMap.get(flowNodeDurationReportId).getResult();
+    assertThat(userTaskCount2.size(), is(3));
   }
 
   @Test
@@ -452,7 +501,7 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
-  public void combinedReportWithSingleNumberReports() {
+  public void canEvaluateUnsavedCombinedReportWithSingleNumberReports() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId1 = createNewSingleNumberReport(engineDto);
@@ -472,7 +521,7 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
-  public void combinedReportWithSingleMapReports() {
+  public void canEvaluateUnsavedCombinedReportWithSingleMapReports() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId1 = createNewSingleMapReport(engineDto);
@@ -492,7 +541,7 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
-  public void combineProcessDurationNumberReports() {
+  public void canEvaluateUnsavedCombinedReportWithProcessDurationNumberReports() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleDurationNumberReport(engineDto);
@@ -512,7 +561,7 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
-  public void combineProcessDurationMapReports() {
+  public void canEvaluateUnsavedCombinedReportWithProcessDurationMapReports() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleDurationMapReport(engineDto);
@@ -532,7 +581,70 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
-  public void combinedReportWithSingleNumberAndMapReport_firstWins() {
+  public void canEvaluateUnsavedCombinedReportWithProcessUserTaskTotalDurationMapReports() {
+    // given
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
+    engineRule.finishAllUserTasks();
+    String totalDurationReportId = createNewSingleUserTaskTotalDurationMapReport(engineDto);
+    String totalDurationReportId2 = createNewSingleUserTaskTotalDurationMapReport(engineDto);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    CombinedProcessReportResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
+      createCombinedReport(totalDurationReportId, totalDurationReportId2)
+    );
+
+    // then
+    Map<String, ProcessReportNumberResultDto> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(2));
+    assertThat(resultMap.keySet(), contains(totalDurationReportId, totalDurationReportId2));
+  }
+
+  @Test
+  public void canEvaluateUnsavedCombinedReportWithProcessUserTaskTotalDurationAndUserTaskIdleDurationMapReports() {
+    // given
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
+    engineRule.finishAllUserTasks();
+    String totalDurationReportId = createNewSingleUserTaskTotalDurationMapReport(engineDto);
+    String idleDurationReportId = createNewSingleUserTaskIdleDurationMapReport(engineDto);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    CombinedProcessReportResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
+      createCombinedReport(totalDurationReportId, idleDurationReportId)
+    );
+
+    // then
+    Map<String, ProcessReportNumberResultDto> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(2));
+    assertThat(resultMap.keySet(), contains(totalDurationReportId, idleDurationReportId));
+  }
+
+  @Test
+  public void canEvaluateUnsavedCombinedReportWithProcessDurationMapReportAndUserTaskTotalDurationMapReport() {
+    // given
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
+    engineRule.finishAllUserTasks();
+    String totalDurationReportId = createNewSingleDurationMapReport(engineDto);
+    String idleDurationReportId = createNewSingleUserTaskIdleDurationMapReport(engineDto);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    CombinedProcessReportResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
+      createCombinedReport(totalDurationReportId, idleDurationReportId)
+    );
+
+    // then
+    Map<String, ProcessReportNumberResultDto> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(2));
+    assertThat(resultMap.keySet(), contains(totalDurationReportId, idleDurationReportId));
+  }
+
+  @Test
+  public void canEvaluateUnsavedCombinedReportWithSingleNumberAndMapReport_firstWins() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleNumberReport(engineDto);
@@ -552,7 +664,7 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
-  public void combinedReportWithRawReport() {
+  public void canEvaluateUnsavedCombinedReportWithRawReport() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleRawReport(engineDto);
@@ -607,7 +719,25 @@ public class CombinedReportHandlingIT {
 
   private String createNewSingleDurationMapReport(ProcessInstanceEngineDto engineDto) {
     ProcessReportDataDto durationMapReportData =
-      createFlowNodeDurationGroupByFlowNodeHeatmapReport(
+      createFlowNodeDurationGroupByFlowNodeTableReport(
+        engineDto.getProcessDefinitionKey(),
+        engineDto.getProcessDefinitionVersion()
+      );
+    return createNewSingleMapReport(durationMapReportData);
+  }
+
+  private String createNewSingleUserTaskTotalDurationMapReport(ProcessInstanceEngineDto engineDto) {
+    ProcessReportDataDto durationMapReportData =
+      createUserTaskTotalDurationMapGroupByUserTaskReport(
+        engineDto.getProcessDefinitionKey(),
+        engineDto.getProcessDefinitionVersion()
+      );
+    return createNewSingleMapReport(durationMapReportData);
+  }
+
+  private String createNewSingleUserTaskIdleDurationMapReport(ProcessInstanceEngineDto engineDto) {
+    ProcessReportDataDto durationMapReportData =
+      createUserTaskIdleDurationMapGroupByUserTaskReport(
         engineDto.getProcessDefinitionKey(),
         engineDto.getProcessDefinitionVersion()
       );
@@ -668,6 +798,15 @@ public class CombinedReportHandlingIT {
       .endEvent(END_EVENT)
       .done();
     return engineRule.deployAndStartProcess(modelInstance);
+  }
+
+  private ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess() {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .startEvent("startEvent")
+      .userTask("userTask")
+      .endEvent()
+      .done();
+    return engineRule.deployAndStartProcess(processModel);
   }
 
   private void deleteReport(String reportId) {
