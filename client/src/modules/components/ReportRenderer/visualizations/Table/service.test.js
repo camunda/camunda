@@ -62,6 +62,7 @@ it('should return correct combined table report data properties', () => {
         }
       },
       visualization: 'table',
+      parameters: {sorting: null},
       configuration: {}
     },
     result: {
@@ -73,6 +74,7 @@ it('should return correct combined table report data properties', () => {
   const combinedReport = {
     combined: true,
     data: {
+      parameters: {sorting: null},
       configuration: {},
       reports: [{id: 'report A'}, {id: 'report B'}]
     },

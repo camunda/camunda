@@ -158,6 +158,7 @@ const exampleDurationReport = {
       }
     },
     visualization: 'table',
+    parameters: {sorting: null},
     configuration: {}
   },
   result: {
@@ -254,6 +255,7 @@ describe('automatic interval selection', () => {
       }
     },
     visualization: 'table',
+    parameters: {sorting: null},
     configuration: {}
   };
 
@@ -309,6 +311,6 @@ describe('automatic interval selection', () => {
 
     const formatedResult = formatReportResult(autoData, result);
 
-    expect(formatedResult).toEqual({'2017': 3, '2015': 2});
+    expect(formatedResult).toEqual({'2017 ': 3, '2015 ': 2});
   });
 });

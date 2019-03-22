@@ -13,41 +13,55 @@ function generateData(amount) {
 }
 
 it('shoud correctly format header', () => {
-  const result = Table.formatColumns(['x', 'y', 'z']);
+  const result = Table.formatColumns('raw', ['x', 'y', 'z']);
 
   expect(result).toEqual([
-    {Header: 'x', accessor: 'x', minWidth: 100},
-    {Header: 'y', accessor: 'y', minWidth: 100},
-    {Header: 'z', accessor: 'z', minWidth: 100}
+    {Header: 'x', accessor: 'x', minWidth: 100, sortBy: 'x'},
+    {Header: 'y', accessor: 'y', minWidth: 100, sortBy: 'y'},
+    {Header: 'z', accessor: 'z', minWidth: 100, sortBy: 'z'}
   ]);
 });
 
 it('should correctly format multi-level header', () => {
-  const result = Table.formatColumns(['x', {label: 'a', columns: ['i', 'j']}]);
+  const result = Table.formatColumns('raw', ['x', {label: 'a', columns: ['i', 'j']}]);
 
   expect(result).toEqual([
-    {Header: 'x', accessor: 'x', minWidth: 100},
+    {Header: 'x', accessor: 'x', minWidth: 100, sortBy: 'x'},
     {
       Header: 'a',
       columns: [
-        {Header: 'i', accessor: 'ai', minWidth: 100},
-        {Header: 'j', accessor: 'aj', minWidth: 100}
+        {Header: 'i', accessor: 'ai', minWidth: 100, sortBy: 'ai'},
+        {Header: 'j', accessor: 'aj', minWidth: 100, sortBy: 'aj'}
       ]
     }
   ]);
 });
 
 it('should support explicit id for columns', () => {
-  const result = Table.formatColumns([
+  const result = Table.formatColumns('raw', [
     {id: 'column1', label: 'X'},
     'Y',
     {id: 'column3', label: 'Z'}
   ]);
 
   expect(result).toEqual([
-    {Header: 'X', accessor: 'column1', minWidth: 100},
-    {Header: 'Y', accessor: 'y', minWidth: 100},
-    {Header: 'Z', accessor: 'column3', minWidth: 100}
+    {Header: 'X', accessor: 'column1', minWidth: 100, sortBy: 'column1'},
+    {Header: 'Y', accessor: 'y', minWidth: 100, sortBy: 'y'},
+    {Header: 'Z', accessor: 'column3', minWidth: 100, sortBy: 'column3'}
+  ]);
+});
+
+it('should add sortBy:key/value props to head columns if resultType is a map', () => {
+  const result = Table.formatColumns('frequencyMap', [
+    {id: 'column1', label: 'X'},
+    'Y',
+    {id: 'column3', label: 'Z'}
+  ]);
+
+  expect(result).toEqual([
+    {Header: 'X', accessor: 'column1', minWidth: 100, sortBy: 'key'},
+    {Header: 'Y', accessor: 'y', minWidth: 100, sortBy: 'value'},
+    {Header: 'Z', accessor: 'column3', minWidth: 100, sortBy: 'value'}
   ]);
 });
 
@@ -85,7 +99,7 @@ it('should call the updateSorting method on click on header', () => {
 
   node
     .find(ReactTable)
-    .prop('getTheadThProps')(0, 0, {id: 'someId'})
+    .prop('getTheadThProps')(0, 0, {sortBy: 'someId'})
     .onClick({target: 'header'});
 
   expect(spy).toHaveBeenCalledWith('someId', 'asc');

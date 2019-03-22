@@ -136,21 +136,32 @@ export function formatReportResult(data, result) {
     // the result data is no time series
     return result;
   }
-  const dateFormat = getDateFormat(unit);
-  const formattedResult = {};
-  Object.keys(result)
-    .sort((a, b) => {
+
+  const keys = Object.keys(result);
+  if (!data.parameters.sorting) {
+    keys.sort((a, b) => {
       // sort descending for tables and ascending for all other visualizations
       if (data.visualization === 'table') {
         return a < b ? 1 : -1;
       } else {
         return a < b ? -1 : 1;
       }
-    })
-    .forEach(key => {
-      const formattedDate = moment(key).format(dateFormat);
-      formattedResult[formattedDate] = result[key];
     });
+  }
+
+  let dateFormat = getDateFormat(unit);
+  // The added space is to make sure all dates are string,
+  // since integer keys in objects does not preserve order
+  if (unit === 'year') {
+    dateFormat += ' ';
+  }
+
+  const formattedResult = {};
+
+  keys.forEach(key => {
+    const formattedDate = moment(key).format(dateFormat);
+    formattedResult[formattedDate] = result[key];
+  });
   return formattedResult;
 }
 

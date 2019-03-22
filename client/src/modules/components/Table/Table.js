@@ -24,11 +24,12 @@ export default class Table extends React.Component {
       body,
       disableReportScrolling,
       disablePagination,
+      resultType = '',
       updateSorting,
       sorting
     } = this.props;
 
-    const columns = Table.formatColumns(head);
+    const columns = Table.formatColumns(resultType, head);
     const data = Table.formatData(head, body);
 
     // react-table does not support Infinity as page size 👎
@@ -55,19 +56,19 @@ export default class Table extends React.Component {
           onResizedChange={this.updateResizedState}
           PreviousComponent={props => <Button {...props} />}
           NextComponent={props => <Button {...props} />}
-          getTheadThProps={(state, rowInfo, {id}) => ({
+          getTheadThProps={(state, rowInfo, {sortBy}) => ({
             style: {
               cursor: updateSorting ? 'pointer' : 'default',
               boxShadow:
-                id === (sorting && sorting.by)
+                sortBy === (sorting && sorting.by)
                   ? `inset 0 ${sorting.order === 'desc' ? '-' : ''}3px 0 0 rgba(0,0,0,.6)`
                   : 'none'
             },
             onClick: evt => {
               if (evt.target.className !== 'rt-resizer' && updateSorting) {
                 updateSorting(
-                  id,
-                  sorting && sorting.by === id && sorting.order === 'asc' ? 'desc' : 'asc'
+                  sortBy,
+                  sorting && sorting.by === sortBy && sorting.order === 'asc' ? 'desc' : 'asc'
                 );
               }
             }
@@ -124,18 +125,24 @@ export default class Table extends React.Component {
     window.removeEventListener('resize', this.fixColumnAlignment);
   }
 
-  static formatColumns = (head, ctx = '') => {
-    return head.map(elem => {
+  static formatColumns = (resultType, head, ctx = '') => {
+    return head.map((elem, i) => {
       if (typeof elem === 'string' || elem.id) {
+        const accessor = convertHeaderNameToAccessor(ctx + (elem.id || elem));
+        let sortBy = accessor;
+        if (resultType.includes('Map')) {
+          sortBy = i === 0 ? 'key' : 'value';
+        }
         return {
           Header: elem.label || elem,
-          accessor: convertHeaderNameToAccessor(ctx + (elem.id || elem)),
-          minWidth: 100
+          accessor,
+          minWidth: 100,
+          sortBy
         };
       }
       return {
         Header: elem.label,
-        columns: Table.formatColumns(elem.columns, ctx + elem.label)
+        columns: Table.formatColumns(resultType, elem.columns, ctx + elem.label)
       };
     });
   };

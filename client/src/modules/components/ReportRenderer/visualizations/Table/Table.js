@@ -57,7 +57,7 @@ export default withErrorHandling(
 
     formatData = () => {
       const {
-        report: {reportType, combined, data, result},
+        report: {reportType, combined, data, result, resultType},
         updateReport
       } = this.props;
       const {parameters} = data;
@@ -65,17 +65,21 @@ export default withErrorHandling(
       // Combined Report
       if (combined) return processCombinedData(this.props);
 
+      let tableData;
       // raw data
       if (isRaw(result)) {
-        return {
-          ...processRawData[reportType](this.props, this.state.camundaEndpoints),
-          updateSorting: updateReport && this.updateSorting,
-          sorting: parameters && parameters.sorting
-        };
+        tableData = processRawData[reportType](this.props, this.state.camundaEndpoints);
+      } else {
+        // Normal single Report
+        tableData = processDefaultData(this.props);
       }
 
-      // Normal single Report
-      return processDefaultData(this.props);
+      return {
+        ...tableData,
+        resultType,
+        updateSorting: updateReport && this.updateSorting,
+        sorting: parameters && parameters.sorting
+      };
     };
   }
 );

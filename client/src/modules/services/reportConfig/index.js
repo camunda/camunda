@@ -11,11 +11,13 @@ const processUpdate = config.process.update;
 config.process.update = (type, data, props) => {
   const changes = processUpdate(type, data, props);
 
+  changes.parameters = {sorting: {$set: null}};
+
   if (type === 'view') {
     changes.configuration = {heatmapTargetValue: {$set: {active: false, values: {}}}};
 
     if (data.property !== 'duration' || data.entity !== 'processInstance') {
-      changes.parameters = {processPart: {$set: null}};
+      changes.parameters.processPart = {$set: null};
     }
   }
 
