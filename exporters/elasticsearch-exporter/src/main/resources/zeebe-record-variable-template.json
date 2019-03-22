@@ -16,7 +16,7 @@
               "type": "keyword"
             },
             "value": {
-              "type": "text"
+              "type": "keyword"
             },
             "scopeKey": {
               "type": "long"
