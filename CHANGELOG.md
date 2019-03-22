@@ -2,6 +2,9 @@
 ## 0.16.4 (2019-03-22)
 
 
+#### Bug Fixes
+
+* **broker:**  use default RocksDB column family options ([4393958b](https://github.com/zeebe-io/zeebe/commit/4393958b76f115a565d38ec8b92af66d75215a00))
 
 
 <a name="0.16.3"></a>
