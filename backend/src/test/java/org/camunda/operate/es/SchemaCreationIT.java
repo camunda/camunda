@@ -66,7 +66,7 @@ public class SchemaCreationIT extends OperateIntegrationTest {
     assertTemplateOrder(eventTemplate.getTemplateName(), 30);
 
     //assert schema creation won't be performed for the second time
-    assertThat(elasticsearchSchemaManager.initializeSchema()).isFalse();
+    assertThat(elasticsearchSchemaManager.schemaAlreadyExists()).isTrue();
   }
 
   private void assertTemplateOrder(String templateName, int templateOrder) throws IOException {

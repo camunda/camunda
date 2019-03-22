@@ -132,7 +132,7 @@ public class ElasticsearchSchemaManager {
    * Checks in Elasticsearch, if the schema already exists. For this it searches for one of used aliases.
    * @return true is Elasticsearch schema already exists, false otherwise
    */
-  private boolean schemaAlreadyExists() {
+  protected boolean schemaAlreadyExists() {
     try {
      return esClient.indices().exists(new GetIndexRequest().indices(indexCreators.get(0).getAlias()), RequestOptions.DEFAULT);
     } catch (IOException e) {
