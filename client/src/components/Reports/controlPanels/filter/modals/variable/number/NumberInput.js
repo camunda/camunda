@@ -9,7 +9,7 @@ export default class NumberInput extends React.Component {
   static defaultFilter = {operator: 'in', values: ['']};
 
   componentDidMount() {
-    this.props.setValid(false);
+    this.props.setValid(this.selectionIsValid());
   }
 
   setOperator = operator => evt => {

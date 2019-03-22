@@ -21,7 +21,7 @@ export default class StringInput extends React.Component {
   };
 
   reset() {
-    this.props.setValid(false);
+    this.props.setValid(this.props.filter.values.length > 0);
     this.loadAvailableValues();
   }
 
