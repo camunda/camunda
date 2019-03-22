@@ -46,7 +46,7 @@ import scala.util.parsing.combinator.JavaTokenParsers
  *
  * comparison  = literal , '==' | '!=' | '<' | '<=' | '>' | '>=' , literal
  *
- * literal     = json path | string | number | 'true' | 'false' | 'null'
+ * literal     = variable | string | number | 'true' | 'false' | 'null'
  * }}}
  *
  */
@@ -67,7 +67,7 @@ object JsonConditionParser extends JavaTokenParsers {
       case x ~ "==" ~ y => Equal(x, y)
       case x ~ "!=" ~ y => NotEqual(x, y)
     }
-    | (number | jsonPath) ~ ("<=" | ">=" | "<" | ">") ~! numberOrJsonPath ^^ {
+    | (number | variable) ~ ("<=" | ">=" | "<" | ">") ~! numberOrVariable ^^ {
       case x ~ "<" ~ y  => LessThan(x, y)
       case x ~ "<=" ~ y => LessOrEqual(x, y)
       case x ~ ">" ~ y  => GreaterThan(x, y)
@@ -81,15 +81,16 @@ object JsonConditionParser extends JavaTokenParsers {
     | "null" ^^^ JsonNull
     | string
     | number
-    | jsonPath) withFailureMessage ("expected literal (JSON path, string, number, boolean, null)")
+    | variable) withFailureMessage ("expected literal (JSON path, string, number, boolean, null)")
 
-  private lazy val numberOrJsonPath: Parser[JsonObject] = (number | jsonPath) withFailureMessage ("expected number or JSON path")
+  private lazy val numberOrVariable: Parser[JsonObject] = (number | variable) withFailureMessage ("expected number or variable")
 
   /**
-   * A JSON path expression which starts with a name. Only allow dot-object-notation.
+   * A variable expression which starts with a name. Only allow dot-object-notation.
    */
-  private lazy val jsonPath: Parser[JsonPath] = not(reservedWords) ~> rep1sep(ident, ".") ^^ {
-    case variableName :: path => JsonPath(wrapString(variableName), path)
+  private lazy val variable: Parser[JsonPath] = not(reservedWords) ~> ident ~ opt("." ~> repsep(ident, ".")) ^^ {
+    case variableName ~ Some(path) => JsonPath(wrapString(variableName), path)
+    case variableName ~ _          => JsonPath(wrapString(variableName), List.empty)
   }
 
   /**
