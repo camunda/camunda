@@ -15,8 +15,8 @@
  */
 package io.zeebe.test.exporter;
 
-import io.zeebe.exporter.context.Configuration;
-import io.zeebe.exporter.context.Context;
+import io.zeebe.exporter.api.context.Configuration;
+import io.zeebe.exporter.api.context.Context;
 import org.slf4j.Logger;
 
 public class MockContext implements Context {

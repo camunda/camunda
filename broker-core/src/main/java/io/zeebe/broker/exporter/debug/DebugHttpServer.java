@@ -25,7 +25,7 @@ import com.google.common.base.Charsets;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.api.record.Record;
 import io.zeebe.util.StreamUtil;
 import io.zeebe.util.collection.Tuple;
 import java.io.IOException;

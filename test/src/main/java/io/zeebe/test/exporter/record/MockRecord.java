@@ -15,7 +15,7 @@
  */
 package io.zeebe.test.exporter.record;
 
-import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.api.record.Record;
 import java.time.Instant;
 import java.util.Objects;
 

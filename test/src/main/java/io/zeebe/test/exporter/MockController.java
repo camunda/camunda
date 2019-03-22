@@ -15,7 +15,7 @@
  */
 package io.zeebe.test.exporter;
 
-import io.zeebe.exporter.context.Controller;
+import io.zeebe.exporter.api.context.Controller;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;

@@ -19,7 +19,7 @@ package io.zeebe.broker.exporter.record.value;
 
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueWithPayloadImpl;
-import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
 import java.util.Objects;
 
 public class WorkflowInstanceSubscriptionRecordValueImpl extends RecordValueWithPayloadImpl

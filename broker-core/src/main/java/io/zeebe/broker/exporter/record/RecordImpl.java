@@ -19,9 +19,9 @@ package io.zeebe.broker.exporter.record;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.RecordMetadata;
-import io.zeebe.exporter.record.RecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.RecordMetadata;
+import io.zeebe.exporter.api.record.RecordValue;
 import io.zeebe.logstreams.log.LoggedEvent;
 import java.time.Instant;
 

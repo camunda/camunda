@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.exporter.record.value.job;
 
-import io.zeebe.exporter.record.value.job.Headers;
+import io.zeebe.exporter.api.record.value.job.Headers;
 import java.util.Objects;
 
 public class HeadersImpl implements Headers {

@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.exporter.util.JarCreatorRule;
 import io.zeebe.broker.exporter.util.TestJarExporter;
-import io.zeebe.exporter.spi.Exporter;
+import io.zeebe.exporter.api.spi.Exporter;
 import java.io.File;
 import org.apache.logging.log4j.LogManager;
 import org.junit.Rule;

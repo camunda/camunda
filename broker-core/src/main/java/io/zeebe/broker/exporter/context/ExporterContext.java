@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.exporter.context;
 
-import io.zeebe.exporter.context.Configuration;
-import io.zeebe.exporter.context.Context;
+import io.zeebe.exporter.api.context.Configuration;
+import io.zeebe.exporter.api.context.Context;
 import org.slf4j.Logger;
 
 public class ExporterContext implements Context {

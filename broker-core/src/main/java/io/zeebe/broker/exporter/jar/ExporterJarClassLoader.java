@@ -32,7 +32,7 @@ public class ExporterJarClassLoader extends URLClassLoader {
 
   /** lists of packages from broker base that are exposed at runtime to the external exporters */
   public static final String[] EXPOSED_PACKAGE_PREFIXES =
-      new String[] {"io.zeebe.exporter.", "org.slf4j.", "org.apache.logging.log4j."};
+      new String[] {"io.zeebe.exporter.api", "org.slf4j.", "org.apache.logging.log4j."};
 
   public ExporterJarClassLoader(URL[] urls) {
     super(urls);
