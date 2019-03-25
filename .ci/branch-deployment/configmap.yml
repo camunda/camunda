@@ -1,0 +1,218 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: @BRANCH@-optimize-camunda-cloud
+  labels:
+    app: @BRANCH@-optimize-camunda-cloud
+    branch: @BRANCH@
+data:
+######################## OPT ########################
+  OptimizeLicense.txt: |
+    --------------- BEGIN OPTIMIZE FAKE KEY ---------------
+    redactedredactedredactedredactedredactedredactedredactedre
+    redactedredactedredactedredactedredactedredactedredactedre
+    redactedredactedredactedredactedredactedredactedredactedre
+    redactedredactedredactedredactedredactedredactedredactedre
+    redactedredactedredactedredactedredactedredactedredactedre
+    redactedredactedredactedredactedredactedredactedredacte
+    schrottis inn;unlimited
+    ---------------  END OPTIMIZE LICENSE KEY  ---------------
+
+  elasticsearch.yml: |
+    cluster.name: "docker-cluster"
+    network.host: 0.0.0.0
+    processors: 2
+    discovery.zen.minimum_master_nodes: 1
+
+  environment-config.yaml: |
+    ###############################################################################
+    #                                                                             #
+    #                     Optimize Environment Configuration                      #
+    #                                                                             #
+    ###############################################################################
+
+    # Note: for all possible configuration options please have a look
+    #       at the Optimize documentation:
+    #       https://docs.camunda.org/optimize/latest/technical-guide/configuration/
+    container:
+      # A host name or IP address, to identify a specific network interface on
+      # which to listen.
+      host: 0.0.0.0
+      ports:
+        # A port number that will be used by the embedded jetty server to process
+        # HTTP connections.
+        http: 8090
+        # A port number that will be used by the embedded jetty server to process
+        # secure HTTPS connections.
+        https: 8091
+
+    # Configuration for engines used to import data. Please note that you have to have at
+    # least one engine configured at all times.
+    engines:
+      # An alias of the engine, which will be used for internal purposes like
+      # logging and displaying which data belong to which engine.
+      'camunda-bpm':
+        # The name of the engine that will be used to import data.
+        name: default
+        # A base URL that will be used for connections to the Camunda Engine REST API.
+        rest: 'http://localhost:8080/engine-rest'
+        authentication:
+          #Toggles basic authentication on or off. When enabling basic
+          #authentication, please be aware that you also need to adjust the values
+          #of the user and password
+          enabled: false
+          #When basic authentication is enabled, this password is used to
+          #authenticate against the engine.
+          password: ''
+          #When basic authentication is enabled, this user is used to authenticate
+          #against the engine.
+          user: ''
+        # The webapps configuration allows Optimize to directly link
+        # to the other Camunda Web Applications, e.g. to jump from
+        # Optimize directly to a dedicated process instance in Cockpit
+        webapps:
+          # Defines the endpoint where to find the camunda webapps
+          endpoint: 'http://localhost:8080/camunda'
+          # Enables/disables linking to other Camunda Web Applications
+          enabled: true
+    es:
+      connection:
+        #Maximum time without connection to Elasticsearch, Optimize should
+        #wait until a time out triggers.
+        timeout: 10000
+        # a list of Elasticsearch nodes Optimize can connect to. If you  have built
+        # an Elasticsearch cluster with several nodes it is recommended to define
+        # several connection points in case one node fails.
+        nodes:
+            # the address/hostname under which the Elasticsearch node is available.
+          - host: 'localhost'
+            # A port number used by Elasticsearch to accept HTTP connections.
+            httpPort: 9200
+
+    serialization:
+      # Define a custom date format that should be used for
+      # fetching date data from the engine(should be the same as in the engine)
+      # Please note that engine prior to 7.8 use yyyy-MM-dd'T'HH:mm:ss as default date format
+      engineDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+
+######################## CAM BPM ########################
+  configure-and-run.sh: |
+    #!/bin/bash -ex
+    # remove unneeded webapps
+    for webapp in camunda-invoice camunda-welcome docs examples host-manager manager h2 ROOT
+    do
+       rm -rf ${HOME}/webapps/${webapp}
+    done
+
+    exec ${HOME}/camunda.sh
+
+  bpm-platform.xml: |
+    <?xml version='1.0' encoding='UTF-8'?>
+    <bpm-platform xmlns="http://www.camunda.org/schema/1.0/BpmPlatform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.camunda.org/schema/1.0/BpmPlatform http://www.camunda.org/schema/1.0/BpmPlatform ">
+        <job-executor>
+            <job-acquisition name="default" />
+            <properties>
+                <!-- configure threadpool size to minimum -->
+                <!-- Note: the following properties only take effect in a Tomcat environment -->
+                <property name="queueSize">1</property>
+                <property name="corePoolSize">1</property>
+                <property name="maxPoolSize">1</property>
+                <property name="keepAliveTime">0</property>
+              </properties>
+        </job-executor>
+        <process-engine name="default">
+            <job-acquisition>default</job-acquisition>
+            <configuration>org.camunda.bpm.engine.impl.cfg.StandaloneProcessEngineConfiguration</configuration>
+            <datasource>java:jdbc/ProcessEngine</datasource>
+            <properties>
+                <property name="history">full</property>
+                <property name="databaseSchemaUpdate">false</property>
+                <property name="authorizationEnabled">false</property>
+                <property name="jobExecutorDeploymentAware">false</property>
+                <!-- disable job executor -->
+                <property name="jobExecutorActivate">false</property>
+            </properties>
+
+            <plugins>
+                <!-- plugin enabling Process Application event listener support -->
+                <plugin>
+                  <class>org.camunda.bpm.application.impl.event.ProcessApplicationEventListenerPlugin</class>
+                </plugin>
+                <!-- plugin enabling integration of camunda Spin -->
+                <plugin>
+                  <class>org.camunda.spin.plugin.impl.SpinProcessEnginePlugin</class>
+                </plugin>
+                <!-- plugin enabling connect support -->
+                <plugin>
+                  <class>org.camunda.connect.plugin.impl.ConnectProcessEnginePlugin</class>
+                </plugin>
+            </plugins>
+        </process-engine>
+    </bpm-platform>
+
+  server.xml: |
+    <?xml version='1.0' encoding='UTF-8'?>
+    <Server port="8005" shutdown="SHUTDOWN">
+      <Listener className="org.apache.catalina.startup.VersionLoggerListener" />
+      <Listener className="org.apache.catalina.core.AprLifecycleListener" SSLEngine="on" />
+      <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" />
+      <Listener className="org.camunda.bpm.container.impl.tomcat.TomcatBpmPlatformBootstrap" />
+      <Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" />
+      <Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener" />
+      <GlobalNamingResources>
+        <Resource name="UserDatabase" auth="Container"
+                  type="org.apache.catalina.UserDatabase"
+                  description="User database that can be updated and saved"
+                  factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
+                  pathname="conf/tomcat-users.xml" />
+        <Resource name="jdbc/ProcessEngine"
+                  auth="Container"
+                  type="javax.sql.DataSource"
+                  factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"
+                  uniqueResourceName="process-engine"
+                  driverClassName="org.postgresql.Driver"
+                  url="jdbc:postgresql://opt-ci-perf.db:5432/optimize-ci-performance"
+                  defaultTransactionIsolation="READ_COMMITTED"
+                  username="camunda"
+                  password="camunda123"
+                  initialSize="10"
+                  maxTotal="20"
+                  minIdle="5"
+                  maxIdle="10"
+                  validationQuery="SELECT 1"
+                  validationQueryTimeout="30"
+                  testOnBorrow="true"
+                  testWhileIdle="true"
+                  removeAbandonedOnBorrow="true"
+                  removeAbandonedTimeout="300"
+                  logAbandoned="true"
+                  logExpiredConnections="true"
+                  defaultQueryTimeout="60" />
+        <Resource name="global/camunda-bpm-platform/process-engine/ProcessEngineService!org.camunda.bpm.ProcessEngineService" auth="Container"
+                  type="org.camunda.bpm.ProcessEngineService"
+                  description="camunda BPM platform Process Engine Service"
+                  factory="org.camunda.bpm.container.impl.jndi.ProcessEngineServiceObjectFactory" />
+        <Resource name="global/camunda-bpm-platform/process-engine/ProcessApplicationService!org.camunda.bpm.ProcessApplicationService" auth="Container"
+                  type="org.camunda.bpm.ProcessApplicationService"
+                  description="camunda BPM platform Process Application Service"
+                  factory="org.camunda.bpm.container.impl.jndi.ProcessApplicationServiceObjectFactory" />
+      </GlobalNamingResources>
+      <Service name="Catalina">
+        <Connector port="8080" protocol="HTTP/1.1"
+                   connectionTimeout="20000"
+                   redirectPort="8443" />
+        <Engine name="Catalina" defaultHost="localhost">
+          <Realm className="org.apache.catalina.realm.LockOutRealm">
+            <Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+                   resourceName="UserDatabase"/>
+          </Realm>
+          <Host name="localhost"  appBase="webapps"
+                unpackWARs="true" autoDeploy="true">
+            <Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
+                   prefix="localhost_access_log" suffix=".txt"
+                   pattern="%h %l %u %t &quot;%r&quot; %s %b" />
+          </Host>
+        </Engine>
+      </Service>
+    </Server>
