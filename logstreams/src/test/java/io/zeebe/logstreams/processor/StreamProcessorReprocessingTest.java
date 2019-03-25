@@ -41,7 +41,6 @@ import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
-import io.zeebe.util.exception.RecoverableException;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
@@ -203,7 +202,7 @@ public class StreamProcessorReprocessingTest {
   }
 
   @Test
-  public void shouldCallProcessingFailedOnReprocessingError() {
+  public void shouldRetryProcessingOnReprocessingError() {
     // given
     final long eventPosition1 = writeEvent();
     final long eventPosition2 = writeEvent();
@@ -226,6 +225,32 @@ public class StreamProcessorReprocessingTest {
               .when(eventProcessorSpy)
               .processEvent();
         });
+    waitUntilProcessedAndFailedCountReached(3, 0);
+
+    // then
+    assertThat(streamProcessor.getEvents())
+        .extracting(LoggedEvent::getPosition)
+        .containsExactly(eventPosition1, eventPosition2, eventPosition3);
+
+    verify(eventProcessor, times(4)).processEvent();
+    verify(eventProcessor, times(0)).onError(any());
+    verify(eventProcessor, times(1)).executeSideEffects();
+    verify(eventProcessor, times(1)).writeEvent(any());
+  }
+
+  @Test
+  public void shouldCallOnErrorForFailedEvent() {
+    // given
+    final long eventPosition1 = writeEvent();
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 =
+        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition2));
+
+    // when
+    openStreamProcessorController(
+        () -> {
+          streamProcessor.setFailedEventPosition(eventPosition2);
+        });
     waitUntilProcessedAndFailedCountReached(2, 1);
 
     // then
@@ -233,43 +258,43 @@ public class StreamProcessorReprocessingTest {
         .extracting(LoggedEvent::getPosition)
         .containsExactly(eventPosition1, eventPosition2, eventPosition3);
 
-    verify(eventProcessor, times(3)).processEvent();
+    verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(1)).onError(any());
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
   }
 
   @Test
-  public void shouldReCallReprocessingOnRecoverableException() throws Exception {
+  public void shouldRetryReprocessingOnException() throws Exception {
     // given
     final CountDownLatch latch = new CountDownLatch(2);
 
     final long eventPosition1 = writeEvent();
-    writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
+    final long eventPosition2 =
+        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
 
     // when
     openStreamProcessorController(
         () -> {
-          doAnswer(
+          doThrow(new RuntimeException("expected"))
+              .doAnswer(
                   (invocationOnMock -> {
                     latch.countDown();
                     return invocationOnMock.callRealMethod();
                   }))
-              .when(streamProcessor)
-              .onEvent(any());
-
-          doThrow(new RecoverableException("expected", new RuntimeException("expected")))
-              .when(dbContext)
-              .getCurrentTransaction();
+              .when(eventProcessor)
+              .processEvent();
         });
     latch.await();
 
     // then
     assertThat(streamProcessor.getEvents())
         .extracting(LoggedEvent::getPosition)
-        .containsOnly(eventPosition1);
+        .containsOnly(eventPosition1, eventPosition2);
 
-    verify(streamProcessor, atLeast(2)).onEvent(any());
+    verify(streamProcessor, times(2)).onEvent(any());
+    verify(dbContext, atLeast(3)).getCurrentTransaction();
+    verify(eventProcessor, times(3)).processEvent();
   }
 
   @Test
@@ -385,32 +410,6 @@ public class StreamProcessorReprocessingTest {
 
     // then
     verify(streamProcessor, times(1)).onRecovered();
-  }
-
-  @Test
-  public void shouldSkipEventOnReprocessingError() {
-    // given [1|S:-] --> [2|S:1]
-    final long eventPosition1 = writeEvent();
-    final long eventPosition2 = writeEvent();
-    final long eventPosition3 =
-        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition2));
-
-    openStreamProcessorController(
-        () -> {
-          doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent();
-        });
-
-    // when
-    waitUntilProcessedAndFailedCountReached(0, 3);
-
-    // then
-    assertThat(streamProcessor.getEvents())
-        .extracting(LoggedEvent::getPosition)
-        .containsExactly(eventPosition1, eventPosition2, eventPosition3);
-
-    verify(streamProcessor, times(1)).onRecovered();
-    verify(eventProcessor, times(3)).processEvent();
-    verify(eventProcessor, times(3)).onError(any());
   }
 
   @Test
