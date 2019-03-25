@@ -220,7 +220,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void updateVariables(ZeebeClient client, String scopeId, String newPayload) {
-    client.newSetVariablesCommand(IdUtil.getKey(scopeId)).variables(newPayload).send().join();
+    client.newSetVariablesCommand(IdUtil.getKey(scopeId)).variables(newPayload).local(true).send().join();
   }
 
 }

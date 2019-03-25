@@ -33,6 +33,7 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
       String updateVariableJson = mergeVariableJson(operation.getVariableName(), operation.getVariableValue());
       zeebeClient.newSetVariablesCommand(IdUtil.getKey(operation.getScopeId()))
         .variables(updateVariableJson)
+        .local(true)
         .send().join();
       markAsSent(operation);
     } catch (ClientException ex) {

@@ -402,7 +402,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("OPE-490")
   public void testAddVariableOnTask() throws Exception {
     // given
     final long workflowInstanceKey = startDemoWorkflowInstance();
@@ -419,7 +418,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //then new variables are returned
     List<VariableDto> variables = variableReader.getVariables(workflowInstanceId, taskAId);
-    assertThat(variables).hasSize(2);
+    assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, true);
     assertVariable(variables, newVar2Name, newVar2Value, true);
 
@@ -429,14 +428,14 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //then - before we process messages from Zeebe, the state of the operation must be SENT - variables has still hasActiveOperation = true
     //then new variables are returned
     variables = variableReader.getVariables(workflowInstanceId, taskAId);
-    assertThat(variables).hasSize(2);
+    assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, true);
     assertVariable(variables, newVar2Name, newVar2Value, true);
 
     //TC3 after we process messages from Zeebe, variables must have hasActiveOperation = false
     elasticsearchTestRule.processAllEvents(2, ZeebeESImporter.ImportValueType.VARIABLE);
     variables = variableReader.getVariables(workflowInstanceId, taskAId);
-    assertThat(variables).hasSize(2);
+    assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, false);
     assertVariable(variables, newVar2Name, newVar2Value, false);
   }
