@@ -15,31 +15,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.handlers.activity;
+package io.zeebe.broker.workflow.processor.handlers;
 
-import io.zeebe.broker.workflow.model.element.ExecutableActivity;
+import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
-import io.zeebe.broker.workflow.processor.handlers.element.ElementTerminatingHandler;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class ActivityElementTerminatingHandler<T extends ExecutableActivity>
-    extends ElementTerminatingHandler<T> {
+public class IncidentResolver {
+  private final IncidentState incidentState;
 
-  public ActivityElementTerminatingHandler() {
-    super();
+  public IncidentResolver(IncidentState incidentState) {
+    this.incidentState = incidentState;
   }
 
-  public ActivityElementTerminatingHandler(WorkflowInstanceIntent nextState) {
-    super(nextState);
+  public void resolveIncidents(BpmnStepContext context) {
+    resolveIncidents(context, context.getRecord().getKey());
   }
 
-  @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
-    if (super.handleState(context)) {
-      context.getCatchEventBehavior().unsubscribeFromEvents(context.getRecord().getKey(), context);
-      return true;
-    }
-
-    return false;
+  public void resolveIncidents(BpmnStepContext context, long scopeKey) {
+    incidentState.forExistingWorkflowIncident(
+        scopeKey, (record, key) -> context.getOutput().appendResolvedIncidentEvent(key, record));
   }
 }

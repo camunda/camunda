@@ -378,7 +378,7 @@ public class MappingIncidentTest {
     // then
     final Record activityTerminating =
         testClient.receiveFirstWorkflowInstanceEvent(
-            workflowInstanceKey, "failingTask", WorkflowInstanceIntent.ELEMENT_TERMINATING);
+            workflowInstanceKey, "failingTask", WorkflowInstanceIntent.ELEMENT_TERMINATED);
     final Record<IncidentRecordValue> incidentResolvedEvent =
         testClient.receiveFirstIncidentEvent(RESOLVED);
 

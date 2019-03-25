@@ -31,16 +31,19 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class ServiceTaskElementTerminatingHandler<T extends ExecutableServiceTask>
     extends ActivityElementTerminatingHandler<T> {
+  private final IncidentState incidentState;
   private final JobState jobState;
 
   public ServiceTaskElementTerminatingHandler(IncidentState incidentState, JobState jobState) {
-    super(incidentState);
+    super();
+    this.incidentState = incidentState;
     this.jobState = jobState;
   }
 
   public ServiceTaskElementTerminatingHandler(
       WorkflowInstanceIntent nextState, IncidentState incidentState, JobState jobState) {
-    super(nextState, incidentState);
+    super(nextState);
+    this.incidentState = incidentState;
     this.jobState = jobState;
   }
 

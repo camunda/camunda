@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow.processor.handlers.catchevent;
 
-import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementTerminatingHandler;
@@ -26,13 +25,12 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 public class IntermediateCatchEventElementTerminatingHandler<T extends ExecutableCatchEventElement>
     extends ElementTerminatingHandler<T> {
 
-  public IntermediateCatchEventElementTerminatingHandler(IncidentState incidentState) {
-    super(incidentState);
+  public IntermediateCatchEventElementTerminatingHandler() {
+    super();
   }
 
-  public IntermediateCatchEventElementTerminatingHandler(
-      WorkflowInstanceIntent nextState, IncidentState incidentState) {
-    super(nextState, incidentState);
+  public IntermediateCatchEventElementTerminatingHandler(WorkflowInstanceIntent nextState) {
+    super(nextState);
   }
 
   @Override
