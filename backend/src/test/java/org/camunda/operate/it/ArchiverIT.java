@@ -141,7 +141,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     //finish instances 2 days ago
     final Instant endDate1 = currentTime.minus(2, ChronoUnit.DAYS);
     finishInstances(count1, endDate1, activityId);
-    elasticsearchTestRule.processAllEventsAndWait(workflowInstancesAreFinishedCheck, ids1);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreFinishedCheck, ids1);
 
     //start instances 2 days ago
     int count2 = random.nextInt(6) + 5;
@@ -150,7 +150,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     //finish instances 1 day ago
     final Instant endDate2 = currentTime.minus(1, ChronoUnit.DAYS);
     finishInstances(count2, endDate2, activityId);
-    elasticsearchTestRule.processAllEventsAndWait(workflowInstancesAreFinishedCheck, ids2);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreFinishedCheck, ids2);
 
     //start instances 1 day ago
     int count3 = random.nextInt(6) + 5;
@@ -206,7 +206,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     //finish instances 1 hour ago
     final Instant endDate1 = currentTime.minus(1, ChronoUnit.HOURS);
     finishInstances(count1, endDate1, activityId);
-    elasticsearchTestRule.processAllEventsAndWait(workflowInstancesAreFinishedCheck, ids1);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreFinishedCheck, ids1);
 
     //start instances 1 hour ago
     int count2 = random.nextInt(6) + 5;
@@ -214,7 +214,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     //finish instances 59 minutes ago
     final Instant endDate2 = currentTime.minus(50, ChronoUnit.MINUTES);
     finishInstances(count2, endDate2, activityId);
-    elasticsearchTestRule.processAllEventsAndWait(workflowInstancesAreFinishedCheck, ids2);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreFinishedCheck, ids2);
 
     brokerRule.getClock().setCurrentTime(currentTime);
 
@@ -303,7 +303,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     for (int i = 0; i < count; i++) {
       ids.add(IdTestUtil.getId(ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"var\": 123}")));
     }
-    elasticsearchTestRule.processAllEventsAndWait(workflowInstancesAreStartedCheck, ids);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreStartedCheck, ids);
     return ids;
   }
 

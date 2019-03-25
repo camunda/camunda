@@ -14,6 +14,8 @@ import org.camunda.operate.entities.OperationType;
 
 public class OperationDto {
 
+  private String id;
+
   private OperationType type;
 
   private OffsetDateTime startDate;
@@ -22,6 +24,14 @@ public class OperationDto {
   private OperationState state;
 
   private String errorMessage;
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
+  }
 
   public OperationType getType() {
     return type;
@@ -68,6 +78,7 @@ public class OperationDto {
       return null;
     }
     OperationDto operation = new OperationDto();
+    operation.setId(operationEntity.getId());
     operation.setType(operationEntity.getType());
     operation.setStartDate(operationEntity.getStartDate());
     operation.setEndDate(operationEntity.getEndDate());
@@ -97,6 +108,8 @@ public class OperationDto {
 
     OperationDto that = (OperationDto) o;
 
+    if (id != null ? !id.equals(that.id) : that.id != null)
+      return false;
     if (type != that.type)
       return false;
     if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
@@ -110,7 +123,8 @@ public class OperationDto {
 
   @Override
   public int hashCode() {
-    int result = type != null ? type.hashCode() : 0;
+    int result = id != null ? id.hashCode() : 0;
+    result = 31 * result + (type != null ? type.hashCode() : 0);
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);

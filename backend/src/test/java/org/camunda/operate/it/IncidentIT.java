@@ -58,7 +58,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     final String errorMsg = "some error";
     final String activityId = "alwaysFailingTask";
     ZeebeTestUtil.failTask(zeebeClient, activityId, getWorkerName(), 3, errorMsg);
-    elasticsearchTestRule.processAllEventsAndWait(incidentsAreActiveCheck, workflowInstanceKey, 4);
+    elasticsearchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, workflowInstanceKey, 4);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when

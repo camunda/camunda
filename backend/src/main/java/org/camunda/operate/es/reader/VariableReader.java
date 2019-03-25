@@ -7,9 +7,12 @@ package org.camunda.operate.es.reader;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.es.schema.templates.VariableTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.rest.dto.VariableDto;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
@@ -31,7 +34,10 @@ public class VariableReader extends AbstractReader {
   @Autowired
   private VariableTemplate variableTemplate;
 
-  public List<VariableEntity> getVariables(String workflowInstanceId, String scopeId) {
+  @Autowired
+  private OperationReader operationReader;
+
+  public List<VariableDto> getVariables(String workflowInstanceId, String scopeId) {
     final TermQueryBuilder workflowInstanceIdQ = termQuery(VariableTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
     final TermQueryBuilder scopeIdQ = termQuery(VariableTemplate.SCOPE_ID, scopeId);
 
@@ -42,7 +48,9 @@ public class VariableReader extends AbstractReader {
         .query(query)
         .sort(VariableTemplate.NAME, SortOrder.ASC));
     try {
-      return scroll(searchRequest, VariableEntity.class);
+      final List<VariableEntity> variableEntities = scroll(searchRequest, VariableEntity.class);
+      final Map<String, List<OperationEntity>> operations = operationReader.getOperationsPerVariableName(workflowInstanceId, scopeId);
+      return VariableDto.createFrom(variableEntities, operations);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining variables: %s", e.getMessage());
       logger.error(message, e);

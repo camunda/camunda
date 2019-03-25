@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.camunda.operate.entities.OperationEntity;
+import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.util.CollectionUtil;
@@ -132,6 +133,35 @@ public class OperationReader extends AbstractReader {
       return result;
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining operations per incident id: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+
+  }
+
+  public Map<String, List<OperationEntity>> getOperationsPerVariableName(String workflowInstanceId, String scopeId) {
+    Map<String, List<OperationEntity>> result = new HashMap<>();
+
+    final TermQueryBuilder workflowInstanceIdQ = termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
+    final TermQueryBuilder scopeIdQ = termQuery(OperationTemplate.SCOPE_ID, scopeId);
+    final TermQueryBuilder operationTypeQ = termQuery(OperationTemplate.TYPE, OperationType.UPDATE_VARIABLE.name());
+    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceIdQ, scopeIdQ, operationTypeQ));
+
+    final SearchRequest searchRequest = new SearchRequest(operationTemplate.getAlias())
+      .source(new SearchSourceBuilder()
+        .query(query)
+        .sort(OperationTemplate.START_DATE, SortOrder.DESC)
+        .sort(OperationTemplate.ID, SortOrder.ASC));
+    try {
+      ElasticsearchUtil.scroll(searchRequest, OperationEntity.class, objectMapper, esClient, hits -> {
+        final List<OperationEntity> operationEntities = ElasticsearchUtil.mapSearchHits(hits.getHits(), objectMapper, OperationEntity.class);
+        for (OperationEntity operationEntity: operationEntities) {
+          CollectionUtil.addToMap(result, operationEntity.getVariableName(), operationEntity);
+        }
+      }, null);
+      return result;
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining operations per variable name: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }

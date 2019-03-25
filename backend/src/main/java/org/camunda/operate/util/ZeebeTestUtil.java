@@ -21,7 +21,6 @@ import io.zeebe.client.api.subscription.JobHandler;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.Protocol;
 
 public abstract class ZeebeTestUtil {
 
@@ -220,8 +219,8 @@ public abstract class ZeebeTestUtil {
     client.newResolveIncidentCommand(incidentKey).send().join();
   }
 
-  public static void updatePayload(ZeebeClient client, String workflowInstanceId, String newPayload) {
-    client.newSetVariablesCommand(IdUtil.getKey(workflowInstanceId)).variables(newPayload).send().join();
+  public static void updateVariables(ZeebeClient client, String scopeId, String newPayload) {
+    client.newSetVariablesCommand(IdUtil.getKey(scopeId)).variables(newPayload).send().join();
   }
 
 }

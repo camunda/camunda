@@ -7,7 +7,12 @@ package org.camunda.operate.rest.dto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.camunda.operate.entities.OperationEntity;
+import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.VariableEntity;
+import org.camunda.operate.util.CollectionUtil;
 
 public class VariableDto {
 
@@ -16,6 +21,7 @@ public class VariableDto {
   private String value;
   private String scopeId;
   private String workflowInstanceId;
+  private boolean hasActiveOperation = false;
 
   public String getId() {
     return id;
@@ -57,8 +63,15 @@ public class VariableDto {
     this.workflowInstanceId = workflowInstanceId;
   }
 
+  public boolean isHasActiveOperation() {
+    return hasActiveOperation;
+  }
 
-  public static VariableDto createFrom(VariableEntity variableEntity) {
+  public void setHasActiveOperation(boolean hasActiveOperation) {
+    this.hasActiveOperation = hasActiveOperation;
+  }
+
+  public static VariableDto createFrom(VariableEntity variableEntity, List<OperationEntity> operations) {
     if (variableEntity == null) {
       return null;
     }
@@ -68,18 +81,52 @@ public class VariableDto {
     variable.setValue(variableEntity.getValue());
     variable.setScopeId(variableEntity.getScopeId());
     variable.setWorkflowInstanceId(variableEntity.getWorkflowInstanceId());
+
+    if (operations != null && operations.size() > 0) {
+      variable.setHasActiveOperation(operations.stream().anyMatch(
+        o ->
+          o.getState().equals(OperationState.SCHEDULED)
+            || o.getState().equals(OperationState.LOCKED)
+            || o.getState().equals(OperationState.SENT)));
+    }
+
     return variable;
   }
 
-  public static List<VariableDto> createFrom(List<VariableEntity> variableEntities) {
+  public static List<VariableDto> createFrom(List<VariableEntity> variableEntities, Map<String, List<OperationEntity>> operations) {
     List<VariableDto> result = new ArrayList<>();
     if (variableEntities != null) {
       for (VariableEntity variableEntity: variableEntities) {
         if (variableEntity != null) {
-          result.add(createFrom(variableEntity));
+          result.add(createFrom(variableEntity, operations.get(variableEntity.getName())));
         }
       }
     }
+    //find new variables
+    final Set<String> operationVarNames = operations.keySet();
+    variableEntities.forEach(ve -> {
+      operationVarNames.remove(ve.getName());
+    });
+    operationVarNames.forEach(varName -> {
+      CollectionUtil.addNotNull(result, createFrom(operations.get(varName)));
+    });
     return result;
+  }
+
+  private static VariableDto createFrom(List<OperationEntity> operations) {
+    for (OperationEntity operation: operations) {
+      if (operation.getState().equals(OperationState.SCHEDULED)
+        || operation.getState().equals(OperationState.LOCKED)
+        || operation.getState().equals(OperationState.SENT)) {
+        VariableDto variable = new VariableDto();
+        variable.setName(operation.getVariableName());
+        variable.setValue(operation.getVariableValue());
+        variable.setScopeId(operation.getScopeId());
+        variable.setWorkflowInstanceId(operation.getWorkflowInstanceId());
+        variable.setHasActiveOperation(true);
+        return variable;
+      }
+    }
+    return null;
   }
 }

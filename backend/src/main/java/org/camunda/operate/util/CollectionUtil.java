@@ -6,6 +6,7 @@
 package org.camunda.operate.util;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -26,4 +27,9 @@ public abstract class CollectionUtil {
     return map;
   }
 
+  public static <T> void addNotNull(Collection<T> collection, T object) {
+    if (collection!= null && object != null) {
+      collection.add(object);
+    }
+  }
 }

@@ -8,8 +8,8 @@ package org.camunda.operate.it;
 import java.util.List;
 import java.util.function.Predicate;
 import org.camunda.operate.entities.ActivityInstanceEntity;
-import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.es.reader.ActivityInstanceReader;
+import org.camunda.operate.rest.dto.VariableDto;
 import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
@@ -85,21 +85,21 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
     //TC 1 - when workflow instance is started
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
-    elasticsearchTestRule.processOneBatchOfEvents(ZeebeESImporter.ImportValueType.VARIABLE);
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
+    elasticsearchTestRule.processOneBatchOfRecords(ZeebeESImporter.ImportValueType.VARIABLE);
 
     //then
     final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
 
-    List<VariableEntity> variables = getVariables(workflowInstanceId);
+    List<VariableDto> variables = getVariables(workflowInstanceId);
     assertThat(variables).hasSize(2);
     assertVariable(variables, "var1","\"initialValue\"");
     assertVariable(variables, "otherVar","123");
 
     //TC2 - when subprocess and task with input mapping are activated
     completeTask(workflowInstanceKey, "task1", null);
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
-    elasticsearchTestRule.processOneBatchOfEvents(ZeebeESImporter.ImportValueType.VARIABLE);
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
+    elasticsearchTestRule.processOneBatchOfRecords(ZeebeESImporter.ImportValueType.VARIABLE);
 
     //then
     variables = getVariables(workflowInstanceId,"subProcess");
@@ -112,8 +112,8 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
     //TC3 - when activity with output mapping is completed
     completeTask(workflowInstanceKey, "task2", "{\"taskVarOut\": \"someResult\", \"otherTaskVar\": 456}");
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task3");
-    elasticsearchTestRule.processOneBatchOfEvents(ZeebeESImporter.ImportValueType.VARIABLE);
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task3");
+    elasticsearchTestRule.processOneBatchOfRecords(ZeebeESImporter.ImportValueType.VARIABLE);
 
     //then
     variables = getVariables(workflowInstanceId,"task2");
@@ -130,8 +130,8 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     assertVariable(variables, "varOut","\"someResult\"");
     assertVariable(variables, "otherVar","123");
 
-    //TC4 - when payload is explicitly updated
-    ZeebeTestUtil.updatePayload(zeebeClient, workflowInstanceId, "{\"var1\": \"updatedValue\" , \"newVar\": 555 }");
+    //TC4 - when variables are updated
+    ZeebeTestUtil.updateVariables(zeebeClient, workflowInstanceId, "{\"var1\": \"updatedValue\" , \"newVar\": 555 }");
     elasticsearchTestRule.processAllEvents(2, ZeebeESImporter.ImportValueType.VARIABLE);
     variables = getVariables(workflowInstanceId);
     assertThat(variables).hasSize(4);
@@ -163,21 +163,21 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("Required String parameter 'scopeId' is not present");
   }
 
-  private void assertVariable(List<VariableEntity> variables, String name, String value) {
+  private void assertVariable(List<VariableDto> variables, String name, String value) {
     assertThat(variables).filteredOn(v -> v.getName().equals(name)).hasSize(1)
       .allMatch(v -> v.getValue().equals(value));
   }
 
-  protected List<VariableEntity> getVariables(String workflowInstanceId) throws Exception {
+  protected List<VariableDto> getVariables(String workflowInstanceId) throws Exception {
     MvcResult mvcResult = mockMvc
       .perform(get(getVariablesURL(workflowInstanceId, workflowInstanceId)))
       .andExpect(status().isOk())
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
-    return mockMvcTestRule.listFromResponse(mvcResult, VariableEntity.class);
+    return mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
   }
 
-  protected List<VariableEntity> getVariables(String workflowInstanceId, String activityId) throws Exception {
+  protected List<VariableDto> getVariables(String workflowInstanceId, String activityId) throws Exception {
     final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
     final String task1Id = findActivityInstanceId(allActivityInstances, activityId);
     MvcResult mvcResult = mockMvc
@@ -185,7 +185,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
       .andExpect(status().isOk())
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
-    return mockMvcTestRule.listFromResponse(mvcResult, VariableEntity.class);
+    return mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
   }
 
   protected String findActivityInstanceId(List<ActivityInstanceEntity> allActivityInstances, String activityId) {

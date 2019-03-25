@@ -30,6 +30,7 @@ import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
 import org.camunda.operate.zeebeimport.ZeebeESImporter;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -111,9 +112,12 @@ public class ElasticsearchTestRule extends ExternalResource {
   }
 
   public void removeAllIndices() {
-    logger.info("Removing indices");
-    //TODO remove indices
-//    esClient.admin().indices().delete(new DeleteIndexRequest(workflowIndexName, workflowInstanceIndexName, eventIndexName, importPositionIndexName));
+//    try {
+      logger.info("Removing indices");
+//      esClient.indices().delete(new DeleteIndexRequest(operateProperties.getElasticsearch().getIndexPrefix() + "*"), RequestOptions.DEFAULT);
+//    } catch (IOException ex) {
+      //do nothing
+//    }
   }
 
 //  public void cleanAndVerify() {
@@ -147,17 +151,13 @@ public class ElasticsearchTestRule extends ExternalResource {
     }
   }
 
-  public void processAllEvents() {
-    processAllEvents(1);
-  }
-
   public void processAllEvents(int expectedMinEventsCount) {
     try {
       int entitiesCount;
       int totalCount = 0;
       int emptyAttempts = 0;
       do {
-        Thread.sleep(1000L);
+        Thread.sleep(300L);
         entitiesCount = zeebeESImporter.processNextEntitiesBatch();
         totalCount += entitiesCount;
         if (entitiesCount > 0) {
@@ -177,7 +177,7 @@ public class ElasticsearchTestRule extends ExternalResource {
       int totalCount = 0;
       int emptyAttempts = 0;
       do {
-        Thread.sleep(1000L);
+        Thread.sleep(300L);
         entitiesCount = zeebeESImporter.processNextEntitiesBatch(0, importValueType);
         totalCount += entitiesCount;
         if (entitiesCount > 0) {
@@ -192,7 +192,7 @@ public class ElasticsearchTestRule extends ExternalResource {
   }
 
 
-  public void processOneBatchOfEvents(ZeebeESImporter.ImportValueType importValueType) {
+  public void processOneBatchOfRecords(ZeebeESImporter.ImportValueType importValueType) {
     try {
       zeebeESImporter.processNextEntitiesBatch(0, importValueType);
     } catch (Exception e) {
@@ -201,7 +201,7 @@ public class ElasticsearchTestRule extends ExternalResource {
   }
 
 
-  public void processAllEventsAndWait(Predicate<Object[]> waitTill, Object... arguments) {
+  public void processAllRecordsAndWait(Predicate<Object[]> waitTill, Object... arguments) {
     try {
       int emptyAttempts = 0;
       boolean found;
@@ -215,7 +215,7 @@ public class ElasticsearchTestRule extends ExternalResource {
         found = waitTill.test(arguments);
         if (!found) {
           emptyAttempts++;
-          Thread.sleep(1000L);
+          Thread.sleep(500L);
         }
       } while(!found && emptyAttempts < 5);
       if (emptyAttempts == 5) {

@@ -64,7 +64,7 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
     //let the boundary event happen
     Thread.sleep(1500L);
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
 
     //when
     ActivityInstanceTreeDto response = getActivityInstanceTreeFromRest(workflowInstanceKey);
@@ -86,11 +86,11 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
     deployWorkflow("subProcess.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
     ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null, 3);
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskB");
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskB");
     ZeebeTestUtil.completeTask(zeebeClient, "taskB", getWorkerName(), null, 3);
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskC");
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskC");
     ZeebeTestUtil.failTask(zeebeClient, "taskC", getWorkerName(), 3, "some error");
-    elasticsearchTestRule.processAllEventsAndWait(incidentIsActiveCheck, workflowInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
 
     //when
     ActivityInstanceTreeDto response = getActivityInstanceTreeFromRest(workflowInstanceKey);
@@ -143,9 +143,9 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
     deployWorkflow("subProcess.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
     ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null, 3);
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskB");
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskB");
     ZeebeTestUtil.failTask(zeebeClient, "taskB", getWorkerName(), 3, "some error");
-    elasticsearchTestRule.processAllEventsAndWait(incidentIsActiveCheck, workflowInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
 
     //when
     ActivityInstanceTreeDto response = getActivityInstanceTreeFromRest(workflowInstanceKey);

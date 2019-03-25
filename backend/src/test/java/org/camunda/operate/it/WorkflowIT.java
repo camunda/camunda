@@ -123,7 +123,7 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
     final String loanProcessV1Id = createAndDeployProcess(super.getClient(), loanProcessId, null);
 
     //when
-    elasticsearchTestRule.processAllEventsAndWait(workflowIsDeployedCheck, loanProcessV1Id);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, loanProcessV1Id);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //then

@@ -10,7 +10,6 @@ import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebeimport.ZeebeESImporter;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.Rule;
-import org.junit.rules.RuleChain;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -120,30 +119,30 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   public Long failTaskWithNoRetriesLeft(String taskName, long workflowInstanceKey, String errorMessage) {
     Long jobKey = ZeebeTestUtil.failTask(getClient(), taskName, getWorkerName(), 3, errorMessage);
-    elasticsearchTestRule.processAllEventsAndWait(incidentIsActiveCheck, workflowInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
     return jobKey;
   }
 
   protected String deployWorkflow(String... classpathResources) {
     final String workflowId = ZeebeTestUtil.deployWorkflow(getClient(), classpathResources);
-    elasticsearchTestRule.processAllEventsAndWait(workflowIsDeployedCheck, workflowId);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowId);
     return workflowId;
   }
 
   protected String deployWorkflow(BpmnModelInstance workflow, String resourceName) {
     final String workflowId = ZeebeTestUtil.deployWorkflow(getClient(), workflow, resourceName);
-    elasticsearchTestRule.processAllEventsAndWait(workflowIsDeployedCheck, workflowId);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowId);
     return workflowId;
   }
 
   protected void cancelWorkflowInstance(long workflowInstanceKey) {
     ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceKey);
-    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
   }
 
   protected void completeTask(long workflowInstanceKey, String activityId, String payload) {
     JobWorker jobWorker = ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), payload);
-    elasticsearchTestRule.processAllEventsAndWait(activityIsCompletedCheck, workflowInstanceKey, activityId);
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey, activityId);
     jobWorker.close();
   }
 }
