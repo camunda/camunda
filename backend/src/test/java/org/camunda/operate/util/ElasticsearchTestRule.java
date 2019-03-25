@@ -177,7 +177,7 @@ public class ElasticsearchTestRule extends ExternalResource {
       int totalCount = 0;
       int emptyAttempts = 0;
       do {
-        Thread.sleep(300L);
+        Thread.sleep(1000L);
         entitiesCount = zeebeESImporter.processNextEntitiesBatch(0, importValueType);
         totalCount += entitiesCount;
         if (entitiesCount > 0) {
