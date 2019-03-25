@@ -78,11 +78,7 @@ See the [Events](/bpmn-workflows/events.html) section on which types of events a
 
 *Sub Processes* are element containers that allow defining common functionality. For example, we can attach an event to a sub process's border:
 
-<!-- TODO: replace by token sim gif -->
-
-<center>
-![payload](/bpmn-workflows/sub-process.png)
-</center>
+![payload](/bpmn-workflows/sub-process.gif)
 
 When the event is triggered, the sub process is interrupted regardless which of its elements is currently active.
 
