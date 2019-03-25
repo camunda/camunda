@@ -9,16 +9,13 @@ public class IncidentErrorTypeDto {
 
   private String errorType;
 
-  private String errorTypeTitle;
-
   private int count;
 
   public IncidentErrorTypeDto() {
   }
 
-  public IncidentErrorTypeDto(String errorType, String errorTypeTitle, int count) {
+  public IncidentErrorTypeDto(String errorType, int count) {
     this.errorType = errorType;
-    this.errorTypeTitle = errorTypeTitle;
     this.count = count;
   }
 
@@ -28,14 +25,6 @@ public class IncidentErrorTypeDto {
 
   public void setErrorType(String errorType) {
     this.errorType = errorType;
-  }
-
-  public String getErrorTypeTitle() {
-    return errorTypeTitle;
-  }
-
-  public void setErrorTypeTitle(String errorTypeTitle) {
-    this.errorTypeTitle = errorTypeTitle;
   }
 
   public int getCount() {
@@ -57,15 +46,12 @@ public class IncidentErrorTypeDto {
 
     if (count != that.count)
       return false;
-    if (errorType != null ? !errorType.equals(that.errorType) : that.errorType != null)
-      return false;
-    return errorTypeTitle != null ? errorTypeTitle.equals(that.errorTypeTitle) : that.errorTypeTitle == null;
+    return errorType != null ? errorType.equals(that.errorType) : that.errorType == null;
   }
 
   @Override
   public int hashCode() {
     int result = errorType != null ? errorType.hashCode() : 0;
-    result = 31 * result + (errorTypeTitle != null ? errorTypeTitle.hashCode() : 0);
     result = 31 * result + count;
     return result;
   }

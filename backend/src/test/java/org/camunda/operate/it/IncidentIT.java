@@ -95,8 +95,8 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
   }
 
   protected void assertErrorType(IncidentResponseDto incidentResponse, ErrorType errorType, int count) {
-    assertThat(incidentResponse.getErrorTypes()).filteredOn(et -> et.getErrorType().equals(errorType.name())).hasSize(1)
-      .allMatch(et -> et.getCount() == count && et.getErrorTypeTitle().equals(errorType.getTitle()));
+    assertThat(incidentResponse.getErrorTypes()).filteredOn(et -> et.getErrorType().equals(errorType.getTitle())).hasSize(1)
+      .allMatch(et -> et.getCount() == count);
   }
 
   protected void assertIncidentFlowNode(IncidentResponseDto incidentResponse, String activityId, int count) {

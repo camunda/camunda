@@ -123,7 +123,7 @@ public class IncidentReader extends AbstractReader {
       final List<IncidentEntity> incidents = scroll(searchRequest, IncidentEntity.class, aggs -> {
         ((Terms)aggs.get(errorTypesAggName)).getBuckets().forEach(b -> {
           ErrorType errorType = ErrorType.createFrom(b.getKeyAsString());
-          incidentResponse.getErrorTypes().add(new IncidentErrorTypeDto(errorType.name(), errorType.getTitle(), (int)b.getDocCount()));
+          incidentResponse.getErrorTypes().add(new IncidentErrorTypeDto(errorType.getTitle(), (int)b.getDocCount()));
         });
         ((Terms)aggs.get(flowNodesAggName)).getBuckets().forEach(b ->
           incidentResponse.getFlowNodes().add(new IncidentFlowNodeDto(b.getKeyAsString(), (int)b.getDocCount())));
