@@ -148,7 +148,14 @@ pipeline {
                 kubectl apply -f .ci/podSpecs/performanceTests/optimize.yml
 
                 kubectl rollout status -f .ci/podSpecs/performanceTests/optimize.yml --watch=true
-
+            """)
+        }
+      }
+    }
+    stage('ImportTest') {
+      steps {
+        container('gcloud') {
+          sh ("""
                 #Monitoring Import of optimize-import (Should be true till data got imported)
                 IMPORTING="true"
                 until [ \$IMPORTING = "false" ]; do
