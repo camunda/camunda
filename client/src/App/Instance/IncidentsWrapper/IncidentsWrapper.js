@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState} from 'react';
+import React, {useState, useMemo} from 'react';
 
 import PropTypes from 'prop-types';
 import IncidentsBar from './IncidentsBar';
@@ -21,16 +21,53 @@ function IncidentsWrapper(props) {
     instance,
     selectedIncidents,
     onIncidentOperation,
-    onIncidentSelection
+    onIncidentSelection,
+    flowNodes,
+    errorTypes
   } = props;
+  const selected = {
+    flowNodes: flowNodes.map(item => item.flowNodeId),
+    errorTypes: errorTypes.map(item => item.errorType)
+  };
   const [isOpen, setIsOpen] = useState(false);
   const [sorting, setSorting] = useState({
     sortBy: 'errorType',
     sortOrder: SORT_ORDER.DESC
   });
+  const [selectedFlowNodes, setSelectedFlowNodes] = useState(
+    selected.flowNodes
+  );
+  const [selectedErrorTypes, setSelectedErrorTypes] = useState(
+    selected.errorTypes
+  );
+  console.log(selectedErrorTypes);
 
   function handleToggle() {
     setIsOpen(!isOpen);
+  }
+
+  function handleFlowNodeSelect(id) {
+    let index = selectedFlowNodes.findIndex(item => item === id);
+    let list = [...selectedFlowNodes];
+    if (index === -1) {
+      list.push(id);
+    } else {
+      list.splice(index, 1);
+    }
+
+    setSelectedFlowNodes(list);
+  }
+
+  function handleErrorTypeSelect(id) {
+    let index = selectedErrorTypes.findIndex(item => item === id);
+    let list = [...selectedErrorTypes];
+    if (index === -1) {
+      list.push(id);
+    } else {
+      list.splice(index, 1);
+    }
+
+    setSelectedErrorTypes(list);
   }
 
   function handleSort(key) {
@@ -42,8 +79,28 @@ function IncidentsWrapper(props) {
     setSorting({sortOrder: newSortOrder, sortBy: key});
   }
 
+  function handleClearAll() {
+    setSelectedErrorTypes([]);
+    setSelectedFlowNodes([]);
+  }
+
+  const filteredIncidents = useMemo(() => filterIncidents(), [
+    selectedErrorTypes,
+    selectedFlowNodes
+  ]);
+
+  function filterIncidents() {
+    return incidents.filter(item => {
+      console.log(item);
+      return (
+        selectedFlowNodes.includes(item.flowNodeId) ||
+        selectedErrorTypes.includes(item.errorTypeTitle)
+      );
+    });
+  }
+
   const sortedIncidents = sortData(
-    incidents,
+    filteredIncidents,
     sorting.sortBy,
     sorting.sortOrder
   );
@@ -60,7 +117,12 @@ function IncidentsWrapper(props) {
         <IncidentsOverlay>
           <IncidentsFilter
             flowNodes={props.flowNodes}
+            selectedFlowNodes={selectedFlowNodes}
             errorTypes={props.errorTypes}
+            selectedErrorTypes={selectedErrorTypes}
+            onFlowNodeSelect={handleFlowNodeSelect}
+            onErrorTypeSelect={handleErrorTypeSelect}
+            onClearAll={handleClearAll}
           />
           <IncidentsTable
             incidents={sortedIncidents}

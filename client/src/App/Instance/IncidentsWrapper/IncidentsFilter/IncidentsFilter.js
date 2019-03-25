@@ -16,54 +16,13 @@ const splitArray = (arr, size = 5) => {
 };
 
 export default class IncidentsFilter extends React.Component {
-  constructor(props) {
-    super(props);
-    const flowNodeIds = props.flowNodes.map(item => item.flowNodeId);
-    const errorTypesList = props.errorTypes.map(item => item.errorType);
-
-    this.state = {
-      selectedFlowNodeIds: flowNodeIds,
-      selectedErrorTypes: errorTypesList
-    };
-  }
-
-  handleSelectedFlowNodeIds = id => {
-    let index = this.state.selectedFlowNodeIds.findIndex(item => item === id);
-    let list = [...this.state.selectedFlowNodeIds];
-    if (index === -1) {
-      list.push(id);
-    } else {
-      list.splice(index, 1);
-    }
-
-    this.setState({
-      selectedFlowNodeIds: list
-    });
-  };
-
-  handleSelectedErrorTypes = id => {
-    let index = this.state.selectedErrorTypes.findIndex(item => item === id);
-    let list = [...this.state.selectedErrorTypes];
-    if (index === -1) {
-      list.push(id);
-    } else {
-      list.splice(index, 1);
-    }
-
-    this.setState({
-      selectedErrorTypes: list
-    });
-  };
-
-  handleClearAll = () => {
-    this.setState({
-      selectedErrorTypes: [],
-      selectedFlowNodeIds: []
-    });
-  };
-
   render() {
-    const {flowNodes, errorTypes} = this.props;
+    const {
+      flowNodes,
+      errorTypes,
+      selectedErrorTypes,
+      selectedFlowNodes
+    } = this.props;
     const groupedFlowNodes = splitArray(flowNodes);
     const groupedErrorTypes = splitArray(errorTypes);
 
@@ -81,10 +40,8 @@ export default class IncidentsFilter extends React.Component {
                         data-test="incident-filter-pill"
                         type="FILTER"
                         count={item.count}
-                        isActive={this.state.selectedErrorTypes.includes(
-                          item.errorType
-                        )}
-                        onClick={this.handleSelectedErrorTypes.bind(
+                        isActive={selectedErrorTypes.includes(item.errorType)}
+                        onClick={this.props.onErrorTypeSelect.bind(
                           this,
                           item.errorType
                         )}
@@ -106,10 +63,10 @@ export default class IncidentsFilter extends React.Component {
                               data-test="incident-filter-pill"
                               type="FILTER"
                               count={item.count}
-                              isActive={this.state.selectedErrorTypes.includes(
+                              isActive={selectedErrorTypes.includes(
                                 item.errorType
                               )}
-                              onClick={this.handleSelectedErrorTypes.bind(
+                              onClick={this.props.onErrorTypeSelect.bind(
                                 this,
                                 item.errorType
                               )}
@@ -134,10 +91,8 @@ export default class IncidentsFilter extends React.Component {
                       <Pill
                         type="FILTER"
                         count={item.count}
-                        isActive={this.state.selectedFlowNodeIds.includes(
-                          item.flowNodeId
-                        )}
-                        onClick={this.handleSelectedFlowNodeIds.bind(
+                        isActive={selectedFlowNodes.includes(item.flowNodeId)}
+                        onClick={this.props.onFlowNodeSelect.bind(
                           this,
                           item.flowNodeId
                         )}
@@ -158,11 +113,11 @@ export default class IncidentsFilter extends React.Component {
                             <Pill
                               type="FILTER"
                               count={item.count}
-                              isActive={this.state.selectedFlowNodeIds.includes(
+                              isActive={selectedFlowNodes.includes(
                                 item.flowNodeId
                               )}
                               grow={true}
-                              onClick={this.handleSelectedFlowNodeIds.bind(
+                              onClick={this.props.onFlowNodeSelect.bind(
                                 this,
                                 item.flowNodeId
                               )}
@@ -182,10 +137,10 @@ export default class IncidentsFilter extends React.Component {
             <Styled.ClearButton
               size="small"
               title="Clear All"
-              onClick={this.handleClearAll}
+              onClick={this.props.onClearAll}
               disabled={
-                this.state.selectedFlowNodeIds.length === 0 &&
-                this.state.selectedErrorTypes.length === 0
+                selectedFlowNodes.length === 0 &&
+                selectedErrorTypes.length === 0
               }
             >
               Clear All
@@ -205,10 +160,26 @@ IncidentsFilter.propTypes = {
       count: PropTypes.number
     })
   ),
+  selectedErrorTypes: PropTypes.arrayOf(
+    PropTypes.shape({
+      errorType: PropTypes.string,
+      errorTypeTitle: PropTypes.string,
+      count: PropTypes.number
+    })
+  ),
   flowNodes: PropTypes.arrayOf(
     PropTypes.shape({
       flowNodeId: PropTypes.string,
       count: PropTypes.number
     })
-  )
+  ),
+  selectedFlowNodes: PropTypes.arrayOf(
+    PropTypes.shape({
+      flowNodeId: PropTypes.string,
+      count: PropTypes.number
+    })
+  ),
+  onFlowNodeSelect: PropTypes.func.isRequired,
+  onErrorTypeSelect: PropTypes.func.isRequired,
+  onClearAll: PropTypes.func.isRequired
 };
