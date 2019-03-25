@@ -146,6 +146,7 @@ public class ReportConflictIT {
     checkAlertsStillExist(expectedConflictedItemIds);
   }
 
+
   @Test
   public void getSingleReportDeleteConflictsIfUsedByCombinedReport() {
     // given
@@ -160,6 +161,22 @@ public class ReportConflictIT {
 
     // then
     checkConflictedItems(conflictResponseDto, ConflictedItemType.COMBINED_REPORT, expectedConflictedItemIds);
+  }
+
+  @Test
+  public void getCombinedReportDeleteConflictsIfUsedByCollection() {
+    // given
+    String firstSingleReportId = addEmptyProcessReportToOptimize();
+    String secondSingleReportId = addEmptyProcessReportToOptimize();
+    String combinedReportId = createNewCombinedReport(firstSingleReportId, secondSingleReportId);
+    String collectionId = createNewCollectionAndAddReport(combinedReportId);
+    String[] expectedConflictedItemIds = {collectionId};
+    
+    // when
+    ConflictResponseDto conflictResponseDto = getReportDeleteConflicts(combinedReportId);
+
+    // then
+    checkConflictedItems(conflictResponseDto, ConflictedItemType.COLLECTION, expectedConflictedItemIds);
   }
 
   @Test
@@ -240,6 +257,28 @@ public class ReportConflictIT {
     checkConflictedItems(conflictResponseDto, ConflictedItemType.COLLECTION, expectedConflictedItemIds);
     checkReportsStillExist(expectedReportIds);
     checkCollectionsStillContainEntity(expectedConflictedItemIds, reportId);
+  }
+
+  @Test
+  @Parameters(source = ForceParameterProvider.class)
+  public void deleteCombinedReportsFailsWithConflictIfUsedByCollectionWhenForceSet(Boolean force) {
+    // given
+    String firstSingleReportId = addEmptyProcessReportToOptimize();
+    String secondSingleReportId = addEmptyProcessReportToOptimize();
+    String combinedReportId = createNewCombinedReport(firstSingleReportId, secondSingleReportId);
+
+    String firstCollectionId = createNewCollectionAndAddReport(combinedReportId);
+    String secondCollectionId = createNewCollectionAndAddReport(combinedReportId);
+    String[] expectedReportIds = {combinedReportId, firstSingleReportId, secondSingleReportId};
+    String[] expectedConflictedItemIds = {firstCollectionId, secondCollectionId};
+
+    // when
+    ConflictResponseDto conflictResponseDto = deleteReportFailWithConflict(combinedReportId, force);
+
+    // then
+    checkConflictedItems(conflictResponseDto, ConflictedItemType.COLLECTION, expectedConflictedItemIds);
+    checkReportsStillExist(expectedReportIds);
+    checkCollectionsStillContainEntity(expectedConflictedItemIds, combinedReportId);
   }
 
   private void checkCollectionsStillContainEntity(String[] expectedConflictedItemIds, String entityId) {

@@ -128,7 +128,12 @@ public class ReportService {
         mapCollectionsToConflictingItems(collectionService.findFirstCollectionsForEntity(reportId))
       );
     } else {
-      conflictedItems.addAll(mapDashboardsToConflictingItems(dashboardService.findFirstDashboardsForReport(reportId)));
+      conflictedItems.addAll(
+        mapDashboardsToConflictingItems(dashboardService.findFirstDashboardsForReport(reportId))
+      );
+      conflictedItems.addAll(
+        mapCollectionsToConflictingItems(collectionService.findFirstCollectionsForEntity(reportId))
+      );
     }
     return conflictedItems;
   }
