@@ -30,6 +30,9 @@ import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.CatchEventBehavior;
 import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.IndexedRecord;
+import io.zeebe.broker.workflow.state.StoredRecord;
+import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -43,7 +46,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 
-public abstract class ElementHandlerTestCase {
+public abstract class ElementHandlerTestCase<T extends ExecutableFlowNode> {
   @ClassRule public static ZeebeStateRule zeebeStateRule = new ZeebeStateRule();
 
   @Mock public EventOutput eventOutput;
@@ -51,7 +54,7 @@ public abstract class ElementHandlerTestCase {
   @Mock public TypedStreamWriter streamWriter;
   @Captor public ArgumentCaptor<IncidentRecord> incidentCaptor;
 
-  protected BpmnStepContext<ExecutableFlowNode> context;
+  protected BpmnStepContext<T> context;
 
   @Before
   public void setUp() {
@@ -70,6 +73,15 @@ public abstract class ElementHandlerTestCase {
     verify(eventOutput, times(1)).storeFailedRecord(context.getRecord());
     verify(streamWriter, times(1))
         .appendNewCommand(eq(IncidentIntent.CREATE), incidentCaptor.capture());
+  }
+
+  protected void verifyRecordPublished(StoredRecord record, long flowScopeKey) {
+    final WorkflowInstanceRecord expectedRecord = new WorkflowInstanceRecord();
+    expectedRecord.wrap(record.getRecord().getValue());
+    expectedRecord.setFlowScopeKey(flowScopeKey);
+
+    verify(eventOutput, times(1))
+        .appendFollowUpEvent(record.getKey(), record.getRecord().getState(), expectedRecord);
   }
 
   protected ElementInstance createAndSetContextElementInstance(WorkflowInstanceIntent state) {
@@ -126,5 +138,27 @@ public abstract class ElementHandlerTestCase {
             .intent(instance.getState());
 
     return new MockTypedRecord<>(instance.getKey(), metadata, instance.getValue());
+  }
+
+  protected StoredRecord deferRecordOn(ElementInstance scopeInstance) {
+    final long key = zeebeStateRule.getKeyGenerator().nextKey();
+    final WorkflowInstanceRecord value =
+        new WorkflowInstanceRecord().setFlowScopeKey(scopeInstance.getKey());
+    final IndexedRecord indexedRecord =
+        new IndexedRecord(key, WorkflowInstanceIntent.ELEMENT_ACTIVATING, value);
+    final StoredRecord storedRecord = new StoredRecord(indexedRecord, Purpose.DEFERRED);
+
+    zeebeStateRule
+        .getZeebeState()
+        .getWorkflowState()
+        .getElementInstanceState()
+        .storeRecord(
+            key,
+            scopeInstance.getKey(),
+            indexedRecord.getValue(),
+            indexedRecord.getState(),
+            storedRecord.getPurpose());
+
+    return storedRecord;
   }
 }

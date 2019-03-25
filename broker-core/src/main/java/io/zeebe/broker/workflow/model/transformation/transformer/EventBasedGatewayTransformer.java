@@ -64,6 +64,8 @@ public class EventBasedGatewayTransformer implements ModelElementTransformer<Eve
     gateway.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_COMPLETING);
     gateway.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_COMPLETED);
+    gateway.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_TERMINATING,
         BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_TERMINATING);
   }
