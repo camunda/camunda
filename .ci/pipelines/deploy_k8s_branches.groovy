@@ -71,10 +71,18 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
-        git url: 'git@github.com:camunda-ci/k8s-infrastructure',
+        dir('k8s-infrastructure') {
+          git url: 'git@github.com:camunda-ci/k8s-infrastructure',
             branch: "${params.INFRASTRUCTURE_BRANCH}",
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
+        }
+        dir('optimize') {
+          git url: 'git@github.com:camunda/camunda-optimize',
+            branch: "${params.BRANCH}",
+            credentialsId: 'camunda-jenkins-github-ssh',
+            poll: false
+        }
 
         container('gcloud') {
           sh("""
@@ -86,17 +94,20 @@ pipeline {
     stage('Deploy to K8s') {
       steps {
         container('gcloud') {
-          sh("""
-            ./cmd/k8s/deploy-template-to-branch \
-            ${WORKSPACE}/infrastructure/ci-30-162810/deployments/optimize-branch \
-            ${params.BRANCH} \
-            optimize
-          """)
+          dir('k8s-infrastructure') {
+            sh("""
+              ./cmd/k8s/deploy-template-to-branch \
+              ${WORKSPACE}/k8s-infrastructure/infrastructure/ci-30-162810/deployments/optimize-branch \
+              ${WORKSPACE}/optimize/infrastructure/ci-30-162810/deployments/optimize-branch \
+              ${params.BRANCH} \
+              optimize
+            """)
+          }
         }
       }
       post {
         always {
-          archiveArtifacts artifacts: 'rendered-templates/**/*'
+          archiveArtifacts artifacts: 'k8s-infrastructure/rendered-templates/**/*'
         }
       }
     }
