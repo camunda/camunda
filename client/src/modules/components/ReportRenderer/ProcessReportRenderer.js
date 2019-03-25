@@ -4,7 +4,7 @@ import {LoadingIndicator} from 'components';
 import {getFlowNodeNames} from 'services';
 import ReportBlankSlate from './ReportBlankSlate';
 
-import {isEmpty, getFormatter, processResult} from './service';
+import {getFormatter, processResult} from './service';
 
 import {Number, Table, Heatmap, Chart} from './visualizations';
 
@@ -48,15 +48,6 @@ export default class ProcessReportRenderer extends React.Component {
   };
 
   render() {
-    const somethingMissing = this.checkReport();
-    if (somethingMissing) {
-      return (
-        <ReportBlankSlate
-          errorMessage={'To display a report, please select ' + somethingMissing + '.'}
-        />
-      );
-    }
-
     const {report} = this.props;
 
     if (!this.state.loaded) {
@@ -78,24 +69,6 @@ export default class ProcessReportRenderer extends React.Component {
       </div>
     );
   }
-
-  checkReport = () => {
-    const {
-      report: {data}
-    } = this.props;
-
-    if (isEmpty(data.processDefinitionKey) || isEmpty(data.processDefinitionVersion)) {
-      return 'a Process Definition';
-    } else if (!data.view) {
-      return 'an option for ”View”';
-    } else if (!data.groupBy) {
-      return 'an option for ”Group by”';
-    } else if (!data.visualization) {
-      return 'an option for ”Visualize as”';
-    } else {
-      return;
-    }
-  };
 
   getComponent = () => {
     switch (this.props.report.data.visualization) {

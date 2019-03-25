@@ -53,16 +53,6 @@ it('should render the ReportRenderer if data is loaded', async () => {
   expect(node).toIncludeText('ReportRenderer');
 });
 
-it('should render an error message if report rendering went wrong', async () => {
-  loadReport.mockReturnValue({errorMessage: 'I AM BROKEN!'});
-
-  const node = mount(<OptimizeReport {...props} />);
-
-  await node.instance().loadReportData();
-
-  expect(node).toIncludeText('I AM BROKEN!');
-});
-
 it('should contain the report name', async () => {
   loadReport.mockReturnValue({name: 'Report Name'});
   const node = mount(<OptimizeReport {...props} />);

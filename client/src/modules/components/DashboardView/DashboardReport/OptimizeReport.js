@@ -68,14 +68,10 @@ export default themed(
               'OptimizeReport__visualization--unscrollable': disableReportScrolling
             })}
           >
-            {this.state.data.errorMessage ? (
-              this.state.data.errorMessage
-            ) : (
-              <ReportRenderer
-                disableReportScrolling={disableReportScrolling}
-                report={this.state.data}
-              />
-            )}
+            <ReportRenderer
+              disableReportScrolling={disableReportScrolling}
+              report={this.state.data.reportDefinition || this.state.data}
+            />
           </div>
           {children({loadReportData: this.loadReportData})}
         </div>

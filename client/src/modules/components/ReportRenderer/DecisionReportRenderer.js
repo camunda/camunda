@@ -1,27 +1,9 @@
 import React from 'react';
 import ReportBlankSlate from './ReportBlankSlate';
 
-import {isEmpty} from './service';
 import {Table, Number, Chart, DecisionTable} from './visualizations';
 
 import {getFormatter} from './service';
-
-const checkReport = props => {
-  const {
-    report: {data}
-  } = props;
-  if (isEmpty(data.decisionDefinitionKey) || isEmpty(data.decisionDefinitionVersion)) {
-    return 'a Decision Definition';
-  } else if (!data.view) {
-    return 'an option for ”View”';
-  } else if (!data.groupBy) {
-    return 'an option for ”Group by”';
-  } else if (!data.visualization) {
-    return 'an option for ”Visualize as”';
-  } else {
-    return;
-  }
-};
 
 const getComponent = (groupBy, visualization) => {
   switch (visualization) {
@@ -39,14 +21,6 @@ const getComponent = (groupBy, visualization) => {
 };
 
 export default function DecisionReportRenderer(props) {
-  const somethingMissing = checkReport(props);
-  if (somethingMissing)
-    return (
-      <ReportBlankSlate
-        errorMessage={'To display a report, please select ' + somethingMissing + '.'}
-      />
-    );
-
   const {
     visualization,
     view,

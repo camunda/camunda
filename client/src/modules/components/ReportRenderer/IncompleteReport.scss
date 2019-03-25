@@ -1,0 +1,21 @@
+.IncompleteReport {
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  color: #bfc3c8;
+  line-height: 1.71;
+  font-size: 14px;
+  font-weight: bold;
+  position: relative;
+
+  p {
+    position: absolute;
+    top: 50%;
+    margin-top: -24px;
+    width: 100%;
+
+    a {
+      font-weight: normal;
+    }
+  }
+}

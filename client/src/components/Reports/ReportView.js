@@ -12,6 +12,8 @@ import {
 } from './service';
 import {checkDeleteConflict} from 'services';
 
+import './ReportView.scss';
+
 export default class ReportView extends Component {
   state = {
     confirmModalVisible: false,
@@ -95,7 +97,7 @@ export default class ReportView extends Component {
           entityName={name}
           loading={deleteLoading}
         />
-        <div className="Report">
+        <div className="ReportView Report">
           <div className="Report__header">
             <div className="name-container">
               <h1 className="name">{name}</h1>
