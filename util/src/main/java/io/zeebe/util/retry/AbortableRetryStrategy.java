@@ -32,12 +32,12 @@ public class AbortableRetryStrategy implements RetryStrategy {
   }
 
   @Override
-  public ActorFuture<Boolean> runWithRetry(BooleanSupplier callable) {
+  public ActorFuture<Boolean> runWithRetry(OperationToRetry callable) {
     return runWithRetry(callable, () -> false);
   }
 
   @Override
-  public ActorFuture<Boolean> runWithRetry(BooleanSupplier callable, BooleanSupplier condition) {
+  public ActorFuture<Boolean> runWithRetry(OperationToRetry callable, BooleanSupplier condition) {
     currentFuture = new CompletableActorFuture<>();
     retryMechanism.wrap(callable, condition, currentFuture);
 
