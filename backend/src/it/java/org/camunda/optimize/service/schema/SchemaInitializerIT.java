@@ -36,6 +36,8 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -201,14 +203,15 @@ public class SchemaInitializerIT {
     // when we add an event with an undefined type in schema
     ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
     elasticSearchRule.addEntryToElasticsearch(
-            ElasticsearchConstants.METADATA_TYPE,
-            "12312412",
-            extendedEventDto
+      ElasticsearchConstants.METADATA_TYPE,
+      "12312412",
+      extendedEventDto
     );
   }
 
   private void assertDynamicSettingsComplyWithDefault(final List<TypeMappingCreator> mappings,
-                                                      final GetSettingsResponse getSettingsResponse) throws IOException {
+                                                      final GetSettingsResponse getSettingsResponse) throws
+                                                                                                     IOException {
     final Settings settings = IndexSettingsBuilder.buildDynamicSettings(embeddedOptimizeRule.getConfigurationService());
 
     for (TypeMappingCreator mapping : mappings) {
@@ -238,13 +241,13 @@ public class SchemaInitializerIT {
       .collect(Collectors.joining(","));
 
     Response response = embeddedOptimizeRule.getElasticsearchClient().getLowLevelClient().performRequest(
-      new Request(HttpGet.METHOD_NAME, indices + "/_settings")
+      new Request(HttpGet.METHOD_NAME, URLEncoder.encode(indices, StandardCharsets.UTF_8.name()) + "/_settings")
     );
     return GetSettingsResponse.fromXContent(JsonXContent.jsonXContent.createParser(
       NamedXContentRegistry.EMPTY,
       DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
-      response.getEntity().getContent())
-    );
+      response.getEntity().getContent()
+    ));
   }
 
   private void assertTypeExists(String type) throws IOException {
