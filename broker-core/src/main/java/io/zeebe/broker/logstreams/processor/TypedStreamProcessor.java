@@ -26,10 +26,13 @@ import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.WorkflowInstanceRelated;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
+import io.zeebe.protocol.intent.ErrorIntent;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.WorkflowInstanceRelatedIntent;
 import io.zeebe.transport.ServerOutput;
@@ -50,6 +53,7 @@ public class TypedStreamProcessor implements StreamProcessor {
   protected final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   protected final ZeebeState zeebeState;
 
+  private final ErrorRecord errorRecord = new ErrorRecord();
   protected final RecordMetadata metadata = new RecordMetadata();
   protected final EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry;
   protected final EnumMap<ValueType, UnpackedObject> eventCache;
@@ -107,6 +111,18 @@ public class TypedStreamProcessor implements StreamProcessor {
   }
 
   @Override
+  public long getFailedPosition(LoggedEvent currentEvent) {
+    metadata.reset();
+    currentEvent.readMetadata(metadata);
+
+    if (metadata.getValueType() == ValueType.ERROR) {
+      currentEvent.readValue(errorRecord);
+      return errorRecord.getErrorEventPosition();
+    }
+    return -1;
+  }
+
+  @Override
   public EventProcessor onEvent(final LoggedEvent event) {
     final long position = event.getPosition();
     metadata.reset();
@@ -131,21 +147,22 @@ public class TypedStreamProcessor implements StreamProcessor {
 
   protected static class DelegatingEventProcessor implements EventProcessor {
 
-    public static final String PROCESSING_ERROR_MESSAGE =
+    static final String PROCESSING_ERROR_MESSAGE =
         "Expected to process event '%s' without errors, but exception occurred with message '%s' .";
 
-    protected final int streamProcessorId;
+    final ErrorRecord errorRecord = new ErrorRecord();
+    final int streamProcessorId;
     protected final LogStream logStream;
     protected final TypedStreamWriterImpl writer;
     protected final TypedResponseWriterImpl responseWriter;
     private final ZeebeState zeebeState;
 
-    protected TypedRecordProcessor<?> eventProcessor;
+    TypedRecordProcessor<?> eventProcessor;
     protected TypedEventImpl event;
     private SideEffectProducer sideEffectProducer;
     private long position;
 
-    public DelegatingEventProcessor(
+    DelegatingEventProcessor(
         final int streamProcessorId,
         final ServerOutput output,
         final LogStream logStream,
@@ -185,6 +202,24 @@ public class TypedStreamProcessor implements StreamProcessor {
     public void onError(Throwable exception) {
       resetOutput();
 
+      writeRejectionOnCommand(exception);
+      errorRecord.initErrorRecord(exception, event.getPosition());
+
+      final Intent intent = event.getMetadata().getIntent();
+      if (shouldBeBlacklisted(intent)) {
+        final UnpackedObject value = event.getValue();
+        if (value instanceof WorkflowInstanceRelated) {
+          final long workflowInstanceKey =
+              ((WorkflowInstanceRelated) value).getWorkflowInstanceKey();
+          zeebeState.blacklist(workflowInstanceKey);
+          errorRecord.setWorkflowInstanceKey(workflowInstanceKey);
+        }
+      }
+
+      writer.appendFollowUpEvent(event.getKey(), ErrorIntent.CREATED, errorRecord);
+    }
+
+    private void writeRejectionOnCommand(Throwable exception) {
       final String errorMessage =
           String.format(PROCESSING_ERROR_MESSAGE, event, exception.getMessage());
       LOG.error(errorMessage, exception);
@@ -192,15 +227,6 @@ public class TypedStreamProcessor implements StreamProcessor {
       if (event.metadata.getRecordType() == RecordType.COMMAND) {
         sendCommandRejectionOnException(errorMessage);
         writeCommandRejectionOnException(errorMessage);
-      }
-
-      blacklist();
-    }
-
-    private void blacklist() {
-      final Intent intent = event.getMetadata().getIntent();
-      if (shouldBeBlacklisted(intent)) {
-        zeebeState.blacklist(event);
       }
     }
 
