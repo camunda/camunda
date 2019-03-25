@@ -2,7 +2,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
-  <artifactId>zb-parent</artifactId>
+  <artifactId>zeebe-parent</artifactId>
   <version>0.17.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <inceptionYear>2017</inceptionYear>
@@ -10,7 +10,7 @@
 
   <parent>
     <groupId>io.zeebe</groupId>
-    <artifactId>zb-bom</artifactId>
+    <artifactId>zeebe-bom</artifactId>
     <version>0.17.0-SNAPSHOT</version>
     <relativePath>../bom</relativePath>
   </parent>
@@ -425,7 +425,7 @@
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-build-tools</artifactId>
+      <artifactId>zeebe-build-tools</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -495,7 +495,7 @@
           <dependencies>
             <dependency>
               <groupId>io.zeebe</groupId>
-              <artifactId>zb-build-tools</artifactId>
+              <artifactId>zeebe-build-tools</artifactId>
               <version>${project.version}</version>
             </dependency>
           </dependencies>
@@ -786,7 +786,7 @@
                 <ignoredUnusedDeclaredDependencies>
                   <dep>org.apache.logging.log4j:log4j-slf4j-impl</dep>
                   <dep>org.apache.logging.log4j:log4j-core</dep>
-                  <dep>io.zeebe:zb-build-tools</dep>
+                  <dep>io.zeebe:zeebe-build-tools</dep>
                 </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>
@@ -950,7 +950,7 @@
             <dependencies>
               <dependency>
                 <groupId>io.zeebe</groupId>
-                <artifactId>zb-build-tools</artifactId>
+                <artifactId>zeebe-build-tools</artifactId>
                 <version>${project.version}</version>
               </dependency>
             </dependencies>

@@ -11,7 +11,7 @@ Add `zeebe-test` as test dependency to your project.
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-bom</artifactId>
+      <artifactId>zeebe-bom</artifactId>
       <version>${ZEEBE_VERSION}</version>
       <scope>import</scope>
       <type>pom</type>
