@@ -56,4 +56,8 @@ public class TimerRecordStream extends ExporterRecordStream<TimerRecordValue, Ti
   public TimerRecordStream withWorkflowKey(final long workflowKey) {
     return valueFilter(v -> v.getWorkflowKey() == workflowKey);
   }
+
+  public TimerRecordStream withWorkflowInstanceKey(final long workflowInstanceKey) {
+    return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
+  }
 }
