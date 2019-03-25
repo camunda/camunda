@@ -1,7 +1,7 @@
 import React from 'react';
 
 import './Footer.scss';
-import {getOptimizeVersion} from './service';
+import {getOptimizeVersion} from 'services';
 
 export default class Footer extends React.Component {
   constructor(props) {

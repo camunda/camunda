@@ -13,6 +13,7 @@ import {
   Message
 } from 'components';
 import {emailNotificationIsEnabled} from './service';
+import {getOptimizeVersion} from 'services';
 
 import ThresholdInput from './ThresholdInput';
 
@@ -48,8 +49,13 @@ export default function AlertModal(reports) {
     componentDidMount = async () => {
       const alert = this.props.entity;
       if (alert && Object.keys(alert).length) this.updateAlert();
+
+      const version = (await getOptimizeVersion()).split('.');
+      version.length = 2;
+
       this.setState({
-        emailNotificationIsEnabled: await emailNotificationIsEnabled()
+        emailNotificationIsEnabled: await emailNotificationIsEnabled(),
+        optimizeVersion: version.join('.')
       });
     };
 
@@ -200,7 +206,8 @@ export default function AlertModal(reports) {
         reminder,
         fixNotification,
         emailNotificationIsEnabled,
-        errorInput
+        errorInput,
+        optimizeVersion
       } = this.state;
       return (
         <Modal open={this.props.entity} onClose={this.props.onClose}>
@@ -212,7 +219,9 @@ export default function AlertModal(reports) {
                   <Message type="warning">
                     The email notification service is not configured. Optimize won't be able to
                     inform you about critical values. Please check out the{' '}
-                    <a href="https://docs.camunda.org/optimize/latest/technical-guide/setup/configuration/#email">
+                    <a
+                      href={`https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/setup/configuration/#email`}
+                    >
                       Optimize documentation
                     </a>{' '}
                     on how to enable the notification service.

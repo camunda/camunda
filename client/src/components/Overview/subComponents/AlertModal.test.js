@@ -5,15 +5,23 @@ import AlertModalFunc from './AlertModal';
 
 import ThresholdInput from './ThresholdInput';
 
-import * as services from 'services';
+import {formatters} from 'services';
 import * as service from './service';
 
 service.emailNotificationIsEnabled = jest.fn();
 
-services.formatters = {
-  convertDurationToSingleNumber: jest.fn().mockReturnValue(723),
-  convertDurationToObject: jest.fn().mockReturnValue({value: '14', unit: 'seconds'})
-};
+jest.mock('services', () => {
+  const rest = jest.requireActual('services');
+
+  return {
+    ...rest,
+    formatters: {
+      convertDurationToSingleNumber: jest.fn().mockReturnValue(723),
+      convertDurationToObject: jest.fn().mockReturnValue({value: '14', unit: 'seconds'})
+    },
+    getOptimizeVersion: jest.fn().mockReturnValue('2.4.0-alpha2')
+  };
+});
 
 const entity = {
   id: '71395',
@@ -173,7 +181,7 @@ it('should convert a duration threshold when opening', async () => {
   });
 
   expect(node.state('threshold')).toEqual({value: '14', unit: 'seconds'});
-  expect(services.formatters.convertDurationToObject).toHaveBeenCalledWith('14000');
+  expect(formatters.convertDurationToObject).toHaveBeenCalledWith('14000');
 });
 
 it('should convert a duration threshold when confirming', async () => {

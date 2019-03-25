@@ -4,9 +4,9 @@ import {shallow, mount} from 'enzyme';
 import {Server} from 'mock-socket';
 
 import Footer from './Footer';
-import {getOptimizeVersion} from './service';
+import {getOptimizeVersion} from 'services';
 
-jest.mock('./service', () => {
+jest.mock('services', () => {
   return {
     getOptimizeVersion: jest.fn()
   };

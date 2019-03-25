@@ -1,21 +1,23 @@
 import * as formattersImport from './formatters';
 
-export {getFlowNodeNames} from './GetFlowNodeNames';
+export {
+  getOptimizeVersion,
+  getFlowNodeNames,
+  loadDefinitions,
+  loadProcessDefinitionXml,
+  loadDecisionDefinitionXml,
+  loadEntity,
+  checkDeleteConflict
+} from './dataLoaders';
 export {numberParser} from './NumberParser';
 export {isDurationValue} from './isDurationValue';
 export {incompatibleFilters} from './incompatibleFilters';
-export {loadEntity, checkDeleteConflict} from './entityServices';
 export {default as reportConfig} from './reportConfig';
 export {getDiagramElementsBetween} from './diagramServices';
 export {default as getDataKeys} from './getDataKeys';
 export {flatten} from './tableServices';
 export {default as getTooltipText} from './getTooltipText';
-export {
-  extractDefinitionName,
-  loadDefinitions,
-  loadProcessDefinitionXml,
-  loadDecisionDefinitionXml
-} from './definitionService';
+export {extractDefinitionName} from './definitionService';
 
 export {isDurationReport} from './reportService';
 
