@@ -46,7 +46,7 @@ export default class IncidentsFilter extends React.Component {
                           item.errorType
                         )}
                       >
-                        {item.errorTypeTitle}
+                        {item.errorType}
                       </Pill>
                     </li>
                   );

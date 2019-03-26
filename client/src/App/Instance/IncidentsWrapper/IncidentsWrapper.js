@@ -21,26 +21,16 @@ function IncidentsWrapper(props) {
     instance,
     selectedIncidents,
     onIncidentOperation,
-    onIncidentSelection,
-    flowNodes,
-    errorTypes
+    onIncidentSelection
   } = props;
-  const selected = {
-    flowNodes: flowNodes.map(item => item.flowNodeId),
-    errorTypes: errorTypes.map(item => item.errorType)
-  };
+
   const [isOpen, setIsOpen] = useState(false);
   const [sorting, setSorting] = useState({
     sortBy: 'errorType',
     sortOrder: SORT_ORDER.DESC
   });
-  const [selectedFlowNodes, setSelectedFlowNodes] = useState(
-    selected.flowNodes
-  );
-  const [selectedErrorTypes, setSelectedErrorTypes] = useState(
-    selected.errorTypes
-  );
-  console.log(selectedErrorTypes);
+  const [selectedFlowNodes, setSelectedFlowNodes] = useState([]);
+  const [selectedErrorTypes, setSelectedErrorTypes] = useState([]);
 
   function handleToggle() {
     setIsOpen(!isOpen);
@@ -90,11 +80,28 @@ function IncidentsWrapper(props) {
   ]);
 
   function filterIncidents() {
+    if (
+      !Boolean(selectedFlowNodes.length) &&
+      !Boolean(selectedErrorTypes.length)
+    ) {
+      return incidents;
+    }
+
     return incidents.filter(item => {
-      console.log(item);
+      const hasSelectedFlowNodes = Boolean(selectedFlowNodes.length);
+      const hasSelectedErrorTypes = Boolean(selectedErrorTypes.length);
+
+      if (!hasSelectedFlowNodes) {
+        return selectedErrorTypes.includes(item.errorType);
+      }
+
+      if (!hasSelectedErrorTypes) {
+        return selectedFlowNodes.includes(item.flowNodeId);
+      }
+
       return (
-        selectedFlowNodes.includes(item.flowNodeId) ||
-        selectedErrorTypes.includes(item.errorTypeTitle)
+        selectedFlowNodes.includes(item.flowNodeId) &&
+        selectedErrorTypes.includes(item.errorType)
       );
     });
   }
