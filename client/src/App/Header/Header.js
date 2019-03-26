@@ -19,7 +19,8 @@ import {
   FILTER_SELECTION,
   BADGE_TYPE,
   COMBO_BADGE_TYPE,
-  DEFAULT_FILTER
+  DEFAULT_FILTER,
+  INCIDENTS_FILTER
 } from 'modules/constants';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 import {withSelection} from 'modules/contexts/SelectionContext';
@@ -44,7 +45,7 @@ class Header extends React.Component {
     isSelectionsCollapsed: PropTypes.bool.isRequired,
     expandFilters: PropTypes.func.isRequired,
     expandSelections: PropTypes.func.isRequired,
-    setFilterFromInput: PropTypes.func
+    onFilterReset: PropTypes.func
   };
 
   state = {
@@ -124,29 +125,33 @@ class Header extends React.Component {
   };
 
   getListLinksProps = key => {
-    if (!this.props.setFilterFromInput) {
-      const urls = {
-        instances: this.state.filter
-          ? getFilterQueryString(this.state.filter)
-          : '',
-        filters: getFilterQueryString(FILTER_SELECTION.running),
-        incidents: getFilterQueryString(FILTER_SELECTION.incidents)
+    if (this.props.onFilterReset) {
+      const filters = {
+        instances: DEFAULT_FILTER,
+        filters: this.state.filter || {},
+        incidents: {incidents: true}
       };
-      return {to: `/instances${urls[key]}`, onClick: this.props.expandFilters};
+      return {
+        onClick: e => {
+          e.preventDefault();
+          this.props.expandFilters();
+          this.props.onFilterReset(filters[key]);
+        },
+        to: ' '
+      };
     }
-    const filters = {
-      instances: FILTER_SELECTION.running,
-      filters: this.state.filter || {},
-      incidents: FILTER_SELECTION.incidents
+    const queryStrings = {
+      instances: this.state.filter
+        ? getFilterQueryString(this.state.filter)
+        : '',
+      filters: getFilterQueryString(FILTER_SELECTION.running),
+      incidents: getFilterQueryString({incidents: true})
     };
 
-    const onClick = e => {
-      e.preventDefault();
-      this.props.expandFilters();
-      this.props.setFilterFromInput(filters[key]);
+    return {
+      to: `/instances${queryStrings[key]}`,
+      onClick: this.props.expandFilters
     };
-
-    return {onClick, to: ' '};
   };
 
   render() {
@@ -158,14 +163,15 @@ class Header extends React.Component {
       : '';
 
     const isRunningInstanceFilter = isEqual(
-      FILTER_SELECTION.running,
-      this.state.filter
+      this.state.filter,
+      FILTER_SELECTION.running
     );
 
     // P.S. checking isRunningInstanceFilter first is a small perf improvement because
     // it checks for isRunningInstanceFilter before making an object equality check
     const isIncidentsFilter =
-      !isRunningInstanceFilter && isEqual({incidents: true}, this.state.filter);
+      !isRunningInstanceFilter && isEqual(this.state.filter, {incidents: true});
+
     return this.state.forceRedirect ? (
       <Redirect to="/login" />
     ) : (

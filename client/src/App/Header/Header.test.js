@@ -19,7 +19,7 @@ import * as api from 'modules/api/header/header';
 import * as instancesApi from 'modules/api/instances/instances';
 
 import {flushPromises, mockResolvedAsyncFn} from 'modules/testUtils';
-import {DEFAULT_FILTER} from 'modules/constants';
+import {DEFAULT_FILTER, INCIDENTS_FILTER} from 'modules/constants';
 
 import {apiKeys, filtersMap} from './constants';
 import * as Styled from './styled.js';
@@ -315,186 +315,250 @@ describe('Header', () => {
     });
   });
 
-  describe('links highlights', () => {
-    it('should highlight the dashboard link when active="dashboard"', () => {
-      const mockProps = {
-        ...mockCollapsablePanelProps,
-        active: 'dashboard',
-        getStateLocally: () => ({})
-      };
+  describe('links', () => {
+    it('should not link anywhere when onFilterReset method is passed', () => {
+      const onFilterResetMock = jest.fn();
+      const emptyRoute = ' ';
 
-      const node = mountComponent(<Header {...mockProps} />);
-
-      let dashboardNode = node.find('[data-test="header-link-dashboard"]');
-
-      // then
-      expect(dashboardNode.childAt(0).prop('isActive')).toBe(true);
-    });
-
-    it('should not highlight the dashboard link when active!="dashboard"', () => {
       const mockProps = {
         ...mockCollapsablePanelProps,
         active: 'instances',
-        getStateLocally: () => ({})
-      };
-
-      const node = mountComponent(<Header {...mockProps} />);
-
-      let dashboardNode = node.find('[data-test="header-link-dashboard"]');
-
-      // then
-      expect(dashboardNode.childAt(0).prop('isActive')).toBe(false);
-    });
-
-    it('should highlight filters link when filters is not collapsed', () => {
-      // given
-      const mockProps = {
-        ...mockCollapsablePanelProps,
-        active: 'instances',
-        isFiltersCollapsed: false,
-        getStateLocally: () => ({})
-      };
-
-      const node = mountComponent(<Header {...mockProps} />);
-
-      let filtersNode = node.find('[data-test="header-link-filters"]');
-
-      // then
-      expect(filtersNode.childAt(0).prop('isActive')).toBe(true);
-    });
-
-    it('should not highlight filters link when filters is collapsed', async () => {
-      // given
-      // we mount Header.WrappedComponent as we need to overwrite the value of
-      // isFiltersCollapsed from CollapsablePanelProvider
-      const mockProps = {
-        ...mockCollapsablePanelProps,
-        ...mockValues,
-        active: 'instances',
-        isFiltersCollapsed: true
-      };
-
-      const node = mountComponent(<Header.WrappedComponent {...mockProps} />);
-
-      // when
-      await flushPromises();
-      node.update();
-
-      let filtersNode = node.find('[data-test="header-link-filters"]');
-
-      // then
-      expect(filtersNode.childAt(0).prop('isActive')).toBe(false);
-    });
-
-    it('should highlight selections link when selections is not collapsed', () => {
-      // (1) when selections is not collapsed
-      // given
-      const mockProps = {
-        ...mockCollapsablePanelProps,
-        isSelectionsCollapsed: false,
-        active: 'instances',
-        getStateLocally: () => mockValues
-      };
-      const node = mountComponent(<Header.WrappedComponent {...mockProps} />);
-      let selectionsNode = node.find('[data-test="header-link-selections"]');
-
-      // then
-      expect(selectionsNode.childAt(0).prop('isActive')).toBe(true);
-    });
-
-    it('should not highlight selections link when selections is collapsed', () => {
-      // given
-      const mockProps = {
-        ...mockCollapsablePanelProps,
-        isSelectionsCollapsed: true,
-        active: 'instances',
-        getStateLocally: () => mockValues
-      };
-      const node = mountComponent(<Header {...mockProps} />);
-
-      let selectionsNode = node.find('[data-test="header-link-selections"]');
-
-      // then
-      expect(selectionsNode.childAt(0).prop('isActive')).toBe(false);
-    });
-
-    it('should highlight running instance link when the filter equals the DEFAULT_FILTER', async () => {
-      // given
-      const mockProps = {
-        ...mockCollapsablePanelProps,
         getStateLocally: () => ({}),
+        onFilterReset: onFilterResetMock
+      };
+
+      const node = mountComponent(<Header {...mockProps} />);
+      let instancesLinkNode = node
+        .find('[data-test="header-link-instances"]')
+        .find(Styled.ListLink);
+      let filterLinkNode = node
+        .find('[data-test="header-link-filters"]')
+        .find(Styled.ListLink);
+      let incidentsLinkNode = node
+        .find('[data-test="header-link-incidents"]')
+        .find(Styled.ListLink);
+
+      expect(instancesLinkNode.props().to).toBe(emptyRoute);
+      expect(filterLinkNode.props().to).toBe(emptyRoute);
+      expect(incidentsLinkNode.props().to).toBe(emptyRoute);
+    });
+
+    it('should update the filter state directly', () => {
+      const onFilterResetMock = jest.fn();
+
+      const mockProps = {
+        ...mockCollapsablePanelProps,
         active: 'instances',
-        filter: DEFAULT_FILTER
-      };
-      const node = mountComponent(<Header {...mockProps} />);
-
-      // when
-      await flushPromises();
-      node.update();
-
-      let instancesNode = node.find('[data-test="header-link-instances"]');
-
-      // then
-      expect(instancesNode.childAt(0).prop('isActive')).toBe(true);
-    });
-
-    it('should not highlight running instance link when the filter !== DEFAULT_FILTER', async () => {
-      // given
-      const mockProps = {
-        ...mockCollapsablePanelProps,
         getStateLocally: () => ({}),
-        active: 'instances',
-        filter: {incidents: true}
+        onFilterReset: onFilterResetMock
       };
+
       const node = mountComponent(<Header {...mockProps} />);
 
-      // when
-      await flushPromises();
-      node.update();
+      let instancesLinkNode = node
+        .find('[data-test="header-link-instances"]')
+        .find(Styled.ListLink);
+      let incidentsLinkNode = node
+        .find('[data-test="header-link-incidents"]')
+        .find(Styled.ListLink);
+      let filterLinkNode = node
+        .find('[data-test="header-link-filters"]')
+        .find(Styled.ListLink);
 
-      let instancesNode = node.find('[data-test="header-link-instances"]');
+      filterLinkNode.simulate('click');
+      expect(onFilterResetMock).toHaveBeenCalledWith({});
 
-      // then
-      expect(instancesNode.childAt(0).prop('isActive')).toBe(false);
+      instancesLinkNode.simulate('click');
+      expect(onFilterResetMock).toHaveBeenCalledWith({
+        active: true,
+        incidents: true
+      });
+
+      incidentsLinkNode.simulate('click');
+      expect(onFilterResetMock).toHaveBeenCalledWith({
+        incidents: true
+      });
     });
 
-    it('should highlight incidents link when the filter equals incidents', async () => {
-      // given
-      const mockProps = {
-        ...mockCollapsablePanelProps,
-        ...mockValues,
-        filter: {incidents: true},
-        active: 'instances'
-      };
-      const node = mountComponent(<Header.WrappedComponent {...mockProps} />);
+    describe('highlighting', () => {
+      it('should highlight the dashboard link when active="dashboard"', () => {
+        const mockProps = {
+          ...mockCollapsablePanelProps,
+          active: 'dashboard',
+          getStateLocally: () => ({})
+        };
+        const node = mountComponent(<Header {...mockProps} />);
+        let dashboardNode = node.find('[data-test="header-link-dashboard"]');
 
-      // when
-      await flushPromises();
-      node.update();
+        // then
+        expect(dashboardNode.childAt(0).prop('isActive')).toBe(true);
+      });
 
-      let incidentsNode = node.find('[data-test="header-link-incidents"]');
+      it('should not highlight the dashboard link when active!="dashboard"', () => {
+        const mockProps = {
+          ...mockCollapsablePanelProps,
+          active: 'instances',
+          getStateLocally: () => ({})
+        };
 
-      // then
-      expect(incidentsNode.childAt(0).prop('isActive')).toBe(true);
-    });
+        const node = mountComponent(<Header {...mockProps} />);
 
-    it('should highlight incidents link when the filter not equals incidents', async () => {
-      // given
-      const mockProps = {
-        ...mockCollapsablePanelProps,
-        getStateLocally: () => ({}),
-        filter: DEFAULT_FILTER
-      };
-      const node = mountComponent(<Header {...mockProps} />);
+        let dashboardNode = node.find('[data-test="header-link-dashboard"]');
 
-      // when
-      await flushPromises();
-      node.update();
+        // then
+        expect(dashboardNode.childAt(0).prop('isActive')).toBe(false);
+      });
 
-      let incidentsNode = node.find('[data-test="header-link-incidents"]');
+      it('should highlight filters link when filters is not collapsed', () => {
+        // given
+        const mockProps = {
+          ...mockCollapsablePanelProps,
+          active: 'instances',
+          isFiltersCollapsed: false,
+          getStateLocally: () => ({})
+        };
 
-      // then
-      expect(incidentsNode.childAt(0).prop('isActive')).toBe(false);
+        const node = mountComponent(<Header {...mockProps} />);
+
+        let filtersNode = node.find('[data-test="header-link-filters"]');
+
+        // then
+        expect(filtersNode.childAt(0).prop('isActive')).toBe(true);
+      });
+
+      it('should not highlight filters link when filters is collapsed', async () => {
+        // given
+        // we mount Header.WrappedComponent as we need to overwrite the value of
+        // isFiltersCollapsed from CollapsablePanelProvider
+        const mockProps = {
+          ...mockCollapsablePanelProps,
+          ...mockValues,
+          active: 'instances',
+          isFiltersCollapsed: true
+        };
+
+        const node = mountComponent(<Header.WrappedComponent {...mockProps} />);
+
+        // when
+        await flushPromises();
+        node.update();
+
+        let filtersNode = node.find('[data-test="header-link-filters"]');
+
+        // then
+        expect(filtersNode.childAt(0).prop('isActive')).toBe(false);
+      });
+
+      it('should highlight selections link when selections is not collapsed', () => {
+        // (1) when selections is not collapsed
+        // given
+        const mockProps = {
+          ...mockCollapsablePanelProps,
+          isSelectionsCollapsed: false,
+          active: 'instances',
+          getStateLocally: () => mockValues
+        };
+        const node = mountComponent(<Header.WrappedComponent {...mockProps} />);
+        let selectionsNode = node.find('[data-test="header-link-selections"]');
+
+        // then
+        expect(selectionsNode.childAt(0).prop('isActive')).toBe(true);
+      });
+
+      it('should not highlight selections link when selections is collapsed', () => {
+        // given
+        const mockProps = {
+          ...mockCollapsablePanelProps,
+          isSelectionsCollapsed: true,
+          active: 'instances',
+          getStateLocally: () => mockValues
+        };
+        const node = mountComponent(<Header {...mockProps} />);
+
+        let selectionsNode = node.find('[data-test="header-link-selections"]');
+
+        // then
+        expect(selectionsNode.childAt(0).prop('isActive')).toBe(false);
+      });
+
+      it('should highlight running instance link when the filter equals the DEFAULT_FILTER', async () => {
+        // given
+        const mockProps = {
+          ...mockCollapsablePanelProps,
+          getStateLocally: () => ({}),
+          active: 'instances',
+          filter: DEFAULT_FILTER
+        };
+        const node = mountComponent(<Header {...mockProps} />);
+
+        // when
+        await flushPromises();
+        node.update();
+
+        let instancesNode = node.find('[data-test="header-link-instances"]');
+
+        // then
+        expect(instancesNode.childAt(0).prop('isActive')).toBe(true);
+      });
+
+      it('should not highlight running instance link when the filter !== DEFAULT_FILTER', async () => {
+        // given
+        const mockProps = {
+          ...mockCollapsablePanelProps,
+          getStateLocally: () => ({}),
+          active: 'instances',
+          filter: {incident: true}
+        };
+        const node = mountComponent(<Header {...mockProps} />);
+
+        // when
+        await flushPromises();
+        node.update();
+
+        let instancesNode = node.find('[data-test="header-link-instances"]');
+
+        // then
+        expect(instancesNode.childAt(0).prop('isActive')).toBe(false);
+      });
+
+      it('should highlight incidents link when the filter equals incidents', async () => {
+        // given
+        const mockProps = {
+          ...mockCollapsablePanelProps,
+          ...mockValues,
+          filter: {incidents: true},
+          active: 'instances'
+        };
+        const node = mountComponent(<Header.WrappedComponent {...mockProps} />);
+
+        // when
+        await flushPromises();
+        node.update();
+
+        let incidentsNode = node.find('[data-test="header-link-incidents"]');
+
+        // then
+        expect(incidentsNode.childAt(0).prop('isActive')).toBe(true);
+      });
+
+      it('should highlight incidents link when the filter not equals incidents', async () => {
+        // given
+        const mockProps = {
+          ...mockCollapsablePanelProps,
+          getStateLocally: () => ({}),
+          filter: DEFAULT_FILTER
+        };
+        const node = mountComponent(<Header {...mockProps} />);
+
+        // when
+        await flushPromises();
+        node.update();
+
+        let incidentsNode = node.find('[data-test="header-link-incidents"]');
+
+        // then
+        expect(incidentsNode.childAt(0).prop('isActive')).toBe(false);
+      });
     });
   });
 

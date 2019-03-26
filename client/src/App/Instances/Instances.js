@@ -7,6 +7,8 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 
+import {DEFAULT_FILTER} from 'modules/constants';
+
 import {isEmpty, sortBy} from 'lodash';
 
 import SplitPane from 'modules/components/SplitPane';
@@ -101,7 +103,7 @@ export default class Instances extends Component {
                 active="instances"
                 filter={this.props.filter}
                 filterCount={this.props.filterCount}
-                setFilterFromInput={this.props.onFilterChange}
+                onFilterReset={this.props.onFilterReset}
               />
               <Styled.Instances>
                 <VisuallyHiddenH1>Camunda Operate Instances</VisuallyHiddenH1>
@@ -114,7 +116,9 @@ export default class Instances extends Component {
                       groupedWorkflows={this.props.groupedWorkflows}
                       filter={this.props.filter}
                       filterCount={this.props.filterCount}
-                      onFilterReset={this.props.onFilterReset}
+                      onFilterReset={() =>
+                        this.props.onFilterReset(DEFAULT_FILTER)
+                      }
                       onFilterChange={this.props.onFilterChange}
                     />
                   </Styled.Filters>
