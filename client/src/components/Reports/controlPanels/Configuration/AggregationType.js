@@ -16,7 +16,7 @@ export default function AggregationType({report: {resultType, data}, onChange}) 
           <Select.Option value="min">Minimum</Select.Option>
           <Select.Option value="avg">Average</Select.Option>
           <Select.Option value="median">Median</Select.Option>
-          <Select.Option value="max">Maxmimum</Select.Option>
+          <Select.Option value="max">Maximum</Select.Option>
         </Select>
       </fieldset>
     );

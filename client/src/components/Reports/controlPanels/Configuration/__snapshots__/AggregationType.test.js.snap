@@ -29,7 +29,7 @@ exports[`should render an aggregation selection for duration reports 1`] = `
     <Option
       value="max"
     >
-      Maxmimum
+      Maximum
     </Option>
   </Select>
 </fieldset>
