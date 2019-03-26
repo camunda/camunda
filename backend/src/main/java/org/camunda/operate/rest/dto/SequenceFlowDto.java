@@ -13,6 +13,8 @@ public class SequenceFlowDto {
 
   private String id;
 
+  private String workflowInstanceId;
+
   private String activityId;
 
   public String getId() {
@@ -21,6 +23,14 @@ public class SequenceFlowDto {
 
   public void setId(String id) {
     this.id = id;
+  }
+
+  public String getWorkflowInstanceId() {
+    return workflowInstanceId;
+  }
+
+  public void setWorkflowInstanceId(String workflowInstanceId) {
+    this.workflowInstanceId = workflowInstanceId;
   }
 
   public String getActivityId() {
@@ -37,6 +47,7 @@ public class SequenceFlowDto {
     }
     SequenceFlowDto sequenceFlowDto = new SequenceFlowDto();
     sequenceFlowDto.setId(sequenceFlowEntity.getId());
+    sequenceFlowDto.setWorkflowInstanceId(sequenceFlowEntity.getWorkflowInstanceId());
     sequenceFlowDto.setActivityId(sequenceFlowEntity.getActivityId());
     return sequenceFlowDto;
   }
@@ -64,12 +75,15 @@ public class SequenceFlowDto {
 
     if (id != null ? !id.equals(that.id) : that.id != null)
       return false;
+    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
+      return false;
     return activityId != null ? activityId.equals(that.activityId) : that.activityId == null;
   }
 
   @Override
   public int hashCode() {
     int result = id != null ? id.hashCode() : 0;
+    result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
     result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
     return result;
   }

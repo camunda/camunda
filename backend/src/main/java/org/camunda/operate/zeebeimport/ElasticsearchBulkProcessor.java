@@ -12,6 +12,7 @@ import org.camunda.operate.zeebeimport.processors.ActivityInstanceZeebeRecordPro
 import org.camunda.operate.zeebeimport.processors.EventZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.IncidentZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.ListViewZeebeRecordProcessor;
+import org.camunda.operate.zeebeimport.processors.SequenceFlowZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.VariableZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.WorkflowZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.record.RecordImpl;
@@ -48,6 +49,9 @@ public class ElasticsearchBulkProcessor extends Thread {
   @Autowired
   private EventZeebeRecordProcessor eventZeebeRecordProcessor;
 
+  @Autowired
+  private SequenceFlowZeebeRecordProcessor sequenceFlowZeebeRecordProcessor;
+
   public void persistZeebeRecords(List<? extends RecordImpl> zeebeRecords) throws PersistenceException {
 
       logger.debug("Writing [{}] Zeebe records to Elasticsearch", zeebeRecords.size());
@@ -59,6 +63,7 @@ public class ElasticsearchBulkProcessor extends Thread {
           listViewZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
           activityInstanceZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
           eventZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
+          sequenceFlowZeebeRecordProcessor.processSequenceFlowRecord(record, bulkRequest);
           break;
         case INCIDENT:
           listViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);

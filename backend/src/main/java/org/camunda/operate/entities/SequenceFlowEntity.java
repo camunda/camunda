@@ -5,11 +5,8 @@
  */
 package org.camunda.operate.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 public class SequenceFlowEntity extends  OperateZeebeEntity {
 
-  @JsonIgnore
   private String workflowInstanceId;
   private String activityId;
 

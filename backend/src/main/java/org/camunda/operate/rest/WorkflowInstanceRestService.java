@@ -8,15 +8,18 @@ package org.camunda.operate.rest;
 import java.util.Collection;
 import java.util.List;
 import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.es.reader.ActivityInstanceReader;
 import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.ListViewReader;
+import org.camunda.operate.es.reader.SequenceFlowReader;
 import org.camunda.operate.es.reader.VariableReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
+import org.camunda.operate.rest.dto.SequenceFlowDto;
 import org.camunda.operate.rest.dto.VariableDto;
 import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.incidents.IncidentResponseDto;
@@ -69,6 +72,9 @@ public class WorkflowInstanceRestService {
   @Autowired
   private VariableReader variableReader;
 
+  @Autowired
+  private SequenceFlowReader sequenceFlowReader;
+
   @ApiOperation("Query workflow instances by different parameters")
   @PostMapping
   public ListViewResponseDto queryWorkflowInstances(
@@ -119,6 +125,13 @@ public class WorkflowInstanceRestService {
   @GetMapping("/{id}/incidents")
   public IncidentResponseDto queryIncidentsByWorkflowInstanceId(@PathVariable String id) {
     return incidentReader.getIncidents(id);
+  }
+
+  @ApiOperation("Get sequence flows by workflow instance id")
+  @GetMapping("/{id}/sequence-flows")
+  public List<SequenceFlowDto> querySequenceFlowsByWorkflowInstanceId(@PathVariable String id) {
+    final List<SequenceFlowEntity> sequenceFlows = sequenceFlowReader.getSequenceFlows(id);
+    return SequenceFlowDto.createFrom(sequenceFlows);
   }
 
   @ApiOperation("Get variables by workflow instance id and scope id")
