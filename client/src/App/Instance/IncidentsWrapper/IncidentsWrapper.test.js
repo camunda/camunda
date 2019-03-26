@@ -121,7 +121,7 @@ describe('IncidentsWrapper', () => {
         SORT_ORDER.DESC
       );
     });
-    it.only('should change the sorting', () => {
+    it('should change the sorting', () => {
       const node = mount(
         <ThemeProvider>
           <IncidentsWrapper {...mockProps} />
