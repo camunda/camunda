@@ -27,7 +27,7 @@ IF NOT DEFINED OPTIMIZE_JAVA_OPTS (
 set OPTIMIZE_CLASSPATH="%BASEDIR%\..\environment;%BASEDIR%\*;%BASEDIR%\..\optimize-backend-${project.version}.jar"
 
 echo.
-echo Starting Camunda Optimize Reimport ${project.version}...
+echo Starting Camunda Optimize Upgrade to ${project.version}...
 echo.
 
 :: start optimize
