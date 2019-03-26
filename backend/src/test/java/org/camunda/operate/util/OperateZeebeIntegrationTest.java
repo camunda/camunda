@@ -6,7 +6,6 @@
 package org.camunda.operate.util;
 
 import java.util.function.Predicate;
-import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebeimport.ZeebeESImporter;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.Rule;
@@ -30,15 +29,12 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Rule
   public final OperateZeebeRule zeebeRule;
 
-  public ClientRule clientRule;
+  protected ClientRule clientRule;
 
-  public EmbeddedBrokerRule brokerRule;
+  protected EmbeddedBrokerRule brokerRule;
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
-
-  @Autowired
-  protected OperateProperties operateProperties;
 
   @Autowired
   private ZeebeESImporter zeebeESImporter;
@@ -71,7 +67,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     brokerRule = zeebeRule.getBrokerRule();
 
     workerName = TestUtil.createRandomString(10);
-    operateProperties.getZeebeElasticsearch().setPrefix(zeebeRule.getPrefix());
+
     workflowCache.clearCache();
     try {
       FieldSetter.setField(zeebeESImporter, ZeebeESImporter.class.getDeclaredField("zeebeClient"), getClient());

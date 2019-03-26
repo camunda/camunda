@@ -12,15 +12,16 @@ import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.OperateZeebeRule;
-import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeClientRule;
 import org.camunda.operate.zeebeimport.ZeebeESImporter;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import io.zeebe.test.EmbeddedBrokerRule;
@@ -39,6 +40,10 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
   @Autowired
   private OperateProperties operateProperties;
 
+  @Autowired
+  @Qualifier("zeebeEsClient")
+  private RestHighLevelClient zeebeEsClient;
+
   private OperateZeebeRule operateZeebeRule;
 
   private ZeebeClientRule clientRule;
@@ -56,7 +61,7 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
   @After
   public void cleanup() {
     if (operateZeebeRule != null) {
-      operateZeebeRule.after();
+      operateZeebeRule.finished(null);
     }
     if (clientRule != null) {
       clientRule.after();
@@ -83,18 +88,7 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
     //when 2
     //Zeebe is started
-    operateZeebeRule = new OperateZeebeRule(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE);
-    clientRule = new ZeebeClientRule(operateZeebeRule.getBrokerRule());
-    operateZeebeRule.before();
-    clientRule.before();
-
-    String workerName = TestUtil.createRandomString(10);
-    operateProperties.getZeebeElasticsearch().setPrefix(operateZeebeRule.getPrefix());
-    try {
-      FieldSetter.setField(zeebeESImporter, ZeebeESImporter.class.getDeclaredField("zeebeClient"), clientRule.getClient());
-    } catch (NoSuchFieldException e) {
-      Assertions.fail("Failed to inject ZeebeClient into some of the beans");
-    }
+    startZeebe();
 
     //then 2
     //data import is working
@@ -102,14 +96,30 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
   }
 
+  private void startZeebe() {
+    operateZeebeRule = new OperateZeebeRule(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE);
+    try {
+      FieldSetter.setField(operateZeebeRule, OperateZeebeRule.class.getDeclaredField("operateProperties"), operateProperties);
+      FieldSetter.setField(operateZeebeRule, OperateZeebeRule.class.getDeclaredField("zeebeEsClient"), zeebeEsClient);
+    } catch (NoSuchFieldException e) {
+      Assertions.fail("Failed to inject ZeebeClient into some of the beans");
+    }
+    clientRule = new ZeebeClientRule(operateZeebeRule.getBrokerRule());
+    operateZeebeRule.starting(null);
+    clientRule.before();
+    operateProperties.getZeebeElasticsearch().setPrefix(operateZeebeRule.getPrefix());
+    try {
+      FieldSetter.setField(zeebeESImporter, ZeebeESImporter.class.getDeclaredField("zeebeClient"), clientRule.getClient());
+    } catch (NoSuchFieldException e) {
+      Assertions.fail("Failed to inject ZeebeClient into some of the beans");
+    }
+  }
+
   @Test
   public void testRecoverAfterZeebeRestart() throws Exception {
     //when 1
     //Zeebe is started
-    operateZeebeRule = new OperateZeebeRule(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE);
-    clientRule = new ZeebeClientRule(operateZeebeRule.getBrokerRule());
-    operateZeebeRule.before();
-    clientRule.before();
+    startZeebe();
 
     //then 1
     //data import is working
@@ -117,9 +127,9 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
     //when 2
     //Zeebe is restarted
-    operateZeebeRule.after();
+    operateZeebeRule.finished(null);
     clientRule.after();
-    operateZeebeRule.before();
+    operateZeebeRule.starting(null);
     clientRule.before();
 
     //then 2

@@ -8,34 +8,47 @@ package org.camunda.operate.util;
 import java.util.Map;
 import java.util.Properties;
 import org.assertj.core.api.Assertions;
-import org.junit.rules.ExternalResource;
+import org.camunda.operate.property.OperateProperties;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 
-public class OperateZeebeRule extends ExternalResource {
+public class OperateZeebeRule extends TestWatcher {
 
   private static final Logger logger = LoggerFactory.getLogger(OperateZeebeRule.class);
+
+  @Autowired
+  public OperateProperties operateProperties;
+
+  @Autowired
+  @Qualifier("zeebeEsClient")
+  protected RestHighLevelClient zeebeEsClient;
 
   private final EmbeddedBrokerRule brokerRule;
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
   private ClientRule clientRule;
 
   private String prefix;
+  private boolean failed = false;
 
   public OperateZeebeRule(final String configFileClasspathLocation) {
     brokerRule = new EmbeddedBrokerRule(configFileClasspathLocation);
   }
 
   @Override
-  public void before() {
+  public void starting(Description description) {
     this.prefix = TestUtil.createRandomString(10);
+    operateProperties.getZeebeElasticsearch().setPrefix(prefix);
     brokerRule.getBrokerCfg().getExporters().stream().filter(ec -> ec.getId().equals("elasticsearch")).forEach(ec -> {
       final Object indexArgs = ec.getArgs().get("index");
       if (indexArgs != null && indexArgs instanceof Map) {
@@ -48,9 +61,16 @@ public class OperateZeebeRule extends ExternalResource {
   }
 
   @Override
-  public void after() {
-    super.after();
+  public void finished(Description description) {
     stop();
+    if (!failed) {
+      TestUtil.removeAllIndices(zeebeEsClient, prefix);
+    }
+  }
+
+  @Override
+  protected void failed(Throwable e, Description description) {
+    this.failed = true;
   }
 
   @Override

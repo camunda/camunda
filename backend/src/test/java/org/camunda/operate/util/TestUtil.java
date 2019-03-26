@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.util;
 
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,8 +25,15 @@ import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class TestUtil {
+
+  private static final Logger logger = LoggerFactory.getLogger(TestUtil.class);
 
   public static final String ERROR_MSG = "No more retries left.";
   private static Random random = new Random();
@@ -253,5 +261,15 @@ public abstract class TestUtil {
     variable.setVarValue(value);
     variable.getJoinRelation().setParent(workflowInstanceId);
     return variable;
+  }
+
+
+  public static void removeAllIndices(RestHighLevelClient esClient, String prefix) {
+    try {
+      logger.info("Removing indices");
+      esClient.indices().delete(new DeleteIndexRequest(prefix + "*"), RequestOptions.DEFAULT);
+    } catch (IOException ex) {
+      //do nothing
+    }
   }
 }

@@ -30,7 +30,6 @@ import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
 import org.camunda.operate.zeebeimport.ZeebeESImporter;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -38,7 +37,8 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.IndexNotFoundException;
-import org.junit.rules.ExternalResource;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +46,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.camunda.operate.property.OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX;
 
-public class ElasticsearchTestRule extends ExternalResource {
+public class ElasticsearchTestRule extends TestWatcher {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchTestRule.class);
 
@@ -87,64 +87,36 @@ public class ElasticsearchTestRule extends ExternalResource {
   @Autowired
   private ObjectMapper objectMapper;
 
-  private boolean haveToClean = true;
-
   Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
 
+  protected boolean failed = false;
+
   @Override
-  public void before() {
+  protected void failed(Throwable e, Description description) {
+    super.failed(e, description);
+    this.failed = true;
+  }
+
+  @Override
+  protected void starting(Description description) {
     operateProperties.getElasticsearch().setIndexPrefix(TestUtil.createRandomString(10) + "-operate");
     elasticsearchSchemaManager.createIndices();
     elasticsearchSchemaManager.createTemplates();
-
   }
 
   @Override
-  public void after() {
-    removeAllIndices();
+  protected void finished(Description description) {
+    if (!failed) {
+      TestUtil.removeAllIndices(esClient, operateProperties.getElasticsearch().getIndexPrefix());
+    }
     operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
-
-//    if (haveToClean) {
-//      logger.info("cleaning up elasticsearch on finish");
-//      cleanAndVerify();
-//      refreshIndexesInElasticsearch();
-//    }
   }
 
-  public void removeAllIndices() {
-//    try {
-      logger.info("Removing indices");
-//      esClient.indices().delete(new DeleteIndexRequest(operateProperties.getElasticsearch().getIndexPrefix() + "*"), RequestOptions.DEFAULT);
-//    } catch (IOException ex) {
-      //do nothing
-//    }
-  }
 
-//  public void cleanAndVerify() {
-//    assureElasticsearchIsClean();
-//    cleanUpElasticSearch();
-//  }
-
-
-//  public void cleanUpElasticSearch() {
-//    for (TypeMappingCreator mapping : typeMappingCreators) {
-//      BulkByScrollResponse response = DeleteByQueryAction.INSTANCE.newRequestBuilder(esClient)
-//        .refresh(true)
-//        .filter(matchAllQuery())
-//        .source(mapping.getIndexName())
-//        .execute()
-//        .actionGet();
-//      logger.info("[{}] documents are removed from the index [{}]", response.getDeleted(), mapping.getIndexName());
-//    }
-//  }
-//
   public void refreshIndexesInElasticsearch() {
     try {
-      esClient.indices()
-        .refresh(new RefreshRequest(), RequestOptions.DEFAULT);
-
-      zeebeEsClient.indices()
-        .refresh(new RefreshRequest(), RequestOptions.DEFAULT);
+      esClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
+      zeebeEsClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
     } catch (IndexNotFoundException | IOException e) {
       logger.error(e.getMessage(), e);
       //      nothing to do
@@ -238,24 +210,6 @@ public class ElasticsearchTestRule extends ExternalResource {
     }
     refreshIndexesInElasticsearch();
   }
-
-//  private void assureElasticsearchIsClean() {
-//    try {
-//      SearchResponse response = esClient
-//        .prepareSearch()
-//        .setQuery(matchAllQuery())
-//        .get();
-//      Long hits = response.getHits().getTotalHits();
-//      assertThat("Elasticsearch was expected to be clean!", hits, is(0L));
-//    } catch (IndexNotFoundException e) {
-////      nothing to do
-//    }
-//  }
-
-  public void disableCleanup() {
-    this.haveToClean = false;
-  }
-
 
   public void persistOperateEntitiesNew(List<? extends OperateEntity> operateEntities) throws PersistenceException {
     try {
