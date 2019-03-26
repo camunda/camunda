@@ -20,6 +20,7 @@ package io.zeebe.broker.incident.processor;
 import io.zeebe.broker.logstreams.state.UnpackedObjectValue;
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -28,7 +29,7 @@ import java.util.function.ObjLongConsumer;
 public class IncidentState {
   public static final int MISSING_INCIDENT = -1;
 
-  private final ZeebeDb zeebeDb;
+  private final DbContext dbContext;
 
   /** incident key -> incident record */
   private final DbLong incidentKey;
@@ -49,28 +50,32 @@ public class IncidentState {
 
   private final ColumnFamily<DbLong, DbLong> jobIncidentColumnFamily;
 
-  public IncidentState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
-    this.zeebeDb = zeebeDb;
+  public IncidentState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+    this.dbContext = dbContext;
 
     incidentKey = new DbLong();
     incidenRecordToRead = new UnpackedObjectValue();
     incidenRecordToRead.wrapObject(new IncidentRecord());
     incidentRecordToWrite = new UnpackedObjectValue();
     incidentColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.INCIDENTS, incidentKey, incidenRecordToRead);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.INCIDENTS, dbContext, incidentKey, incidenRecordToRead);
 
     elementInstanceKey = new DbLong();
     workflowInstanceIncidentColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.INCIDENT_WORKFLOW_INSTANCES, elementInstanceKey, incidentKey);
+            ZbColumnFamilies.INCIDENT_WORKFLOW_INSTANCES,
+            dbContext,
+            elementInstanceKey,
+            incidentKey);
 
     jobKey = new DbLong();
     jobIncidentColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.INCIDENT_JOBS, jobKey, incidentKey);
+        zeebeDb.createColumnFamily(ZbColumnFamilies.INCIDENT_JOBS, dbContext, jobKey, incidentKey);
   }
 
   public void createIncident(long incidentKey, IncidentRecord incident) {
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           this.incidentKey.wrapLong(incidentKey);
           this.incidentRecordToWrite.wrapObject(incident);
@@ -100,7 +105,7 @@ public class IncidentState {
     final IncidentRecord incidentRecord = getIncidentRecord(key);
 
     if (incidentRecord != null) {
-      zeebeDb.transaction(
+      dbContext.runInTransaction(
           () -> {
             incidentColumnFamily.delete(incidentKey);
 

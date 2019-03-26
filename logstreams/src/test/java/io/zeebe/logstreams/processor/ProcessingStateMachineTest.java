@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDbTransaction;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -48,7 +48,7 @@ public class ProcessingStateMachineTest {
   @Mock private StreamProcessor streamProcessor;
   @Mock private LogStreamReader logStreamReader;
   @Mock private LogStreamRecordWriter logStreamWriter;
-  @Mock private ZeebeDb zeebeDb;
+  @Mock private DbContext dbContext;
 
   private ZeebeDbTransaction zeebeDbTransaction;
   private ActorControl actor;
@@ -67,7 +67,7 @@ public class ProcessingStateMachineTest {
     when(logStreamWriter.producerId(anyInt())).thenReturn(logStreamWriter);
 
     zeebeDbTransaction = mock(ZeebeDbTransaction.class);
-    when(zeebeDb.transaction()).thenReturn(zeebeDbTransaction);
+    when(dbContext.getCurrentTransaction()).thenReturn(zeebeDbTransaction);
 
     eventProcessor = mock(EventProcessor.class);
 
@@ -87,7 +87,7 @@ public class ProcessingStateMachineTest {
             .setStreamProcessorContext(streamProcessorContext)
             .setMetrics(mock(StreamProcessorMetrics.class))
             .setStreamProcessor(streamProcessor)
-            .setZeebeDb(zeebeDb)
+            .setDbContext(dbContext)
             .setShouldProcessNext(() -> true)
             .setAbortCondition(() -> false)
             .build();
@@ -113,11 +113,11 @@ public class ProcessingStateMachineTest {
     // then
     latch.await();
     final InOrder inOrder =
-        Mockito.inOrder(streamProcessor, eventProcessor, zeebeDb, zeebeDbTransaction);
+        Mockito.inOrder(streamProcessor, eventProcessor, dbContext, zeebeDbTransaction);
 
     // process
     inOrder.verify(streamProcessor, times(1)).onEvent(any());
-    inOrder.verify(zeebeDb, times(1)).transaction();
+    inOrder.verify(dbContext, times(1)).getCurrentTransaction();
     inOrder.verify(zeebeDbTransaction, times(1)).run(any());
 
     // write event
@@ -150,16 +150,16 @@ public class ProcessingStateMachineTest {
     // then
     latch.await();
     final InOrder inOrder =
-        Mockito.inOrder(streamProcessor, eventProcessor, zeebeDb, zeebeDbTransaction);
+        Mockito.inOrder(streamProcessor, eventProcessor, dbContext, zeebeDbTransaction);
 
     // process
     inOrder.verify(streamProcessor, times(1)).onEvent(any());
-    inOrder.verify(zeebeDb, times(1)).transaction();
+    inOrder.verify(dbContext, times(1)).getCurrentTransaction();
     inOrder.verify(zeebeDbTransaction, times(1)).run(any());
 
     // on error
     inOrder.verify(zeebeDbTransaction, times(1)).rollback();
-    inOrder.verify(zeebeDb, times(1)).transaction();
+    inOrder.verify(dbContext, times(1)).getCurrentTransaction();
     inOrder.verify(zeebeDbTransaction, times(1)).run(any());
 
     // write event
@@ -192,11 +192,11 @@ public class ProcessingStateMachineTest {
     // then
     latch.await();
     final InOrder inOrder =
-        Mockito.inOrder(streamProcessor, eventProcessor, zeebeDb, zeebeDbTransaction);
+        Mockito.inOrder(streamProcessor, eventProcessor, dbContext, zeebeDbTransaction);
 
     // process
     inOrder.verify(streamProcessor, times(1)).onEvent(any());
-    inOrder.verify(zeebeDb, times(1)).transaction();
+    inOrder.verify(dbContext, times(1)).getCurrentTransaction();
     inOrder.verify(zeebeDbTransaction, times(1)).run(any());
 
     // write event
@@ -204,7 +204,7 @@ public class ProcessingStateMachineTest {
 
     // on error
     inOrder.verify(zeebeDbTransaction, times(1)).rollback();
-    inOrder.verify(zeebeDb, times(1)).transaction();
+    inOrder.verify(dbContext, times(1)).getCurrentTransaction();
     inOrder.verify(zeebeDbTransaction, times(1)).run(any());
 
     // write event
@@ -237,11 +237,11 @@ public class ProcessingStateMachineTest {
     // then
     latch.await();
     final InOrder inOrder =
-        Mockito.inOrder(streamProcessor, eventProcessor, zeebeDb, zeebeDbTransaction);
+        Mockito.inOrder(streamProcessor, eventProcessor, dbContext, zeebeDbTransaction);
 
     // process
     inOrder.verify(streamProcessor, times(1)).onEvent(any());
-    inOrder.verify(zeebeDb, times(1)).transaction();
+    inOrder.verify(dbContext, times(1)).getCurrentTransaction();
     inOrder.verify(zeebeDbTransaction, times(1)).run(any());
 
     // write event
@@ -252,7 +252,7 @@ public class ProcessingStateMachineTest {
 
     // on error
     inOrder.verify(zeebeDbTransaction, times(1)).rollback();
-    inOrder.verify(zeebeDb, times(1)).transaction();
+    inOrder.verify(dbContext, times(1)).getCurrentTransaction();
     inOrder.verify(zeebeDbTransaction, times(1)).run(any());
 
     // update state
@@ -281,11 +281,11 @@ public class ProcessingStateMachineTest {
     // then
     latch.await();
     final InOrder inOrder =
-        Mockito.inOrder(streamProcessor, eventProcessor, zeebeDb, zeebeDbTransaction);
+        Mockito.inOrder(streamProcessor, eventProcessor, dbContext, zeebeDbTransaction);
 
     // process
     inOrder.verify(streamProcessor, times(1)).onEvent(any());
-    inOrder.verify(zeebeDb, times(1)).transaction();
+    inOrder.verify(dbContext, times(1)).getCurrentTransaction();
     inOrder.verify(zeebeDbTransaction, times(1)).run(any());
 
     // write event

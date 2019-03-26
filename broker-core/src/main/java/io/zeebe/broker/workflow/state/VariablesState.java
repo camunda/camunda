@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.state;
 import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbBuffer;
 import io.zeebe.db.impl.DbCompositeKey;
@@ -81,24 +82,25 @@ public class VariablesState {
 
   private VariableListener listener;
 
-  public VariablesState(ZeebeDb<ZbColumnFamilies> zeebeDb, KeyGenerator keyGenerator) {
+  public VariablesState(
+      ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext, KeyGenerator keyGenerator) {
     this.keyGenerator = keyGenerator;
 
     parentKey = new DbLong();
     childKey = new DbLong();
     childParentColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.ELEMENT_INSTANCE_CHILD_PARENT, childKey, parentKey);
+            ZbColumnFamilies.ELEMENT_INSTANCE_CHILD_PARENT, dbContext, childKey, parentKey);
 
     scopeKey = new DbLong();
     variableName = new DbString();
     scopeKeyVariableNameKey = new DbCompositeKey<>(scopeKey, variableName);
     variablesColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.VARIABLES, scopeKeyVariableNameKey, new VariableInstance());
+            ZbColumnFamilies.VARIABLES, dbContext, scopeKeyVariableNameKey, new VariableInstance());
 
     payloadColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.PAYLOAD, payloadScopeKey, payload);
+        zeebeDb.createColumnFamily(ZbColumnFamilies.PAYLOAD, dbContext, payloadScopeKey, payload);
   }
 
   public void setVariablesLocalFromDocument(long scopeKey, DirectBuffer document) {

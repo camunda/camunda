@@ -19,6 +19,7 @@ package io.zeebe.broker.logstreams.state;
 
 import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.workflow.state.NextValueManager;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.protocol.Protocol;
 
@@ -36,10 +37,12 @@ public class KeyState implements KeyGenerator {
    * generated over all partitions.
    *
    * @param partitionId the partition to determine the key start value
+   * @param dbContext
    */
-  public KeyState(int partitionId, ZeebeDb zeebeDb) {
+  public KeyState(int partitionId, ZeebeDb zeebeDb, DbContext dbContext) {
     keyStartValue = Protocol.encodePartitionId(partitionId, INITIAL_VALUE);
-    nextValueManager = new NextValueManager(keyStartValue, zeebeDb, ZbColumnFamilies.KEY);
+    nextValueManager =
+        new NextValueManager(keyStartValue, zeebeDb, dbContext, ZbColumnFamilies.KEY);
   }
 
   @Override

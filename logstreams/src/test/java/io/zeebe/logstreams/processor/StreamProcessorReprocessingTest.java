@@ -29,6 +29,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
@@ -66,6 +67,7 @@ public class StreamProcessorReprocessingTest {
 
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
+  private DbContext dbContext;
   private final LogStreamRule logStreamRule =
       new LogStreamRule(
           temporaryFolder,
@@ -78,6 +80,13 @@ public class StreamProcessorReprocessingTest {
                       final ZeebeDb<DefaultColumnFamily> db =
                           ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class).createDb(path);
                       zeebeDb = spy(db);
+                      doAnswer(
+                              invocationOnMock -> {
+                                dbContext = (DbContext) spy(invocationOnMock.callRealMethod());
+                                return dbContext;
+                              })
+                          .when(zeebeDb)
+                          .createContext();
                       return zeebeDb;
                     },
                     stateStorage);
@@ -111,7 +120,7 @@ public class StreamProcessorReprocessingTest {
   private ActorFuture<StreamProcessorService> openStreamProcessorControllerAsync(
       Runnable runnable) {
     return openStreamProcessorControllerAsync(
-        zeebeDb -> {
+        (zeebeDb, dbContext) -> {
           createStreamProcessor(zeebeDb);
           runnable.run();
           return streamProcessor;
@@ -250,8 +259,8 @@ public class StreamProcessorReprocessingTest {
               .onEvent(any());
 
           doThrow(new RecoverableException("expected", new RuntimeException("expected")))
-              .when(zeebeDb)
-              .transaction();
+              .when(dbContext)
+              .getCurrentTransaction();
         });
     latch.await();
 
@@ -410,7 +419,7 @@ public class StreamProcessorReprocessingTest {
         LogStreams.createStreamProcessor("read-only", PROCESSOR_ID)
             .logStream(logStreamRule.getLogStream())
             .snapshotController(stateSnapshotController)
-            .streamProcessorFactory(this::createStreamProcessor)
+            .streamProcessorFactory((zeebeDb1, dbContext) -> createStreamProcessor(zeebeDb1))
             .actorScheduler(logStreamRule.getActorScheduler())
             .serviceContainer(logStreamRule.getServiceContainer())
             .readOnly(true);
@@ -469,7 +478,7 @@ public class StreamProcessorReprocessingTest {
             });
 
     // when
-    openStreamProcessorController(zeebeDb -> processor);
+    openStreamProcessorController((zeebeDb, dbContext) -> processor);
 
     // then
     waitUntil(() -> processedRecords.get() == numberOfRecords + 2);
@@ -502,7 +511,7 @@ public class StreamProcessorReprocessingTest {
                 }
               }
             });
-    openStreamProcessorController(zeebeDb -> processor);
+    openStreamProcessorController((zeebeDb, dbContext) -> processor);
 
     // when
     waitUntil(() -> barrier.getNumberWaiting() == 1);

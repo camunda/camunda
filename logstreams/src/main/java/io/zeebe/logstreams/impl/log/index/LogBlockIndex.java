@@ -16,6 +16,7 @@
 package io.zeebe.logstreams.impl.log.index;
 
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.db.impl.DbLong;
@@ -45,6 +46,7 @@ public class LogBlockIndex implements SnapshotSupport {
   private final DbLong blockPosition = new DbLong();
   private final DbLong value = new DbLong();
   private ZeebeDb db;
+  private DbContext context;
 
   private long lastVirtualPosition = -1;
 
@@ -55,8 +57,10 @@ public class LogBlockIndex implements SnapshotSupport {
 
   public void openDb() {
     db = stateSnapshotController.openDb();
+    context = db.createContext();
     blockPositionToAddress =
-        db.createColumnFamily(LogBlockColumnFamilies.BLOCK_POSITION_ADDRESS, blockPosition, value);
+        db.createColumnFamily(
+            LogBlockColumnFamilies.BLOCK_POSITION_ADDRESS, context, blockPosition, value);
   }
 
   public void closeDb() throws Exception {

@@ -22,6 +22,7 @@ import io.zeebe.broker.exporter.context.ExporterContext;
 import io.zeebe.broker.exporter.record.RecordMetadataImpl;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.exporter.api.record.Record;
@@ -59,9 +60,10 @@ public class ExporterStreamProcessor implements StreamProcessor {
 
   public ExporterStreamProcessor(
       ZeebeDb<ExporterColumnFamilies> zeebeDb,
+      DbContext dbContext,
       final int partitionId,
       final Collection<ExporterDescriptor> descriptors) {
-    state = new ExporterStreamProcessorState(zeebeDb);
+    state = new ExporterStreamProcessorState(zeebeDb, dbContext);
 
     this.partitionId = partitionId;
 

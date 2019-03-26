@@ -19,6 +19,7 @@ package io.zeebe.broker.exporter.stream;
 
 import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
@@ -30,11 +31,12 @@ public class ExporterStreamProcessorState {
   private final DbLong position;
   private final ColumnFamily<DbString, DbLong> exporterPositionColumnFamily;
 
-  public ExporterStreamProcessorState(ZeebeDb<ExporterColumnFamilies> zeebeDb) {
+  public ExporterStreamProcessorState(
+      ZeebeDb<ExporterColumnFamilies> zeebeDb, DbContext dbContext) {
     exporterId = new DbString();
     position = new DbLong();
     exporterPositionColumnFamily =
-        zeebeDb.createColumnFamily(ExporterColumnFamilies.DEFAULT, exporterId, position);
+        zeebeDb.createColumnFamily(ExporterColumnFamilies.DEFAULT, dbContext, exporterId, position);
   }
 
   public void setPosition(final String exporterId, final long position) {

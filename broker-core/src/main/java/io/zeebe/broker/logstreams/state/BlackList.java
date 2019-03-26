@@ -18,6 +18,7 @@
 package io.zeebe.broker.logstreams.state;
 
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
@@ -27,10 +28,11 @@ public class BlackList {
   private final ColumnFamily<DbLong, DbNil> blackListColumnFamily;
   private final DbLong workflowInstanceKey;
 
-  public BlackList(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public BlackList(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
     workflowInstanceKey = new DbLong();
     blackListColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.BLACKLIST, workflowInstanceKey, DbNil.INSTANCE);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.BLACKLIST, dbContext, workflowInstanceKey, DbNil.INSTANCE);
   }
 
   public void blacklist(long key) {

@@ -45,7 +45,7 @@ public class ZeebeRocksDbTest {
     final DbString value = new DbString();
     value.wrapString("bar");
     final ColumnFamily<DbString, DbString> columnFamily =
-        db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+        db.createColumnFamily(DefaultColumnFamily.DEFAULT, db.createContext(), key, value);
     columnFamily.put(key, value);
 
     // when
@@ -70,7 +70,7 @@ public class ZeebeRocksDbTest {
     final DbString value = new DbString();
     value.wrapString("bar");
     ColumnFamily<DbString, DbString> columnFamily =
-        db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+        db.createColumnFamily(DefaultColumnFamily.DEFAULT, db.createContext(), key, value);
     columnFamily.put(key, value);
     db.close();
 
@@ -78,7 +78,8 @@ public class ZeebeRocksDbTest {
     db = dbFactory.createDb(pathName);
 
     // then
-    columnFamily = db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+    columnFamily =
+        db.createColumnFamily(DefaultColumnFamily.DEFAULT, db.createContext(), key, value);
     final DbString zbString = columnFamily.get(key);
     assertThat(zbString).isNotNull();
     assertThat(zbString.toString()).isEqualTo("bar");
@@ -99,7 +100,7 @@ public class ZeebeRocksDbTest {
     final DbString value = new DbString();
     value.wrapString("bar");
     ColumnFamily<DbString, DbString> columnFamily =
-        db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+        db.createColumnFamily(DefaultColumnFamily.DEFAULT, db.createContext(), key, value);
     columnFamily.put(key, value);
 
     final File snapshotDir = new File(temporaryFolder.newFolder(), "snapshot");
@@ -111,7 +112,8 @@ public class ZeebeRocksDbTest {
     assertThat(pathName.listFiles()).isNotEmpty();
     db.close();
     db = dbFactory.createDb(snapshotDir);
-    columnFamily = db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+    columnFamily =
+        db.createColumnFamily(DefaultColumnFamily.DEFAULT, db.createContext(), key, value);
 
     // then
     final DbString dbString = columnFamily.get(key);

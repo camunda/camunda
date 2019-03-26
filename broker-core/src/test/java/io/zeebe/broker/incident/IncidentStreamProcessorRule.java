@@ -88,8 +88,8 @@ public class IncidentStreamProcessorRule extends ExternalResource {
         .thenReturn(true);
 
     environmentRule.runStreamProcessor(
-        (typedEventStreamProcessorBuilder, zeebeDb) -> {
-          this.zeebeState = new ZeebeState(zeebeDb);
+        (typedEventStreamProcessorBuilder, zeebeDb, dbContext) -> {
+          this.zeebeState = new ZeebeState(zeebeDb, dbContext);
           this.workflowState = zeebeState.getWorkflowState();
           final BpmnStepProcessor stepProcessor =
               WorkflowEventProcessors.addWorkflowProcessors(

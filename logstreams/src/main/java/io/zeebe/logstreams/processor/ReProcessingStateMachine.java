@@ -15,7 +15,7 @@
  */
 package io.zeebe.logstreams.processor;
 
-import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDbTransaction;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStreamReader;
@@ -104,7 +104,7 @@ public final class ReProcessingStateMachine {
   private final EventFilter eventFilter;
   private final LogStreamReader logStreamReader;
 
-  private final ZeebeDb zeebeDb;
+  private final DbContext dbContext;
   private final RetryStrategy updateStateRetryStrategy;
 
   private final BooleanSupplier abortCondition;
@@ -112,7 +112,7 @@ public final class ReProcessingStateMachine {
   private ReProcessingStateMachine(
       StreamProcessorContext context,
       StreamProcessor streamProcessor,
-      ZeebeDb zeebeDb,
+      DbContext dbContext,
       BooleanSupplier abortCondition) {
     this.actor = context.getActorControl();
     this.streamProcessorName = context.getName();
@@ -120,7 +120,7 @@ public final class ReProcessingStateMachine {
     this.logStreamReader = context.getLogStreamReader();
 
     this.streamProcessor = streamProcessor;
-    this.zeebeDb = zeebeDb;
+    this.dbContext = dbContext;
     this.updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
     this.abortCondition = abortCondition;
   }
@@ -184,7 +184,7 @@ public final class ReProcessingStateMachine {
 
     try {
       // don't execute side effects or write events
-      zeebeDbTransaction = zeebeDb.transaction();
+      zeebeDbTransaction = dbContext.getCurrentTransaction();
       zeebeDbTransaction.run(eventProcessor::processEvent);
       updateState();
     } catch (final RecoverableException recoverableException) {
@@ -231,7 +231,7 @@ public final class ReProcessingStateMachine {
             LOG.error(ERROR_MESSAGE_ROLLBACK_ABORTED, currentEvent, throwable);
           }
           try {
-            zeebeDbTransaction = zeebeDb.transaction();
+            zeebeDbTransaction = dbContext.getCurrentTransaction();
             zeebeDbTransaction.run(() -> eventProcessor.onError(t));
             nextStep.run();
           } catch (Exception ex) {
@@ -267,7 +267,7 @@ public final class ReProcessingStateMachine {
     private StreamProcessor streamProcessor;
 
     private StreamProcessorContext streamProcessorContext;
-    private ZeebeDb zeebeDb;
+    private DbContext dbContext;
     private BooleanSupplier abortCondition;
 
     public ProcessingStateMachineBuilder setStreamProcessor(StreamProcessor streamProcessor) {
@@ -280,8 +280,8 @@ public final class ReProcessingStateMachine {
       return this;
     }
 
-    public ProcessingStateMachineBuilder setZeebeDb(ZeebeDb zeebeDb) {
-      this.zeebeDb = zeebeDb;
+    public ProcessingStateMachineBuilder setDbContext(DbContext dbContext) {
+      this.dbContext = dbContext;
       return this;
     }
 
@@ -293,10 +293,10 @@ public final class ReProcessingStateMachine {
     public ReProcessingStateMachine build() {
       Objects.requireNonNull(streamProcessorContext);
       Objects.requireNonNull(streamProcessor);
-      Objects.requireNonNull(zeebeDb);
+      Objects.requireNonNull(dbContext);
       Objects.requireNonNull(abortCondition);
       return new ReProcessingStateMachine(
-          streamProcessorContext, streamProcessor, zeebeDb, abortCondition);
+          streamProcessorContext, streamProcessor, dbContext, abortCondition);
     }
   }
 }

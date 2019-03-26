@@ -28,6 +28,7 @@ import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
 import io.zeebe.broker.workflow.deployment.distribute.processor.state.DeploymentsState;
 import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
@@ -52,21 +53,21 @@ public class ZeebeState {
   private final IncidentState incidentState;
   private final BlackList blackList;
 
-  public ZeebeState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
-    this(Protocol.DEPLOYMENT_PARTITION, zeebeDb);
+  public ZeebeState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+    this(Protocol.DEPLOYMENT_PARTITION, zeebeDb, dbContext);
   }
 
-  public ZeebeState(int partitionId, ZeebeDb<ZbColumnFamilies> zeebeDb) {
-    keyState = new KeyState(partitionId, zeebeDb);
-    workflowState = new WorkflowState(zeebeDb, keyState);
-    deploymentState = new DeploymentsState(zeebeDb);
-    jobState = new JobState(zeebeDb);
-    messageState = new MessageState(zeebeDb);
-    messageSubscriptionState = new MessageSubscriptionState(zeebeDb);
-    messageStartEventSubscriptionState = new MessageStartEventSubscriptionState(zeebeDb);
-    workflowInstanceSubscriptionState = new WorkflowInstanceSubscriptionState(zeebeDb);
-    incidentState = new IncidentState(zeebeDb);
-    blackList = new BlackList(zeebeDb);
+  public ZeebeState(int partitionId, ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+    keyState = new KeyState(partitionId, zeebeDb, dbContext);
+    workflowState = new WorkflowState(zeebeDb, dbContext, keyState);
+    deploymentState = new DeploymentsState(zeebeDb, dbContext);
+    jobState = new JobState(zeebeDb, dbContext);
+    messageState = new MessageState(zeebeDb, dbContext);
+    messageSubscriptionState = new MessageSubscriptionState(zeebeDb, dbContext);
+    messageStartEventSubscriptionState = new MessageStartEventSubscriptionState(zeebeDb, dbContext);
+    workflowInstanceSubscriptionState = new WorkflowInstanceSubscriptionState(zeebeDb, dbContext);
+    incidentState = new IncidentState(zeebeDb, dbContext);
+    blackList = new BlackList(zeebeDb, dbContext);
   }
 
   public DeploymentsState getDeploymentState() {

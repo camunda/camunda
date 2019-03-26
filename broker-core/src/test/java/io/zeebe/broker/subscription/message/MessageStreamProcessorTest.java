@@ -77,8 +77,8 @@ public class MessageStreamProcessorTest {
 
     streamProcessor =
         rule.runStreamProcessor(
-            (typedEventStreamProcessorBuilder, zeebeDb) -> {
-              final ZeebeState zeebeState = new ZeebeState(zeebeDb);
+            (typedEventStreamProcessorBuilder, zeebeDb, dbContext) -> {
+              final ZeebeState zeebeState = new ZeebeState(zeebeDb, dbContext);
               MessageEventProcessors.addMessageProcessors(
                   typedEventStreamProcessorBuilder,
                   zeebeState,

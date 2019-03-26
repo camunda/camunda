@@ -406,8 +406,8 @@ public class TestStreams {
           .actorScheduler(actorScheduler)
           .serviceContainer(serviceContainer)
           .streamProcessorFactory(
-              zeebeDb -> {
-                currentStreamProcessor.wrap(factory.createProcessor(zeebeDb));
+              (zeebeDb, dbContext) -> {
+                currentStreamProcessor.wrap(factory.createProcessor(zeebeDb, dbContext));
                 return currentStreamProcessor;
               })
           .build()

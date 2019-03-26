@@ -15,9 +15,10 @@
  */
 package io.zeebe.logstreams.processor;
 
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 
 public interface StreamProcessorFactory {
 
-  StreamProcessor createProcessor(ZeebeDb zeebeDb);
+  StreamProcessor createProcessor(ZeebeDb zeebeDb, DbContext dbContext);
 }

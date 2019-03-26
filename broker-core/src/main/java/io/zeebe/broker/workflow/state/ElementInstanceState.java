@@ -22,6 +22,7 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbByte;
 import io.zeebe.db.impl.DbCompositeKey;
@@ -62,25 +63,29 @@ public class ElementInstanceState {
 
   private final VariablesState variablesState;
 
-  public ElementInstanceState(ZeebeDb<ZbColumnFamilies> zeebeDb, KeyGenerator keyGenerator) {
+  public ElementInstanceState(
+      ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext, KeyGenerator keyGenerator) {
 
     elementInstanceKey = new DbLong();
     parentKey = new DbLong();
     parentChildKey = new DbCompositeKey<>(parentKey, elementInstanceKey);
     parentChildColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD, parentChildKey, DbNil.INSTANCE);
+            ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD,
+            dbContext,
+            parentChildKey,
+            DbNil.INSTANCE);
 
     elementInstance = new ElementInstance();
     elementInstanceColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.ELEMENT_INSTANCE_KEY, elementInstanceKey, elementInstance);
+            ZbColumnFamilies.ELEMENT_INSTANCE_KEY, dbContext, elementInstanceKey, elementInstance);
 
     recordKey = new DbLong();
     storedRecord = new StoredRecord();
     recordColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.STORED_INSTANCE_EVENTS, recordKey, storedRecord);
+            ZbColumnFamilies.STORED_INSTANCE_EVENTS, dbContext, recordKey, storedRecord);
 
     recordParentKey = new DbLong();
     stateKey = new DbByte();
@@ -89,10 +94,11 @@ public class ElementInstanceState {
     recordParentChildColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.STORED_INSTANCE_EVENTS_PARENT_CHILD,
+            dbContext,
             recordParentStateRecordKey,
             DbNil.INSTANCE);
 
-    variablesState = new VariablesState(zeebeDb, keyGenerator);
+    variablesState = new VariablesState(zeebeDb, dbContext, keyGenerator);
   }
 
   public ElementInstance newInstance(

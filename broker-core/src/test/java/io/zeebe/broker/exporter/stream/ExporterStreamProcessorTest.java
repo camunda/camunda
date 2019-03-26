@@ -151,7 +151,8 @@ public class ExporterStreamProcessorTest {
     // when
     final StreamProcessorControl control =
         rule.initStreamProcessor(
-            (db) -> new ExporterStreamProcessor(db, PARTITION_ID, descriptors));
+            (db, dbContext) ->
+                new ExporterStreamProcessor(db, dbContext, PARTITION_ID, descriptors));
     control.start();
     assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
 
@@ -188,8 +189,9 @@ public class ExporterStreamProcessorTest {
             "instantiateConfiguration", PojoConfigurationExporter.class, arguments);
 
     rule.runStreamProcessor(
-        (db) ->
-            new ExporterStreamProcessor(db, PARTITION_ID, Collections.singletonList(descriptor)));
+        (db, dbContext) ->
+            new ExporterStreamProcessor(
+                db, dbContext, PARTITION_ID, Collections.singletonList(descriptor)));
 
     // then
     final PojoExporterConfiguration configuration = PojoConfigurationExporter.configuration;
@@ -207,7 +209,8 @@ public class ExporterStreamProcessorTest {
 
     // when
     final StreamProcessorControl control =
-        rule.runStreamProcessor((db) -> createStreamProcessor(db, closedExporters.length));
+        rule.runStreamProcessor(
+            (db, dbContext) -> createStreamProcessor(db, closedExporters.length));
     exporters.get(0).onClose(() -> closedExporters[0] = true);
     exporters.get(1).onClose(() -> closedExporters[1] = true);
 
@@ -229,7 +232,7 @@ public class ExporterStreamProcessorTest {
   public void shouldRestartEachExporterFromCorrectPosition() {
     // given
     final StreamProcessorControl control =
-        rule.runStreamProcessor((db) -> createStreamProcessor(db, 2));
+        rule.runStreamProcessor((db, dbContext) -> createStreamProcessor(db, 2));
     final AtomicLong atomicLong = new AtomicLong();
     control.blockAfterEvent(e -> atomicLong.incrementAndGet() == 2);
 
@@ -269,9 +272,9 @@ public class ExporterStreamProcessorTest {
     // when
     final StreamProcessorControl control =
         rule.initStreamProcessor(
-            (db) -> {
+            (db, dbContext) -> {
               final ExporterStreamProcessor processor =
-                  new ExporterStreamProcessor(db, PARTITION_ID, descriptors);
+                  new ExporterStreamProcessor(db, dbContext, PARTITION_ID, descriptors);
               state = processor.getState();
               return processor;
             });
@@ -290,7 +293,7 @@ public class ExporterStreamProcessorTest {
   @Test
   public void shouldRetryExportingOnException() {
     final StreamProcessorControl control =
-        rule.runStreamProcessor((db) -> createStreamProcessor(db, 3));
+        rule.runStreamProcessor((db, dbContext) -> createStreamProcessor(db, 3));
 
     final AtomicLong failCount = new AtomicLong(3);
     exporters
@@ -329,7 +332,7 @@ public class ExporterStreamProcessorTest {
         r -> controlledTestExporter.getController().scheduleTask(delay, latch::countDown));
 
     final StreamProcessorControl control =
-        rule.runStreamProcessor((db) -> createStreamProcessor(db, mockedExporters));
+        rule.runStreamProcessor((db, dbContext) -> createStreamProcessor(db, mockedExporters));
     final long position = writeEvent();
     control.blockAfterEvent(e -> e.getPosition() >= position);
     TestUtil.waitUntil(control::isBlocked);
@@ -349,7 +352,8 @@ public class ExporterStreamProcessorTest {
     // when
     final StreamProcessorControl control =
         rule.initStreamProcessor(
-            (db) -> new ExporterStreamProcessor(db, PARTITION_ID, descriptors));
+            (db, dbContext) ->
+                new ExporterStreamProcessor(db, dbContext, PARTITION_ID, descriptors));
     final long lowestPosition = writeEvent();
     final long latestPosition = writeExporterEvent(descriptors.get(0).getId(), lowestPosition);
 
@@ -768,7 +772,7 @@ public class ExporterStreamProcessorTest {
   public void shouldUpdateLastExportedPositionOnClose() {
     // given
     final StreamProcessorControl control =
-        rule.initStreamProcessor((db) -> createStreamProcessor(db, 1));
+        rule.initStreamProcessor((db, dbContext) -> createStreamProcessor(db, 1));
     control.start();
 
     final long firstPosition = writeEvent();
@@ -799,11 +803,12 @@ public class ExporterStreamProcessorTest {
 
   private ExporterStreamProcessor createStreamProcessor(
       ZeebeDb db, final List<ExporterDescriptor> exporterDescriptors) {
-    return new ExporterStreamProcessor(db, PARTITION_ID, exporterDescriptors);
+    return new ExporterStreamProcessor(db, db.createContext(), PARTITION_ID, exporterDescriptors);
   }
 
   private ExporterStreamProcessor createStreamProcessor(ZeebeDb db, final int count) {
-    return new ExporterStreamProcessor(db, PARTITION_ID, createMockedExporters(count));
+    return new ExporterStreamProcessor(
+        db, db.createContext(), PARTITION_ID, createMockedExporters(count));
   }
 
   private List<ExporterDescriptor> createMockedExporters(final int count) {
@@ -861,7 +866,7 @@ public class ExporterStreamProcessorTest {
       final Intent intent, final UnpackedObject record, final RecordValue expectedRecordValue) {
     // setup stream processor
     final StreamProcessorControl control =
-        rule.initStreamProcessor((db) -> createStreamProcessor(db, 1));
+        rule.initStreamProcessor((db, dbContext) -> createStreamProcessor(db, 1));
 
     // write event
     final long position = rule.writeEvent(intent, record);
