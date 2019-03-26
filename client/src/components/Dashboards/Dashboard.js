@@ -262,7 +262,7 @@ export default themed(
         const {name, lastModifier, lastModified} = state;
 
         return (
-          <div className="Dashboard">
+          <div className="Dashboard editMode">
             <div className="Dashboard__header">
               <EntityNameForm
                 id={this.id}
