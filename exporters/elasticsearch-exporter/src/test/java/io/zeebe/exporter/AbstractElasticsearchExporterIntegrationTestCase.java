@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.exporter.api;
+package io.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,8 +21,8 @@ import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.util.ElasticsearchForkedJvm;
-import io.zeebe.exporter.api.util.ElasticsearchNode;
+import io.zeebe.exporter.util.ElasticsearchForkedJvm;
+import io.zeebe.exporter.util.ElasticsearchNode;
 import io.zeebe.test.exporter.ExporterIntegrationRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.ZbLogger;
