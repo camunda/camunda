@@ -157,13 +157,53 @@ describe('Instances', () => {
       const FiltersNode = node.find(Filters);
 
       // then
-      expect(FiltersNode.prop('activityIds')[0].label).toEqual('task D');
-      expect(FiltersNode.prop('activityIds')[0].value).toEqual('taskD');
+      expect(FiltersNode.prop('activityIds')[0].label).toEqual('End Event');
+      expect(FiltersNode.prop('activityIds')[0].value).toEqual(
+        'EndEvent_042s0oc'
+      );
       expect(FiltersNode.prop('groupedWorkflows')).toEqual(
         mockProps.groupedWorkflows
       );
       expect(FiltersNode.prop('filter')).toEqual(mockProps.filter);
       expect(FiltersNode.prop('filterCount')).toBe(mockInstances.totalCount);
+    });
+
+    it('should use the flowNode id if no name is available', async () => {
+      // given
+      const customMockProps = {
+        ...mockProps,
+        diagramModel: {
+          bpmnElements: {
+            EndEvent_042s0oc: {
+              id: 'EndEvent_042s0oc',
+              name: undefined,
+              $type: 'bpmn:EndEvent'
+            }
+          }
+        }
+      };
+
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Instances {...customMockProps} />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
+      );
+
+      // when
+      await flushPromises();
+      node.update();
+
+      const FiltersNode = node.find(Filters);
+
+      // then
+      expect(FiltersNode.prop('activityIds')[0].label).toEqual(
+        'EndEvent_042s0oc'
+      );
+      expect(FiltersNode.prop('activityIds')[0].value).toEqual(
+        'EndEvent_042s0oc'
+      );
     });
 
     it('should handle the filter reset', () => {
@@ -267,7 +307,15 @@ describe('Instances', () => {
       expect(DiagramNode.prop('selectedFlowNodeId')).toEqual(
         mockProps.filter.activityId
       );
-      expect(DiagramNode.prop('selectableFlowNodes')).toEqual(['taskD']);
+      expect(DiagramNode.prop('selectableFlowNodes')).toEqual([
+        'taskD',
+        'StartEvent_1',
+        'EndEvent_042s0oc',
+        'timerCatchEvent',
+        'messageCatchEvent',
+        'parallelGateway',
+        'exclusiveGateway'
+      ]);
       expect(DiagramNode.prop('definitions')).toBe(
         mockProps.diagramModel.definitions
       );

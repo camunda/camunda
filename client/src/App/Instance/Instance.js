@@ -281,11 +281,9 @@ export default class Instance extends Component {
     }
 
     // get the last event corresponding to the given flowNodeId (= activityId)
-    const {activityInstanceId, metadata} = events.reduce(
-      (acc, event) =>
-        event.activityInstanceId === treeRowIds[0] ? event : acc,
-      null
-    );
+    const {activityInstanceId, metadata} = events.reduce((acc, event) => {
+      return event.activityInstanceId === treeRowIds[0] ? event : acc;
+    }, null);
 
     // get corresponding start and end dates
     const activityInstance = activityIdToActivityInstanceMap

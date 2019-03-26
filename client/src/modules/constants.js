@@ -11,6 +11,18 @@ export const DIRECTION = {
   LEFT: 'LEFT'
 };
 
+export const FLOWNODE_TYPE = {
+  TASK: 'Task',
+  GATEWAY: 'Gateway',
+  EVENT: 'Event'
+};
+
+export const SELECTABLE_FLOWNODE_TYPES = [
+  FLOWNODE_TYPE.TASK,
+  FLOWNODE_TYPE.GATEWAY,
+  FLOWNODE_TYPE.EVENT
+];
+
 export const FILTER_TYPES = {
   RUNNING: 'running',
   FINISHED: 'finished'

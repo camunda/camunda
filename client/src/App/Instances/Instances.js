@@ -7,8 +7,7 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 
-import {DEFAULT_FILTER} from 'modules/constants';
-
+import {DEFAULT_FILTER, SELECTABLE_FLOWNODE_TYPES} from 'modules/constants';
 import {isEmpty, sortBy} from 'lodash';
 
 import SplitPane from 'modules/components/SplitPane';
@@ -28,7 +27,7 @@ import Selections from './Selections';
 
 import {
   getEmptyDiagramMessage,
-  getTaskNodes,
+  getSelectableActivityIds,
   getWorkflowByVersionFromFilter,
   getWorkflowNameFromFilter
 } from './service';
@@ -78,10 +77,10 @@ export default class Instances extends Component {
       groupedWorkflows
     });
     const workflowName = getWorkflowNameFromFilter({filter, groupedWorkflows});
-    const activityIds = getTaskNodes(this.props.diagramModel.bpmnElements).map(
-      item => {
-        return {value: item.id, label: item.name};
-      }
+
+    const activityIds = getSelectableActivityIds(
+      SELECTABLE_FLOWNODE_TYPES,
+      this.props.diagramModel.bpmnElements
     );
 
     return (
