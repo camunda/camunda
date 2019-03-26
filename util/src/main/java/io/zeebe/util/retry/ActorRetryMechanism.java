@@ -23,7 +23,7 @@ public class ActorRetryMechanism {
 
   private final ActorControl actor;
 
-  private BooleanSupplier currentCallable;
+  private OperationToRetry currentCallable;
   private BooleanSupplier currentTerminateCondition;
   private ActorFuture<Boolean> currentFuture;
 
@@ -32,14 +32,14 @@ public class ActorRetryMechanism {
   }
 
   void wrap(
-      BooleanSupplier callable, BooleanSupplier condition, ActorFuture<Boolean> resultFuture) {
+      OperationToRetry callable, BooleanSupplier condition, ActorFuture<Boolean> resultFuture) {
     currentCallable = callable;
     currentTerminateCondition = condition;
     currentFuture = resultFuture;
   }
 
-  void run() {
-    if (currentCallable.getAsBoolean()) {
+  void run() throws Exception {
+    if (currentCallable.run()) {
       currentFuture.complete(true);
       actor.done();
     } else if (currentTerminateCondition.getAsBoolean()) {

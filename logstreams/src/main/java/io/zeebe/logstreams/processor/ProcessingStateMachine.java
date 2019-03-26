@@ -18,6 +18,7 @@ package io.zeebe.logstreams.processor;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDbTransaction;
 import io.zeebe.logstreams.impl.Loggers;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -90,6 +91,11 @@ public final class ProcessingStateMachine {
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING =
       "Expected to process event '{}' successfully on stream processor '{}', but caught recoverable exception. Retry processing.";
 
+  private static final String LOG_ERROR_EVENT_COMMITTED =
+      "Error event was committed, we continue with processing.";
+  private static final String LOG_ERROR_EVENT_WRITTEN =
+      "Error record was written at {}, we will continue with processing if event was committed. Current commit position is {}.";
+
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
 
   public static ProcessingStateMachineBuilder builder() {
@@ -102,6 +108,7 @@ public final class ProcessingStateMachine {
   private final StreamProcessorMetrics metrics;
   private final StreamProcessor streamProcessor;
   private final EventFilter eventFilter;
+  private final LogStream logStream;
   private final LogStreamReader logStreamReader;
   private final LogStreamRecordWriter logStreamWriter;
 
@@ -126,6 +133,7 @@ public final class ProcessingStateMachine {
     this.eventFilter = context.getEventFilter();
     this.logStreamReader = context.getLogStreamReader();
     this.logStreamWriter = context.logStreamWriter;
+    this.logStream = context.getLogStream();
 
     this.metrics = metrics;
     this.streamProcessor = streamProcessor;
@@ -146,13 +154,25 @@ public final class ProcessingStateMachine {
   private long lastSuccessfulProcessedEventPosition = -1L;
   private long lastWrittenEventPosition = -1L;
 
+  private boolean onErrorHandling;
+  private long errorRecordPosition = -1;
+
   private void skipRecord() {
     actor.submit(this::readNextEvent);
     metrics.incrementEventsSkippedCount();
   }
 
   void readNextEvent() {
-    if (shouldProcessNext.getAsBoolean() && logStreamReader.hasNext() && eventProcessor == null) {
+    if (shouldProcessNext.getAsBoolean()
+        && logStreamReader.hasNext()
+        && eventProcessor == null
+        && logStream.getCommitPosition() >= errorRecordPosition) {
+
+      if (onErrorHandling) {
+        LOG.info(LOG_ERROR_EVENT_COMMITTED);
+        onErrorHandling = false;
+      }
+
       currentEvent = logStreamReader.next();
 
       if (eventFilter == null || eventFilter.applies(currentEvent)) {
@@ -192,11 +212,11 @@ public final class ProcessingStateMachine {
       actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processEvent(currentEvent));
     } catch (final Exception e) {
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, event, streamProcessorName, e);
-      onProcessingError(e, this::writeEvent);
+      onError(e, this::writeEvent);
     }
   }
 
-  private void onProcessingError(Throwable t, Runnable nextStep) {
+  private void onError(Throwable processingException, Runnable nextStep) {
     final ActorFuture<Boolean> retryFuture =
         updateStateRetryStrategy.runWithRetry(
             () -> {
@@ -213,10 +233,11 @@ public final class ProcessingStateMachine {
           }
           try {
             zeebeDbTransaction = dbContext.getCurrentTransaction();
-            zeebeDbTransaction.run(() -> eventProcessor.onError(t));
+            zeebeDbTransaction.run(() -> eventProcessor.onError(processingException));
+            onErrorHandling = true;
             nextStep.run();
           } catch (Exception ex) {
-            onProcessingError(ex, nextStep);
+            onError(ex, nextStep);
           }
         });
   }
@@ -237,7 +258,7 @@ public final class ProcessingStateMachine {
         (bool, t) -> {
           if (t != null) {
             LOG.error(ERROR_MESSAGE_WRITE_EVENT_ABORTED, currentEvent, t);
-            onProcessingError(t, this::writeEvent);
+            onError(t, this::writeEvent);
           } else {
             metrics.incrementEventsWrittenCount();
             updateState();
@@ -260,9 +281,13 @@ public final class ProcessingStateMachine {
           if (throwable != null) {
             LOG.error(
                 ERROR_MESSAGE_UPDATE_STATE_FAILED, currentEvent, streamProcessorName, throwable);
-            onProcessingError(throwable, this::updateState);
+            onError(throwable, this::updateState);
           } else {
 
+            if (onErrorHandling) {
+              errorRecordPosition = eventPosition;
+              LOG.info(LOG_ERROR_EVENT_WRITTEN, errorRecordPosition, logStream.getCommitPosition());
+            }
             lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
             lastWrittenEventPosition = eventPosition;
 

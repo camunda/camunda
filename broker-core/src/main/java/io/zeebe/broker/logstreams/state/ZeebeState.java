@@ -106,14 +106,10 @@ public class ZeebeState {
     return keyState;
   }
 
-  public void blacklist(TypedRecord record) {
-    final UnpackedObject value = record.getValue();
-    if (value instanceof WorkflowInstanceRelated) {
-      final long workflowInstanceKey = ((WorkflowInstanceRelated) value).getWorkflowInstanceKey();
-      if (workflowInstanceKey >= 0) {
-        LOG.warn(BLACKLIST_INSTANCE_MESSAGE, workflowInstanceKey);
-        blackList.blacklist(workflowInstanceKey);
-      }
+  public void blacklist(long workflowInstanceKey) {
+    if (workflowInstanceKey >= 0) {
+      LOG.warn(BLACKLIST_INSTANCE_MESSAGE, workflowInstanceKey);
+      blackList.blacklist(workflowInstanceKey);
     }
   }
 

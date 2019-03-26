@@ -29,7 +29,7 @@ public interface RetryStrategy {
    * @param callable the callable which should be executed
    * @return a future, which is completed with true if the execution was successful
    */
-  ActorFuture<Boolean> runWithRetry(BooleanSupplier callable);
+  ActorFuture<Boolean> runWithRetry(OperationToRetry callable);
 
   /**
    * Runs the given runnable with the defined retry strategy.
@@ -42,5 +42,5 @@ public interface RetryStrategy {
    *     condition returns true the retry strategy is aborted
    * @return a future, which is completed with true if the execution was successful
    */
-  ActorFuture<Boolean> runWithRetry(BooleanSupplier callable, BooleanSupplier terminateCondition);
+  ActorFuture<Boolean> runWithRetry(OperationToRetry callable, BooleanSupplier terminateCondition);
 }

@@ -15,20 +15,19 @@
  */
 package io.zeebe.util.retry;
 
-import io.zeebe.util.exception.RecoverableException;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.BooleanSupplier;
 
-public class RecoverableRetryStrategy implements RetryStrategy {
+public class EndlessRetryStrategy implements RetryStrategy {
 
   private final ActorControl actor;
   private final ActorRetryMechanism retryMechanism;
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier terminateCondition;
 
-  public RecoverableRetryStrategy(ActorControl actor) {
+  public EndlessRetryStrategy(ActorControl actor) {
     this.actor = actor;
     this.retryMechanism = new ActorRetryMechanism(actor);
   }
@@ -52,15 +51,13 @@ public class RecoverableRetryStrategy implements RetryStrategy {
   private void run() {
     try {
       retryMechanism.run();
-    } catch (RecoverableException ex) {
+    } catch (Exception exception) {
       if (terminateCondition.getAsBoolean()) {
+        currentFuture.complete(false);
         actor.done();
       } else {
         actor.yield();
       }
-    } catch (Exception exception) {
-      currentFuture.completeExceptionally(exception);
-      actor.done();
     }
   }
 }

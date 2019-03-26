@@ -60,10 +60,7 @@ public class StreamProcessorController extends Actor {
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   private Phase phase = Phase.REPROCESSING;
 
-  private final boolean isReadOnlyProcessor;
-
   private long snapshotPosition = -1L;
-  private long lastSourceEventPosition = -1L;
 
   private ActorCondition onCommitPositionUpdatedCondition;
 
@@ -72,7 +69,6 @@ public class StreamProcessorController extends Actor {
   private StreamProcessorMetrics metrics;
   private DbContext dbContext;
   private ProcessingStateMachine processingStateMachine;
-  private ReProcessingStateMachine reProcessingStateMachine;
 
   public StreamProcessorController(final StreamProcessorContext context) {
     this.streamProcessorContext = context;
@@ -89,7 +85,6 @@ public class StreamProcessorController extends Actor {
     this.logStreamReader = context.getLogStreamReader();
     this.logStreamWriter = context.getLogStreamWriter();
     this.snapshotPeriod = context.getSnapshotPeriod();
-    this.isReadOnlyProcessor = context.isReadOnlyProcessor();
   }
 
   @Override
@@ -123,12 +118,6 @@ public class StreamProcessorController extends Actor {
       LOG.info(
           "Recovering partition {} from snapshot at position {}", partitionId, snapshotPosition);
 
-      lastSourceEventPosition = seekFromSnapshotPositionToLastSourceEvent();
-      LOG.info(
-          "Reprocessing partition {} until last source event position {}",
-          partitionId,
-          lastSourceEventPosition);
-
       final ZeebeDb zeebeDb = snapshotController.openDb();
       dbContext = zeebeDb.createContext();
       streamProcessor = streamProcessorFactory.createProcessor(zeebeDb, dbContext);
@@ -147,36 +136,32 @@ public class StreamProcessorController extends Actor {
             .setShouldProcessNext(() -> isOpened() && !isSuspended())
             .setAbortCondition(this::isClosed)
             .build();
-
-    reProcessingStateMachine =
-        ReProcessingStateMachine.builder()
-            .setStreamProcessorContext(streamProcessorContext)
-            .setStreamProcessor(streamProcessor)
-            .setDbContext(dbContext)
-            .setAbortCondition(this::isClosed)
-            .build();
   }
 
   @Override
   protected void onActorStarted() {
     try {
-      if (lastSourceEventPosition > snapshotPosition) {
-        final ActorFuture<Void> recoverFuture =
-            reProcessingStateMachine.startRecover(lastSourceEventPosition);
+      final ReProcessingStateMachine reProcessingStateMachine =
+          ReProcessingStateMachine.builder()
+              .setStreamProcessorContext(streamProcessorContext)
+              .setStreamProcessor(streamProcessor)
+              .setDbContext(dbContext)
+              .setAbortCondition(this::isClosed)
+              .build();
 
-        actor.runOnCompletion(
-            recoverFuture,
-            (v, throwable) -> {
-              if (throwable != null) {
-                LOG.error("Unexpected error on recovery happens.", throwable);
-                onFailure();
-              } else {
-                onRecovered();
-              }
-            });
-      } else {
-        onRecovered();
-      }
+      final ActorFuture<Void> recoverFuture =
+          reProcessingStateMachine.startRecover(snapshotPosition);
+
+      actor.runOnCompletion(
+          recoverFuture,
+          (v, throwable) -> {
+            if (throwable != null) {
+              LOG.error("Unexpected error on recovery happens.", throwable);
+              onFailure();
+            } else {
+              onRecovered();
+            }
+          });
     } catch (final RuntimeException e) {
       onFailure();
       throw e;
@@ -214,30 +199,6 @@ public class StreamProcessorController extends Actor {
     }
 
     return isValid;
-  }
-
-  private long seekFromSnapshotPositionToLastSourceEvent() {
-    long lastSourceEventPosition = -1L;
-
-    if (!isReadOnlyProcessor && logStreamReader.hasNext()) {
-      lastSourceEventPosition = snapshotPosition;
-      while (logStreamReader.hasNext()) {
-        final LoggedEvent newEvent = logStreamReader.next();
-
-        // ignore events from other producers
-        if (newEvent.getProducerId() == streamProcessorContext.getId()) {
-          final long sourceEventPosition = newEvent.getSourceEventPosition();
-          if (sourceEventPosition > 0 && sourceEventPosition > lastSourceEventPosition) {
-            lastSourceEventPosition = sourceEventPosition;
-          }
-        }
-      }
-
-      // reset position
-      logStreamReader.seek(snapshotPosition + 1);
-    }
-
-    return lastSourceEventPosition;
   }
 
   private void onRecovered() {
@@ -343,9 +304,11 @@ public class StreamProcessorController extends Actor {
 
     streamProcessorContext.getLogStreamReader().close();
 
-    streamProcessorContext.logStream.removeOnCommitPositionUpdatedCondition(
-        onCommitPositionUpdatedCondition);
-    onCommitPositionUpdatedCondition = null;
+    if (onCommitPositionUpdatedCondition != null) {
+      streamProcessorContext.logStream.removeOnCommitPositionUpdatedCondition(
+          onCommitPositionUpdatedCondition);
+      onCommitPositionUpdatedCondition = null;
+    }
   }
 
   private void onFailure() {

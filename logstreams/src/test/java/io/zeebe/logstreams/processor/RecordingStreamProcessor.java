@@ -44,6 +44,7 @@ public class RecordingStreamProcessor implements StreamProcessor {
           });
 
   private StreamProcessorContext context = null;
+  private long failedEventPosition;
 
   public RecordingStreamProcessor(ZeebeDb zeebeDb) {
     this.zeebeDb = zeebeDb;
@@ -68,6 +69,14 @@ public class RecordingStreamProcessor implements StreamProcessor {
     }
 
     return eventProcessor;
+  }
+
+  @Override
+  public long getFailedPosition(LoggedEvent currentEvent) {
+    if (currentEvent.getPosition() == failedEventPosition) {
+      return failedEventPosition;
+    }
+    return -1;
   }
 
   public static RecordingStreamProcessor createSpy(ZeebeDb db) {
@@ -100,5 +109,9 @@ public class RecordingStreamProcessor implements StreamProcessor {
 
   public int getProcessingFailedCount() {
     return failedEvents.get();
+  }
+
+  public void setFailedEventPosition(long failedEventPosition) {
+    this.failedEventPosition = failedEventPosition;
   }
 }

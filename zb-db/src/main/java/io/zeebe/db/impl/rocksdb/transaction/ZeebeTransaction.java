@@ -72,12 +72,15 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   }
 
   @Override
-  public void run(TransactionOperation operations) {
+  public void run(TransactionOperation operations) throws Exception {
     try {
       operations.run();
-    } catch (Exception ex) {
-      throw new RuntimeException(
-          "Unexpected error occurred during zeebe db transaction operation.", ex);
+    } catch (RocksDBException rdbex) {
+      final String errorMessage = "Unexpected error occurred during RocksDB transaction commit.";
+      if (isRocksDbExceptionRecoverable(rdbex)) {
+        throw new ZeebeDbException(errorMessage, rdbex);
+      }
+      throw rdbex;
     }
   }
 
