@@ -29,7 +29,7 @@ public interface ZeebeDbTransaction {
    * @throws ZeebeDbException is thrown on an unexpected error in the database layer
    * @throws RuntimeException is thrown on an unexpected error in executing the operations
    */
-  void run(TransactionOperation operations);
+  void run(TransactionOperation operations) throws Exception;
 
   /**
    * Commits the transaction and writes the data into the database.

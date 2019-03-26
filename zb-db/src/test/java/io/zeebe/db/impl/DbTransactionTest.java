@@ -105,7 +105,7 @@ public class DbTransactionTest {
   }
 
   @Test
-  public void shouldStartNewTransaction() {
+  public void shouldStartNewTransaction() throws Exception {
     // given
     oneKey.wrapLong(1);
     oneValue.wrapLong(-1);
@@ -134,7 +134,7 @@ public class DbTransactionTest {
   }
 
   @Test
-  public void shouldAccessOnOpenTransaction() {
+  public void shouldAccessOnOpenTransaction() throws Exception {
     // given
     oneKey.wrapLong(1);
     oneValue.wrapLong(-1);
@@ -164,7 +164,7 @@ public class DbTransactionTest {
   }
 
   @Test
-  public void shouldNotReopenTransaction() {
+  public void shouldNotReopenTransaction() throws Exception {
     // given
     final ZeebeDbTransaction transaction = dbContext.getCurrentTransaction();
 
@@ -219,7 +219,7 @@ public class DbTransactionTest {
   }
 
   @Test
-  public void shouldRollbackTransaction() {
+  public void shouldRollbackTransaction() throws Exception {
     // given
     oneKey.wrapLong(1);
     oneValue.wrapLong(-1);
