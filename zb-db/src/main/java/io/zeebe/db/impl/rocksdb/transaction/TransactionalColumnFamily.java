@@ -56,6 +56,7 @@ class TransactionalColumnFamily<
     put(context, key, value);
   }
 
+  @Override
   public void put(DbContext context, KeyType key, ValueType value) {
     transactionDb.put(handle, context, key, value);
   }
@@ -66,10 +67,16 @@ class TransactionalColumnFamily<
   }
 
   public ValueType get(DbContext context, KeyType key) {
+    return get(context, key, valueInstance);
+  }
+
+  @Override
+  public ValueType get(DbContext context, KeyType key, ValueType value) {
     final DirectBuffer valueBuffer = transactionDb.get(handle, context, key);
     if (valueBuffer != null) {
-      valueInstance.wrap(valueBuffer, 0, valueBuffer.capacity());
-      return valueInstance;
+
+      value.wrap(valueBuffer, 0, valueBuffer.capacity());
+      return value;
     }
     return null;
   }
@@ -98,7 +105,16 @@ class TransactionalColumnFamily<
   }
 
   public void whileTrue(DbContext context, KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    transactionDb.whileTrue(handle, context, keyInstance, valueInstance, visitor);
+    whileTrue(context, visitor, keyInstance, valueInstance);
+  }
+
+  @Override
+  public void whileTrue(
+      DbContext context,
+      KeyValuePairVisitor<KeyType, ValueType> visitor,
+      KeyType key,
+      ValueType value) {
+    transactionDb.whileTrue(handle, context, key, value, visitor);
   }
 
   @Override
@@ -144,6 +160,7 @@ class TransactionalColumnFamily<
     return isEmpty(context);
   }
 
+  @Override
   public boolean isEmpty(DbContext context) {
     return transactionDb.isEmpty(handle, context);
   }

@@ -44,12 +44,14 @@ public class LogBlockIndexService implements Service<LogBlockIndex> {
 
   @Override
   public void stop(ServiceStopContext stopContext) {
-    try {
-      logBlockIndex.closeDb();
-    } catch (Exception e) {
-      LOG.error("Couldn't close block index db", e);
+    if (logBlockIndex != null) {
+      try {
+        logBlockIndex.closeDb();
+      } catch (Exception e) {
+        LOG.error("Couldn't close block index db", e);
+      }
+      logBlockIndex = null;
     }
-    logBlockIndex = null;
   }
 
   @Override
