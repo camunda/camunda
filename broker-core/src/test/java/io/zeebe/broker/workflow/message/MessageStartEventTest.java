@@ -123,7 +123,7 @@ public class MessageStartEventTest {
   }
 
   @Test
-  public void shouldMergeMessagePayload() {
+  public void shouldMergeMessageVariables() {
     // given
     testClient.deployWithResponse(createWorkflowWithOneMessageStartEvent());
 

@@ -41,13 +41,12 @@ public interface JobWorkerBuilderStep1 {
      *   &#64;Override
      *   public void handle(JobClient client, JobEvent jobEvent)
      *   {
-     *     String json = jobEvent.getPayload();
-     *     // modify payload
+     *     String json = jobEvent.getVariables();
+     *     // modify variables
      *
      *     client
-     *      .newCompleteCommand()
-     *      .event(jobEvent)
-     *      .payload(json)
+     *      .newCompleteCommand(jobEvent.getKey())
+     *      .variables(json)
      *      .send();
      *   }
      * };
@@ -148,10 +147,9 @@ public interface JobWorkerBuilderStep1 {
     /**
      * Set a list of variable names which should be fetch on job activation.
      *
-     * <p>The jobs which are activated by this worker will only contain variables from this list in
-     * their payload.
+     * <p>The jobs which are activated by this worker will only contain variables from this list.
      *
-     * <p>This can be used to limit the number of variables in the payload of the activated jobs.
+     * <p>This can be used to limit the number of variables of the activated jobs.
      *
      * @param fetchVariables list of variables names to fetch on activation
      * @return the builder for this worker
@@ -161,10 +159,9 @@ public interface JobWorkerBuilderStep1 {
     /**
      * Set a list of variable names which should be fetch on job activation.
      *
-     * <p>The jobs which are activated by this worker will only contain variables from this list in
-     * their payload.
+     * <p>The jobs which are activated by this worker will only contain variables from this list.
      *
-     * <p>This can be used to limit the number of variables in the payload of the activated jobs.
+     * <p>This can be used to limit the number of variables of the activated jobs.
      *
      * @param fetchVariables list of variables names to fetch on activation
      * @return the builder for this worker

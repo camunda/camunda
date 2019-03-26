@@ -129,7 +129,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
               && !correlatedWorkflowInstances.containsLong(workflowInstanceKey)) {
 
             subscriptionState.updateToCorrelatingState(
-                subscription, messageRecord.getPayload(), ActorClock.currentTimeMillis());
+                subscription, messageRecord.getVariables(), ActorClock.currentTimeMillis());
 
             correlatedWorkflowInstances.addLong(workflowInstanceKey);
             correlatedElementInstances.addLong(elementInstanceKey);
@@ -148,7 +148,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
               key,
               messageRecord.getName(),
               messageRecord.getCorrelationKey(),
-              messageRecord.getPayload(),
+              messageRecord.getVariables(),
               messageRecord.getMessageId(),
               messageRecord.getTimeToLive(),
               messageRecord.getTimeToLive() + ActorClock.currentTimeMillis());
@@ -175,7 +175,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
               workflowInstanceKey,
               elementInstanceKey,
               messageRecord.getName(),
-              messageRecord.getPayload());
+              messageRecord.getVariables());
 
       if (!success) {
         return false;
@@ -208,7 +208,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     final long eventKey = keyGenerator.nextKey();
     final boolean wasTriggered =
         scopeEventInstanceState.triggerEvent(
-            workflowKey, eventKey, startEventId, command.getValue().getPayload());
+            workflowKey, eventKey, startEventId, command.getValue().getVariables());
 
     if (wasTriggered) {
       streamWriter.appendNewEvent(eventKey, WorkflowInstanceIntent.EVENT_OCCURRED, record);

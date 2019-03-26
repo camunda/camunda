@@ -33,7 +33,7 @@ import java.util.function.Consumer;
 /** @author Sebastian Menski */
 public abstract class AbstractActivityBuilder<
         B extends AbstractActivityBuilder<B, E>, E extends Activity>
-    extends AbstractFlowNodeBuilder<B, E> implements ZeebePayloadMappingBuilder<B> {
+    extends AbstractFlowNodeBuilder<B, E> implements ZeebeVariablesMappingBuilder<B> {
 
   protected AbstractActivityBuilder(BpmnModelInstance modelInstance, E element, Class<?> selfType) {
     super(modelInstance, element, selfType);

@@ -62,10 +62,10 @@ public class JobFailIncidentTest {
           .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("foo", "foo"))
           .done();
 
-  private static final DirectBuffer PAYLOAD;
+  private static final DirectBuffer VARIABLES;
 
   static {
-    PAYLOAD =
+    VARIABLES =
         MsgPackUtil.encodeMsgPack(
             p -> {
               p.packMapHeader(1);
@@ -87,7 +87,7 @@ public class JobFailIncidentTest {
 
     final long workflowInstanceKey =
         testClient
-            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(PAYLOAD))
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(VARIABLES))
             .getInstanceKey();
 
     // when
@@ -121,7 +121,7 @@ public class JobFailIncidentTest {
 
     final long workflowInstanceKey =
         testClient
-            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(PAYLOAD))
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(VARIABLES))
             .getInstanceKey();
 
     // when
@@ -155,7 +155,7 @@ public class JobFailIncidentTest {
 
     final long workflowInstanceKey =
         testClient
-            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(PAYLOAD))
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(VARIABLES))
             .getInstanceKey();
 
     // when
@@ -185,7 +185,7 @@ public class JobFailIncidentTest {
 
     final long workflowInstanceKey =
         testClient
-            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(PAYLOAD))
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(VARIABLES))
             .getInstanceKey();
 
     failJobWithNoRetriesLeft();
@@ -254,7 +254,7 @@ public class JobFailIncidentTest {
 
     final long workflowInstanceKey =
         testClient
-            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(PAYLOAD))
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(VARIABLES))
             .getInstanceKey();
 
     failJobWithNoRetriesLeft();

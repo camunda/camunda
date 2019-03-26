@@ -15,40 +15,41 @@
  */
 package io.zeebe.test.exporter.record;
 
-import io.zeebe.exporter.api.record.RecordValueWithPayload;
+import io.zeebe.exporter.api.record.RecordValueWithVariables;
 import java.util.Map;
 
-public class MockRecordValueWithPayload extends MockRecordValue implements RecordValueWithPayload {
+public class MockRecordValueWithVariables extends MockRecordValue
+    implements RecordValueWithVariables {
 
-  private Map<String, Object> payload;
+  private Map<String, Object> variables;
 
-  public MockRecordValueWithPayload() {}
+  public MockRecordValueWithVariables() {}
 
-  public MockRecordValueWithPayload(Map<String, Object> payload) {
-    this.payload = payload;
+  public MockRecordValueWithVariables(Map<String, Object> variables) {
+    this.variables = variables;
   }
 
   @Override
-  public String getPayload() {
-    if (payload != null) {
-      return OBJECT_MAPPER.toJson(payload);
+  public String getVariables() {
+    if (variables != null) {
+      return OBJECT_MAPPER.toJson(variables);
     }
 
     return null;
   }
 
-  public MockRecordValueWithPayload setPayload(String payloadAsJson) {
-    this.payload = OBJECT_MAPPER.fromJsonAsMap(payloadAsJson);
+  public MockRecordValueWithVariables setVariables(String variablesAsJson) {
+    this.variables = OBJECT_MAPPER.fromJsonAsMap(variablesAsJson);
     return this;
   }
 
-  public MockRecordValueWithPayload setPayload(Map<String, Object> payload) {
-    this.payload = payload;
+  public MockRecordValueWithVariables setVariables(Map<String, Object> variables) {
+    this.variables = variables;
     return this;
   }
 
   @Override
-  public Map<String, Object> getPayloadAsMap() {
-    return payload;
+  public Map<String, Object> getVariablesAsMap() {
+    return variables;
   }
 }

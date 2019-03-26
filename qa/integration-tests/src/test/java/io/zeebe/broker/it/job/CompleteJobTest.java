@@ -64,7 +64,7 @@ public class CompleteJobTest {
   }
 
   @Test
-  public void shouldCompleteJobWithoutPayload() {
+  public void shouldCompleteJobWithoutVariables() {
     // when
     clientRule.getClient().newCompleteCommand(jobKey).send().join();
 
@@ -72,59 +72,59 @@ public class CompleteJobTest {
     ZeebeAssertHelper.assertJobCompleted(
         "test",
         (job) -> {
-          assertThat(job.getPayload()).isEqualTo("{}");
-          assertThat(job.getPayloadAsMap()).isEmpty();
+          assertThat(job.getVariables()).isEqualTo("{}");
+          assertThat(job.getVariablesAsMap()).isEmpty();
         });
   }
 
   @Test
-  public void shouldCompleteJobNullPayload() {
+  public void shouldCompleteJobNullVariables() {
     // when
-    clientRule.getClient().newCompleteCommand(jobKey).payload("null").send().join();
+    clientRule.getClient().newCompleteCommand(jobKey).variables("null").send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
         "test",
         (job) -> {
-          assertThat(job.getPayload()).isEqualTo("{}");
-          assertThat(job.getPayloadAsMap()).isEmpty();
+          assertThat(job.getVariables()).isEqualTo("{}");
+          assertThat(job.getVariablesAsMap()).isEmpty();
         });
   }
 
   @Test
-  public void shouldCompleteJobWithPayload() {
+  public void shouldCompleteJobWithVariables() {
     // when
-    clientRule.getClient().newCompleteCommand(jobKey).payload("{\"foo\":\"bar\"}").send().join();
+    clientRule.getClient().newCompleteCommand(jobKey).variables("{\"foo\":\"bar\"}").send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
         "test",
         (job) -> {
-          assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-          assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+          assertThat(job.getVariables()).isEqualTo("{\"foo\":\"bar\"}");
+          assertThat(job.getVariablesAsMap()).containsOnly(entry("foo", "bar"));
         });
   }
 
   @Test
-  public void shouldThrowExceptionOnCompleteJobWithInvalidPayload() {
+  public void shouldThrowExceptionOnCompleteJobWithInvalidVariables() {
     // expect
     thrown.expect(ClientStatusException.class);
     thrown.expect(hasStatusCode(Code.INVALID_ARGUMENT));
     thrown.expect(
         descriptionContains(
-            "Property 'payload' is invalid: Expected document to be a root level object, but was 'ARRAY'"));
+            "Property 'variables' is invalid: Expected document to be a root level object, but was 'ARRAY'"));
 
     // when
-    clientRule.getClient().newCompleteCommand(jobKey).payload("[]").send().join();
+    clientRule.getClient().newCompleteCommand(jobKey).variables("[]").send().join();
   }
 
   @Test
-  public void shouldCompleteJobWithPayloadAsMap() {
+  public void shouldCompleteJobWithVariablesAsMap() {
     // when
     clientRule
         .getClient()
         .newCompleteCommand(jobKey)
-        .payload(Collections.singletonMap("foo", "bar"))
+        .variables(Collections.singletonMap("foo", "bar"))
         .send()
         .join();
 
@@ -132,25 +132,25 @@ public class CompleteJobTest {
     ZeebeAssertHelper.assertJobCompleted(
         "test",
         (job) -> {
-          assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-          assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+          assertThat(job.getVariables()).isEqualTo("{\"foo\":\"bar\"}");
+          assertThat(job.getVariablesAsMap()).containsOnly(entry("foo", "bar"));
         });
   }
 
   @Test
-  public void shouldCompleteJobWithPayloadAsObject() {
-    final PayloadObject payload = new PayloadObject();
-    payload.foo = "bar";
+  public void shouldCompleteJobWithVariablesAsObject() {
+    final VariablesObject variables = new VariablesObject();
+    variables.foo = "bar";
 
     // when
-    clientRule.getClient().newCompleteCommand(jobKey).payload(payload).send().join();
+    clientRule.getClient().newCompleteCommand(jobKey).variables(variables).send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
         "test",
         (job) -> {
-          assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-          assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+          assertThat(job.getVariables()).isEqualTo("{\"foo\":\"bar\"}");
+          assertThat(job.getVariablesAsMap()).containsOnly(entry("foo", "bar"));
         });
   }
 
@@ -169,7 +169,7 @@ public class CompleteJobTest {
     jobClient.newCompleteCommand(jobKey).send().join();
   }
 
-  public static class PayloadObject {
+  public static class VariablesObject {
     public String foo;
   }
 }

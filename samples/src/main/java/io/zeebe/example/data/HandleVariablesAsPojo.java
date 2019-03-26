@@ -22,7 +22,7 @@ import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobHandler;
 import java.util.Scanner;
 
-public class HandlePayloadAsPojo {
+public class HandleVariablesAsPojo {
   public static void main(final String[] args) {
     final String broker = "127.0.0.1:26500";
 
@@ -50,14 +50,14 @@ public class HandlePayloadAsPojo {
   private static class DemoJobHandler implements JobHandler {
     @Override
     public void handle(final JobClient client, final ActivatedJob job) {
-      // read the payload of the job
-      final Order order = job.getPayloadAsType(Order.class);
+      // read the variables of the job
+      final Order order = job.getVariablesAsType(Order.class);
       System.out.println("new job with orderId: " + order.getOrderId());
 
-      // update the payload and complete the job
+      // update the variables and complete the job
       order.setTotalPrice(46.50);
 
-      client.newCompleteCommand(job.getKey()).payload(order).send();
+      client.newCompleteCommand(job.getKey()).variables(order).send();
     }
   }
 

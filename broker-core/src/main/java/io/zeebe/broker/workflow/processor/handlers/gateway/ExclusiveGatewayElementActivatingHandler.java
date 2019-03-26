@@ -60,9 +60,9 @@ public class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclus
     final ExecutableSequenceFlow sequenceFlow;
     try {
       final ExecutableExclusiveGateway exclusiveGateway = context.getElement();
-      final DirectBuffer payload = determinePayload(context, exclusiveGateway);
+      final DirectBuffer variables = determineVariables(context, exclusiveGateway);
 
-      sequenceFlow = getSequenceFlowWithFulfilledCondition(exclusiveGateway, payload);
+      sequenceFlow = getSequenceFlowWithFulfilledCondition(exclusiveGateway, variables);
     } catch (JsonConditionException e) {
       context.raiseIncident(ErrorType.CONDITION_ERROR, e.getMessage());
       return false;
@@ -77,7 +77,7 @@ public class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclus
     return true;
   }
 
-  private DirectBuffer determinePayload(
+  private DirectBuffer determineVariables(
       BpmnStepContext<T> context, ExecutableExclusiveGateway exclusiveGateway) {
     final List<ExecutableSequenceFlow> sequenceFlows = exclusiveGateway.getOutgoingWithCondition();
 
@@ -109,12 +109,12 @@ public class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclus
   }
 
   private ExecutableSequenceFlow getSequenceFlowWithFulfilledCondition(
-      ExecutableExclusiveGateway exclusiveGateway, DirectBuffer payload) {
+      ExecutableExclusiveGateway exclusiveGateway, DirectBuffer variables) {
     final List<ExecutableSequenceFlow> sequenceFlows = exclusiveGateway.getOutgoingWithCondition();
 
     for (final ExecutableSequenceFlow sequenceFlow : sequenceFlows) {
       final CompiledJsonCondition compiledCondition = sequenceFlow.getCondition();
-      final boolean isFulFilled = interpreter.eval(compiledCondition, payload);
+      final boolean isFulFilled = interpreter.eval(compiledCondition, variables);
 
       if (isFulFilled) {
         return sequenceFlow;

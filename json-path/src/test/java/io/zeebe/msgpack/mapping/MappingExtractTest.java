@@ -37,7 +37,7 @@ public class MappingExtractTest {
 
   @Test
   public void shouldThrowExceptionIfMappingDoesNotMatchInStrictMode() throws Throwable {
-    // given payload
+    // given variables
     final DirectBuffer sourceDocument = new UnsafeBuffer(EMTPY_OBJECT);
     final Mapping[] mapping = createMapping("foo", "bar");
 

@@ -25,7 +25,7 @@ public class JobRequestStub {
   public static final long DEADLINE = 123;
   public static final String TYPE = "type";
   public static final String WORKER = "worker";
-  public static final DirectBuffer PAYLOAD = MsgPackUtil.asMsgPack("payloadKey", "payloadVal");
+  public static final DirectBuffer VARIABLES = MsgPackUtil.asMsgPack("key", "val");
   public static final DirectBuffer CUSTOM_HEADERS = MsgPackUtil.asMsgPack("headerKey", "headerVal");
   public static final int RETRIES = 456;
 
@@ -45,8 +45,8 @@ public class JobRequestStub {
     return WORKER;
   }
 
-  public DirectBuffer getPayload() {
-    return PAYLOAD;
+  public DirectBuffer getVariables() {
+    return VARIABLES;
   }
 
   public DirectBuffer getCustomHeaders() {
@@ -57,7 +57,7 @@ public class JobRequestStub {
     final JobRecord value = new JobRecord();
     value.setCustomHeaders(CUSTOM_HEADERS);
     value.setDeadline(DEADLINE);
-    value.setPayload(PAYLOAD);
+    value.setVariables(VARIABLES);
     value.setRetries(RETRIES);
     value.setType(TYPE);
     value.setWorker(WORKER);

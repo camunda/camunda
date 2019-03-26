@@ -53,7 +53,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
       BufferUtil.wrapString("contact_points");
   public static final DirectBuffer PARTITIONS_EVENT_TYPE = BufferUtil.wrapString("partitions");
 
-  private final MembershipListener membershipListner = new MembershipListener();
+  private final MembershipListener membershipListener = new MembershipListener();
   private final ContactPointsChangeListener contactPointsChangeListener =
       new ContactPointsChangeListener();
   private final PartitionChangeListener partitionChangeListener = new PartitionChangeListener();
@@ -65,8 +65,8 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
   private final Topology topology;
   private final Gossip gossip;
 
-  private List<TopologyMemberListener> topologyMemberListers = new ArrayList<>();
-  private List<TopologyPartitionListener> topologyPartitionListers = new ArrayList<>();
+  private List<TopologyMemberListener> topologyMemberListeners = new ArrayList<>();
+  private List<TopologyPartitionListener> topologyPartitionListeners = new ArrayList<>();
 
   public TopologyManagerImpl(Gossip gossip, NodeInfo localBroker, ClusterCfg clusterCfg) {
     this.gossip = gossip;
@@ -85,7 +85,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
 
   @Override
   protected void onActorStarting() {
-    gossip.addMembershipListener(membershipListner);
+    gossip.addMembershipListener(membershipListener);
 
     gossip.addCustomEventListener(CONTACT_POINTS_EVENT_TYPE, contactPointsChangeListener);
     gossip.addCustomEventListener(PARTITIONS_EVENT_TYPE, partitionChangeListener);
@@ -256,7 +256,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
   public void addTopologyMemberListener(TopologyMemberListener listener) {
     actor.run(
         () -> {
-          topologyMemberListers.add(listener);
+          topologyMemberListeners.add(listener);
 
           // notify initially
           topology
@@ -272,7 +272,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
   public void removeTopologyMemberListener(TopologyMemberListener listener) {
     actor.run(
         () -> {
-          topologyMemberListers.remove(listener);
+          topologyMemberListeners.remove(listener);
         });
   }
 
@@ -280,7 +280,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
   public void addTopologyPartitionListener(TopologyPartitionListener listener) {
     actor.run(
         () -> {
-          topologyPartitionListers.add(listener);
+          topologyPartitionListeners.add(listener);
 
           // notify initially
           topology
@@ -309,24 +309,24 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
   public void removeTopologyPartitionListener(TopologyPartitionListener listener) {
     actor.run(
         () -> {
-          topologyPartitionListers.remove(listener);
+          topologyPartitionListeners.remove(listener);
         });
   }
 
   private void notifyMemberAdded(NodeInfo memberInfo) {
-    for (TopologyMemberListener listener : topologyMemberListers) {
+    for (TopologyMemberListener listener : topologyMemberListeners) {
       LogUtil.catchAndLog(LOG, () -> listener.onMemberAdded(memberInfo, topology));
     }
   }
 
   private void notifyMemberRemoved(NodeInfo memberInfo) {
-    for (TopologyMemberListener listener : topologyMemberListers) {
+    for (TopologyMemberListener listener : topologyMemberListeners) {
       LogUtil.catchAndLog(LOG, () -> listener.onMemberRemoved(memberInfo, topology));
     }
   }
 
   private void notifyPartitionUpdated(PartitionInfo partitionInfo, NodeInfo member) {
-    for (TopologyPartitionListener listener : topologyPartitionListers) {
+    for (TopologyPartitionListener listener : topologyPartitionListeners) {
       LogUtil.catchAndLog(LOG, () -> listener.onPartitionUpdated(partitionInfo, member));
     }
   }

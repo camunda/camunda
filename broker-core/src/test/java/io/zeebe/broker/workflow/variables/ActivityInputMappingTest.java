@@ -24,7 +24,7 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.SubProcessBuilder;
-import io.zeebe.model.bpmn.builder.ZeebePayloadMappingBuilder;
+import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.util.MsgPackUtil;
@@ -59,7 +59,7 @@ public class ActivityInputMappingTest {
       new RecordingExporterTestWatcher();
 
   @Parameter(0)
-  public String initialPayload;
+  public String initialVariables;
 
   @Parameter(1)
   public Consumer<SubProcessBuilder> mappings;
@@ -111,7 +111,7 @@ public class ActivityInputMappingTest {
             .getWorkflowKey();
 
     // when
-    final DirectBuffer variables = MsgPackUtil.asMsgPack(initialPayload);
+    final DirectBuffer variables = MsgPackUtil.asMsgPack(initialVariables);
     final long workflowInstanceKey =
         apiRule
             .partitionClient()
@@ -137,8 +137,8 @@ public class ActivityInputMappingTest {
         .containsAll(expectedActivityVariables);
   }
 
-  private static Consumer<ZeebePayloadMappingBuilder<SubProcessBuilder>> mapping(
-      Consumer<ZeebePayloadMappingBuilder<SubProcessBuilder>> mappingBuilder) {
+  private static Consumer<ZeebeVariablesMappingBuilder<SubProcessBuilder>> mapping(
+      Consumer<ZeebeVariablesMappingBuilder<SubProcessBuilder>> mappingBuilder) {
     return mappingBuilder;
   }
 

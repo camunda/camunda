@@ -250,12 +250,12 @@ public class ClientApiRule extends ExternalResource {
     publishMessage(messageName, correlationKey, MsgPackUtil.asMsgPack("{}"));
   }
 
-  public void publishMessage(String messageName, String correlationKey, DirectBuffer payload) {
-    publishMessage(messageName, correlationKey, payload, Duration.ofHours(1).toMillis());
+  public void publishMessage(String messageName, String correlationKey, DirectBuffer variables) {
+    publishMessage(messageName, correlationKey, variables, Duration.ofHours(1).toMillis());
   }
 
   public void publishMessage(
-      String messageName, String correlationKey, DirectBuffer payload, long ttl) {
+      String messageName, String correlationKey, DirectBuffer variables, long ttl) {
     final ExecuteCommandResponse response =
         createCmdRequest()
             .partitionId(partitionForCorrelationKey(correlationKey))
@@ -264,7 +264,7 @@ public class ClientApiRule extends ExternalResource {
             .put("name", messageName)
             .put("correlationKey", correlationKey)
             .put("timeToLive", ttl)
-            .put("payload", BufferUtil.bufferAsArray(payload))
+            .put("variables", BufferUtil.bufferAsArray(variables))
             .done()
             .sendAndAwait();
 
@@ -290,7 +290,7 @@ public class ClientApiRule extends ExternalResource {
     completeJob(jobType, MsgPackUtil.asMsgPack("{}"));
   }
 
-  public void completeJob(String jobType, DirectBuffer payload) {
+  public void completeJob(String jobType, DirectBuffer variables) {
     activateJobs(jobType).await();
 
     final Record<JobRecordValue> jobRecord =
@@ -301,7 +301,7 @@ public class ClientApiRule extends ExternalResource {
             .type(ValueType.JOB, JobIntent.COMPLETE)
             .key(jobRecord.getKey())
             .command()
-            .put("payload", BufferUtil.bufferAsArray(payload))
+            .put("variables", BufferUtil.bufferAsArray(variables))
             .done()
             .sendAndAwait();
 

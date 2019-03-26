@@ -90,7 +90,7 @@ public class MessageCorrelationTest {
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
-        .payload(Collections.singletonMap("foo", "bar"))
+        .variables(Collections.singletonMap("foo", "bar"))
         .send()
         .join();
 
@@ -155,7 +155,7 @@ public class MessageCorrelationTest {
         .messageName("order canceled")
         .correlationKey("order-123")
         .timeToLive(Duration.ZERO)
-        .payload(Collections.singletonMap("msg", "failure"))
+        .variables(Collections.singletonMap("msg", "failure"))
         .send()
         .join();
 
@@ -165,7 +165,7 @@ public class MessageCorrelationTest {
         .messageName("order canceled")
         .correlationKey("order-123")
         .timeToLive(Duration.ofMinutes(1))
-        .payload(Collections.singletonMap("msg", "expected"))
+        .variables(Collections.singletonMap("msg", "expected"))
         .send()
         .join();
 

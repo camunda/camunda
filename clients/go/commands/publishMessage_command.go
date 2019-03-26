@@ -38,15 +38,15 @@ type PublishMessageCommandStep3 interface {
 	TimeToLive(duration time.Duration) PublishMessageCommandStep3
 
 	// Expected to be valid JSON string
-	PayloadFromString(string) (PublishMessageCommandStep3, error)
+	VariablesFromString(string) (PublishMessageCommandStep3, error)
 
 	// Expected to construct a valid JSON string
-	PayloadFromStringer(fmt.Stringer) (PublishMessageCommandStep3, error)
+	VariablesFromStringer(fmt.Stringer) (PublishMessageCommandStep3, error)
 
 	// Expected that object is JSON serializable
-	PayloadFromObject(interface{}) (PublishMessageCommandStep3, error)
-	PayloadFromObjectIgnoreOmitempty(interface{}) (PublishMessageCommandStep3, error)
-	PayloadFromMap(map[string]interface{}) (PublishMessageCommandStep3, error)
+	VariablesFromObject(interface{}) (PublishMessageCommandStep3, error)
+	VariablesFromObjectIgnoreOmitempty(interface{}) (PublishMessageCommandStep3, error)
+	VariablesFromMap(map[string]interface{}) (PublishMessageCommandStep3, error)
 }
 
 type DispatchPublishMessageCommand interface {
@@ -66,42 +66,42 @@ func (cmd *PublishMessageCommand) MessageId(messageId string) PublishMessageComm
 	return cmd
 }
 
-func (cmd *PublishMessageCommand) PayloadFromObject(payload interface{}) (PublishMessageCommandStep3, error) {
-	value, err := cmd.AsJson("payload", payload, false)
+func (cmd *PublishMessageCommand) VariablesFromObject(variables interface{}) (PublishMessageCommandStep3, error) {
+	value, err := cmd.AsJson("variables", variables, false)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd.request.Payload = value
+	cmd.request.Variables = value
 	return cmd, nil
 }
 
-func (cmd *PublishMessageCommand) PayloadFromObjectIgnoreOmitempty(payload interface{}) (PublishMessageCommandStep3, error) {
-	value, err := cmd.AsJson("payload", payload, true)
+func (cmd *PublishMessageCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (PublishMessageCommandStep3, error) {
+	value, err := cmd.AsJson("variables", variables, true)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd.request.Payload = value
+	cmd.request.Variables = value
 	return cmd, nil
 }
 
-func (cmd *PublishMessageCommand) PayloadFromMap(payload map[string]interface{}) (PublishMessageCommandStep3, error) {
-	return cmd.PayloadFromObject(payload)
+func (cmd *PublishMessageCommand) VariablesFromMap(variables map[string]interface{}) (PublishMessageCommandStep3, error) {
+	return cmd.VariablesFromObject(variables)
 }
 
-func (cmd *PublishMessageCommand) PayloadFromString(payload string) (PublishMessageCommandStep3, error) {
-	err := cmd.Validate("payload", payload)
+func (cmd *PublishMessageCommand) VariablesFromString(variables string) (PublishMessageCommandStep3, error) {
+	err := cmd.Validate("variables", variables)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd.request.Payload = payload
+	cmd.request.Variables = variables
 	return cmd, nil
 }
 
-func (cmd *PublishMessageCommand) PayloadFromStringer(payload fmt.Stringer) (PublishMessageCommandStep3, error) {
-	return cmd.PayloadFromString(payload.String())
+func (cmd *PublishMessageCommand) VariablesFromStringer(variables fmt.Stringer) (PublishMessageCommandStep3, error) {
+	return cmd.VariablesFromString(variables.String())
 }
 
 func (cmd *PublishMessageCommand) TimeToLive(duration time.Duration) PublishMessageCommandStep3 {

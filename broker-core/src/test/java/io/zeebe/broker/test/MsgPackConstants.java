@@ -25,11 +25,11 @@ public class MsgPackConstants {
   public static final String OTHER_DOCUMENT = "{'string':'bar', 'otherObject':{'testAttr':'test'}}";
   public static final String MERGED_OTHER_WITH_JSON_DOCUMENT =
       "{'string':'bar', 'jsonObject':{'testAttr':'test'}, 'otherObject':{'testAttr':'test'}}";
-  public static final byte[] MSGPACK_PAYLOAD;
-  public static final byte[] OTHER_PAYLOAD;
+  public static final byte[] MSGPACK_VARIABLES;
+  public static final byte[] OTHER_VARIABLES;
 
   static {
-    MSGPACK_PAYLOAD = MsgPackUtil.asMsgPackReturnArray(JSON_DOCUMENT);
-    OTHER_PAYLOAD = MsgPackUtil.asMsgPackReturnArray(OTHER_DOCUMENT);
+    MSGPACK_VARIABLES = MsgPackUtil.asMsgPackReturnArray(JSON_DOCUMENT);
+    OTHER_VARIABLES = MsgPackUtil.asMsgPackReturnArray(OTHER_DOCUMENT);
   }
 }

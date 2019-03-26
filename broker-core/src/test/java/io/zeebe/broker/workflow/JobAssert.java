@@ -31,9 +31,9 @@ public class JobAssert {
     Assertions.assertThat(createJobCmd.getValue()).hasRetries(5).hasType("bar");
   }
 
-  public static void assertJobPayload(Record<JobRecordValue> event, String expectedPayload) {
-    final byte[] payload = MsgPackUtil.asMsgPackReturnArray(event.getValue().getPayload());
-    MsgPackUtil.assertEquality(payload, expectedPayload);
+  public static void assertJobVariables(Record<JobRecordValue> event, String expectedVariables) {
+    final byte[] variables = MsgPackUtil.asMsgPackReturnArray(event.getValue().getVariables());
+    MsgPackUtil.assertEquality(variables, expectedVariables);
   }
 
   public static void assertJobHeaders(long workflowInstanceKey, Record<JobRecordValue> jobRecord) {

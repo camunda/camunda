@@ -69,8 +69,8 @@ import org.junit.rules.RuleChain;
 
 public class ActivateJobsTest {
 
-  public static final String JSON_PAYLOAD = "{\"foo\": \"bar\"}";
-  public static final byte[] PAYLOAD_MSG_PACK = MsgPackUtil.asMsgPackReturnArray(JSON_PAYLOAD);
+  public static final String JSON_VARIABLES = "{\"foo\": \"bar\"}";
+  public static final byte[] VARIABLES_MSG_PACK = MsgPackUtil.asMsgPackReturnArray(JSON_VARIABLES);
   public static final String LONG_CUSTOM_HEADER_VALUE = RandomString.make(128);
 
   public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
@@ -223,7 +223,7 @@ public class ActivateJobsTest {
             entry("deadline", deadline.toEpochMilli()),
             entry("type", jobType));
 
-    MsgPackUtil.assertEquality((byte[]) jobs.get(0).get("payload"), JSON_PAYLOAD);
+    MsgPackUtil.assertEquality((byte[]) jobs.get(0).get("variables"), JSON_VARIABLES);
 
     final Record<JobRecordValue> jobRecord =
         jobRecords(JobIntent.ACTIVATED).withType(jobType).getFirst();
@@ -424,7 +424,7 @@ public class ActivateJobsTest {
             entry("retries", 3L),
             entry("deadline", deadline.toEpochMilli()));
 
-    MsgPackUtil.assertEquality((byte[]) value.get("payload"), "{'foo': 'bar'}");
+    MsgPackUtil.assertEquality((byte[]) value.get("variables"), "{'foo': 'bar'}");
 
     final Map<String, Object> headers = (Map<String, Object>) value.get("headers");
     final Headers jobRecordHeaders = jobRecord.getValue().getHeaders();
@@ -446,11 +446,11 @@ public class ActivateJobsTest {
   @Test
   public void shouldLimitJobsInBatch() {
     // given
-    final int payloadSize = VarDataEncodingEncoder.lengthMaxValue() / 3;
-    final String payload = "{\"key\": \"" + RandomString.make(payloadSize) + "\"}";
+    final int variablesSize = VarDataEncodingEncoder.lengthMaxValue() / 3;
+    final String variables = "{\"key\": \"" + RandomString.make(variablesSize) + "\"}";
 
     // when
-    createJobs(jobType, 3, payload);
+    createJobs(jobType, 3, variables);
     final List<Job> jobs = activateJobs(jobType, 3);
 
     // then
@@ -464,18 +464,18 @@ public class ActivateJobsTest {
   }
 
   private List<Long> createJobs(String jobType, int amount) {
-    return createJobs(jobType, amount, JSON_PAYLOAD);
+    return createJobs(jobType, amount, JSON_VARIABLES);
   }
 
-  private List<Long> createJobs(String jobType, int amount, String payload) {
+  private List<Long> createJobs(String jobType, int amount, String variables) {
     return IntStream.range(0, amount)
         .boxed()
-        .map(i -> createJob(jobType, payload))
+        .map(i -> createJob(jobType, variables))
         .collect(Collectors.toList());
   }
 
-  private long createJob(String jobType, String payload) {
-    return apiRule.partitionClient().createJob(jobType, b -> b.zeebeTaskRetries(3), payload);
+  private long createJob(String jobType, String variables) {
+    return apiRule.partitionClient().createJob(jobType, b -> b.zeebeTaskRetries(3), variables);
   }
 
   private List<Job> activateJobs(int amount) {
@@ -570,7 +570,7 @@ public class ActivateJobsTest {
     return apiRule
         .partitionClient()
         .createWorkflowInstance(
-            r -> r.setBpmnProcessId(processId).setVariables(new UnsafeBuffer(PAYLOAD_MSG_PACK)))
+            r -> r.setBpmnProcessId(processId).setVariables(new UnsafeBuffer(VARIABLES_MSG_PACK)))
         .getInstanceKey();
   }
 

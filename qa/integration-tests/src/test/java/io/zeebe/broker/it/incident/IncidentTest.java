@@ -315,7 +315,7 @@ public class IncidentTest {
       if (failJob) {
         throw new RuntimeException("expected failure");
       } else {
-        client.newCompleteCommand(job.getKey()).payload("{}").send().join();
+        client.newCompleteCommand(job.getKey()).variables("{}").send().join();
         jobCompleteCount.incrementAndGet();
       }
     }

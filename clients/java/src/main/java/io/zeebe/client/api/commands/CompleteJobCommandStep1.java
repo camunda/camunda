@@ -21,38 +21,38 @@ import java.util.Map;
 public interface CompleteJobCommandStep1 extends FinalCommandStep<Void> {
 
   /**
-   * Set the payload to complete the job with.
+   * Set the variables to complete the job with.
    *
-   * @param payload the payload (JSON) as stream
+   * @param variables the variables (JSON) as stream
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  CompleteJobCommandStep1 payload(InputStream payload);
+  CompleteJobCommandStep1 variables(InputStream variables);
 
   /**
-   * Set the payload to complete the job with.
+   * Set the variables to complete the job with.
    *
-   * @param payload the payload (JSON) as String
+   * @param variables the variables (JSON) as String
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  CompleteJobCommandStep1 payload(String payload);
+  CompleteJobCommandStep1 variables(String variables);
 
   /**
-   * Set the payload to complete the job with.
+   * Set the variables to complete the job with.
    *
-   * @param payload the payload as map
+   * @param variables the variables as map
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  CompleteJobCommandStep1 payload(Map<String, Object> payload);
+  CompleteJobCommandStep1 variables(Map<String, Object> variables);
 
   /**
-   * Set the payload to complete the job with.
+   * Set the variables to complete the job with.
    *
-   * @param payload the payload as object
+   * @param variables the variables as object
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  CompleteJobCommandStep1 payload(Object payload);
+  CompleteJobCommandStep1 variables(Object variables);
 }

@@ -32,7 +32,7 @@ func TestSetVariablesCommandWithVariablesFromString(t *testing.T) {
 
 	request := &pb.SetVariablesRequest{
 		ElementInstanceKey: 123,
-		Variables:            variables,
+		Variables:          variables,
 	}
 	stub := &pb.SetVariablesResponse{}
 
@@ -66,7 +66,7 @@ func TestSetVariablesCommandWithVariablesFromStringer(t *testing.T) {
 
 	request := &pb.SetVariablesRequest{
 		ElementInstanceKey: 123,
-		Variables:            variables,
+		Variables:          variables,
 	}
 	stub := &pb.SetVariablesResponse{}
 
@@ -134,7 +134,7 @@ func TestSetVariablesCommandWithVariablesFromObjectOmitempty(t *testing.T) {
 
 	request := &pb.SetVariablesRequest{
 		ElementInstanceKey: 123,
-		Variables:           variables,
+		Variables:          variables,
 	}
 	stub := &pb.SetVariablesResponse{}
 

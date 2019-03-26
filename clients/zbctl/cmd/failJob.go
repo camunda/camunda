@@ -21,8 +21,8 @@ import (
 )
 
 var (
-	failJobKey         int64
-	failJobRetriesFlag int32
+	failJobKey          int64
+	failJobRetriesFlag  int32
 	failJobErrorMessage string
 )
 

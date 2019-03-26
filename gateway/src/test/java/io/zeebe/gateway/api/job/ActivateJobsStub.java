@@ -42,12 +42,12 @@ public class ActivateJobsStub
   public static final long ELEMENT_INSTANCE_KEY = 459L;
 
   public static final String CUSTOM_HEADERS = "{\"foo\": 12, \"bar\": \"val\"}";
-  public static final String PAYLOAD = "{\"foo\": 13, \"bar\": \"world\"}";
+  public static final String VARIABLES = "{\"foo\": 13, \"bar\": \"world\"}";
 
   public static final DirectBuffer CUSTOM_HEADERS_MSGPACK =
       new UnsafeBuffer(MSG_PACK_CONVERTER.convertToMsgPack(CUSTOM_HEADERS));
-  public static final DirectBuffer PAYLOAD_MSGPACK =
-      new UnsafeBuffer(MSG_PACK_CONVERTER.convertToMsgPack(PAYLOAD));
+  public static final DirectBuffer VARIABLES_MSGPACK =
+      new UnsafeBuffer(MSG_PACK_CONVERTER.convertToMsgPack(VARIABLES));
 
   public long getJobBatchKey() {
     return JOB_BATCH_KEY;
@@ -65,8 +65,8 @@ public class ActivateJobsStub
     return CUSTOM_HEADERS;
   }
 
-  public String getPayload() {
-    return PAYLOAD;
+  public String getVariables() {
+    return VARIABLES;
   }
 
   public long getWorkflowInstanceKey() {
@@ -121,7 +121,7 @@ public class ActivateJobsStub
                   .setRetries(RETRIES)
                   .setDeadline(DEADLINE)
                   .setCustomHeaders(CUSTOM_HEADERS_MSGPACK)
-                  .setPayload(PAYLOAD_MSGPACK)
+                  .setVariables(VARIABLES_MSGPACK)
                   .getHeaders()
                   .setWorkflowInstanceKey(WORKFLOW_INSTANCE_KEY)
                   .setBpmnProcessId(BPMN_PROCESS_ID)

@@ -149,7 +149,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .newPublishMessageCommand()
    *  .messageName("order canceled")
    *  .correlationKey(orderId)
-   *  .payload(json)
+   *  .variables(json)
    *  .send();
    * </pre>
    *
@@ -257,13 +257,13 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *   &#64;Override
    *   public void handle(JobClient client, JobEvent jobEvent)
    *   {
-   *     String json = jobEvent.getPayload();
-   *     // modify payload
+   *     String json = jobEvent.getVariables();
+   *     // modify variables
    *
    *     client
    *      .newCompleteCommand()
    *      .event(jobEvent)
-   *      .payload(json)
+   *      .variables(json)
    *      .send();
    *   }
    * };

@@ -386,10 +386,10 @@ public class BpmnElementTypeTest {
       testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId()));
     }
 
-    void executeInstance(Map<String, String> payload) {
+    void executeInstance(Map<String, String> variables) {
       final String json =
           "{ "
-              + payload.entrySet().stream()
+              + variables.entrySet().stream()
                   .map(e -> String.format("\"%s\":\"%s\"", e.getKey(), e.getValue()))
                   .collect(Collectors.joining(","))
               + " }";

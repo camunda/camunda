@@ -57,12 +57,12 @@ public class WorkflowInstanceVariableTypeTest {
       new RecordingExporterTestWatcher();
 
   @Parameter(0)
-  public String payload;
+  public String variables;
 
   @Parameter(1)
   public String expectedValue;
 
-  @Parameters(name = "with payload: {0}")
+  @Parameters(name = "with variables: {0}")
   public static Object[][] parameters() {
     return new Object[][] {
       {"{'x':'foo'}", "\"foo\""},
@@ -83,7 +83,7 @@ public class WorkflowInstanceVariableTypeTest {
   @Test
   public void shouldWriteVariableCreatedEvent() {
     // when
-    final DirectBuffer variables = MsgPackUtil.asMsgPack(payload);
+    final DirectBuffer variables = MsgPackUtil.asMsgPack(this.variables);
     final long workflowInstanceKey =
         apiRule
             .partitionClient()

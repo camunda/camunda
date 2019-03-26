@@ -92,7 +92,7 @@ public class EmbeddedSubProcessTest {
     final Record<JobRecordValue> jobCreatedEvent =
         testClient.receiveFirstJobEvent(JobIntent.CREATED);
     MsgPackUtil.assertEquality(
-        DocumentValue.EMPTY_DOCUMENT, jobCreatedEvent.getValue().getPayload());
+        DocumentValue.EMPTY_DOCUMENT, jobCreatedEvent.getValue().getVariables());
 
     final Headers headers = jobCreatedEvent.getValue().getHeaders();
     Assertions.assertThat(headers).hasElementId("subProcessTask");

@@ -53,7 +53,7 @@ public class ActivateJobsTest {
 
   private static final String JOB_TYPE = "testJob";
   private static final Map<String, Object> CUSTOM_HEADERS = Collections.singletonMap("foo", "bar");
-  private static final Map<String, Object> PAYLOAD = Collections.singletonMap("hello", "world");
+  private static final Map<String, Object> VARIABLES = Collections.singletonMap("hello", "world");
 
   @Rule public ClusteringRule clusteringRule = new ClusteringRule();
   @Rule public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
@@ -103,8 +103,8 @@ public class ActivateJobsTest {
             ActivatedJob::getType,
             ActivatedJob::getWorker,
             ActivatedJob::getCustomHeaders,
-            ActivatedJob::getPayloadAsMap)
-        .containsOnly(tuple(JOB_TYPE, worker, CUSTOM_HEADERS, PAYLOAD));
+            ActivatedJob::getVariablesAsMap)
+        .containsOnly(tuple(JOB_TYPE, worker, CUSTOM_HEADERS, VARIABLES));
 
     final List<Instant> deadlines =
         jobRecords(JobIntent.ACTIVATED)
@@ -172,12 +172,12 @@ public class ActivateJobsTest {
       throws IOException, InterruptedException {
     // given
     final int numJobs = 15;
-    final byte[] payloadBytes =
+    final byte[] variablesBytes =
         StreamUtil.read(
-            ActivateJobsTest.class.getResourceAsStream("/payloads/large_random_payload.json"));
-    final String payload = new String(payloadBytes, Charset.forName("UTF-8"));
+            ActivateJobsTest.class.getResourceAsStream("/variables/large_random_variables.json"));
+    final String variables = new String(variablesBytes, Charset.forName("UTF-8"));
 
-    createJobs(JOB_TYPE, numJobs, payload);
+    createJobs(JOB_TYPE, numJobs, variables);
 
     // when
     final CountDownLatch latch = new CountDownLatch(numJobs);
@@ -211,14 +211,14 @@ public class ActivateJobsTest {
     return createJobs(type, amount, "{\"hello\":\"world\"}");
   }
 
-  private List<Long> createJobs(String type, int amount, String payload) {
+  private List<Long> createJobs(String type, int amount, String variables) {
     return IntStream.range(0, amount)
-        .mapToLong(i -> createJob(type, payload))
+        .mapToLong(i -> createJob(type, variables))
         .boxed()
         .collect(Collectors.toList());
   }
 
-  private long createJob(String type, String payload) {
-    return clientRule.createSingleJob(type, b -> b.zeebeTaskHeader("foo", "bar"), payload);
+  private long createJob(String type, String variables) {
+    return clientRule.createSingleJob(type, b -> b.zeebeTaskHeader("foo", "bar"), variables);
   }
 }

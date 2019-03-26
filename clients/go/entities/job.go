@@ -23,13 +23,13 @@ type Job struct {
 	pb.ActivatedJob
 }
 
-func (job *Job) GetPayloadAsMap() (map[string]interface{}, error) {
-	var payloadMap map[string]interface{}
-	return payloadMap, job.GetPayloadAs(&payloadMap)
+func (job *Job) GetVariablesAsMap() (map[string]interface{}, error) {
+	var variablesMap map[string]interface{}
+	return variablesMap, job.GetVariablesAs(&variablesMap)
 }
 
-func (job *Job) GetPayloadAs(payloadType interface{}) error {
-	return json.Unmarshal([]byte(job.Payload), payloadType)
+func (job *Job) GetVariablesAs(variablesType interface{}) error {
+	return json.Unmarshal([]byte(job.Variables), variablesType)
 }
 
 func (job *Job) GetCustomHeadersAsMap() (map[string]interface{}, error) {

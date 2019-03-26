@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	incidentKey  int64
+	incidentKey int64
 )
 
 var resolveIncidentCommand = &cobra.Command{

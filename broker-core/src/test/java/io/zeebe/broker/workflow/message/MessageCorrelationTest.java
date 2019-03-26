@@ -125,7 +125,7 @@ public class MessageCorrelationTest {
             r.setName("message")
                 .setTimeToLive(1000)
                 .setCorrelationKey("order-123")
-                .setPayload(asMsgPack("foo", "bar"))
+                .setVariables(asMsgPack("foo", "bar"))
                 .setMessageId(messageId));
 
     // then

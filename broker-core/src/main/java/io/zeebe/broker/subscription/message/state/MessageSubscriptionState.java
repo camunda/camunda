@@ -139,8 +139,8 @@ public class MessageSubscriptionState {
   }
 
   public void updateToCorrelatingState(
-      final MessageSubscription subscription, DirectBuffer messagePayload, long sentTime) {
-    subscription.setMessagePayload(messagePayload);
+      final MessageSubscription subscription, DirectBuffer messageVariables, long sentTime) {
+    subscription.setMessageVariables(messageVariables);
     updateSentTime(subscription, sentTime);
   }
 

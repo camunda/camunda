@@ -48,7 +48,7 @@ public class POJOMappingContext {
     jobRecord.setDeadline(System.currentTimeMillis());
     jobRecord.setType(BufferUtil.wrapString("someTaskType"));
 
-    final DirectBuffer payload =
+    final DirectBuffer variables =
         write(
             (w) -> {
               w.writeMapHeader(4);
@@ -61,7 +61,7 @@ public class POJOMappingContext {
               w.writeString(BufferUtil.wrapString("key4"));
               w.writeString(BufferUtil.wrapString("yetAnotherValue"));
             });
-    jobRecord.setPayload(payload);
+    jobRecord.setVariables(variables);
 
     final DirectBuffer headers =
         write(

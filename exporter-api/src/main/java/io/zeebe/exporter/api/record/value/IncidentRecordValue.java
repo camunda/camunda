@@ -60,7 +60,7 @@ public interface IncidentRecordValue extends RecordValue {
   long getJobKey();
 
   /**
-   * @return the key of the element instance to use in order to update the correct payload before
+   * @return the key of the element instance to use in order to update the correct variables before
    *     resolving the incident.
    */
   long getVariableScopeKey();

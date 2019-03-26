@@ -33,11 +33,11 @@ type CompleteJobCommandStep1 interface {
 type CompleteJobCommandStep2 interface {
 	DispatchCompleteJobCommand
 
-	PayloadFromString(string) (DispatchCompleteJobCommand, error)
-	PayloadFromStringer(fmt.Stringer) (DispatchCompleteJobCommand, error)
-	PayloadFromMap(map[string]interface{}) (DispatchCompleteJobCommand, error)
-	PayloadFromObject(interface{}) (DispatchCompleteJobCommand, error)
-	PayloadFromObjectIgnoreOmitempty(interface{}) (DispatchCompleteJobCommand, error)
+	VariablesFromString(string) (DispatchCompleteJobCommand, error)
+	VariablesFromStringer(fmt.Stringer) (DispatchCompleteJobCommand, error)
+	VariablesFromMap(map[string]interface{}) (DispatchCompleteJobCommand, error)
+	VariablesFromObject(interface{}) (DispatchCompleteJobCommand, error)
+	VariablesFromObjectIgnoreOmitempty(interface{}) (DispatchCompleteJobCommand, error)
 }
 
 type CompleteJobCommand struct {
@@ -53,42 +53,42 @@ func (cmd *CompleteJobCommand) JobKey(jobKey int64) CompleteJobCommandStep2 {
 	return cmd
 }
 
-func (cmd *CompleteJobCommand) PayloadFromString(payload string) (DispatchCompleteJobCommand, error) {
-	err := cmd.Validate("payload", payload)
+func (cmd *CompleteJobCommand) VariablesFromString(variables string) (DispatchCompleteJobCommand, error) {
+	err := cmd.Validate("variables", variables)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd.request.Payload = payload
+	cmd.request.Variables = variables
 	return cmd, nil
 }
 
-func (cmd *CompleteJobCommand) PayloadFromStringer(payload fmt.Stringer) (DispatchCompleteJobCommand, error) {
-	return cmd.PayloadFromString(payload.String())
+func (cmd *CompleteJobCommand) VariablesFromStringer(variables fmt.Stringer) (DispatchCompleteJobCommand, error) {
+	return cmd.VariablesFromString(variables.String())
 }
 
-func (cmd *CompleteJobCommand) PayloadFromObject(payload interface{}) (DispatchCompleteJobCommand, error) {
-	value, err := cmd.AsJson("payload", payload, false)
+func (cmd *CompleteJobCommand) VariablesFromObject(variables interface{}) (DispatchCompleteJobCommand, error) {
+	value, err := cmd.AsJson("variables", variables, false)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd.request.Payload = value
+	cmd.request.Variables = value
 	return cmd, nil
 }
 
-func (cmd *CompleteJobCommand) PayloadFromObjectIgnoreOmitempty(payload interface{}) (DispatchCompleteJobCommand, error) {
-	value, err := cmd.AsJson("payload", payload, true)
+func (cmd *CompleteJobCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (DispatchCompleteJobCommand, error) {
+	value, err := cmd.AsJson("variables", variables, true)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd.request.Payload = value
+	cmd.request.Variables = value
 	return cmd, nil
 }
 
-func (cmd *CompleteJobCommand) PayloadFromMap(payload map[string]interface{}) (DispatchCompleteJobCommand, error) {
-	return cmd.PayloadFromObject(payload)
+func (cmd *CompleteJobCommand) VariablesFromMap(variables map[string]interface{}) (DispatchCompleteJobCommand, error) {
+	return cmd.VariablesFromObject(variables)
 }
 
 func (cmd *CompleteJobCommand) Send() (*pb.CompleteJobResponse, error) {

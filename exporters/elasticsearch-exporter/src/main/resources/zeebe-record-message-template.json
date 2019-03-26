@@ -24,7 +24,7 @@
             "timeToLive": {
               "type": "long"
             },
-            "payload": {
+            "variables": {
               "type": "text"
             }
           }

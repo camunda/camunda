@@ -106,9 +106,9 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
 
     // collect jobs for activation
     variableNames.clear();
-    final ValueArray<StringValue> variables = value.variables();
+    final ValueArray<StringValue> jobBatchVariables = value.variables();
 
-    variables.forEach(
+    jobBatchVariables.forEach(
         v -> {
           final MutableDirectBuffer nameCopy = new UnsafeBuffer(new byte[v.getValue().capacity()]);
           nameCopy.putBytes(0, v.getValue(), 0, v.getValue().capacity());
@@ -122,13 +122,13 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
           final long deadline = currentTimeMillis() + value.getTimeout();
           jobRecord.setDeadline(deadline).setWorker(value.getWorker());
 
-          // fetch and set payload, required here to already have the full size of the job record
+          // fetch and set variables, required here to already have the full size of the job record
           final long elementInstanceKey = jobRecord.getHeaders().getElementInstanceKey();
           if (elementInstanceKey >= 0) {
-            final DirectBuffer payload = collectPayload(variableNames, elementInstanceKey);
-            jobRecord.setPayload(payload);
+            final DirectBuffer variables = collectVariables(variableNames, elementInstanceKey);
+            jobRecord.setVariables(variables);
           } else {
-            jobRecord.setPayload(DocumentValue.EMPTY_DOCUMENT);
+            jobRecord.setVariables(DocumentValue.EMPTY_DOCUMENT);
           }
 
           if (remainingAmount >= 0
@@ -172,15 +172,15 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
     }
   }
 
-  private DirectBuffer collectPayload(
+  private DirectBuffer collectVariables(
       Collection<DirectBuffer> variableNames, long elementInstanceKey) {
-    final DirectBuffer payload;
+    final DirectBuffer variables;
     if (variableNames.isEmpty()) {
-      payload = variablesState.getVariablesAsDocument(elementInstanceKey);
+      variables = variablesState.getVariablesAsDocument(elementInstanceKey);
     } else {
-      payload = variablesState.getVariablesAsDocument(elementInstanceKey, variableNames);
+      variables = variablesState.getVariablesAsDocument(elementInstanceKey, variableNames);
     }
-    return payload;
+    return variables;
   }
 
   private void rejectCommand(

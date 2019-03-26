@@ -26,9 +26,9 @@ const (
 )
 
 var (
-	activateJobsAmountFlag  int32
-	activateJobsWorkerFlag  string
-	activateJobsTimeoutFlag time.Duration
+	activateJobsAmountFlag         int32
+	activateJobsWorkerFlag         string
+	activateJobsTimeoutFlag        time.Duration
 	activateJobsFetchVariablesFlag []string
 )
 

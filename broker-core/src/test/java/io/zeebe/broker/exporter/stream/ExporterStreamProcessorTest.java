@@ -120,10 +120,10 @@ import org.junit.Test;
 public class ExporterStreamProcessorTest {
   private static final int PARTITION_ID = 1;
   private static final ExporterObjectMapper OBJECT_MAPPER = new ExporterObjectMapper();
-  private static final Map<String, Object> PAYLOAD = Collections.singletonMap("foo", "bar");
-  private static final String PAYLOAD_JSON = OBJECT_MAPPER.toJson(PAYLOAD);
-  private static final DirectBuffer PAYLOAD_MSGPACK =
-      new UnsafeBuffer(OBJECT_MAPPER.toMsgpack(PAYLOAD));
+  private static final Map<String, Object> VARIABLES = Collections.singletonMap("foo", "bar");
+  private static final String VARIABLES_JSON = OBJECT_MAPPER.toJson(VARIABLES);
+  private static final DirectBuffer VARIABLES_MSGPACK =
+      new UnsafeBuffer(OBJECT_MAPPER.toMsgpack(VARIABLES));
   private static final Map<String, Object> CUSTOM_HEADERS =
       Collections.singletonMap("workerVersion", 42);
   private static final DirectBuffer CUSTOM_HEADERS_MSGPACK =
@@ -465,7 +465,7 @@ public class ExporterStreamProcessorTest {
         new JobRecord()
             .setWorker(wrapString(worker))
             .setType(wrapString(type))
-            .setPayload(PAYLOAD_MSGPACK)
+            .setVariables(VARIABLES_MSGPACK)
             .setRetries(retries)
             .setDeadline(deadline)
             .setErrorMessage("failed message");
@@ -483,7 +483,7 @@ public class ExporterStreamProcessorTest {
     final JobRecordValue recordValue =
         new io.zeebe.broker.exporter.record.value.JobRecordValueImpl(
             OBJECT_MAPPER,
-            PAYLOAD_JSON,
+            VARIABLES_JSON,
             type,
             worker,
             Instant.ofEpochMilli(deadline),
@@ -514,13 +514,13 @@ public class ExporterStreamProcessorTest {
         new MessageRecord()
             .setCorrelationKey(wrapString(correlationKey))
             .setName(wrapString(messageName))
-            .setPayload(PAYLOAD_MSGPACK)
+            .setVariables(VARIABLES_MSGPACK)
             .setTimeToLive(timeToLive)
             .setMessageId(wrapString(messageId));
 
     final MessageRecordValue recordValue =
         new io.zeebe.broker.exporter.record.value.MessageRecordValueImpl(
-            OBJECT_MAPPER, PAYLOAD_JSON, messageName, messageId, correlationKey, timeToLive);
+            OBJECT_MAPPER, VARIABLES_JSON, messageName, messageId, correlationKey, timeToLive);
 
     // then
     assertRecordExported(MessageIntent.PUBLISHED, record, recordValue);
@@ -615,11 +615,11 @@ public class ExporterStreamProcessorTest {
             .setMessageName(wrapString(messageName))
             .setSubscriptionPartitionId(subscriptionPartitionId)
             .setWorkflowInstanceKey(workflowInstanceKey)
-            .setPayload(PAYLOAD_MSGPACK);
+            .setVariables(VARIABLES_MSGPACK);
 
     final WorkflowInstanceSubscriptionRecordValue recordValue =
         new WorkflowInstanceSubscriptionRecordValueImpl(
-            OBJECT_MAPPER, PAYLOAD_JSON, messageName, workflowInstanceKey, activityInstanceKey);
+            OBJECT_MAPPER, VARIABLES_JSON, messageName, workflowInstanceKey, activityInstanceKey);
 
     // then
     assertRecordExported(WorkflowInstanceSubscriptionIntent.OPENED, record, recordValue);
@@ -654,7 +654,7 @@ public class ExporterStreamProcessorTest {
     jobRecord
         .setWorker(wrapString(worker))
         .setType(wrapString(type))
-        .setPayload(PAYLOAD_MSGPACK)
+        .setVariables(VARIABLES_MSGPACK)
         .setRetries(3)
         .setErrorMessage("failed message")
         .setDeadline(1000L);
@@ -671,7 +671,7 @@ public class ExporterStreamProcessorTest {
     final JobRecordValueImpl jobRecordValue =
         new JobRecordValueImpl(
             OBJECT_MAPPER,
-            PAYLOAD_JSON,
+            VARIABLES_JSON,
             type,
             worker,
             Instant.ofEpochMilli(1000L),

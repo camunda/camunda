@@ -193,12 +193,12 @@ public class CreateWorkflowInstanceProcessorTest
   @Test
   public void shouldActivateElementInstance() {
     // given
-    final DirectBuffer payload =
+    final DirectBuffer variables =
         MsgPackUtil.asMsgPack(Maps.of(entry("foo", "bar"), entry("baz", "boz")));
     final DeployedWorkflow workflow = deployNewWorkflow();
     final TypedRecord<WorkflowInstanceCreationRecord> command =
         newCommand(WorkflowInstanceCreationRecord.class);
-    command.getValue().setBpmnProcessId(workflow.getBpmnProcessId()).setVariables(payload);
+    command.getValue().setBpmnProcessId(workflow.getBpmnProcessId()).setVariables(variables);
 
     // when
     processor.onCommand(command, controller, streamWriter);

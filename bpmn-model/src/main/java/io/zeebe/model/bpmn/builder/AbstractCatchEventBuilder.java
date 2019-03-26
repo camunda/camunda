@@ -36,7 +36,7 @@ import java.util.function.Consumer;
 /** @author Sebastian Menski */
 public abstract class AbstractCatchEventBuilder<
         B extends AbstractCatchEventBuilder<B, E>, E extends CatchEvent>
-    extends AbstractEventBuilder<B, E> implements ZeebePayloadMappingBuilder<B> {
+    extends AbstractEventBuilder<B, E> implements ZeebeVariablesMappingBuilder<B> {
 
   protected AbstractCatchEventBuilder(
       BpmnModelInstance modelInstance, E element, Class<?> selfType) {

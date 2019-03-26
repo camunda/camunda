@@ -13,16 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util.buffer;
+package io.zeebe.model.bpmn.builder;
 
-import java.nio.ByteBuffer;
-import org.agrona.DirectBuffer;
+public interface ZeebeVariablesMappingBuilder<B> {
 
-public interface PayloadRequestWriter extends RequestWriter {
+  B zeebeInput(String source, String target);
 
-  void payload(byte[] payload, int offset, int length);
-
-  void payload(DirectBuffer buffer, int offset, int length);
-
-  void payload(ByteBuffer byteBuffer);
+  B zeebeOutput(String source, String target);
 }

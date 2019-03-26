@@ -105,8 +105,8 @@ public class MessageSubscriptionStateTest {
     assertThat(subscriptions.get(0).getMessageName()).isEqualTo(subscription.getMessageName());
     assertThat(subscriptions.get(0).getCorrelationKey())
         .isEqualTo(subscription.getCorrelationKey());
-    assertThat(subscriptions.get(0).getMessagePayload())
-        .isEqualTo(subscription.getMessagePayload());
+    assertThat(subscriptions.get(0).getMessageVariables())
+        .isEqualTo(subscription.getMessageVariables());
     assertThat(subscriptions.get(0).getCommandSentTime())
         .isEqualTo(subscription.getCommandSentTime());
   }
@@ -265,8 +265,8 @@ public class MessageSubscriptionStateTest {
         subscription.getMessageName(), subscription.getCorrelationKey(), subscriptions::add);
 
     assertThat(subscriptions).hasSize(1);
-    assertThat(subscriptions.get(0).getMessagePayload())
-        .isEqualTo(subscription.getMessagePayload());
+    assertThat(subscriptions.get(0).getMessageVariables())
+        .isEqualTo(subscription.getMessageVariables());
 
     // and
     final List<Long> keys = new ArrayList<>();

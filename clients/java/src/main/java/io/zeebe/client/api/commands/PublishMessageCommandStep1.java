@@ -66,39 +66,39 @@ public interface PublishMessageCommandStep1 {
     PublishMessageCommandStep3 timeToLive(Duration timeToLive);
 
     /**
-     * Set the payload of the message.
+     * Set the variables of the message.
      *
-     * @param payload the payload (JSON) as stream
+     * @param variables the variables (JSON) as stream
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    PublishMessageCommandStep3 payload(InputStream payload);
+    PublishMessageCommandStep3 variables(InputStream variables);
 
     /**
-     * Set the payload of the message.
+     * Set the variables of the message.
      *
-     * @param payload the payload (JSON) as String
+     * @param variables the variables (JSON) as String
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    PublishMessageCommandStep3 payload(String payload);
+    PublishMessageCommandStep3 variables(String variables);
 
     /**
-     * Set the payload of the message.
+     * Set the variables of the message.
      *
-     * @param payload the payload as map
+     * @param variables the variables as map
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    PublishMessageCommandStep3 payload(Map<String, Object> payload);
+    PublishMessageCommandStep3 variables(Map<String, Object> variables);
 
     /**
-     * Set the payload of the message.
+     * Set the variables of the message.
      *
-     * @param payload the payload as object
+     * @param variables the variables as object
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    PublishMessageCommandStep3 payload(Object payload);
+    PublishMessageCommandStep3 variables(Object variables);
   }
 }
