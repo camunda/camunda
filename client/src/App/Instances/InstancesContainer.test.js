@@ -691,7 +691,7 @@ describe('InstancesContainer', () => {
       const InstancesNode = node.find('Instances');
 
       // when
-      InstancesNode.prop('onFilterReset')();
+      InstancesNode.prop('onFilterReset')(DEFAULT_FILTER);
 
       // then
       expect(pushMock).toHaveBeenCalled();
@@ -759,7 +759,7 @@ describe('InstancesContainer', () => {
       node.update();
 
       // when
-      node.find('Instances').prop('onFilterReset')();
+      node.find('Instances').prop('onFilterReset')(DEFAULT_FILTER);
       await flushPromises();
       node.update();
 

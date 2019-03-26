@@ -79,7 +79,6 @@ class InstancesContainer extends Component {
     if (prevProps.location.search !== this.props.location.search) {
       this.setFilterFromUrl();
     }
-
     // if any of these change, re-fetch workflowInstances
     const hasFirstElementChanged =
       prevState.firstElement !== this.state.firstElement;
@@ -193,9 +192,9 @@ class InstancesContainer extends Component {
     }
   };
 
-  handleFilterReset = async () => {
-    if (!isEqual(DEFAULT_FILTER, this.state.filter)) {
-      await this.setFilterFromInput(DEFAULT_FILTER);
+  handleFilterReset = async fallbackFilter => {
+    if (!isEqual(fallbackFilter, this.state.filter)) {
+      await this.setFilterFromInput(fallbackFilter);
     }
   };
 
