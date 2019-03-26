@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.exporter.api;
+package io.zeebe.exporter;
 
-import io.zeebe.exporter.api.util.ElasticsearchNode;
+import io.zeebe.exporter.util.ElasticsearchNode;
 import java.util.function.Consumer;
 import org.junit.Test;
 import org.junit.runner.RunWith;

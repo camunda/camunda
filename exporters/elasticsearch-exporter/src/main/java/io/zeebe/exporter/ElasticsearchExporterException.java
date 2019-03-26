@@ -13,23 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.exporter.api.util;
+package io.zeebe.exporter;
 
-import org.apache.http.HttpHost;
+public class ElasticsearchExporterException extends RuntimeException {
 
-public interface ElasticsearchNode<SELF extends ElasticsearchNode> {
+  public ElasticsearchExporterException(String message) {
+    super(message);
+  }
 
-  void start();
-
-  void stop();
-
-  SELF withXpack();
-
-  SELF withUser(String username, String password);
-
-  SELF withJavaOptions(String... options);
-
-  SELF withKeyStore(String keyStore);
-
-  HttpHost getRestHttpHost();
+  public ElasticsearchExporterException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }
