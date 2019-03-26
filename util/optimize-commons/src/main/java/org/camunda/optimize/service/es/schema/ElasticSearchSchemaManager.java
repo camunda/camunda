@@ -46,20 +46,28 @@ public class ElasticSearchSchemaManager {
   private static final ToXContent.Params XCONTENT_PARAMS_FLAT_SETTINGS =
     new ToXContent.MapParams(Collections.singletonMap("flat_settings", "true"));
 
+  private final ElasticsearchMetadataService metadataService;
+
   private ConfigurationService configurationService;
   private List<TypeMappingCreator> mappings;
   private ObjectMapper objectMapper;
 
   @Autowired
-  public ElasticSearchSchemaManager(ConfigurationService configurationService,
-                                    List<TypeMappingCreator> mappings,
-                                    ObjectMapper objectMapper) {
+  public ElasticSearchSchemaManager(final ElasticsearchMetadataService metadataService,
+                                    final ConfigurationService configurationService,
+                                    final List<TypeMappingCreator> mappings,
+                                    final ObjectMapper objectMapper) {
+    this.metadataService = metadataService;
     this.configurationService = configurationService;
     this.mappings = mappings;
     this.objectMapper = objectMapper;
   }
 
-  public void initializeSchema(RestHighLevelClient esClient) {
+  public void validateExistingSchemaVersion(final RestHighLevelClient esClient) {
+    metadataService.validateSchemaVersionCompatibility(esClient);
+  }
+
+  public void initializeSchema(final RestHighLevelClient esClient) {
     unblockIndices(esClient);
     if (!schemaAlreadyExists(esClient)) {
       logger.info("Initializing Optimize schema...");
@@ -68,6 +76,7 @@ public class ElasticSearchSchemaManager {
     } else {
       updateAllMappingsAndDynamicSettings(esClient);
     }
+    metadataService.initMetadataVersionIfMissing(esClient);
   }
 
   public void addMapping(TypeMappingCreator mapping) {
@@ -142,6 +151,7 @@ public class ElasticSearchSchemaManager {
 
     disableAutomaticIndexCreation(esClient);
   }
+
 
   private void updateAllMappingsAndDynamicSettings(RestHighLevelClient esClient) {
     logger.info("Updating Optimize schema...");

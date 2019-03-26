@@ -1,6 +1,8 @@
 package org.camunda.optimize.upgrade.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -24,7 +26,10 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    underTest = new ValidationService(new ConfigurationService());
+    underTest = new ValidationService(
+      new ConfigurationService(),
+      new ElasticsearchMetadataService(new ObjectMapper())
+    );
     initSchema(Lists.newArrayList(METADATA_TYPE));
   }
 
@@ -41,9 +46,9 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
   }
 
   @Test
-  public void versionValidationBreaksWithoutMatchingVersion() throws Exception {
+  public void versionValidationBreaksWithoutMatchingVersion() {
     //given
-    addVersionToElasticsearch("Test");
+    setMetadataIndexVersion("Test");
 
     try {
       //when
@@ -58,9 +63,9 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
   }
 
   @Test
-  public void versionValidationPassesWithMatchingVersion() throws Exception {
+  public void versionValidationPassesWithMatchingVersion() {
     //given
-    addVersionToElasticsearch("2.0");
+    setMetadataIndexVersion("2.0");
 
     //when
     underTest.validateVersions(restClient, "2.0", "2.1");
@@ -69,9 +74,9 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
   }
 
   @Test
-  public void toVersionIsNotAllowedToBeNull() throws Exception {
+  public void toVersionIsNotAllowedToBeNull() {
     //given
-    addVersionToElasticsearch("2.0");
+    setMetadataIndexVersion("2.0");
 
     try {
       //when
@@ -86,9 +91,9 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
   }
 
   @Test
-  public void toVersionIsNotAllowedToBeEmptyString() throws Exception {
+  public void toVersionIsNotAllowedToBeEmptyString() {
     //given
-    addVersionToElasticsearch("2.0");
+    setMetadataIndexVersion("2.0");
 
     try {
       //when

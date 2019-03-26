@@ -18,7 +18,6 @@ import java.io.IOException;
 
 import static org.camunda.optimize.service.util.ESVersionChecker.checkESVersionSupport;
 
-
 public class SchemaInitializingElasticsearchRestClientFactory
   implements FactoryBean<RestHighLevelClient>, DisposableBean {
   private final static Logger logger = LoggerFactory.getLogger(SchemaInitializingElasticsearchRestClientFactory.class);
@@ -30,12 +29,12 @@ public class SchemaInitializingElasticsearchRestClientFactory
   private final BackoffCalculator backoffCalculator;
 
   @Autowired
-  public SchemaInitializingElasticsearchRestClientFactory(ConfigurationService configurationService,
-                                                          BackoffCalculator backoffCalculator,
-                                                          ElasticSearchSchemaManager elasticSearchSchemaManager) {
+  public SchemaInitializingElasticsearchRestClientFactory(final ConfigurationService configurationService,
+                                                          final ElasticSearchSchemaManager elasticSearchSchemaManager,
+                                                          final BackoffCalculator backoffCalculator) {
     this.configurationService = configurationService;
-    this.backoffCalculator = backoffCalculator;
     this.elasticSearchSchemaManager = elasticSearchSchemaManager;
+    this.backoffCalculator = backoffCalculator;
   }
 
 
@@ -48,7 +47,8 @@ public class SchemaInitializingElasticsearchRestClientFactory
       waitForElasticsearch(esClient);
       logger.info("Elasticsearch client has successfully been started");
 
-      elasticSearchSchemaManager.initializeSchema(getObject());
+      elasticSearchSchemaManager.validateExistingSchemaVersion(esClient);
+      elasticSearchSchemaManager.initializeSchema(esClient);
     }
     return esClient;
   }

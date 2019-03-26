@@ -12,5 +12,3 @@ es:
     password: 'optimize'
     ssl:
       enabled: false
-container:
-  checkMetadata: false

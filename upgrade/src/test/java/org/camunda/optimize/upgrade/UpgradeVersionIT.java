@@ -37,7 +37,7 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     super.setUp();
 
     initSchema(Lists.newArrayList(METADATA_TYPE));
-    addVersionToElasticsearch(FROM_VERSION);
+    setMetadataIndexVersion(FROM_VERSION);
   }
 
   @Test

@@ -767,13 +767,6 @@ public class ConfigurationService {
     return maxStatusConnections;
   }
 
-  public Boolean getCheckMetadata() {
-    if (checkMetadata == null) {
-      checkMetadata = configJsonContext.read(ConfigurationServiceConstants.CHECK_METADATA, Boolean.class);
-    }
-    return checkMetadata;
-  }
-
   public String getProcessDefinitionXmlEndpoint(String processDefinitionId) {
     return getProcessDefinitionEndpoint() + "/" + processDefinitionId + getProcessDefinitionXmlEndpoint();
   }
@@ -1036,10 +1029,6 @@ public class ConfigurationService {
 
   public void setContainerHttpPort(Integer containerHttpPort) {
     this.containerHttpPort = Optional.ofNullable(containerHttpPort);
-  }
-
-  public void setCheckMetadata(Boolean checkMetadata) {
-    this.checkMetadata = checkMetadata;
   }
 
   public void setAlertEmailUsername(String alertEmailUsername) {

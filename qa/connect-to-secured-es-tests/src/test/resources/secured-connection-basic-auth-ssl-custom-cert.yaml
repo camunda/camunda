@@ -9,5 +9,3 @@ es:
     ssl:
       certificate: 'certs/optimize/optimize.crt'
       enabled: true
-container:
-  checkMetadata: false

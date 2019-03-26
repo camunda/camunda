@@ -92,7 +92,7 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
 
     initSchema(Lists.newArrayList(METADATA_TYPE, SINGLE_PROCESS_REPORT_TYPE));
 
-    addVersionToElasticsearch(FROM_VERSION);
+    setMetadataIndexVersion(FROM_VERSION);
 
     executeBulk("steps/configuration_upgrade/21-single-process-report-bulk");
     executeBulk("steps/configuration_upgrade/22-single-process-report-bulk");

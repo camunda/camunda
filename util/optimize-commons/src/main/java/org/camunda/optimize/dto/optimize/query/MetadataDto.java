@@ -9,6 +9,13 @@ public class MetadataDto implements OptimizeDto, Serializable {
 
   private String schemaVersion;
 
+  protected MetadataDto() {
+  }
+
+  public MetadataDto(final String schemaVersion) {
+    this.schemaVersion = schemaVersion;
+  }
+
   public String getSchemaVersion() {
     return schemaVersion;
   }

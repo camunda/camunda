@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
 import org.camunda.optimize.service.es.schema.TypeMappingCreator;
 import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
@@ -85,8 +86,12 @@ public class ReimportPreparation {
   private static void recreateImportAndEngineDataIndexes(RestHighLevelClient restHighLevelClient) {
     logger.info("Recreating import indexes and engine data from Optimize...");
 
+    final ObjectMapper objectMapper = new ObjectMapper();
     final ElasticSearchSchemaManager schemaManager = new ElasticSearchSchemaManager(
-      configurationService, TYPES_TO_CLEAR, new ObjectMapper()
+      new ElasticsearchMetadataService(objectMapper),
+      configurationService,
+      TYPES_TO_CLEAR,
+      objectMapper
     );
 
     schemaManager.createOptimizeIndices(restHighLevelClient);

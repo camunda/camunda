@@ -1,7 +1,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.OptimizeVersionDto;
-import org.camunda.optimize.service.metadata.MetadataService;
+import org.camunda.optimize.service.metadata.OptimizeVersionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +16,7 @@ import javax.ws.rs.core.MediaType;
 public class MetadataRestService {
 
   @Autowired
-  private MetadataService metadataService;
+  private OptimizeVersionService versionService;
 
   /**
    * Returns the current Optimize version.
@@ -26,7 +26,7 @@ public class MetadataRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.WILDCARD)
   public OptimizeVersionDto getOptimizeVersion() {
-    return new OptimizeVersionDto(metadataService.getRawVersion());
+    return new OptimizeVersionDto(versionService.getRawVersion());
   }
 
 }

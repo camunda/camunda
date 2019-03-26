@@ -49,7 +49,7 @@ public class UpgradeSingleDecisionReportConfigurationDataIT extends AbstractUpgr
 
     initSchema(Lists.newArrayList(METADATA_TYPE, DECISION_DEFINITION_TYPE, SINGLE_DECISION_REPORT_TYPE));
 
-    addVersionToElasticsearch(FROM_VERSION);
+    setMetadataIndexVersion(FROM_VERSION);
 
     executeBulk("steps/configuration_upgrade/23_decision_definition-bulk");
     executeBulk("steps/configuration_upgrade/23-single-decision-report-bulk");

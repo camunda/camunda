@@ -1,12 +1,13 @@
 package org.camunda.optimize.upgrade;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
+import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.TypeMappingCreator;
 import org.camunda.optimize.service.es.schema.type.MetadataType;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
@@ -16,24 +17,17 @@ import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.After;
 import org.junit.Before;
 
 import java.io.IOException;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 
 public abstract class AbstractUpgradeIT {
@@ -42,6 +36,7 @@ public abstract class AbstractUpgradeIT {
 
   protected ObjectMapper objectMapper;
   protected RestHighLevelClient restClient;
+  private ElasticsearchMetadataService metadataService;
 
   @Before
   protected void setUp() throws Exception {
@@ -53,6 +48,9 @@ public abstract class AbstractUpgradeIT {
     }
     if (restClient == null) {
       restClient = ElasticsearchHighLevelRestClientBuilder.build(new ConfigurationService());
+    }
+    if (metadataService == null) {
+      metadataService = new ElasticsearchMetadataService(objectMapper);
     }
     cleanAllDataFromElasticsearch();
     createEmptyEnvConfig();
@@ -66,22 +64,13 @@ public abstract class AbstractUpgradeIT {
 
   public void initSchema(List<TypeMappingCreator> mappingCreators) {
     final ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
-      new ConfigurationService(), mappingCreators, objectMapper
+      metadataService, new ConfigurationService(), mappingCreators, objectMapper
     );
     elasticSearchSchemaManager.initializeSchema(restClient);
   }
 
-  protected void addVersionToElasticsearch(String version) throws IOException {
-    final IndexRequest indexRequest = new IndexRequest(
-      getOptimizeIndexAliasForType(METADATA_TYPE.getType()),
-      METADATA_TYPE.getType(),
-      "1"
-    );
-    indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-    indexRequest.source(ImmutableMap.of(MetadataType.SCHEMA_VERSION, version), XContentType.JSON);
-
-    final IndexResponse index = restClient.index(indexRequest, RequestOptions.DEFAULT);
-    assertThat(index.status().getStatus(), is(201));
+  protected void setMetadataIndexVersion(String version) {
+    metadataService.writeMetadata(restClient, new MetadataDto(version));
   }
 
   protected void cleanAllDataFromElasticsearch() {

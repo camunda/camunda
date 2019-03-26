@@ -9,5 +9,3 @@ es:
     ssl:
       certificate_authorities: ['certs/ca/ca.crt']
       enabled: true
-container:
-  checkMetadata: false

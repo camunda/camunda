@@ -75,7 +75,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
     COMBINED_REPORT_TYPE.setDynamicMappingsValue("false");
 
     initSchema(Lists.newArrayList(METADATA_TYPE, SINGLE_PROCESS_REPORT_TYPE, COMBINED_REPORT_TYPE));
-    addVersionToElasticsearch(FROM_VERSION);
+    setMetadataIndexVersion(FROM_VERSION);
 
     executeBulk("steps/configuration_upgrade/22-single-process-report-bulk");
     executeBulk("steps/configuration_upgrade/23-single-process-report-bulk");

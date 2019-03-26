@@ -1,14 +1,15 @@
 package org.camunda.optimize.upgrade.plan;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
 import org.camunda.optimize.service.es.schema.TypeMappingCreator;
 import org.camunda.optimize.service.es.schema.type.MetadataType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.service.ValidationService;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
@@ -25,31 +26,36 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TYPE_SCHEMA_VERSION;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 public class UpgradeExecutionPlan implements UpgradePlan {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 
   private final RestHighLevelClient client;
-  private final ConfigurationService configurationService;
   private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
 
   private ValidationService validationService;
+  private ElasticsearchMetadataService metadataService;
   private ElasticSearchSchemaManager schemaManager;
   private String toVersion;
   private String fromVersion;
   private ESIndexAdjuster esIndexAdjuster;
 
   public UpgradeExecutionPlan() {
-    configurationService = new ConfigurationService();
-    validationService = new ValidationService(configurationService);
+    final ConfigurationService configurationService = new ConfigurationService();
+    final ObjectMapper objectMapper = new ObjectMapper();
+    metadataService = new ElasticsearchMetadataService(objectMapper);
+
+    validationService = new ValidationService(configurationService, metadataService);
     validationService.validateConfiguration();
 
     client = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
 
-    schemaManager = new ElasticSearchSchemaManager(configurationService, getMappings(), new ObjectMapper());
+    schemaManager = new ElasticSearchSchemaManager(
+      metadataService,
+      configurationService,
+      getMappings(),
+      objectMapper
+    );
     esIndexAdjuster = new ESIndexAdjuster(client, configurationService);
   }
 
@@ -75,9 +81,9 @@ public class UpgradeExecutionPlan implements UpgradePlan {
       currentStepCount++;
     }
 
-    updateOptimizeVersion(esIndexAdjuster);
-
     schemaManager.initializeSchema(client);
+
+    updateOptimizeVersion();
   }
 
   public List<TypeMappingCreator> getMappings() {
@@ -102,6 +108,11 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     this.upgradeSteps.add(upgradeStep);
   }
 
+  private void updateOptimizeVersion() {
+    logger.info("Updating Optimize Elasticsearch data structure version tag from {} to {}.", fromVersion, toVersion);
+    metadataService.writeMetadata(client, new MetadataDto(toVersion));
+  }
+
   public void setEsIndexAdjuster(final ESIndexAdjuster esIndexAdjuster) {
     this.esIndexAdjuster = esIndexAdjuster;
   }
@@ -114,14 +125,8 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     this.validationService = validationService;
   }
 
-  private void updateOptimizeVersion(ESIndexAdjuster ESIndexAdjuster) {
-    logger.info("Updating Elasticsearch data structure version tag from {} to {}.", fromVersion, toVersion);
-    ESIndexAdjuster.updateDataByTypeName(
-      ElasticsearchConstants.METADATA_TYPE,
-      termQuery(METADATA_TYPE_SCHEMA_VERSION, fromVersion),
-      String.format("ctx._source.schemaVersion = \"%s\"", toVersion),
-      null
-    );
+  public void setMetadataService(final ElasticsearchMetadataService metadataService) {
+    this.metadataService = metadataService;
   }
 
   public void setFromVersion(String fromVersion) {

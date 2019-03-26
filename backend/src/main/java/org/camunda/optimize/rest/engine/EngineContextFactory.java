@@ -47,12 +47,10 @@ public class EngineContextFactory {
     this.configuredEngines = new ArrayList<>();
     for (Map.Entry<String, EngineConfiguration> config : configurationService.getConfiguredEngines().entrySet()) {
       EngineContext engineContext = constructEngineContext(config);
-      if (configurationService.getCheckMetadata()) {
-        checkEngineVersionSupport(
-          configurationService.getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()),
-          engineContext
-        );
-      }
+      checkEngineVersionSupport(
+        configurationService.getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()),
+        engineContext
+      );
       configuredEngines.add(engineContext);
     }
   }
