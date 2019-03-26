@@ -117,37 +117,20 @@
     }
   }
 
-  .createButton {
-    & > .Button {
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
-    }
-
-    .Dropdown {
-      border-left: 1px solid white;
-
-      .downIcon {
-        display: none;
-      }
-
-      .activateButton {
-        padding-right: 12px;
-        border-top-left-radius: 0;
-        border-bottom-left-radius: 0;
-
-        .Icon {
-          margin: 0;
-        }
-      }
-    }
-  }
-
-  .createButton,
-  .createAllButton {
+  .createReport,
+  .createAllButton,
+  .createDashboard {
     float: right;
     margin: 6px 0 0 10px;
 
+    .Button {
+      padding: 6px 20px;
+    }
+  }
+
+  .createAllButton {
     .activateButton {
+      padding-right: 40px;
       color: white;
       background-color: $cam-green;
       border: 1px solid $cam-green;
@@ -155,6 +138,38 @@
       &:hover {
         background-color: darken($cam-green, 10%);
         border: 1px solid darken($cam-green, 10%);
+      }
+
+      .Icon {
+        margin-right: 10px;
+      }
+    }
+
+    .menu {
+      width: 164px;
+    }
+  }
+
+  .createReport {
+    & > .Button {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    .Dropdown {
+      .downIcon {
+        display: none;
+      }
+
+      .activateButton {
+        padding: 6px 12px;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        border-left: none;
+
+        .Icon {
+          margin: 0;
+        }
       }
     }
   }

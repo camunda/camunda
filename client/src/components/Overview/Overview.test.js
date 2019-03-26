@@ -23,14 +23,14 @@ it('should show a loading indicator', () => {
 it('should show create Report buttons', async () => {
   const node = shallow(<Overview {...props} />);
 
-  expect(node.find('.createButton')).toBePresent();
+  expect(node.find('.createReport')).toBePresent();
 });
 
 it('should have a Dropdown with more creation options', async () => {
   const node = shallow(<Overview {...props} />);
 
-  expect(node.find('.createButton').find(Dropdown)).toBePresent();
-  expect(node.find('.createButton').find(Dropdown)).toMatchSnapshot();
+  expect(node.find('.createReport').find(Dropdown)).toBePresent();
+  expect(node.find('.createReport').find(Dropdown)).toMatchSnapshot();
 });
 
 it('should invoke createProcessReport when clicking create button', async () => {
@@ -38,9 +38,8 @@ it('should invoke createProcessReport when clicking create button', async () => 
   const node = shallow(<Overview {...props} />);
 
   await node
-    .find('.createButton')
+    .find('.createReport')
     .find(Button)
-    .at(1)
     .simulate('click');
 });
 

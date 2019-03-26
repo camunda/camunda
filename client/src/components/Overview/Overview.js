@@ -45,43 +45,33 @@ function Overview({store: {loading, deleting, conflicts, deleteLoading, searchQu
           <div className="createAllButton">
             <Dropdown label="Create New">
               <Dropdown.Option onClick={() => props.setCollectionToUpdate({})}>
-                Create Collection
+                New Collection
               </Dropdown.Option>
-              <Dropdown.Option onClick={props.createDashboard}>Create Dashboard</Dropdown.Option>
+              <Dropdown.Option onClick={props.createDashboard}>New Dashboard</Dropdown.Option>
               <Dropdown.Submenu label="New Report">
-                <Dropdown.Option onClick={props.createProcessReport}>
-                  Create Process Report
-                </Dropdown.Option>
+                <Dropdown.Option onClick={props.createProcessReport}>BPMN Report</Dropdown.Option>
                 <Dropdown.Option onClick={props.createCombinedReport}>
-                  Create Combined Process Report
+                  Combined BPMN Report
                 </Dropdown.Option>
-                <Dropdown.Option onClick={props.createDecisionReport}>
-                  Create Decision Report
-                </Dropdown.Option>
+                <Dropdown.Option onClick={props.createDecisionReport}>DMN Report</Dropdown.Option>
               </Dropdown.Submenu>
             </Dropdown>
           </div>
         </div>
       </div>
       <Collections />
-      <Button color="green" className="createButton" onClick={props.createDashboard}>
-        Create New Dashboard
-      </Button>
+      <div className="createDashboard">
+        <Button onClick={props.createDashboard}>Create Dashboard</Button>
+      </div>
       <Dashboards />
-      <div className="createButton">
-        <Button color="green" onClick={props.createProcessReport}>
-          Create Process Report
-        </Button>
+      <div className="createReport">
+        <Button onClick={props.createProcessReport}>Create BPMN Report</Button>
         <Dropdown label={<Icon type="down" />}>
-          <Dropdown.Option onClick={props.createProcessReport}>
-            Create Process Report
-          </Dropdown.Option>
+          <Dropdown.Option onClick={props.createProcessReport}>Create BPMN Report</Dropdown.Option>
           <Dropdown.Option onClick={props.createCombinedReport}>
-            Create Combined Process Report
+            Create Combined BPMN Report
           </Dropdown.Option>
-          <Dropdown.Option onClick={props.createDecisionReport}>
-            Create Decision Report
-          </Dropdown.Option>
+          <Dropdown.Option onClick={props.createDecisionReport}>Create DMN Report</Dropdown.Option>
         </Dropdown>
       </div>
       <Reports />
