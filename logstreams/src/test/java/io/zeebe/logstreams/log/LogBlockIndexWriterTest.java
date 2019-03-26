@@ -252,6 +252,8 @@ public class LogBlockIndexWriterTest {
     logStreamRule.getClock().pinCurrentTime();
     writer.writeEvents(2, EVENT_1, true);
 
+    waitUntil(() -> !blockIndex.isEmpty());
+
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
     waitUntil(() -> getSnapshotCount() > 0);
 
