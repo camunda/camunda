@@ -11,7 +11,7 @@ import Button from 'modules/components/Button';
 
 export const FiltersWrapper = themed(styled.div`
   position: relative;
-  padding: 18px 20px 24px;
+  padding: 18px 20px 19px;
 
   background-color: ${themeStyle({
     dark: Colors.uiDark03,
@@ -42,7 +42,7 @@ export const Content = styled.div`
 export const FilterRow = styled.div`
   display: flex;
   &:first-child {
-    margin-bottom: 17px;
+    margin-bottom: 12px;
   }
 `;
 
@@ -83,6 +83,7 @@ export const Ul = styled.ul`
   li {
     display: inline-block;
     margin-right: 10px;
+    margin-bottom: 5px;
   }
 `;
 

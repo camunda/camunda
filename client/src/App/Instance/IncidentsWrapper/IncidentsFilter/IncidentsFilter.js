@@ -160,25 +160,14 @@ IncidentsFilter.propTypes = {
       count: PropTypes.number
     })
   ),
-  selectedErrorTypes: PropTypes.arrayOf(
-    PropTypes.shape({
-      errorType: PropTypes.string,
-      errorTypeTitle: PropTypes.string,
-      count: PropTypes.number
-    })
-  ),
+  selectedErrorTypes: PropTypes.arrayOf(PropTypes.string),
   flowNodes: PropTypes.arrayOf(
     PropTypes.shape({
       flowNodeId: PropTypes.string,
       count: PropTypes.number
     })
   ),
-  selectedFlowNodes: PropTypes.arrayOf(
-    PropTypes.shape({
-      flowNodeId: PropTypes.string,
-      count: PropTypes.number
-    })
-  ),
+  selectedFlowNodes: PropTypes.arrayOf(PropTypes.string),
   onFlowNodeSelect: PropTypes.func.isRequired,
   onErrorTypeSelect: PropTypes.func.isRequired,
   onClearAll: PropTypes.func.isRequired
