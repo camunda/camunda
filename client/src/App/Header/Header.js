@@ -19,8 +19,7 @@ import {
   FILTER_SELECTION,
   BADGE_TYPE,
   COMBO_BADGE_TYPE,
-  DEFAULT_FILTER,
-  INCIDENTS_FILTER
+  DEFAULT_FILTER
 } from 'modules/constants';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 import {withSelection} from 'modules/contexts/SelectionContext';
