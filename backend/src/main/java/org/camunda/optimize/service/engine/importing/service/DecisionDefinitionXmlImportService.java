@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DecisionDefinitionXmlImportService {
+public class DecisionDefinitionXmlImportService implements ImportService<DecisionDefinitionXmlEngineDto> {
   private static final Logger logger = LoggerFactory.getLogger(DecisionDefinitionImportService.class);
 
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
@@ -28,6 +28,7 @@ public class DecisionDefinitionXmlImportService {
     this.decisionDefinitionXmlWriter = decisionDefinitionXmlWriter;
   }
 
+  @Override
   public void executeImport(final List<DecisionDefinitionXmlEngineDto> engineDtoList) {
     logger.trace("Importing entities from engine...");
     final boolean newDataIsAvailable = !engineDtoList.isEmpty();
@@ -38,6 +39,11 @@ public class DecisionDefinitionXmlImportService {
       );
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
+  }
+
+  @Override
+  public void executeImport(final List<DecisionDefinitionXmlEngineDto> pageOfEngineEntities, final Runnable callback) {
+    executeImport(pageOfEngineEntities);
   }
 
   private void addElasticsearchImportJobToQueue(final ElasticsearchImportJob elasticsearchImportJob) {

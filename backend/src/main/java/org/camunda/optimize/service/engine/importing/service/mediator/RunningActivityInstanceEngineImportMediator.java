@@ -1,11 +1,9 @@
 package org.camunda.optimize.service.engine.importing.service.mediator;
 
-import org.apache.commons.collections.ListUtils;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.RunningActivityInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningActivityInstanceImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.engine.importing.service.RunningActivityInstanceImportService;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,12 +14,11 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.function.Function;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RunningActivityInstanceEngineImportMediator
-  extends BackoffImportMediator<RunningActivityInstanceImportIndexHandler> {
+  extends TimestampBasedImportMediator<RunningActivityInstanceImportIndexHandler, HistoricActivityInstanceEngineDto> {
 
   private RunningActivityInstanceFetcher engineEntityFetcher;
 
@@ -39,41 +36,28 @@ public class RunningActivityInstanceEngineImportMediator
   public void init() {
     importIndexHandler = provider.getRunningActivityInstanceImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanFactory.getBean(RunningActivityInstanceFetcher.class, engineContext);
-    runningActivityInstanceImportService = new RunningActivityInstanceImportService(
+    importService = new RunningActivityInstanceImportService(
       runningActivityInstanceWriter, elasticsearchImportJobExecutor, engineContext
     );
   }
 
   @Override
-  public boolean importNextEnginePage() {
-    final List<HistoricActivityInstanceEngineDto> entitiesOfLastTimestamp = engineEntityFetcher
-      .fetchRunningActivityInstancesForTimestamp(importIndexHandler.getTimestampOfLastEntity());
+  protected List<HistoricActivityInstanceEngineDto> getEntitiesLastTimestamp() {
+    return engineEntityFetcher.fetchRunningActivityInstancesForTimestamp(importIndexHandler.getTimestampOfLastEntity());
+  }
 
-    final TimestampBasedImportPage page = importIndexHandler.getNextPage();
-    final List<HistoricActivityInstanceEngineDto> nextPageEntities = engineEntityFetcher
-      .fetchRunningActivityInstances(page);
+  @Override
+  protected List<HistoricActivityInstanceEngineDto> getEntitiesNextPage() {
+    return engineEntityFetcher.fetchRunningActivityInstances(importIndexHandler.getNextPage());
+  }
 
-    boolean timestampNeedsToBeSet = !nextPageEntities.isEmpty();
+  @Override
+  protected int getMaxPageSize() {
+    return configurationService.getEngineImportActivityInstanceMaxPageSize();
+  }
 
-    OffsetDateTime timestamp = timestampNeedsToBeSet ?
-      nextPageEntities.get(nextPageEntities.size() - 1).getStartTime() :
-      null;
-
-    if (timestampNeedsToBeSet) {
-      importIndexHandler.updatePendingTimestampOfLastEntity(timestamp);
-    }
-
-    if (!entitiesOfLastTimestamp.isEmpty() || timestampNeedsToBeSet) {
-      final List<HistoricActivityInstanceEngineDto> allEntities =
-        ListUtils.union(entitiesOfLastTimestamp, nextPageEntities);
-
-      runningActivityInstanceImportService.executeImport(allEntities, () -> {
-        if (timestampNeedsToBeSet) {
-          importIndexHandler.updateTimestampOfLastEntity(timestamp);
-        }
-      });
-    }
-
-    return nextPageEntities.size() >= configurationService.getEngineImportActivityInstanceMaxPageSize();
+  @Override
+  protected OffsetDateTime getTimestamp(final HistoricActivityInstanceEngineDto historicActivityInstanceEngineDto) {
+    return historicActivityInstanceEngineDto.getStartTime();
   }
 }

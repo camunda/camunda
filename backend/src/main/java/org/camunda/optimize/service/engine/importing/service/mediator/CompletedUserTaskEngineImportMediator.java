@@ -1,11 +1,9 @@
 package org.camunda.optimize.service.engine.importing.service.mediator;
 
-import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.CompletedUserTaskInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.CompletedUserTaskInstanceImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.engine.importing.service.CompletedUserTaskInstanceImportService;
 import org.camunda.optimize.service.es.writer.CompletedUserTaskInstanceWriter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +18,7 @@ import java.util.List;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class CompletedUserTaskEngineImportMediator
-  extends BackoffImportMediator<CompletedUserTaskInstanceImportIndexHandler> {
+  extends TimestampBasedImportMediator<CompletedUserTaskInstanceImportIndexHandler, HistoricUserTaskInstanceDto> {
 
   private CompletedUserTaskInstanceFetcher engineEntityFetcher;
 
@@ -37,7 +35,7 @@ public class CompletedUserTaskEngineImportMediator
   public void init() {
     importIndexHandler = provider.getCompletedUserTaskInstanceImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanFactory.getBean(CompletedUserTaskInstanceFetcher.class, engineContext);
-    completedUserTaskInstanceImportService = new CompletedUserTaskInstanceImportService(
+    importService = new CompletedUserTaskInstanceImportService(
       completedUserTaskInstanceWriter,
       elasticsearchImportJobExecutor,
       engineContext
@@ -45,38 +43,22 @@ public class CompletedUserTaskEngineImportMediator
   }
 
   @Override
-  public boolean importNextEnginePage() {
-    final List<HistoricUserTaskInstanceDto> userTaskEntitiesOfLastTimestamp =
-      engineEntityFetcher.fetchCompletedUserTaskInstancesForTimestamp(importIndexHandler.getTimestampOfLastEntity());
-
-    final TimestampBasedImportPage page = importIndexHandler.getNextPage();
-    final List<HistoricUserTaskInstanceDto> nextPageUserTaskEntities = engineEntityFetcher
-      .fetchCompletedUserTaskInstances(page);
-
-    boolean timestampNeedsToBeSet = !nextPageUserTaskEntities.isEmpty();
-
-    OffsetDateTime timestamp = timestampNeedsToBeSet ?
-      nextPageUserTaskEntities.get(nextPageUserTaskEntities.size() - 1).getEndTime() :
-      null;
-
-    if (timestampNeedsToBeSet) {
-      importIndexHandler.updatePendingTimestampOfLastEntity(timestamp);
-    }
-
-    if (!userTaskEntitiesOfLastTimestamp.isEmpty() || timestampNeedsToBeSet) {
-      final List<HistoricUserTaskInstanceDto> allEntities = ImmutableList.<HistoricUserTaskInstanceDto>builder()
-        .addAll(userTaskEntitiesOfLastTimestamp)
-        .addAll(nextPageUserTaskEntities)
-        .build();
-
-      completedUserTaskInstanceImportService.executeImport(allEntities, () -> {
-        if (timestampNeedsToBeSet) {
-          importIndexHandler.updateTimestampOfLastEntity(timestamp);
-        }
-      });
-    }
-
-    return nextPageUserTaskEntities.size() >= configurationService.getEngineImportUserTaskInstanceMaxPageSize();
+  protected List<HistoricUserTaskInstanceDto> getEntitiesLastTimestamp() {
+    return engineEntityFetcher.fetchCompletedUserTaskInstancesForTimestamp(importIndexHandler.getTimestampOfLastEntity());
   }
 
+  @Override
+  protected List<HistoricUserTaskInstanceDto> getEntitiesNextPage() {
+    return engineEntityFetcher.fetchCompletedUserTaskInstances(importIndexHandler.getNextPage());
+  }
+
+  @Override
+  protected int getMaxPageSize() {
+    return configurationService.getEngineImportUserTaskInstanceMaxPageSize();
+  }
+
+  @Override
+  protected OffsetDateTime getTimestamp(final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
+    return historicUserTaskInstanceDto.getEndTime();
+  }
 }

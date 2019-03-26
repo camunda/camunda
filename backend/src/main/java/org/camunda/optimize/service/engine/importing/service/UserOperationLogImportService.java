@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class UserOperationLogImportService {
+public class UserOperationLogImportService implements ImportService<UserOperationLogEntryEngineDto>{
   private static final Logger logger = LoggerFactory.getLogger(UserOperationLogImportService.class);
 
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
@@ -28,6 +28,7 @@ public class UserOperationLogImportService {
     this.userOperationsLogEntryWriter = userOperationsLogEntryWriter;
   }
 
+  @Override
   public void executeImport(final List<UserOperationLogEntryEngineDto> pageOfEngineEntities, Runnable callback) {
     logger.trace("Importing user operation log entries from engine...");
 

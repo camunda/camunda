@@ -18,39 +18,31 @@ import java.util.List;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionDefinitionXmlEngineImportMediator
-  extends BackoffImportMediator<DecisionDefinitionXmlImportIndexHandler> {
+  extends ScrollBasedImportMediator<DecisionDefinitionXmlImportIndexHandler, DecisionDefinitionXmlEngineDto> {
 
   @Autowired
   private DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
 
   private DecisionDefinitionXmlFetcher engineEntityFetcher;
-  private DecisionDefinitionXmlImportService definitionXmlImportService;
 
   public DecisionDefinitionXmlEngineImportMediator(final EngineContext engineContext) {
     super(engineContext);
   }
+
 
   @PostConstruct
   public void init() {
     importIndexHandler = provider.getDecisionDefinitionXmlImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanFactory.getBean(DecisionDefinitionXmlFetcher.class, engineContext);
 
-    definitionXmlImportService = new DecisionDefinitionXmlImportService(
+    importService = new DecisionDefinitionXmlImportService(
       decisionDefinitionXmlWriter, elasticsearchImportJobExecutor, engineContext
     );
   }
 
   @Override
-  protected boolean importNextEnginePage() {
-    final IdSetBasedImportPage page = importIndexHandler.getNextPage();
-    if (!page.getIds().isEmpty()) {
-      final List<DecisionDefinitionXmlEngineDto> entities = engineEntityFetcher.fetchXmlsForDefinitions(page);
-      if (!entities.isEmpty()) {
-        definitionXmlImportService.executeImport(entities);
-      }
-      return true;
-    }
-    return false;
+  protected List<DecisionDefinitionXmlEngineDto> getEntities(final IdSetBasedImportPage page) {
+    return engineEntityFetcher.fetchXmlsForDefinitions(page);
   }
 
 }

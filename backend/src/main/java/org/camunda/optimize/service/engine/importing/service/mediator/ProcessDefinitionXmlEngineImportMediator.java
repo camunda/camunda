@@ -18,10 +18,10 @@ import java.util.List;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionXmlEngineImportMediator
-  extends BackoffImportMediator<ProcessDefinitionXmlImportIndexHandler> {
+  extends ScrollBasedImportMediator<ProcessDefinitionXmlImportIndexHandler, ProcessDefinitionXmlEngineDto> {
 
   private ProcessDefinitionXmlFetcher engineEntityFetcher;
-  private ProcessDefinitionXmlImportService definitionXmlImportService;
+
   @Autowired
   private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
@@ -34,7 +34,7 @@ public class ProcessDefinitionXmlEngineImportMediator
     importIndexHandler = provider.getProcessDefinitionXmlImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanFactory.getBean(ProcessDefinitionXmlFetcher.class, engineContext);
 
-    definitionXmlImportService = new ProcessDefinitionXmlImportService(
+    importService = new ProcessDefinitionXmlImportService(
       processDefinitionXmlWriter,
       elasticsearchImportJobExecutor,
       engineContext
@@ -42,17 +42,7 @@ public class ProcessDefinitionXmlEngineImportMediator
   }
 
   @Override
-  protected boolean importNextEnginePage() {
-    IdSetBasedImportPage page = importIndexHandler.getNextPage();
-    if (!page.getIds().isEmpty()) {
-      List<ProcessDefinitionXmlEngineDto> entities = engineEntityFetcher.fetchXmlsForDefinitions(page);
-      if (!entities.isEmpty()) {
-        importIndexHandler.updateIndex(page.getIds().size());
-        definitionXmlImportService.executeImport(entities);
-      }
-      return true;
-    }
-    return false;
+  protected List<ProcessDefinitionXmlEngineDto> getEntities(final IdSetBasedImportPage page) {
+    return engineEntityFetcher.fetchXmlsForDefinitions(page);
   }
-
 }

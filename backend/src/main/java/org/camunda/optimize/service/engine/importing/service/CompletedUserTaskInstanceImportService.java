@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class CompletedUserTaskInstanceImportService {
+public class CompletedUserTaskInstanceImportService implements ImportService<HistoricUserTaskInstanceDto> {
   private static final Logger logger = LoggerFactory.getLogger(CompletedUserTaskInstanceImportService.class);
 
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
@@ -28,6 +28,7 @@ public class CompletedUserTaskInstanceImportService {
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
   }
 
+  @Override
   public void executeImport(final List<HistoricUserTaskInstanceDto> pageOfEngineEntities, Runnable callback) {
     logger.trace("Importing completed user task entities from engine...");
 

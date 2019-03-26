@@ -1,12 +1,10 @@
 package org.camunda.optimize.service.engine.importing.service.mediator;
 
-import org.apache.commons.collections.ListUtils;
 import org.camunda.optimize.dto.engine.HistoricVariableUpdateInstanceDto;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.VariableUpdateInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableUpdateInstanceImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.engine.importing.service.VariableUpdateInstanceImportService;
 import org.camunda.optimize.service.es.writer.variable.VariableUpdateWriter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,10 +19,10 @@ import java.util.List;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class VariableUpdateEngineImportMediator
-  extends BackoffImportMediator<VariableUpdateInstanceImportIndexHandler> {
+  extends TimestampBasedImportMediator<VariableUpdateInstanceImportIndexHandler, HistoricVariableUpdateInstanceDto> {
 
   private VariableUpdateInstanceFetcher engineEntityFetcher;
-  private VariableUpdateInstanceImportService variableUpdateInstanceImportService;
+
   @Autowired
   private VariableUpdateWriter variableWriter;
   @Autowired
@@ -38,44 +36,28 @@ public class VariableUpdateEngineImportMediator
   public void init() {
     importIndexHandler = provider.getRunningVariableInstanceImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanFactory.getBean(VariableUpdateInstanceFetcher.class, engineContext);
-    variableUpdateInstanceImportService = new VariableUpdateInstanceImportService(
+    importService = new VariableUpdateInstanceImportService(
       variableWriter, importAdapterProvider, elasticsearchImportJobExecutor, engineContext
     );
   }
 
   @Override
-  protected boolean importNextEnginePage() {
-    final List<HistoricVariableUpdateInstanceDto> entitiesOfLastTimestamp = engineEntityFetcher
-      .fetchVariableInstanceUpdates(importIndexHandler.getTimestampOfLastEntity());
-
-    final TimestampBasedImportPage page = importIndexHandler.getNextPage();
-    final List<HistoricVariableUpdateInstanceDto> nextPageEntities = engineEntityFetcher
-      .fetchVariableInstanceUpdates(page);
-
-
-
-    boolean timestampNeedsToBeSet = !nextPageEntities.isEmpty();
-
-    OffsetDateTime timestamp = timestampNeedsToBeSet ?
-      nextPageEntities.get(nextPageEntities.size() - 1).getTime() :
-      null;
-
-
-    if (timestampNeedsToBeSet) {
-      importIndexHandler.updatePendingTimestampOfLastEntity(timestamp);
-    }
-
-    if (!entitiesOfLastTimestamp.isEmpty() || timestampNeedsToBeSet) {
-      final List<HistoricVariableUpdateInstanceDto> allEntities =
-        ListUtils.union(entitiesOfLastTimestamp, nextPageEntities);
-      variableUpdateInstanceImportService.executeImport(allEntities, () -> {
-        if (timestampNeedsToBeSet) {
-          importIndexHandler.updateTimestampOfLastEntity(timestamp);
-        }
-      });
-    }
-
-    return nextPageEntities.size() >= configurationService.getEngineImportVariableInstanceMaxPageSize();
+  protected List<HistoricVariableUpdateInstanceDto> getEntitiesNextPage() {
+    return engineEntityFetcher.fetchVariableInstanceUpdates(importIndexHandler.getNextPage());
   }
 
+  @Override
+  protected List<HistoricVariableUpdateInstanceDto> getEntitiesLastTimestamp() {
+    return engineEntityFetcher.fetchVariableInstanceUpdates(importIndexHandler.getTimestampOfLastEntity());
+  }
+
+  @Override
+  protected int getMaxPageSize() {
+    return configurationService.getEngineImportVariableInstanceMaxPageSize();
+  }
+
+  @Override
+  protected OffsetDateTime getTimestamp(final HistoricVariableUpdateInstanceDto historicVariableUpdateInstanceDto) {
+    return historicVariableUpdateInstanceDto.getTime();
+  }
 }

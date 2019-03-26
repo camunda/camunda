@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class RunningProcessInstanceImportService {
+public class RunningProcessInstanceImportService implements ImportService<HistoricProcessInstanceDto> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -31,6 +31,7 @@ public class RunningProcessInstanceImportService {
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
   }
 
+  @Override
   public void executeImport(List<HistoricProcessInstanceDto> pageOfEngineEntities, Runnable callback) {
     logger.trace("Importing entities from engine...");
 
@@ -56,7 +57,7 @@ public class RunningProcessInstanceImportService {
 
   private ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(List<ProcessInstanceDto>
                                                                                     processInstances, Runnable
-    callback) {
+                                                                                    callback) {
     RunningProcessInstanceElasticsearchImportJob importJob =
       new RunningProcessInstanceElasticsearchImportJob(runningProcessInstanceWriter, callback);
     importJob.setEntitiesToImport(processInstances);

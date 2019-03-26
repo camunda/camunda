@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ProcessDefinitionImportService {
+public class ProcessDefinitionImportService implements ImportService<ProcessDefinitionEngineDto> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -32,6 +32,7 @@ public class ProcessDefinitionImportService {
 
   }
 
+  @Override
   public void executeImport(List<ProcessDefinitionEngineDto> pageOfEngineEntities) {
     logger.trace("Importing entities from engine...");
 
@@ -43,6 +44,11 @@ public class ProcessDefinitionImportService {
         createElasticsearchImportJob(newOptimizeEntities);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
+  }
+
+  @Override
+  public void executeImport(final List<ProcessDefinitionEngineDto> pageOfEngineEntities, final Runnable callback) {
+    executeImport(pageOfEngineEntities);
   }
 
   private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {

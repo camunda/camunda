@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.ProcessVariableHelper.isVariableTypeSupported;
 
-public class DecisionInstanceImportService {
+public class DecisionInstanceImportService implements ImportService<HistoricDecisionInstanceDto> {
   private static final Logger logger = LoggerFactory.getLogger(DecisionInstanceImportService.class);
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
@@ -55,16 +55,26 @@ public class DecisionInstanceImportService {
     this.decisionOutputImportAdapterProvider = decisionOutputImportAdapterProvider;
   }
 
-  public void executeImport(List<HistoricDecisionInstanceDto> engineDtoList, Runnable callback)
-    throws OptimizeDecisionDefinitionFetchException {
+  @Override
+  public void executeImport(List<HistoricDecisionInstanceDto> engineDtoList, Runnable callback) {
     logger.trace("Importing entities from engine...");
     boolean newDataIsAvailable = !engineDtoList.isEmpty();
+
     if (newDataIsAvailable) {
-      final List<DecisionInstanceDto> optimizeDtos = mapEngineEntitiesToOptimizeEntities(engineDtoList);
-      final ElasticsearchImportJob<DecisionInstanceDto> elasticsearchImportJob = createElasticsearchImportJob(
-        optimizeDtos, callback);
-      addElasticsearchImportJobToQueue(elasticsearchImportJob);
+      try {
+        final List<DecisionInstanceDto> optimizeDtos = mapEngineEntitiesToOptimizeEntities(engineDtoList);
+
+        final ElasticsearchImportJob<DecisionInstanceDto> elasticsearchImportJob = createElasticsearchImportJob(
+          optimizeDtos, callback);
+        addElasticsearchImportJobToQueue(elasticsearchImportJob);
+      } catch (OptimizeDecisionDefinitionFetchException e) {
+        logger.debug(
+          "Required Decision Definition not imported yet, skipping current decision instance import cycle.",
+          e.getMessage()
+        );
+      }
     }
+
   }
 
   private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {

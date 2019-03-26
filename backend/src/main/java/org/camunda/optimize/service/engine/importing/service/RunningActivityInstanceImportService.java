@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class RunningActivityInstanceImportService {
+public class RunningActivityInstanceImportService implements ImportService<HistoricActivityInstanceEngineDto> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -30,6 +30,7 @@ public class RunningActivityInstanceImportService {
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
   }
 
+  @Override
   public void executeImport(List<HistoricActivityInstanceEngineDto> pageOfEngineEntities, Runnable callback) {
     logger.trace("Importing running activity instances from engine...");
 
@@ -52,7 +53,8 @@ public class RunningActivityInstanceImportService {
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events, Runnable callback) {
+  private ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events,
+                                                                                Runnable callback) {
     RunningActivityInstanceElasticsearchImportJob activityImportJob =
       new RunningActivityInstanceElasticsearchImportJob(runningActivityInstanceWriter, callback);
     activityImportJob.setEntitiesToImport(events);

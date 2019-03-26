@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class CompletedActivityInstanceImportService {
+public class CompletedActivityInstanceImportService implements ImportService<HistoricActivityInstanceEngineDto> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -30,6 +30,7 @@ public class CompletedActivityInstanceImportService {
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
   }
 
+  @Override
   public void executeImport(List<HistoricActivityInstanceEngineDto> pageOfEngineEntities, Runnable callback) {
     logger.trace("Importing completed activity instances from engine...");
 

@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.ProcessVariableHelper.isVariableTypeSupported;
 
-public class VariableUpdateInstanceImportService {
+public class VariableUpdateInstanceImportService implements ImportService<HistoricVariableUpdateInstanceDto> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -41,13 +41,17 @@ public class VariableUpdateInstanceImportService {
     this.importAdapterProvider = importAdapterProvider;
   }
 
+  @Override
   public void executeImport(List<HistoricVariableUpdateInstanceDto> pageOfEngineEntities, Runnable callback) {
     logger.trace("Importing entities from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       List<VariableDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      ElasticsearchImportJob<VariableDto> elasticsearchImportJob = createElasticsearchImportJob(newOptimizeEntities, callback);
+      ElasticsearchImportJob<VariableDto> elasticsearchImportJob = createElasticsearchImportJob(
+        newOptimizeEntities,
+        callback
+      );
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
   }

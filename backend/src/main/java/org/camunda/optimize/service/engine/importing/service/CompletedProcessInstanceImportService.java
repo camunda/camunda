@@ -14,7 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class CompletedProcessInstanceImportService {
+public class CompletedProcessInstanceImportService implements ImportService<HistoricProcessInstanceDto> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -31,6 +31,7 @@ public class CompletedProcessInstanceImportService {
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
   }
 
+  @Override
   public void executeImport(List<HistoricProcessInstanceDto> pageOfEngineEntities, Runnable callback) {
     logger.trace("Importing entities from engine...");
 
@@ -54,9 +55,8 @@ public class CompletedProcessInstanceImportService {
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(List<ProcessInstanceDto>
-                                                                                    processInstances, Runnable
-    callback) {
+  private ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(List<ProcessInstanceDto> processInstances,
+                                                                                  Runnable callback) {
     CompletedProcessInstanceElasticsearchImportJob importJob = new CompletedProcessInstanceElasticsearchImportJob(
       completedProcessInstanceWriter, callback);
     importJob.setEntitiesToImport(processInstances);

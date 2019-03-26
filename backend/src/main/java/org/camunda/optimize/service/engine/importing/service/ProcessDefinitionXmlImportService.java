@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class ProcessDefinitionXmlImportService {
+public class ProcessDefinitionXmlImportService implements ImportService<ProcessDefinitionXmlEngineDto> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -38,6 +38,7 @@ public class ProcessDefinitionXmlImportService {
 
   }
 
+  @Override
   public void executeImport(List<ProcessDefinitionXmlEngineDto> pageOfEngineEntities) {
     logger.trace("Importing entities from engine...");
 
@@ -49,6 +50,11 @@ public class ProcessDefinitionXmlImportService {
         createElasticsearchImportJob(newOptimizeEntities);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
+  }
+
+  @Override
+  public void executeImport(final List<ProcessDefinitionXmlEngineDto> pageOfEngineEntities, final Runnable callback) {
+    executeImport(pageOfEngineEntities);
   }
 
   private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
