@@ -425,9 +425,21 @@ public class StreamProcessorControllerTest {
     // given
     final ArgumentCaptor<StateSnapshotMetadata> args =
         ArgumentCaptor.forClass(StateSnapshotMetadata.class);
+    final CountDownLatch latch = new CountDownLatch(1);
+    changeMockInActorContext(
+        () ->
+            doAnswer(
+                    i -> {
+                      latch.countDown();
+                      return i.callRealMethod();
+                    })
+                .when(eventProcessor)
+                .executeSideEffects());
 
     // when
     final long lastEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
+
+    latch.await();
     streamProcessorController.closeAsync().join();
 
     // then
