@@ -180,4 +180,11 @@ describe('IncidentsWrapper', () => {
       );
     });
   });
+
+  describe('Filtering', () => {
+    it('should not have active filters by default', () => {});
+    it('should filter the incidents when errorTypes are selected', () => {});
+    it('should filter the incidents when flowNodes are selected', () => {});
+    it('should filter the incidents when both errorTypes & flowNodes are selected', () => {});
+  });
 });

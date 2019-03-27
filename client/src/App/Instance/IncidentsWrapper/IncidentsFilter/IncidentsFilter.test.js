@@ -137,4 +137,12 @@ describe('IncidentsFilter', () => {
         .text()
     ).toContain('error type 3');
   });
+
+  it('should mark as active the selected pills', () => {});
+
+  it('should filter the incidents when clicking a errorType pill', () => {});
+  it('should filter the incidents when clicking a flowNode pill', () => {});
+
+  it('should render a clear all button', () => {});
+  it('should deselect pills when clicking the clear all button', () => {});
 });
