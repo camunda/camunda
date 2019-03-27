@@ -32,7 +32,7 @@ export default class IncidentsFilter extends React.Component {
           <Styled.PillsWrapper>
             <Styled.FilterRow>
               <Styled.Label>Incident type:</Styled.Label>
-              <Styled.Ul>
+              <Styled.Ul data-test="incidents-by-errorType">
                 {groupedErrorTypes[0].map(item => {
                   return (
                     <li key={item.errorType}>
@@ -72,7 +72,7 @@ export default class IncidentsFilter extends React.Component {
                               )}
                               grow
                             >
-                              {item.errorTypeTitle}
+                              {item.errorType}
                             </Pill>
                           </Dropdown.Option>
                         );
@@ -84,7 +84,7 @@ export default class IncidentsFilter extends React.Component {
             </Styled.FilterRow>
             <Styled.FilterRow>
               <Styled.Label>Flow Node:</Styled.Label>
-              <Styled.Ul>
+              <Styled.Ul data-test="incidents-by-flowNode">
                 {groupedFlowNodes[0].map(item => {
                   return (
                     <li key={item.flowNodeId}>

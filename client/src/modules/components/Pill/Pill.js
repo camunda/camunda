@@ -16,8 +16,14 @@ const iconTypes = {
 };
 export default function Pill(props) {
   const TargetIcon = iconTypes[props.type] || (() => null);
+
   return (
-    <Styled.Pill {...props}>
+    <Styled.Pill
+      onClick={props.onClick}
+      className={props.className}
+      isActive={props.isActive}
+      type={props.type}
+    >
       <TargetIcon />
       <Styled.Label grow={props.grow}>{props.children}</Styled.Label>
       {props.type === PILL_TYPE.FILTER && (
@@ -33,7 +39,8 @@ Pill.propTypes = {
   children: PropTypes.node,
   count: PropTypes.number,
   grow: PropTypes.bool,
-  onClick: PropTypes.func
+  onClick: PropTypes.func,
+  className: PropTypes.string
 };
 
 Pill.defaultProps = {

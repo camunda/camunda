@@ -195,6 +195,11 @@ describe('Instance', () => {
       expect(item.flowNodeName).not.toBe(undefined);
     });
     expect(IncidentsWrapper.props().incidentsCount).toEqual(INCIDENTS.count);
+    expect(IncidentsWrapper.props().errorTypes).toEqual(INCIDENTS.errorTypes);
+    IncidentsWrapper.props().flowNodes.forEach((item, index) => {
+      expect(item.flowNodeId).toEqual(INCIDENTS.flowNodes[index].flowNodeId);
+      expect(item.flowNodeName).not.toBe(undefined);
+    });
   });
 
   it('should fetch data from APIs', async () => {

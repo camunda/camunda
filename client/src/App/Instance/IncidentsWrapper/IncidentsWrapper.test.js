@@ -16,6 +16,7 @@ import IncidentsWrapper from './IncidentsWrapper';
 import IncidentsOverlay from './IncidentsOverlay';
 import IncidentsTable from './IncidentsTable';
 import IncidentsBar from './IncidentsBar';
+import IncidentsFilter from './IncidentsFilter';
 import {sortData} from './service';
 
 const incidentsMock = createIncidents();
@@ -99,6 +100,26 @@ describe('IncidentsWrapper', () => {
     );
     expect(IncidentsTableNode.props().onIncidentSelection).toEqual(
       mockProps.onIncidentSelection
+    );
+  });
+
+  it('should render the IncidentsFilter', () => {
+    const node = mount(
+      <ThemeProvider>
+        <IncidentsWrapper {...mockProps} />
+      </ThemeProvider>
+    );
+
+    // open overlay
+    node.find(IncidentsBar).simulate('click');
+    node.update();
+
+    const IncidentsFilterNode = node.find(IncidentsFilter);
+
+    expect(IncidentsFilterNode).toExist();
+    expect(IncidentsFilterNode.props().flowNodes).toEqual(mockProps.flowNodes);
+    expect(IncidentsFilterNode.props().errorTypes).toEqual(
+      mockProps.errorTypes
     );
   });
 

@@ -564,23 +564,19 @@ export const createIncidents = () => {
     incidents: [createIncident(), createIncident()],
     errorTypes: [
       {
-        errorType: 'CONDITION_ERROR',
-        errorTypeTitle: 'Condition error',
+        errorType: 'Condition error',
         count: 1
       },
       {
-        errorType: 'EXTRACT_VALUE_ERROR',
-        errorTypeTitle: 'Extract value error',
+        errorType: 'Extract value error',
         count: 1
       },
       {
-        errorType: 'IO_MAPPING_ERROR',
-        errorTypeTitle: 'I/O mapping error',
+        errorType: 'I/O mapping error',
         count: 1
       },
       {
-        errorType: 'JOB_NO_RETRIES',
-        errorTypeTitle: 'No more retries left',
+        errorType: 'No more retries left',
         count: 1
       }
     ],
