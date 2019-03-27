@@ -76,7 +76,8 @@ function IncidentsWrapper(props) {
 
   const filteredIncidents = useMemo(() => filterIncidents(), [
     selectedErrorTypes,
-    selectedFlowNodes
+    selectedFlowNodes,
+    incidents
   ]);
 
   function filterIncidents() {
