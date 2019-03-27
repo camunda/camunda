@@ -157,6 +157,7 @@ public class MessageCorrelationMultiplePartitionsTest {
 
     // when
     brokerRule.stopBroker();
+    RecordingExporter.reset();
     brokerRule.startBroker();
 
     IntStream.range(0, 5)
