@@ -9,6 +9,7 @@ import org.camunda.operate.JacksonConfig;
 import org.camunda.operate.es.reader.ActivityInstanceReader;
 import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.ListViewReader;
+import org.camunda.operate.es.reader.SequenceFlowReader;
 import org.camunda.operate.es.reader.VariableReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.writer.BatchOperationWriter;
@@ -48,6 +49,9 @@ public class WorkflowInstanceRestServiceTest extends OperateIntegrationTest {
 
   @MockBean
   private VariableReader variableReader;
+
+  @MockBean
+  private SequenceFlowReader sequenceFlowReader;
 
   @MockBean
   private BatchOperationWriter batchOperationWriter;
