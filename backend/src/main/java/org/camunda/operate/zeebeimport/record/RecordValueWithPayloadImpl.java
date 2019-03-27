@@ -6,30 +6,29 @@
 package org.camunda.operate.zeebeimport.record;
 
 import java.util.Map;
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.zeebe.exporter.record.RecordValue;
-import io.zeebe.exporter.record.RecordValueWithPayload;
+import io.zeebe.exporter.api.record.RecordValue;
+import io.zeebe.exporter.api.record.RecordValueWithVariables;
 
-public abstract class RecordValueWithPayloadImpl implements RecordValue, RecordValueWithPayload {
-  private String payload;
+public abstract class RecordValueWithPayloadImpl implements RecordValue, RecordValueWithVariables {
+  private String variables;
 
   public RecordValueWithPayloadImpl() {
   }
 
   @Override
-  public String getPayload() {
-    return payload;
+  public String getVariables() {
+    return variables;
   }
 
-  public void setPayload(String payload) {
-    this.payload = payload;
+  public void setVariables(String variables) {
+    this.variables = variables;
   }
 
   @Override
   @JsonIgnore
-  public Map<String, Object> getPayloadAsMap() {
-    throw new UnsupportedOperationException("getPayloadAsMap operation is not supported");
+  public Map<String, Object> getVariablesAsMap() {
+    throw new UnsupportedOperationException("getVariablesAsMap operation is not supported");
   }
 
   @Override
@@ -38,19 +37,19 @@ public abstract class RecordValueWithPayloadImpl implements RecordValue, RecordV
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(Object o) {
+    if (this == o)
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    final RecordValueWithPayloadImpl that = (RecordValueWithPayloadImpl) o;
-    return Objects.equals(payload, that.payload);
+
+    RecordValueWithPayloadImpl that = (RecordValueWithPayloadImpl) o;
+
+    return variables != null ? variables.equals(that.variables) : that.variables == null;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(payload);
+    return variables != null ? variables.hashCode() : 0;
   }
 }

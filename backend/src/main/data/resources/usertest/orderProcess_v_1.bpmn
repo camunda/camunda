@@ -38,11 +38,11 @@
       <bpmn:outgoing>SequenceFlow_1q6ade7</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="SequenceFlow_0jzbqu1" name="Not paid" sourceRef="ExclusiveGateway_1qqmrb8" targetRef="ServiceTask_00g0gy6">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">$.paid == false</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">paid == false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="SequenceFlow_1q6ade7" sourceRef="ServiceTask_00g0gy6" targetRef="Task_1b1r7ow" />
     <bpmn:sequenceFlow id="SequenceFlow_1dq2rqw" name="paid" sourceRef="ExclusiveGateway_1qqmrb8" targetRef="Task_162x79i">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">$.paid == true</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">paid == true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">

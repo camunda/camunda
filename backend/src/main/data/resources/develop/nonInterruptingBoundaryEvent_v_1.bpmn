@@ -35,7 +35,7 @@
   </bpmn:process>
   <bpmn:message id="Message_052ytb9" name="messageTask1">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="$.orderId" />
+      <zeebe:subscription correlationKey="orderId" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">

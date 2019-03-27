@@ -6,7 +6,7 @@
 package org.camunda.operate.zeebeimport.record.value;
 
 import org.camunda.operate.zeebeimport.record.RecordValueWithPayloadImpl;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.BpmnElementType;
 
 public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl

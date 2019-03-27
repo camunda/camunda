@@ -26,11 +26,11 @@
     </dependency>
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-exporter-api</artifactId>
+      <artifactId>zeebe-exporter-api</artifactId>
     </dependency>
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-protocol</artifactId>
+      <artifactId>zeebe-protocol</artifactId>
     </dependency>
     <dependency>
       <groupId>io.zeebe</groupId>
@@ -44,7 +44,7 @@
     </dependency>
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-elasticsearch-exporter</artifactId>
+      <artifactId>zeebe-elasticsearch-exporter</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>

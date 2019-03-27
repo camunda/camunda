@@ -113,12 +113,12 @@
   </bpmn:process>
   <bpmn:message id="Message_101w822" name="interruptMessageTask">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="$.clientId" />
+      <zeebe:subscription correlationKey="clientId" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_0heterz" name="clientMessage">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="$.clientId" />
+      <zeebe:subscription correlationKey="clientId" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">

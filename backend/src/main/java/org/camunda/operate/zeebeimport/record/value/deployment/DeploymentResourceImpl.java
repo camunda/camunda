@@ -7,8 +7,8 @@ package org.camunda.operate.zeebeimport.record.value.deployment;
 
 import java.util.Arrays;
 import java.util.Objects;
-import io.zeebe.exporter.record.value.deployment.DeploymentResource;
-import io.zeebe.exporter.record.value.deployment.ResourceType;
+import io.zeebe.exporter.api.record.value.deployment.DeploymentResource;
+import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 
 public class DeploymentResourceImpl implements DeploymentResource {
   private byte[] resource;

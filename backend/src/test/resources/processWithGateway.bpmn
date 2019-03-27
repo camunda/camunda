@@ -41,10 +41,10 @@
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_000ynmn" sourceRef="taskA" targetRef="gateway" />
     <bpmn:sequenceFlow id="SequenceFlow_054v4fs" sourceRef="gateway" targetRef="taskC">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">$.goToTaskC == true</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">goToTaskC == true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="SequenceFlow_1lf9ptg" sourceRef="gateway" targetRef="taskB" >
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">$.goToTaskC == false</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">goToTaskC == false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">

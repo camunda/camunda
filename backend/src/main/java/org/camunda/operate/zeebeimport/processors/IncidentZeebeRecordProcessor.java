@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.api.record.Record;
 import static org.camunda.operate.zeebeimport.record.Intent.CREATED;
 import static org.camunda.operate.zeebeimport.record.Intent.RESOLVED;
 

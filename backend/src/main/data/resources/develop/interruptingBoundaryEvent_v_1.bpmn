@@ -35,7 +35,7 @@
   </bpmn:process>
   <bpmn:message id="Message_1wjs6vw" name="interruptTask1">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="$.orderId" />
+      <zeebe:subscription correlationKey="orderId" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">

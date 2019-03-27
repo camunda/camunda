@@ -18,7 +18,7 @@ public class ZeebeConnector {
 
   private static final Logger logger = LoggerFactory.getLogger(ZeebeConnector.class);
 
-  private static final int JOB_WORKER_BUFFER_SIZE = 5;
+  private static final int JOB_WORKER_MAX_JOBS_ACTIVE = 5;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -31,7 +31,7 @@ public class ZeebeConnector {
     return ZeebeClient
       .newClientBuilder()
       .brokerContactPoint(brokerContactPoint)
-      .defaultJobWorkerBufferSize(JOB_WORKER_BUFFER_SIZE)
+      .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE)
       .build();
   }
 

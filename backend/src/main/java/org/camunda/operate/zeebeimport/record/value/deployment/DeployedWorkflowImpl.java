@@ -6,7 +6,7 @@
 package org.camunda.operate.zeebeimport.record.value.deployment;
 
 import java.util.Objects;
-import io.zeebe.exporter.record.value.deployment.DeployedWorkflow;
+import io.zeebe.exporter.api.record.value.deployment.DeployedWorkflow;
 
 public class DeployedWorkflowImpl implements DeployedWorkflow {
   private String bpmnProcessId;

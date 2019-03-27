@@ -393,11 +393,11 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
       .startEvent("start")
         .exclusiveGateway(activityId)
-        .sequenceFlowId("s1").condition("$.foo < 5")
+        .sequenceFlowId("s1").condition("foo < 5")
           .serviceTask("task1").zeebeTaskType("task1")
           .endEvent()
         .moveToLastGateway()
-        .sequenceFlowId("s2").condition("$.foo >= 5")
+        .sequenceFlowId("s2").condition("foo >= 5")
           .serviceTask("task2").zeebeTaskType("task2")
           .endEvent()
       .done();
@@ -456,11 +456,11 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
       .startEvent("start")
         .exclusiveGateway(activityId)
-        .sequenceFlowId("s1").condition("$.foo < 5")
+        .sequenceFlowId("s1").condition("foo < 5")
           .serviceTask("task1").zeebeTaskType("task1")
           .endEvent()
         .moveToLastGateway()
-        .sequenceFlowId("s2").condition("$.foo >= 5")
+        .sequenceFlowId("s2").condition("foo >= 5")
           .serviceTask("task2").zeebeTaskType("task2")
           .endEvent()
       .done();
@@ -511,11 +511,11 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
       .startEvent("start")
         .exclusiveGateway(activityId)
-        .sequenceFlowId("s1").condition("$.foo < 5")
+        .sequenceFlowId("s1").condition("foo < 5")
           .serviceTask("task1").zeebeTaskType("task1")
           .endEvent()
         .moveToLastGateway()
-        .sequenceFlowId("s2").condition("$.foo >= 5")
+        .sequenceFlowId("s2").condition("foo >= 5")
           .serviceTask("task2").zeebeTaskType("task2")
           .endEvent()
       .done();
@@ -546,11 +546,11 @@ public class ImportIT extends OperateZeebeIntegrationTest {
       .startEvent()
       .eventBasedGateway(activityId)
       .intermediateCatchEvent(
-        "msg-1", i -> i.message(m -> m.name("msg-1").zeebeCorrelationKey("$.key1")))
+        "msg-1", i -> i.message(m -> m.name("msg-1").zeebeCorrelationKey("key1")))
       .endEvent()
       .moveToLastGateway()
       .intermediateCatchEvent(
-        "msg-2", i -> i.message(m -> m.name("msg-2").zeebeCorrelationKey("$.key2")))
+        "msg-2", i -> i.message(m -> m.name("msg-2").zeebeCorrelationKey("key2")))
       .endEvent()
       .done();
     final String resourceName = processId + ".bpmn";

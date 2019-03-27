@@ -113,7 +113,7 @@ public abstract class ZeebeTestUtil {
         if (payload == null) {
           jobClient.newCompleteCommand(job.getKey()).send().join();
         } else {
-          jobClient.newCompleteCommand(job.getKey()).payload(payload).send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables(payload).send().join();
         }
         logger.debug("Complete task command was sent to Zeebe for jobKey [{}]", job.getKey());
       })
@@ -128,9 +128,9 @@ public abstract class ZeebeTestUtil {
       .jobType(jobType)
       .handler((jobClient, job) -> {
         if (payload == null) {
-          jobClient.newCompleteCommand(job.getKey()).payload(job.getPayload()).send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables(job.getVariables()).send().join();
         } else {
-          jobClient.newCompleteCommand(job.getKey()).payload(payload).send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables(payload).send().join();
         }
         logger.debug("Complete task command was sent to Zeebe for jobKey [{}]", job.getKey());
         countCompleted[0]++;

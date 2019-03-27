@@ -6,8 +6,8 @@
 package org.camunda.operate.zeebeimport.record;
 
 import java.time.Instant;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.RecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.RecordValue;
 
 public class RecordImpl<T extends RecordValue> implements Record<T> {
   private long key;

@@ -360,12 +360,12 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
           //fail
           throw new RuntimeException("Payment system not available.");
         case 1:
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":false}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables("{\"paid\":false}").send().join();
           break;
         case 2:
         case 3:
         case 4:
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":true,\"orderStatus\": \"PAID\"}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables("{\"paid\":true,\"orderStatus\": \"PAID\"}").send().join();
           break;
         }
       })
@@ -385,10 +385,10 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         case 0:
         case 1:
         case 2:
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables("{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}").send().join();
           break;
         case 3:
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"smthIsMissing\":true}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables("{\"smthIsMissing\":true}").send().join();
           break;
         }
       })
@@ -406,7 +406,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         final int scenario = random.nextInt(2);
         switch (scenario) {
         case 0:
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"orderStatus\":\"SHIPPED\"}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables("{\"orderStatus\":\"SHIPPED\"}").send().join();
           break;
         case 1:
           jobClient.newFailCommand(job.getKey()).retries(0).errorMessage("Cannot connect to server delivery05").send().join();
@@ -429,10 +429,10 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         case 0:
         case 1:
         case 2:
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"luggage\":false}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables("{\"luggage\":false}").send().join();
           break;
         case 3:
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"luggage\":true}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables("{\"luggage\":true}").send().join();
           break;
         }
       })
@@ -447,7 +447,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .handler((jobClient, job) -> {
         if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))
           return;
-        jobClient.newCompleteCommand(job.getKey()).payload("{\"luggageWeight\":" + (random.nextInt(10) + 20) + "}").send().join();
+        jobClient.newCompleteCommand(job.getKey()).variables("{\"luggageWeight\":" + (random.nextInt(10) + 20) + "}").send().join();
       })
       .name("operate")
       .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
@@ -491,7 +491,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         switch (scenarioCount) {
         case 0:
           //successfully complete task
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"loanRequestOK\": " + random.nextBoolean() + "}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables("{\"loanRequestOK\": " + random.nextBoolean() + "}").send().join();
           break;
         case 1:
           //leave the task A active
@@ -517,7 +517,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         switch (scenarioCount) {
         case 0:
           //successfully complete task
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"schufaOK\": " + random.nextBoolean() + "}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables("{\"schufaOK\": " + random.nextBoolean() + "}").send().join();
           break;
         case 1:
           //leave the task A active
@@ -647,9 +647,9 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     public void handle(JobClient jobClient, ActivatedJob job) {
       if (!taskCompleted && workflowInstanceKey == job.getHeaders().getWorkflowInstanceKey()) {
         if (payload == null) {
-          jobClient.newCompleteCommand(job.getKey()).payload(job.getPayload()).send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables(job.getVariables()).send().join();
         } else {
-          jobClient.newCompleteCommand(job.getKey()).payload(payload).send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables(payload).send().join();
         }
         taskCompleted = true;
       }

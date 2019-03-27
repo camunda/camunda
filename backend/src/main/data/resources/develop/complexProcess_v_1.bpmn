@@ -87,12 +87,12 @@
   </bpmn:process>
   <bpmn:message id="Message_0hh3rtz" name="clientMessage">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="$.clientId" />
+      <zeebe:subscription correlationKey="clientId" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_1agndym" name="dataReceived">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="$.clientId" />
+      <zeebe:subscription correlationKey="clientId" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">

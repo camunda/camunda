@@ -15,8 +15,8 @@
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="taskA" />
         <zeebe:ioMapping>
-          <zeebe:input source="$.a" target="$.foo" />
-          <zeebe:output source="$.foo" target="$.bar" />
+          <zeebe:input source="a" target="foo" />
+          <zeebe:output source="foo" target="bar" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_1sz6737</bpmn:incoming>

@@ -8,7 +8,7 @@
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="upperTask" />
         <zeebe:ioMapping>
-          <zeebe:input source="$.orderId" target="$.taskOrderId" />
+          <zeebe:input source="orderId" target="taskOrderId" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_0oxsuty</bpmn:incoming>
@@ -49,14 +49,14 @@
     <bpmn:endEvent id="EndEvent_1w1u88d" name="endUp">
       <bpmn:incoming>SequenceFlow_1pzygua</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_1pzygua" name="$.goUp == true" sourceRef="exclusiveGateway" targetRef="EndEvent_1w1u88d">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">$.goUp == true</bpmn:conditionExpression>
+    <bpmn:sequenceFlow id="SequenceFlow_1pzygua" name="goUp == true" sourceRef="exclusiveGateway" targetRef="EndEvent_1w1u88d">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">goUp == true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:endEvent id="EndEvent_0tfsfo0" name="endDown">
       <bpmn:incoming>SequenceFlow_1goon4z</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_1goon4z" name="$.goUp == false" sourceRef="exclusiveGateway" targetRef="EndEvent_0tfsfo0">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">$.goUp == false</bpmn:conditionExpression>
+    <bpmn:sequenceFlow id="SequenceFlow_1goon4z" name="goUp == false" sourceRef="exclusiveGateway" targetRef="EndEvent_0tfsfo0">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">goUp == false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="SequenceFlow_10d2jhh" sourceRef="messageCatchEvent" targetRef="EndEvent_0bkqw71" />
     <bpmn:endEvent id="EndEvent_1lek4u7">
@@ -70,12 +70,12 @@
   </bpmn:process>
   <bpmn:message id="Message_0hh3rtz" name="clientMessage">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="$.clientId" />
+      <zeebe:subscription correlationKey="clientId" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="Message_1agndym" name="dataReceived">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="$.clientId" />
+      <zeebe:subscription correlationKey="clientId" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">

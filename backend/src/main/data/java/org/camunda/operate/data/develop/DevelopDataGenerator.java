@@ -103,7 +103,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       client.newPublishMessageCommand()
         .messageName(messageName)
         .correlationKey(correlationKey)
-        .payload(payload)
+        .variables(payload)
         .timeToLive(Duration.ofSeconds(30))
         .messageId(UUID.randomUUID().toString())
         .send().join();
@@ -125,12 +125,12 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
           //fail
           throw new RuntimeException("Payment system not available.");
         case 1:
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":false}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables("{\"paid\":false}").send().join();
           break;
         case 2:
         case 3:
         case 4:
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":true}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables("{\"paid\":true}").send().join();
           break;
         case 5:
           jobClient.newCompleteCommand(job.getKey()).send().join();    //incident in gateway for v.1

@@ -50,7 +50,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.Topology;
-import io.zeebe.exporter.record.RecordValue;
+import io.zeebe.exporter.api.record.RecordValue;
 import io.zeebe.protocol.clientapi.ValueType;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;

@@ -7,7 +7,7 @@ package org.camunda.operate.zeebeimport.record.value;
 
 import java.util.Objects;
 import org.camunda.operate.zeebeimport.record.RecordValueWithPayloadImpl;
-import io.zeebe.exporter.record.value.IncidentRecordValue;
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
 
 public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
     implements IncidentRecordValue {

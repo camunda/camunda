@@ -77,8 +77,8 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     assertThat(incidentResponse.getIncidents()).hasSize(4);
     assertThat(incidentResponse.getIncidents()).isSortedAccordingTo(IncidentDto.INCIDENT_DEFAULT_COMPARATOR);
     assertIncident(incidentResponse, errorMsg, activityId, ErrorType.JOB_NO_RETRIES);
-    assertIncident(incidentResponse, "No data found for query $.orderId.", "upperTask", ErrorType.IO_MAPPING_ERROR);
-    assertIncident(incidentResponse, "Failed to extract the correlation-key by '$.clientId': no value found", "messageCatchEvent", ErrorType.EXTRACT_VALUE_ERROR);
+    assertIncident(incidentResponse, "No data found for query orderId.", "upperTask", ErrorType.IO_MAPPING_ERROR);
+    assertIncident(incidentResponse, "Failed to extract the correlation-key by 'clientId': no value found", "messageCatchEvent", ErrorType.EXTRACT_VALUE_ERROR);
     assertIncident(incidentResponse, "Expected at least one condition to evaluate to true, or to have a default flow", "exclusiveGateway", ErrorType.CONDITION_ERROR);
 
     assertThat(incidentResponse.getFlowNodes()).hasSize(4);

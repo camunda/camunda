@@ -6,7 +6,7 @@
 package org.camunda.operate.zeebeimport.record.value;
 
 import org.camunda.operate.zeebeimport.record.RecordValueImpl;
-import io.zeebe.exporter.record.value.VariableRecordValue;
+import io.zeebe.exporter.api.record.value.VariableRecordValue;
 
 public class VariableRecordValueImpl extends RecordValueImpl implements VariableRecordValue {
 
@@ -14,6 +14,7 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
   private String value;
   private long scopeKey;
   private long workflowInstanceKey;
+  private long workflowKey;
 
   @Override
   public String getName() {
@@ -35,6 +36,11 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
     return workflowInstanceKey;
   }
 
+  @Override
+  public long getWorkflowKey() {
+    return workflowKey;
+  }
+
   public void setName(String name) {
     this.name = name;
   }
@@ -51,6 +57,10 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
     this.workflowInstanceKey = workflowInstanceKey;
   }
 
+  public void setWorkflowKey(long workflowKey) {
+    this.workflowKey = workflowKey;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -64,6 +74,8 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
       return false;
     if (workflowInstanceKey != that.workflowInstanceKey)
       return false;
+    if (workflowKey != that.workflowKey)
+      return false;
     if (name != null ? !name.equals(that.name) : that.name != null)
       return false;
     return value != null ? value.equals(that.value) : that.value == null;
@@ -75,12 +87,13 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
     result = 31 * result + (value != null ? value.hashCode() : 0);
     result = 31 * result + (int) (scopeKey ^ (scopeKey >>> 32));
     result = 31 * result + (int) (workflowInstanceKey ^ (workflowInstanceKey >>> 32));
+    result = 31 * result + (int) (workflowKey ^ (workflowKey >>> 32));
     return result;
   }
 
   @Override
   public String toString() {
     return "VariableRecordValueImpl{" + "name='" + name + '\'' + ", value='" + value + '\'' + ", scopeKey=" + scopeKey + ", workflowInstanceKey="
-      + workflowInstanceKey + "} " + super.toString();
+      + workflowInstanceKey + ", workflowKey=" + workflowKey + "} " + super.toString();
   }
 }

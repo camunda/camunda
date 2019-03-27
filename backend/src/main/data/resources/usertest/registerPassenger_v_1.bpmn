@@ -27,7 +27,7 @@
     <bpmn:sequenceFlow id="SequenceFlow_1n3aihd" sourceRef="registerPassenger" targetRef="registerCabinBag" />
     <bpmn:sequenceFlow id="SequenceFlow_04tw8w0" sourceRef="registerCabinBag" targetRef="ExclusiveGateway_0dhe4io" />
     <bpmn:sequenceFlow id="SequenceFlow_06gtrty" name="yes" sourceRef="ExclusiveGateway_0dhe4io" targetRef="registerLuggage">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">$.luggage == true</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">luggage == true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:exclusiveGateway id="ExclusiveGateway_1ow3snl">
       <bpmn:incoming>SequenceFlow_15n7i0o</bpmn:incoming>
@@ -35,7 +35,7 @@
       <bpmn:outgoing>SequenceFlow_13ky0da</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_15n7i0o" name="no" sourceRef="ExclusiveGateway_0dhe4io" targetRef="ExclusiveGateway_1ow3snl">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">$.luggage == false</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">luggage == false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:serviceTask id="printOutBoardingPass" name="Print out boarding pass">
       <bpmn:extensionElements>

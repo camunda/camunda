@@ -195,7 +195,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
       .startEvent("start")
       .serviceTask("task1").zeebeTaskType("task1")
-      .zeebeInput("$.var", "$.varIn")
+      .zeebeInput("var", "varIn")
       .endEvent()
       .done();
 
