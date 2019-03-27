@@ -11,13 +11,13 @@ exports[`should have a Dropdown with more creation options 1`] = `
   <ForwardRef(DropdownOption)
     onClick={[MockFunction]}
   >
-    Create BPMN Report
+    Create Process Report
   </ForwardRef(DropdownOption)>
   <ForwardRef(DropdownOption)>
-    Create Combined BPMN Report
+    Create Combined Process Report
   </ForwardRef(DropdownOption)>
   <ForwardRef(DropdownOption)>
-    Create DMN Report
+    Create Decision Report
   </ForwardRef(DropdownOption)>
 </Dropdown>
 `;
