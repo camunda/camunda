@@ -96,13 +96,13 @@ public class TimerStartEventTest {
 
   @Before
   public void setUp() {
-    brokerRule.getClock().pinCurrentTime();
     testClient = apiRule.partitionClient();
   }
 
   @Test
   public void shouldCreateTimer() {
     // when
+    brokerRule.getClock().pinCurrentTime();
     testClient.deploy(SIMPLE_MODEL);
 
     // then
@@ -292,6 +292,7 @@ public class TimerStartEventTest {
   @Test
   public void shouldUpdateTimerPeriod() {
     // when
+    brokerRule.getClock().pinCurrentTime();
     long beginTime = brokerRule.getClock().getCurrentTimeInMillis();
     testClient.deploy(THREE_SEC_MODEL);
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).exists()).isTrue();
