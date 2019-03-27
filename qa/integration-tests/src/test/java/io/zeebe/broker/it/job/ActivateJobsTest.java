@@ -15,12 +15,13 @@
  */
 package io.zeebe.broker.it.job;
 
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.it.GrpcClientRule;
-import io.zeebe.broker.it.clustering.ClusteringRule;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.api.response.ActivatedJob;
@@ -47,6 +48,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 public class ActivateJobsTest {
@@ -54,9 +56,13 @@ public class ActivateJobsTest {
   private static final String JOB_TYPE = "testJob";
   private static final Map<String, Object> CUSTOM_HEADERS = Collections.singletonMap("foo", "bar");
   private static final Map<String, Object> VARIABLES = Collections.singletonMap("hello", "world");
+  private static final int PARTITION_COUNT = 3;
 
-  @Rule public ClusteringRule clusteringRule = new ClusteringRule();
-  @Rule public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
+  private final EmbeddedBrokerRule embeddedBrokerRule =
+      new EmbeddedBrokerRule(setPartitionCount(PARTITION_COUNT));
+  public GrpcClientRule clientRule = new GrpcClientRule(embeddedBrokerRule);
+
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(embeddedBrokerRule).around(clientRule);
 
   @Rule public Timeout timeout = Timeout.seconds(60);
 
@@ -79,7 +85,7 @@ public class ActivateJobsTest {
     // given
     final String worker = "testWorker";
     final Duration timeout = Duration.ofMinutes(4);
-    final int amount = clusteringRule.getPartitionIds().size() * 3;
+    final int amount = PARTITION_COUNT * 3;
 
     final List<Long> jobKeys = createJobs(amount);
 
@@ -148,12 +154,11 @@ public class ActivateJobsTest {
   @Test
   public void shouldActivateJobsOnPartitionsRoundRobin() {
     // given
-    final List<Integer> partitionIds = clusteringRule.getPartitionIds();
-    createJobs(partitionIds.size() * 3);
+    createJobs(PARTITION_COUNT * 3);
 
     // when
     final List<Integer> activatedPartitionIds =
-        IntStream.range(0, partitionIds.size())
+        IntStream.range(0, PARTITION_COUNT)
             .boxed()
             .flatMap(
                 i ->
@@ -164,7 +169,7 @@ public class ActivateJobsTest {
             .collect(Collectors.toList());
 
     // then
-    assertThat(activatedPartitionIds).containsOnlyElementsOf(partitionIds);
+    assertThat(activatedPartitionIds).containsOnly(0, 1, 2);
   }
 
   @Test
