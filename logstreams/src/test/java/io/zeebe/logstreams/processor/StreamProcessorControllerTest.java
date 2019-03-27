@@ -139,17 +139,20 @@ public class StreamProcessorControllerTest {
   public void testStreamProcessorLifecycleOnRecoverableException() throws Exception {
     // given
     final CountDownLatch latch = new CountDownLatch(2);
-    doAnswer(
-            (invocationOnMock -> {
-              latch.countDown();
-              return invocationOnMock.callRealMethod();
-            }))
-        .when(streamProcessor)
-        .onEvent(any());
+    changeMockInActorContext(
+        () -> {
+          doAnswer(
+                  (invocationOnMock -> {
+                    latch.countDown();
+                    return invocationOnMock.callRealMethod();
+                  }))
+              .when(streamProcessor)
+              .onEvent(any());
 
-    doThrow(new RecoverableException("expected", new RuntimeException("expected")))
-        .when(dbContext)
-        .getCurrentTransaction();
+          doThrow(new RecoverableException("expected", new RuntimeException("expected")))
+              .when(dbContext)
+              .getCurrentTransaction();
+        });
 
     // when
     writer.writeEvent(EVENT_1, true);
@@ -172,7 +175,8 @@ public class StreamProcessorControllerTest {
   public void testStreamProcessorLifecycleOnError() throws Exception {
     // given
     final EventProcessor eventProcessorSpy = streamProcessor.getEventProcessorSpy();
-    doThrow(new RuntimeException("expected")).when(eventProcessorSpy).processEvent();
+    changeMockInActorContext(
+        () -> doThrow(new RuntimeException("expected")).when(eventProcessorSpy).processEvent());
 
     // when
     writeEventAndWaitUntilProcessedOrFailed(EVENT_1);
