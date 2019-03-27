@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,7 +21,6 @@ import org.quartz.TriggerKey;
 import javax.mail.internet.MimeMessage;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -41,9 +41,17 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
       .around(engineRule)
       .around(embeddedOptimizeRule);
 
+  private GreenMail greenMail;
+
   @Before
   public void cleanUp() throws Exception {
     embeddedOptimizeRule.getAlertService().getScheduler().clear();
+    greenMail = initGreenMail();
+  }
+
+  @After
+  public void tearDown() {
+    greenMail.stop();
   }
 
   @Test
@@ -92,7 +100,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   @Test
   public void reportDeletionRemovesAlert() throws Exception {
     //given
-    AlertCreationDto simpleAlert = setupBasicAlert();
+    AlertCreationDto simpleAlert = setupBasicProcessAlert();
 
     Response response = embeddedOptimizeRule
             .getRequestExecutor()
@@ -130,7 +138,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   @Test
   public void createNewAlertPropagatedToScheduler() throws Exception {
     //given
-    AlertCreationDto simpleAlert = setupBasicAlert();
+    AlertCreationDto simpleAlert = setupBasicProcessAlert();
 
     // when
     String id =
@@ -148,9 +156,26 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   }
 
   @Test
+  public void createNewAlertDecisionReport() {
+    //given
+    AlertCreationDto simpleAlert = setupBasicDecisionAlert();
+    setEmailConfiguration();
+
+    // when
+    String id =
+      embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateAlertRequest(simpleAlert)
+            .execute(String.class, 200);
+
+    // then
+    assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
+  }
+
+  @Test
   public void deletedAlertsAreRemovedFromScheduler() throws Exception {
     //given
-    AlertCreationDto simpleAlert = setupBasicAlert();
+    AlertCreationDto simpleAlert = setupBasicProcessAlert();
 
     String alertId = embeddedOptimizeRule
             .getRequestExecutor()
@@ -175,7 +200,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   @Test
   public void updatedAlertIsRescheduled() throws Exception {
     //given
-    AlertCreationDto simpleAlert = setupBasicAlert();
+    AlertCreationDto simpleAlert = setupBasicProcessAlert();
 
     String alertId =
       embeddedOptimizeRule
@@ -235,32 +260,27 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   public void testScheduleTriggers() throws Exception {
 
     //given
-    GreenMail greenMail = initGreenMail();
-    try {
-      String reportId = startProcessAndCreateReport();
-      setEmailConfiguration();
+    String reportId = startProcessAndCreateReport();
+    setEmailConfiguration();
 
-      // when
-      AlertCreationDto simpleAlert = createSimpleAlert(reportId);
-      embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateAlertRequest(simpleAlert)
-            .execute();
-      assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
+    // when
+    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
+    embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateAlertRequest(simpleAlert)
+      .execute();
+    assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
 
-      //then
-      MimeMessage[] emails = greenMail.getReceivedMessages();
-      assertThat(emails.length, is(1));
-      assertThat(emails[0].getSubject(), is("[Camunda-Optimize] - Report status"));
-      String content = emails[0].getContent().toString();
-      assertThat(content, containsString(simpleAlert.getName()));
-      assertThat(content, containsString("http://localhost:8090/#/report/" + reportId));
-    } finally {
-      greenMail.stop();
-    }
+    //then
+    MimeMessage[] emails = greenMail.getReceivedMessages();
+    assertThat(emails.length, is(1));
+    assertThat(emails[0].getSubject(), is("[Camunda-Optimize] - Report status"));
+    String content = emails[0].getContent().toString();
+    assertThat(content, containsString(simpleAlert.getName()));
+    assertThat(content, containsString("http://localhost:8090/#/report/" + reportId));
   }
 
-  private String startProcessAndCreateReport() throws IOException {
+  private String startProcessAndCreateReport() {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
     engineRule.startProcessInstance(processDefinition.getId());
 

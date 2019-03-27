@@ -82,7 +82,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
   @Test
   public void reminderIsNotCreatedOnStartupIfNotDefinedInAlert() throws Exception {
     //given
-    AlertCreationDto alert = setupBasicAlert();
+    AlertCreationDto alert = setupBasicProcessAlert();
     createAlert(alert);
 
     //when

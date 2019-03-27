@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.report.result.process;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
+import org.camunda.optimize.service.es.report.result.NumberResult;
 import org.camunda.optimize.service.es.report.result.ReportResult;
 
 import java.util.LinkedList;

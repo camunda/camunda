@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es.report.result.process;
+package org.camunda.optimize.service.es.report.result;
 
 public interface NumberResult {
 

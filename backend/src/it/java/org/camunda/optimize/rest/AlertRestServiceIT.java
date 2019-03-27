@@ -181,12 +181,12 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   }
 
   @Test
-  public void getAuthorizedAlertsOnly() throws Exception {
+  public void getAuthorizedAlertsOnly() {
     //given
     engineRule.addUser("kermit", "kermit");
     engineRule.grantUserOptimizeAccess("kermit");
-    AlertCreationDto alert1 = setupBasicAlert("processDefinition1");
-    AlertCreationDto alert2 = setupBasicAlert("processDefinition2");
+    AlertCreationDto alert1 = setupBasicProcessAlert("processDefinition1");
+    AlertCreationDto alert2 = setupBasicProcessAlert("processDefinition2");
     addAlertToOptimize(alert1);
     addAlertToOptimize(alert2);
     grantSingleDefinitionAuthorizationsForUser("kermit", "processDefinition1");

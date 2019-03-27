@@ -5,7 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
-import org.camunda.optimize.service.es.report.result.process.NumberResult;
+import org.camunda.optimize.service.es.report.result.NumberResult;
 import org.camunda.optimize.service.es.writer.AlertWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.quartz.Job;

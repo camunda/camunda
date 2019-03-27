@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.report.result.decision;
 
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportNumberResultDto;
+import org.camunda.optimize.service.es.report.result.NumberResult;
 import org.camunda.optimize.service.es.report.result.ReportResult;
 
 import java.util.LinkedList;
@@ -9,7 +10,7 @@ import java.util.List;
 import java.util.Set;
 
 public class SingleDecisionNumberReportResult
-  extends ReportResult<DecisionReportNumberResultDto, DecisionReportDataDto> {
+  extends ReportResult<DecisionReportNumberResultDto, DecisionReportDataDto> implements NumberResult {
 
   public SingleDecisionNumberReportResult(DecisionReportNumberResultDto reportResultDto) {
     super(reportResultDto);
@@ -30,5 +31,10 @@ public class SingleDecisionNumberReportResult
   @Override
   public void copyReportData(DecisionReportDataDto data) {
     reportResultDto.setData(data);
+  }
+
+  @Override
+  public long getResultAsNumber() {
+    return reportResultDto.getResult();
   }
 }

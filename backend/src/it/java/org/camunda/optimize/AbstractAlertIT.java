@@ -4,12 +4,16 @@ import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
+import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -18,12 +22,13 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.DecisionReportDataType;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.quartz.JobKey;
 import org.quartz.SchedulerException;
 
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -35,6 +40,7 @@ import java.util.Map;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.test.util.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -51,17 +57,17 @@ public abstract class AbstractAlertIT {
 
   protected String createAlert(AlertCreationDto simpleAlert) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateAlertRequest(simpleAlert)
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateAlertRequest(simpleAlert)
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   protected void triggerAndCompleteCheckJob(String id) throws SchedulerException, InterruptedException {
     this.triggerAndCompleteJob(checkJobKey(id));
   }
 
-  protected void triggerAndCompleteJob(JobKey jobKey ) throws SchedulerException, InterruptedException {
+  private void triggerAndCompleteJob(JobKey jobKey) throws SchedulerException, InterruptedException {
     SyncListener jobListener = new SyncListener(1);
     embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
     //trigger job
@@ -71,7 +77,7 @@ public abstract class AbstractAlertIT {
     embeddedOptimizeRule.getAlertService().getScheduler().getListenerManager().removeJobListener(jobListener.getName());
   }
 
-  protected void triggerAndCompleteReminderJob(String id) throws SchedulerException, InterruptedException  {
+  protected void triggerAndCompleteReminderJob(String id) throws SchedulerException, InterruptedException {
     this.triggerAndCompleteJob(reminderJobKey(id));
   }
 
@@ -80,7 +86,7 @@ public abstract class AbstractAlertIT {
   }
 
   protected OffsetDateTime getNextReminderExecutionTime(String id) throws SchedulerException {
-    Date nextTimeReminderIsExecuted =  embeddedOptimizeRule
+    Date nextTimeReminderIsExecuted = embeddedOptimizeRule
       .getAlertService()
       .getScheduler()
       .getTriggersOfJob(reminderJobKey(id))
@@ -102,30 +108,30 @@ public abstract class AbstractAlertIT {
     return deployAndStartSimpleProcessWithVariables(new HashMap<>());
   }
 
-  protected ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
+  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-        .name("aProcessName")
-        .startEvent()
-        .endEvent()
-        .done();
+      .name("aProcessName")
+      .startEvent()
+      .endEvent()
+      .done();
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  protected void adjustProcessInstanceDates(String processInstanceId,
-                                            OffsetDateTime startDate,
-                                            long daysToShift,
-                                            long durationInSec) throws SQLException {
+  private void adjustProcessInstanceDates(String processInstanceId,
+                                          OffsetDateTime startDate,
+                                          long daysToShift,
+                                          long durationInSec) throws SQLException {
     OffsetDateTime shiftedStartDate = startDate.plusDays(daysToShift);
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceId, shiftedStartDate.plusSeconds(durationInSec));
   }
 
-  protected JobKey checkJobKey(String id) {
+  private JobKey checkJobKey(String id) {
     return new JobKey(id + "-check-job", "statusCheck-job");
   }
 
-  protected AlertCreationDto createBasicAlertWithReminder() throws IOException {
-    AlertCreationDto simpleAlert = setupBasicAlert();
+  protected AlertCreationDto createBasicAlertWithReminder() {
+    AlertCreationDto simpleAlert = setupBasicProcessAlert();
     AlertInterval reminderInterval = new AlertInterval();
     reminderInterval.setValue(1);
     reminderInterval.setUnit("Seconds");
@@ -133,11 +139,44 @@ public abstract class AbstractAlertIT {
     return simpleAlert;
   }
 
-  protected AlertCreationDto setupBasicAlert() throws IOException {
-    return setupBasicAlert("aProcess");
+  protected AlertCreationDto setupBasicDecisionAlert() {
+    DecisionDefinitionEngineDto decisionDefinitionDto = deployAndStartSimpleDecisionDefinition();
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    String id = createAndStoreDecisionNumberReport(decisionDefinitionDto);
+    return createSimpleAlert(id);
   }
 
-  protected AlertCreationDto setupBasicAlert(String definitionKey) throws IOException {
+  private String createAndStoreDecisionNumberReport(DecisionDefinitionEngineDto decisionDefinitionDto1) {
+    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
+    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
+      .setDecisionDefinitionVersion(decisionDefinitionVersion1)
+      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
+      .build();
+
+    SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
+    report.setData(reportData);
+    report.setId("something");
+    report.setLastModifier("something");
+    report.setName("something");
+    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
+    report.setCreated(someDate);
+    report.setLastModified(someDate);
+    report.setOwner("something");
+
+    String id = createNewDecisionReport();
+    updateReport(id, report);
+    return id;
+  }
+
+  protected AlertCreationDto setupBasicProcessAlert() {
+    return setupBasicProcessAlert("aProcess");
+  }
+
+  protected AlertCreationDto setupBasicProcessAlert(String definitionKey) {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess(definitionKey);
     engineRule.startProcessInstance(processDefinition.getId());
 
@@ -149,7 +188,7 @@ public abstract class AbstractAlertIT {
   }
 
   protected AlertCreationDto createSimpleAlert(String reportId) {
-    return createSimpleAlert(reportId, 1,"Seconds");
+    return createSimpleAlert(reportId, 1, "Seconds");
   }
 
   protected AlertCreationDto createSimpleAlert(String reportId, int intervalValue, String unit) {
@@ -168,18 +207,29 @@ public abstract class AbstractAlertIT {
     return alertCreationDto;
   }
 
-  private String createNewReportHelper() {
+  private String createNewProcessReport() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateSingleProcessReportRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private String createNewDecisionReport() {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateSingleDecisionReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
 
   protected String createAndStoreNumberReport(ProcessDefinitionEngineDto processDefinition) {
-    String id = createNewReportHelper();
-    ReportDefinitionDto report = getReportDefinitionDto(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+    String id = createNewProcessReport();
+    ReportDefinitionDto report = getReportDefinitionDto(
+      processDefinition.getKey(),
+      String.valueOf(processDefinition.getVersion())
+    );
     updateReport(id, report);
     return id;
   }
@@ -189,7 +239,8 @@ public abstract class AbstractAlertIT {
   }
 
 
-  protected SingleProcessReportDefinitionDto getReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
+  protected SingleProcessReportDefinitionDto getReportDefinitionDto(String processDefinitionKey,
+                                                                    String processDefinitionVersion) {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNoneAsNumber(
       processDefinitionKey, processDefinitionVersion
     );
@@ -207,40 +258,44 @@ public abstract class AbstractAlertIT {
 
   protected void updateReport(String id, ReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
+      .getRequestExecutor()
       .buildUpdateReportRequest(id, updatedReport, true)
-            .execute();
+      .execute();
     assertThat(response.getStatus(), is(204));
   }
 
-  protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() throws IOException {
+  protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
     return deploySimpleServiceTaskProcess("aProcess");
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(String definitionKey) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess(definitionKey)
       .name("aProcessName")
-        .startEvent()
-          .serviceTask()
-            .camundaExpression("${true}")
-        .endEvent()
-        .done();
+      .startEvent()
+      .serviceTask()
+      .camundaExpression("${true}")
+      .endEvent()
+      .done();
     return engineRule.deployProcessAndGetProcessDefinition(processModel);
   }
 
   protected String createAndStoreDurationNumberReport(ProcessInstanceEngineDto instanceEngineDto) {
-    return createAndStoreDurationNumberReport(instanceEngineDto.getProcessDefinitionKey(), instanceEngineDto.getProcessDefinitionVersion());
+    return createAndStoreDurationNumberReport(
+      instanceEngineDto.getProcessDefinitionKey(),
+      instanceEngineDto.getProcessDefinitionVersion()
+    );
   }
 
   private String createAndStoreDurationNumberReport(String processDefinitionKey, String processDefinitionVersion) {
-    String id = createNewReportHelper();
+    String id = createNewProcessReport();
     ReportDefinitionDto report =
       getDurationReportDefinitionDto(processDefinitionKey, processDefinitionVersion);
     updateReport(id, report);
     return id;
   }
 
-  private SingleProcessReportDefinitionDto getDurationReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
+  private SingleProcessReportDefinitionDto getDurationReportDefinitionDto(String processDefinitionKey,
+                                                                          String processDefinitionVersion) {
     ProcessReportDataDto reportData = createProcessInstanceDurationGroupByNone(
       processDefinitionKey, processDefinitionVersion
     );
@@ -282,5 +337,10 @@ public abstract class AbstractAlertIT {
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(userId);
     engineRule.createAuthorization(authorizationDto);
+  }
+
+  private DecisionDefinitionEngineDto deployAndStartSimpleDecisionDefinition() {
+    final DmnModelInstance modelInstance = createSimpleDmnModel("key");
+    return engineRule.deployAndStartDecisionDefinition(modelInstance);
   }
 }
