@@ -199,14 +199,12 @@ workflowKey:1 bpmnProcessId:"order-process" version:1 workflowInstanceKey:6
 
 You did it! You want to see how the workflow instance is executed?
 
-Start the Zeebe Monitor using `java -jar zeebe-simple-monitor.jar`.
+Start the Zeebe Monitor using `java -jar zeebe-simple-monitor-app-*.jar`.
 
 Open a web browser and go to <http://localhost:8080/>.
 
-Connect to the broker and switch to the workflow instances view.
-Here, you see the current state of the workflow instance which includes active jobs, completed activities, the payload and open incidents.
-
-![zeebe-monitor-step-1](/java-client/zeebe-monitor-1.png)
+Here, you see the current state of the workflow instance.
+![zeebe-monitor-step-1](/java-client/java-get-started-monitor-1.gif)
 
 
 ## Work on a task
@@ -322,7 +320,7 @@ it encounters a problem while processing the job.
 
 When you have a look at the Zeebe Monitor, then you can see that the workflow instance moved from the first service task to the next one:
 
-![zeebe-monitor-step-2](/go-client/zeebe-monitor-2.png)
+![zeebe-monitor-step-2](/java-client/java-get-started-monitor-2.gif)
 
 When you run the above example you should see similar output:
 

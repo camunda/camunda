@@ -215,7 +215,7 @@ and completed by a [job worker](/basics/job-workers.html). A job worker is a
 long living process which repeatedly tries to activate jobs for a given job
 type and completes them after executing its business logic. The `zbctl` also
 provides a command to spawn simple job workers using an external command or
-script. The job worker will receive for every job the payload as JSON object on
+script. The job worker will receive for every job the workflow instance variables as JSON object on
 `stdin` and has to return its result also as JSON object on `stdout` if it
 handled the job successfully.
 
