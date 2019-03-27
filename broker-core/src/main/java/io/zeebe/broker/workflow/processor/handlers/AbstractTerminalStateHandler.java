@@ -60,6 +60,7 @@ public class AbstractTerminalStateHandler<T extends ExecutableFlowElement>
     final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
 
     for (final IndexedRecord record : deferredRecords) {
+      record.getValue().setFlowScopeKey(flowScopeInstance.getKey());
       context
           .getOutput()
           .appendFollowUpEvent(record.getKey(), record.getState(), record.getValue());

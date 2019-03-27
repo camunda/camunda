@@ -27,7 +27,6 @@ import static org.mockito.Mockito.verify;
 
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.state.ElementInstance;
-import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import org.junit.Before;
@@ -83,32 +82,6 @@ public class ElementCompletedHandlerTest extends ElementHandlerTestCase {
 
     // when - then
     assertThat(handler.shouldHandleState(context)).isTrue();
-  }
-
-  @Test
-  public void shouldPublishDeferredRecords() {
-    // given
-    final ElementInstance flowScope = newElementInstance(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    final int currentTokens = flowScope.getNumberOfActiveTokens();
-    final ElementInstance instance =
-        createAndSetContextElementInstance(WorkflowInstanceIntent.ELEMENT_COMPLETED, flowScope);
-    final ElementInstance deferred = newElementInstance(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    context
-        .getElementInstanceState()
-        .storeRecord(
-            deferred.getKey(),
-            instance.getKey(),
-            deferred.getValue(),
-            deferred.getState(),
-            Purpose.DEFERRED);
-
-    // when
-    handler.handleState(context);
-
-    // then
-    assertThat(flowScope.getNumberOfActiveTokens()).isEqualTo(currentTokens + 1);
-    verify(eventOutput, times(1))
-        .appendFollowUpEvent(deferred.getKey(), deferred.getState(), deferred.getValue());
   }
 
   @Test

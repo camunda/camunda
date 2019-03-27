@@ -41,6 +41,7 @@ import io.zeebe.broker.workflow.processor.handlers.element.ElementTerminatedHand
 import io.zeebe.broker.workflow.processor.handlers.element.ElementTerminatingHandler;
 import io.zeebe.broker.workflow.processor.handlers.element.EventOccurredHandler;
 import io.zeebe.broker.workflow.processor.handlers.gateway.EventBasedGatewayElementActivatingHandler;
+import io.zeebe.broker.workflow.processor.handlers.gateway.EventBasedGatewayElementCompletedHandler;
 import io.zeebe.broker.workflow.processor.handlers.gateway.EventBasedGatewayElementCompletingHandler;
 import io.zeebe.broker.workflow.processor.handlers.gateway.EventBasedGatewayElementTerminatingHandler;
 import io.zeebe.broker.workflow.processor.handlers.gateway.EventBasedGatewayEventOccurredHandler;
@@ -100,10 +101,16 @@ public class BpmnStepHandlers {
     stepHandlers.put(
         BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_TERMINATING,
         new EventBasedGatewayElementTerminatingHandler<>(state.getIncidentState()));
+    stepHandlers.put(
+        BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_COMPLETED,
+        new EventBasedGatewayElementCompletedHandler<>());
 
     stepHandlers.put(
         BpmnStep.EXCLUSIVE_GATEWAY_ELEMENT_ACTIVATING,
         new ExclusiveGatewayElementActivatingHandler<>());
+    stepHandlers.put(
+        BpmnStep.EXCLUSIVE_GATEWAY_ELEMENT_COMPLETED,
+        new EventBasedGatewayElementCompletedHandler<>());
 
     stepHandlers.put(
         BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_ACTIVATING,
