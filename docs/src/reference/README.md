@@ -7,5 +7,5 @@ This section gives in-depth explanations of Zeebe usage concepts.
 * [Conditions](reference/conditions.html)
 * [Message Correlation](reference/message-correlation.html)
 * [Incidents](reference/incidents.html)
-* [Partitions](reference/partitions.html)
+* [gRPC](reference/grpc.html)
 * [Exporters](reference/exporters.html)

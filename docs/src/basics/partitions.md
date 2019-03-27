@@ -23,3 +23,11 @@ A partition is a persistent append-only event stream. Initially, a partition is 
 ## Replication
 
 For fault tolerance, data in a partition is replicated from the leader of the partition to its *followers*. Followers are other Zeebe Broker nodes that maintain a copy of the partition without performing event processing.
+
+## Recommendations
+
+Choosing the number of partitions depends on the use case, workload and cluster setup. Here are some rules of thumb:
+
+* For testing and early development, start with a single partition. Note that Zeebe's workflow processing is highly optimized for efficiency, so a single partition can already handle high event loads.
+* With a single Zeebe Broker, a single partition is mostly enough. However, if the node has many cores and the broker is configured to use them, then more partitions can increase the total throughput (~ 2 threads per partition).
+* Base your decisions on data. Simulate the expected workload, measure and compare the performance of different partition setups.

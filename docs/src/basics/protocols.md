@@ -1,8 +1,8 @@
-# gRPC in Zeebe
+# Protocols
 
 Zeebe clients connect to brokers via a stateless gateway. For the communication
-between client and gateway gRPC is used. The communication protocol is defined using
-Protocol Buffers v3 (proto3), and you can find it in the
+between client and gateway [gRPC](https://grpc.io/) is used. The communication protocol is defined using
+Protocol Buffers v3 ([proto3](https://developers.google.com/protocol-buffers/docs/proto3)), and you can find it in the
 [Zeebe repository](https://github.com/zeebe-io/zeebe/tree/develop/gateway-protocol).
 
 
