@@ -9,8 +9,8 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
@@ -43,7 +43,8 @@ import java.util.stream.IntStream;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper
+  .createCountProcessInstanceFrequencyGroupByStartDate;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -544,9 +545,12 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByStartDate(
       processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), GroupByDateUnit.DAY
     );
-    List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
-      .id("task1")
-      .build();
+
+    List<ProcessFilterDto> flowNodeFilter = ProcessFilterBuilder.filter().executedFlowNodes()
+          .id("task1")
+          .add()
+          .buildList();
+
     reportData.getFilter().addAll(flowNodeFilter);
     ProcessReportMapResultDto result = evaluateReport(reportData);
 

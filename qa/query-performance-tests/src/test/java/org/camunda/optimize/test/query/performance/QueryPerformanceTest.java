@@ -11,15 +11,13 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.DateUtilHelper;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.PropertyUtil;
@@ -48,7 +46,6 @@ import java.util.concurrent.TimeoutException;
 
 import static java.time.temporal.ChronoUnit.YEARS;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
-import static org.camunda.optimize.test.util.ProcessVariableFilterUtilHelper.createBooleanVariableFilter;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
@@ -138,17 +135,32 @@ public class QueryPerformanceTest {
   }
 
   private static List<ProcessFilterDto> createFilter() {
-    List<ProcessFilterDto> filterList = new ArrayList<>();
-
-    VariableFilterDto booleanVariableFilter =
-      createBooleanVariableFilter("boolVar", String.valueOf(randomGen.nextBoolean()));
-    filterList.add(booleanVariableFilter);
-    filterList.addAll(DateUtilHelper.createFixedStartDateFilter(null, OffsetDateTime.now().minusYears(100L)));
-    filterList.addAll(DateUtilHelper.createFixedEndDateFilter(null, OffsetDateTime.now().plusYears(100L)));
-    filterList.add(new CompletedInstancesOnlyFilterDto());
-    filterList.addAll(DateUtilHelper.createDurationFilter(LESS_THAN, 100, YEARS.toString()));
-    return filterList;
+    // @formatter:off
+    return ProcessFilterBuilder
+      .filter()
+        .variable()
+        .booleanType()
+        .values(Collections.singletonList(String.valueOf(randomGen.nextBoolean())))
+        .name("boolVar")
+      .add()
+        .fixedStartDate()
+        .start(null)
+        .end(OffsetDateTime.now().minusYears(100L))
+      .add()
+        .fixedEndDate()
+        .start(null)
+        .end(OffsetDateTime.now().plusYears(100L))
+      .add()
+        .completedInstancesOnly()
+      .add()
+        .duration()
+        .unit(YEARS.toString())
+        .value((long) 100)
+        .operator(LESS_THAN)
+      .add()
+      .buildList();
   }
+  // @formatter:on
 
   private static void importEngineData() throws InterruptedException, TimeoutException {
     logger.info("Start importing engine data...");

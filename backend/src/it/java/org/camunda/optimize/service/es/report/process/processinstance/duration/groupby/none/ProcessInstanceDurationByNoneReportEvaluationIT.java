@@ -7,8 +7,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
@@ -28,11 +27,9 @@ import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
-import static org.camunda.optimize.test.util.ProcessVariableFilterUtilHelper.createBooleanVariableFilter;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -293,7 +290,13 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .build();
 
-    reportData.setFilter(createVariableFilter("true"));
+    reportData.setFilter(ProcessFilterBuilder
+                           .filter()
+                           .variable()
+                           .booleanTrue()
+                           .name("var")
+                           .add()
+                           .buildList());
     ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
 
     // then
@@ -305,7 +308,13 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     assertThat(calculatedResult.getMedian(), is(1000L));
 
     // when
-    reportData.setFilter(createVariableFilter("false"));
+    reportData.setFilter(ProcessFilterBuilder
+                           .filter()
+                           .variable()
+                           .booleanFalse()
+                           .name("var")
+                           .add()
+                           .buildList());
     resultDto = evaluateReport(reportData);
 
     // then
@@ -315,11 +324,6 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     assertThat(calculatedResult.getMax(), is(0L));
     assertThat(calculatedResult.getMin(), is(0L));
     assertThat(calculatedResult.getMedian(), is(0L));
-  }
-
-  private List<ProcessFilterDto> createVariableFilter(String value) {
-    VariableFilterDto variableFilterDto = createBooleanVariableFilter("var", value);
-    return Collections.singletonList(variableFilterDto);
   }
 
   @Test

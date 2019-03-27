@@ -6,16 +6,12 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.DateUtilHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -26,7 +22,6 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +29,6 @@ import java.util.Map;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
-
 
 
 public class BranchAnalysisQueryIT {
@@ -54,7 +48,7 @@ public class BranchAnalysisQueryIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   private static final String START_EVENT_ID = "startEvent";
   private static final String SPLITTING_GATEWAY_ID = "splittingGateway";
@@ -64,6 +58,7 @@ public class BranchAnalysisQueryIT {
   private static final String END_EVENT_ID = "endEvent";
   private static final String USER_TASK_ID = "userTask";
 
+  // @formatter:off
   private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() throws Exception {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent(START_EVENT_ID)
@@ -87,23 +82,26 @@ public class BranchAnalysisQueryIT {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent(START_EVENT_ID)
       .exclusiveGateway(SPLITTING_GATEWAY_ID)
-      .name("Should we go to task 1?")
+        .name("Should we go to task 1?")
         .condition("yes", "${goToTask1}")
         .serviceTask(TASK_ID_1)
-          .camundaExpression("${true}")
-        .exclusiveGateway(MERGE_GATEWAY_ID)
+        .camundaExpression("${true}")
+      .exclusiveGateway(MERGE_GATEWAY_ID)
         .endEvent(END_EVENT_ID)
       .moveToNode(SPLITTING_GATEWAY_ID)
         .condition("no", "${!goToTask1}")
         .serviceTask(TASK_ID_2)
-          .camundaExpression("${true}")
+        .camundaExpression("${true}")
         .userTask(USER_TASK_ID)
         .connectTo(MERGE_GATEWAY_ID)
       .done();
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
+  // @formatter:on
 
-  private ProcessInstanceEngineDto startSimpleGatewayProcessAndTakeTask1(ProcessDefinitionEngineDto processDefinition) throws IOException {
+  private ProcessInstanceEngineDto startSimpleGatewayProcessAndTakeTask1(ProcessDefinitionEngineDto
+                                                                           processDefinition) throws
+                                                                                                                       IOException {
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask1", true);
     return engineRule.startProcessInstance(processDefinition.getId(), variables);
@@ -248,7 +246,7 @@ public class BranchAnalysisQueryIT {
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     ProcessInstanceEngineDto processInstance = startSimpleGatewayProcessAndTakeTask1(processDefinition);
     OffsetDateTime now =
-        engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+      engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
@@ -259,8 +257,14 @@ public class BranchAnalysisQueryIT {
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
 
-    DateUtilHelper.addStartDateFilter(null, now, dto);
-    logger.debug("Preparing query on [{}] with operator [{}], type [{}], date [{}]", processDefinition, "<=", "start_date", now);
+    addStartDateFilter(null, now, dto);
+    logger.debug(
+      "Preparing query on [{}] with operator [{}], type [{}], date [{}]",
+      processDefinition,
+      "<=",
+      "start_date",
+      now
+    );
 
     BranchAnalysisDto result = getBranchAnalysisDto(dto);
     //then
@@ -286,7 +290,7 @@ public class BranchAnalysisQueryIT {
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     ProcessInstanceEngineDto processInstance = startSimpleGatewayProcessAndTakeTask1(processDefinition);
     OffsetDateTime now =
-        engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+      engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
@@ -295,7 +299,7 @@ public class BranchAnalysisQueryIT {
     dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
-    DateUtilHelper.addStartDateFilter(now.plusSeconds(1L), null, dto);
+    addStartDateFilter(now.plusSeconds(1L), null, dto);
 
     //when
     BranchAnalysisDto result = getBranchAnalysisDto(dto);
@@ -331,7 +335,7 @@ public class BranchAnalysisQueryIT {
     dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
-    DateUtilHelper.addStartDateFilter(nowPlusTimeInSec(-20), null, dto);
+    addStartDateFilter(nowPlusTimeInSec(-20), null, dto);
 
     //when
     BranchAnalysisDto result = getBranchAnalysisDto(dto);
@@ -353,6 +357,7 @@ public class BranchAnalysisQueryIT {
     assertThat(task2.getActivityCount(), is(0L));
   }
 
+  // @formatter:off
   @Test
   public void bypassOfGatewayDoesNotDistortResult() throws Exception {
     //given
@@ -374,6 +379,7 @@ public class BranchAnalysisQueryIT {
           .camundaExpression("${true}")
         .connectTo(GATEWAY_F)
       .done();
+  // @formatter:on
     ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
     startBypassProcessAndTakeLongWayWithoutTask(processDefinition);
     startBypassProcessAndTakeShortcut(processDefinition);
@@ -407,7 +413,8 @@ public class BranchAnalysisQueryIT {
     assertThat(task.getActivityCount(), is(1L));
   }
 
-  private void startBypassProcessAndTakeLongWayWithoutTask(ProcessDefinitionEngineDto processDefinition) throws IOException {
+  private void startBypassProcessAndTakeLongWayWithoutTask(ProcessDefinitionEngineDto processDefinition) throws
+                                                                                                         IOException {
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask", false);
     variables.put("takeShortcut", false);
@@ -420,7 +427,8 @@ public class BranchAnalysisQueryIT {
     engineRule.startProcessInstance(processDefinition.getId(), variables);
   }
 
-  private void startBypassProcessAndTakeLongWayWithTask(ProcessDefinitionEngineDto processDefinition) throws IOException {
+  private void startBypassProcessAndTakeLongWayWithTask(ProcessDefinitionEngineDto processDefinition) throws
+                                                                                                      IOException {
     Map<String, Object> variables = new HashMap<>();
     variables.put("takeShortcut", false);
     variables.put("goToTask", true);
@@ -440,7 +448,12 @@ public class BranchAnalysisQueryIT {
     dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
-    dto.setFilter(createVariableFilter());
+    dto.setFilter(ProcessFilterBuilder.filter()
+                    .variable()
+                    .booleanTrue()
+                    .name("goToTask1")
+                    .add()
+                    .buildList());
 
     //when
     BranchAnalysisDto result = getBranchAnalysisDto(dto);
@@ -475,9 +488,12 @@ public class BranchAnalysisQueryIT {
     dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);
-    List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
-          .id("task1")
-          .build();
+    List<ProcessFilterDto> flowNodeFilter = ProcessFilterBuilder
+      .filter()
+      .executedFlowNodes()
+      .id("task1")
+      .add()
+      .buildList();
     dto.getFilter().addAll(flowNodeFilter);
 
     //when
@@ -500,35 +516,29 @@ public class BranchAnalysisQueryIT {
     assertThat(task2.getActivityCount(), is(0L));
   }
 
-  private List<ProcessFilterDto> createVariableFilter() {
-    BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto("true");
-    data.setName("goToTask1");
-
-    VariableFilterDto variableFilterDto = new VariableFilterDto();
-    variableFilterDto.setData(data);
-    return Collections.singletonList(variableFilterDto);
-  }
-
   @Test
   public void shortcutInExclusiveGatewayDoesNotDistortBranchAnalysis() throws Exception {
     // given
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-    .startEvent("startEvent")
-    .exclusiveGateway("splittingGateway")
+      .startEvent("startEvent")
+      .exclusiveGateway("splittingGateway")
       .condition("Take long way", "${!takeShortcut}")
       .serviceTask("serviceTask")
-        .camundaExpression("${true}")
+      .camundaExpression("${true}")
       .exclusiveGateway("mergeExclusiveGateway")
       .endEvent("endEvent")
-    .moveToLastGateway()
-    .moveToLastGateway()
+      .moveToLastGateway()
+      .moveToLastGateway()
       .condition("Take shortcut", "${takeShortcut}")
       .connectTo("mergeExclusiveGateway")
-    .done();
+      .done();
 
     Map<String, Object> variables = new HashMap<>();
     variables.put("takeShortcut", true);
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.deployAndStartProcessWithVariables(modelInstance, variables);
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.deployAndStartProcessWithVariables(
+      modelInstance,
+      variables
+    );
     variables.put("takeShortcut", false);
     engineRule.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -559,26 +569,31 @@ public class BranchAnalysisQueryIT {
     assertThat(task2.getActivityCount(), is(1L));
   }
 
+  // @formatter:off
   @Test
   public void shortcutInMergingFlowNodeDoesNotDistortBranchAnalysis() throws Exception {
     // given
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-    .startEvent("startEvent")
-    .exclusiveGateway("splittingGateway")
-      .condition("Take long way", "${!takeShortcut}")
-      .serviceTask("serviceTask")
-        .camundaExpression("${true}")
-      .serviceTask("mergingServiceTask")
-        .camundaExpression("${true}")
-      .endEvent("endEvent")
-    .moveToLastGateway()
-      .condition("Take shortcut", "${takeShortcut}")
-      .connectTo("mergingServiceTask")
-    .done();
+      .startEvent("startEvent")
+      .exclusiveGateway("splittingGateway")
+        .condition("Take long way", "${!takeShortcut}")
+        .serviceTask("serviceTask")
+          .camundaExpression("${true}")
+        .serviceTask("mergingServiceTask")
+          .camundaExpression("${true}")
+        .endEvent("endEvent")
+      .moveToLastGateway()
+        .condition("Take shortcut", "${takeShortcut}")
+        .connectTo("mergingServiceTask")
+      .done();
+  // @formatter:on
 
     Map<String, Object> variables = new HashMap<>();
     variables.put("takeShortcut", true);
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.deployAndStartProcessWithVariables(modelInstance, variables);
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.deployAndStartProcessWithVariables(
+      modelInstance,
+      variables
+    );
     variables.put("takeShortcut", false);
     engineRule.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -612,26 +627,30 @@ public class BranchAnalysisQueryIT {
   @Test
   public void endEventDirectlyAfterGateway() throws Exception {
     // given
+    // @formatter:off
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-    .startEvent("startEvent")
-    .exclusiveGateway("mergeExclusiveGateway")
-      .serviceTask()
-        .camundaExpression("${true}")
-      .exclusiveGateway("splittingGateway")
-        .condition("Take another round", "${!anotherRound}")
-      .endEvent("endEvent")
-    .moveToLastGateway()
-      .condition("End process", "${anotherRound}")
-      .serviceTask("serviceTask")
-        .camundaExpression("${true}")
-        .camundaInputParameter("anotherRound", "${anotherRound}")
-        .camundaOutputParameter("anotherRound", "${!anotherRound}")
-      .connectTo("mergeExclusiveGateway")
-    .done();
-
+      .startEvent("startEvent")
+      .exclusiveGateway("mergeExclusiveGateway")
+        .serviceTask()
+          .camundaExpression("${true}")
+        .exclusiveGateway("splittingGateway")
+          .condition("Take another round", "${!anotherRound}")
+        .endEvent("endEvent")
+      .moveToLastGateway()
+        .condition("End process", "${anotherRound}")
+        .serviceTask("serviceTask")
+          .camundaExpression("${true}")
+          .camundaInputParameter("anotherRound", "${anotherRound}")
+          .camundaOutputParameter("anotherRound", "${!anotherRound}")
+        .connectTo("mergeExclusiveGateway")
+      .done();
+    // @formatter:on
     Map<String, Object> variables = new HashMap<>();
     variables.put("anotherRound", true);
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.deployAndStartProcessWithVariables(modelInstance, variables);
+    ProcessInstanceEngineDto instanceEngineDto = engineRule.deployAndStartProcessWithVariables(
+      modelInstance,
+      variables
+    );
     variables.put("anotherRound", false);
     engineRule.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -714,6 +733,18 @@ public class BranchAnalysisQueryIT {
     assertThat(response.getStatus(), is(500));
   }
 
+  private void addStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate, BranchAnalysisQueryDto dto) {
+    List<ProcessFilterDto> dateFilter = ProcessFilterBuilder
+      .filter()
+      .fixedStartDate()
+      .start(startDate)
+      .end(endDate)
+      .add()
+      .buildList();
+
+    dto.getFilter().addAll(dateFilter);
+  }
+
 
   private BranchAnalysisDto getBranchAnalysisDto(BranchAnalysisQueryDto dto) {
     Response response = getRawResponse(dto);
@@ -724,9 +755,9 @@ public class BranchAnalysisQueryIT {
 
   private Response getRawResponse(BranchAnalysisQueryDto dto) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildProcessDefinitionCorrelation(dto)
-            .execute();
+      .getRequestExecutor()
+      .buildProcessDefinitionCorrelation(dto)
+      .execute();
   }
 
   private Response getResponse(BranchAnalysisQueryDto request) {

@@ -5,6 +5,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -18,6 +19,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -56,7 +58,7 @@ public class CanceledInstancesOnlyFilterIT {
     // when
     ProcessReportDataDto reportData =
             ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
-    reportData.setFilter(Collections.singletonList(new CanceledInstancesOnlyFilterDto()));
+    reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -93,7 +95,7 @@ public class CanceledInstancesOnlyFilterIT {
     // when
     ProcessReportDataDto reportData =
             ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
-    reportData.setFilter(Collections.singletonList(new CanceledInstancesOnlyFilterDto()));
+    reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 
     //then
@@ -124,7 +126,7 @@ public class CanceledInstancesOnlyFilterIT {
     // when
     ProcessReportDataDto reportData =
             ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
-    reportData.setFilter(Collections.singletonList(new CanceledInstancesOnlyFilterDto()));
+    reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 
     //then

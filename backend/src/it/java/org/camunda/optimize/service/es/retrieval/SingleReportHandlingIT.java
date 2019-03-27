@@ -12,16 +12,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.valu
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.util.DateUtilHelper;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.DecisionReportDataType;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
@@ -309,7 +307,7 @@ public class SingleReportHandlingIT {
     reportData.setProcessDefinitionKey("procdef");
     reportData.setProcessDefinitionVersion("123");
 
-    reportData.getFilter().addAll(DateUtilHelper.createFixedStartDateFilter(null, null));
+    reportData.getFilter().addAll(ProcessFilterBuilder.filter().fixedStartDate().start(null).end(null).add().buildList());
     reportData.getFilter().addAll(createVariableFilter());
     reportData.getFilter().addAll(createExecutedFlowNodeFilter());
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
@@ -345,9 +343,12 @@ public class SingleReportHandlingIT {
   }
 
   private List<ProcessFilterDto> createExecutedFlowNodeFilter() {
-    List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
+    List<ProcessFilterDto> flowNodeFilter = ProcessFilterBuilder
+      .filter()
+      .executedFlowNodes()
       .id("task1")
-      .build();
+      .add()
+      .buildList();
     return new ArrayList<>(flowNodeFilter);
   }
 

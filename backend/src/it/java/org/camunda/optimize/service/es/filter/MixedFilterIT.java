@@ -4,17 +4,13 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.DateUtilHelper;
-import org.camunda.optimize.test.util.ProcessVariableFilterUtilHelper;
 import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,7 +19,7 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,17 +93,27 @@ public class MixedFilterIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessFilterDto> filterList = new ArrayList<>();
+    List<ProcessFilterDto> filterList = ProcessFilterBuilder
+      .filter()
+      .executedFlowNodes()
+      .id(USER_TASK_ACTIVITY_ID)
+      .add()
+      .variable()
+      .stringType()
+      .values(Collections.singletonList("value"))
+      .name("var")
+      .operator(IN)
+      .add()
+      .fixedStartDate()
+      .start(null)
+      .end(start.minusSeconds(1L))
+      .add()
+      .fixedEndDate()
+      .start(null)
+      .end(end.minusSeconds(1L))
+      .add()
+      .buildList();
 
-    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("var", IN, "value");
-    filterList.add(filter);
-
-    List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
-          .id(USER_TASK_ACTIVITY_ID)
-          .build();
-    filterList.addAll(flowNodeFilter);
-    filterList.addAll(DateUtilHelper.createFixedStartDateFilter(null , start.minusSeconds(1L)));
-    filterList.addAll(DateUtilHelper.createFixedEndDateFilter(null , end.minusSeconds(1L)));
     RawDataProcessReportResultDto rawDataReportResultDto = evaluateReportWithFilter(processDefinition, filterList);
 
     // then

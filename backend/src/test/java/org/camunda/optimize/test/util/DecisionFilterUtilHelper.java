@@ -19,7 +19,7 @@ public class DecisionFilterUtilHelper {
   public static EvaluationDateFilterDto createRollingEvaluationDateFilter(Long value, String unit) {
     EvaluationDateFilterDto filter = new EvaluationDateFilterDto();
     RelativeDateFilterDataDto filterData = new RelativeDateFilterDataDto();
-    RelativeDateFilterStartDto evaluationDate = new RelativeDateFilterStartDto();
+    RelativeDateFilterStartDto evaluationDate = new RelativeDateFilterStartDto(value, unit);
 
     evaluationDate.setUnit(unit);
     evaluationDate.setValue(value);

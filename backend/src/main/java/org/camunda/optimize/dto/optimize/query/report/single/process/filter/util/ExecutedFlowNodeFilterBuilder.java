@@ -14,10 +14,14 @@ public class ExecutedFlowNodeFilterBuilder {
 
   private String operator = IN;
   private List<String> values = new ArrayList<>();
-  private List<ExecutedFlowNodeFilterDto> executedFlowNodes = new ArrayList<>();
+  private ProcessFilterBuilder filterBuilder;
 
-  public static ExecutedFlowNodeFilterBuilder construct() {
-    return new ExecutedFlowNodeFilterBuilder();
+  private ExecutedFlowNodeFilterBuilder(ProcessFilterBuilder processFilterBuilder) {
+    filterBuilder = processFilterBuilder;
+  }
+
+  public static ExecutedFlowNodeFilterBuilder construct(ProcessFilterBuilder processFilterBuilder) {
+    return new ExecutedFlowNodeFilterBuilder(processFilterBuilder);
   }
 
   public ExecutedFlowNodeFilterBuilder id(String flowNodeId) {
@@ -27,6 +31,11 @@ public class ExecutedFlowNodeFilterBuilder {
 
   public ExecutedFlowNodeFilterBuilder inOperator() {
     operator = IN;
+    return this;
+  }
+
+  public ExecutedFlowNodeFilterBuilder operator(String operator) {
+    this.operator = operator;
     return this;
   }
 
@@ -40,32 +49,13 @@ public class ExecutedFlowNodeFilterBuilder {
     return this;
   }
 
-  public ExecutedFlowNodeFilterBuilder and() {
-    addNewFilter();
-    return this;
-  }
-
-  private void addNewFilter() {
+  public ProcessFilterBuilder add() {
     ExecutedFlowNodeFilterDataDto dataDto = new ExecutedFlowNodeFilterDataDto();
     dataDto.setOperator(operator);
     dataDto.setValues(new ArrayList<>(values));
     ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = new ExecutedFlowNodeFilterDto();
     executedFlowNodeFilterDto.setData(dataDto);
-    executedFlowNodes.add(executedFlowNodeFilterDto);
-    values.clear();
-    restoreDefaultOperator();
-  }
-
-  private void restoreDefaultOperator() {
-    operator = IN;
-  }
-
-  public List<ExecutedFlowNodeFilterDto> build() {
-    if (!values.isEmpty()) {
-      addNewFilter();
-    }
-    List<ExecutedFlowNodeFilterDto> result = new ArrayList<>(executedFlowNodes);
-    executedFlowNodes.clear();
-    return result;
+    filterBuilder.addFilter(executedFlowNodeFilterDto);
+    return filterBuilder;
   }
 }

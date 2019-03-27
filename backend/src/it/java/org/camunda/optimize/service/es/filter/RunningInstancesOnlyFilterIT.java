@@ -5,6 +5,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -49,7 +50,7 @@ public class RunningInstancesOnlyFilterIT {
     // when
     ProcessReportDataDto reportData =
       createProcessReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
-    reportData.setFilter(Collections.singletonList(new RunningInstancesOnlyFilterDto()));
+    reportData.setFilter(ProcessFilterBuilder.filter().runningInstancesOnly().add().buildList());
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 
     // then

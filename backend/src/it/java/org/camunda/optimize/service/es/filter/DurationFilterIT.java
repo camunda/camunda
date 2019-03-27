@@ -2,9 +2,9 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.DateUtilHelper;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -26,8 +26,22 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
     // when
     ProcessReportDataDto reportData =
       createProcessReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    List<ProcessFilterDto> gte = DateUtilHelper.createDurationFilter(">=", 2, "Seconds");
-    List<ProcessFilterDto> lt = DateUtilHelper.createDurationFilter("<", 1, "Days");
+    List<ProcessFilterDto> gte = ProcessFilterBuilder
+      .filter()
+      .duration()
+      .unit("Seconds")
+      .value((long) 2)
+      .operator(">=")
+      .add()
+      .buildList();
+    List<ProcessFilterDto> lt = ProcessFilterBuilder
+      .filter()
+      .duration()
+      .unit("Days")
+      .value((long) 1)
+      .operator("<")
+      .add()
+      .buildList();
     gte.addAll(lt);
     reportData.setFilter(gte);
     RawDataProcessReportResultDto result = evaluateReport(reportData);
@@ -45,7 +59,14 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
 
     ProcessReportDataDto reportData =
       createProcessReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    reportData.setFilter(DateUtilHelper.createDurationFilter(">=", 2, null));
+    reportData.setFilter(ProcessFilterBuilder
+                           .filter()
+                           .duration()
+                           .unit(null)
+                           .value((long) 2)
+                           .operator(">=")
+                           .add()
+                           .buildList());
 
 
     Assert.assertThat(evaluateReportAndReturnResponse(reportData).getStatus(),is(500));

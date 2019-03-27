@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
@@ -54,7 +55,6 @@ import static org.camunda.optimize.dto.optimize.query.report.single.sorting.Sort
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
-import static org.camunda.optimize.test.util.ProcessVariableFilterUtilHelper.createBooleanVariableFilter;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
@@ -702,8 +702,14 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   }
 
   private List<ProcessFilterDto> createVariableFilter(String value) {
-    VariableFilterDto variableFilterDto = createBooleanVariableFilter("var", value);
-    return Collections.singletonList(variableFilterDto);
+    return ProcessFilterBuilder
+      .filter()
+      .variable()
+      .booleanType()
+      .values(Collections.singletonList(value))
+      .name("var")
+      .add()
+      .buildList();
   }
 
   @Test

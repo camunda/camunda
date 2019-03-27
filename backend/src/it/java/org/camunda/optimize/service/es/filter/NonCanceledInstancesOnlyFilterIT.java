@@ -5,6 +5,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -61,7 +62,7 @@ public class NonCanceledInstancesOnlyFilterIT {
     // when
     ProcessReportDataDto reportData =
       ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
-    reportData.setFilter(Collections.singletonList(new NonCanceledInstancesOnlyFilterDto()));
+    reportData.setFilter(ProcessFilterBuilder.filter().nonCanceledInstancesOnly().add().buildList());
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 
     //then

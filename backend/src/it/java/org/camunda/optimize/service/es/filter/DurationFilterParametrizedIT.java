@@ -1,9 +1,9 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.DateUtilHelper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -72,7 +72,14 @@ public class DurationFilterParametrizedIT extends AbstractDurationFilterIT {
     // when
     ProcessReportDataDto reportData =
       createProcessReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    reportData.setFilter(DateUtilHelper.createDurationFilter(this.operator, this.duration, this.unit));
+    reportData.setFilter(ProcessFilterBuilder
+                           .filter()
+                           .duration()
+                           .unit(this.unit)
+                           .value((long) this.duration)
+                           .operator(this.operator)
+                           .add()
+                           .buildList());
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 
     // then

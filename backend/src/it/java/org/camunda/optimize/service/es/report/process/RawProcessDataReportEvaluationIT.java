@@ -10,10 +10,9 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -25,7 +24,6 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.DateUtilHelper;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -517,7 +515,14 @@ public class RawProcessDataReportEvaluationIT {
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
       processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    reportData.setFilter(DateUtilHelper.createDurationFilter(">", 1, "Days"));
+    reportData.setFilter(ProcessFilterBuilder
+                           .filter()
+                           .duration()
+                           .unit("Days")
+                           .value((long) 1)
+                           .operator(">")
+                           .add()
+                           .buildList());
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -532,7 +537,14 @@ public class RawProcessDataReportEvaluationIT {
     // when
     reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
       processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    reportData.setFilter(DateUtilHelper.createDurationFilter("<", 1, "Days"));
+    reportData.setFilter(ProcessFilterBuilder
+                           .filter()
+                           .duration()
+                           .unit("Days")
+                           .value((long) 1)
+                           .operator("<")
+                           .add()
+                           .buildList());
     result = evaluateReport(reportData);
 
     // then
@@ -558,7 +570,12 @@ public class RawProcessDataReportEvaluationIT {
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
       processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minusSeconds(1L)));
+    reportData.setFilter(ProcessFilterBuilder.filter()
+                           .fixedStartDate()
+                           .start(null)
+                           .end(past.minusSeconds(1L))
+                           .add()
+                           .buildList());
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -573,7 +590,7 @@ public class RawProcessDataReportEvaluationIT {
     // when
     reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
       processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(past, null));
+    reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
     result = evaluateReport(reportData);
 
     // then
@@ -638,9 +655,13 @@ public class RawProcessDataReportEvaluationIT {
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
       processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
-    List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
+    List<ProcessFilterDto> flowNodeFilter = ProcessFilterBuilder
+      .filter()
+      .executedFlowNodes()
       .id("task1")
-      .build();
+      .add()
+      .buildList();
+
     reportData.getFilter().addAll(flowNodeFilter);
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 

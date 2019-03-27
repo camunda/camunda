@@ -7,6 +7,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
@@ -20,7 +21,6 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.DateUtilHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -476,7 +476,12 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
       "foo",
         VariableType.STRING
     );
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minusSeconds(1L)));
+    reportData.setFilter(ProcessFilterBuilder.filter()
+                           .fixedStartDate()
+                           .start(null)
+                           .end(past.minusSeconds(1L))
+                           .add()
+                           .buildList());
     ProcessReportMapResultDto result = evaluateReport(reportData);
 
     // then
@@ -485,7 +490,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(variableValueToCount.size(), is(0));
 
     // when
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(past, null));
+    reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
     result = evaluateReport(reportData);
 
     // then

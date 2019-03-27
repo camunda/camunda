@@ -5,6 +5,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -36,7 +37,7 @@ public class CompletedInstancesOnlyFilterIT {
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
-  public void filterByRunningInstancesOnly() throws Exception {
+  public void filterByCompletedInstancesOnly() throws Exception {
     // given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
     ProcessInstanceEngineDto firstProcInst = engineRule.startProcessInstance(userTaskProcess.getId());
@@ -51,7 +52,7 @@ public class CompletedInstancesOnlyFilterIT {
     // when
     ProcessReportDataDto reportData =
       ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
-    reportData.setFilter(Collections.singletonList(new CompletedInstancesOnlyFilterDto()));
+    reportData.setFilter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList());
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 
     // then

@@ -4,13 +4,13 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.DateUtilHelper;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -76,7 +76,13 @@ public abstract class AbstractRollingDateFilterIT {
       boolean newToken
   ) {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
-    List<ProcessFilterDto> rollingDateFilter = DateUtilHelper.createRollingStartDateFilter(1L, unit);
+    List<ProcessFilterDto> rollingDateFilter = ProcessFilterBuilder
+      .filter()
+      .relativeStartDate()
+      .start(1L, unit)
+      .add()
+      .buildList();
+
     reportData.setFilter(rollingDateFilter);
     return evaluateReport(reportData, newToken);
   }
@@ -88,7 +94,13 @@ public abstract class AbstractRollingDateFilterIT {
           boolean newToken
   ) {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
-    List<ProcessFilterDto> rollingDateFilter = DateUtilHelper.createRollingEndDateFilter(1L, unit);
+    List<ProcessFilterDto> rollingDateFilter = ProcessFilterBuilder
+      .filter()
+      .relativeEndDate()
+      .start(1L, unit)
+      .add()
+      .buildList();
+
     reportData.setFilter(rollingDateFilter);
     return evaluateReport(reportData, newToken);
   }

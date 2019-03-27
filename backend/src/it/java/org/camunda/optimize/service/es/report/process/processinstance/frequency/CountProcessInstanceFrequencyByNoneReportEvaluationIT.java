@@ -5,8 +5,8 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -15,7 +15,6 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.DateUtilHelper;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.Rule;
 import org.junit.Test;
@@ -141,7 +140,12 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
     );
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minusSeconds(1L)));
+    reportData.setFilter(ProcessFilterBuilder.filter()
+                           .fixedStartDate()
+                           .start(null)
+                           .end(past.minusSeconds(1L))
+                           .add()
+                           .buildList());
     ProcessReportNumberResultDto result = evaluateReport(reportData);
 
     // then
@@ -152,7 +156,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT {
     reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
     );
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(past, null));
+    reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
     result = evaluateReport(reportData);
 
     // then
@@ -176,9 +180,12 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
         processDefinition.getKey(), String.valueOf(processDefinition.getVersion())
     );
-    List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
-          .id("task1")
-          .build();
+    List<ProcessFilterDto> flowNodeFilter = ProcessFilterBuilder
+      .filter()
+      .executedFlowNodes()
+      .id("task1")
+      .add()
+      .buildList();
     reportData.getFilter().addAll(flowNodeFilter);
     ProcessReportNumberResultDto result = evaluateReport(reportData);
 

@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
@@ -26,7 +27,6 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.DateUtilHelper;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.junit.Rule;
 import org.junit.Test;
@@ -563,7 +563,12 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       .setVariableType(VariableType.STRING)
       .build();
 
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, startDate.minusSeconds(1L)));
+    reportData.setFilter(ProcessFilterBuilder.filter()
+                           .fixedStartDate()
+                           .start(null)
+                           .end(startDate.minusSeconds(1L))
+                           .add()
+                           .buildList());
     ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData);
 
     // then
@@ -572,7 +577,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     assertThat(resultMap.size(), is(0));
 
     // when
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(startDate, null));
+    reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(null).add().buildList());
     resultDto = evaluateReport(reportData);
 
     // then
