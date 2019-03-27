@@ -1,4 +1,4 @@
-import {getEntitiesCollections} from './service';
+import {getEntitiesCollections, filterEntitiesBySearch} from './service';
 
 const collection = {
   id: 'aCollectionId',
@@ -23,4 +23,10 @@ it('should return entities Collections as a hash of arrays', () => {
     reportID1: [collection],
     reportID2: [collection]
   });
+});
+
+it('should filter entities by search correctly', () => {
+  expect(filterEntitiesBySearch([{name: 'test name'}, {name: 'Another Name'}], 'Test')).toEqual([
+    {name: 'test name'}
+  ]);
 });

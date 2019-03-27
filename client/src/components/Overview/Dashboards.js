@@ -6,6 +6,7 @@ import DashboardItem from './subComponents/DashboardItem';
 import NoEntities from './subComponents/NoEntities';
 import classnames from 'classnames';
 import {withStore} from './OverviewStore';
+import {filterEntitiesBySearch} from './service';
 
 const HeaderIcon = entityIcons.dashboard.header.Component;
 const OpenCloseIcon = entityIcons.entityOpenClose;
@@ -34,9 +35,7 @@ class Dashboards extends React.Component {
         children
       );
 
-    const filteredDashboards = dashboards.filter(dashboard =>
-      dashboard.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredDashboards = filterEntitiesBySearch(dashboards, searchQuery);
 
     const noSearchResult = !empty && filteredDashboards.length === 0 && (
       <p className="empty">No Dashboards matching '{searchQuery}'</p>

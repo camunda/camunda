@@ -6,6 +6,7 @@ import ReportItem from './subComponents/ReportItem';
 import NoEntities from './subComponents/NoEntities';
 import classnames from 'classnames';
 import {withStore} from './OverviewStore';
+import {filterEntitiesBySearch} from './service';
 
 const HeaderIcon = entityIcons.report.header.Component;
 const OpenCloseIcon = entityIcons.entityOpenClose;
@@ -32,9 +33,7 @@ class Reports extends React.Component {
         children
       );
 
-    const filteredReports = reports.filter(collection =>
-      collection.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredReports = filterEntitiesBySearch(reports, searchQuery);
 
     const noSearchResult = !empty && filteredReports.length === 0 && (
       <p className="empty">No Reports matching '{searchQuery}'</p>

@@ -6,8 +6,6 @@ import {Button} from 'components';
 import CollectionsWithStore from './Collections';
 const Collections = CollectionsWithStore.WrappedComponent;
 
-jest.mock('./service');
-
 const processReport = {
   id: 'reportID',
   name: 'Some Report',

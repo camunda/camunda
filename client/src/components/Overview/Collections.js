@@ -9,6 +9,7 @@ import './Collections.scss';
 import DashboardItem from './subComponents/DashboardItem';
 
 import {withStore} from './OverviewStore';
+import {filterEntitiesBySearch} from './service';
 
 class Collections extends React.Component {
   state = {
@@ -35,9 +36,7 @@ class Collections extends React.Component {
       </div>
     );
 
-    const filteredCollections = collections.filter(collection =>
-      collection.name.toLowerCase().includes(searchQuery)
-    );
+    const filteredCollections = filterEntitiesBySearch(collections, searchQuery);
 
     const noSearchResult = !empty && filteredCollections.length === 0 && (
       <p className="empty">No Collections matching '{searchQuery}'</p>

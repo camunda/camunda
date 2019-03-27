@@ -4,7 +4,6 @@ import {shallow} from 'enzyme';
 import {Button} from 'components';
 
 import DashboardsWithStore from './Dashboards';
-jest.mock('./service');
 
 const Dashboards = DashboardsWithStore.WrappedComponent;
 

@@ -112,3 +112,7 @@ export function getEntitiesCollections(collections) {
 
   return entitiesCollections;
 }
+
+export function filterEntitiesBySearch(entities, searchQuery) {
+  return entities.filter(entity => entity.name.toLowerCase().includes(searchQuery.toLowerCase()));
+}

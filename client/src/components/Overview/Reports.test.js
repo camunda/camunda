@@ -5,14 +5,7 @@ import {Button} from 'components';
 
 import ReportsWithStore from './Reports';
 
-import {getReportIcon} from './service';
-
 const Reports = ReportsWithStore.WrappedComponent;
-jest.mock('./service');
-
-beforeAll(() => {
-  getReportIcon.mockReturnValue({Icon: () => {}, label: 'Icon'});
-});
 
 const processReport = {
   id: 'reportID',
