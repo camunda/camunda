@@ -137,6 +137,7 @@ public final class ReProcessingStateMachine {
 
     LOG.info("Start scanning the log for error events.");
     lastSourceEventPosition = scanLog(snapshotPosition);
+    LOG.info("Finished scanning the log for error events.");
 
     if (lastSourceEventPosition > snapshotPosition) {
       LOG.info(
