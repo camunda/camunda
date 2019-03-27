@@ -274,8 +274,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
 
     final DirectBuffer value = wrapString(message);
 
-    TestUtil.doRepeatedly(
-            () -> writer.positionAsKey().metadataWriter(metadata.reset()).value(value).tryWrite())
+    TestUtil.doRepeatedly(() -> writer.metadataWriter(metadata.reset()).value(value).tryWrite())
         .until(
             position -> {
               if (position != null && position >= 0) {

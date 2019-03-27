@@ -585,7 +585,7 @@ public class TestStreams {
       if (key >= 0) {
         writer.key(key);
       } else {
-        writer.positionAsKey();
+        writer.keyNull();
       }
 
       writer.metadataWriter(metadata);

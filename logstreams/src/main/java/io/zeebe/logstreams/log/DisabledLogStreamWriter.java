@@ -24,11 +24,6 @@ public class DisabledLogStreamWriter implements LogStreamRecordWriter {
   public void wrap(LogStream log) {}
 
   @Override
-  public LogStreamRecordWriter positionAsKey() {
-    return this;
-  }
-
-  @Override
   public LogStreamRecordWriter keyNull() {
     return this;
   }
