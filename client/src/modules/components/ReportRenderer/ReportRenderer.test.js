@@ -2,6 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ReportRenderer from './ReportRenderer';
+import CombinedReportRenderer from './CombinedReportRenderer';
 
 const reportTemplate = {
   combined: false,
@@ -50,7 +51,7 @@ it('should render CombinedReportRenderer if the report is combined', () => {
   };
   const node = shallow(<ReportRenderer report={report} />);
 
-  expect(node.find('CombinedReportRenderer')).toBePresent();
+  expect(node.find(CombinedReportRenderer)).toBePresent();
 });
 
 it('should display an error message the report is defined', () => {

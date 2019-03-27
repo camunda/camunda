@@ -1,7 +1,7 @@
 import {getFormattedLabels, getBodyRows, getCombinedTableProps} from './service';
 import {uniteResults} from '../service';
 
-export default function processCombinedData({formatter, report}) {
+export default function processCombinedData({formatter, report, flowNodeNames = {}}) {
   const {labels, reportsNames, combinedResult, processInstanceCount} = getCombinedTableProps(
     report.result,
     report.data.reports
@@ -37,7 +37,8 @@ export default function processCombinedData({formatter, report}) {
     formatter,
     displayRelativeValue,
     processInstanceCount,
-    displayAbsoluteValue
+    displayAbsoluteValue,
+    flowNodeNames
   );
 
   return {

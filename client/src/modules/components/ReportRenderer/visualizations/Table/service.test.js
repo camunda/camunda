@@ -22,6 +22,15 @@ jest.mock('services', () => {
   };
 });
 
+it('should apply flow node names to the body rows', () => {
+  expect(
+    getBodyRows([{a: 1, b: 2}, {a: '', b: 0}], ['a', 'b'], v => v, false, [100, 100], true, {
+      a: 'Flownode A',
+      b: 'Flownode B'
+    })
+  ).toEqual([['Flownode A', 1, ''], ['Flownode B', 2, 0]]);
+});
+
 it('should return correctly formatted body rows', () => {
   expect(
     getBodyRows([{a: 1, b: 2}, {a: '', b: 0}], ['a', 'b'], v => v, false, [100, 100], true)

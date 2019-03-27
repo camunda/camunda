@@ -42,10 +42,11 @@ export function getBodyRows(
   formatter,
   displayRelativeValue,
   processInstanceCount,
-  displayAbsoluteValue
+  displayAbsoluteValue,
+  flowNodeNames = {}
 ) {
   const rows = allKeys.map(key => {
-    const row = [key];
+    const row = [flowNodeNames[key] || key];
     unitedResults.forEach((result, i) => {
       const value = result[key];
       if (displayAbsoluteValue)
