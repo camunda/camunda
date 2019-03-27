@@ -21,6 +21,7 @@ import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_C
 import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
 
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
+import io.zeebe.logstreams.impl.log.index.LogBlockIndexContext;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
@@ -56,6 +57,7 @@ public class LogBlockIndexWriter extends Actor {
   private final String name;
   private final LogStorage logStorage;
   private final LogBlockIndex blockIndex;
+  private final LogBlockIndexContext indexContext;
   private final MetricsManager metricsManager;
 
   /** Defines the block size for which an index will be created. */
@@ -115,6 +117,8 @@ public class LogBlockIndexWriter extends Actor {
     this.allocatedBuffer = BufferAllocators.allocateDirect(bufferSize);
     this.ioBuffer = allocatedBuffer.getRawBuffer();
     this.buffer.wrap(ioBuffer);
+
+    this.indexContext = blockIndex.createLogBlockIndexContext();
   }
 
   @Override
@@ -132,17 +136,9 @@ public class LogBlockIndexWriter extends Actor {
             .create();
 
     try {
-      blockIndex.recoverFromSnapshot();
-    } catch (Exception e) {
-      LOG.debug(
-          "Failed to recover from snapshot with error {}. Rebuilding block index.", e.getMessage());
-    }
-
-    try {
-      blockIndex.openDb();
-
       final long snapshotPosition = blockIndex.getLastPosition();
-      final long snapshotBlockAddress = blockIndex.lookupBlockAddress(snapshotPosition);
+      final long snapshotBlockAddress =
+          blockIndex.lookupBlockAddress(indexContext, snapshotPosition);
 
       if (snapshotBlockAddress >= logStorage.getFirstBlockAddress()) {
         nextAddress = snapshotBlockAddress;
@@ -238,7 +234,7 @@ public class LogBlockIndexWriter extends Actor {
             currentBlockEventPosition,
             currentBlockAddress);
 
-        blockIndex.addBlock(currentBlockEventPosition, currentBlockAddress);
+        blockIndex.addBlock(indexContext, currentBlockEventPosition, currentBlockAddress);
 
         lastBlockAddress = currentBlockAddress;
         lastBlockEventPosition = currentBlockEventPosition;
