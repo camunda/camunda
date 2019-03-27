@@ -26,10 +26,10 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
@@ -93,9 +93,7 @@ public class CollectionReader {
   }
 
   public List<ResolvedCollectionDefinitionDto> getAllResolvedCollections() {
-    List<SimpleCollectionDefinitionDto> allCollections = getAllCollections();
-    Set<String> entityIds = getAllEntityIdsFromCollections(allCollections);
-
+    final List<SimpleCollectionDefinitionDto> allCollections = getAllCollections();
     final Map<String, CollectionEntity> entityIdToEntityMap = getAllEntities()
       .stream()
       .collect(toMap(CollectionEntity::getId, r -> r));
@@ -138,35 +136,26 @@ public class CollectionReader {
     );
   }
 
-  private Set<String> getAllEntityIdsFromCollections(List<SimpleCollectionDefinitionDto> allCollections) {
-    return allCollections.stream()
-      .map(SimpleCollectionDefinitionDto::getData)
-      .filter(Objects::nonNull)
-      .map(CollectionDataDto::getEntities)
-      .flatMap(List::stream)
-      .collect(Collectors.toSet());
-  }
-
-  private ResolvedCollectionDefinitionDto mapToResolvedCollection(SimpleCollectionDefinitionDto c,
+  private ResolvedCollectionDefinitionDto mapToResolvedCollection(SimpleCollectionDefinitionDto collectionDefinitionDto,
                                                                   Map<String, CollectionEntity> entityIdToEntityMap) {
-    ResolvedCollectionDefinitionDto resolvedCollection =
-      new ResolvedCollectionDefinitionDto();
-    resolvedCollection.setId(c.getId());
-    resolvedCollection.setName(c.getName());
-    resolvedCollection.setLastModifier(c.getLastModifier());
-    resolvedCollection.setOwner(c.getOwner());
-    resolvedCollection.setCreated(c.getCreated());
-    resolvedCollection.setLastModified(c.getLastModified());
+    final ResolvedCollectionDefinitionDto resolvedCollection = new ResolvedCollectionDefinitionDto();
+    resolvedCollection.setId(collectionDefinitionDto.getId());
+    resolvedCollection.setName(collectionDefinitionDto.getName());
+    resolvedCollection.setLastModifier(collectionDefinitionDto.getLastModifier());
+    resolvedCollection.setOwner(collectionDefinitionDto.getOwner());
+    resolvedCollection.setCreated(collectionDefinitionDto.getCreated());
+    resolvedCollection.setLastModified(collectionDefinitionDto.getLastModified());
 
-    if (c.getData() != null) {
-      CollectionDataDto<String> collectionData = c.getData();
-      CollectionDataDto<CollectionEntity> resolvedCollectionData = new CollectionDataDto<>();
-      resolvedCollectionData.setConfiguration(c.getData().getConfiguration());
+    if (collectionDefinitionDto.getData() != null) {
+      final CollectionDataDto<String> collectionData = collectionDefinitionDto.getData();
+      final CollectionDataDto<CollectionEntity> resolvedCollectionData = new CollectionDataDto<>();
+      resolvedCollectionData.setConfiguration(collectionDefinitionDto.getData().getConfiguration());
       resolvedCollectionData.setEntities(
         collectionData.getEntities()
           .stream()
           .map(entityIdToEntityMap::get)
           .filter(Objects::nonNull)
+          .sorted(Comparator.comparing(CollectionEntity::getLastModified).reversed())
           .collect(Collectors.toList())
       );
       resolvedCollection.setData(resolvedCollectionData);

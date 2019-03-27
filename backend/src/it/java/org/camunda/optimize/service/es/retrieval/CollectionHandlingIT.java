@@ -8,6 +8,7 @@ import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefi
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.elasticsearch.action.get.GetRequest;
@@ -147,7 +148,7 @@ public class CollectionHandlingIT {
   }
 
   @Test
-  public void theOrderOfEntityItemsIsPreservedForDifferentEntityTypesInCollection() {
+  public void collectionItemsAreOrderedByModificationDateDescending() {
     // given
     String collectionId = createNewCollection();
     String reportId1 = createNewSingleReport();
@@ -156,9 +157,10 @@ public class CollectionHandlingIT {
 
     // when
     addEntitiesToCollection(ImmutableList.of(reportId1, dashboardId, reportId2), collectionId);
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+    updateReport(reportId1, new SingleProcessReportDefinitionDto() );
 
     // then
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
     assertThat(collections.size(), is(1));
     ResolvedCollectionDefinitionDto collection = collections.get(0);
     assertThat(collection.getData().getEntities().get(0).getId(), is(reportId1));

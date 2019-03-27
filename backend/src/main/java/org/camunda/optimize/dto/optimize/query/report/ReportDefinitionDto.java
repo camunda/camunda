@@ -37,6 +37,7 @@ public class ReportDefinitionDto implements CollectionEntity {
     this.name = name;
   }
 
+  @Override
   public OffsetDateTime getLastModified() {
     return lastModified;
   }
