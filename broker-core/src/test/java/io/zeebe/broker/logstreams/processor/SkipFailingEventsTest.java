@@ -35,6 +35,7 @@ import io.zeebe.broker.util.Records;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.TestStreams;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -161,6 +162,63 @@ public class SkipFailingEventsTest {
 
     assertThat(errorRecord.getErrorEventPosition()).isEqualTo(failingEventPosition);
     assertThat(BufferUtil.bufferAsString(errorRecord.getExceptionMessage())).isEqualTo("expected");
+    assertThat(errorRecord.getWorkflowInstanceKey()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldWriteErrorEventWithNoMessage() {
+    // given
+    streamProcessorControl =
+        streams.initStreamProcessor(
+            STREAM_NAME,
+            STREAM_PROCESSOR_ID,
+            DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+            (db, dbContext) -> {
+              zeebeState = new ZeebeState(db, dbContext);
+              return env.newStreamProcessor()
+                  .zeebeState(zeebeState)
+                  .onEvent(
+                      ValueType.WORKFLOW_INSTANCE,
+                      WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+                      new TypedRecordProcessor<UnpackedObject>() {
+                        @Override
+                        public void processRecord(
+                            TypedRecord<UnpackedObject> record,
+                            TypedResponseWriter responseWriter,
+                            TypedStreamWriter streamWriter) {
+                          throw new NullPointerException();
+                        }
+                      })
+                  .build();
+            });
+    streamProcessorControl.start();
+
+    final long failingEventPosition =
+        streams
+            .newRecord(STREAM_NAME)
+            .event(workflowInstance(1))
+            .recordType(RecordType.EVENT)
+            .intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .key(keyGenerator.nextKey())
+            .write();
+
+    // when
+    doRepeatedly(
+            () ->
+                streams
+                    .events(STREAM_NAME)
+                    .filter(e -> Records.isEvent(e, ValueType.ERROR, ErrorIntent.CREATED))
+                    .findFirst())
+        .until(o -> o.isPresent())
+        .get();
+
+    // then
+    final ErrorRecord errorRecord =
+        new RecordStream(streams.events(STREAM_NAME)).onlyErrorRecords().getFirst().getValue();
+
+    assertThat(errorRecord.getErrorEventPosition()).isEqualTo(failingEventPosition);
+    assertThat(BufferUtil.bufferAsString(errorRecord.getExceptionMessage()))
+        .isEqualTo("Without exception message.");
     assertThat(errorRecord.getWorkflowInstanceKey()).isEqualTo(1);
   }
 

@@ -20,9 +20,13 @@ import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 
 public class ErrorRecord extends UnpackedObject {
+
+  private static final String NULL_MESSAGE = "Without exception message.";
+
   private final StringProperty exceptionMessageProp = new StringProperty("exceptionMessage");
   private final StringProperty stacktraceProp = new StringProperty("stacktrace", "");
   private final LongProperty errorEventPositionProp = new LongProperty("errorEventPosition");
@@ -37,6 +41,7 @@ public class ErrorRecord extends UnpackedObject {
   }
 
   public void initErrorRecord(Throwable throwable, long position) {
+    Objects.requireNonNull(throwable);
     reset();
 
     final StringWriter stringWriter = new StringWriter();
@@ -44,7 +49,8 @@ public class ErrorRecord extends UnpackedObject {
     throwable.printStackTrace(pw);
 
     stacktraceProp.setValue(stringWriter.toString());
-    exceptionMessageProp.setValue(throwable.getMessage());
+    final String exceptionMessage = throwable.getMessage();
+    exceptionMessageProp.setValue(exceptionMessage == null ? NULL_MESSAGE : exceptionMessage);
     errorEventPositionProp.setValue(position);
   }
 
