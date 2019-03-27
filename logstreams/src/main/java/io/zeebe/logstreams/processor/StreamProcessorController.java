@@ -114,11 +114,14 @@ public class StreamProcessorController extends Actor {
     logStreamWriter.wrap(logStream);
 
     try {
+      LOG.info("Recovering state of partition {} from snapshot", partitionId);
       snapshotPosition = recoverFromSnapshot(logStream.getCommitPosition(), logStream.getTerm());
-      LOG.info(
-          "Recovering partition {} from snapshot at position {}", partitionId, snapshotPosition);
-
       final ZeebeDb zeebeDb = snapshotController.openDb();
+      LOG.info(
+          "Recovered state of partition {} from snapshot at position {}",
+          partitionId,
+          snapshotPosition);
+
       dbContext = zeebeDb.createContext();
       streamProcessor = streamProcessorFactory.createProcessor(zeebeDb, dbContext);
       streamProcessor.onOpen(streamProcessorContext);
