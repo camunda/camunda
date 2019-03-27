@@ -202,12 +202,14 @@ public class CreateDeploymentMultiplePartitionsTest {
   }
 
   @Test
-  @Category(UnstableTest.class) // => https://github.com/zeebe-io/zeebe/issues/1250
   public void shouldIncrementWorkflowVersions() {
     // given
+    final ExecuteCommandResponse d1 = apiRule.partitionClient().deployWithResponse(WORKFLOW);
+    apiRule
+        .partitionClient()
+        .receiveFirstDeploymentEvent(DeploymentIntent.DISTRIBUTED, d1.getKey());
 
     // when
-    final ExecuteCommandResponse d1 = apiRule.partitionClient().deployWithResponse(WORKFLOW);
     final ExecuteCommandResponse d2 = apiRule.partitionClient().deployWithResponse(WORKFLOW);
 
     // then
@@ -237,7 +239,7 @@ public class CreateDeploymentMultiplePartitionsTest {
   }
 
   @Test
-  @Category(UnstableTest.class) // => https://github.com/zeebe-io/zeebe/issues/1250
+  @Category(UnstableTest.class) // => https://github.com/zeebe-io/zeebe/issues/2110
   public void shouldCreateDeploymentOnAllPartitionsWithRestartBroker() {
     // given
     apiRule
