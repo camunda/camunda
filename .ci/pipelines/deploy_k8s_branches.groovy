@@ -98,7 +98,7 @@ pipeline {
             sh("""
               ./cmd/k8s/deploy-template-to-branch \
               ${WORKSPACE}/k8s-infrastructure/infrastructure/ci-30-162810/deployments/optimize-branch \
-              ${WORKSPACE}/optimize/infrastructure/ci-30-162810/deployments/optimize-branch \
+              ${WORKSPACE}/optimize/.ci/branch-deployment \
               ${params.BRANCH} \
               optimize
             """)
