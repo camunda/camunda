@@ -87,7 +87,7 @@ export default themed(
         }
       };
 
-      renderDashboard = async isSharingEnabled => {
+      renderDashboard = async sharingEnabled => {
         await this.props.mightFail(
           loadDashboard(this.id),
           async response => {
@@ -102,7 +102,7 @@ export default themed(
               reports: reports || [],
               originalReports: reports || [],
               isAuthorizedToShare: await isAuthorizedToShareDashboard(this.id),
-              ...(isSharingEnabled !== 'undefined' ? {isSharingEnabled} : {})
+              ...(sharingEnabled !== 'undefined' ? {sharingEnabled} : {})
             });
           },
           error => {
