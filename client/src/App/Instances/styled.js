@@ -7,11 +7,10 @@
 import styled from 'styled-components';
 
 import BadgeComponent from 'modules/components/Badge';
-import SplitPane from 'modules/components/SplitPane';
+import {default as SplitPaneComponent} from 'modules/components/SplitPane';
 import Panel from 'modules/components/Panel';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/components/CollapsablePanel/styled';
 import ExpandButton from 'modules/components/ExpandButton';
-import EmptyMessage from './EmptyMessage';
 
 import {HEADER_HEIGHT} from './../Header/styled';
 
@@ -30,21 +29,14 @@ export const Content = styled.div`
   width: calc(100% - ${COLLAPSABLE_PANEL_MIN_WIDTH});
 `;
 
-export const Filters = styled.div`
+export const FilterSection = styled.div`
   margin-right: 1px;
 `;
 
-export const Center = styled(SplitPane)`
+export const SplitPane = styled(SplitPaneComponent)`
   width: 100%;
 `;
 
-export const Pane = styled(SplitPane.Pane)`
-  border-radius: 3px 3px 0 0;
-`;
-
-export const PaneHeader = styled(SplitPane.Pane.Header)`
-  border-radius: 3px 3px 0 0;
-`;
 export const Selections = styled.div`
   width: 479px;
   display: flex;
@@ -72,16 +64,4 @@ export const SelectionHeader = styled(Panel.Header)`
 export const Badge = styled(BadgeComponent)`
   top: 2px;
   margin-left: 13px;
-`;
-
-export const EmptyMessageWrapper = styled.div`
-  position: relative;
-`;
-
-export const DiagramEmptyMessage = styled(EmptyMessage)`
-  position: absolute;
-  height: 100%;
-  width: 100%;
-  left: 0;
-  top: 0;
 `;

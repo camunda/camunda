@@ -10,7 +10,6 @@ import PropTypes from 'prop-types';
 import {DEFAULT_FILTER, SELECTABLE_FLOWNODE_TYPES} from 'modules/constants';
 import {isEmpty, sortBy} from 'lodash';
 
-import SplitPane from 'modules/components/SplitPane';
 import Diagram from 'modules/components/Diagram';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import {
@@ -21,12 +20,12 @@ import {getInstancesIdsFromSelections} from 'modules/contexts/SelectionContext/s
 import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 
 import Header from '../Header';
+import TopPane from './TopPane';
 import ListView from './ListView';
 import Filters from './Filters';
 import Selections from './Selections';
 
 import {
-  getEmptyDiagramMessage,
   getSelectableActivityIds,
   getWorkflowByVersionFromFilter,
   getWorkflowNameFromFilter
@@ -76,6 +75,7 @@ export default class Instances extends Component {
       filter,
       groupedWorkflows
     });
+
     const workflowName = getWorkflowNameFromFilter({filter, groupedWorkflows});
 
     const activityIds = getSelectableActivityIds(
@@ -107,7 +107,7 @@ export default class Instances extends Component {
               <Styled.Instances>
                 <VisuallyHiddenH1>Camunda Operate Instances</VisuallyHiddenH1>
                 <Styled.Content>
-                  <Styled.Filters>
+                  <Styled.FilterSection>
                     <Filters
                       activityIds={sortBy(activityIds, item =>
                         item.label.toLowerCase()
@@ -120,49 +120,30 @@ export default class Instances extends Component {
                       }
                       onFilterChange={this.props.onFilterChange}
                     />
-                  </Styled.Filters>
+                  </Styled.FilterSection>
 
-                  <Styled.Center
+                  <Styled.SplitPane
                     titles={{top: 'Workflow', bottom: 'Instances'}}
                   >
-                    <Styled.Pane>
-                      <Styled.PaneHeader>
-                        <span data-test="instances-diagram-title">
-                          {workflowName}
-                        </span>
-                      </Styled.PaneHeader>
-                      <SplitPane.Pane.Body>
-                        {!this.props.filter.workflow && (
-                          <Styled.EmptyMessageWrapper>
-                            <Styled.DiagramEmptyMessage
-                              message={`There is no Workflow selected.\n
-To see a diagram, select a Workflow in the Filters panel.`}
-                              data-test="data-test-noWorkflowMessage"
-                            />
-                          </Styled.EmptyMessageWrapper>
+                    <TopPane
+                      workflowName={workflowName}
+                      renderNoWorkflowMessage={!filter.workflow}
+                      renderNoVersionMessage={filter.version === 'all'}
+                      renderChildren={
+                        !isEmpty(currentWorkflowByVersion) &&
+                        !!this.props.diagramModel.definitions
+                      }
+                    >
+                      <Diagram
+                        definitions={this.props.diagramModel.definitions}
+                        flowNodesStatistics={this.props.statistics}
+                        onFlowNodeSelection={this.handleFlowNodeSelection}
+                        selectedFlowNodeId={this.props.filter.activityId}
+                        selectableFlowNodes={activityIds.map(
+                          item => item.value
                         )}
-                        {this.props.filter.version === 'all' && (
-                          <Styled.EmptyMessageWrapper>
-                            <Styled.DiagramEmptyMessage
-                              message={getEmptyDiagramMessage(workflowName)}
-                              data-test="data-test-allVersionsMessage"
-                            />
-                          </Styled.EmptyMessageWrapper>
-                        )}
-                        {!isEmpty(currentWorkflowByVersion) &&
-                          this.props.diagramModel.definitions && (
-                            <Diagram
-                              flowNodesStatistics={this.props.statistics}
-                              onFlowNodeSelection={this.handleFlowNodeSelection}
-                              selectedFlowNodeId={this.props.filter.activityId}
-                              selectableFlowNodes={activityIds.map(
-                                item => item.value
-                              )}
-                              definitions={this.props.diagramModel.definitions}
-                            />
-                          )}
-                      </SplitPane.Pane.Body>
-                    </Styled.Pane>
+                      />
+                    </TopPane>
 
                     <ListView
                       instances={this.props.workflowInstances}
@@ -177,7 +158,7 @@ To see a diagram, select a Workflow in the Filters panel.`}
                         this.props.onWorkflowInstancesRefresh
                       }
                     />
-                  </Styled.Center>
+                  </Styled.SplitPane>
                 </Styled.Content>
                 <Selections />
               </Styled.Instances>

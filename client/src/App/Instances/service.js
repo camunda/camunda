@@ -64,11 +64,6 @@ export function decodeFields(object) {
   return result;
 }
 
-export function getEmptyDiagramMessage(name) {
-  return `There is more than one version selected for Workflow "${name}".\n
-   To see a diagram, select a single version.`;
-}
-
 export function getSelectableActivityIds(selectableTypes, bpmnElements) {
   const formatedNodes = formatDiagramNodes(bpmnElements);
   let selectableIds = [];

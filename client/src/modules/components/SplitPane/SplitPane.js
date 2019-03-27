@@ -60,6 +60,7 @@ export default class SplitPane extends React.Component {
 
   render() {
     const children = this.getChildren();
+
     return <Styled.SplitPane {...this.props}>{children}</Styled.SplitPane>;
   }
 }

@@ -29,6 +29,8 @@ import Selections from './Selections';
 import Header from '../Header';
 import Instances from './Instances';
 
+import EmptyMessage from './EmptyMessage';
+
 // component mocks
 jest.mock(
   '../Header',
@@ -173,6 +175,7 @@ describe('Instances', () => {
       const customMockProps = {
         ...mockProps,
         diagramModel: {
+          definitions: {},
           bpmnElements: {
             EndEvent_042s0oc: {
               id: 'EndEvent_042s0oc',
@@ -255,13 +258,12 @@ describe('Instances', () => {
         </ThemeProvider>
       );
 
+      // when
+      node.update();
+
       // then
       // expect no Diagram, general title and an empty message
       expect(node.find(Diagram)).not.toExist();
-      expect(node.find("[data-test='instances-diagram-title']").text()).toBe(
-        'Workflow'
-      );
-      expect(node.find("[data-test='data-test-noWorkflowMessage']")).toExist();
     });
 
     it('should display a diagram when a workflow is present', () => {
@@ -277,12 +279,43 @@ describe('Instances', () => {
       // then
       // expect Diagram, Workflow title and no empty message
       expect(node.find(Diagram)).toExist();
-      expect(node.find("[data-test='instances-diagram-title']").text()).toBe(
-        'Demo process'
+    });
+
+    it('should display an message when no specific workflow version is selected', () => {
+      const customMockProps = {
+        ...defaultFilterMockProps,
+        diagramModel: {},
+        filter: {workflow: ''}
+      };
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Instances {...customMockProps} />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
-      expect(
-        node.find("[data-test='data-test-noWorkflowMessage']")
-      ).not.toExist();
+
+      expect(node.find(EmptyMessage)).toExist();
+    });
+
+    it('should display an message when no workflow is selected', () => {
+      const customMockProps = {
+        ...mockProps,
+        filter: {...mockProps.filter, version: 'all'}
+      };
+
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Instances {...customMockProps} />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
+      );
+
+      // when
+      node.update();
+
+      expect(node.find(EmptyMessage)).toExist();
     });
 
     it('should pass the right data to diagram', () => {
