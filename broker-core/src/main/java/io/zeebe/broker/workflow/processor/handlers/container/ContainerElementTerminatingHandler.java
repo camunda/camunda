@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow.processor.handlers.container;
 
-import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.EventOutput;
@@ -30,13 +29,12 @@ import java.util.List;
 public class ContainerElementTerminatingHandler<T extends ExecutableFlowElementContainer>
     extends ActivityElementTerminatingHandler<T> {
 
-  public ContainerElementTerminatingHandler(IncidentState incidentState) {
-    this(null, incidentState);
+  public ContainerElementTerminatingHandler() {
+    this(null);
   }
 
-  public ContainerElementTerminatingHandler(
-      WorkflowInstanceIntent nextState, IncidentState incidentState) {
-    super(nextState, incidentState);
+  public ContainerElementTerminatingHandler(WorkflowInstanceIntent nextState) {
+    super(nextState);
   }
 
   @Override
@@ -53,15 +51,6 @@ public class ContainerElementTerminatingHandler<T extends ExecutableFlowElementC
         elementInstanceState.getChildren(elementInstance.getKey());
 
     if (children.isEmpty()) {
-      // todo: https://github.com/zeebe-io/zeebe/issues/1970
-      elementInstanceState.visitFailedRecords(
-          elementInstance.getKey(),
-          (token) -> {
-            incidentState.forExistingWorkflowIncident(
-                token.getKey(),
-                (incident, key) -> context.getOutput().appendResolvedIncidentEvent(key, incident));
-          });
-
       transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATED);
     } else {
       for (final ElementInstance child : children) {

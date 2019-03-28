@@ -90,16 +90,15 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   }
 
   @Override
-  public void commit() {
+  public void commit() throws RocksDBException {
     try {
       commitInternal();
     } catch (RocksDBException rdbex) {
       final String errorMessage = "Unexpected error occurred during RocksDB transaction commit.";
       if (isRocksDbExceptionRecoverable(rdbex)) {
         throw new ZeebeDbException(errorMessage, rdbex);
-      } else {
-        throw new RuntimeException(errorMessage, rdbex);
       }
+      throw rdbex;
     }
   }
 
@@ -109,16 +108,15 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   }
 
   @Override
-  public void rollback() {
+  public void rollback() throws RocksDBException {
     try {
       rollbackInternal();
     } catch (RocksDBException rdbex) {
       final String errorMessage = "Unexpected error occurred during RocksDB transaction rollback.";
       if (isRocksDbExceptionRecoverable(rdbex)) {
         throw new ZeebeDbException(errorMessage, rdbex);
-      } else {
-        throw new RuntimeException(errorMessage, rdbex);
       }
+      throw rdbex;
     }
   }
 

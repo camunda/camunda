@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.processor.handlers.activity;
 
 import io.zeebe.broker.workflow.model.element.ExecutableActivity;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
+import io.zeebe.broker.workflow.processor.handlers.IncidentResolver;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementTerminatedHandler;
 import io.zeebe.broker.workflow.state.ElementInstance;
 
@@ -32,8 +33,8 @@ import io.zeebe.broker.workflow.state.ElementInstance;
 public class ActivityElementTerminatedHandler<T extends ExecutableActivity>
     extends ElementTerminatedHandler<T> {
 
-  public ActivityElementTerminatedHandler() {
-    super();
+  public ActivityElementTerminatedHandler(IncidentResolver incidentResolver) {
+    super(incidentResolver);
   }
 
   @Override

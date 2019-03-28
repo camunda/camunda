@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.processor;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
+import io.zeebe.broker.workflow.processor.handlers.IncidentResolver;
 import io.zeebe.broker.workflow.processor.handlers.activity.ActivityElementActivatingHandler;
 import io.zeebe.broker.workflow.processor.handlers.activity.ActivityElementCompletingHandler;
 import io.zeebe.broker.workflow.processor.handlers.activity.ActivityElementTerminatedHandler;
@@ -60,14 +61,15 @@ public class BpmnStepHandlers {
   private final Map<BpmnStep, BpmnStepHandler<?>> stepHandlers = new EnumMap<>(BpmnStep.class);
 
   public BpmnStepHandlers(ZeebeState state) {
+    final IncidentResolver incidentResolver = new IncidentResolver(state.getIncidentState());
+
     stepHandlers.put(BpmnStep.ELEMENT_ACTIVATING, new ElementActivatingHandler<>());
     stepHandlers.put(BpmnStep.ELEMENT_ACTIVATED, new ElementActivatedHandler<>());
     stepHandlers.put(BpmnStep.EVENT_OCCURRED, new EventOccurredHandler<>());
     stepHandlers.put(BpmnStep.ELEMENT_COMPLETING, new ElementCompletingHandler<>());
     stepHandlers.put(BpmnStep.ELEMENT_COMPLETED, new ElementCompletedHandler<>());
-    stepHandlers.put(
-        BpmnStep.ELEMENT_TERMINATING, new ElementTerminatingHandler<>(state.getIncidentState()));
-    stepHandlers.put(BpmnStep.ELEMENT_TERMINATED, new ElementTerminatedHandler<>());
+    stepHandlers.put(BpmnStep.ELEMENT_TERMINATING, new ElementTerminatingHandler<>());
+    stepHandlers.put(BpmnStep.ELEMENT_TERMINATED, new ElementTerminatedHandler<>(incidentResolver));
     stepHandlers.put(BpmnStep.FLOWOUT_ELEMENT_COMPLETED, new FlowOutElementCompletedHandler<>());
 
     stepHandlers.put(
@@ -76,17 +78,16 @@ public class BpmnStepHandlers {
     stepHandlers.put(
         BpmnStep.ACTIVITY_ELEMENT_COMPLETING, new ActivityElementCompletingHandler<>());
     stepHandlers.put(
-        BpmnStep.ACTIVITY_ELEMENT_TERMINATING,
-        new ActivityElementTerminatingHandler<>(state.getIncidentState()));
+        BpmnStep.ACTIVITY_ELEMENT_TERMINATING, new ActivityElementTerminatingHandler<>());
     stepHandlers.put(
-        BpmnStep.ACTIVITY_ELEMENT_TERMINATED, new ActivityElementTerminatedHandler<>());
+        BpmnStep.ACTIVITY_ELEMENT_TERMINATED,
+        new ActivityElementTerminatedHandler<>(incidentResolver));
 
     stepHandlers.put(
         BpmnStep.CONTAINER_ELEMENT_ACTIVATED,
         new ContainerElementActivatedHandler<>(state.getWorkflowState()));
     stepHandlers.put(
-        BpmnStep.CONTAINER_ELEMENT_TERMINATING,
-        new ContainerElementTerminatingHandler<>(state.getIncidentState()));
+        BpmnStep.CONTAINER_ELEMENT_TERMINATING, new ContainerElementTerminatingHandler<>());
 
     stepHandlers.put(
         BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_ACTIVATING,
@@ -100,7 +101,7 @@ public class BpmnStepHandlers {
         new EventBasedGatewayElementCompletingHandler<>());
     stepHandlers.put(
         BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_TERMINATING,
-        new EventBasedGatewayElementTerminatingHandler<>(state.getIncidentState()));
+        new EventBasedGatewayElementTerminatingHandler<>());
     stepHandlers.put(
         BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_COMPLETED,
         new EventBasedGatewayElementCompletedHandler<>());
@@ -126,7 +127,7 @@ public class BpmnStepHandlers {
         new IntermediateCatchEventElementCompletingHandler<>());
     stepHandlers.put(
         BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_TERMINATING,
-        new IntermediateCatchEventElementTerminatingHandler<>(state.getIncidentState()));
+        new IntermediateCatchEventElementTerminatingHandler<>());
 
     stepHandlers.put(BpmnStep.RECEIVE_TASK_ELEMENT_ACTIVATED, new ElementActivatedHandler<>(null));
     stepHandlers.put(BpmnStep.RECEIVE_TASK_EVENT_OCCURRED, new ReceiveTaskEventOccurredHandler<>());

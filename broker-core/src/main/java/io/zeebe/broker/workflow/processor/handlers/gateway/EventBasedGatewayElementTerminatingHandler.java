@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow.processor.handlers.gateway;
 
-import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.workflow.model.element.ExecutableEventBasedGateway;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementTerminatingHandler;
@@ -25,13 +24,12 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class EventBasedGatewayElementTerminatingHandler<T extends ExecutableEventBasedGateway>
     extends ElementTerminatingHandler<T> {
-  public EventBasedGatewayElementTerminatingHandler(IncidentState incidentState) {
-    super(incidentState);
+  public EventBasedGatewayElementTerminatingHandler() {
+    super();
   }
 
-  public EventBasedGatewayElementTerminatingHandler(
-      WorkflowInstanceIntent nextState, IncidentState incidentState) {
-    super(nextState, incidentState);
+  public EventBasedGatewayElementTerminatingHandler(WorkflowInstanceIntent nextState) {
+    super(nextState);
   }
 
   @Override

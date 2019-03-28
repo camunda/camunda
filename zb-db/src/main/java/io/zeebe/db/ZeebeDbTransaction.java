@@ -35,15 +35,15 @@ public interface ZeebeDbTransaction {
    * Commits the transaction and writes the data into the database.
    *
    * @throws ZeebeDbException if the underlying database has a recoverable exception thrown
-   * @throws RuntimeException if the underlying database has a non recoverable exception thrown
+   * @throws Exception if the underlying database has a non recoverable exception thrown
    */
-  void commit();
+  void commit() throws Exception;
 
   /**
    * Rolls the transaction back to the latest commit, discards all changes in between.
    *
    * @throws ZeebeDbException if the underlying database has a recoverable exception thrown
-   * @throws RuntimeException if the underlying database has a non recoverable exception thrown
+   * @throws Exception if the underlying database has a non recoverable exception thrown
    */
-  void rollback();
+  void rollback() throws Exception;
 }

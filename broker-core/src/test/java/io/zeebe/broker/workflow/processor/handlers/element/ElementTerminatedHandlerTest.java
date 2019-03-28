@@ -25,23 +25,29 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
+import io.zeebe.broker.workflow.processor.handlers.IncidentResolver;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
 public class ElementTerminatedHandlerTest extends ElementHandlerTestCase {
+  @Spy
+  IncidentResolver incidentResolver =
+      new IncidentResolver(zeebeStateRule.getZeebeState().getIncidentState());
+
   private ElementTerminatedHandler<ExecutableFlowNode> handler;
 
   @Override
   @Before
   public void setUp() {
     super.setUp();
-    handler = new ElementTerminatedHandler<>();
+    handler = new ElementTerminatedHandler<>(incidentResolver);
   }
 
   @Test
@@ -124,5 +130,17 @@ public class ElementTerminatedHandlerTest extends ElementHandlerTestCase {
     verify(eventOutput, never())
         .appendFollowUpEvent(
             flowScope.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATED, flowScope.getValue());
+  }
+
+  @Test
+  public void shouldResolveIncidents() {
+    // given
+    createAndSetContextElementInstance(WorkflowInstanceIntent.ELEMENT_TERMINATED);
+
+    // when
+    handler.handleState(context);
+
+    // then
+    verify(incidentResolver, times(1)).resolveIncidents(context, context.getRecord().getKey());
   }
 }
