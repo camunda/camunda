@@ -268,6 +268,28 @@ pipeline {
       }
       failFast true
       parallel {
+        stage('Migration') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-migration_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec()
+            }
+          }
+          steps {
+            retry(2) {
+              unstash name: "optimize-stash-distro"
+              unstash name: "optimize-stash-client"
+              migrationTestSteps()
+            }
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
         stage('Data upgrade test') {
           agent {
             kubernetes {
