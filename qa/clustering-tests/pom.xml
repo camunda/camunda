@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
-    <version>2.4.0</version>
+    <version>2.5.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>clustering-tests</artifactId>
@@ -142,26 +142,26 @@
                     <echo message="Authenticating with the not importing optimize instance..." />
                     <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' --connect-to optimize::${optimize.notImporting.host}:${optimize.notImporting.port} -XPOST http://optimize/api/authentication --data-binary '{&quot;username&quot;:&quot;demo&quot;, &quot;password&quot;:&quot;demo&quot;}'                         -c authCookie" />
+                      <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' --connect-to optimize::${optimize.notImporting.host}:${optimize.notImporting.port} -XPOST http://optimize/api/authentication --data-binary '{&quot;username&quot;:&quot;demo&quot;, &quot;password&quot;:&quot;demo&quot;}' -c authCookie" />
                     </exec>
 
                     <echo message="Creating a new report on api of not importing optimize instance..." />
                     <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true" outputproperty="report.id">
                       <arg value="-c" />
-                      <arg value="curl -s -f -H 'Content-Type: application/json' --connect-to optimize::${optimize.notImporting.host}:${optimize.notImporting.port} -XPOST http://optimize/api/report --data-binary '{&quot;combined&quot;:false,&quot;reportType&quot;:&quot;process&quot;}'                         -b authCookie                         | jq -r '.id'" />
+                      <arg value="curl -s -f -H 'Content-Type: application/json' --connect-to optimize::${optimize.notImporting.host}:${optimize.notImporting.port} -XPOST http://optimize/api/report --data-binary '{&quot;combined&quot;:false,&quot;reportType&quot;:&quot;process&quot;}' -b authCookie                         | jq -r '.id'" />
                     </exec>
                     <echo message="Report id: ${report.id}" />
 
                     <echo message="Updating the new report on api of not importing optimize instance..." />
                     <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' --connect-to optimize::${optimize.notImporting.host}:${optimize.notImporting.port} -XPUT http://optimize/api/report/${report.id} --data-binary '@../src/test/resources/sample-report.json'                         -b authCookie" />
+                      <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' --connect-to optimize::${optimize.notImporting.host}:${optimize.notImporting.port} -XPUT http://optimize/api/report/${report.id} --data-binary '@../src/test/resources/sample-report.json' -b authCookie" />
                     </exec>
 
                     <echo message="Evaluating the new report on api of not importing optimize instance.." />
                     <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true" outputproperty="report.instance.count">
                       <arg value="-c" />
-                      <arg value="curl -s -f --connect-to optimize::${optimize.notImporting.host}:${optimize.notImporting.port} -XGET http://optimize/api/report/${report.id}/evaluate -b authCookie                         | jq -r '.processInstanceCount'" />
+                      <arg value="curl -s -f --connect-to optimize::${optimize.notImporting.host}:${optimize.notImporting.port} -XGET http://optimize/api/report/${report.id}/evaluate -b authCookie | jq -r '.processInstanceCount'" />
                     </exec>
                     <echo message="ProcessInstanceCount: ${report.instance.count}" />
 
@@ -199,7 +199,7 @@
                     <echo message="Authenticating with the not importing optimize instance..." />
                     <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' --connect-to optimize::${optimize.notImporting.host}:${optimize.notImporting.port} -XPOST http://optimize/api/authentication --data-binary '{&quot;username&quot;:&quot;demo&quot;, &quot;password&quot;:&quot;demo&quot;}'                         -c authCookie" />
+                      <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' --connect-to optimize::${optimize.notImporting.host}:${optimize.notImporting.port} -XPOST http://optimize/api/authentication --data-binary '{&quot;username&quot;:&quot;demo&quot;, &quot;password&quot;:&quot;demo&quot;}' -c authCookie" />
                     </exec>
 
                     <echo message="Reading all reports from optimize api of importing instance with same cookie..." />
