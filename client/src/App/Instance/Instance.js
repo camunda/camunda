@@ -11,13 +11,12 @@ import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import Diagram from 'modules/components/Diagram';
 import IncidentsWrapper from './IncidentsWrapper';
-import {PAGE_TITLE, UNNAMED_ACTIVITY} from 'modules/constants';
+import {PAGE_TITLE, UNNAMED_ACTIVITY, STATE} from 'modules/constants';
 import {compactObject} from 'modules/utils';
 import {getWorkflowName} from 'modules/utils/instance';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {formatDate} from 'modules/utils/date';
 import * as api from 'modules/api/instances';
-import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {fetchEvents} from 'modules/api/events';
 
@@ -32,7 +31,9 @@ import {
   getFlowNodeStateOverlays,
   getActivityIdToNameMap,
   isRunningInstance,
-  getActivityIdToActivityInstancesMap
+  fetchActivityInstancesTreeData,
+  fetchIncidents,
+  fetchVariables
 } from './service';
 import * as Styled from './styled';
 
@@ -49,6 +50,7 @@ export default class Instance extends Component {
 
   constructor(props) {
     super(props);
+
     this.state = {
       instance: null,
       selection: {
@@ -63,11 +65,14 @@ export default class Instance extends Component {
       events: [],
       incidents: {
         count: 0,
-        incidents: []
+        incidents: [],
+        flowNodes: [],
+        errorTypes: []
       },
       forceInstanceSpinner: false,
       forceIncidentsSpinner: false,
-      variables: null
+      variables: null,
+      isEditMode: false
     };
 
     this.pollingTimer = null;
@@ -76,57 +81,46 @@ export default class Instance extends Component {
   async componentDidMount() {
     const id = this.props.match.params.id;
     const instance = await api.fetchWorkflowInstance(id);
-    let incidents = [];
 
     document.title = PAGE_TITLE.INSTANCE(
       instance.id,
       getWorkflowName(instance)
     );
 
-    if (instance.state === 'INCIDENT') {
-      incidents = await api.fetchWorkflowInstanceIncidents(id);
-    }
+    const selection = {
+      flowNodeId: null,
+      treeRowIds: [instance.id]
+    };
 
     const [
-      activitiesInstancesTree,
+      {activityInstancesTree, activityIdToActivityInstanceMap},
       diagramXml,
       events,
+      incidents,
       variables
     ] = await Promise.all([
-      fetchActivityInstancesTree(id),
+      fetchActivityInstancesTreeData(instance),
       fetchWorkflowXML(instance.workflowId),
       fetchEvents(instance.id),
-      api.fetchVariables(instance.id, instance.id)
+      fetchIncidents(instance),
+      fetchVariables(instance, selection)
     ]);
 
     const {bpmnElements, definitions} = await parseDiagramXML(diagramXml);
 
     const activityIdToNameMap = getActivityIdToNameMap(bpmnElements);
 
-    const activityIdToActivityInstanceMap = getActivityIdToActivityInstancesMap(
-      activitiesInstancesTree
-    );
-
     this.setState(
       {
         loaded: true,
         instance,
-        incidents,
+        ...(incidents && {incidents}),
         activityIdToNameMap,
         diagramDefinitions: definitions,
         events,
-        activityInstancesTree: {
-          ...activitiesInstancesTree,
-          id: instance.id,
-          type: 'WORKFLOW',
-          state: instance.state,
-          endDate: instance.endDate
-        },
+        activityInstancesTree,
         activityIdToActivityInstanceMap,
-        selection: {
-          flowNodeId: null,
-          treeRowIds: [instance.id]
-        },
+        selection,
         variables
       },
       () => {
@@ -161,13 +155,16 @@ export default class Instance extends Component {
     this.setState({
       selection: newSelection,
       // clear variables object if we don't have exactly 1 selected row
-      ...(newSelection.treeRowIds.length !== 1 && {variables: null})
+      ...(newSelection.treeRowIds.length !== 1 && {
+        variables: null,
+        isEditMode: false
+      })
     });
 
     if (newSelection.treeRowIds.length === 1) {
       const scopeId = newSelection.treeRowIds[0];
       const variables = await api.fetchVariables(instance.id, scopeId);
-      this.setState({variables});
+      this.setState({variables, isEditMode: false});
     }
   };
 
@@ -188,13 +185,13 @@ export default class Instance extends Component {
         flowNodeId
       },
       // clear variables object if we don't have exactly 1 selected row
-      ...(treeRowIds.length !== 1 && {variables: null})
+      ...(treeRowIds.length !== 1 && {variables: null, isEditMode: false})
     });
 
     if (treeRowIds.length === 1) {
       const scopeId = treeRowIds[0];
       const variables = await api.fetchVariables(instance.id, scopeId);
-      this.setState({variables});
+      this.setState({variables, isEditMode: false});
     }
   };
 
@@ -206,52 +203,41 @@ export default class Instance extends Component {
     }
   };
 
+  resetPolling = () => {
+    this.clearPolling();
+    this.initializePolling();
+  };
+
   clearPolling = () => {
     this.pollingTimer && clearTimeout(this.pollingTimer);
     this.pollingTimer = null;
   };
 
   detectChangesPoll = async () => {
-    const {id} = this.state.instance;
-    const {treeRowIds} = this.state.selection;
-    const shouldFetchVariables = treeRowIds.length === 1;
-
     let requestsPromises = [
-      api.fetchWorkflowInstance(id),
-      api.fetchWorkflowInstanceIncidents(id),
-      fetchActivityInstancesTree(id),
-      fetchEvents(id)
+      api.fetchWorkflowInstance(this.state.instance.id),
+      fetchIncidents(this.state.instance),
+      fetchActivityInstancesTreeData(this.state.instance),
+      fetchEvents(this.state.instance.id),
+      fetchVariables(this.state.instance, this.state.selection)
     ];
-
-    if (shouldFetchVariables) {
-      requestsPromises.push(api.fetchVariables(id, treeRowIds[0]));
-    }
 
     const [
       instance,
       incidents,
-      activitiesInstancesTree,
+      {activityInstancesTree, activityIdToActivityInstanceMap},
       events,
       variables
     ] = await Promise.all(requestsPromises);
 
-    const activityIdToActivityInstanceMap = getActivityIdToActivityInstancesMap(
-      activitiesInstancesTree
-    );
-
     this.setState(
       {
         instance,
-        incidents,
+        ...(incidents && {incidents}),
         events,
-        activityInstancesTree: {
-          ...activitiesInstancesTree,
-          id: instance.id,
-          type: 'WORKFLOW',
-          state: instance.state
-        },
+        activityInstancesTree,
         activityIdToActivityInstanceMap,
-        ...(shouldFetchVariables && variables),
+        ...(variables && {variables}),
         forceInstanceSpinner: false,
         forceIncidentsSpinner: false
       },
@@ -361,6 +347,54 @@ export default class Instance extends Component {
     this.setState({forceIncidentsSpinner: true});
   };
 
+  handleVariableUpdate = async (key, value) => {
+    const {
+      selection: {treeRowIds},
+      instance: {id},
+      variables
+    } = this.state;
+
+    this.setState({
+      variables: [...variables, {name: key, value, hasActiveOperation: true}]
+    });
+
+    return await api.applyOperation(id, {
+      operationType: 'UPDATE_VARIABLE',
+      scopeId: treeRowIds[0],
+      name: key,
+      value
+    });
+  };
+
+  areVariablesEditable = () => {
+    const {
+      instance,
+      activityIdToActivityInstanceMap,
+      variables,
+      selection: {flowNodeId, treeRowIds}
+    } = this.state;
+
+    if (!variables) {
+      return false;
+    }
+
+    const selectedRowState = !flowNodeId
+      ? instance.state
+      : activityIdToActivityInstanceMap.get(flowNodeId).get(treeRowIds[0])
+          .state;
+
+    return [STATE.ACTIVE, STATE.INCIDENT].includes(selectedRowState);
+  };
+
+  setVariables = variables => {
+    this.setState({variables, isEditMode: false});
+    return this.resetPolling();
+  };
+
+  setEditMode = isEditMode => {
+    this.setState({isEditMode});
+  };
+
   render() {
     const {
       loaded,
@@ -369,7 +403,8 @@ export default class Instance extends Component {
       selection,
       activityIdToActivityInstanceMap,
       activityIdToNameMap,
-      variables
+      variables,
+      isEditMode
     } = this.state;
 
     if (!loaded) {
@@ -441,7 +476,13 @@ export default class Instance extends Component {
                   />
                 </Styled.NodeContainer>
               </Styled.FlowNodeInstanceLog>
-              <Variables variables={variables} />
+              <Variables
+                variables={variables}
+                isEditMode={isEditMode}
+                isEditable={this.areVariablesEditable()}
+                onVariableUpdate={this.handleVariableUpdate}
+                setEditMode={this.setEditMode}
+              />
             </InstanceHistory>
           </SplitPane>
         </Styled.Instance>

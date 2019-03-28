@@ -5,6 +5,8 @@
  */
 
 import {STATE} from 'modules/constants';
+import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
+import * as api from 'modules/api/instances';
 
 /**
  * @returns activityId -> name map
@@ -77,4 +79,33 @@ export function getActivityIdToActivityInstancesMap(
     },
     activityIdToActivityInstanceMap
   );
+}
+
+export async function fetchActivityInstancesTreeData(instance) {
+  const activitiesInstancesTree = await fetchActivityInstancesTree(instance.id);
+
+  return {
+    activityInstancesTree: {
+      ...activitiesInstancesTree,
+      id: instance.id,
+      type: 'WORKFLOW',
+      state: instance.state,
+      endDate: instance.endDate
+    },
+    activityIdToActivityInstanceMap: getActivityIdToActivityInstancesMap(
+      activitiesInstancesTree
+    )
+  };
+}
+
+export async function fetchIncidents(instance) {
+  return instance.state === 'INCIDENT'
+    ? await api.fetchWorkflowInstanceIncidents(instance.id)
+    : null;
+}
+
+export async function fetchVariables({id}, {treeRowIds}) {
+  return treeRowIds.length === 1
+    ? await api.fetchVariables(id, treeRowIds[0])
+    : null;
 }

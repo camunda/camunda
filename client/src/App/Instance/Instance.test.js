@@ -279,17 +279,26 @@ describe('Instance', () => {
     });
 
     afterEach(() => {
+      jest.runOnlyPendingTimers();
       jest.clearAllTimers();
+      jest.clearAllMocks();
     });
 
     it('should set, for running instances, a 5s timeout after initial render', async () => {
       // given
       const node = mountRenderComponent();
+      const detectChangesPollSpy = jest.spyOn(
+        node.find(Instance).instance(),
+        'detectChangesPoll'
+      );
       await flushPromises();
       node.update();
 
-      expect(setTimeout).toHaveBeenCalledTimes(1);
-      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 5000);
+      // when
+      jest.advanceTimersByTime(5000);
+
+      // then
+      expect(detectChangesPollSpy).toHaveBeenCalledTimes(1);
     });
 
     it('should not set, for completed instances, a 5s timeout after initial render', async () => {
@@ -298,68 +307,63 @@ describe('Instance', () => {
         COMPLETED_INSTANCE
       );
       const node = mountRenderComponent();
+      const detectChangesPollSpy = jest.spyOn(
+        node.find(Instance).instance(),
+        'detectChangesPoll'
+      );
       await flushPromises();
       node.update();
 
-      expect(setTimeout).toHaveBeenCalledTimes(0);
+      // when
+      jest.advanceTimersByTime(5000);
+
+      // then
+      expect(detectChangesPollSpy).toHaveBeenCalledTimes(0);
       instancesApi.fetchWorkflowInstance.mockClear();
     });
 
     it('should not set, for canceled instances, a 5s timeout after initial render', async () => {
+      // given
       instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
         CANCELED_INSTANCE
       );
       const node = mountRenderComponent();
+      const detectChangesPollSpy = jest.spyOn(
+        node.find(Instance).instance(),
+        'detectChangesPoll'
+      );
       await flushPromises();
       node.update();
 
-      expect(setTimeout).toHaveBeenCalledTimes(0);
+      // when
+      jest.advanceTimersByTime(5000);
+
+      //then
+      expect(detectChangesPollSpy).toHaveBeenCalledTimes(0);
       instancesApi.fetchWorkflowInstance.mockClear();
     });
 
     it('should start a polling for changes if instance.state is ACTIVE', async () => {
       // given
       const node = mountRenderComponent();
+      const detectChangesPollSpy = jest.spyOn(
+        node.find(Instance).instance(),
+        'detectChangesPoll'
+      );
       await flushPromises();
       node.update();
+      jest.clearAllMocks();
 
       // when first setTimeout is ran
-      jest.runOnlyPendingTimers();
-      await flushPromises();
-      node.update();
+      jest.advanceTimersByTime(5000);
 
-      // expect another one setTimeout to have been started
-      expect(setTimeout).toBeCalledTimes(2);
-      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 5000);
-      // expect setTimeout's executed function to fetch the instance
-      // 1st time on render, 2nd on first setTimeout
-      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(2);
-      expect(instancesApi.fetchWorkflowInstanceIncidents).toHaveBeenCalledTimes(
-        1
-      );
+      // then
+      expect(detectChangesPollSpy).toHaveBeenCalledTimes(1);
+      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(1);
       expect(
         activityInstanceApi.fetchActivityInstancesTree
-      ).toHaveBeenCalledTimes(2);
-      expect(eventsApi.fetchEvents).toHaveBeenCalledTimes(2);
-
-      // when 2nd setTimeout is ran
-      jest.runOnlyPendingTimers();
-      await flushPromises();
-      node.update();
-
-      expect(setTimeout).toBeCalledTimes(3);
-      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 5000);
-
-      // expect setTimeout's executed function to fetch the instance
-      // 1st time on render, 2nd on first setTimeout, 3rd on 2nd setTimeout
-      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(3);
-      expect(instancesApi.fetchWorkflowInstanceIncidents).toHaveBeenCalledTimes(
-        2
-      );
-      expect(
-        activityInstanceApi.fetchActivityInstancesTree
-      ).toHaveBeenCalledTimes(3);
-      expect(eventsApi.fetchEvents).toHaveBeenCalledTimes(3);
+      ).toHaveBeenCalledTimes(1);
+      expect(eventsApi.fetchEvents).toHaveBeenCalledTimes(1);
     });
 
     it('should start a polling for changes if instance.state is INCIDENT', async () => {
@@ -368,39 +372,24 @@ describe('Instance', () => {
         INSTANCE_WITH_INCIDENTS
       );
       const node = mountRenderComponent();
+      const detectChangesPollSpy = jest.spyOn(
+        node.find(Instance).instance(),
+        'detectChangesPoll'
+      );
       await flushPromises();
       node.update();
 
       // when first setTimeout is ran
-      jest.runOnlyPendingTimers();
-      await flushPromises();
-      node.update();
+      jest.clearAllMocks();
+      jest.advanceTimersByTime(5000);
 
-      // expect another one setTimeout to have been started
-      expect(setTimeout).toBeCalledTimes(2);
-      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 5000);
-      // expect setTimeout's executed function to fetch the instance
-      // 1st time on render, 2nd on first setTimeout
-      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(2);
-
-      // when 2nd setTimeout is ran
-      jest.runOnlyPendingTimers();
-      await flushPromises();
-      node.update();
-
-      expect(setTimeout).toBeCalledTimes(3);
-      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 5000);
-
-      // expect setTimeout's executed function to fetch the instance
-      // 1st time on render, 2nd on first setTimeout, 3rd on 2nd setTimeout
-      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(3);
-      expect(instancesApi.fetchWorkflowInstanceIncidents).toHaveBeenCalledTimes(
-        3
-      );
-      expect(
-        activityInstanceApi.fetchActivityInstancesTree
-      ).toHaveBeenCalledTimes(3);
-      expect(eventsApi.fetchEvents).toHaveBeenCalledTimes(3);
+      // then
+      expect(detectChangesPollSpy).toBeCalledTimes(1);
+      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalled();
+      expect(instancesApi.fetchWorkflowInstanceIncidents).toHaveBeenCalled();
+      expect(activityInstanceApi.fetchActivityInstancesTree).toHaveBeenCalled();
+      expect(eventsApi.fetchEvents).toHaveBeenCalled();
+      instancesApi.fetchWorkflowInstance.mockClear();
     });
 
     it('should stop the polling once the component has completed', async () => {
@@ -412,19 +401,21 @@ describe('Instance', () => {
         .mockResolvedValueOnce(COMPLETED_INSTANCE); // 2nd call
 
       const node = mountRenderComponent();
+      const detectChangesPollSpy = jest.spyOn(
+        node.find(Instance).instance(),
+        'detectChangesPoll'
+      );
       await flushPromises();
       node.update();
+      jest.clearAllMocks();
 
       // when first setTimeout is ran
-      jest.runOnlyPendingTimers();
-      await flushPromises();
-      node.update();
+      jest.advanceTimersByTime(5000);
 
       // expect polling to stop as Instance is now completed
-      expect(setTimeout).toBeCalledTimes(1);
-      // expect setTimeout's executed function to fetch the instance
-      // 1st time on render, 2nd on first setTimeout
-      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(2);
+      expect(detectChangesPollSpy).toBeCalledTimes(1);
+      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalled();
+      instancesApi.fetchWorkflowInstance.mockClear();
     });
   });
 
@@ -736,7 +727,6 @@ describe('Instance', () => {
         node.update();
 
         instanceNode = node.find(Instance);
-        instanceNode.instance().getCurrentMetadata = jest.fn();
       });
 
       it('should select the row when not selected already', async () => {
@@ -751,8 +741,10 @@ describe('Instance', () => {
         // When
         instanceNode.instance().handleTreeRowSelection({
           id: nodeIdOfSelectedRow,
-          activityId: 'someActivityId'
+          activityId: null
         });
+        instanceNode.update();
+
         // Then
         expect(instanceNode.instance().state.selection.treeRowIds).toEqual([
           nodeIdOfSelectedRow
@@ -772,7 +764,7 @@ describe('Instance', () => {
         // When
         instanceNode.instance().handleTreeRowSelection({
           id: nodeIdOfSelectedRow,
-          activityId: 'someActivityId'
+          activityId: null
         });
 
         // Then
@@ -796,7 +788,7 @@ describe('Instance', () => {
         // When
         instanceNode.instance().handleTreeRowSelection({
           id: nodeIdOfSelectedRow,
-          activityId: 'someActivityId'
+          activityId: null
         });
 
         // Then

@@ -65,7 +65,7 @@ export default class Actions extends React.Component {
 
   handleOnClick = async operationType => {
     this.setState({operationState: OPERATION_STATE.SCHEDULED});
-    await applyOperation(this.props.instance.id, operationType);
+    await applyOperation(this.props.instance.id, {operationType});
     this.props.onButtonClick && this.props.onButtonClick(this.props.instance);
   };
 

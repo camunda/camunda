@@ -107,9 +107,8 @@ export async function applyBatchOperation(operationType, queries) {
  * @param {*} operationType constants specifying the operation to be applied.
  * @param {*} queries object with query params.
  */
-export async function applyOperation(instanceId, operationType, incidentId) {
+export async function applyOperation(instanceId, payload) {
   const url = `${URL}/${instanceId}/operation`;
-  const payload = {operationType, incidentId};
 
   const response = await post(url, payload);
   return await response.json();

@@ -13,10 +13,19 @@ import {createVariables} from 'modules/testUtils';
 import {EMPTY_PLACEHOLDER, NULL_PLACEHOLDER} from './constants';
 import Variables from './Variables';
 
+const mockProps = {
+  variables: createVariables(),
+  isEditMode: false,
+  onVariableUpdate: jest.fn(),
+  isEditable: true,
+  setVariables: jest.fn(),
+  setEditMode: jest.fn()
+};
+
 function mountNode(props = {}) {
   return mount(
     <ThemeProvider>
-      <Variables {...props} />
+      <Variables {...mockProps} {...props} />
     </ThemeProvider>
   );
 }
@@ -24,7 +33,7 @@ function mountNode(props = {}) {
 describe('Variables', () => {
   it('should render proper message for non existing variables', () => {
     // given
-    const node = mountNode();
+    const node = mountNode({variables: null});
 
     // then
     expect(node.contains(NULL_PLACEHOLDER)).toBe(true);
@@ -49,9 +58,30 @@ describe('Variables', () => {
       const row = node.find(`tr[data-test="${variable.name}"]`);
       expect(row).toHaveLength(1);
       const columns = row.find('td');
-      expect(columns).toHaveLength(2);
+      expect(columns).toHaveLength(3);
       expect(columns.at(0).text()).toContain(variable.name);
       expect(columns.at(1).text()).toContain(variable.value);
+    });
+  });
+
+  describe('add variable', () => {
+    it('should disable add button when variables are not editable', () => {
+      // given
+      const node = mountNode({isEditable: false});
+
+      // then
+      expect(
+        node.find("button[data-test='add-var-btn']").prop('disabled')
+      ).toBe(true);
+    });
+
+    it('should show adding variable inputs', () => {
+      // given
+      const node = mountNode({isEditMode: true});
+
+      // then
+      expect(node.find('input[type="text"]')).toHaveLength(1);
+      expect(node.find('textarea')).toHaveLength(1);
     });
   });
 });

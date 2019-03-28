@@ -44,7 +44,5 @@ export const Textarea = themed(styled.textarea`
   font-family: IBMPlexSans;
   font-size: 13px;
 
-  resize: none;
-
   ${placeholderStyle};
 `);

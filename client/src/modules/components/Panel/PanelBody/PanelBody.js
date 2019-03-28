@@ -9,9 +9,11 @@ import PropTypes from 'prop-types';
 
 import * as Styled from './styled.js';
 
-export default function PanelBody(props) {
-  return <Styled.Body {...props} />;
-}
+const PanelBody = React.forwardRef(function PanelBody(props, ref) {
+  return <Styled.Body ref={ref} {...props} />;
+});
+
+export default PanelBody;
 
 PanelBody.propTypes = {
   children: PropTypes.oneOfType([

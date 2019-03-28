@@ -30,11 +30,10 @@ export default class Actions extends React.Component {
   handleOnClick = async e => {
     e.stopPropagation();
     this.setState({isSpinnerVisible: true});
-    await applyOperation(
-      this.props.instanceId,
-      OPERATION_TYPE.RESOLVE_INCIDENT,
-      this.props.incident.id
-    );
+    await applyOperation(this.props.instanceId, {
+      operationType: OPERATION_TYPE.RESOLVE_INCIDENT,
+      incidentId: this.props.incident.id
+    });
 
     this.props.onButtonClick && this.props.onButtonClick();
   };

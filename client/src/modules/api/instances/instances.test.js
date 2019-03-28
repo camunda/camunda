@@ -168,11 +168,10 @@ describe('instances api', () => {
   describe('applyOperation', () => {
     it('should call post with the right payload', async () => {
       // when
-      await applyOperation(
-        'instance_1',
-        OPERATION_TYPE.RESOLVE_INCIDENT,
-        'incident_1'
-      );
+      await applyOperation('instance_1', {
+        operationType: OPERATION_TYPE.RESOLVE_INCIDENT,
+        incidentId: 'incident_1'
+      });
 
       // then
       expect(wrappers.post.mock.calls[0][0]).toBe(

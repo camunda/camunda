@@ -53,6 +53,10 @@ button {
   border-width: 0;
 }
 
+button:disabled {
+  cursor: not-allowed;
+}
+
 /* removes dotted default focus */
 button::-moz-focus-inner {
   border: 0;

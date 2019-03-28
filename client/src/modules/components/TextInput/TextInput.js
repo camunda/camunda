@@ -10,7 +10,7 @@ import PropTypes from 'prop-types';
 import * as Styled from './styled';
 
 export default function TextInput(props) {
-  return <Styled.Input {...props} aria-label={props.placeholder} />;
+  return <Styled.Input {...props} aria-label={props.placeholder} type="text" />;
 }
 
 TextInput.propTypes = {

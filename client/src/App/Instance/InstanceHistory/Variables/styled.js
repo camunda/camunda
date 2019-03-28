@@ -4,10 +4,16 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 import Panel from 'modules/components/Panel';
+import DefaultButton from 'modules/components/Button';
+import BasicTextInput from 'modules/components/TextInput';
+import BasicTextarea from 'modules/components/Textarea';
+import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
+import {ReactComponent as DefaultClose} from 'modules/components/Icon/close.svg';
+import {ReactComponent as DefaultCheck} from 'modules/components/Icon/check.svg';
 
 export const Variables = themed(styled(Panel)`
   flex: 1;
@@ -19,7 +25,10 @@ export const Variables = themed(styled(Panel)`
   })};
 `);
 
-export const VariablesContent = styled(Panel.Body)``;
+export const VariablesContent = styled(Panel.Body)`
+  position: relative;
+  overflow: auto;
+`;
 
 export const Placeholder = themed(styled.span`
   position: absolute;
@@ -59,7 +68,26 @@ export const TD = themed(styled.td`
   font-weight: ${props => (props.isBold ? 'bold' : 'normal')};
   padding-left: 17px;
   height: 32px;
+
+  &:not(:nth-child(2)) {
+    white-space: nowrap;
+  }
+
+  &:nth-child(2) {
+    width: 100%;
+  }
 `);
+
+const rowWithActiveOperationStyle = css`
+  background-color: ${themeStyle({
+    dark: 'rgba(91, 94, 99, 0.4)',
+    light: '#e7e9ed'
+  })};
+
+  opacity: ${themeStyle({
+    dark: '0.7'
+  })};
+`;
 
 export const TR = themed(styled.tr`
   border-width: 1px 0;
@@ -68,7 +96,92 @@ export const TR = themed(styled.tr`
     dark: Colors.uiDark04,
     light: Colors.uiLight05
   })};
-  &:first-child {
-    border-top: none;
+
+  &:last-child {
+    border-bottom: none;
   }
+
+  ${({hasActiveOperation}) =>
+    !hasActiveOperation ? '' : rowWithActiveOperationStyle};
+`);
+
+export const VariablesFooter = styled(Panel.Footer)``;
+
+export const Button = styled(DefaultButton)`
+  display: flex;
+`;
+
+export const AddButton = styled(Button)`
+  width: 93px;
+`;
+
+export const Plus = styled(DefaultPlus)`
+  height: 16px;
+  margin-right: 4px;
+`;
+
+export const TextInput = styled(BasicTextInput)`
+  height: 26px;
+`;
+
+export const Textarea = styled(BasicTextarea)`
+  padding: 4px 11px 5px 8px;
+  position: absolute;
+  top: 2px;
+  left: 9px;
+  height: 26px;
+  min-height: 26px;
+  max-height: 72px;
+  width: calc(100% - 18px);
+  min-width: calc(100% - 18px);
+  max-width: calc(100% - 18px);
+`;
+
+export const EditButtonsTD = styled.td`
+  display: flex;
+  justify-content: flex-end;
+  padding: 2px 20px;
+  padding-top: 7px;
+`;
+
+export const EditInputTD = styled.td`
+  padding-left: 9px;
+  position: relative;
+
+  &:not(:nth-child(2)) {
+    white-space: nowrap;
+  }
+
+  &:nth-child(2) {
+    width: 100%;
+  }
+`;
+
+export const EditButton = styled.button`
+  margin: 0;
+  margin-left: 13px;
+  background: transparent;
+  border: none;
+
+  &:disabled svg {
+    opacity: 0.5;
+  }
+`;
+
+const iconStyle = css`
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  color: ${themeStyle({
+    dark: Colors.uiLight02,
+    light: Colors.uiDark04
+  })};
+`;
+
+export const CloseIcon = themed(styled(DefaultClose)`
+  ${iconStyle}
+`);
+
+export const CheckIcon = themed(styled(DefaultCheck)`
+  ${iconStyle}
 `);

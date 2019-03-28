@@ -95,11 +95,10 @@ describe('IncidentAction', () => {
       await flushPromises();
       node.update();
 
-      expect(api.applyOperation).toHaveBeenCalledWith(
-        mockProps.instanceId,
-        OPERATION_TYPE.RESOLVE_INCIDENT,
-        mockProps.incident.id
-      );
+      expect(api.applyOperation).toHaveBeenCalledWith(mockProps.instanceId, {
+        operationType: OPERATION_TYPE.RESOLVE_INCIDENT,
+        incidentId: mockProps.incident.id
+      });
       expect(mockProps.onButtonClick).toHaveBeenCalled();
     });
   });

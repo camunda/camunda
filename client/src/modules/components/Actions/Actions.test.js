@@ -132,10 +132,9 @@ describe('Actions', () => {
         await flushPromises();
         node.update();
 
-        expect(api.applyOperation).toBeCalledWith(
-          mockInstance.id,
-          OPERATION_TYPE.RESOLVE_INCIDENT
-        );
+        expect(api.applyOperation).toBeCalledWith(mockInstance.id, {
+          operationType: OPERATION_TYPE.RESOLVE_INCIDENT
+        });
         // expect Spinner to appear
         expect(node.find(ActionStatus).props().operationState).toEqual(
           OPERATION_STATE.SCHEDULED
@@ -168,10 +167,9 @@ describe('Actions', () => {
         node.update();
 
         // then
-        expect(api.applyOperation).toBeCalledWith(
-          mockInstance.id,
-          OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
-        );
+        expect(api.applyOperation).toBeCalledWith(mockInstance.id, {
+          operationType: OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
+        });
 
         // expect Spinner to appear
         expect(node.find(ActionStatus).props().operationState).toEqual(
