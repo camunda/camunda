@@ -103,7 +103,8 @@ public class VariablesState {
         zeebeDb.createColumnFamily(ZbColumnFamilies.PAYLOAD, dbContext, payloadScopeKey, payload);
   }
 
-  public void setVariablesLocalFromDocument(long scopeKey, DirectBuffer document) {
+  public void setVariablesLocalFromDocument(
+      long scopeKey, long workflowKey, DirectBuffer document) {
     reader.wrap(document, 0, document.capacity());
 
     final int variables = reader.readMapHeader();
@@ -118,16 +119,20 @@ public class VariablesState {
       final int valueLength = reader.getOffset() - valueOffset;
 
       setVariableLocal(
-          scopeKey, document, nameOffset, nameLength, document, valueOffset, valueLength);
+          scopeKey,
+          workflowKey,
+          document,
+          nameOffset,
+          nameLength,
+          document,
+          valueOffset,
+          valueLength);
     }
   }
 
-  public void setVariableLocal(long scopeKey, DirectBuffer name, DirectBuffer value) {
-    setVariableLocal(scopeKey, name, 0, name.capacity(), value, 0, value.capacity());
-  }
-
-  private void setVariableLocal(
+  void setVariableLocal(
       long scopeKey,
+      long workflowKey,
       DirectBuffer name,
       int nameOffset,
       int nameLength,
@@ -149,6 +154,7 @@ public class VariablesState {
         final long rootScopeKey = getRootScopeKey(scopeKey);
         listener.onCreate(
             newVariable.getKey(),
+            workflowKey,
             variableName.getBuffer(),
             newVariable.getValue(),
             scopeKey,
@@ -163,6 +169,7 @@ public class VariablesState {
         final long rootScopeKey = getRootScopeKey(scopeKey);
         listener.onUpdate(
             newVariable.getKey(),
+            workflowKey,
             variableName.getBuffer(),
             newVariable.getValue(),
             scopeKey,
@@ -202,7 +209,7 @@ public class VariablesState {
     return variablesColumnFamily.get(scopeKeyVariableNameKey);
   }
 
-  public void setVariablesFromDocument(long scopeKey, DirectBuffer document) {
+  public void setVariablesFromDocument(long scopeKey, long workflowKey, DirectBuffer document) {
     // 1. index entries in the document
     indexedDocument.index(document);
 
@@ -226,6 +233,7 @@ public class VariablesState {
         if (hasVariable) {
           setVariableLocal(
               currentScope,
+              workflowKey,
               document,
               entryIterator.getNameOffset(),
               entryIterator.getNameLength(),
@@ -248,6 +256,7 @@ public class VariablesState {
 
         setVariableLocal(
             currentScope,
+            workflowKey,
             document,
             entryIterator.getNameOffset(),
             entryIterator.getNameLength(),
@@ -569,9 +578,19 @@ public class VariablesState {
 
   public interface VariableListener {
     void onCreate(
-        long key, DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey);
+        long key,
+        long workflowKey,
+        DirectBuffer name,
+        DirectBuffer value,
+        long variableScopeKey,
+        long rootScopeKey);
 
     void onUpdate(
-        long key, DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey);
+        long key,
+        long workflowKey,
+        DirectBuffer name,
+        DirectBuffer value,
+        long variableScopeKey,
+        long rootScopeKey);
   }
 }

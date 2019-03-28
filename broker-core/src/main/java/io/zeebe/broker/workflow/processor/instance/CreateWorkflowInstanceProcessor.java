@@ -86,7 +86,7 @@ public class CreateWorkflowInstanceProcessor
     }
 
     final long workflowInstanceKey = keyGenerator.nextKey();
-    if (!setVariablesFromDocument(controller, record, workflowInstanceKey)) {
+    if (!setVariablesFromDocument(controller, record, workflow.getKey(), workflowInstanceKey)) {
       return;
     }
 
@@ -118,9 +118,11 @@ public class CreateWorkflowInstanceProcessor
   private boolean setVariablesFromDocument(
       CommandControl<WorkflowInstanceCreationRecord> controller,
       WorkflowInstanceCreationRecord record,
+      long workflowKey,
       long workflowInstanceKey) {
     try {
-      variablesState.setVariablesLocalFromDocument(workflowInstanceKey, record.getVariables());
+      variablesState.setVariablesLocalFromDocument(
+          workflowInstanceKey, workflowKey, record.getVariables());
     } catch (MsgpackReaderException e) {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(ERROR_INVALID_VARIABLES_LOGGED_MESSAGE, e);
       controller.reject(

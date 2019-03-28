@@ -63,7 +63,7 @@ public class WorkflowInstanceVariableTest {
   @Test
   public void shouldCreateVariableByWorkflowInstanceCreation() {
     // given
-    testClient.deploy(WORKFLOW);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW).getKey();
 
     // when
     final long workflowInstanceKey =
@@ -77,6 +77,7 @@ public class WorkflowInstanceVariableTest {
         RecordingExporter.variableRecords(VariableIntent.CREATED).getFirst();
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeKey(workflowInstanceKey)
+        .hasWorkflowKey(workflowKey)
         .hasName("x")
         .hasValue("1");
   }
@@ -84,7 +85,7 @@ public class WorkflowInstanceVariableTest {
   @Test
   public void shouldCreateVariableByJobCompletion() {
     // given
-    testClient.deploy(WORKFLOW);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW).getKey();
 
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
@@ -97,6 +98,7 @@ public class WorkflowInstanceVariableTest {
         RecordingExporter.variableRecords(VariableIntent.CREATED).getFirst();
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeKey(workflowInstanceKey)
+        .hasWorkflowKey(workflowKey)
         .hasName("x")
         .hasValue("1");
   }
@@ -104,12 +106,15 @@ public class WorkflowInstanceVariableTest {
   @Test
   public void shouldCreateVariableByOutputMapping() {
     // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType("test").zeebeOutput("x", "y"))
-            .endEvent()
-            .done());
+    final long workflowKey =
+        testClient
+            .deployWorkflow(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask("task", t -> t.zeebeTaskType("test").zeebeOutput("x", "y"))
+                    .endEvent()
+                    .done())
+            .getKey();
 
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
@@ -122,6 +127,7 @@ public class WorkflowInstanceVariableTest {
         RecordingExporter.variableRecords(VariableIntent.CREATED).withName("y").getFirst();
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeKey(workflowInstanceKey)
+        .hasWorkflowKey(workflowKey)
         .hasName("y")
         .hasValue("1");
   }
@@ -129,7 +135,7 @@ public class WorkflowInstanceVariableTest {
   @Test
   public void shouldCreateVariableByUpdateVariables() {
     // given
-    testClient.deploy(WORKFLOW);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW).getKey();
 
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
@@ -142,6 +148,7 @@ public class WorkflowInstanceVariableTest {
         RecordingExporter.variableRecords(VariableIntent.CREATED).getFirst();
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeKey(workflowInstanceKey)
+        .hasWorkflowKey(workflowKey)
         .hasName("x")
         .hasValue("1");
   }
@@ -170,7 +177,7 @@ public class WorkflowInstanceVariableTest {
   @Test
   public void shouldUpdateVariableByJobCompletion() {
     // given
-    testClient.deploy(WORKFLOW);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW).getKey();
 
     final long workflowInstanceKey =
         testClient
@@ -186,6 +193,7 @@ public class WorkflowInstanceVariableTest {
         RecordingExporter.variableRecords(VariableIntent.UPDATED).getFirst();
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeKey(workflowInstanceKey)
+        .hasWorkflowKey(workflowKey)
         .hasName("x")
         .hasValue("2");
   }
@@ -193,12 +201,15 @@ public class WorkflowInstanceVariableTest {
   @Test
   public void shouldUpdateVariableByOutputMapping() {
     // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType("test").zeebeOutput("x", "y"))
-            .endEvent()
-            .done());
+    final long workflowKey =
+        testClient
+            .deployWorkflow(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask("task", t -> t.zeebeTaskType("test").zeebeOutput("x", "y"))
+                    .endEvent()
+                    .done())
+            .getKey();
 
     final long workflowInstanceKey =
         testClient
@@ -214,6 +225,7 @@ public class WorkflowInstanceVariableTest {
         RecordingExporter.variableRecords(VariableIntent.UPDATED).getFirst();
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeKey(workflowInstanceKey)
+        .hasWorkflowKey(workflowKey)
         .hasName("y")
         .hasValue("2");
   }
@@ -221,7 +233,7 @@ public class WorkflowInstanceVariableTest {
   @Test
   public void shouldUpdateVariableByUpdateVariables() {
     // given
-    testClient.deploy(WORKFLOW);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW).getKey();
 
     final long workflowInstanceKey =
         testClient
@@ -237,6 +249,7 @@ public class WorkflowInstanceVariableTest {
         RecordingExporter.variableRecords(VariableIntent.UPDATED).getFirst();
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeKey(workflowInstanceKey)
+        .hasWorkflowKey(workflowKey)
         .hasName("x")
         .hasValue("2");
   }
@@ -244,7 +257,7 @@ public class WorkflowInstanceVariableTest {
   @Test
   public void shouldUpdateMultipleVariables() {
     // given
-    testClient.deploy(WORKFLOW);
+    testClient.deployWorkflow(WORKFLOW);
     testClient.createWorkflowInstance(
         r ->
             r.setBpmnProcessId(PROCESS_ID)
@@ -264,7 +277,7 @@ public class WorkflowInstanceVariableTest {
   @Test
   public void shouldCreateAndUpdateVariables() {
     // given
-    testClient.deploy(WORKFLOW);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW).getKey();
 
     final long workflowInstanceKey =
         testClient
@@ -287,10 +300,13 @@ public class WorkflowInstanceVariableTest {
             record ->
                 tuple(
                     record.getMetadata().getIntent(),
+                    record.getValue().getWorkflowKey(),
                     record.getValue().getName(),
                     record.getValue().getValue()))
         .hasSize(2)
-        .contains(tuple(VariableIntent.UPDATED, "x", "2"), tuple(VariableIntent.CREATED, "y", "3"));
+        .contains(
+            tuple(VariableIntent.UPDATED, workflowKey, "x", "2"),
+            tuple(VariableIntent.CREATED, workflowKey, "y", "3"));
   }
 
   @Test
