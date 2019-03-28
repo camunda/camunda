@@ -253,7 +253,7 @@ public class ExporterStreamProcessor implements StreamProcessor {
             .valueType(ValueType.EXPORTER)
             .intent(ExporterIntent.EXPORTED);
 
-        return writer.positionAsKey().valueWriter(record).metadataWriter(rawMetadata).tryWrite();
+        return writer.valueWriter(record).metadataWriter(rawMetadata).tryWrite();
       }
 
       return 0;

@@ -324,22 +324,24 @@ public class ExporterStreamProcessorTest {
   public void shouldExecuteScheduledTask() throws Exception {
     // given
     final List<ExporterDescriptor> mockedExporters = createMockedExporters(1);
-    final CountDownLatch latch = new CountDownLatch(1);
+    final CountDownLatch timerTriggerLatch = new CountDownLatch(1);
+    final CountDownLatch timerScheduledLatch = new CountDownLatch(1);
     final Duration delay = Duration.ofSeconds(10);
 
     final ControlledTestExporter controlledTestExporter = exporters.get(0);
     controlledTestExporter.onExport(
-        r -> controlledTestExporter.getController().scheduleTask(delay, latch::countDown));
+        r -> {
+          controlledTestExporter.getController().scheduleTask(delay, timerTriggerLatch::countDown);
+          timerScheduledLatch.countDown();
+        });
 
-    final StreamProcessorControl control =
-        rule.runStreamProcessor((db, dbContext) -> createStreamProcessor(db, mockedExporters));
-    final long position = writeEvent();
-    control.blockAfterEvent(e -> e.getPosition() >= position);
-    TestUtil.waitUntil(control::isBlocked);
+    rule.runStreamProcessor((db, dbContext) -> createStreamProcessor(db, mockedExporters));
+    writeEvent();
+    timerScheduledLatch.await();
 
     // when
     rule.getClock().addTime(delay.plusSeconds(20));
-    latch.await();
+    timerTriggerLatch.await();
 
     // then
   }

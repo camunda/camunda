@@ -560,7 +560,7 @@ public class StreamProcessorReprocessingTest {
   private long writeEventWith(final Consumer<LogStreamRecordWriter> wr) {
     return writer.writeEvent(
         w -> {
-          w.positionAsKey().value(EVENT);
+          w.key(-1).value(EVENT);
           wr.accept(w);
         },
         true);

@@ -63,10 +63,6 @@ public class RaftEvent {
       configurationMembers.add().setNodeId(member.getNodeId());
     }
 
-    return logStreamWriter
-        .positionAsKey()
-        .metadataWriter(metadata)
-        .valueWriter(configuration)
-        .tryWrite();
+    return logStreamWriter.key(-1).metadataWriter(metadata).valueWriter(configuration).tryWrite();
   }
 }
