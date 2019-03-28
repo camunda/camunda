@@ -45,7 +45,8 @@ class Diagram extends React.PureComponent {
         canceled: PropTypes.number
       })
     ),
-    metadata: PropTypes.object
+    metadata: PropTypes.object,
+    expandState: PropTypes.string
   };
 
   constructor(props) {
@@ -65,10 +66,15 @@ class Diagram extends React.PureComponent {
   componentDidUpdate({
     theme: prevTheme,
     definitions: prevDefinitions,
-    selectedFlowNodeId
+    selectedFlowNodeId,
+    expandState: prevExpandState
   }) {
     const hasNewDefinitions = this.props.definitions !== prevDefinitions;
     const hasNewTheme = this.props.theme !== prevTheme;
+
+    if (this.props.expandState !== prevExpandState) {
+      this.handleZoomReset();
+    }
 
     if (hasNewTheme || hasNewDefinitions) {
       return this.resetViewer();

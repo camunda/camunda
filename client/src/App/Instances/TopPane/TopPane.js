@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {Children, cloneElement} from 'react';
 import PropTypes from 'prop-types';
 
 import {EXPAND_STATE} from 'modules/constants';
@@ -32,7 +32,11 @@ export default function TopPane(props) {
     const renderOptions = {
       renderNoWorkflowMessage: renderMessage(messages['NoWorkflow']),
       renderNoVersionMessage: renderMessage(messages['NoVersion']),
-      renderChildren: props.children
+      renderChildren: Children.map(props.children, child => {
+        return cloneElement(child, {
+          expandState
+        });
+      })
     };
 
     return (

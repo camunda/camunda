@@ -90,6 +90,22 @@ describe('Diagram', () => {
     );
   });
 
+  it('should reset Zoom-levels when expandState changes', () => {
+    // given
+    const node = shallowRenderNode({
+      definitions: mockProps.definitions,
+      theme: 'dark',
+      expandState: 'DEFAULT'
+    });
+    const resetZoom = jest.spyOn(node.instance(), 'handleZoomReset');
+
+    // when
+    node.setProps({expandState: 'EXPANDED'});
+
+    // then
+    expect(resetZoom).toHaveBeenCalled();
+  });
+
   describe("viewer's theme", () => {
     it('should initiate dark BPMNViewer if theme is dark', () => {
       // given
