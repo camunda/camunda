@@ -105,7 +105,7 @@ pipeline {
                   poll: false
           sh ("""
                 # install jq
-                apk update && apk add jq && rm -rf /var/cache/apk/*
+                apk add --no-cache jq
                 # kubectl
                 gcloud components install kubectl --quiet
 
