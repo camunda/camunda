@@ -159,6 +159,17 @@ es:
       - host: 'localhost'
         # A port number used by Elasticsearch to accept HTTP connections.
         httpPort: 9200
+    # HTTP forward proxy configuration
+    proxy:
+      # whether an HTTP proxy should be used for requests to elasticsearch
+      enabled: false
+      # the host of the proxy to use
+      host: null
+      # the port of the proxy to use
+      port: null
+      # whether this proxy is using a secured connection
+      sslEnabled: false
+
 
   # Elasticsearch security settings
   security:

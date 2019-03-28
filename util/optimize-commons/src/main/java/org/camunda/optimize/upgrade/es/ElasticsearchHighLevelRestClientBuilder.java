@@ -9,6 +9,7 @@ import org.apache.http.ssl.SSLContexts;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ProxyConfiguration;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -76,8 +77,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
    * This method cares about all aspects that need to be considered in it's setup.
    *
    * @param configurationService configuration source for the client callback
-   * @param sslContext ssl setup to apply, might be <code>null</code> if there is no ssl setup
-   *
+   * @param sslContext           ssl setup to apply, might be <code>null</code> if there is no ssl setup
    * @return singleton config callback for the elasticsearch rest client
    */
   private static RestClientBuilder.HttpClientConfigCallback createHttpClientConfigCallback(
@@ -88,6 +88,14 @@ public class ElasticsearchHighLevelRestClientBuilder {
         .ifPresent(httpClientBuilder::setDefaultCredentialsProvider);
 
       httpClientBuilder.setSSLContext(sslContext);
+
+
+      final ProxyConfiguration proxyConfig = configurationService.getElasticSearchProxyConfig();
+      if (proxyConfig.isEnabled()) {
+        httpClientBuilder.setProxy(new HttpHost(
+          proxyConfig.getHost(), proxyConfig.getPort(), proxyConfig.isSslEnabled() ? "https" : "http"
+        ));
+      }
 
       return httpClientBuilder;
     };

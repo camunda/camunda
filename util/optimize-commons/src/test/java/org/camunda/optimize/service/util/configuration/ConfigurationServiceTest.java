@@ -104,6 +104,13 @@ public class ConfigurationServiceTest {
     underTest.getContainerHttpsPort();
   }
 
+  @Test(expected = OptimizeConfigurationException.class)
+  public void invalidElasticsearchProxyConfigThrowsError() {
+    String[] locations = {"config-samples/config-invalid-elasticsearch-proxy-config.yaml"};
+    ConfigurationService underTest = new ConfigurationService(locations);
+    underTest.getElasticSearchProxyConfig();
+  }
+
   @Test
   public void resolvePropertiesFromEnvironmentVariables() {
     //when

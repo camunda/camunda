@@ -42,6 +42,7 @@ public interface ConfigurationServiceConstants {
   String ELASTIC_SEARCH_CONNECTION_TIMEOUT = "$.es.connection.timeout";
   String ELASTIC_SEARCH_SCROLL_TIMEOUT = "$.es.scrollTimeout";
   String ELASTIC_SEARCH_CONNECTION_NODES = "$.es.connection.nodes";
+  String ELASTIC_SEARCH_PROXY = "$.es.connection.proxy";
 
 
   String ELASTIC_SEARCH_SECURITY_USERNAME = "$.es.security.username";

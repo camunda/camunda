@@ -82,6 +82,7 @@ public class ConfigurationService {
   private List<ElasticsearchConnectionNodeConfiguration> elasticsearchConnectionNodes;
   private Integer elasticsearchScrollTimeout;
   private Integer elasticsearchConnectionTimeout;
+  private ProxyConfiguration elasticSearchProxyConfig;
 
   // elasticsearch connection security
   private String elasticsearchSecurityUsername;
@@ -510,6 +511,16 @@ public class ConfigurationService {
       );
     }
     return elasticsearchConnectionTimeout;
+  }
+
+  public ProxyConfiguration getElasticSearchProxyConfig() {
+    if (elasticSearchProxyConfig == null) {
+      elasticSearchProxyConfig = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTIC_SEARCH_PROXY, ProxyConfiguration.class
+      );
+      elasticSearchProxyConfig.validate();
+    }
+    return elasticSearchProxyConfig;
   }
 
   public int getEngineConnectTimeout() {
