@@ -25,7 +25,7 @@ public class SingleProcessMapDurationReportResult
       new String[]{"", "minimum", "maximum", "average", "median"};
     csvStrings.add(0, operations);
     final String[] header =
-      new String[]{reportResultDto.getData().getGroupBy().toString(), normalizedCommandKey};
+      new String[]{reportResultDto.getData().getGroupBy().toString(), normalizedCommandKey, "", "", ""};
     csvStrings.add(0, header);
     return csvStrings;
   }

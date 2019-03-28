@@ -37,7 +37,7 @@ public class SingleProcessNumberDurationReportResult
       new String[]{"minimum", "maximum", "average", "median"};
     csvStrings.add(0, operations);
     final String[] header =
-      new String[]{normalizedCommandKey};
+      new String[]{normalizedCommandKey, "", "", ""};
     csvStrings.add(0, header);
     return csvStrings;
   }
