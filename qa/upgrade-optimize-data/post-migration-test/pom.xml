@@ -5,7 +5,7 @@
 
   <properties>
     <skipTests>true</skipTests>
-    <upgrade.versions>2.1.0,2.2.0,2.3.0,${project.version}</upgrade.versions>
+    <upgrade.versions>2.1.0,2.2.0,2.3.0,2.4.0</upgrade.versions>
   </properties>
 
   <parent>
@@ -15,7 +15,7 @@
   </parent>
 
   <artifactId>post-migration-test</artifactId>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
 
   <dependencies>
     <dependency>
@@ -207,29 +207,29 @@
                 </configuration>
               </execution>
               <!--4. Generate engine data-->
-              <execution>
-                <id>generate-engine-data</id>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-                <phase>pre-integration-test</phase>
-                <configuration>
-                  <target name="generate-engine-data" description="Generate process instances">
-                    <property environment="env"/>
-                    <condition property="maven-settings" value="--settings=../../settings.xml" else="">
-                      <isset property="env.JENKINS_URL"/>
-                    </condition>
+              <!--<execution>-->
+                <!--<id>generate-engine-data</id>-->
+                <!--<goals>-->
+                  <!--<goal>run</goal>-->
+                <!--</goals>-->
+                <!--<phase>pre-integration-test</phase>-->
+                <!--<configuration>-->
+                  <!--<target name="generate-engine-data" description="Generate process instances">-->
+                    <!--<property environment="env"/>-->
+                    <!--<condition property="maven-settings" value="&#45;&#45;settings=../../settings.xml" else="">-->
+                      <!--<isset property="env.JENKINS_URL"/>-->
+                    <!--</condition>-->
 
-                    <echo message="Generating engine data..."/>
-                    <exec dir="${project.build.directory}/../../../../qa/data-generation" executable="/bin/bash"
-                          failonerror="true">
-                      <arg value="-c"/>
-                      <arg
-                          value="set -o pipefail; mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 10' -B ${maven-settings} | sed 's/^/[ENGINE DATA GENERATION]: /'"/>
-                    </exec>
-                  </target>
-                </configuration>
-              </execution>
+                    <!--<echo message="Generating engine data..."/>-->
+                    <!--<exec dir="${project.build.directory}/../../../../qa/data-generation" executable="/bin/bash"-->
+                          <!--failonerror="true">-->
+                      <!--<arg value="-c"/>-->
+                      <!--<arg-->
+                          <!--value="set -o pipefail; mvn clean compile exec:java -Dexec.args='&#45;&#45;numberOfProcessInstances 10' -B ${maven-settings} | sed 's/^/[ENGINE DATA GENERATION]: /'"/>-->
+                    <!--</exec>-->
+                  <!--</target>-->
+                <!--</configuration>-->
+              <!--</execution>-->
               <!--5. Generate optimize data and run migration-->
               <execution>
                 <id>unpack</id>
@@ -321,26 +321,29 @@
                         <ac:if>
                           <!-- only if not the first version in the list -->
                           <not>
-                            <matches string="${upgrade.versions}" pattern="^@{currentVersion},.*" />
+                            <matches string="${upgrade.versions}" pattern="^@{currentVersion},.*"/>
                           </not>
                           <ac:then>
-                            <echo message="Running migration to @{currentVersion}..." />
+                            <echo message="Running migration to @{currentVersion}..."/>
                             <ac:if>
-                              <matches string="@{currentVersion}" pattern="2\.[0-3]\.0" />
+                              <matches string="@{currentVersion}" pattern="2\.[0-3]\.0"/>
                               <ac:then>
-                                <ac:var name="optimize.upgrade.command" value="java -cp environment:upgrade/* org.camunda.optimize.upgrade.main.UpgradeMain" />
+                                <ac:var name="optimize.upgrade.command"
+                                        value="java -cp environment:upgrade/* org.camunda.optimize.upgrade.main.UpgradeMain"/>
                               </ac:then>
                               <ac:else>
-                                <ac:var name="optimize.upgrade.command" value="./upgrade/upgrade.sh " />
+                                <ac:var name="optimize.upgrade.command" value="./upgrade/upgrade.sh "/>
                               </ac:else>
                             </ac:if>
                             <exec dir="${project.build.directory}/@{currentVersion}" executable="/bin/bash">
-                              <arg value="-c" />
-                              <arg value="set -o pipefail; ${optimize.upgrade.command} --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT @{currentVersion}]: /'" />
+                              <arg value="-c"/>
+                              <arg
+                                  value="set -o pipefail; ${optimize.upgrade.command} --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT @{currentVersion}]: /'"/>
                             </exec>
                             <echo message="Starting Optimize @{currentVersion}..."/>
                             <exec dir="${project.build.directory}/@{currentVersion}/"
-                                  executable="${project.build.directory}/@{currentVersion}/optimize-startup.sh" spawn="true"/>
+                                  executable="${project.build.directory}/@{currentVersion}/optimize-startup.sh"
+                                  spawn="true"/>
 
                             <echo message="Wait for Optimize to start..."/>
                             <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
@@ -355,7 +358,7 @@
                             </exec>
                             <ac:if>
                               <not>
-                                <matches string="${upgrade.versions}" pattern="@{currentVersion}$" />
+                                <matches string="${upgrade.versions}" pattern="@{currentVersion}$"/>
                               </not>
                               <ac:then>
                                 <!-- Generate additional data-->

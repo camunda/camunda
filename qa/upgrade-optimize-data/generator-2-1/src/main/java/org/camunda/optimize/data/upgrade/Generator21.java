@@ -241,7 +241,7 @@ public class Generator21 {
     VariableFilterDataDto booleanVariableFilterDataDto = new VariableFilterDataDto();
     booleanVariableFilterDataDto.setName("var");
     booleanVariableFilterDataDto.setOperator("in");
-    booleanVariableFilterDataDto.setType("boolean");
+    booleanVariableFilterDataDto.setType("Boolean");
     List<String> values = new ArrayList<>();
     values.add("true");
     booleanVariableFilterDataDto.setValues(values);
