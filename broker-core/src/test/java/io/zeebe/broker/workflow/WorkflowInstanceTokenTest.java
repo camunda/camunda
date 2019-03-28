@@ -26,6 +26,7 @@ import io.zeebe.exporter.api.record.value.IncidentRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
@@ -43,10 +44,10 @@ import org.junit.rules.RuleChain;
 
 public class WorkflowInstanceTokenTest {
 
-  private static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  private static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
+  private static final ClientApiRule API_RULE = new ClientApiRule(BROKER_RULE::getClientAddress);
 
-  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(API_RULE);
 
   @Rule
   public RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -57,7 +58,8 @@ public class WorkflowInstanceTokenTest {
 
   @Before
   public void setUp() {
-    testClient = apiRule.partitionClient();
+    BROKER_RULE.getClock().reset();
+    testClient = API_RULE.partitionClient();
     processId = Strings.newRandomValidBpmnId();
   }
 
@@ -191,7 +193,7 @@ public class WorkflowInstanceTokenTest {
   @Test
   public void shouldCompleteInstanceAfterTimerIntermediateCatchEvent() {
     // given
-    brokerRule.getClock().pinCurrentTime();
+    BROKER_RULE.getClock().pinCurrentTime();
 
     testClient.deploy(
         Bpmn.createExecutableProcess(processId)
@@ -210,7 +212,7 @@ public class WorkflowInstanceTokenTest {
     // when
     testClient.completeJobOfType(workflowInstanceKey, "task");
 
-    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    BROKER_RULE.getClock().addTime(Duration.ofSeconds(1));
 
     // then
     assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
@@ -300,9 +302,12 @@ public class WorkflowInstanceTokenTest {
         testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
-    testClient.receiveElementInState(
-        workflowInstanceKey, "task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    testClient
+        .receiveJobs()
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withIntent(JobIntent.CREATED)
+        .getFirst();
+    BROKER_RULE.getClock().addTime(Duration.ofSeconds(1));
 
     // then
     assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
@@ -326,9 +331,12 @@ public class WorkflowInstanceTokenTest {
         testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
-    testClient.receiveElementInState(
-        workflowInstanceKey, "task-1", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    testClient
+        .receiveJobs()
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withIntent(JobIntent.CREATED)
+        .getFirst();
+    BROKER_RULE.getClock().addTime(Duration.ofSeconds(1));
     testClient.completeJobOfType(workflowInstanceKey, "task-2");
     testClient.completeJobOfType(workflowInstanceKey, "task-1");
 
