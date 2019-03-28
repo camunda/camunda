@@ -31,8 +31,6 @@ import org.agrona.DirectBuffer;
 
 public class MessageStartEventSubscriptionState {
 
-  private final DbContext dbContext;
-
   private final DbString messageName;
   private final DbLong workflowKey;
 
@@ -50,8 +48,6 @@ public class MessageStartEventSubscriptionState {
 
   public MessageStartEventSubscriptionState(
       ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
-    this.dbContext = dbContext;
-
     messageName = new DbString();
     workflowKey = new DbLong();
     messageNameAndWorkflowKey = new DbCompositeKey<>(messageName, workflowKey);
@@ -79,13 +75,10 @@ public class MessageStartEventSubscriptionState {
     subscriptionRecord.setMessageName(subscription.getMessageName());
     subscriptionRecord.setWorkflowKey(subscription.getWorkflowKey());
 
-    dbContext.runInTransaction(
-        () -> {
-          messageName.wrapBuffer(subscription.getMessageName());
-          workflowKey.wrapLong(subscription.getWorkflowKey());
-          subscriptionsColumnFamily.put(messageNameAndWorkflowKey, subscriptionValue);
-          subscriptionsOfWorkflowKeyColumnfamily.put(workflowKeyAndMessageName, DbNil.INSTANCE);
-        });
+    messageName.wrapBuffer(subscription.getMessageName());
+    workflowKey.wrapLong(subscription.getWorkflowKey());
+    subscriptionsColumnFamily.put(messageNameAndWorkflowKey, subscriptionValue);
+    subscriptionsOfWorkflowKeyColumnfamily.put(workflowKeyAndMessageName, DbNil.INSTANCE);
   }
 
   public void removeSubscriptionsOfWorkflow(long workflowKey) {

@@ -29,8 +29,6 @@ import java.util.function.ObjLongConsumer;
 public class IncidentState {
   public static final int MISSING_INCIDENT = -1;
 
-  private final DbContext dbContext;
-
   /** incident key -> incident record */
   private final DbLong incidentKey;
 
@@ -51,8 +49,6 @@ public class IncidentState {
   private final ColumnFamily<DbLong, DbLong> jobIncidentColumnFamily;
 
   public IncidentState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
-    this.dbContext = dbContext;
-
     incidentKey = new DbLong();
     incidenRecordToRead = new UnpackedObjectValue();
     incidenRecordToRead.wrapObject(new IncidentRecord());
@@ -75,20 +71,17 @@ public class IncidentState {
   }
 
   public void createIncident(long incidentKey, IncidentRecord incident) {
-    dbContext.runInTransaction(
-        () -> {
-          this.incidentKey.wrapLong(incidentKey);
-          this.incidentRecordToWrite.wrapObject(incident);
-          incidentColumnFamily.put(this.incidentKey, this.incidentRecordToWrite);
+    this.incidentKey.wrapLong(incidentKey);
+    this.incidentRecordToWrite.wrapObject(incident);
+    incidentColumnFamily.put(this.incidentKey, this.incidentRecordToWrite);
 
-          if (isJobIncident(incident)) {
-            jobKey.wrapLong(incident.getJobKey());
-            jobIncidentColumnFamily.put(jobKey, this.incidentKey);
-          } else {
-            elementInstanceKey.wrapLong(incident.getElementInstanceKey());
-            workflowInstanceIncidentColumnFamily.put(elementInstanceKey, this.incidentKey);
-          }
-        });
+    if (isJobIncident(incident)) {
+      jobKey.wrapLong(incident.getJobKey());
+      jobIncidentColumnFamily.put(jobKey, this.incidentKey);
+    } else {
+      elementInstanceKey.wrapLong(incident.getElementInstanceKey());
+      workflowInstanceIncidentColumnFamily.put(elementInstanceKey, this.incidentKey);
+    }
   }
 
   public IncidentRecord getIncidentRecord(long incidentKey) {
@@ -105,18 +98,15 @@ public class IncidentState {
     final IncidentRecord incidentRecord = getIncidentRecord(key);
 
     if (incidentRecord != null) {
-      dbContext.runInTransaction(
-          () -> {
-            incidentColumnFamily.delete(incidentKey);
+      incidentColumnFamily.delete(incidentKey);
 
-            if (isJobIncident(incidentRecord)) {
-              jobKey.wrapLong(incidentRecord.getJobKey());
-              jobIncidentColumnFamily.delete(jobKey);
-            } else {
-              elementInstanceKey.wrapLong(incidentRecord.getElementInstanceKey());
-              workflowInstanceIncidentColumnFamily.delete(elementInstanceKey);
-            }
-          });
+      if (isJobIncident(incidentRecord)) {
+        jobKey.wrapLong(incidentRecord.getJobKey());
+        jobIncidentColumnFamily.delete(jobKey);
+      } else {
+        elementInstanceKey.wrapLong(incidentRecord.getElementInstanceKey());
+        workflowInstanceIncidentColumnFamily.delete(elementInstanceKey);
+      }
     }
   }
 

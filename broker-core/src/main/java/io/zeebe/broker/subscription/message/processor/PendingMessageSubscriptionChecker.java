@@ -53,7 +53,7 @@ public class PendingMessageSubscriptionChecker implements Runnable {
             subscription.getMessageVariables());
 
     if (success) {
-      subscriptionState.updateSentTime(subscription, ActorClock.currentTimeMillis());
+      subscriptionState.updateSentTimeInTransaction(subscription, ActorClock.currentTimeMillis());
     }
 
     return success;
