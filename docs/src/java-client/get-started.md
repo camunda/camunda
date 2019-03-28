@@ -21,9 +21,9 @@ You will be guided through the following steps:
 * [Zeebe Modeler](https://github.com/zeebe-io/zeebe-modeler/releases)
 * [Zeebe Monitor](https://github.com/zeebe-io/zeebe-simple-monitor/releases)
 
-Before you begin to setup your project please start the broker, i.e. by running the start up script 
-`bin/broker` or `bin/broker.bat` in the distribution. Per default the broker is binding to the 
-address `localhost:26500`, which is used as contact point in this guide. In case your broker is 
+Before you begin to setup your project please start the broker, i.e. by running the start up script
+`bin/broker` or `bin/broker.bat` in the distribution. Per default the broker is binding to the
+address `localhost:26500`, which is used as contact point in this guide. In case your broker is
 available under another address please adjust the broker contact point when building the client.
 
 ## Set up a project
@@ -182,14 +182,12 @@ Workflow instance created. Key: 6
 
 You did it! You want to see how the workflow instance is executed?
 
-Start the Zeebe Monitor using `java -jar zeebe-simple-monitor.jar`.
+Start the Zeebe Monitor using `java -jar zeebe-simple-monitor-app-*.jar`.
 
 Open a web browser and go to <http://localhost:8080/>.
 
-Connect to the broker and switch to the workflow instances view.
-Here, you see the current state of the workflow instance which includes active jobs, completed activities, the payload and open incidents.
-
-![zeebe-monitor-step-1](/java-client/zeebe-monitor-1.png)
+Here, you see the current state of the workflow instance.
+![zeebe-monitor-step-1](/java-client/java-get-started-monitor-1.gif)
 
 ## Work on a job
 
@@ -205,12 +203,9 @@ Insert a few service tasks between the start and the end event.
 You need to set the type of each task, which identifies the nature of the work to be performed.
 Set the type of the first task to 'payment-service'.
 
-Optionally, you can define parameters of the task by adding headers.
-Add the header `method = VISA` to the first task.
-
 Save the BPMN diagram and switch back to the main class.
 
-Add the following lines to create a [job worker][] for the first jobs type:
+Add the following lines to create a job worker for the first jobs type:
 
 ```java
 package io.zeebe;
@@ -227,10 +222,7 @@ public class Application
             .jobType("payment-service")
             .handler((jobClient, job) ->
             {
-                final Map<String, Object> headers = job.getCustomHeaders();
-                final String method = (String) headers.get("method");
-
-                System.out.println("Collect money using payment method: " + method);
+                System.out.println("Collect money");
 
                 // ...
 
@@ -252,40 +244,29 @@ public class Application
 Run the program and verify that the job is processed. You should see the output:
 
 ```
-Collect money using payment method: VISA
+Collect money
 ```
 
 When you have a look at the Zeebe Monitor, then you can see that the workflow instance moved from the first service task to the next one:
 
-![zeebe-monitor-step-2](/java-client/zeebe-monitor-2.png)
+![zeebe-monitor-step-2](/java-client/java-get-started-monitor-2.gif)
 
 ## Work with data
 
-Usually, a workflow is more than just tasks, there is also data flow.
-The tasks need data as input and in order to produce data.
+Usually, a workflow is more than just tasks, there is also a data flow. The worker gets the data from the workflow instance to do its work and send the result back to the workflow instance.
 
-In Zeebe, the data is represented as a JSON document.
-When you create a workflow instance, then you can pass the data as payload.
-Within the workflow, you can use input and output mappings on tasks to control the data flow.
+In Zeebe, the data is stored as key-value-pairs in form of variables. Variables can be set when the workflow instance is created. Within the workflow, variables can be read and modified by workers.
 
-In our example, we want to create a workflow instance with the following data:
+In our example, we want to create a workflow instance with the following variables:
 
 ```json
-{
-  "orderId": 31243,
-  "orderItems": [435, 182, 376]
-}
+"orderId": 31243
+"orderItems": [435, 182, 376]
 ```
 
-The first task should take `orderId` as input and return `totalPrice` as result.
+The first task should read `orderId` as input and return `totalPrice` as result.
 
-Open the BPMN diagram and switch to the input-output-mappings of the first task.
-Add the input mapping `$.orderId : $.orderId` and the output mapping `$.totalPrice : $.totalPrice`.
-
-Save the BPMN diagram and go back to the main class.
-
-Modify the create command and pass the data as variables.
-Also, modify the job worker to read the jobs payload and complete the job with payload.
+Modify the workflow instance create command and pass the data as variables. Also, modify the job worker to read the job variables and complete the job with a result.
 
 ```java
 package io.zeebe;
@@ -313,23 +294,22 @@ public class Application
             .jobType("payment-service")
             .handler((jobClient, job) ->
             {
-                final Map<String, Object> headers = job.getCustomHeaders();
-                final String method = (String) headers.get("method");
+                final Map<String, Object> variables = job.getVariablesAsMap();
 
-                final Map<String, Object> payload = job.getPayloadAsMap();
-
-                System.out.println("Process order: " + payload.get("orderId"));
-                System.out.println("Collect money using payment method: " + method);
+                System.out.println("Process order: " + variables.get("orderId"));
+                System.out.println("Collect money");
 
                 // ...
 
-                payload.put("totalPrice", 46.50);
+                final Map<String, Object> result = new HashMap<>();
+                result.put("totalPrice", 46.50);
 
                 jobClient.newCompleteCommand(job.getKey())
-                    .payload(payload)
+                    .variables(result)
                     .send()
                     .join();
             })
+            .fetchVariables("orderId")
             .open();
 
         // ...
@@ -337,16 +317,16 @@ public class Application
 }
 ```
 
-Run the program and verify that the payload is mapped into the job. You should see the output:
+Run the program and verify that the variable is read. You should see the output:
 
 ```
-Process order: {"orderId":31243}
-Collect money using payment method: VISA
+Process order: 31243
+Collect money
 ```
 
-When we have a look at the Zeebe Monitor, then we can see how the payload is modified after the activity:
+When we have a look at the Zeebe Monitor, then we can see that the variable `totalPrice` is set:
 
-![zeebe-monitor-step-3](/java-client/zeebe-monitor-3.png)
+![zeebe-monitor-step-3](/java-client/java-get-started-monitor-3.gif)
 
 ## What's next?
 
