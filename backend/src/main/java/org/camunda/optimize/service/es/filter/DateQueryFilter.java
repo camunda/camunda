@@ -66,7 +66,6 @@ public abstract class DateQueryFilter implements QueryFilter<DateFilterDataDto> 
     RelativeDateFilterStartDto startDate = dateDto.getStart();
     RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(type);
     OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
-    System.out.println(formatter.format(now));
     queryDate.lte(formatter.format(now));
 
     OffsetDateTime dateBeforeGivenFilter = now.minus(startDate.getValue(), unitOf(startDate.getUnit()));
