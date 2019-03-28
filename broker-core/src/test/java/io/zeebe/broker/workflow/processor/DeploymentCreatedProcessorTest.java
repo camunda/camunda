@@ -41,6 +41,9 @@ import org.junit.Test;
 
 public class DeploymentCreatedProcessorTest {
 
+  public static final String PROCESS_ID = "process";
+  public static final String RESOURCE_ID = "process.bpmn";
+
   @Rule
   public StreamProcessorRule rule = new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION + 1);
 
@@ -79,20 +82,55 @@ public class DeploymentCreatedProcessorTest {
     assertThat(
             rule.events()
                 .onlyMessageStartEventSubscriptionRecords()
-                .withIntent(MessageStartEventSubscriptionIntent.OPEN)
-                .exists())
-        .isTrue();
+                .limit(1)
+                .getFirst()
+                .getMetadata()
+                .getIntent())
+        .isEqualTo(MessageStartEventSubscriptionIntent.OPEN);
+  }
+
+  @Test
+  public void shouldNotWriteCloseSubscriptionIfNotMessageStart() {
+    // given
+    streamProcessor.start();
+
+    // when
+    writeNoneStartRecord(3, 1);
+    writeMessageStartRecord(7, 2);
+
+    // then
+    waitUntil(() -> rule.events().onlyMessageStartEventSubscriptionRecords().exists());
+    assertThat(
+            rule.events()
+                .onlyMessageStartEventSubscriptionRecords()
+                .limit(1)
+                .getFirst()
+                .getMetadata()
+                .getIntent())
+        .isEqualTo(MessageStartEventSubscriptionIntent.OPEN);
+  }
+
+  private void writeNoneStartRecord(final long key, final int version) {
+    writeNoneStartRecord(PROCESS_ID, RESOURCE_ID, key, version);
+  }
+
+  private void writeNoneStartRecord(
+      final String processId, final String resourceId, final long key, final int version) {
+    final DeploymentRecord record =
+        createNoneStartDeploymentRecord(processId, resourceId, key, version);
+
+    rule.writeCommand(key, DeploymentIntent.CREATE, record);
   }
 
   private void writeMessageStartRecord(final long key, final int version) {
-    writeMessageStartRecord("process", "process.bpmn", key, version);
+    writeMessageStartRecord(PROCESS_ID, RESOURCE_ID, key, version);
   }
 
   private void writeMessageStartRecord(
       final String processId, final String resourceId, final long key, final int version) {
     final DeploymentRecord msgRecord =
         createMessageStartDeploymentRecord(processId, resourceId, key, version);
-    rule.writeCommand(-1, DeploymentIntent.CREATE, msgRecord);
+    rule.writeCommand(key, DeploymentIntent.CREATE, msgRecord);
   }
 
   private static DeploymentRecord createMessageStartDeploymentRecord(
