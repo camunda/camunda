@@ -36,6 +36,8 @@
     * [Introduction](bpmn-modeler/introduction.md)
     * [Tasks](bpmn-modeler/tasks.md)
     * [Gateways](bpmn-modeler/gateways.md)
+    * [Events](bpmn-modeler/events.md)
+    * [Sub Processes](bpmn-modeler/subprocesses.md)
 * [YAML Workflows](yaml-workflows/README.md)
     * [Tasks](yaml-workflows/tasks.md)
     * [Control Flow](yaml-workflows/control-flow.md)

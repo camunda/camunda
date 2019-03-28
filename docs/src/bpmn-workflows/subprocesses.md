@@ -17,6 +17,8 @@ XML representation:
 </bpmn:subProcess>
 ```
 
+BPMN Modeler: [Click Here](/bpmn-modeler/subprocesses.html#embedded-sub-process)
+
 ## Variable Mappings
 
 Input mappings can be used to create new variables in the scope of the sub process. These variables are only visible within the sub process.

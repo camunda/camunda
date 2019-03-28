@@ -37,6 +37,8 @@ XML representation:
 </bpmn:intermediateCatchEvent>
 ```
 
+BPMN Modeler: [Click Here](/bpmn-modeler/events.html#intermediate-message-catch-event)
+
 > [Receive tasks](/bpmn-workflows/receive-tasks.html) are an alternative to message intermediate catch events where boundary events can be attached to.
 
 ## Message Start Events

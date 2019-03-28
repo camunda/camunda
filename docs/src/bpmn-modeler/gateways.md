@@ -1,13 +1,19 @@
 # Gateways
 
-## Create an Exclusive Gateway
+# Exclusive Gateway
 
-![create-exclusive-gw](/bpmn-modeler/gateways/exclusive1.png)
+Create an exclusive gateway with two outgoing sequence flow. One sequence flow has a condition and the other one is the default flow.
 
-## Configure Sequence Flow Condition
+![exclusive-gateway](/bpmn-modeler/gateways/exclusive-gateway.gif)
 
-![exclusive-gw-condition](/bpmn-modeler/gateways/exclusive2.png)
+# Parallel Gateway
 
-## Configure Default Flow
+Create a parallel gateway with two outgoing sequence flow.
 
-![exclusive-gw-default](/bpmn-modeler/gateways/exclusive3.png)
+![parallel-gateway](/bpmn-modeler/gateways/parallel-gateway.gif)
+
+# Event-Based Gateway
+
+Create an event-based gateway with two events. One message event and one timer event.
+
+![parallel-gateway](/bpmn-modeler/gateways/event-based-gateway.gif)
