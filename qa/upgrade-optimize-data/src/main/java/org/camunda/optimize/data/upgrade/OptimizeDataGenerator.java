@@ -11,24 +11,24 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -51,17 +51,15 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.rest.util.AuthenticationUtil.createOptimizeAuthCookieValue;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByVariableWithProcessPart;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createAvgPiDurationAsNumberGroupByNone;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport;
+import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.service.security.AuthCookieService.createOptimizeAuthCookieValue;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeHeatmapReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByStartDateReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByVariableWithProcessPart;
 
 public class OptimizeDataGenerator {
 
@@ -228,7 +226,7 @@ public class OptimizeDataGenerator {
   private static List<String> createAndUpdateReports(WebTarget target, List<ProcessReportDataDto> reportDefinitions,
                                                      List<ProcessFilterDto> filters) {
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
-    combinedReportData.setReportIds(new ArrayList<>());
+    combinedReportData.setReports(new ArrayList<>());
     List<String> reportIds = new ArrayList<>();
     for (ProcessReportDataDto reportData : reportDefinitions) {
       String id = createEmptySingleProcessReport(target);
@@ -236,16 +234,14 @@ public class OptimizeDataGenerator {
       // there are two reports expected matching this criteria
       if (reportData.getVisualization().equals(ProcessVisualization.BAR)
         && reportData.getGroupBy().getType().equals(ProcessGroupByType.START_DATE)) {
-        combinedReportData.getReportIds().add(id);
+        combinedReportData.getReports().add(new CombinedReportItemDto(id));
       }
-      reportData.setConfiguration(createDefaultReportConfiguration());
       reportData.setFilter(filters);
 
-      SingleReportDefinitionDto reportUpdate = prepareReportUpdate(reportData, id);
+      SingleProcessReportDefinitionDto reportUpdate = prepareReportUpdate(reportData, id);
       updateReport(id, reportUpdate);
     }
-    if (!combinedReportData.getReportIds().isEmpty()) {
-      combinedReportData.setConfiguration(createDefaultReportConfiguration());
+    if (!combinedReportData.getReports().isEmpty()) {
       reportIds.add(createCombinedReport(combinedReportData));
     }
     return reportIds;
@@ -265,8 +261,8 @@ public class OptimizeDataGenerator {
     return id;
   }
 
-  private static SingleReportDefinitionDto prepareReportUpdate(SingleReportDataDto reportData, String id) {
-    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
+  private static SingleProcessReportDefinitionDto prepareReportUpdate(ProcessReportDataDto reportData, String id) {
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
 
     report.setData(reportData);
     report.setId(id);
@@ -331,24 +327,25 @@ public class OptimizeDataGenerator {
 
 
     reportDefinitions.add(
-      createAvgPiDurationAsNumberGroupByNone(
+      createProcessInstanceDurationGroupByNone(
         processDefinitionKey, processDefinitionVersion
       )
     );
     reportDefinitions.add(
-      createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+      createFlowNodeDurationGroupByFlowNodeHeatmapReport(
         processDefinitionKey, processDefinitionVersion
       )
     );
-    reportDefinitions.add(
-      createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinitionKey,
-        processDefinitionVersion
-      )
+    final ProcessReportDataDto maxFlowNodeDurationGroupByFlowNodeHeatmapReport =
+      createFlowNodeDurationGroupByFlowNodeHeatmapReport(
+      processDefinitionKey,
+      processDefinitionVersion
     );
+    maxFlowNodeDurationGroupByFlowNodeHeatmapReport.getConfiguration().setAggregationType(AggregationType.MAX);
+    reportDefinitions.add(maxFlowNodeDurationGroupByFlowNodeHeatmapReport);
 
     ProcessReportDataDto reportDataDto =
-      createAverageProcessInstanceDurationGroupByStartDateReport(
+      createProcessInstanceDurationGroupByStartDateReport(
         processDefinitionKey,
         processDefinitionVersion,
         GroupByDateUnit.DAY
@@ -357,7 +354,7 @@ public class OptimizeDataGenerator {
     reportDefinitions.add(reportDataDto);
 
     reportDataDto =
-      createAverageProcessInstanceDurationGroupByStartDateReport(
+      createProcessInstanceDurationGroupByStartDateReport(
         processDefinitionKey,
         processDefinitionVersion,
         GroupByDateUnit.DAY
@@ -365,7 +362,7 @@ public class OptimizeDataGenerator {
     reportDataDto.setVisualization(ProcessVisualization.BAR);
     reportDefinitions.add(reportDataDto);
 
-    reportDataDto = createAverageProcessInstanceDurationGroupByVariableWithProcessPart(
+    reportDataDto = createProcessInstanceDurationGroupByVariableWithProcessPart(
       processDefinitionKey,
       processDefinitionVersion,
       "var",
@@ -376,28 +373,13 @@ public class OptimizeDataGenerator {
     reportDataDto.setVisualization(ProcessVisualization.BAR);
     reportDefinitions.add(reportDataDto);
 
-    Map reportConfigurationAsMap = createDefaultReportConfiguration();
-    reportDefinitions.forEach(r -> r.setConfiguration(reportConfigurationAsMap));
-
     return reportDefinitions;
-  }
-
-  private static Map createDefaultReportConfiguration() {
-    String pathToMapping = "2.3/report-configuration.json";
-    String configuration = readClasspathFileAsString(pathToMapping);
-    Map reportConfigurationAsMap;
-    try {
-      reportConfigurationAsMap = objectMapper.readValue(configuration, Map.class);
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Could not deserialize configuration structure as json!");
-    }
-    return reportConfigurationAsMap;
   }
 
   private static String createEmptySingleProcessReport(WebTarget target) {
     Response response = target.request()
       .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
-      .post(Entity.json(new SingleReportDefinitionDto(new ProcessReportDataDto())));
+      .post(Entity.json(new SingleProcessReportDefinitionDto()));
     return response.readEntity(IdDto.class).getId();
   }
 
@@ -417,17 +399,6 @@ public class OptimizeDataGenerator {
 
     return response.readEntity(new GenericType<List<ProcessDefinitionEngineDto>>() {
     });
-  }
-
-  private static String readClasspathFileAsString(String filePath) {
-    InputStream inputStream = OptimizeDataGenerator.class.getClassLoader().getResourceAsStream(filePath);
-    String data = null;
-    try {
-      data = readFromInputStream(inputStream);
-    } catch (IOException e) {
-      logger.error("can't read [{}] from classpath", filePath, e);
-    }
-    return data;
   }
 
   private static String readFromInputStream(InputStream inputStream) throws IOException {

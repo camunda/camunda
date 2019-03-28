@@ -11,7 +11,8 @@
 
   <context:component-scan base-package="org.camunda.optimize.service.util" />
   <context:component-scan base-package="org.camunda.optimize.rest.providers" >
-    <context:exclude-filter type="assignable" expression="org.camunda.optimize.rest.providers.AuthenticationFilter" />
+    <context:exclude-filter type="assignable" expression="org.camunda.optimize.rest.providers.RequestAuthenticationFilter" />
+    <context:exclude-filter type="assignable" expression="org.camunda.optimize.rest.providers.ResponseCookieRefreshFilter" />
   </context:component-scan>
 
   <bean id="configurationService" class="org.camunda.optimize.service.util.configuration.ConfigurationService">

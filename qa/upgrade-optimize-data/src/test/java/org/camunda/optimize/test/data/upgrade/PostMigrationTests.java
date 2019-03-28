@@ -13,8 +13,8 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.rest.util.AuthenticationUtil.createOptimizeAuthCookieValue;
+import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.service.security.AuthCookieService.createOptimizeAuthCookieValue;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
