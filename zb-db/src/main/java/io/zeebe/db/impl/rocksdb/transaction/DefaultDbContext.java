@@ -38,7 +38,7 @@ import org.rocksdb.Status;
 public class DefaultDbContext implements DbContext {
   private static final byte[] ZERO_SIZE_ARRAY = new byte[0];
 
-  private ZeebeTransaction transaction;
+  private final ZeebeTransaction transaction;
 
   // we can also simply use one buffer
   private final ExpandableArrayBuffer keyBuffer = new ExpandableArrayBuffer();
