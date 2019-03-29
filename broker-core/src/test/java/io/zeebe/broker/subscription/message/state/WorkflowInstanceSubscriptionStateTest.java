@@ -15,14 +15,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.state;
+package io.zeebe.broker.subscription.message.state;
 
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
 import io.zeebe.broker.util.ZeebeStateRule;
+import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
 import io.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
 import java.util.List;

@@ -34,8 +34,6 @@ import org.agrona.DirectBuffer;
 
 public class JobState {
 
-  private final DbContext dbContext;
-
   // key => job record value
   // we need two separate wrapper to not interfere with get and put
   // see https://github.com/zeebe-io/zeebe/issues/1914
@@ -60,7 +58,6 @@ public class JobState {
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> deadlinesColumnFamily;
 
   public JobState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
-    this.dbContext = dbContext;
 
     jobRecordToRead = new UnpackedObjectValue();
     jobRecordToRead.wrapObject(new JobRecord());
@@ -89,7 +86,7 @@ public class JobState {
 
   public void create(final long key, final JobRecord record) {
     final DirectBuffer type = record.getType();
-    dbContext.runInTransaction(() -> createJob(key, record, type));
+    createJob(key, record, type);
   }
 
   private void createJob(long key, JobRecord record, DirectBuffer type) {
@@ -110,17 +107,14 @@ public class JobState {
 
     validateParameters(type, deadline);
 
-    dbContext.runInTransaction(
-        () -> {
-          resetVariablesAndUpdateJobRecord(key, record);
+    resetVariablesAndUpdateJobRecord(key, record);
 
-          updateJobState(State.ACTIVATED);
+    updateJobState(State.ACTIVATED);
 
-          makeJobNotActivatable(type);
+    makeJobNotActivatable(type);
 
-          deadlineKey.wrapLong(deadline);
-          deadlinesColumnFamily.put(deadlineJobKey, DbNil.INSTANCE);
-        });
+    deadlineKey.wrapLong(deadline);
+    deadlinesColumnFamily.put(deadlineJobKey, DbNil.INSTANCE);
   }
 
   public void timeout(final long key, final JobRecord record) {
@@ -128,29 +122,22 @@ public class JobState {
     final long deadline = record.getDeadline();
     validateParameters(type, deadline);
 
-    dbContext.runInTransaction(
-        () -> {
-          createJob(key, record, type);
-
-          removeJobDeadline(deadline);
-        });
+    createJob(key, record, type);
+    removeJobDeadline(deadline);
   }
 
   public void delete(long key, JobRecord record) {
     final DirectBuffer type = record.getType();
     final long deadline = record.getDeadline();
 
-    dbContext.runInTransaction(
-        () -> {
-          jobKey.wrapLong(key);
-          jobsColumnFamily.delete(jobKey);
+    jobKey.wrapLong(key);
+    jobsColumnFamily.delete(jobKey);
 
-          statesJobColumnFamily.delete(jobKey);
+    statesJobColumnFamily.delete(jobKey);
 
-          makeJobNotActivatable(type);
+    makeJobNotActivatable(type);
 
-          removeJobDeadline(deadline);
-        });
+    removeJobDeadline(deadline);
   }
 
   public void fail(long key, JobRecord updatedValue) {
@@ -159,19 +146,16 @@ public class JobState {
 
     validateParameters(type, deadline);
 
-    dbContext.runInTransaction(
-        () -> {
-          resetVariablesAndUpdateJobRecord(key, updatedValue);
+    resetVariablesAndUpdateJobRecord(key, updatedValue);
 
-          final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
-          updateJobState(newState);
+    final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
+    updateJobState(newState);
 
-          if (newState == State.ACTIVATABLE) {
-            makeJobActivatable(type);
-          }
+    if (newState == State.ACTIVATABLE) {
+      makeJobActivatable(type);
+    }
 
-          removeJobDeadline(deadline);
-        });
+    removeJobDeadline(deadline);
   }
 
   private void validateParameters(DirectBuffer type, long deadline) {
@@ -182,12 +166,9 @@ public class JobState {
   public void resolve(long key, final JobRecord updatedValue) {
     final DirectBuffer type = updatedValue.getType();
 
-    dbContext.runInTransaction(
-        () -> {
-          resetVariablesAndUpdateJobRecord(key, updatedValue);
-          updateJobState(State.ACTIVATABLE);
-          makeJobActivatable(type);
-        });
+    resetVariablesAndUpdateJobRecord(key, updatedValue);
+    updateJobState(State.ACTIVATABLE);
+    makeJobActivatable(type);
   }
 
   public void forEachTimedOutEntry(

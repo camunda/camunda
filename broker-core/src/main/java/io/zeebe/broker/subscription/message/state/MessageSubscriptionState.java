@@ -95,16 +95,13 @@ public class MessageSubscriptionState {
   }
 
   public void put(final MessageSubscription subscription) {
-    dbContext.runInTransaction(
-        () -> {
-          elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
-          messageName.wrapBuffer(subscription.getMessageName());
-          subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
+    elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
+    messageName.wrapBuffer(subscription.getMessageName());
+    subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
 
-          correlationKey.wrapBuffer(subscription.getCorrelationKey());
-          messageNameAndCorrelationKeyColumnFamily.put(
-              nameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
-        });
+    correlationKey.wrapBuffer(subscription.getCorrelationKey());
+    messageNameAndCorrelationKeyColumnFamily.put(
+        nameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
   }
 
   public void visitSubscriptions(
@@ -148,22 +145,23 @@ public class MessageSubscriptionState {
     updateSentTime(subscription, 0);
   }
 
-  public void updateSentTime(final MessageSubscription subscription, long sentTime) {
-    dbContext.runInTransaction(
-        () -> {
-          elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
-          messageName.wrapBuffer(subscription.getMessageName());
+  public void updateSentTimeInTransaction(final MessageSubscription subscription, long sentTime) {
+    dbContext.runInTransaction((() -> updateSentTime(subscription, sentTime)));
+  }
 
-          removeSubscriptionFromSentTimeColumnFamily(subscription);
+  void updateSentTime(final MessageSubscription subscription, long sentTime) {
+    elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
+    messageName.wrapBuffer(subscription.getMessageName());
 
-          subscription.setCommandSentTime(sentTime);
-          subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
+    removeSubscriptionFromSentTimeColumnFamily(subscription);
 
-          if (sentTime > 0) {
-            this.sentTime.wrapLong(subscription.getCommandSentTime());
-            sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
-          }
-        });
+    subscription.setCommandSentTime(sentTime);
+    subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
+
+    if (sentTime > 0) {
+      this.sentTime.wrapLong(subscription.getCommandSentTime());
+      sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
+    }
   }
 
   public void visitSubscriptionBefore(final long deadline, MessageSubscriptionVisitor visitor) {
@@ -200,16 +198,13 @@ public class MessageSubscriptionState {
   }
 
   public void remove(final MessageSubscription subscription) {
-    dbContext.runInTransaction(
-        () -> {
-          subscriptionColumnFamily.delete(elementKeyAndMessageName);
+    subscriptionColumnFamily.delete(elementKeyAndMessageName);
 
-          messageName.wrapBuffer(subscription.getMessageName());
-          correlationKey.wrapBuffer(subscription.getCorrelationKey());
-          messageNameAndCorrelationKeyColumnFamily.delete(nameCorrelationAndElementInstanceKey);
+    messageName.wrapBuffer(subscription.getMessageName());
+    correlationKey.wrapBuffer(subscription.getCorrelationKey());
+    messageNameAndCorrelationKeyColumnFamily.delete(nameCorrelationAndElementInstanceKey);
 
-          removeSubscriptionFromSentTimeColumnFamily(subscription);
-        });
+    removeSubscriptionFromSentTimeColumnFamily(subscription);
   }
 
   private void removeSubscriptionFromSentTimeColumnFamily(MessageSubscription subscription) {
