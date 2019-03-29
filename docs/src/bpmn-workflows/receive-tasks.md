@@ -34,6 +34,8 @@ XML representation:
 </bpmn:receiveTask>
 ```
 
+BPMN Modeler: [Click Here](/bpmn-modeler/tasks.html#receive-task)
+
 > [Message intermediate catch events](/bpmn-workflows/message-events.html) are an alternative to receive tasks which can be used on an event-based gateway.
 
 ## Variable Mappings

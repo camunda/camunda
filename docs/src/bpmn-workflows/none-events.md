@@ -14,6 +14,8 @@ XML representation:
 <bpmn:startEvent id="order-placed" name="Order Placed" />
 ```
 
+BPMN Modeler: [Click Here](/bpmn-modeler/events.html#none-start-event)
+
 ## None End Events
 
 ![workflow](/bpmn-workflows/none-end-event.png)
@@ -27,6 +29,8 @@ XML representation:
 ```
 <bpmn:endEvent id="order-delivered" name="Order Delivered" />
 ```
+
+BPMN Modeler: [Click Here](/bpmn-modeler/events.html#none-end-event)
 
 Note that an activity without outgoing sequence flow has the same semantics as a none end event.
 After the task is completed, the token is consumed and the workflow instance may end.

@@ -20,7 +20,7 @@ If no condition is fulfilled, then it takes the default flow which has no condit
 <bpmn:sequenceFlow id="else" name="else" sourceRef="exclusiveGateway" targetRef="shipParcel" />
 ```
 
-BPMN Modeler: [Click Here](/bpmn-modeler/gateways.html#create-an-exclusive-gateway)
+BPMN Modeler: [Click Here](/bpmn-modeler/gateways.html#exclusive-gateway)
 
 ## Additional Resources
 

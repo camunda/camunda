@@ -21,7 +21,7 @@ XML representation:
 </bpmn:serviceTask>
 ```
 
-BPMN Modeler: [Click Here](/bpmn-modeler/tasks.html#create-a-service-task)
+BPMN Modeler: [Click Here](/bpmn-modeler/tasks.html#service-task)
 
 ## Task Definition
 
@@ -34,8 +34,6 @@ Optionally, a task definition can specify the number of times the job is retried
 <zeebe:taskDefinition type="payment-service" retries="5" />
 ```
 
-BPMN Modeler: [Click Here](/bpmn-modeler/tasks.html#configure-job-type)
-
 ## Task Headers
 
 A service task can define an arbitrary number of task headers.
@@ -46,8 +44,6 @@ Task headers are metadata that are handed to workers along with the job. They ca
   <zeebe:header key="method" value="VISA" />
 </zeebe:taskHeaders>
 ```
-
-BPMN Modeler: [Click Here](/bpmn-modeler/tasks.html#add-task-header)
 
 ## Variable Mappings
 
@@ -65,8 +61,6 @@ XML representation:
   </extensionElements>
 </serviceTask>
 ```
-
-BPMN Modeler: [Click Here](/bpmn-modeler/tasks.html#add-inputoutput-mapping)
 
 ## Additional Resources
 
