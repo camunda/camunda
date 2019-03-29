@@ -17,8 +17,8 @@ message ActivateJobsRequest {
   // a job returned after this call will not be activated by another call until the
   // timeout has been reached
   int64 timeout = 3;
-  // the maximum number of jobs to fetch in a single call
-  int32 amount = 4;
+  // the maximum jobs to activate by this request
+  int32 maxJobsToActivate = 4;
   // a list of variables to fetch as the job variables; if empty, all visible variables at
   // the time of activation for the scope of the job will be returned
   repeated string fetchVariable = 5;
@@ -302,15 +302,15 @@ message SetVariablesResponse {
 
 service Gateway {
   /*
-    Iterates through all known partitions in a round-robin and activates up to the requested amount
-    of jobs and streams them back to the client as they are activated.
+    Iterates through all known partitions round-robin and activates up to the requested
+    maximum and streams them back to the client as they are activated.
 
     Errors:
      INVALID_ARGUMENT:
       - type is blank (empty string, null)
       - worker is blank (empty string, null)
       - timeout less than 1
-      - amount is less than 1
+      - maxJobsToActivate is less than 1
    */
   rpc ActivateJobs (ActivateJobsRequest) returns (stream ActivateJobsResponse) {
   }

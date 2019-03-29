@@ -24,8 +24,8 @@ public interface ZeebeClientConfiguration {
   /** @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int) */
   int getNumJobWorkerExecutionThreads();
 
-  /** @see ZeebeClientBuilder#defaultJobWorkerBufferSize(int) */
-  int getDefaultJobWorkerBufferSize();
+  /** @see ZeebeClientBuilder#defaultJobWorkerMaxJobsActive(int) */
+  int getDefaultJobWorkerMaxJobsActive();
 
   /** @see ZeebeClientBuilder#defaultJobWorkerName(String) */
   String getDefaultJobWorkerName();

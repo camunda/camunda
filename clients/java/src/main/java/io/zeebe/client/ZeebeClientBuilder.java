@@ -37,10 +37,10 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder brokerContactPoint(String contactPoint);
 
   /**
-   * @param numberOfJobs Default value for {@link JobWorkerBuilderStep3#bufferSize(int)}. Default
-   *     value is 32.
+   * @param maxJobsActive Default value for {@link JobWorkerBuilderStep3#maxJobsActive(int)}.
+   *     Default value is 32.
    */
-  ZeebeClientBuilder defaultJobWorkerBufferSize(int numberOfJobs);
+  ZeebeClientBuilder defaultJobWorkerMaxJobsActive(int maxJobsActive);
 
   /**
    * @param numThreads The number of threads for invocation of job workers. Setting this value to 0

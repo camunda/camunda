@@ -354,7 +354,7 @@ public class BrokerReprocessingTest {
             .getClient()
             .newActivateJobsCommand()
             .jobType("foo")
-            .amount(10)
+            .maxJobsToActivate(10)
             .workerName("this")
             .send()
             .join();

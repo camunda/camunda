@@ -94,7 +94,7 @@ public class ActivateJobsTest {
         client
             .newActivateJobsCommand()
             .jobType(JOB_TYPE)
-            .amount(amount)
+            .maxJobsToActivate(amount)
             .workerName(worker)
             .timeout(timeout)
             .send()
@@ -125,7 +125,7 @@ public class ActivateJobsTest {
 
   @Test
   public void shouldActivateJobsRespectingAmountLimit() {
-    // map from job type to tuple of available jobs and amount to activate
+    // map from job type to tuple of available jobs and maxJobsToActivate
     final Map<String, Tuple<Integer, Integer>> jobCounts = new HashMap<>();
     jobCounts.put("foo", new Tuple<>(3, 7));
     jobCounts.put("bar", new Tuple<>(7, 3));
@@ -145,7 +145,7 @@ public class ActivateJobsTest {
 
     // when
     final ActivateJobsResponse response =
-        client.newActivateJobsCommand().jobType(jobType).amount(amount).send().join();
+        client.newActivateJobsCommand().jobType(jobType).maxJobsToActivate(amount).send().join();
 
     // then
     assertThat(response.getJobs()).hasSize(expectedJobsCount);
@@ -162,8 +162,8 @@ public class ActivateJobsTest {
             .boxed()
             .flatMap(
                 i ->
-                    client.newActivateJobsCommand().jobType(JOB_TYPE).amount(1).workerName("worker")
-                        .timeout(1000).send().join().getJobs().stream())
+                    client.newActivateJobsCommand().jobType(JOB_TYPE).maxJobsToActivate(1)
+                        .workerName("worker").timeout(1000).send().join().getJobs().stream())
             .map(ActivatedJob::getKey)
             .map(Protocol::decodePartitionId)
             .collect(Collectors.toList());
@@ -196,7 +196,7 @@ public class ActivateJobsTest {
             })
         .name("worker")
         .timeout(Duration.ofMinutes(2))
-        .bufferSize(10)
+        .maxJobsActive(10)
         .open();
     latch.await();
 

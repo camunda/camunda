@@ -281,14 +281,14 @@ public class PartitionTestClient {
     final JobBatchRecord request =
         new JobBatchRecord()
             .setType(jobType)
-            .setAmount(1)
+            .setMaxJobsToActivate(1)
             .setTimeout(1000)
             .setWorker("partition-" + partitionId + "-" + jobType);
 
     return doRepeatedly(
             () -> {
               final JobBatchRecord response = activateJobBatch(request);
-              if (response.getAmount() > 0) {
+              if (response.getMaxJobsToActivate() > 0) {
                 final JobRecord job = response.jobs().iterator().next();
                 if (filter.test(job)) {
                   return new Tuple<>(response.jobKeys().iterator().next().getValue(), job);

@@ -109,7 +109,7 @@ public class CancelWorkflowInstanceTest {
                         .getClient()
                         .newActivateJobsCommand()
                         .jobType("test")
-                        .amount(1)
+                        .maxJobsToActivate(1)
                         .send()
                         .join())
             .until(response -> !response.getJobs().isEmpty())

@@ -100,7 +100,7 @@ public class ActivateJobsTest {
             .put("worker", "testWorker")
             .put("timeout", Duration.ofSeconds(10).toMillis())
             .put("retries", 3)
-            .put("amount", 0)
+            .put("maxJobsToActivate", 0)
             .put("jobs", Collections.emptyList())
             .done()
             .sendAndAwait();
@@ -124,7 +124,7 @@ public class ActivateJobsTest {
             .put("worker", "testWorker")
             .put("timeout", Duration.ofSeconds(0).toMillis())
             .put("retries", 3)
-            .put("amount", 3)
+            .put("maxJobsToActivate", 3)
             .put("jobs", Collections.emptyList())
             .done()
             .sendAndAwait();
@@ -148,7 +148,7 @@ public class ActivateJobsTest {
             .put("worker", "testWorker")
             .put("timeout", Duration.ofSeconds(10).toMillis())
             .put("retries", 3)
-            .put("amount", 3)
+            .put("maxJobsToActivate", 3)
             .put("jobs", Collections.emptyList())
             .done()
             .sendAndAwait();
@@ -171,7 +171,7 @@ public class ActivateJobsTest {
             .put("worker", "")
             .put("timeout", Duration.ofSeconds(10).toMillis())
             .put("retries", 3)
-            .put("amount", 3)
+            .put("maxJobsToActivate", 3)
             .put("jobs", Collections.emptyList())
             .done()
             .sendAndAwait();
@@ -202,7 +202,7 @@ public class ActivateJobsTest {
             .put("type", jobType)
             .put("worker", worker)
             .put("timeout", timeout.toMillis())
-            .put("amount", 1)
+            .put("maxJobsToActivate", 1)
             .put("jobs", Collections.emptyList())
             .done()
             .sendAndAwait();
@@ -495,7 +495,7 @@ public class ActivateJobsTest {
             .put("type", jobType)
             .put("worker", worker)
             .put("timeout", timeout.toMillis())
-            .put("amount", amount)
+            .put("maxJobsToActivate", amount)
             .put("jobs", Collections.emptyList())
             .done()
             .sendAndAwait()

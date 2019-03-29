@@ -29,7 +29,7 @@ public class JobBatchRecordValueImpl extends RecordValueImpl implements JobBatch
   private final String type;
   private final String worker;
   private final Duration timeout;
-  private final int amount;
+  private final int maxJobsToActivate;
   private final List<Long> jobKeys;
   private final List<JobRecordValue> jobs;
   private final boolean truncated;
@@ -39,7 +39,7 @@ public class JobBatchRecordValueImpl extends RecordValueImpl implements JobBatch
       final String type,
       final String worker,
       final Duration timeout,
-      final int amount,
+      final int maxJobsToActivate,
       final List<Long> jobKeys,
       final List<JobRecordValue> jobs,
       boolean truncated) {
@@ -47,7 +47,7 @@ public class JobBatchRecordValueImpl extends RecordValueImpl implements JobBatch
     this.type = type;
     this.worker = worker;
     this.timeout = timeout;
-    this.amount = amount;
+    this.maxJobsToActivate = maxJobsToActivate;
     this.jobKeys = jobKeys;
     this.jobs = jobs;
     this.truncated = truncated;
@@ -69,8 +69,8 @@ public class JobBatchRecordValueImpl extends RecordValueImpl implements JobBatch
   }
 
   @Override
-  public int getAmount() {
-    return amount;
+  public int getMaxJobsToActivate() {
+    return maxJobsToActivate;
   }
 
   @Override
@@ -97,7 +97,7 @@ public class JobBatchRecordValueImpl extends RecordValueImpl implements JobBatch
       return false;
     }
     final JobBatchRecordValueImpl that = (JobBatchRecordValueImpl) o;
-    return amount == that.amount
+    return maxJobsToActivate == that.maxJobsToActivate
         && Objects.equals(type, that.type)
         && Objects.equals(worker, that.worker)
         && Objects.equals(timeout, that.timeout)
@@ -108,7 +108,7 @@ public class JobBatchRecordValueImpl extends RecordValueImpl implements JobBatch
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, worker, timeout, amount, jobKeys, jobs, truncated);
+    return Objects.hash(type, worker, timeout, maxJobsToActivate, jobKeys, jobs, truncated);
   }
 
   @Override
@@ -124,8 +124,8 @@ public class JobBatchRecordValueImpl extends RecordValueImpl implements JobBatch
         + '\''
         + ", timeout="
         + timeout
-        + ", amount="
-        + amount
+        + ", maxJobsToActivate="
+        + maxJobsToActivate
         + ", jobKeys="
         + jobKeys
         + ", jobs="

@@ -280,15 +280,15 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * zeebeClient
    *  .newActivateJobsCommand()
    *  .jobType("payment")
-   *  .amount(10)
+   *  .maxJobsToActivate(10)
    *  .workerName("paymentWorker")
    *  .timeout(Duration.ofMinutes(10))
    *  .send();
    * </pre>
    *
-   * <p>The command will try to activate maximal {@code amount} jobs of given {@code jobType}. If
-   * less then {@code amount} jobs of the {@code jobType} are available for activation the returned
-   * list will have fewer elements.
+   * <p>The command will try to use {@code maxJobsToActivate} for given {@code jobType}. If less
+   * then the requested {@code maxJobsToActivate} jobs of the {@code jobType} are available for
+   * activation the returned list will have fewer elements.
    *
    * @return a builder for the command
    */

@@ -49,6 +49,6 @@ public class JobBatchRecordStream
   }
 
   public JobBatchRecordStream withAmount(final int amount) {
-    return valueFilter(v -> v.getAmount() == amount);
+    return valueFilter(v -> v.getMaxJobsToActivate() == amount);
   }
 }

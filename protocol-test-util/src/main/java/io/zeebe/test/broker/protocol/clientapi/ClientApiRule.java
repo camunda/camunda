@@ -169,7 +169,7 @@ public class ClientApiRule extends ExternalResource {
         .put("type", type)
         .put("worker", DEFAULT_WORKER)
         .put("timeout", lockDuration)
-        .put("amount", amount)
+        .put("maxJobsToActivate", amount)
         .put("jobs", Collections.emptyList())
         .done()
         .send();

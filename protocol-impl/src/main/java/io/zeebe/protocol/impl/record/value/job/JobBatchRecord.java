@@ -32,7 +32,7 @@ public class JobBatchRecord extends UnpackedObject {
   private final StringProperty typeProp = new StringProperty("type");
   private final StringProperty workerProp = new StringProperty("worker", "");
   private final LongProperty timeoutProp = new LongProperty("timeout", Protocol.INSTANT_NULL_VALUE);
-  private final IntegerProperty amountProp = new IntegerProperty("amount", 1);
+  private final IntegerProperty maxJobsToActivateProp = new IntegerProperty("maxJobsToActivate", 1);
   private final ArrayProperty<LongValue> jobKeysProp =
       new ArrayProperty<>("jobKeys", new LongValue());
   private final ArrayProperty<JobRecord> jobsProp = new ArrayProperty<>("jobs", new JobRecord());
@@ -44,7 +44,7 @@ public class JobBatchRecord extends UnpackedObject {
     this.declareProperty(typeProp)
         .declareProperty(workerProp)
         .declareProperty(timeoutProp)
-        .declareProperty(amountProp)
+        .declareProperty(maxJobsToActivateProp)
         .declareProperty(jobKeysProp)
         .declareProperty(jobsProp)
         .declareProperty(variablesProp)
@@ -98,12 +98,12 @@ public class JobBatchRecord extends UnpackedObject {
     return this;
   }
 
-  public int getAmount() {
-    return amountProp.getValue();
+  public int getMaxJobsToActivate() {
+    return maxJobsToActivateProp.getValue();
   }
 
-  public JobBatchRecord setAmount(int amount) {
-    amountProp.setValue(amount);
+  public JobBatchRecord setMaxJobsToActivate(int maxJobsToActivate) {
+    maxJobsToActivateProp.setValue(maxJobsToActivate);
     return this;
   }
 
