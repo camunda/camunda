@@ -117,15 +117,15 @@
                 <exec executable="${maven.multiModuleProjectDirectory}/clients/zbctl/build.sh"
                   osfamily="unix" failonerror="true"/>
                 <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl"
-                  tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="false"/>
+                  tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="true"/>
                 <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl.exe"
                   tofile="${project.build.directory}/zeebe-broker/bin/zbctl.exe"
-                  failonerror="false"/>
+                  failonerror="true"/>
                 <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl.darwin"
                   tofile="${project.build.directory}/zeebe-broker/bin/zbctl.darwin"
-                  failonerror="false"/>
+                  failonerror="true"/>
                 <chmod dir="${project.build.directory}/zeebe-broker/bin" perm="ugo+rx"
-                  includes="zbctl*"/>
+                  includes="zbctl*" failonerror="true"/>
               </target>
               <skip>${skip-zbctl}</skip>
             </configuration>
