@@ -37,7 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
-public class ElementActivatingHandlerTest extends ElementHandlerTestCase {
+public class ElementActivatingHandlerTest extends ElementHandlerTestCase<ExecutableFlowNode> {
   @Mock public IOMappingHelper ioMappingHelper;
 
   private final WorkflowInstanceIntent nextState = WorkflowInstanceIntent.ELEMENT_ACTIVATED;

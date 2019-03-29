@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.processor.handlers.catchevent;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.handlers.element.EventOccurredHandler;
@@ -37,12 +38,19 @@ public class IntermediateCatchEventEventOccurredHandler<T extends ExecutableCatc
   protected boolean handleState(BpmnStepContext<T> context) {
     if (super.handleState(context)) {
       final EventTrigger event = getTriggeredEvent(context, context.getRecord().getKey());
+      if (event == null) {
+        Loggers.WORKFLOW_PROCESSOR_LOGGER.debug(
+            "Processing EVENT_OCCURRED but no event trigger found for element {}",
+            context.getElementInstance());
+        return false;
+      }
 
-      handleEvent(context, context.getRecord().getKey(), context.getRecord().getKey(), event);
+      processEventTrigger(
+          context, context.getRecord().getKey(), context.getRecord().getKey(), event);
       transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
       return true;
     }
 
-    return super.handleState(context);
+    return false;
   }
 }

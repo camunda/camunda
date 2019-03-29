@@ -27,7 +27,6 @@ import io.zeebe.broker.util.MockTypedRecord;
 import io.zeebe.broker.util.ZeebeStateRule;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
-import io.zeebe.broker.workflow.processor.CatchEventBehavior;
 import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.IndexedRecord;
@@ -50,7 +49,6 @@ public abstract class ElementHandlerTestCase<T extends ExecutableFlowNode> {
   @ClassRule public static ZeebeStateRule zeebeStateRule = new ZeebeStateRule();
 
   @Mock public EventOutput eventOutput;
-  @Mock public CatchEventBehavior catchEventBehavior;
   @Mock public TypedStreamWriter streamWriter;
   @Captor public ArgumentCaptor<IncidentRecord> incidentCaptor;
 
@@ -58,9 +56,7 @@ public abstract class ElementHandlerTestCase<T extends ExecutableFlowNode> {
 
   @Before
   public void setUp() {
-    context =
-        new BpmnStepContext<>(
-            zeebeStateRule.getZeebeState().getWorkflowState(), eventOutput, catchEventBehavior);
+    context = new BpmnStepContext<>(zeebeStateRule.getZeebeState().getWorkflowState(), eventOutput);
     context.setStreamWriter(streamWriter);
   }
 

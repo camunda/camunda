@@ -168,4 +168,20 @@ public class ElementInstance implements DbValue {
   public long getParentKey() {
     return parentKey;
   }
+
+  @Override
+  public String toString() {
+    return "ElementInstance{"
+        + "elementRecord="
+        + elementRecord
+        + ", parentKey="
+        + parentKey
+        + ", childCount="
+        + childCount
+        + ", jobKey="
+        + jobKey
+        + ", activeTokens="
+        + activeTokens
+        + '}';
+  }
 }

@@ -34,7 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
-public class ElementCompletingHandlerTest extends ElementHandlerTestCase {
+public class ElementCompletingHandlerTest extends ElementHandlerTestCase<ExecutableFlowNode> {
   @Mock public IOMappingHelper ioMappingHelper;
 
   private ElementCompletingHandler<ExecutableFlowNode> handler;

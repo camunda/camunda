@@ -52,7 +52,8 @@ public class ContainerElementActivatedHandler<T extends ExecutableFlowElementCon
     final ExecutableCatchEventElement firstStartEvent = element.getStartEvents().get(0);
 
     // workflows with none start event only have a single none start event and no other types of
-    // start events
+    // start events; note that embedded sub-processes only have a single none start event, so
+    // publishing a deferred record only applies to processes
     if (firstStartEvent.isNone()) {
       activateNoneStartEvent(context, firstStartEvent);
     } else {

@@ -19,24 +19,30 @@ package io.zeebe.broker.workflow.processor.handlers.catchevent;
 
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
+import io.zeebe.broker.workflow.processor.handlers.CatchEventSubscriber;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementTerminatingHandler;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class IntermediateCatchEventElementTerminatingHandler<T extends ExecutableCatchEventElement>
     extends ElementTerminatingHandler<T> {
+  private final CatchEventSubscriber catchEventSubscriber;
 
-  public IntermediateCatchEventElementTerminatingHandler() {
+  public IntermediateCatchEventElementTerminatingHandler(
+      CatchEventSubscriber catchEventSubscriber) {
     super();
+    this.catchEventSubscriber = catchEventSubscriber;
   }
 
-  public IntermediateCatchEventElementTerminatingHandler(WorkflowInstanceIntent nextState) {
+  public IntermediateCatchEventElementTerminatingHandler(
+      WorkflowInstanceIntent nextState, CatchEventSubscriber catchEventSubscriber) {
     super(nextState);
+    this.catchEventSubscriber = catchEventSubscriber;
   }
 
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
     if (super.handleState(context)) {
-      context.getCatchEventBehavior().unsubscribeFromEvents(context.getRecord().getKey(), context);
+      catchEventSubscriber.unsubscribeFromEvents(context);
       return true;
     }
 

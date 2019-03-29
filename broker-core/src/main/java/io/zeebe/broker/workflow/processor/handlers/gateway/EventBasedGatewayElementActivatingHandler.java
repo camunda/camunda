@@ -19,40 +19,35 @@ package io.zeebe.broker.workflow.processor.handlers.gateway;
 
 import io.zeebe.broker.workflow.model.element.ExecutableEventBasedGateway;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
+import io.zeebe.broker.workflow.processor.handlers.CatchEventSubscriber;
 import io.zeebe.broker.workflow.processor.handlers.IOMappingHelper;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementActivatingHandler;
-import io.zeebe.broker.workflow.processor.message.MessageCorrelationKeyException;
-import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class EventBasedGatewayElementActivatingHandler<T extends ExecutableEventBasedGateway>
     extends ElementActivatingHandler<T> {
+  private final CatchEventSubscriber catchEventSubscriber;
 
-  public EventBasedGatewayElementActivatingHandler() {
-    this(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-  }
-
-  public EventBasedGatewayElementActivatingHandler(WorkflowInstanceIntent nextState) {
-    super(nextState);
+  public EventBasedGatewayElementActivatingHandler(CatchEventSubscriber catchEventSubscriber) {
+    this(WorkflowInstanceIntent.ELEMENT_ACTIVATED, catchEventSubscriber);
   }
 
   public EventBasedGatewayElementActivatingHandler(
-      WorkflowInstanceIntent nextState, IOMappingHelper ioMappingHelper) {
+      WorkflowInstanceIntent nextState, CatchEventSubscriber catchEventSubscriber) {
+    super(nextState);
+    this.catchEventSubscriber = catchEventSubscriber;
+  }
+
+  public EventBasedGatewayElementActivatingHandler(
+      WorkflowInstanceIntent nextState,
+      IOMappingHelper ioMappingHelper,
+      CatchEventSubscriber catchEventSubscriber) {
     super(nextState, ioMappingHelper);
+    this.catchEventSubscriber = catchEventSubscriber;
   }
 
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
-    if (super.handleState(context)) {
-      try {
-        context.getCatchEventBehavior().subscribeToEvents(context, context.getElement());
-        return true;
-      } catch (MessageCorrelationKeyException e) {
-        context.raiseIncident(
-            ErrorType.EXTRACT_VALUE_ERROR, e.getContext().getVariablesScopeKey(), e.getMessage());
-      }
-    }
-
-    return false;
+    return super.handleState(context) && catchEventSubscriber.subscribeToEvents(context);
   }
 }
