@@ -37,7 +37,7 @@ type ActivateJobsCommandStep1 interface {
 }
 
 type ActivateJobsCommandStep2 interface {
-	Amount(int32) ActivateJobsCommandStep3
+	MaxJobsToActivate(int32) ActivateJobsCommandStep3
 }
 
 type ActivateJobsCommandStep3 interface {
@@ -59,8 +59,8 @@ func (cmd *ActivateJobsCommand) JobType(jobType string) ActivateJobsCommandStep2
 	return cmd
 }
 
-func (cmd *ActivateJobsCommand) Amount(amount int32) ActivateJobsCommandStep3 {
-	cmd.request.Amount = amount
+func (cmd *ActivateJobsCommand) MaxJobsToActivate(maxJobsToActivate int32) ActivateJobsCommandStep3 {
+	cmd.request.MaxJobsToActivate = maxJobsToActivate
 	return cmd
 }
 
