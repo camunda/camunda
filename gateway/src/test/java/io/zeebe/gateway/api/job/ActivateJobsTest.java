@@ -42,7 +42,7 @@ public class ActivateJobsTest extends GatewayTest {
 
     final String jobType = "testJob";
     final String worker = "testWorker";
-    final int amount = 13;
+    final int maxJobsToActivate = 13;
     final Duration timeout = Duration.ofMinutes(12);
     final List<String> fetchVariables = Arrays.asList("foo", "bar", "baz");
 
@@ -50,7 +50,7 @@ public class ActivateJobsTest extends GatewayTest {
         ActivateJobsRequest.newBuilder()
             .setType(jobType)
             .setWorker(worker)
-            .setAmount(amount)
+            .setMaxJobsToActivate(maxJobsToActivate)
             .setTimeout(timeout.toMillis())
             .addAllFetchVariable(fetchVariables)
             .build();
@@ -63,9 +63,9 @@ public class ActivateJobsTest extends GatewayTest {
 
     final ActivateJobsResponse response = responses.next();
 
-    assertThat(response.getJobsCount()).isEqualTo(amount);
+    assertThat(response.getJobsCount()).isEqualTo(maxJobsToActivate);
 
-    for (int i = 0; i < amount; i++) {
+    for (int i = 0; i < maxJobsToActivate; i++) {
       final ActivatedJob job = response.getJobs(i);
       assertThat(job.getKey()).isEqualTo(i);
       assertThat(job.getType()).isEqualTo(jobType);
@@ -87,7 +87,7 @@ public class ActivateJobsTest extends GatewayTest {
 
     final BrokerActivateJobsRequest brokerRequest = gateway.getSingleBrokerRequest();
     final JobBatchRecord brokerRequestValue = brokerRequest.getRequestWriter();
-    assertThat(brokerRequestValue.getAmount()).isEqualTo(amount);
+    assertThat(brokerRequestValue.getMaxJobsToActivate()).isEqualTo(maxJobsToActivate);
     assertThat(brokerRequestValue.getType()).isEqualTo(wrapString(jobType));
     assertThat(brokerRequestValue.getTimeout()).isEqualTo(timeout.toMillis());
     assertThat(brokerRequestValue.getWorker()).isEqualTo(wrapString(worker));

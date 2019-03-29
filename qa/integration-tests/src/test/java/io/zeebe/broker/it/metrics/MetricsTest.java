@@ -126,7 +126,7 @@ public class MetricsTest {
 
   private void completeJob(long workflowInstanceKey, String jobType) {
     final ActivateJobsResponse response =
-        client.newActivateJobsCommand().jobType(jobType).amount(1).send().join();
+        client.newActivateJobsCommand().jobType(jobType).maxJobsToActivate(1).send().join();
     assertThat(response.getJobs()).hasSize(1);
     client.newCompleteCommand(response.getJobs().get(0).getKey()).send().join();
   }

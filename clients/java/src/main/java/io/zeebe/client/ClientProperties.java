@@ -24,8 +24,8 @@ public class ClientProperties {
   /** @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int) */
   public static final String JOB_WORKER_EXECUTION_THREADS = "zeebe.client.worker.threads";
 
-  /** @see ZeebeClientBuilder#defaultJobWorkerBufferSize(int) */
-  public static final String JOB_WORKER_BUFFER_SIZE = "zeebe.client.worker.buffersize";
+  /** @see ZeebeClientBuilder#defaultJobWorkerMaxJobsActive(int) */
+  public static final String JOB_WORKER_MAX_JOBS_ACTIVE = "zeebe.client.worker.maxJobsActive";
 
   /** @see ZeebeClientBuilder#defaultJobWorkerName(String) */
   public static final String DEFAULT_JOB_WORKER_NAME = "zeebe.client.job.worker";

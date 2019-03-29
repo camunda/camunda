@@ -48,7 +48,7 @@ public class JobBatchRecordStream
     return valueFilter(v -> Duration.ofMillis(timeout).equals(v.getTimeout()));
   }
 
-  public JobBatchRecordStream withAmount(final int amount) {
-    return valueFilter(v -> v.getAmount() == amount);
+  public JobBatchRecordStream withMaxJobsToActivate(final int maxJobsToActivate) {
+    return valueFilter(v -> v.getMaxJobsToActivate() == maxJobsToActivate);
   }
 }

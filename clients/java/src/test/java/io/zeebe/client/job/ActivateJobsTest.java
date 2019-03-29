@@ -85,7 +85,7 @@ public class ActivateJobsTest extends ClientTest {
         client
             .newActivateJobsCommand()
             .jobType("foo")
-            .amount(3)
+            .maxJobsToActivate(3)
             .timeout(1000)
             .workerName("worker1")
             .send()
@@ -116,7 +116,7 @@ public class ActivateJobsTest extends ClientTest {
 
     final ActivateJobsRequest request = gatewayService.getLastRequest();
     assertThat(request.getType()).isEqualTo("foo");
-    assertThat(request.getAmount()).isEqualTo(3);
+    assertThat(request.getMaxJobsToActivate()).isEqualTo(3);
     assertThat(request.getTimeout()).isEqualTo(1000);
     assertThat(request.getWorker()).isEqualTo("worker1");
   }
@@ -127,7 +127,13 @@ public class ActivateJobsTest extends ClientTest {
     final Duration timeout = Duration.ofMinutes(2);
 
     // when
-    client.newActivateJobsCommand().jobType("foo").amount(3).timeout(timeout).send().join();
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(3)
+        .timeout(timeout)
+        .send()
+        .join();
 
     // then
     final ActivateJobsRequest request = gatewayService.getLastRequest();
@@ -143,7 +149,7 @@ public class ActivateJobsTest extends ClientTest {
     client
         .newActivateJobsCommand()
         .jobType("foo")
-        .amount(3)
+        .maxJobsToActivate(3)
         .fetchVariables(fetchVariables)
         .send()
         .join();
@@ -162,7 +168,7 @@ public class ActivateJobsTest extends ClientTest {
     client
         .newActivateJobsCommand()
         .jobType("foo")
-        .amount(3)
+        .maxJobsToActivate(3)
         .fetchVariables(fetchVariables)
         .send()
         .join();
@@ -175,7 +181,7 @@ public class ActivateJobsTest extends ClientTest {
   @Test
   public void shouldSetDefaultValues() {
     // when
-    client.newActivateJobsCommand().jobType("foo").amount(3).send().join();
+    client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join();
 
     // then
     final ActivateJobsRequest request = gatewayService.getLastRequest();
@@ -191,7 +197,8 @@ public class ActivateJobsTest extends ClientTest {
         ActivateJobsRequest.class, () -> new ClientException("Invalid request"));
 
     // when
-    assertThatThrownBy(() -> client.newActivateJobsCommand().jobType("foo").amount(3).send().join())
+    assertThatThrownBy(
+            () -> client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
   }

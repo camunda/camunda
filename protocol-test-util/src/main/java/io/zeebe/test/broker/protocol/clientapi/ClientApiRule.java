@@ -155,7 +155,10 @@ public class ClientApiRule extends ExternalResource {
   }
 
   public ExecuteCommandRequest activateJobs(
-      final int partitionId, final String type, final long lockDuration, final int amount) {
+      final int partitionId,
+      final String type,
+      final long lockDuration,
+      final int maxJobsToActivate) {
     // to make sure that job already exist
     partitionClient(partitionId)
         .receiveJobs()
@@ -169,7 +172,7 @@ public class ClientApiRule extends ExternalResource {
         .put("type", type)
         .put("worker", DEFAULT_WORKER)
         .put("timeout", lockDuration)
-        .put("amount", amount)
+        .put("maxJobsToActivate", maxJobsToActivate)
         .put("jobs", Collections.emptyList())
         .done()
         .send();

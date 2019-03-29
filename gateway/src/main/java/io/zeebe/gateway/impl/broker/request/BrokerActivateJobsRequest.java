@@ -43,8 +43,8 @@ public class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBatchReco
     return this;
   }
 
-  public BrokerActivateJobsRequest setAmount(int amount) {
-    requestDto.setAmount(amount);
+  public BrokerActivateJobsRequest setMaxJobsToActivate(int maxJobsToActivate) {
+    requestDto.setMaxJobsToActivate(maxJobsToActivate);
     return this;
   }
 

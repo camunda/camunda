@@ -33,7 +33,7 @@ public class JobWorkerImpl implements JobWorker, CloseableSilently {
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
 
   // job queue state
-  private final int bufferSize;
+  private final int maxJobsActive;
   private final int activationThreshold;
   private final AtomicInteger remainingJobs;
 
@@ -46,14 +46,14 @@ public class JobWorkerImpl implements JobWorker, CloseableSilently {
   private final AtomicReference<JobPoller> jobPoller;
 
   public JobWorkerImpl(
-      int bufferSize,
+      int maxJobsActive,
       ScheduledExecutorService executor,
       Duration pollInterval,
       JobRunnableFactory jobRunnableFactory,
       JobPoller jobPoller) {
 
-    this.bufferSize = bufferSize;
-    this.activationThreshold = Math.round(bufferSize * 0.3f);
+    this.maxJobsActive = maxJobsActive;
+    this.activationThreshold = Math.round(maxJobsActive * 0.3f);
     this.remainingJobs = new AtomicInteger(0);
 
     this.executor = executor;
@@ -94,10 +94,10 @@ public class JobWorkerImpl implements JobWorker, CloseableSilently {
       // to avoid race conditions that would let us exceed the buffer size
       final int currentRemainingJobs = remainingJobs.get();
       if (shouldActivateJobs(currentRemainingJobs)) {
-        final int amount = bufferSize - currentRemainingJobs;
+        final int maxActivatedJobs = maxJobsActive - currentRemainingJobs;
         try {
           jobPoller.poll(
-              amount,
+              maxActivatedJobs,
               this::submitJob,
               activatedJobs -> {
                 remainingJobs.addAndGet(activatedJobs);

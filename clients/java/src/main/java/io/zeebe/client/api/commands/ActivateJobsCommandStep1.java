@@ -32,13 +32,13 @@ public interface ActivateJobsCommandStep1 {
   interface ActivateJobsCommandStep2 {
 
     /**
-     * Set the maximal amount of jobs to activate. If less jobs are avaiable for activation the
-     * command will return a list with fewer jobs.
+     * Set the maximum of jobs to activate. If less jobs are available for activation the command
+     * will return a list with fewer jobs.
      *
-     * @param amount the maximal number of jobs to activate
+     * @param maxJobsToActivate the maximal number of jobs to activate
      * @return the builder for this command
      */
-    ActivateJobsCommandStep3 amount(int amount);
+    ActivateJobsCommandStep3 maxJobsToActivate(int maxJobsToActivate);
   }
 
   interface ActivateJobsCommandStep3 extends FinalCommandStep<ActivateJobsResponse> {

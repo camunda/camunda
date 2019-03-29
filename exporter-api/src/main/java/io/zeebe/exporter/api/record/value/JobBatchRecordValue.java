@@ -39,7 +39,7 @@ public interface JobBatchRecordValue extends RecordValue {
   Duration getTimeout();
 
   /** @return the number of jobs to handle */
-  int getAmount();
+  int getMaxJobsToActivate();
 
   /** @return list of the keys from the jobs assigned to this batch */
   List<Long> getJobKeys();

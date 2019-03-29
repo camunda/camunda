@@ -98,11 +98,12 @@ public class ActivateJobsStub
     final JobBatchRecord requestDto = request.getRequestWriter();
 
     final JobBatchRecord response = new JobBatchRecord();
-    response.setAmount(requestDto.getAmount());
+    response.setMaxJobsToActivate(requestDto.getMaxJobsToActivate());
     response.setWorker(requestDto.getWorker());
     response.setType(requestDto.getType());
     response.setTimeout(requestDto.getTimeout());
-    addJobs(response, requestDto.getAmount(), requestDto.getType(), requestDto.getWorker());
+    addJobs(
+        response, requestDto.getMaxJobsToActivate(), requestDto.getType(), requestDto.getWorker());
 
     return new BrokerResponse<>(response, 0, JOB_BATCH_KEY);
   }
