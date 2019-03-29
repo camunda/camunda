@@ -60,7 +60,6 @@ class InstancesContainer extends Component {
 
   async componentDidMount() {
     document.title = PAGE_TITLE.INSTANCES;
-
     // fetch groupedWorflows and workflow instances in parallel
     const groupedWorkflows = await fetchGroupedWorkflows();
 
@@ -76,7 +75,10 @@ class InstancesContainer extends Component {
   }
 
   async componentDidUpdate(prevProps, prevState) {
-    if (prevProps.location.search !== this.props.location.search) {
+    if (
+      prevProps.location.search !== this.props.location.search &&
+      !isEmpty(this.state.groupedWorkflows)
+    ) {
       this.setFilterFromUrl();
     }
     // if any of these change, re-fetch workflowInstances
