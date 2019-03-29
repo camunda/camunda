@@ -133,6 +133,7 @@ void upgradeTestSteps(String startVersion, String targetVersion) {
   container('maven') {
     def versionList = generateUpgradeList(startVersion, targetVersion)
     runMaven("install -Dskip.docker -DskipTests -pl backend -am -Pproduction,engine-latest")
+    runMaven("install -Dskip.docker -DskipTests -f qa")
     runMaven("verify -Dskip.docker -pl qa/upgrade-es-schema-tests -Pupgrade-es-schema-tests -Dupgrade.versions=${versionList}")
   }
 }
