@@ -53,10 +53,10 @@ func TestJobWorkerActivateJobsDefault(t *testing.T) {
 	stream := mock_pb.NewMockGateway_ActivateJobsClient(ctrl)
 
 	request := &pb.ActivateJobsRequest{
-		Type:    "foo",
-		Amount:  DefaultJobWorkerBufferSize,
-		Timeout: commands.DefaultJobTimeoutInMs,
-		Worker:  commands.DefaultJobWorkerName,
+		Type:              "foo",
+		MaxJobsToActivate: DefaultJobWorkerMaxJobActive,
+		Timeout:           commands.DefaultJobTimeoutInMs,
+		Worker:            commands.DefaultJobWorkerName,
 	}
 
 	response := &pb.ActivateJobsResponse{
@@ -98,10 +98,10 @@ func TestJobWorkerActivateJobsCustom(t *testing.T) {
 	timeout := 7 * time.Minute
 
 	request := &pb.ActivateJobsRequest{
-		Type:    "foo",
-		Amount:  123,
-		Timeout: int64(timeout / time.Millisecond),
-		Worker:  "fooWorker",
+		Type:              "foo",
+		MaxJobsToActivate: 123,
+		Timeout:           int64(timeout / time.Millisecond),
+		Worker:            "fooWorker",
 	}
 
 	response := &pb.ActivateJobsResponse{
@@ -120,7 +120,7 @@ func TestJobWorkerActivateJobsCustom(t *testing.T) {
 
 	NewJobWorkerBuilder(client, nil, utils.DefaultTestTimeout).JobType("foo").Handler(func(client JobClient, job entities.Job) {
 		jobs <- job
-	}).BufferSize(123).Timeout(timeout).Name("fooWorker").Open()
+	}).MaxJobsActive(123).Timeout(timeout).Name("fooWorker").Open()
 
 	select {
 	case job := <-jobs:

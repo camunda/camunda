@@ -44,13 +44,13 @@ func (suite *JobPollerSuite) BeforeTest(suiteName, testName string) {
 		client:         suite.client,
 		request:        pb.ActivateJobsRequest{},
 		requestTimeout: utils.DefaultTestTimeout,
-		bufferSize:     DefaultJobWorkerBufferSize,
+		maxJobsActive:  DefaultJobWorkerMaxJobActive,
 		pollInterval:   DefaultJobWorkerPollInterval,
 		jobQueue:       make(chan entities.Job),
 		workerFinished: make(chan bool),
 		closeSignal:    make(chan struct{}),
 		remaining:      0,
-		threshold:      int(math.Round(float64(DefaultJobWorkerBufferSize) * DefaultJobWorkerPollThreshold)),
+		threshold:      int(math.Round(float64(DefaultJobWorkerMaxJobActive) * DefaultJobWorkerPollThreshold)),
 	}
 	suite.waitGroup.Add(1)
 }
@@ -85,15 +85,15 @@ func TestJobPollerSuite(t *testing.T) {
 func (suite *JobPollerSuite) TestShouldPollAfterPollIntervalIfThresholdIsReached() {
 	// given
 	suite.poller.pollInterval = 250 * time.Millisecond
-	suite.poller.bufferSize = 10
+	suite.poller.maxJobsActive = 10
 	suite.poller.threshold = 4
 
 	gomock.InOrder(
 		suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: &pb.ActivateJobsRequest{
-			Amount: 10,
+			MaxJobsToActivate: 10,
 		}}).Return(suite.singleJobStream(), nil),
 		suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: &pb.ActivateJobsRequest{
-			Amount: 9,
+			MaxJobsToActivate: 9,
 		}}).Return(suite.singleJobStream(), nil),
 	)
 
@@ -108,12 +108,12 @@ func (suite *JobPollerSuite) TestShouldPollAfterPollIntervalIfThresholdIsReached
 func (suite *JobPollerSuite) TestShouldNotPollAfterIntervalIfNotThreshold() {
 	// given
 	suite.poller.pollInterval = 250 * time.Millisecond
-	suite.poller.bufferSize = 10
+	suite.poller.maxJobsActive = 10
 	suite.poller.remaining = 6
 	suite.poller.threshold = 4
 
 	suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: &pb.ActivateJobsRequest{
-		Amount: 4,
+		MaxJobsToActivate: 4,
 	}}).Return(suite.singleJobStream(), nil)
 
 	// when
@@ -125,15 +125,15 @@ func (suite *JobPollerSuite) TestShouldNotPollAfterIntervalIfNotThreshold() {
 
 func (suite *JobPollerSuite) TestShoulPolldAfterJobFinsihedIfThresholdIsReached() {
 	// given
-	suite.poller.bufferSize = 10
+	suite.poller.maxJobsActive = 10
 	suite.poller.threshold = 4
 
 	gomock.InOrder(
 		suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: &pb.ActivateJobsRequest{
-			Amount: 10,
+			MaxJobsToActivate: 10,
 		}}).Return(suite.singleJobStream(), nil),
 		suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: &pb.ActivateJobsRequest{
-			Amount: 10,
+			MaxJobsToActivate: 10,
 		}}).Return(suite.singleJobStream(), nil),
 	)
 
@@ -147,12 +147,12 @@ func (suite *JobPollerSuite) TestShoulPolldAfterJobFinsihedIfThresholdIsReached(
 
 func (suite *JobPollerSuite) TestShouldNotPollAfterJobIsFinishedIfNotThreshold() {
 	// given
-	suite.poller.bufferSize = 10
+	suite.poller.maxJobsActive = 10
 	suite.poller.remaining = 6
 	suite.poller.threshold = 4
 
 	suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: &pb.ActivateJobsRequest{
-		Amount: 4,
+		MaxJobsToActivate: 4,
 	}}).Return(suite.singleJobStream(), nil)
 
 	// when
@@ -164,7 +164,7 @@ func (suite *JobPollerSuite) TestShouldNotPollAfterJobIsFinishedIfNotThreshold()
 
 func (suite *JobPollerSuite) TestShouldIgnoreRequestFailure() {
 	// given
-	suite.poller.bufferSize = 10
+	suite.poller.maxJobsActive = 10
 	suite.poller.remaining = 5
 	suite.poller.threshold = 4
 
@@ -185,7 +185,7 @@ func (suite *JobPollerSuite) TestShouldIgnoreRequestFailure() {
 
 func (suite *JobPollerSuite) TestShouldIgnoreStreamFailure() {
 	// given
-	suite.poller.bufferSize = 10
+	suite.poller.maxJobsActive = 10
 	suite.poller.remaining = 4
 	suite.poller.threshold = 4
 
