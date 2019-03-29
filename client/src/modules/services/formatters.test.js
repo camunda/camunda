@@ -81,6 +81,10 @@ describe('durationFormatter', () => {
       `1 day${nbsp}10 hours${nbsp}17 minutes${nbsp}37 seconds`
     );
   });
+
+  it('should not crash when providing null as timeObject', () => {
+    expect(durationFormatter(null)).toBe('-');
+  });
 });
 
 describe('convertDurationToObject', () => {

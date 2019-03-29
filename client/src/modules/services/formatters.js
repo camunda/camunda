@@ -33,6 +33,10 @@ export function frequency(number, precision) {
 }
 
 export function duration(timeObject, precision) {
+  if (timeObject === null) {
+    return '-';
+  }
+
   const time =
     typeof timeObject === 'object'
       ? timeObject.value * timeUnits[timeObject.unit].value
