@@ -5,7 +5,7 @@
 
   <properties>
     <skipTests>true</skipTests>
-    <upgrade.versions>2.1.0,2.2.0,2.3.0,2.4.0</upgrade.versions>
+    <upgrade.versions>2.1.0,2.2.0,2.3.0,2.4.0,${project.version}</upgrade.versions>
   </properties>
 
   <parent>
@@ -73,6 +73,29 @@
                       <overWrite>true</overWrite>
                       <outputDirectory>${project.build.directory}/generators</outputDirectory>
                       <destFileName>generator2.2.0.jar</destFileName>
+                    </artifactItem>
+                  </artifactItems>
+                  <overWriteReleases>false</overWriteReleases>
+                  <overWriteSnapshots>true</overWriteSnapshots>
+                </configuration>
+              </execution>
+              <execution>
+                <id>copy-generator-2-4</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.camunda.optimize</groupId>
+                      <artifactId>generator-2-4</artifactId>
+                      <version>${project.version}</version>
+                      <type>jar</type>
+                      <classifier>jar-with-dependencies</classifier>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
+                      <destFileName>generator2.4.0.jar</destFileName>
                     </artifactItem>
                   </artifactItems>
                   <overWriteReleases>false</overWriteReleases>
@@ -207,29 +230,29 @@
                 </configuration>
               </execution>
               <!--4. Generate engine data-->
-              <!--<execution>-->
-                <!--<id>generate-engine-data</id>-->
-                <!--<goals>-->
-                  <!--<goal>run</goal>-->
-                <!--</goals>-->
-                <!--<phase>pre-integration-test</phase>-->
-                <!--<configuration>-->
-                  <!--<target name="generate-engine-data" description="Generate process instances">-->
-                    <!--<property environment="env"/>-->
-                    <!--<condition property="maven-settings" value="&#45;&#45;settings=../../settings.xml" else="">-->
-                      <!--<isset property="env.JENKINS_URL"/>-->
-                    <!--</condition>-->
+              <execution>
+                <id>generate-engine-data</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <target name="generate-engine-data" description="Generate process instances">
+                    <property environment="env"/>
+                    <condition property="maven-settings" value="--settings=../../settings.xml" else="">
+                      <isset property="env.JENKINS_URL"/>
+                    </condition>
 
-                    <!--<echo message="Generating engine data..."/>-->
-                    <!--<exec dir="${project.build.directory}/../../../../qa/data-generation" executable="/bin/bash"-->
-                          <!--failonerror="true">-->
-                      <!--<arg value="-c"/>-->
-                      <!--<arg-->
-                          <!--value="set -o pipefail; mvn clean compile exec:java -Dexec.args='&#45;&#45;numberOfProcessInstances 10' -B ${maven-settings} | sed 's/^/[ENGINE DATA GENERATION]: /'"/>-->
-                    <!--</exec>-->
-                  <!--</target>-->
-                <!--</configuration>-->
-              <!--</execution>-->
+                    <echo message="Generating engine data..."/>
+                    <exec dir="${project.build.directory}/../../../../qa/data-generation" executable="/bin/bash"
+                          failonerror="true">
+                      <arg value="-c"/>
+                      <arg
+                          value="set -o pipefail; mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 10' -B ${maven-settings} | sed 's/^/[ENGINE DATA GENERATION]: /'"/>
+                    </exec>
+                  </target>
+                </configuration>
+              </execution>
               <!--5. Generate optimize data and run migration-->
               <execution>
                 <id>unpack</id>

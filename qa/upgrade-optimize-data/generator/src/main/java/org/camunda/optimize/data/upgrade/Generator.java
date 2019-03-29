@@ -58,7 +58,7 @@ import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper
   .createProcessInstanceDurationGroupByVariableWithProcessPart;
 
-public class Generator24 {
+public class Generator {
   private static Client client;
   private static String authCookie;
   private static String processDefinitionKey;
@@ -201,7 +201,7 @@ public class Generator24 {
   }
 
   private static String readFileToString() throws IOException, URISyntaxException {
-    return IOUtils.toString(Generator24.class.getResourceAsStream("/ValidTestLicense.txt"), Charset.forName("UTF-8"));
+    return IOUtils.toString(Generator.class.getResourceAsStream("/ValidTestLicense.txt"), Charset.forName("UTF-8"));
   }
 
   private static List<String> generateReports() {
