@@ -22,6 +22,7 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.ElementInstanceState;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.impl.record.value.job.JobHeaders;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -43,11 +44,12 @@ public final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord
     final JobHeaders jobHeaders = record.getValue().getHeaders();
     final long elementInstanceKey = jobHeaders.getElementInstanceKey();
     if (elementInstanceKey > 0) {
-      final ElementInstance elementInstance =
-          workflowState.getElementInstanceState().getInstance(elementInstanceKey);
+      final ElementInstanceState elementInstanceState = workflowState.getElementInstanceState();
+      final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
       if (elementInstance != null) {
         elementInstance.setJobKey(record.getKey());
+        elementInstanceState.updateInstance(elementInstance);
       }
     }
   }

@@ -60,13 +60,14 @@ public class ParallelMergeSequenceFlowTaken<T extends ExecutableSequenceFlow>
       mergeableRecords.forEach(
           r -> {
             eventOutput.removeDeferredEvent(scopeInstance.getKey(), r.getKey());
-            context.getFlowScopeInstance().consumeToken();
+            scopeInstance.consumeToken();
           });
 
       context
           .getOutput()
           .appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, context.getValue(), gateway);
-      context.getFlowScopeInstance().spawnToken();
+      scopeInstance.spawnToken();
+      context.getStateDb().getElementInstanceState().updateInstance(scopeInstance);
     }
 
     return true;

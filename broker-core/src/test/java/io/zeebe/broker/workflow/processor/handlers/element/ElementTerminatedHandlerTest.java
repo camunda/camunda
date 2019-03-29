@@ -53,7 +53,6 @@ public class ElementTerminatedHandlerTest extends ElementHandlerTestCase {
   @Test
   public void shouldNotHandleStateIfNoElementGiven() {
     // given
-    context.setElementInstance(null);
 
     // when - then
     assertThat(handler.shouldHandleState(context)).isFalse();
@@ -65,6 +64,7 @@ public class ElementTerminatedHandlerTest extends ElementHandlerTestCase {
     final ElementInstance instance =
         createAndSetContextElementInstance(WorkflowInstanceIntent.ELEMENT_TERMINATED);
     instance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
+    elementInstanceState.updateInstance(instance);
 
     // when - then
     assertThat(handler.shouldHandleState(context)).isFalse();

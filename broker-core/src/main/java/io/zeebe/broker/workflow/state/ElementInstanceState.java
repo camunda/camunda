@@ -31,14 +31,10 @@ import io.zeebe.db.impl.DbNil;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import org.agrona.ExpandableArrayBuffer;
 
 public class ElementInstanceState {
-  private final Map<Long, ElementInstance> cachedInstances = new HashMap<>();
 
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> parentChildColumnFamily;
   private final DbCompositeKey<DbLong, DbLong> parentChildKey;
@@ -117,8 +113,9 @@ public class ElementInstanceState {
       instance = new ElementInstance(key, state, value);
     } else {
       instance = new ElementInstance(key, parent, state, value);
+      updateInstance(parent);
     }
-    cachedInstances.put(key, instance);
+    updateInstance(instance);
 
     return instance;
   }
@@ -133,16 +130,9 @@ public class ElementInstanceState {
   }
 
   public ElementInstance getInstance(long key) {
-    return cachedInstances.computeIfAbsent(
-        key,
-        k -> {
-          elementInstanceKey.wrapLong(key);
-          final ElementInstance elementInstance =
-              elementInstanceColumnFamily.get(elementInstanceKey);
-
-          final ElementInstance copiedElementInstance = copyElementInstance(elementInstance);
-          return copiedElementInstance != null ? copiedElementInstance : null;
-        });
+    elementInstanceKey.wrapLong(key);
+    final ElementInstance elementInstance = elementInstanceColumnFamily.get(elementInstanceKey);
+    return copyElementInstance(elementInstance);
   }
 
   public void removeInstance(long key) {
@@ -154,7 +144,6 @@ public class ElementInstanceState {
 
       parentChildColumnFamily.delete(parentChildKey);
       elementInstanceColumnFamily.delete(elementInstanceKey);
-      cachedInstances.remove(key);
 
       recordParentChildColumnFamily.whileEqualPrefix(
           elementInstanceKey,
@@ -169,6 +158,7 @@ public class ElementInstanceState {
       if (parentKey > 0) {
         final ElementInstance parentInstance = getInstance(parentKey);
         parentInstance.decrementChildCount();
+        updateInstance(parentInstance);
       }
     }
   }
@@ -178,7 +168,7 @@ public class ElementInstanceState {
     return recordColumnFamily.get(this.recordKey);
   }
 
-  void updateInstance(ElementInstance scopeInstance) {
+  public void updateInstance(ElementInstance scopeInstance) {
     writeElementInstance(scopeInstance);
   }
 
@@ -205,6 +195,7 @@ public class ElementInstanceState {
     final ElementInstance elementInstance = getInstance(scopeKey);
     if (elementInstance != null) {
       elementInstance.consumeToken();
+      updateInstance(elementInstance);
     }
   }
 
@@ -212,6 +203,7 @@ public class ElementInstanceState {
     final ElementInstance elementInstance = getInstance(scopeKey);
     if (elementInstance != null) {
       elementInstance.spawnToken();
+      updateInstance(elementInstance);
     }
   }
 
@@ -324,13 +316,6 @@ public class ElementInstanceState {
 
   public VariablesState getVariablesState() {
     return variablesState;
-  }
-
-  public void flushDirtyState() {
-    for (Entry<Long, ElementInstance> entry : cachedInstances.entrySet()) {
-      updateInstance(entry.getValue());
-    }
-    cachedInstances.clear();
   }
 
   private ElementInstance copyElementInstance(ElementInstance elementInstance) {

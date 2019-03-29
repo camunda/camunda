@@ -21,6 +21,7 @@ import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementActivatedHandler;
+import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.IndexedRecord;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.broker.workflow.state.WorkflowState;
@@ -60,7 +61,9 @@ public class ContainerElementActivatedHandler<T extends ExecutableFlowElementCon
       publishDeferredRecord(context);
     }
 
-    context.getElementInstance().spawnToken();
+    final ElementInstance elementInstance = context.getElementInstance();
+    elementInstance.spawnToken();
+    context.getStateDb().getElementInstanceState().updateInstance(elementInstance);
     return true;
   }
 

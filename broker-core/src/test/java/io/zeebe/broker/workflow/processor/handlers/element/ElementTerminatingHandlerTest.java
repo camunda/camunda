@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.processor.handlers.element;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -30,6 +31,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
 public class ElementTerminatingHandlerTest extends ElementHandlerTestCase<ExecutableFlowNode> {
   private ElementTerminatingHandler<ExecutableFlowNode> handler;
+  private final IncidentState incidentState = zeebeStateRule.getZeebeState().getIncidentState();
 
   @Override
   @Before
@@ -41,7 +43,6 @@ public class ElementTerminatingHandlerTest extends ElementHandlerTestCase<Execut
   @Test
   public void shouldNotHandleStateIfNoElementGiven() {
     // given
-    context.setElementInstance(null);
 
     // when - then
     assertThat(handler.shouldHandleState(context)).isFalse();
@@ -53,6 +54,7 @@ public class ElementTerminatingHandlerTest extends ElementHandlerTestCase<Execut
     final ElementInstance instance =
         createAndSetContextElementInstance(WorkflowInstanceIntent.ELEMENT_TERMINATING);
     instance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
+    elementInstanceState.updateInstance(instance);
 
     // when - then
     assertThat(handler.shouldHandleState(context)).isFalse();

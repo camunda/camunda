@@ -43,9 +43,6 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   private ExecutableFlowElement element;
   private TypedCommandWriter commandWriter;
 
-  private ElementInstance flowScopeInstance;
-  private ElementInstance elementInstance;
-
   public BpmnStepContext(WorkflowState stateDb, EventOutput eventOutput) {
     this.stateDb = stateDb;
     this.eventOutput = eventOutput;
@@ -94,11 +91,8 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   }
 
   public ElementInstance getFlowScopeInstance() {
-    return flowScopeInstance;
-  }
-
-  public void setFlowScopeInstance(final ElementInstance flowScopeInstance) {
-    this.flowScopeInstance = flowScopeInstance;
+    final WorkflowInstanceRecord value = getValue();
+    return stateDb.getElementInstanceState().getInstance(value.getFlowScopeKey());
   }
 
   /**
@@ -107,11 +101,12 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
    * @return
    */
   public ElementInstance getElementInstance() {
-    return elementInstance;
-  }
-
-  public void setElementInstance(final ElementInstance elementInstance) {
-    this.elementInstance = elementInstance;
+    final TypedRecord<WorkflowInstanceRecord> record = getRecord();
+    if (record != null) {
+      final long key = record.getKey();
+      return stateDb.getElementInstanceState().getInstance(key);
+    }
+    return null;
   }
 
   public SideEffectQueue getSideEffect() {
