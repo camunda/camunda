@@ -98,6 +98,7 @@ public class WorkflowPersistenceCache {
         for (final DeploymentResource resource : deploymentRecord.resources()) {
           if (resource.getResourceName().equals(resourceName)) {
             persistWorkflow(workflowKey, workflow, resource);
+            updateLatestVersion(workflow);
           }
         }
       }
@@ -116,8 +117,17 @@ public class WorkflowPersistenceCache {
     workflowVersion.wrapLong(workflow.getVersion());
 
     workflowByIdAndVersionColumnFamily.put(idAndVersionKey, persistedWorkflow);
+  }
 
-    latestWorkflowColumnFamily.put(workflowId, workflowVersion);
+  private void updateLatestVersion(final Workflow workflow) {
+    workflowId.wrapBuffer(workflow.getBpmnProcessId());
+    final DbLong storedVersion = latestWorkflowColumnFamily.get(workflowId);
+    final long latestVersion = storedVersion == null ? -1 : storedVersion.getValue();
+
+    if (workflow.getVersion() > latestVersion) {
+      workflowVersion.wrapLong(workflow.getVersion());
+      latestWorkflowColumnFamily.put(workflowId, workflowVersion);
+    }
   }
 
   private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();

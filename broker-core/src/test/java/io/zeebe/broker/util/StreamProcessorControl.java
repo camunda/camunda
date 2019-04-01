@@ -18,6 +18,7 @@
 package io.zeebe.broker.util;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -56,6 +57,9 @@ public interface StreamProcessorControl {
       Predicate<TypedRecord<WorkflowInstanceSubscriptionRecord>> test);
 
   void blockAfterTimerEvent(Predicate<TypedRecord<TimerRecord>> test);
+
+  void blockAfterMessageStartEventSubscriptionRecord(
+      final Predicate<TypedRecord<MessageStartEventSubscriptionRecord>> test);
 
   /**
    * @return true if the event to block on has been processed and the stream processor won't handle
