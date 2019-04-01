@@ -36,7 +36,7 @@ On requesting jobs, the following properties can be set:
 
 * **Worker**: The identifier of the worker. Used for auditing purposes.
 * **Timeout**: The time a job is assigned to the worker. If a job is not completed within this time then it can be requested again from a worker.
-* **Amount**: The maximum number of jobs which are requested.
+* **MaxJobsToActivate**: The maximum number of jobs which should be activated by this request.
 * **FetchVariables**: A list of variables names which are required. If the list is empty, all variables of the workflow instance are requested.
 
 ## Job Queueing

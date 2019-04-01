@@ -42,7 +42,7 @@ public class ActivateJobsHandler {
     activateJobs(
         RequestMapper.toActivateJobsRequest(request),
         partitionIdIteratorForType(request.getType(), partitionsCount),
-        request.getAmount(),
+        request.getMaxJobsToActivate(),
         request.getType(),
         responseObserver);
   }
@@ -72,7 +72,7 @@ public class ActivateJobsHandler {
 
       // partitions to check and jobs to activate left
       request.setPartitionId(partitionId);
-      request.setAmount(remainingAmount);
+      request.setMaxJobsToActivate(remainingAmount);
       brokerClient.sendRequest(
           request,
           (key, response) -> {

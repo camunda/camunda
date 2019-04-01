@@ -102,17 +102,15 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 name(String workerName);
 
     /**
-     * Set the maximum number of jobs which will be exclusively assigned to this worker at the same
-     * time.
+     * Set the maximum number of jobs which will be exclusively activated for this worker at the
+     * same time.
      *
-     * <p>This is used to control the backpressure of the worker. When the number of assigned jobs
-     * is reached then the broker will stop assigning new jobs to the worker in order to to not
-     * overwhelm the client and give other workers the chance to work on the jobs. The broker will
-     * assign new jobs again when jobs are completed (or marked as failed) which were assigned to
-     * the worker.
+     * <p>This is used to control the backpressure of the worker. When the maximum is reached then
+     * the worker will stop activating new jobs in order to not overwhelm the client and give other
+     * workers the chance to work on the jobs. The worker will try to activate new jobs again when
+     * jobs are completed (or marked as failed).
      *
-     * <p>If no buffer size is set then the default is used from the {@link
-     * ZeebeClientConfiguration}.
+     * <p>If no maximum is set then the default, from the {@link ZeebeClientConfiguration}, is used.
      *
      * <p>Considerations:
      *
@@ -122,13 +120,12 @@ public interface JobWorkerBuilderStep1 {
      *   <li>The memory used by the worker is linear with respect to this value.
      *   <li>The job's timeout starts to run down as soon as the broker pushes the job. Keep in mind
      *       that the following must hold to ensure fluent job handling: <code>
-     *       time spent in buffer + time job handler needs until job completion < job timeout</code>
-     *       .
+     *       time spent in queue + time job handler needs until job completion < job timeout</code>
      *
-     * @param numberOfJobs the number of assigned jobs
+     * @param maxJobsActive the maximum jobs active by this worker
      * @return the builder for this worker
      */
-    JobWorkerBuilderStep3 bufferSize(int numberOfJobs);
+    JobWorkerBuilderStep3 maxJobsActive(int maxJobsActive);
 
     /**
      * Set the maximal interval between polling for new jobs.

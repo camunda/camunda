@@ -55,8 +55,8 @@ public class ActivateJobsCommandImpl
   }
 
   @Override
-  public ActivateJobsCommandStep3 amount(int amount) {
-    builder.setAmount(amount);
+  public ActivateJobsCommandStep3 maxJobsToActivate(int maxJobsToActivate) {
+    builder.setMaxJobsToActivate(maxJobsToActivate);
     return this;
   }
 

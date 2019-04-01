@@ -49,14 +49,14 @@ func TestJobWorkerBuilder_Timeout(t *testing.T) {
 	assert.Equal(t, testDurationMs, builder.request.Timeout)
 }
 
-func TestJobWorkerBuilder_BufferSize(t *testing.T) {
+func TestJobWorkerBuilder_MaxJobsActive(t *testing.T) {
 	builder := JobWorkerBuilder{}
-	builder.BufferSize(123)
-	assert.Equal(t, 123, builder.bufferSize)
+	builder.MaxJobsActive(123)
+	assert.Equal(t, 123, builder.maxJobsActive)
 
 	// should ignore invalid buffer size
-	builder.BufferSize(0)
-	assert.Equal(t, 123, builder.bufferSize)
+	builder.MaxJobsActive(0)
+	assert.Equal(t, 123, builder.maxJobsActive)
 }
 
 func TestJobWorkerBuilder_Concurrency(t *testing.T) {

@@ -38,7 +38,7 @@ public class ZeebeClientTest extends ClientTest {
 
       // then
       assertThat(configuration.getBrokerContactPoint()).isEqualTo("0.0.0.0:26500");
-      assertThat(configuration.getDefaultJobWorkerBufferSize()).isEqualTo(32);
+      assertThat(configuration.getDefaultJobWorkerMaxJobsActive()).isEqualTo(32);
       assertThat(configuration.getNumJobWorkerExecutionThreads()).isEqualTo(1);
       assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("default");
       assertThat(configuration.getDefaultJobTimeout()).isEqualTo(Duration.ofMinutes(5));

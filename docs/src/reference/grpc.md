@@ -48,13 +48,13 @@ any call made to the server can return errors as described by the spec
 The Zeebe gRPC API is exposed through a single gateway service.
 
 ### ActivateJobs RPC
-
-Iterates through all known partitions in a round-robin and activates up to the requested amount
-of jobs and streams them back to the client as they are activated.
+Iterates through all known partitions round-robin and activates up to the requested
+maximum and streams them back to the client as they are activated.
 
 #### Input: ActivateJobsRequest
 
 ```protobuf
+
 message ActivateJobsRequest {
   // the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
   // type="payment-service" />)
@@ -64,10 +64,10 @@ message ActivateJobsRequest {
   // a job returned after this call will not be activated by another call until the
   // timeout has been reached
   int64 timeout = 3;
-  // the maximum number of jobs to fetch in a single call
-  int32 amount = 4;
-  // a list of variables to fetch as the job payload; if empty, all visible variables at
-  // the time of activation for the scope of the job will be returned as the job payload
+  // the maximum jobs to activate by this request
+  int32 maxJobsToActivate = 4;
+  // a list of variables to fetch as the job variables; if empty, all visible variables at
+  // the time of activation for the scope of the job will be returned
   repeated string fetchVariable = 5;
 }
 ```

@@ -27,7 +27,7 @@ import java.util.Properties;
 public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
 
   private String brokerContactPoint = "0.0.0.0:26500";
-  private int jobWorkerBufferSize = 32;
+  private int jobWorkerMaxJobsActive = 32;
   private int numJobWorkerExecutionThreads = 1;
   private String defaultJobWorkerName = "default";
   private Duration defaultJobTimeout = Duration.ofMinutes(5);
@@ -46,13 +46,13 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public int getDefaultJobWorkerBufferSize() {
-    return jobWorkerBufferSize;
+  public int getDefaultJobWorkerMaxJobsActive() {
+    return jobWorkerMaxJobsActive;
   }
 
   @Override
-  public ZeebeClientBuilder defaultJobWorkerBufferSize(final int numberOfJobs) {
-    this.jobWorkerBufferSize = numberOfJobs;
+  public ZeebeClientBuilder defaultJobWorkerMaxJobsActive(final int maxJobsActive) {
+    this.jobWorkerMaxJobsActive = maxJobsActive;
     return this;
   }
 
@@ -125,9 +125,9 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
       numJobWorkerExecutionThreads(
           Integer.parseInt(properties.getProperty(ClientProperties.JOB_WORKER_EXECUTION_THREADS)));
     }
-    if (properties.containsKey(ClientProperties.JOB_WORKER_BUFFER_SIZE)) {
-      defaultJobWorkerBufferSize(
-          Integer.parseInt(properties.getProperty(ClientProperties.JOB_WORKER_BUFFER_SIZE)));
+    if (properties.containsKey(ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE)) {
+      defaultJobWorkerMaxJobsActive(
+          Integer.parseInt(properties.getProperty(ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE)));
     }
     if (properties.containsKey(ClientProperties.DEFAULT_JOB_WORKER_NAME)) {
       defaultJobWorkerName(properties.getProperty(ClientProperties.DEFAULT_JOB_WORKER_NAME));
@@ -156,7 +156,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     final StringBuilder sb = new StringBuilder();
 
     appendProperty(sb, "brokerContactPoint", brokerContactPoint);
-    appendProperty(sb, "jobWorkerBufferSize", jobWorkerBufferSize);
+    appendProperty(sb, "jobWorkerMaxJobsActive", jobWorkerMaxJobsActive);
     appendProperty(sb, "numJobWorkerExecutionThreads", numJobWorkerExecutionThreads);
     appendProperty(sb, "defaultJobWorkerName", defaultJobWorkerName);
     appendProperty(sb, "defaultJobTimeout", defaultJobTimeout);

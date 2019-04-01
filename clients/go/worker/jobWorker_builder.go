@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	DefaultJobWorkerBufferSize    = 32
+	DefaultJobWorkerMaxJobActive  = 32
 	DefaultJobWorkerConcurrency   = 4
 	DefaultJobWorkerPollInterval  = 100 * time.Millisecond
 	DefaultJobWorkerPollThreshold = 0.3
@@ -39,7 +39,7 @@ type JobWorkerBuilder struct {
 	requestTimeout time.Duration
 
 	handler       JobHandler
-	bufferSize    int
+	maxJobsActive int
 	concurrency   int
 	pollInterval  time.Duration
 	pollThreshold float64
@@ -63,12 +63,12 @@ type JobWorkerBuilderStep3 interface {
 	Timeout(time.Duration) JobWorkerBuilderStep3
 	// Set the maximum number of jobs which will be activated for this worker at the
 	// same time.
-	BufferSize(int) JobWorkerBuilderStep3
+	MaxJobsActive(int) JobWorkerBuilderStep3
 	// Set the maximum number of concurrent spawned goroutines to complete jobs
 	Concurrency(int) JobWorkerBuilderStep3
 	// Set the maximal interval between polling for new jobs
 	PollInterval(time.Duration) JobWorkerBuilderStep3
-	// Set the threshold of buffered activated jobs before polling for new jobs, i.e. threshold * BufferSize(int)
+	// Set the threshold of buffered activated jobs before polling for new jobs, i.e. threshold * MaxJobsActive(int)
 	PollThreshold(float64) JobWorkerBuilderStep3
 	// Set list of variable names which should be fetched on job activation
 	FetchVariables(...string) JobWorkerBuilderStep3
@@ -96,11 +96,11 @@ func (builder *JobWorkerBuilder) Timeout(timeout time.Duration) JobWorkerBuilder
 	return builder
 }
 
-func (builder *JobWorkerBuilder) BufferSize(bufferSize int) JobWorkerBuilderStep3 {
-	if bufferSize > 0 {
-		builder.bufferSize = bufferSize
+func (builder *JobWorkerBuilder) MaxJobsActive(maxJobsActive int) JobWorkerBuilderStep3 {
+	if maxJobsActive > 0 {
+		builder.maxJobsActive = maxJobsActive
 	} else {
-		log.Println("Ignoring invalid buffer size", bufferSize, "which should be greater then for job worker and using instead", builder.bufferSize)
+		log.Println("Ignoring invalid maximum", maxJobsActive, "which should be greater then for job worker and using instead", builder.maxJobsActive)
 	}
 	return builder
 }
@@ -134,8 +134,8 @@ func (builder *JobWorkerBuilder) FetchVariables(fetchVariables ...string) JobWor
 }
 
 func (builder *JobWorkerBuilder) Open() JobWorker {
-	jobQueue := make(chan entities.Job, builder.bufferSize)
-	workerFinished := make(chan bool, builder.bufferSize)
+	jobQueue := make(chan entities.Job, builder.maxJobsActive)
+	workerFinished := make(chan bool, builder.maxJobsActive)
 	closePoller := make(chan struct{})
 	closeDispatcher := make(chan struct{})
 	var closeWait sync.WaitGroup
@@ -143,7 +143,7 @@ func (builder *JobWorkerBuilder) Open() JobWorker {
 
 	poller := jobPoller{
 		client:         builder.gatewayClient,
-		bufferSize:     builder.bufferSize,
+		maxJobsActive:  builder.maxJobsActive,
 		pollInterval:   builder.pollInterval,
 		request:        builder.request,
 		requestTimeout: builder.requestTimeout,
@@ -152,7 +152,7 @@ func (builder *JobWorkerBuilder) Open() JobWorker {
 		workerFinished: workerFinished,
 		closeSignal:    closePoller,
 		remaining:      0,
-		threshold:      int(math.Round(float64(builder.bufferSize) * builder.pollThreshold)),
+		threshold:      int(math.Round(float64(builder.maxJobsActive) * builder.pollThreshold)),
 	}
 
 	dispatcher := jobDispatcher{
@@ -175,7 +175,7 @@ func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient, re
 	return &JobWorkerBuilder{
 		gatewayClient: gatewayClient,
 		jobClient:     jobClient,
-		bufferSize:    DefaultJobWorkerBufferSize,
+		maxJobsActive: DefaultJobWorkerMaxJobActive,
 		concurrency:   DefaultJobWorkerConcurrency,
 		pollInterval:  DefaultJobWorkerPollInterval,
 		pollThreshold: DefaultJobWorkerPollThreshold,

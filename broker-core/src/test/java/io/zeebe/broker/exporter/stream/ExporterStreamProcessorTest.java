@@ -637,7 +637,7 @@ public class ExporterStreamProcessorTest {
 
     final JobBatchRecord record =
         new JobBatchRecord()
-            .setAmount(amount)
+            .setMaxJobsToActivate(amount)
             .setTimeout(timeout)
             .setType(type)
             .setWorker(worker)

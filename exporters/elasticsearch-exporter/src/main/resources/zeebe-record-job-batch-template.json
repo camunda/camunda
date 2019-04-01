@@ -21,7 +21,7 @@
             "timeout": {
               "type": "date"
             },
-            "amount": {
+            "maxJobsToActivate": {
               "type": "integer"
             },
             "jobKeys": {

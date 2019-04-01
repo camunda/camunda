@@ -166,9 +166,10 @@
     "github.com/golang/protobuf/protoc-gen-go",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/suite",
-    "golang.org/x/net/context",
     "google.golang.org/grpc",
+    "google.golang.org/grpc/codes",
     "google.golang.org/grpc/metadata",
+    "google.golang.org/grpc/status",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

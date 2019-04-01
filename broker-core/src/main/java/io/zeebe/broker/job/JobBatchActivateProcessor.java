@@ -71,7 +71,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
   }
 
   private boolean isValid(final JobBatchRecord record) {
-    return record.getAmount() > 0
+    return record.getMaxJobsToActivate() > 0
         && record.getTimeout() > 0
         && record.getType().capacity() > 0
         && record.getWorker().capacity() > 0;
@@ -85,7 +85,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
 
     final long jobBatchKey = keyGenerator.nextKey();
 
-    final AtomicInteger amount = new AtomicInteger(value.getAmount());
+    final AtomicInteger amount = new AtomicInteger(value.getMaxJobsToActivate());
     collectJobsToActivate(record, amount);
 
     // Collecting of jobs and update state and write ACTIVATED job events should be separate,
@@ -194,11 +194,14 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
 
     final String format = "Expected to activate job batch with %s to be %s, but it was %s";
 
-    if (value.getAmount() < 1) {
+    if (value.getMaxJobsToActivate() < 1) {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason =
           String.format(
-              format, "amount", "greater than zero", String.format("'%d'", value.getAmount()));
+              format,
+              "max jobs to activate",
+              "greater than zero",
+              String.format("'%d'", value.getMaxJobsToActivate()));
     } else if (value.getTimeout() < 1) {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason =

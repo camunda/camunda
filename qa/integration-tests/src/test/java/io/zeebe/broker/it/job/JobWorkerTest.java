@@ -209,7 +209,7 @@ public class JobWorkerTest {
         .handler(handler)
         .timeout(Duration.ofMinutes(5))
         .name("test")
-        .bufferSize(10)
+        .maxJobsActive(10)
         .open();
 
     // when
