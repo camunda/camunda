@@ -109,6 +109,7 @@ export const VariablesFooter = styled(Panel.Footer)``;
 
 export const Button = styled(DefaultButton)`
   display: flex;
+  align-items: center;
 `;
 
 export const AddButton = styled(Button)`
