@@ -43,6 +43,12 @@ describe('frequencyFormatter', () => {
       new Intl.NumberFormat().format(12.35) + ' Million'
     );
   });
+
+  it('should return -- for nondefined values', () => {
+    expect(frequencyFormatter()).toBe('--');
+    expect(frequencyFormatter('')).toBe('--');
+    expect(frequencyFormatter(null)).toBe('--');
+  });
 });
 
 describe('durationFormatter', () => {
@@ -88,8 +94,10 @@ describe('durationFormatter', () => {
     );
   });
 
-  it('should not crash when providing null as timeObject', () => {
-    expect(durationFormatter(null)).toBe('-');
+  it('should return -- for nondefined values', () => {
+    expect(durationFormatter()).toBe('--');
+    expect(durationFormatter('')).toBe('--');
+    expect(durationFormatter(null)).toBe('--');
   });
 });
 

@@ -26,7 +26,7 @@ const reportTemplate = {
     visualization: 'number',
     configuration: {}
   },
-  result: {data: 1234}
+  result: {data: 1234, processInstanceCount: 100}
 };
 
 it('should render ProcessReportRenderer if the report type is process', () => {
@@ -53,6 +53,10 @@ it('should render DecisionReportRenderer if the report type is decision', () => 
 it('should render CombinedReportRenderer if the report is combined', () => {
   const report = {
     ...reportTemplate,
+    data: {
+      ...reportTemplate.data,
+      reports: []
+    },
     combined: true
   };
   const node = shallow(<ReportRenderer report={report} />);
@@ -173,5 +177,112 @@ describe('SetupNotice', () => {
     const node = shallow(<ReportRenderer report={newReport} updateReport />);
 
     expect(node.find('SetupNotice')).not.toBePresent();
+  });
+});
+
+describe('NoDataNotice', () => {
+  it('should show a no data notice if the result does not contain process instances', () => {
+    const report = {
+      ...reportTemplate,
+      result: {
+        ...reportTemplate.result,
+        processInstanceCount: 0
+      }
+    };
+
+    const node = shallow(<ReportRenderer report={report} />);
+
+    expect(node.find('NoDataNotice')).toBePresent();
+  });
+
+  it('should not show a no data notice for single number frequency reports', () => {
+    const report = {
+      ...reportTemplate,
+      data: {
+        ...reportTemplate.data,
+        view: {
+          property: 'frequency',
+          entity: 'processInstance'
+        },
+        groupBy: {
+          type: 'none'
+        },
+        visualization: 'number'
+      },
+      result: {
+        ...reportTemplate.result,
+        processInstanceCount: 0
+      }
+    };
+
+    const node = shallow(<ReportRenderer report={report} />);
+
+    expect(node.find('NoDataNotice')).not.toBePresent();
+  });
+
+  it('should show a no data notice if a combined report contains no data', () => {
+    const report = {
+      ...reportTemplate,
+      data: {
+        ...reportTemplate.data,
+        reports: [1, 2]
+      },
+      result: {
+        data: {
+          1: {
+            ...reportTemplate,
+            result: {
+              ...reportTemplate.result,
+              processInstanceCount: 0
+            }
+          },
+          2: {
+            ...reportTemplate,
+            result: {
+              ...reportTemplate.result,
+              processInstanceCount: 0
+            }
+          }
+        }
+      },
+      combined: true
+    };
+
+    const node = shallow(<ReportRenderer report={report} />);
+
+    expect(node.find('NoDataNotice')).toBePresent();
+  });
+
+  it('should not show a no data notice if a combined report contains at least one report with data', () => {
+    const report = {
+      ...reportTemplate,
+      data: {
+        ...reportTemplate.data,
+        reports: [1, 2]
+      },
+      result: {
+        data: {
+          1: {
+            ...reportTemplate,
+            result: {
+              ...reportTemplate.result,
+              processInstanceCount: 0
+            }
+          },
+          2: {
+            ...reportTemplate,
+            result: {
+              ...reportTemplate.result,
+              processInstanceCount: 1
+            }
+          }
+        }
+      },
+      combined: true
+    };
+
+    const node = shallow(<ReportRenderer report={report} />);
+
+    expect(node.find('NoDataNotice')).not.toBePresent();
   });
 });

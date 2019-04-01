@@ -126,7 +126,7 @@ it('should create two Charts', async () => {
     }
   });
 
-  expect(ChartRenderer.mock.instances.length).toBe(2);
+  expect(node).toMatchSnapshot();
 });
 
 it('should invoke add Marker when called Mark Sequence flow function', async () => {
@@ -173,6 +173,22 @@ it('should show a summary after loading is complete', async () => {
   await flushPromises();
 
   node.update();
+
+  expect(node).toMatchSnapshot();
+});
+
+it('should show a message if no instances passed the gateway', () => {
+  const node = shallow(<Statistics {...props} />);
+
+  node.setState({
+    data: {
+      total: 10,
+      followingNodes: {
+        a: {activitiesReached: 0, activityCount: 0},
+        b: {activitiesReached: 0, activityCount: 0}
+      }
+    }
+  });
 
   expect(node).toMatchSnapshot();
 });

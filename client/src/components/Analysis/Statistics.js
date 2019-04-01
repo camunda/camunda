@@ -47,6 +47,16 @@ export default class Statistics extends React.Component {
       const gatewayName = this.props.gateway.name || this.props.gateway.id;
       const endEventName = this.props.endEvent.name || this.props.endEvent.id;
 
+      if (!totalGateway) {
+        return (
+          <div className="Statistics">
+            <div className="placeholder">
+              No Instances in the current filter passed the selected Gateway.
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className="Statistics">
           <p>
@@ -70,13 +80,13 @@ export default class Statistics extends React.Component {
             Distribution of Instances at the Gateway <i>{gatewayName}</i>:
           </p>
           <div className="diagram-container">
-            <canvas ref={node => (this.absoluteChart = node)} />
+            <canvas ref={node => (this.absoluteChartRef = node)} />
           </div>
           <p>
             Probability to reach the end event <i>{endEventName}</i> after taking a branch:
           </p>
           <div className="diagram-container">
-            <canvas ref={node => (this.relativeChart = node)} />
+            <canvas ref={node => (this.relativeChartRef = node)} />
           </div>
         </div>
       );
@@ -117,27 +127,31 @@ export default class Statistics extends React.Component {
 
     if (selectionChanged) {
       await this.loadCorrelation();
-      // relative chart
-      if (this.chart1) {
-        this.chart1.destroy();
+      this.createCharts();
+    }
+  }
+
+  createCharts = () => {
+    if (this.relativeChartRef && this.absoluteChartRef) {
+      if (this.relativeChart) {
+        this.relativeChart.destroy();
       }
-      this.chart1 = this.createChart(
-        this.relativeChart,
+      this.relativeChart = this.createChart(
+        this.relativeChartRef,
         ({activitiesReached, activityCount}) => {
           return Math.round((activitiesReached / activityCount) * 1000) / 10 || 0;
         },
         '%'
       );
 
-      // absolute chart
-      if (this.chart2) {
-        this.chart2.destroy();
+      if (this.absoluteChart) {
+        this.absoluteChart.destroy();
       }
-      this.chart2 = this.createChart(this.absoluteChart, ({activityCount}) => {
+      this.absoluteChart = this.createChart(this.absoluteChartRef, ({activityCount}) => {
         return activityCount || 0;
       });
     }
-  }
+  };
 
   loadCorrelation = () => {
     return new Promise(resolve => {

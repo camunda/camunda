@@ -19,6 +19,10 @@ const timeUnits = {
 };
 
 export function frequency(number, precision) {
+  if (!number && number !== 0) {
+    return '--';
+  }
+
   const intl = new Intl.NumberFormat(undefined, {maximumFractionDigits: precision});
 
   if (precision) {
@@ -39,8 +43,8 @@ export function frequency(number, precision) {
 }
 
 export function duration(timeObject, precision) {
-  if (timeObject === null) {
-    return '-';
+  if (!timeObject && timeObject !== 0) {
+    return '--';
   }
 
   const time =

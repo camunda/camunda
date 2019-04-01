@@ -1,10 +1,114 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should create two Charts 1`] = `
+<div
+  className="Statistics"
+>
+  <p>
+    Of all 
+    <b>
+      3
+       instances
+    </b>
+     that passed the Gateway 
+    <i>
+      g
+    </i>
+  </p>
+  <ul>
+    <li
+      key="a"
+    >
+      <b>
+        1
+      </b>
+       (
+      33
+      %) took the
+       
+      <i>
+        a
+      </i>
+       branch, 
+      <b>
+        3
+      </b>
+       (
+      300
+      %) of those then continued to reach the end event 
+      <i>
+        e
+      </i>
+    </li>
+    <li
+      key="b"
+    >
+      <b>
+        2
+      </b>
+       (
+      67
+      %) took the
+       
+      <i>
+        b
+      </i>
+       branch, 
+      <b>
+        2
+      </b>
+       (
+      100
+      %) of those then continued to reach the end event 
+      <i>
+        e
+      </i>
+    </li>
+  </ul>
+  <p>
+    Distribution of Instances at the Gateway 
+    <i>
+      g
+    </i>
+    :
+  </p>
+  <div
+    className="diagram-container"
+  >
+    <canvas />
+  </div>
+  <p>
+    Probability to reach the end event 
+    <i>
+      e
+    </i>
+     after taking a branch:
+  </p>
+  <div
+    className="diagram-container"
+  >
+    <canvas />
+  </div>
+</div>
+`;
+
 exports[`should show a loading indicator while stuff is loading 1`] = `
 <div
   className="Statistics"
 >
   <LoadingIndicator />
+</div>
+`;
+
+exports[`should show a message if no instances passed the gateway 1`] = `
+<div
+  className="Statistics"
+>
+  <div
+    className="placeholder"
+  >
+    No Instances in the current filter passed the selected Gateway.
+  </div>
 </div>
 `;
 

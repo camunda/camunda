@@ -11,6 +11,7 @@ import ProcessReportRenderer from './ProcessReportRenderer';
 import DecisionReportRenderer from './DecisionReportRenderer';
 import SetupNotice from './SetupNotice';
 import IncompleteReport from './IncompleteReport';
+import NoDataNotice from './NoDataNotice';
 
 import {ErrorBoundary, Message} from 'components';
 
@@ -42,27 +43,51 @@ export default function ReportRenderer(props) {
       }
     }
 
+    const showNoDataMessage = !containsData(report);
+
     return (
       <ErrorBoundary>
         <div className="ReportRenderer">
-          <View {...props} errorMessage={errorMessage} />
-          {report.data.configuration.showInstanceCount && (
-            <div className="additionalInfo">
-              Total {isDecision ? 'Evaluation' : 'Instance'}
-              <br />
-              Count:
-              <b>
-                {formatters.frequency(
-                  report.result.processInstanceCount || report.result.decisionInstanceCount || 0
-                )}
-              </b>
-            </div>
+          {showNoDataMessage ? (
+            <NoDataNotice>
+              {updateReport &&
+                !report.combined &&
+                'To display this report, edit your set-up above.'}
+            </NoDataNotice>
+          ) : (
+            <>
+              <View {...props} errorMessage={errorMessage} />
+              {report.data.configuration.showInstanceCount && (
+                <div className="additionalInfo">
+                  Total {isDecision ? 'Evaluation' : 'Instance'}
+                  <br />
+                  Count:
+                  <b>
+                    {formatters.frequency(
+                      report.result.processInstanceCount || report.result.decisionInstanceCount || 0
+                    )}
+                  </b>
+                </div>
+              )}
+            </>
           )}
         </div>
       </ErrorBoundary>
     );
   } else {
     return <Message type="error">{errorMessage}</Message>;
+  }
+}
+
+function containsData(report) {
+  if (report.combined) {
+    return report.data.reports.length === 0 || Object.values(report.result.data).some(containsData);
+  } else {
+    return (
+      report.result.processInstanceCount ||
+      report.result.decisionInstanceCount ||
+      (report.data.view.property === 'frequency' && report.data.visualization === 'number')
+    );
   }
 }
 
