@@ -22,7 +22,7 @@ it('should return correct chart data object for a combined report', () => {
       result,
       data: {
         groupBy: {
-          type: '',
+          type: 'flowNodes',
           value: ''
         },
         view: {},
@@ -32,6 +32,7 @@ it('should return correct chart data object for a combined report', () => {
       },
       combined: true
     },
+    flowNodeNames: {foo: 'Flownode Foo', bar: 'Barrrr', dar: 'Flownode DAR'},
     targetValue: false,
     theme: 'light'
   });
@@ -55,6 +56,6 @@ it('should return correct chart data object for a combined report', () => {
         legendColor: 'yellow'
       }
     ],
-    labels: ['foo', 'bar', 'dar']
+    labels: ['Flownode Foo', 'Barrrr', 'Flownode DAR']
   });
 });
