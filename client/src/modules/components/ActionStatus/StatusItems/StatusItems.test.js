@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {shallow, mount} from 'enzyme';
 
 import StatusItems from './StatusItems';
 import {OPERATION_TYPE} from 'modules/constants';
@@ -60,7 +60,7 @@ describe('StatusItems', () => {
       OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
     );
 
-    //then
+    // then
     expect(
       node
         .find(StatusItems.Item)

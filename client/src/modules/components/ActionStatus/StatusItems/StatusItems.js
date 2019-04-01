@@ -11,8 +11,8 @@ import {OPERATION_TYPE} from 'modules/constants';
 import * as Styled from './styled';
 
 const iconsMap = {
-  [OPERATION_TYPE.RESOLVE_INCIDENT]: Styled.RetryIcon,
-  [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: Styled.CancelIcon
+  [OPERATION_TYPE.RESOLVE_INCIDENT]: <Styled.RetryIcon />,
+  [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: <Styled.CancelIcon />
 };
 
 export default function StatusItems(props) {
@@ -26,12 +26,10 @@ StatusItems.propTypes = {
 };
 
 StatusItems.Item = function Item(props) {
-  const Icon = iconsMap[props.type];
-
   return (
-    <Styled.Li {...props}>
-      <Icon />
-    </Styled.Li>
+    iconsMap.hasOwnProperty(props.type) && (
+      <Styled.Li {...props}>{iconsMap[props.type]}</Styled.Li>
+    )
   );
 };
 
