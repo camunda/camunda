@@ -123,6 +123,7 @@ export const Plus = styled(DefaultPlus)`
 
 export const TextInput = styled(BasicTextInput)`
   height: 26px;
+  min-width: 181px;
 `;
 
 export const Textarea = styled(BasicTextarea)`

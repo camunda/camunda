@@ -84,7 +84,7 @@ export default function Variables({
                 <Styled.TR data-test="add-key-row">
                   <Styled.EditInputTD>
                     <Styled.TextInput
-                      placeholder="Key"
+                      placeholder="Variable"
                       value={key}
                       onChange={e => setKey(e.target.value)}
                     />
