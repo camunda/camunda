@@ -111,6 +111,11 @@ public class TypedStreamProcessor implements StreamProcessor {
   }
 
   @Override
+  public long getPositionToRecoveryFrom() {
+    return zeebeState.getLastSuccessfuProcessedRecordPosition();
+  }
+
+  @Override
   public long getFailedPosition(LoggedEvent currentEvent) {
     metadata.reset();
     currentEvent.readMetadata(metadata);
@@ -196,6 +201,8 @@ public class TypedStreamProcessor implements StreamProcessor {
         eventProcessor.processRecord(
             position, event, responseWriter, writer, this::setSideEffectProducer);
       }
+
+      zeebeState.markAsProcessed(position);
     }
 
     @Override

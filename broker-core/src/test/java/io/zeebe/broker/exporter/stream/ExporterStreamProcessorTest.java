@@ -229,7 +229,7 @@ public class ExporterStreamProcessorTest {
   }
 
   @Test
-  public void shouldRestartEachExporterFromCorrectPosition() {
+  public void shouldRestartEachExporterFromCorrectPosition() throws Exception {
     // given
     final StreamProcessorControl control =
         rule.runStreamProcessor((db, dbContext) -> createStreamProcessor(db, 2));

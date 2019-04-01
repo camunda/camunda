@@ -20,6 +20,8 @@ import io.zeebe.logstreams.log.LoggedEvent;
 /** Process events from a log stream. */
 public interface StreamProcessor {
 
+  long NO_EVENTS_PROCESSED = -1L;
+
   /**
    * Returns a specific processor to process the event which is read from the log stream, if
    * available.
@@ -50,6 +52,16 @@ public interface StreamProcessor {
    */
   default void onClose() {
     // no nothing
+  }
+
+  /**
+   * Returns the last successful processed event position from the state. This is used after load
+   * the latest snapshot and recover the state, to find the position for reprocessing.
+   *
+   * @return the last successful processed event position from the state
+   */
+  default long getPositionToRecoveryFrom() {
+    return NO_EVENTS_PROCESSED;
   }
 
   default long getFailedPosition(LoggedEvent currentEvent) {

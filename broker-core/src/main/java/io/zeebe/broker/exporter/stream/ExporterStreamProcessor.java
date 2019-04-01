@@ -27,7 +27,6 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.spi.Exporter;
-import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventProcessor;
@@ -56,7 +55,6 @@ public class ExporterStreamProcessor implements StreamProcessor {
   private final ExporterRecordProcessor exporterRecordProcessor = new ExporterRecordProcessor();
 
   private ActorControl actorControl;
-  private LogStreamReader logStreamReader;
 
   public ExporterStreamProcessor(
       ZeebeDb<ExporterColumnFamilies> zeebeDb,
@@ -95,7 +93,6 @@ public class ExporterStreamProcessor implements StreamProcessor {
 
   @Override
   public void onOpen(StreamProcessorContext context) {
-    logStreamReader = context.getLogStreamReader();
     actorControl = context.getActorControl();
 
     for (final ExporterContainer container : containers) {
@@ -104,26 +101,23 @@ public class ExporterStreamProcessor implements StreamProcessor {
   }
 
   @Override
-  public void onRecovered() {
+  public long getPositionToRecoveryFrom() {
     long lowestPosition = -1;
 
     for (final ExporterContainer container : containers) {
-      container.exporter.open(container);
       container.position = state.getPosition(container.getId());
 
       if (lowestPosition == -1 || lowestPosition > container.position) {
         lowestPosition = container.position;
       }
     }
+    return lowestPosition;
+  }
 
-    // in case the lowest known position is not found, start from the
-    // beginning again
-    if (lowestPosition <= 0 || !logStreamReader.seek(lowestPosition)) {
-      logStreamReader.seekToFirstEvent();
-    } else {
-      if (logStreamReader.hasNext()) {
-        logStreamReader.seek(lowestPosition + 1);
-      }
+  @Override
+  public void onRecovered() {
+    for (final ExporterContainer container : containers) {
+      container.exporter.open(container);
     }
   }
 

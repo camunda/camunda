@@ -21,7 +21,6 @@ import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.state.StateSnapshotController;
-import io.zeebe.logstreams.state.StateSnapshotMetadata;
 import io.zeebe.logstreams.state.StateStorage;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -39,11 +38,11 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class LogBlockIndex {
 
-  public static final int VALUE_NOT_FOUND = -1;
+  private static final int VALUE_NOT_FOUND = -1;
   private long lastVirtualPosition = VALUE_NOT_FOUND;
 
   private final StateSnapshotController stateSnapshotController;
-  private ZeebeDb zeebeDb;
+  private ZeebeDb<LogBlockColumnFamilies> zeebeDb;
   private ColumnFamily<DbLong, DbLong> indexColumnFamily;
 
   public LogBlockIndex(
@@ -53,10 +52,8 @@ public class LogBlockIndex {
   }
 
   private void tryToRestoreAndOpen() {
-    final StateSnapshotMetadata snapshotMetadata;
     try {
-      snapshotMetadata = stateSnapshotController.recoverFromLatestSnapshot();
-      lastVirtualPosition = snapshotMetadata.getLastWrittenEventPosition();
+      lastVirtualPosition = stateSnapshotController.recover();
     } catch (Exception e) {
       Loggers.ROCKSDB_LOGGER.debug("Log block index failed to recover from snapshot", e);
     }
@@ -172,8 +169,7 @@ public class LogBlockIndex {
    * @param snapshotEventPosition last written position
    */
   public void writeSnapshot(final long snapshotEventPosition) {
-    final StateSnapshotMetadata snapshotMetadata = new StateSnapshotMetadata(snapshotEventPosition);
-    stateSnapshotController.takeSnapshot(snapshotMetadata);
+    stateSnapshotController.takeSnapshot(snapshotEventPosition);
   }
 
   /**

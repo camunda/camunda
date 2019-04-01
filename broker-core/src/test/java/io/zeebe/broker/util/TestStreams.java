@@ -18,6 +18,7 @@
 package io.zeebe.broker.util;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static org.mockito.Mockito.spy;
 
 import io.zeebe.broker.exporter.stream.ExporterRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
@@ -62,7 +63,6 @@ import io.zeebe.protocol.intent.Intent;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.util.LangUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
@@ -175,31 +175,6 @@ public class TestStreams {
     return managedLogs.get(name);
   }
 
-  /**
-   * Truncates events with getPosition greater than the argument. Includes committed events. Resets
-   * commit getPosition to the argument getPosition.
-   *
-   * @param position exclusive (unlike {@link LogStream#truncate(long)}!)
-   */
-  public void truncate(final String stream, final long position) {
-    final LogStream logStream = getLogStream(stream);
-    try (final LogStreamReader reader = new BufferedLogStreamReader(logStream)) {
-      logStream.closeAppender().get();
-
-      reader.seek(position + 1);
-
-      logStream.setCommitPosition(position);
-      if (reader.hasNext()) {
-        logStream.truncate(reader.next().getPosition());
-      }
-      logStream.setCommitPosition(Long.MAX_VALUE);
-
-      logStream.openAppender().get();
-    } catch (final Exception e) {
-      throw new RuntimeException("Could not truncate log stream " + stream, e);
-    }
-  }
-
   public Stream<LoggedEvent> events(final String logName) {
     final LogStream logStream = managedLogs.get(logName);
 
@@ -269,15 +244,6 @@ public class TestStreams {
       this.currentStreamProcessor = new SuspendableStreamProcessor();
       this.factory = streamProcessorFactory;
       this.streamProcessorId = streamProcessorId;
-    }
-
-    @Override
-    public void purgeSnapshot() {
-      try {
-        currentSnapshotController.purgeAll();
-      } catch (final Exception e) {
-        LangUtil.rethrowUnchecked(e);
-      }
     }
 
     @Override
@@ -396,11 +362,16 @@ public class TestStreams {
       start();
     }
 
+    @Override
+    public SnapshotController getSnapshotController() {
+      return currentSnapshotController;
+    }
+
     private StreamProcessorService buildStreamProcessorController() {
       final String name = "processor";
 
       final StateStorage stateStorage = getStateStorageFactory().create(streamProcessorId, name);
-      currentSnapshotController = new StateSnapshotController(zeebeDbFactory, stateStorage);
+      currentSnapshotController = spy(new StateSnapshotController(zeebeDbFactory, stateStorage));
 
       return LogStreams.createStreamProcessor(name, streamProcessorId)
           .logStream(stream)
@@ -484,6 +455,11 @@ public class TestStreams {
           return result;
         }
       };
+    }
+
+    @Override
+    public long getPositionToRecoveryFrom() {
+      return wrappedProcessor.getPositionToRecoveryFrom();
     }
 
     @Override
