@@ -70,9 +70,9 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       final Map<String, AggregationResultDto> resultMap = processAggregations(response.getAggregations());
       final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();
-      resultDto.setResult(resultMap);
+      resultDto.setData(resultMap);
       resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-      return new SingleProcessMapDurationReportResult(resultDto);
+      return new SingleProcessMapDurationReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       final String reason = String.format(
         "Could not evaluate user task total duration for process definition key [%s] and version [%s]",
@@ -86,7 +86,7 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
 
   @Override
   protected void sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
-    getReportData().getParameters().getSorting().ifPresent(
+    ((ProcessReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
   }

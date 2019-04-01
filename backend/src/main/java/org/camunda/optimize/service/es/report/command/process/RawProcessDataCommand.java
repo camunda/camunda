@@ -79,7 +79,7 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
 
     RawDataProcessReportResultDto rawDataProcessReportResultDto =
       rawDataSingleReportResultDtoMapper.mapFrom(response, objectMapper);
-    return new SingleProcessRawDataReportResult(rawDataProcessReportResultDto);
+    return new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
   }
 
   @Override

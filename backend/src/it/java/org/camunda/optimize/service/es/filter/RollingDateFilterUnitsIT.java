@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.Test;
@@ -46,7 +47,7 @@ public class RollingDateFilterUnitsIT extends AbstractRollingDateFilterIT {
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     // when
-    RawDataProcessReportResultDto result = createAndEvaluateReportWithRollingStartDateFilter(
+    ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = createAndEvaluateReportWithRollingStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
         unit,

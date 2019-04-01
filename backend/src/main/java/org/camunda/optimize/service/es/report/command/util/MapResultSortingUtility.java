@@ -20,26 +20,27 @@ public class MapResultSortingUtility {
 
   public static void sortResultData(final SortingDto sorting,
                                     final SingleDecisionMapReportResult resultData) {
-    resultData.getResultAsDto().setResult(MapResultSortingUtility.sortResultData(
+    resultData.getResultAsDto().getData(MapResultSortingUtility.sortResultData(
       sorting,
-      resultData.getResultAsDto().getResult()
+      resultData.getResultAsDto().getData()
     ));
   }
 
   public static void sortResultData(final SortingDto sorting,
                                     final SingleProcessMapReportResult resultData) {
-    resultData.getResultAsDto().setResult(MapResultSortingUtility.sortResultData(
-      sorting, resultData.getResultAsDto().getResult()
+    resultData.getResultAsDto().setData(MapResultSortingUtility.sortResultData(
+      sorting, resultData.getResultAsDto().getData()
     ));
   }
 
   public static void sortResultData(final SortingDto sorting,
                                     final SingleProcessMapDurationReportResult resultData) {
-    resultData.getResultAsDto().setResult(MapResultSortingUtility.sortResultData(
+    resultData.getResultAsDto().setData(MapResultSortingUtility.sortResultData(
       sorting,
-      resultData.getResultAsDto().getResult(),
-      entry -> entry.getValue()
-        .getResultForGivenAggregationType(resultData.getResultAsDto().getData().getConfiguration().getAggregationType())
+      resultData.getResultAsDto().getData(),
+      entry -> entry.getValue().getResultForGivenAggregationType(
+        resultData.getReportDefinition().getData().getConfiguration().getAggregationType()
+      )
     ));
   }
 

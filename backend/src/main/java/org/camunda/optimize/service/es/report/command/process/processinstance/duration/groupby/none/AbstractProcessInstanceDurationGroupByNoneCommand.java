@@ -65,9 +65,9 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
     Aggregations aggregations = response.getAggregations();
 
     ProcessDurationReportNumberResultDto numberResultDto = new ProcessDurationReportNumberResultDto();
-    numberResultDto.setResult(processAggregationOperation(aggregations));
+    numberResultDto.setData(processAggregationOperation(aggregations));
     numberResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessNumberDurationReportResult(numberResultDto);
+    return new SingleProcessNumberDurationReportResult(numberResultDto, reportDefinition);
   }
 
   @Override

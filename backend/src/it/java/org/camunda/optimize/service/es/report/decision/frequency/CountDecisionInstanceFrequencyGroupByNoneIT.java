@@ -40,12 +40,12 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    DecisionReportNumberResultDto result = evaluateNumberReport(reportData);
+    final DecisionReportNumberResultDto result = evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(3L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(3L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData(), is(3L));
   }
 
   @Test
@@ -68,12 +68,12 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    DecisionReportNumberResultDto result = evaluateNumberReport(reportData);
+    final DecisionReportNumberResultDto result = evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(5L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData(), is(5L));
   }
 
   @Test
@@ -99,12 +99,12 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    DecisionReportNumberResultDto result = evaluateNumberReport(reportData);
+    final DecisionReportNumberResultDto result = evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(5L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData(), is(5L));
   }
 
   @Test
@@ -137,12 +137,12 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
         INPUT_AMOUNT_ID, FilterOperatorConstants.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();
-    DecisionReportNumberResultDto result = evaluateNumberReport(reportData);
+   final DecisionReportNumberResultDto result = evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(2L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(2L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData(), is(2L));
   }
 
   @Test

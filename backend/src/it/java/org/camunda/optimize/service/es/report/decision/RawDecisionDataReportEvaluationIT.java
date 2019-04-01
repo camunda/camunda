@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.view.Decis
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.command.decision.RawDecisionDataCommand;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
@@ -51,14 +52,16 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
       decisionDefinitionDto.getKey(), decisionDefinitionVersion
     );
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+      evaluateRawReport(reportData);
 
     // then
+    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
     assertThat(result.getDecisionInstanceCount(), is(1L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
 
-    RawDataDecisionInstanceDto rawDataDecisionInstanceDto = result.getResult().get(0);
+    RawDataDecisionInstanceDto rawDataDecisionInstanceDto = result.getData().get(0);
     assertThat(rawDataDecisionInstanceDto.getDecisionDefinitionKey(), is(decisionDefinitionDto.getKey()));
     assertThat(rawDataDecisionInstanceDto.getDecisionDefinitionId(), is(decisionDefinitionDto.getId()));
     assertThat(rawDataDecisionInstanceDto.getDecisionInstanceId(), is(notNullValue()));
@@ -71,7 +74,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     final Map<String, OutputVariableEntry> receivedOutputVariables = rawDataDecisionInstanceDto.getOutputVariables();
     assertOutputVariablesMatchExcepted(expectedOutputs, receivedOutputVariables);
 
-    DecisionReportDataDto resultDataDto = result.getData();
+    final DecisionReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getDecisionDefinitionKey(), is(decisionDefinitionDto.getKey()));
     assertThat(resultDataDto.getDecisionDefinitionVersion(), is(decisionDefinitionVersion));
     assertThat(resultDataDto.getView(), is(notNullValue()));
@@ -93,14 +96,16 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
       decisionDefinitionDto.getKey(), ALL_VERSIONS
     );
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+      evaluateRawReport(reportData);
 
     // then
+    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
     assertThat(result.getDecisionInstanceCount(), is(1L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
 
-    assertThat(result.getData().getDecisionDefinitionVersion(), is(ALL_VERSIONS));
+    assertThat(evaluationResult.getReportDefinition().getData().getDecisionDefinitionVersion(), is(ALL_VERSIONS));
   }
 
   @Test
@@ -146,14 +151,16 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
       decisionDefinitionDto.getKey(), ALL_VERSIONS
     );
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+      evaluateRawReport(reportData);
 
     // then
+    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
     assertThat(result.getDecisionInstanceCount(), is(1L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
 
-    RawDataDecisionInstanceDto rawDataDecisionInstanceDto = result.getResult().get(0);
+    RawDataDecisionInstanceDto rawDataDecisionInstanceDto = result.getData().get(0);
 
     final Map<String, OutputVariableEntry> receivedOutputVariables = rawDataDecisionInstanceDto.getOutputVariables();
     assertOutputVariablesMatchExcepted(expectedOutputs, receivedOutputVariables);
@@ -177,15 +184,17 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
       decisionDefinitionDto.getKey(), ALL_VERSIONS
     );
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+      evaluateRawReport(reportData);
 
     // then
+    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
     assertThat(result.getDecisionInstanceCount(), is(5L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(5));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(5));
 
     assertThat(
-      result.getResult(),
+      result.getData(),
       isInExpectedOrder(
         (currentItem, previousItem) -> currentItem.getEvaluationDateTime()
           .isAfter(previousItem.getEvaluationDateTime()),
@@ -212,15 +221,17 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
       decisionDefinitionDto.getKey(), ALL_VERSIONS
     );
     reportData.getParameters().setSorting(new SortingDto(DecisionInstanceType.DECISION_INSTANCE_ID, SortOrder.ASC));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+      evaluateRawReport(reportData);
 
     // then
+    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
     assertThat(result.getDecisionInstanceCount(), is(5L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(5));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(5));
 
     assertThat(
-      result.getResult(),
+      result.getData(),
       isInExpectedOrder(
         (currentItem, previousItem) -> currentItem.getDecisionInstanceId()
           .compareTo(previousItem.getDecisionInstanceId()) < 0,
@@ -247,15 +258,17 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
       decisionDefinitionDto.getKey(), ALL_VERSIONS
     );
     reportData.getParameters().setSorting(new SortingDto(DecisionInstanceType.EVALUATION_DATE_TIME, SortOrder.ASC));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+      evaluateRawReport(reportData);
 
     // then
+    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
     assertThat(result.getDecisionInstanceCount(), is(5L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(5));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(5));
 
     assertThat(
-      result.getResult(),
+      result.getData(),
       isInExpectedOrder(
         (currentItem, previousItem) -> currentItem.getEvaluationDateTime()
           .isBefore(previousItem.getEvaluationDateTime()),
@@ -285,15 +298,17 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     reportData.getParameters().setSorting(
       new SortingDto(RawDecisionDataCommand.INPUT_VARIABLE_PREFIX + INPUT_AMOUNT_ID, SortOrder.ASC)
     );
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+      evaluateRawReport(reportData);
 
     // then
+    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
     assertThat(result.getDecisionInstanceCount(), is(5L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(5));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(5));
 
     assertThat(
-      result.getResult(),
+      result.getData(),
       isInExpectedOrder(
         (currentItem, previousItem) -> {
           final Double currentItemAmountValue = Double.valueOf((String) currentItem.getInputVariables()
@@ -334,15 +349,17 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     reportData.getParameters().setSorting(
       new SortingDto(RawDecisionDataCommand.OUTPUT_VARIABLE_PREFIX + OUTPUT_AUDIT_ID, SortOrder.ASC)
     );
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+      evaluateRawReport(reportData);
 
     // then
+    final RawDataDecisionReportResultDto result = evaluationResult.getResult();
     assertThat(result.getDecisionInstanceCount(), is(5L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(5));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(5));
 
     assertThat(
-      result.getResult(),
+      result.getData(),
       isInExpectedOrder(
         (currentItem, previousItem) -> {
           final Boolean currentItemAuditValue = Boolean.valueOf((String) currentItem.getOutputVariables()

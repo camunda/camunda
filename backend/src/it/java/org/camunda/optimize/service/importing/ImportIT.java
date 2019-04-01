@@ -54,8 +54,6 @@ import static org.junit.Assert.assertTrue;
 
 public class ImportIT {
 
-
-
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();

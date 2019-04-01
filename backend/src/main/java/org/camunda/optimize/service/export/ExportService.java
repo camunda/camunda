@@ -2,7 +2,7 @@ package org.camunda.optimize.service.export;
 
 import com.opencsv.CSVWriter;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
-import org.camunda.optimize.service.es.report.result.ReportResult;
+import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,7 @@ public class ExportService {
     final Integer exportCsvOffset = configurationService.getExportCsvOffset();
 
 
-    final ReportResult reportResult;
+    final ReportEvaluationResult reportResult;
     try {
       reportResult = reportService.evaluateSavedReport(userId, reportId);
     } catch (Exception e) {

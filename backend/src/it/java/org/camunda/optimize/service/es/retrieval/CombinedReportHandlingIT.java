@@ -1,10 +1,10 @@
 package org.camunda.optimize.service.es.retrieval;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
@@ -14,9 +14,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.rest.report.CombinedReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.EvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -193,20 +197,19 @@ public class CombinedReportHandlingIT {
     updateReport(reportId, report);
 
     // when
-    CombinedProcessReportResultDto<?> result = evaluateCombinedReportById(reportId);
+    CombinedReportEvaluationResultDto<ProcessReportMapResultDto> result = evaluateCombinedReportById(reportId);
 
     // then
-    assertThat(result.getId(), is(reportId));
-    assertThat(result.getName(), is("name"));
-    assertThat(result.getOwner(), is("owner"));
-    assertThat(result.getCreated().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
-    assertThat(result.getLastModifier(), is(DEFAULT_USERNAME));
-    assertThat(result.getLastModified().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
-    assertThat(result.getData(), is(notNullValue()));
-    CombinedReportDataDto dataDto = result.getData();
-    assertThat(dataDto.getReportIds().size(), is(1));
-    assertThat(dataDto.getReportIds().get(0), is(singleReportId));
-    assertThat(report.getData().getConfiguration(), equalTo(new CombinedReportConfigurationDto()));
+    assertThat(result.getReportDefinition().getId(), is(reportId));
+    assertThat(result.getReportDefinition().getName(), is("name"));
+    assertThat(result.getReportDefinition().getOwner(), is("owner"));
+    assertThat(result.getReportDefinition().getCreated().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
+    assertThat(result.getReportDefinition().getLastModifier(), is(DEFAULT_USERNAME));
+    assertThat(result.getReportDefinition().getLastModified().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
+    assertThat(result.getResult().getData(), is(notNullValue()));
+    assertThat(result.getReportDefinition().getData().getReportIds().size(), is(1));
+    assertThat(result.getReportDefinition().getData().getReportIds().get(0), is(singleReportId));
+    assertThat(result.getReportDefinition().getData().getConfiguration(), equalTo(new CombinedReportConfigurationDto()));
   }
 
   @Test
@@ -239,15 +242,15 @@ public class CombinedReportHandlingIT {
 
     // when
     String reportId = createNewCombinedReport(singleReportId, singleReportId2);
-    CombinedProcessReportResultDto<ProcessReportMapResultDto> result = evaluateCombinedReportById(reportId);
+    CombinedReportEvaluationResultDto<ProcessReportMapResultDto> result = evaluateCombinedReportById(reportId);
 
     // then
-    assertThat(result.getId(), is(reportId));
-    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
+    assertThat(result.getReportDefinition().getId(), is(reportId));
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportMapResultDto>> resultMap = result.getResult().getData();
     assertThat(resultMap.size(), is(2));
-    Map<String, Long> flowNodeToCount = resultMap.get(singleReportId).getResult();
+    Map<String, Long> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
     assertThat(flowNodeToCount.size(), is(3));
-    Map<String, Long> flowNodeToCount2 = resultMap.get(singleReportId2).getResult();
+    Map<String, Long> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getData();
     assertThat(flowNodeToCount2.size(), is(3));
   }
 
@@ -263,15 +266,16 @@ public class CombinedReportHandlingIT {
 
     // when
     String reportId = createNewCombinedReport(totalDurationReportId, idleDurationReportId);
-    CombinedProcessReportResultDto<ProcessDurationReportMapResultDto> result = evaluateCombinedReportById(reportId);
+    CombinedReportEvaluationResultDto<ProcessDurationReportMapResultDto> result = evaluateCombinedReportById(reportId);
 
     // then
-    assertThat(result.getId(), is(reportId));
-    Map<String, ProcessDurationReportMapResultDto> resultMap = result.getResult();
+    assertThat(result.getReportDefinition().getId(), is(reportId));
+    Map<String, ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> resultMap =
+      result.getResult().getData();
     assertThat(resultMap.size(), is(2));
-    Map<String, AggregationResultDto> userTaskCount1 = resultMap.get(totalDurationReportId).getResult();
+    Map<String, AggregationResultDto> userTaskCount1 = resultMap.get(totalDurationReportId).getResult().getData();
     assertThat(userTaskCount1.size(), is(1));
-    Map<String, AggregationResultDto> userTaskCount2 = resultMap.get(idleDurationReportId).getResult();
+    Map<String, AggregationResultDto> userTaskCount2 = resultMap.get(idleDurationReportId).getResult().getData();
     assertThat(userTaskCount2.size(), is(1));
   }
 
@@ -287,33 +291,35 @@ public class CombinedReportHandlingIT {
 
     // when
     String reportId = createNewCombinedReport(userTaskTotalDurationReportId, flowNodeDurationReportId);
-    CombinedProcessReportResultDto<ProcessDurationReportMapResultDto> result = evaluateCombinedReportById(reportId);
+    CombinedReportEvaluationResultDto<ProcessDurationReportMapResultDto> result = evaluateCombinedReportById(reportId);
 
     // then
-    assertThat(result.getId(), is(reportId));
-    Map<String, ProcessDurationReportMapResultDto> resultMap = result.getResult();
+    assertThat(result.getReportDefinition().getId(), is(reportId));
+    Map<String, ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> resultMap =
+      result.getResult().getData();
     assertThat(resultMap.size(), is(2));
-    Map<String, AggregationResultDto> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId).getResult();
+    Map<String, AggregationResultDto> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId).getResult().getData();
     assertThat(userTaskCount1.size(), is(1));
-    Map<String, AggregationResultDto> userTaskCount2 = resultMap.get(flowNodeDurationReportId).getResult();
+    Map<String, AggregationResultDto> userTaskCount2 = resultMap.get(flowNodeDurationReportId).getResult().getData();
     assertThat(userTaskCount2.size(), is(3));
   }
 
   @Test
   public void reportsThatCantBeEvaluatedAreIgnored() {
     // given
-    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleReport();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     String reportId = createNewCombinedReport(singleReportId);
-    CombinedProcessReportResultDto result = evaluateCombinedReportById(reportId);
+    CombinedReportEvaluationResultDto<ProcessReportMapResultDto> result = evaluateCombinedReportById(reportId);
 
     // then
-    assertThat(result.getId(), is(reportId));
-    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
+    assertThat(result.getReportDefinition().getId(), is(reportId));
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportMapResultDto>> resultMap =
+      result.getResult().getData();
     assertThat(resultMap.size(), is(0));
   }
 
@@ -340,7 +346,7 @@ public class CombinedReportHandlingIT {
     assertThat(resultSet.contains(combinedReportId), is(true));
     Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
       .filter(r -> r instanceof CombinedReportDefinitionDto)
-      .map(r -> (CombinedReportDefinitionDto)r)
+      .map(r -> (CombinedReportDefinitionDto) r)
       .findFirst();
     assertThat(combinedReport.isPresent(), is(true));
     CombinedReportDataDto dataDto = combinedReport.get().getData();
@@ -377,7 +383,7 @@ public class CombinedReportHandlingIT {
     assertThat(resultSet.contains(combinedReportId), is(true));
     Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
       .filter(r -> r instanceof CombinedReportDefinitionDto)
-      .map(r -> (CombinedReportDefinitionDto)r)
+      .map(r -> (CombinedReportDefinitionDto) r)
       .findFirst();
     assertThat(combinedReport.isPresent(), is(true));
     CombinedReportDataDto dataDto = combinedReport.get().getData();
@@ -414,7 +420,7 @@ public class CombinedReportHandlingIT {
     assertThat(resultSet.contains(combinedReportId), is(true));
     Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
       .filter(r -> r instanceof CombinedReportDefinitionDto)
-      .map(r -> (CombinedReportDefinitionDto)r)
+      .map(r -> (CombinedReportDefinitionDto) r)
       .findFirst();
     assertThat(combinedReport.isPresent(), is(true));
     CombinedReportDataDto dataDto = combinedReport.get().getData();
@@ -451,7 +457,7 @@ public class CombinedReportHandlingIT {
     assertThat(resultSet.contains(combinedReportId), is(true));
     Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
       .filter(r -> r instanceof CombinedReportDefinitionDto)
-      .map(r -> (CombinedReportDefinitionDto)r)
+      .map(r -> (CombinedReportDefinitionDto) r)
       .findFirst();
     assertThat(combinedReport.isPresent(), is(true));
     CombinedReportDataDto dataDto = combinedReport.get().getData();
@@ -469,15 +475,16 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    CombinedProcessReportResultDto result =
+    CombinedReportEvaluationResultDto<ProcessReportMapResultDto> result =
       evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
 
     // then
-    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportMapResultDto>> resultMap =
+      result.getResult().getData();
     assertThat(resultMap.size(), is(2));
-    Map<String, Long> flowNodeToCount = resultMap.get(singleReportId).getResult();
+    Map<String, Long> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
     assertThat(flowNodeToCount.size(), is(3));
-    Map<String, Long> flowNodeToCount2 = resultMap.get(singleReportId2).getResult();
+    Map<String, Long> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getData();
     assertThat(flowNodeToCount2.size(), is(3));
   }
 
@@ -490,14 +497,16 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    CombinedProcessReportResultDto result =
+    CombinedReportEvaluationResultDto<ProcessReportMapResultDto> result =
       evaluateUnsavedCombined(createCombinedReport(singleReportId));
 
     // then
-    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportMapResultDto>> resultMap =
+      result.getResult().getData();
     assertThat(resultMap.size(), is(1));
-    ProcessReportMapResultDto mapResult = resultMap.get(singleReportId);
-    assertThat(mapResult.getName(), is(TEST_REPORT_NAME));
+    EvaluationResultDto<ProcessReportMapResultDto, SingleProcessReportDefinitionDto> mapResult =
+      resultMap.get(singleReportId);
+    assertThat(mapResult.getReportDefinition().getName(), is(TEST_REPORT_NAME));
   }
 
   @Test
@@ -510,12 +519,13 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    CombinedProcessReportResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
+    CombinedReportEvaluationResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
       createCombinedReport(singleReportId1, singleReportId2)
     );
 
     // then
-    Map<String, ProcessReportNumberResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportNumberResultDto>> resultMap =
+      result.getResult().getData();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
   }
@@ -530,12 +540,13 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    CombinedProcessReportResultDto<ProcessReportMapResultDto> result = evaluateUnsavedCombined(
+    CombinedReportEvaluationResultDto<ProcessReportMapResultDto> result = evaluateUnsavedCombined(
       createCombinedReport(singleReportId1, singleReportId2)
     );
 
     // then
-    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportMapResultDto>> resultMap =
+      result.getResult().getData();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
   }
@@ -550,12 +561,13 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    CombinedProcessReportResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
+    CombinedReportEvaluationResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
       createCombinedReport(singleReportId, singleReportId2)
     );
 
     // then
-    Map<String, ProcessReportNumberResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportNumberResultDto>> resultMap =
+      result.getResult().getData();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(singleReportId, singleReportId2));
   }
@@ -570,12 +582,13 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    CombinedProcessReportResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
+    CombinedReportEvaluationResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
       createCombinedReport(singleReportId, singleReportId2)
     );
 
     // then
-    Map<String, ProcessReportNumberResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportNumberResultDto>> resultMap =
+      result.getResult().getData();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(singleReportId, singleReportId2));
   }
@@ -591,12 +604,13 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    CombinedProcessReportResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
+    CombinedReportEvaluationResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
       createCombinedReport(totalDurationReportId, totalDurationReportId2)
     );
 
     // then
-    Map<String, ProcessReportNumberResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportNumberResultDto>> resultMap =
+      result.getResult().getData();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(totalDurationReportId, totalDurationReportId2));
   }
@@ -612,12 +626,13 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    CombinedProcessReportResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
+    CombinedReportEvaluationResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
       createCombinedReport(totalDurationReportId, idleDurationReportId)
     );
 
     // then
-    Map<String, ProcessReportNumberResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportNumberResultDto>> resultMap =
+      result.getResult().getData();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(totalDurationReportId, idleDurationReportId));
   }
@@ -633,12 +648,13 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    CombinedProcessReportResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
+    CombinedReportEvaluationResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
       createCombinedReport(totalDurationReportId, idleDurationReportId)
     );
 
     // then
-    Map<String, ProcessReportNumberResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportNumberResultDto>> resultMap =
+      result.getResult().getData();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(totalDurationReportId, idleDurationReportId));
   }
@@ -653,12 +669,13 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    CombinedProcessReportResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
+    CombinedReportEvaluationResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
       createCombinedReport(singleReportId, singleReportId2)
     );
 
     // then
-    Map<String, ProcessReportNumberResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportNumberResultDto>> resultMap =
+      result.getResult().getData();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.keySet(), contains(singleReportId));
   }
@@ -673,11 +690,12 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    CombinedProcessReportResultDto result =
+    CombinedReportEvaluationResultDto<ProcessReportMapResultDto> result =
       evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
 
     // then
-    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportMapResultDto>> resultMap =
+      result.getResult().getData();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.containsKey(singleReportId2), is(true));
   }
@@ -771,7 +789,10 @@ public class CombinedReportHandlingIT {
   private String createNewSingleRawReport(ProcessInstanceEngineDto engineDto) {
     String singleReportId = createNewSingleReport();
     ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode =
-      createProcessReportDataViewRawAsTable(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
+      createProcessReportDataViewRawAsTable(
+        engineDto.getProcessDefinitionKey(),
+        engineDto.getProcessDefinitionVersion()
+      );
     SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
     definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportId, definitionDto);
@@ -791,10 +812,10 @@ public class CombinedReportHandlingIT {
   }
 
   private ProcessInstanceEngineDto deploySimpleServiceTaskProcessDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess" )
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
       .startEvent(START_EVENT)
       .serviceTask(SERVICE_TASK_ID)
-        .camundaExpression("${true}")
+      .camundaExpression("${true}")
       .endEvent(END_EVENT)
       .done();
     return engineRule.deployAndStartProcess(modelInstance);
@@ -825,18 +846,18 @@ public class CombinedReportHandlingIT {
 
   private String createNewCombinedReport() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateCombinedReportRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private String createNewSingleReport() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateSingleProcessReportRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
@@ -850,31 +871,34 @@ public class CombinedReportHandlingIT {
 
   private Response getUpdateReportResponse(String id, ReportDefinitionDto updatedReport, Boolean force) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
+      .getRequestExecutor()
       .buildUpdateReportRequest(id, updatedReport, force)
-            .execute();
+      .execute();
   }
 
-  private CombinedProcessReportResultDto evaluateCombinedReportById(String reportId) {
+  private <T extends ProcessReportResultDto> CombinedReportEvaluationResultDto<T> evaluateCombinedReportById(String reportId) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateSavedReportRequest(reportId)
-      .execute(CombinedProcessReportResultDto.class, 200);
+      .getRequestExecutor()
+      .buildEvaluateSavedReportRequest(reportId)
+      // @formatter:off
+      .execute(new TypeReference<CombinedReportEvaluationResultDto<T>>() {});
+      // @formatter:on
   }
 
-  private CombinedProcessReportResultDto evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
-    Response response = evaluateUnsavedCombinedReportAndReturnResponse(reportDataDto);
-
-    // then the status code is okay
-    assertThat(response.getStatus(), is(200));
-    return response.readEntity(CombinedProcessReportResultDto.class);
+  private <T extends ProcessReportResultDto> CombinedReportEvaluationResultDto<T> evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
+      // @formatter:off
+      .execute(new TypeReference<CombinedReportEvaluationResultDto<T>>() {});
+      // @formatter:on
   }
 
   private Response evaluateUnsavedCombinedReportAndReturnResponse(CombinedReportDataDto reportDataDto) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
-            .execute();
+      .getRequestExecutor()
+      .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
+      .execute();
   }
 
   private List<ReportDefinitionDto> getAllReports() {
@@ -883,9 +907,9 @@ public class CombinedReportHandlingIT {
 
   private List<ReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .addQueryParams(queryParams)
-            .buildGetAllReportsRequest()
-            .executeAndReturnList(ReportDefinitionDto.class, 200);
+      .getRequestExecutor()
+      .addQueryParams(queryParams)
+      .buildGetAllReportsRequest()
+      .executeAndReturnList(ReportDefinitionDto.class, 200);
   }
 }

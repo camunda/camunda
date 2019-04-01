@@ -84,14 +84,14 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
     }
 
     ProcessReportMapResultDto mapResultDto = new ProcessReportMapResultDto();
-    mapResultDto.setResult(processAggregations(response.getAggregations()));
+    mapResultDto.setData(processAggregations(response.getAggregations()));
     mapResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessMapReportResult(mapResultDto);
+    return new SingleProcessMapReportResult(mapResultDto, reportDefinition);
   }
 
   @Override
   protected void sortResultData(final SingleProcessMapReportResult evaluationResult) {
-    getReportData().getParameters().getSorting().ifPresent(
+    ((ProcessReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
   }

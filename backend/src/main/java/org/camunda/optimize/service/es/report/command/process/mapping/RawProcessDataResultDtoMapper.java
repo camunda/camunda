@@ -99,7 +99,7 @@ public class RawProcessDataResultDtoMapper {
   private RawDataProcessReportResultDto createResult(final List<RawDataProcessInstanceDto> limitedRawDataResult,
                                                      final Long totalHits) {
     RawDataProcessReportResultDto result = new RawDataProcessReportResultDto();
-    result.setResult(limitedRawDataResult);
+    result.setData(limitedRawDataResult);
     result.setProcessInstanceCount(totalHits);
     return result;
   }

@@ -44,15 +44,15 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
     reportData.setFilter(Lists.newArrayList(createBooleanOutputVariableFilter(
       outputVariableIdToFilterOn, outputAuditValueToFilterFor
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(1L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
 
     assertThat(
-      result.getResult().get(0).getOutputVariables().get(outputVariableIdToFilterOn).getFirstValue(),
+      result.getData().get(0).getOutputVariables().get(outputVariableIdToFilterOn).getFirstValue(),
       is(outputAuditValueToFilterFor)
     );
   }

@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.decision;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
@@ -9,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.Dec
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -21,8 +23,6 @@ import java.util.HashMap;
 
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.test.util.DmnHelper.createSimpleDmnModel;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public abstract class AbstractDecisionDefinitionIT {
   protected static final String OUTPUT_CLASSIFICATION_ID = "clause3";
@@ -120,26 +120,33 @@ public abstract class AbstractDecisionDefinitionIT {
     );
   }
 
-  protected DecisionReportMapResultDto evaluateMapReport(DecisionReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(DecisionReportMapResultDto.class);
+  protected DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateMapReport(DecisionReportDataDto reportData) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<DecisionReportEvaluationResultDto<DecisionReportMapResultDto>>() {});
+      // @formatter:on
   }
 
-  protected DecisionReportNumberResultDto evaluateNumberReport(DecisionReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(DecisionReportNumberResultDto.class);
+  protected DecisionReportEvaluationResultDto<DecisionReportNumberResultDto> evaluateNumberReport(DecisionReportDataDto reportData) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<DecisionReportEvaluationResultDto<DecisionReportNumberResultDto>>() {});
+      // @formatter:on
   }
 
-  protected RawDataDecisionReportResultDto evaluateRawReport(DecisionReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(RawDataDecisionReportResultDto.class);
+  protected DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateRawReport(DecisionReportDataDto reportData) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
+      // @formatter:on
   }
+
 
   protected Response evaluateReportAndReturnResponse(DecisionReportDataDto reportData) {
     return embeddedOptimizeRule

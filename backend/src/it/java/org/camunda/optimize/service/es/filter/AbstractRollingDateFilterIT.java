@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.filter;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -7,6 +8,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -33,49 +35,55 @@ public abstract class AbstractRollingDateFilterIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   protected ProcessInstanceEngineDto deployAndStartSimpleProcess() {
     return deployAndStartSimpleProcessWithVariables(new HashMap<>());
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
+    // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-        .name("aProcessName")
-        .startEvent()
-        .serviceTask()
-        .camundaExpression("${true}")
-        .userTask()
-        .endEvent()
-        .done();
+      .name("aProcessName")
+      .startEvent()
+       .serviceTask()
+       .camundaExpression("${true}")
+       .userTask()
+      .endEvent()
+      .done();
+    // @formatter:on
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   protected void assertResults(
-      ProcessInstanceEngineDto processInstance,
-      RawDataProcessReportResultDto result,
-      int expectedPiCount
-  ) {
-    ProcessReportDataDto resultDataDto = result.getData();
+    ProcessInstanceEngineDto processInstance,
+    ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult,
+    int expectedPiCount) {
+
+    final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat("rolling date result size", result.getResult().size(), is(expectedPiCount));
+    final List<RawDataProcessInstanceDto> resultData = evaluationResult.getResult().getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat("rolling date result size", resultData.size(), is(expectedPiCount));
 
     if (expectedPiCount > 0) {
-      RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
+      RawDataProcessInstanceDto rawDataProcessInstanceDto = resultData.get(0);
       assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
     }
   }
 
-  protected RawDataProcessReportResultDto createAndEvaluateReportWithRollingStartDateFilter(
-      String processDefinitionKey,
-      String processDefinitionVersion,
-      String unit,
-      boolean newToken
+  protected ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> createAndEvaluateReportWithRollingStartDateFilter(
+    String processDefinitionKey,
+    String processDefinitionVersion,
+    String unit,
+    boolean newToken
   ) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
+      processDefinitionKey,
+      processDefinitionVersion
+    );
     List<ProcessFilterDto> rollingDateFilter = ProcessFilterBuilder
       .filter()
       .relativeStartDate()
@@ -87,13 +95,16 @@ public abstract class AbstractRollingDateFilterIT {
     return evaluateReport(reportData, newToken);
   }
 
-  protected RawDataProcessReportResultDto createAndEvaluateReportWithRollingEndDateFilter(
-          String processDefinitionKey,
-          String processDefinitionVersion,
-          String unit,
-          boolean newToken
+  protected ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> createAndEvaluateReportWithRollingEndDateFilter(
+    String processDefinitionKey,
+    String processDefinitionVersion,
+    String unit,
+    boolean newToken
   ) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
+      processDefinitionKey,
+      processDefinitionVersion
+    );
     List<ProcessFilterDto> rollingDateFilter = ProcessFilterBuilder
       .filter()
       .relativeEndDate()
@@ -105,31 +116,38 @@ public abstract class AbstractRollingDateFilterIT {
     return evaluateReport(reportData, newToken);
   }
 
-  protected RawDataProcessReportResultDto evaluateReport(ProcessReportDataDto reportData, boolean newToken) {
-    Response response;
+  protected ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReport(ProcessReportDataDto reportData, boolean newToken) {
     if (newToken) {
-      response = evaluateReportAndReturnResponseWithNewToken(reportData);
+      return evaluateReportWithNewToken(reportData);
     } else {
-      response = evaluateReportAndReturnResponse(reportData);
+      return evaluateReport(reportData);
     }
-    assertThat(response.getStatus(), is(200));
+  }
 
-    return response.readEntity(RawDataProcessReportResultDto.class);
+  protected ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReport(ProcessReportDataDto reportData) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
+      // @formatter:on
+  }
+
+  private ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReportWithNewToken(ProcessReportDataDto reportData) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .withGivenAuthToken(embeddedOptimizeRule.getNewAuthenticationToken())
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
+      // @formatter:on
   }
 
   protected Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateSingleUnsavedReportRequest(reportData)
-            .execute();
-  }
-
-  private Response evaluateReportAndReturnResponseWithNewToken(ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
-            .getRequestExecutor()
-            .withGivenAuthToken(embeddedOptimizeRule.getNewAuthenticationToken())
-            .buildEvaluateSingleUnsavedReportRequest(reportData)
-            .execute();
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      .execute();
   }
 
 }

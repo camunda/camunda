@@ -1,15 +1,16 @@
 package org.camunda.optimize.service.es.filter.decision;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
 import org.junit.Test;
 
-import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 
@@ -41,12 +42,12 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     );
     reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(OffsetDateTime.now(), null)));
 
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(0L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(0));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(0));
   }
 
   @Test
@@ -68,12 +69,12 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     );
     reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(null, OffsetDateTime.now())));
 
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(5));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(5));
   }
 
   @Test
@@ -106,12 +107,12 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       OffsetDateTime.now()
     )));
 
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(5));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(5));
   }
 
   @Test
@@ -129,12 +130,12 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     );
     reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, "days")));
 
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(1L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
   }
 
   @Test
@@ -154,27 +155,22 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
     LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusDays(2L));
 
-    RawDataDecisionReportResultDto result = evaluateReportWithNewAuthToken(reportData);
+    RawDataDecisionReportResultDto result = evaluateReportWithNewAuthToken(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(0L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(0));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(0));
   }
 
-  private RawDataDecisionReportResultDto evaluateReportWithNewAuthToken(DecisionReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponseWithNewToken(reportData);
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(RawDataDecisionReportResultDto.class);
-  }
-
-  private Response evaluateReportAndReturnResponseWithNewToken(DecisionReportDataDto reportData) {
+  private DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateReportWithNewAuthToken(final DecisionReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .withGivenAuthToken(embeddedOptimizeRule.getNewAuthenticationToken())
       .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
+      // @formatter:off
+      .execute(new TypeReference<DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
+      // @formatter:on
   }
 
 }

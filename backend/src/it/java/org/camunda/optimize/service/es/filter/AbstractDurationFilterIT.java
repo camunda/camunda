@@ -1,10 +1,12 @@
 package org.camunda.optimize.service.es.filter;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -17,6 +19,7 @@ import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -42,11 +45,20 @@ public class AbstractDurationFilterIT {
     return deployAndStartSimpleProcessWithVariables(new HashMap<>());
   }
 
-  protected RawDataProcessReportResultDto evaluateReport(ProcessReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
+  protected ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReportById(final String reportId) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSavedReportRequest(reportId)
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {
+      });
+  }
 
-    return response.readEntity(RawDataProcessReportResultDto.class);
+  protected ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReport(final ProcessReportDataDto reportData) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {
+      });
   }
 
   protected Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
@@ -84,14 +96,15 @@ public class AbstractDurationFilterIT {
     return processInstance;
   }
 
-  protected void assertResult(ProcessInstanceEngineDto processInstance, RawDataProcessReportResultDto result) {
-    ProcessReportDataDto resultDataDto = result.getData();
+  protected void assertResult(ProcessInstanceEngineDto processInstance, ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult) {
+    final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getResult().get(0);
+    final List<RawDataProcessInstanceDto> resultData = evaluationResult.getResult().getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+    final RawDataProcessInstanceDto rawDataProcessInstanceDto = resultData.get(0);
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
   }
 }

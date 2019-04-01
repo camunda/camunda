@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.Dec
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.filter.FilterOperatorConstants;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
@@ -56,15 +57,15 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, decisionDefinitionVersion1, GroupByDateUnit.DAY
-    );
+    ).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(3L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    assertThat(result.getResult().values().stream().findFirst().get(), is(3L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().values().stream().findFirst().get(), is(3L));
   }
 
   @Test
@@ -85,15 +86,15 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, decisionDefinitionVersion1, GroupByDateUnit.DAY
-    );
+    ).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(2));
-    final Iterator<Long> resultValueIterator = result.getResult().values().iterator();
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
+    final Iterator<Long> resultValueIterator = result.getData().values().iterator();
     assertThat(resultValueIterator.next(), is(2L));
     assertThat(resultValueIterator.next(), is(3L));
   }
@@ -131,12 +132,12 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, decisionDefinitionVersion1, GroupByDateUnit.DAY
-    );
+    ).getResult();
 
     // then
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     assertThat(
       new ArrayList<>(resultMap.keySet()),
@@ -188,10 +189,11 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData);
+    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
 
     // then
-    final Map<String, Long> resultMap = result.getResult();
+    final DecisionReportMapResultDto result = evaluationResult.getResult();
+    final Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     assertThat(
       new ArrayList<>(resultMap.keySet()),
@@ -242,10 +244,11 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData);
+    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
 
     // then
-    final Map<String, Long> resultMap = result.getResult();
+    final DecisionReportMapResultDto result = evaluationResult.getResult();
+    final Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     final List<Long> bucketValues = new ArrayList<>(resultMap.values());
     assertThat(
@@ -285,12 +288,12 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, decisionDefinitionVersion1, groupByDateUnit
-    );
+    ).getResult();
 
     // then
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     assertThat(
       new ArrayList<>(resultMap.keySet()),
@@ -329,12 +332,12 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, decisionDefinitionVersion1, GroupByDateUnit.AUTOMATIC
-    );
+    ).getResult();
 
     // then
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
     ArrayList<Long> resultValues = new ArrayList<>(resultMap.values());
     assertThat(resultValues.get(0), is(2L));
@@ -357,15 +360,15 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, GroupByDateUnit.YEAR
-    );
+    ).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    assertThat(result.getResult().values().stream().findFirst().get(), is(5L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().values().stream().findFirst().get(), is(5L));
   }
 
   @Test
@@ -386,15 +389,15 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, GroupByDateUnit.YEAR
-    );
+    ).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    assertThat(result.getResult().values().stream().findFirst().get(), is(5L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().values().stream().findFirst().get(), is(5L));
   }
 
   @Test
@@ -428,13 +431,14 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
         INPUT_AMOUNT_ID, FilterOperatorConstants.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();
-    DecisionReportMapResultDto result = evaluateMapReport(reportData);
+    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
 
     // then
+    final DecisionReportMapResultDto result = evaluationResult.getResult();
     assertThat(result.getDecisionInstanceCount(), is(2L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    assertThat(result.getResult().values().stream().findFirst().get(), is(2L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().values().stream().findFirst().get(), is(2L));
   }
 
   @Test
@@ -477,7 +481,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(response.getStatus(), is(400));
   }
 
-  private DecisionReportMapResultDto evaluateDecisionInstanceFrequencyByEvaluationDate(
+  private DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByEvaluationDate(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final GroupByDateUnit groupByDateUnit) {

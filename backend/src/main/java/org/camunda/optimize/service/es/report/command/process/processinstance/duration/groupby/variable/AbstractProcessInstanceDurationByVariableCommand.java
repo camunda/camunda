@@ -89,14 +89,14 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     }
 
     ProcessDurationReportMapResultDto mapResultDto = new ProcessDurationReportMapResultDto();
-    mapResultDto.setResult(processAggregations(response.getAggregations()));
+    mapResultDto.setData(processAggregations(response.getAggregations()));
     mapResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessMapDurationReportResult(mapResultDto);
+    return new SingleProcessMapDurationReportResult(mapResultDto, reportDefinition);
   }
 
   @Override
   protected void sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
-    getReportData().getParameters().getSorting().ifPresent(
+    ((ProcessReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
   }

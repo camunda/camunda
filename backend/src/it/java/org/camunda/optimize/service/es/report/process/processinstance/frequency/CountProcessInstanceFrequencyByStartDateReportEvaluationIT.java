@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.process.processinstance.frequency;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -18,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -43,8 +45,7 @@ import java.util.stream.IntStream;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper
-  .createCountProcessInstanceFrequencyGroupByStartDate;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -76,11 +77,10 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceDto.getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
@@ -89,57 +89,15 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.START_DATE));
     StartDateGroupByDto startDateGroupByDto = (StartDateGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(startDateGroupByDto.getValue().getUnit(), is(GroupByDateUnit.DAY));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    Map<String, Long> resultMap = result.getResult();
+
+    final ProcessReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    Map<String, Long> resultMap = result.getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultMap.containsKey(localDateTimeToString(startOfToday)), is(true));
     assertThat(resultMap.containsValue(1L), is(true));
-  }
-
-  private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
-    String id = createNewReport();
-    ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByStartDate(
-      processDefinitionKey, processDefinitionVersion, GroupByDateUnit.DAY
-    );
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setId(id);
-    report.setLastModifier("something");
-    report.setName("something");
-    report.setCreated(OffsetDateTime.now());
-    report.setLastModified(OffsetDateTime.now());
-    report.setOwner("something");
-    updateReport(id, report);
-    return id;
-  }
-
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateReportRequest(id, updatedReport)
-      .execute();
-
-    assertThat(response.getStatus(), is(204));
-  }
-
-  private String createNewReport() {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
-  private ProcessReportMapResultDto evaluateReportById(String reportId) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId)
-      .execute(ProcessReportMapResultDto.class, 200);
-  }
-
-  private String localDateTimeToString(ZonedDateTime time) {
-    return embeddedOptimizeRule.getDateTimeFormatter().format(time);
   }
 
   @Test
@@ -153,10 +111,10 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     );
 
     // when
-    ProcessReportMapResultDto result = evaluateReportById(reportId);
+    ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluationResponse = evaluateReportById(reportId);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
@@ -165,9 +123,11 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.START_DATE));
     StartDateGroupByDto startDateGroupByDto = (StartDateGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(startDateGroupByDto.getValue().getUnit(), is(GroupByDateUnit.DAY));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    Map<String, Long> resultMap = result.getResult();
+
+    final ProcessReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    Map<String, Long> resultMap = result.getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultMap.containsKey(localDateTimeToString(startOfToday)), is(true));
     assertThat(resultMap.containsValue(1L), is(true));
@@ -192,10 +152,10 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceDto.getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
     );
-    final ProcessReportMapResultDto result = evaluateReport(reportData);
+    final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getResult();
+    final Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     assertThat(
       new ArrayList<>(resultMap.keySet()),
@@ -224,10 +184,10 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       GroupByDateUnit.DAY
     );
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ProcessReportMapResultDto result = evaluateReport(reportData);
+    final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getResult();
+    final Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     assertThat(
       new ArrayList<>(resultMap.keySet()),
@@ -262,10 +222,10 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       GroupByDateUnit.DAY
     );
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.DESC));
-    final ProcessReportMapResultDto result = evaluateReport(reportData);
+    final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getResult();
+    final Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     final List<Long> bucketValues = new ArrayList<>(resultMap.values());
     assertThat(
@@ -291,10 +251,10 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceDto.getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(2));
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     String expectedStringToday = localDateTimeToString(startOfToday);
@@ -322,10 +282,10 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceDto.getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     String expectedStringToday = localDateTimeToString(startOfToday);
@@ -355,11 +315,11 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceEngineDto.getProcessDefinitionVersion(),
       GroupByDateUnit.HOUR
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> resultMap = result.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, Long> resultMap = result.getData();
     assertStartDateResultMap(resultMap, 5, now, ChronoUnit.HOURS);
   }
 
@@ -403,11 +363,11 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceEngineDto.getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> resultMap = result.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, Long> resultMap = result.getData();
     assertStartDateResultMap(resultMap, 8, now, ChronoUnit.DAYS);
   }
 
@@ -427,11 +387,11 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceEngineDto.getProcessDefinitionVersion(),
       GroupByDateUnit.WEEK
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> resultMap = result.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, Long> resultMap = result.getData();
     assertStartDateResultMap(resultMap, 8, now, ChronoUnit.WEEKS);
   }
 
@@ -451,11 +411,11 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceEngineDto.getProcessDefinitionVersion(),
       GroupByDateUnit.MONTH
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> resultMap = result.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, Long> resultMap = result.getData();
     assertStartDateResultMap(resultMap, 3, now, ChronoUnit.MONTHS);
   }
 
@@ -475,11 +435,11 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceEngineDto.getProcessDefinitionVersion(),
       GroupByDateUnit.YEAR
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> resultMap = result.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, Long> resultMap = result.getData();
     assertStartDateResultMap(resultMap, 8, now, ChronoUnit.YEARS);
   }
 
@@ -495,10 +455,10 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByStartDate(
       processInstanceDto.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS, GroupByDateUnit.DAY
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, Long> resultMap = result.getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     String expectedStartDateString = localDateTimeToString(startOfToday);
     assertThat("contains [" + expectedStartDateString + "]", resultMap.containsKey(expectedStartDateString), is(true));
@@ -519,10 +479,10 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceDto.getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, Long> resultMap = result.getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     String expectedStartDateString = localDateTimeToString(startOfToday);
     assertThat("contains [" + expectedStartDateString + "]", resultMap.containsKey(expectedStartDateString), is(true));
@@ -552,11 +512,11 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
           .buildList();
 
     reportData.getFilter().addAll(flowNodeFilter);
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
   }
 
   @Test
@@ -633,11 +593,57 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private ProcessReportMapResultDto evaluateReport(ProcessReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(ProcessReportMapResultDto.class);
+  private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
+    String id = createNewReport();
+    ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByStartDate(
+      processDefinitionKey, processDefinitionVersion, GroupByDateUnit.DAY
+    );
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    report.setData(reportData);
+    report.setId(id);
+    report.setLastModifier("something");
+    report.setName("something");
+    report.setCreated(OffsetDateTime.now());
+    report.setLastModified(OffsetDateTime.now());
+    report.setOwner("something");
+    updateReport(id, report);
+    return id;
+  }
+
+  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateReportRequest(id, updatedReport)
+      .execute();
+
+    assertThat(response.getStatus(), is(204));
+  }
+
+  private String createNewReport() {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluateReportById(String reportId) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSavedReportRequest(reportId)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessReportMapResultDto>>() {});
+      // @formatter:on
+  }
+
+  private ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessReportMapResultDto>>() {});
+      // @formatter:on
   }
 
   private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
@@ -647,5 +653,8 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       .execute();
   }
 
+  private String localDateTimeToString(ZonedDateTime time) {
+    return embeddedOptimizeRule.getDateTimeFormatter().format(time);
+  }
 
 }

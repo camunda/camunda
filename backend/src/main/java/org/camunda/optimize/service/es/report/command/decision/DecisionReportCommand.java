@@ -1,18 +1,19 @@
 package org.camunda.optimize.service.es.report.command.decision;
 
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
-import org.camunda.optimize.service.es.report.result.ReportResult;
+import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public abstract class DecisionReportCommand<T extends ReportResult> extends ReportCommand<T, DecisionReportDataDto> {
+public abstract class DecisionReportCommand<T extends ReportEvaluationResult>
+  extends ReportCommand<T, SingleDecisionReportDefinitionDto> {
   protected DecisionQueryFilterEnhancer queryFilterEnhancer;
   protected IntervalAggregationService intervalAggregationService;
 
@@ -23,11 +24,13 @@ public abstract class DecisionReportCommand<T extends ReportResult> extends Repo
   }
 
   @Override
-  protected T filterResultData(final CommandContext<DecisionReportDataDto> commandContext, final T evaluationResult) {
+  protected T filterResultData(final CommandContext<SingleDecisionReportDefinitionDto> commandContext,
+                               final T evaluationResult) {
     return super.filterResultData(commandContext, evaluationResult);
   }
 
-  protected BoolQueryBuilder setupBaseQuery(String decisionDefinitionKey, String decisionDefinitionVersion) {
+  protected BoolQueryBuilder setupBaseQuery(final String decisionDefinitionKey,
+                                            final String decisionDefinitionVersion) {
     BoolQueryBuilder query;
     query = boolQuery()
       .must(termQuery("decisionDefinitionKey", decisionDefinitionKey));

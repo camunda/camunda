@@ -25,7 +25,7 @@ import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
-import org.camunda.optimize.service.es.report.result.ReportResult;
+import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -382,12 +382,11 @@ public class ReportService {
     return true;
   }
 
-  public ReportResult<?, ?> evaluateSavedReport(String userId, String reportId) {
+  public ReportEvaluationResult evaluateSavedReport(String userId, String reportId) {
     return reportEvaluator.evaluateSavedReport(userId, reportId);
   }
 
-  public ReportResult<?, ?> evaluateReport(String userId,
-                                           ReportDefinitionDto reportDefinition) {
+  public ReportEvaluationResult evaluateReport(String userId, ReportDefinitionDto reportDefinition) {
     return reportEvaluator.evaluateReport(userId, reportDefinition);
   }
 

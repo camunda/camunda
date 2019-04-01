@@ -46,15 +46,15 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     reportData.setFilter(Lists.newArrayList(createFixedDateInputVariableFilter(
       inputVariableIdToFilterOn, dateTimeInputFilterStart, null
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(1L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
 
     assertThat(
-      (String) result.getResult().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue(),
+      (String) result.getData().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue(),
       startsWith("2019-06-06T00:00:00")
     );
   }
@@ -86,15 +86,15 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     reportData.setFilter(Lists.newArrayList(createFixedDateInputVariableFilter(
       inputVariableIdToFilterOn, null, dateTimeInputFilterEnd
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(1L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
 
     assertThat(
-      (String) result.getResult().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue(),
+      (String) result.getData().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue(),
       startsWith("2018-01-01T00:00:00")
     );
   }
@@ -131,15 +131,15 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     reportData.setFilter(Lists.newArrayList(createFixedDateInputVariableFilter(
       inputVariableIdToFilterOn, dateTimeInputFilterStart, dateTimeInputFilterEnd
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(1L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
 
     assertThat(
-      (String) result.getResult().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue(),
+      (String) result.getData().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue(),
       startsWith("2019-01-01T01:00:00")
     );
   }

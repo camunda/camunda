@@ -25,7 +25,7 @@ public class CustomReportDefinitionDeserializer extends StdDeserializer<ReportDe
   private ObjectMapper objectMapper;
 
   public CustomReportDefinitionDeserializer(ObjectMapper objectMapper) {
-    super(ReportDefinitionDto.class);
+    this(ReportDefinitionDto.class);
     this.objectMapper = objectMapper;
   }
 
@@ -54,9 +54,9 @@ public class CustomReportDefinitionDeserializer extends StdDeserializer<ReportDe
       }
     }
     String errorMessage = String.format(
-      "Could not create report definition since the report " +
-        "with type [%s] and is combined [%s] is unknown", reportTypeAsString, isCombined);
-    throw new JsonParseException(jp, "Could not create report definition since the t");
+      "Could not create single report definition since the report with type [%s] is unknown", reportTypeAsString
+    );
+    throw new JsonParseException(jp, errorMessage);
   }
 
   private void ensureCombinedReportFieldIsProvided(JsonParser jp, JsonNode node) throws JsonParseException {

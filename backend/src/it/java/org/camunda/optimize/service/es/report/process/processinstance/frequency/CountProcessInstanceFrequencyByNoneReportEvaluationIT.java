@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.process.processinstance.frequency;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -11,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -56,19 +58,21 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
         processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
-    ProcessReportNumberResultDto result = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessReportNumberResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(1L));
+
+    final ProcessReportNumberResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getProcessInstanceCount(), is(1L));
+    assertThat(resultDto.getData(), is(notNullValue()));
+    assertThat(resultDto.getData(), is(1L));
   }
 
   @Test
@@ -84,10 +88,10 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
         engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
     );
-    ProcessReportNumberResultDto result = evaluateReport(reportData);
+    ProcessReportNumberResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(3L));
+    assertThat(result.getData(), is(3L));
   }
 
   @Test
@@ -103,10 +107,10 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
         engineDto.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS
     );
-    ProcessReportNumberResultDto result = evaluateReport(reportData);
+    ProcessReportNumberResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(3L));
+    assertThat(result.getData(), is(3L));
   }
 
   @Test
@@ -122,10 +126,10 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
         engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
     );
-    ProcessReportNumberResultDto result = evaluateReport(reportData);
+    ProcessReportNumberResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(2L));
+    assertThat(result.getData(), is(2L));
   }
 
   @Test
@@ -146,22 +150,22 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT {
                            .end(past.minusSeconds(1L))
                            .add()
                            .buildList());
-    ProcessReportNumberResultDto result = evaluateReport(reportData);
+    ProcessReportNumberResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(0L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData(), is(0L));
 
     // when
     reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
     );
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
-    result = evaluateReport(reportData);
+    result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult(), is(1L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData(), is(1L));
   }
 
   @Test
@@ -187,10 +191,10 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT {
       .add()
       .buildList();
     reportData.getFilter().addAll(flowNodeFilter);
-    ProcessReportNumberResultDto result = evaluateReport(reportData);
+    ProcessReportNumberResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(1L));
+    assertThat(result.getData(), is(1L));
   }
 
 
@@ -257,11 +261,13 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT {
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private ProcessReportNumberResultDto evaluateReport(ProcessReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(ProcessReportNumberResultDto.class);
+  private ProcessReportEvaluationResultDto<ProcessReportNumberResultDto> evaluateReport(ProcessReportDataDto reportData) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessReportNumberResultDto>>() {});
+      // @formatter:on
   }
 
   private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {

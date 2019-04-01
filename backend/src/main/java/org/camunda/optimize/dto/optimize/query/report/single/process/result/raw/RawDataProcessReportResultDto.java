@@ -7,18 +7,18 @@ import java.util.List;
 
 public class RawDataProcessReportResultDto extends ProcessReportResultDto {
 
-  protected List<RawDataProcessInstanceDto> result;
+  protected List<RawDataProcessInstanceDto> data;
 
-  public List<RawDataProcessInstanceDto> getResult() {
-    return result;
+  public List<RawDataProcessInstanceDto> getData() {
+    return data;
   }
 
-  public void setResult(List<RawDataProcessInstanceDto> result) {
-    this.result = result;
+  public void setData(List<RawDataProcessInstanceDto> data) {
+    this.data = data;
   }
 
   @Override
-  public ResultType getResultType() {
+  public ResultType getType() {
     return ResultType.RAW;
   }
 

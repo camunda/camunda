@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.report.command.process;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
@@ -33,46 +34,48 @@ class LatestFlowNodesOnlyFilter {
   private LatestFlowNodesOnlyFilter() {
   }
 
-  static SingleProcessMapReportResult filterResultData(final CommandContext<ProcessReportDataDto> commandContext,
+  static SingleProcessMapReportResult filterResultData(final CommandContext<SingleProcessReportDefinitionDto> commandContext,
                                                        final SingleProcessMapReportResult evaluationResult) {
-    if (ReportConstants.ALL_VERSIONS.equalsIgnoreCase(commandContext.getReportData().getProcessDefinitionVersion())) {
+    final ProcessReportDataDto reportData = commandContext.getReportDefinition().getData();
+    if (ReportConstants.ALL_VERSIONS.equalsIgnoreCase(reportData.getProcessDefinitionVersion())) {
       final ProcessDefinitionOptimizeDto latestXml = fetchLatestDefinitionXml(commandContext);
       final Map<String, Long> filteredNodes = new HashMap<>();
 
-      for (Map.Entry<String, Long> node : evaluationResult.getResultAsDto().getResult().entrySet()) {
+      for (Map.Entry<String, Long> node : evaluationResult.getResultAsDto().getData().entrySet()) {
         if (latestXml.getFlowNodeNames().containsKey(node.getKey())) {
           filteredNodes.put(node.getKey(), node.getValue());
         }
       }
 
-      evaluationResult.getResultAsDto().setResult(filteredNodes);
+      evaluationResult.getResultAsDto().setData(filteredNodes);
     }
     return evaluationResult;
   }
 
-  static SingleProcessMapDurationReportResult filterResultData(final CommandContext<ProcessReportDataDto> commandContext,
+  static SingleProcessMapDurationReportResult filterResultData(final CommandContext<SingleProcessReportDefinitionDto> commandContext,
                                                                final SingleProcessMapDurationReportResult evaluationResult) {
-    if (ReportConstants.ALL_VERSIONS.equalsIgnoreCase(commandContext.getReportData().getProcessDefinitionVersion())) {
+    final ProcessReportDataDto reportData = commandContext.getReportDefinition().getData();
+    if (ReportConstants.ALL_VERSIONS.equalsIgnoreCase(reportData.getProcessDefinitionVersion())) {
       final ProcessDefinitionOptimizeDto latestXml = fetchLatestDefinitionXml(commandContext);
       final Map<String, AggregationResultDto> filteredNodes = new HashMap<>();
 
-      for (Map.Entry<String, AggregationResultDto> node : evaluationResult.getResultAsDto().getResult().entrySet()) {
+      for (Map.Entry<String, AggregationResultDto> node : evaluationResult.getResultAsDto().getData().entrySet()) {
         if (latestXml.getFlowNodeNames().containsKey(node.getKey())) {
           filteredNodes.put(node.getKey(), node.getValue());
         }
       }
 
-      evaluationResult.getResultAsDto().setResult(filteredNodes);
+      evaluationResult.getResultAsDto().setData(filteredNodes);
     }
     return evaluationResult;
   }
 
   private static ProcessDefinitionOptimizeDto fetchLatestDefinitionXml(
-    final CommandContext<ProcessReportDataDto> commandContext) {
+    final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
     final BoolQueryBuilder query = boolQuery()
       .must(termQuery(
         ProcessDefinitionType.PROCESS_DEFINITION_KEY,
-        commandContext.getReportData().getProcessDefinitionKey()
+        commandContext.getReportDefinition().getData().getProcessDefinitionKey()
       ));
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()

@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.process.processinstance.duration.groupby.none;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.ReportConstants;
@@ -13,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.dura
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -25,7 +27,6 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -70,11 +71,11 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .build();
 
-    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluationResponse =
+      evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = resultDto.getData();
-    assertThat(resultDto.getProcessInstanceCount(), is(1L));
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
@@ -82,7 +83,9 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
     assertThat(resultReportDataDto.getParameters().getProcessPart(), is(nullValue()));
-    AggregationResultDto calculatedResult = resultDto.getResult();
+
+    assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
+    AggregationResultDto calculatedResult = evaluationResponse.getResult().getData();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(1000L));
     assertThat(calculatedResult.getMax(), is(1000L));
@@ -110,18 +113,19 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     String reportId = createAndStoreDefaultReportDefinition(reportDataDto);
 
     // when
-    ProcessDurationReportNumberResultDto resultDto = evaluateReportById(reportId);
+    ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluationResponse =
+      evaluateReportById(reportId);
 
     // then
-    ProcessReportDataDto resultReportDataDto = resultDto.getData();
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
-
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
-    AggregationResultDto calculatedResult = resultDto.getResult();
+
+    AggregationResultDto calculatedResult = evaluationResponse.getResult().getData();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(1000L));
     assertThat(calculatedResult.getMax(), is(1000L));
@@ -158,11 +162,11 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .build();
-    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportDataDto);
+    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportDataDto).getResult();
 
     // then
-    assertThat(resultDto.getResult(), is(notNullValue()));
-    AggregationResultDto calculatedResult = resultDto.getResult();
+    assertThat(resultDto.getData(), is(notNullValue()));
+    AggregationResultDto calculatedResult = resultDto.getData();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(4000L));
     assertThat(calculatedResult.getMin(), is(1000L));
@@ -180,10 +184,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .build();
 
-    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
+    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData).getResult();
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getData();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(0L));
     assertThat(calculatedResult.getMax(), is(0L));
@@ -217,10 +221,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .build();
 
-    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportDataDto);
+    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportDataDto).getResult();
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getData();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(4000L));
     assertThat(calculatedResult.getMax(), is(9000L));
@@ -257,10 +261,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .build();
 
-    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportDataDto);
+    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportDataDto).getResult();
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getData();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(4000L));
     assertThat(calculatedResult.getMax(), is(9000L));
@@ -297,10 +301,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
                            .name("var")
                            .add()
                            .buildList());
-    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData);
+    ProcessDurationReportNumberResultDto resultDto = evaluateReport(reportData).getResult();
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getResult();
+    AggregationResultDto calculatedResult = resultDto.getData();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(1000L));
     assertThat(calculatedResult.getMax(), is(1000L));
@@ -315,10 +319,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
                            .name("var")
                            .add()
                            .buildList());
-    resultDto = evaluateReport(reportData);
+    resultDto = evaluateReport(reportData).getResult();
 
     // then
-    calculatedResult = resultDto.getResult();
+    calculatedResult = resultDto.getData();
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult.getAvg(), is(0L));
     assertThat(calculatedResult.getMax(), is(0L));
@@ -386,13 +390,6 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  private ProcessDurationReportNumberResultDto evaluateReport(ProcessReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(ProcessDurationReportNumberResultDto.class);
-  }
-
   private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
@@ -432,11 +429,22 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
       .getId();
   }
 
-  private ProcessDurationReportNumberResultDto evaluateReportById(String reportId) {
+  private ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluateReportById(String reportId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId)
-      .execute(ProcessDurationReportNumberResultDto.class, 200);
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>>() {});
+      // @formatter:on
+  }
+
+  private ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluateReport(ProcessReportDataDto reportData) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>>() {});
+      // @formatter:on
   }
 
 }

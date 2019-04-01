@@ -45,15 +45,15 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     reportData.setFilter(Lists.newArrayList(createDoubleInputVariableFilter(
       inputVariableIdToFilterOn, FilterOperatorConstants.IN, categoryInputValueToFilterFor
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(1L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
 
     assertThat(
-      result.getResult().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue(),
+      result.getData().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue(),
       is(categoryInputValueToFilterFor)
     );
   }
@@ -91,15 +91,15 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       inputVariableIdToFilterOn, FilterOperatorConstants.IN,
       firstCategoryInputValueToFilterFor, secondCategoryInputValueToFilterFor
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(2L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(2));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
 
     assertThat(
-      result.getResult().stream().map(entry -> entry.getInputVariables().get(inputVariableIdToFilterOn).getValue())
+      result.getData().stream().map(entry -> entry.getInputVariables().get(inputVariableIdToFilterOn).getValue())
         .collect(toList()),
       containsInAnyOrder(firstCategoryInputValueToFilterFor, secondCategoryInputValueToFilterFor)
     );
@@ -132,15 +132,15 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     reportData.setFilter(Lists.newArrayList(createDoubleInputVariableFilter(
       inputVariableIdToFilterOn, FilterOperatorConstants.NOT_IN, categoryInputValueToExclude
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(1L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
 
     assertThat(
-      result.getResult().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue(),
+      result.getData().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue(),
       is(expectedCategoryInputValue)
     );
   }
@@ -171,12 +171,12 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     reportData.setFilter(Lists.newArrayList(createDoubleInputVariableFilter(
       inputVariableIdToFilterOn, FilterOperatorConstants.LESS_THAN_EQUALS, categoryInputValueToFilterFor
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(2L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(2));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
   }
 
   @Test
@@ -205,15 +205,15 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     reportData.setFilter(Lists.newArrayList(createDoubleInputVariableFilter(
       inputVariableIdToFilterOn, FilterOperatorConstants.GREATER_THAN, categoryInputValueToFilter
     )));
-    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(1L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
 
     assertThat(
-      result.getResult().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue(),
+      result.getData().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue(),
       is("200.0")
     );
   }

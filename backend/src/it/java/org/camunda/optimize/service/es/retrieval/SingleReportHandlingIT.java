@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.retrieval;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -17,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Vari
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -387,15 +389,16 @@ public class SingleReportHandlingIT {
     updateReport(reportId, report);
 
     // when
-    RawDataProcessReportResultDto result = evaluateRawDataReportById(reportId);
+    ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = evaluateRawDataReportById(reportId);
 
     // then
-    assertThat(result.getId(), is(reportId));
-    assertThat(result.getName(), is("name"));
-    assertThat(result.getOwner(), is("owner"));
-    assertThat(result.getCreated().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
-    assertThat(result.getLastModifier(), is(DEFAULT_USERNAME));
-    assertThat(result.getLastModified().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
+    final SingleProcessReportDefinitionDto reportDefinition = result.getReportDefinition();
+    assertThat(reportDefinition.getId(), is(reportId));
+    assertThat(reportDefinition.getName(), is("name"));
+    assertThat(reportDefinition.getOwner(), is("owner"));
+    assertThat(reportDefinition.getCreated().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
+    assertThat(reportDefinition.getLastModifier(), is(DEFAULT_USERNAME));
+    assertThat(reportDefinition.getLastModified().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
   }
 
   @Test
@@ -612,11 +615,13 @@ public class SingleReportHandlingIT {
       .execute();
   }
 
-  private RawDataProcessReportResultDto evaluateRawDataReportById(String reportId) {
+  private ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawDataReportById(String reportId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId)
-      .execute(RawDataProcessReportResultDto.class, 200);
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
+    // @formatter:on
   }
 
   private List<ReportDefinitionDto> getAllReports() {

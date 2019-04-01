@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.process.processinstance.duration.groupby.variable;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -22,6 +23,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -92,11 +94,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       .setVariableType(VariableType.STRING)
       .build();
 
-    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = resultDto.getData();
-    assertThat(resultDto.getProcessInstanceCount(), is(1L));
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
@@ -106,9 +107,12 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName(), is("foo"));
     assertThat(variableGroupByDto.getValue().getType(), is(VariableType.STRING));
-    assertThat(resultDto.getResult(), is(notNullValue()));
-    assertThat(resultDto.getResult().size(), is(1));
-    Map<String, AggregationResultDto> resultMap = resultDto.getResult();
+
+    final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getProcessInstanceCount(), is(1L));
+    assertThat(resultDto.getData(), is(notNullValue()));
+    assertThat(resultDto.getData().size(), is(1));
+    Map<String, AggregationResultDto> resultMap = resultDto.getData();
     AggregationResultDto calculatedResult = resultMap.get("bar");
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult, is(calculateExpectedValueGivenDurations(1000L)));
@@ -138,11 +142,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     String reportId = createAndStoreDefaultReportDefinition(reportData);
 
     // when
-    ProcessDurationReportMapResultDto resultDto = evaluateReportById(reportId);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = resultDto.getData();
-    assertThat(resultDto.getProcessInstanceCount(), is(1L));
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
@@ -152,9 +155,12 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName(), is("foo"));
     assertThat(variableGroupByDto.getValue().getType(), is(VariableType.STRING));
-    assertThat(resultDto.getResult(), is(notNullValue()));
-    assertThat(resultDto.getResult().size(), is(1));
-    Map<String, AggregationResultDto> resultMap = resultDto.getResult();
+
+    final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getProcessInstanceCount(), is(1L));
+    assertThat(resultDto.getData(), is(notNullValue()));
+    assertThat(resultDto.getData().size(), is(1));
+    Map<String, AggregationResultDto> resultMap = resultDto.getData();
     AggregationResultDto calculatedResult = resultMap.get("bar");
     assertThat(calculatedResult, is(notNullValue()));
     assertThat(calculatedResult, is(calculateExpectedValueGivenDurations(1000L)));
@@ -186,10 +192,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       .setVariableType(VariableType.STRING)
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, AggregationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     assertThat(
       new ArrayList<>(resultMap.keySet()),
@@ -230,10 +236,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
     reportData.getConfiguration().setAggregationType(aggregationType);
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, AggregationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     final List<Long> bucketValues = resultMap.values().stream()
       .map(bucketResult -> bucketResult.getResultForGivenAggregationType(aggregationType))
@@ -270,14 +276,15 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
       .build();
-    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = resultDto.getData();
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(ALL_VERSIONS));
-    assertThat(resultDto.getResult(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = resultDto.getResult();
+
+    assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
+    Map<String, AggregationResultDto> resultMap = evaluationResponse.getResult().getData();
     assertThat(resultMap.get("bar"), is(calculateExpectedValueGivenDurations(1000L)));
     assertThat(resultMap.get("bar2"), is(calculateExpectedValueGivenDurations(1000L)));
   }
@@ -308,14 +315,15 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
       .build();
-    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = resultDto.getData();
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
-    assertThat(resultDto.getResult(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = resultDto.getResult();
+
+    assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
+    Map<String, AggregationResultDto> resultMap = evaluationResponse.getResult().getData();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.get("bar2"), is(calculateExpectedValueGivenDurations(1000L)));
   }
@@ -346,17 +354,17 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       .setVariableType(VariableType.STRING)
       .build();
 
-    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = resultDto.getData();
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinitionDto.getKey()));
     assertThat(
       resultReportDataDto.getProcessDefinitionVersion(),
       is(String.valueOf(processDefinitionDto.getVersion()))
     );
-    assertThat(resultDto.getResult(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = resultDto.getResult();
+    assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
+    Map<String, AggregationResultDto> resultMap = evaluationResponse.getResult().getData();
     assertThat(resultMap.get("bar1"), is(calculateExpectedValueGivenDurations(1000L)));
     assertThat(resultMap.get("bar2"), is(calculateExpectedValueGivenDurations(1000L, 9000L, 2000L)));
   }
@@ -385,11 +393,11 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
       .build();
-    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getResult(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = resultDto.getResult();
+    assertThat(resultDto.getData(), is(notNullValue()));
+    Map<String, AggregationResultDto> resultMap = resultDto.getData();
     assertThat(resultMap.get("bar"), is(calculateExpectedValueGivenDurations(0L)));
   }
 
@@ -420,14 +428,15 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
       .build();
-    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = resultDto.getData();
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
-    assertThat(resultDto.getResult(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = resultDto.getResult();
+
+    assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
+    Map<String, AggregationResultDto> resultMap = evaluationResponse.getResult().getData();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.get("1"), is(calculateExpectedValueGivenDurations(1000L)));
   }
@@ -459,14 +468,15 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       .setVariableName("foo1")
       .setVariableType(VariableType.STRING)
       .build();
-    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = resultDto.getData();
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
-    assertThat(resultDto.getResult(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = resultDto.getResult();
+
+    assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
+    Map<String, AggregationResultDto> resultMap = evaluationResponse.getResult().getData();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.get("bar1"), is(calculateExpectedValueGivenDurations(1000L)));
   }
@@ -503,12 +513,12 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
         .setVariableType(variableType)
         .build();
 
-      ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData);
+      ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData).getResult();
 
       // then
-      assertThat(resultDto.getResult(), is(notNullValue()));
+      assertThat(resultDto.getData(), is(notNullValue()));
 
-      Map<String, AggregationResultDto> variableValueToCount = resultDto.getResult();
+      Map<String, AggregationResultDto> variableValueToCount = resultDto.getData();
       assertThat(variableValueToCount.size(), is(1));
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
@@ -569,19 +579,19 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
                            .end(startDate.minusSeconds(1L))
                            .add()
                            .buildList());
-    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getResult(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = resultDto.getResult();
+    assertThat(resultDto.getData(), is(notNullValue()));
+    Map<String, AggregationResultDto> resultMap = resultDto.getData();
     assertThat(resultMap.size(), is(0));
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(null).add().buildList());
-    resultDto = evaluateReport(reportData);
+    resultDto = evaluateReport(reportData).getResult();
 
     // then
-    resultMap = resultDto.getResult();
+    resultMap = resultDto.getData();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.get("bar"), is(calculateExpectedValueGivenDurations(1000L)));
   }
@@ -734,13 +744,6 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     return engineRule.deployProcessAndGetProcessDefinition(processModel);
   }
 
-  private ProcessDurationReportMapResultDto evaluateReport(ProcessReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(ProcessDurationReportMapResultDto.class);
-  }
-
   private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
@@ -765,11 +768,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       .getId();
   }
 
-  private ProcessDurationReportMapResultDto evaluateReportById(String reportId) {
+  private ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId)
-      .execute(ProcessDurationReportMapResultDto.class, 200);
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
+      // @formatter:on
   }
 
   private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {

@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.process.processinstance.duration.groupby.date;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -14,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
@@ -24,6 +24,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -96,23 +97,23 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
-    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = resultDto.getData();
-    assertThat(resultDto.getProcessInstanceCount(), is(1L));
+    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
-
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.START_DATE));
     StartDateGroupByDto startDateGroupByDto = (StartDateGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(startDateGroupByDto.getValue().getUnit(), is(GroupByDateUnit.DAY));
-    assertThat(resultDto.getResult(), is(notNullValue()));
-    assertThat(resultDto.getResult().size(), is(1));
-    Map<String, AggregationResultDto> resultMap = resultDto.getResult();
+
+    assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
+    assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
+    assertThat(evaluationResponse.getResult().getData().size(), is(1));
+    Map<String, AggregationResultDto> resultMap = evaluationResponse.getResult().getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(startDate, ChronoUnit.DAYS);
     assertThat(resultMap.keySet(), hasItem(localDateTimeToString(startOfToday)));
     AggregationResultDto calculatedResult = resultMap.get(localDateTimeToString(startOfToday));
@@ -141,10 +142,11 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     String reportId = createAndStoreDefaultReportDefinition(reportData);
 
     // when
-    ProcessDurationReportMapResultDto resultDto = evaluateReportById(reportId);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
+      evaluateReportById(reportId);
 
     // then
-    ProcessReportDataDto resultReportDataDto = resultDto.getData();
+    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
@@ -153,9 +155,9 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.START_DATE));
     StartDateGroupByDto startDateGroupByDto = (StartDateGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(startDateGroupByDto.getValue().getUnit(), is(GroupByDateUnit.DAY));
-    assertThat(resultDto.getResult(), is(notNullValue()));
-    assertThat(resultDto.getResult().size(), is(1));
-    Map<String, AggregationResultDto> resultMap = resultDto.getResult();
+    assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
+    assertThat(evaluationResponse.getResult().getData().size(), is(1));
+    Map<String, AggregationResultDto> resultMap = evaluationResponse.getResult().getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(startDate, ChronoUnit.DAYS);
     assertThat(resultMap.keySet(), hasItem(localDateTimeToString(startOfToday)));
     AggregationResultDto calculatedResult = resultMap.get(localDateTimeToString(startOfToday));
@@ -191,10 +193,10 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, AggregationResultDto> resultMap = resultDto.getResult();
+    Map<String, AggregationResultDto> resultMap = resultDto.getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(startDate, ChronoUnit.DAYS);
     String expectedStringToday = localDateTimeToString(startOfToday);
     assertThat(resultMap.keySet(), hasItem(expectedStringToday));
@@ -230,10 +232,10 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, AggregationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     assertThat(
       new ArrayList<>(resultMap.keySet()),
@@ -269,10 +271,10 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, AggregationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     assertThat(
       new ArrayList<>(resultMap.keySet()),
@@ -322,10 +324,10 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
     reportData.getConfiguration().setAggregationType(aggregationType);
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, AggregationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     final List<Long> bucketValues = resultMap.values().stream()
       .map(bucketResult -> bucketResult.getResultForGivenAggregationType(aggregationType))
@@ -376,10 +378,10 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setProcessDefinitionKey(processDefinitionKey)
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, AggregationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
 
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
@@ -422,10 +424,10 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setProcessDefinitionKey(processDefinitionKey)
       .setDateInterval(GroupByDateUnit.AUTOMATIC)
       .build();
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, AggregationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getData();
     assertThat(resultMap.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
     ArrayList<AggregationResultDto> resultValues = new ArrayList<>(resultMap.values());
     assertThat(resultValues.get(0), is(calculateExpectedValueGivenDurations(1000L, 9000L, 2000L)));
@@ -451,11 +453,11 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = result.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, AggregationResultDto> resultMap = result.getData();
     assertDateResultMap(resultMap, 5, now, ChronoUnit.HOURS);
   }
 
@@ -509,11 +511,11 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = result.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, AggregationResultDto> resultMap = result.getData();
     assertDateResultMap(resultMap, 8, now, ChronoUnit.DAYS);
   }
 
@@ -535,11 +537,11 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = result.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, AggregationResultDto> resultMap = result.getData();
     assertDateResultMap(resultMap, 8, now, ChronoUnit.WEEKS);
   }
 
@@ -561,11 +563,11 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = result.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, AggregationResultDto> resultMap = result.getData();
     assertDateResultMap(resultMap, 8, now, ChronoUnit.MONTHS);
   }
 
@@ -587,11 +589,11 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setDateInterval(GroupByDateUnit.YEAR)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = result.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, AggregationResultDto> resultMap = result.getData();
     assertDateResultMap(resultMap, 8, now, ChronoUnit.YEARS);
   }
 
@@ -615,10 +617,10 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, AggregationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(startDate, ChronoUnit.DAYS);
     String expectedStartDateString = localDateTimeToString(startOfToday);
     assertThat(resultMap.size(), is(1));
@@ -644,10 +646,10 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, AggregationResultDto> resultMap = result.getResult();
+    Map<String, AggregationResultDto> resultMap = result.getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(startDate, ChronoUnit.DAYS);
     String expectedStartDateString = localDateTimeToString(startOfToday);
     assertThat(resultMap.size(), is(1));
@@ -678,11 +680,11 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setFilter(createVariableFilter("true"))
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
 
     // when
     reportData = ProcessReportDataBuilder
@@ -694,11 +696,11 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .setFilter(createVariableFilter("false"))
       .build();
 
-    result = evaluateReport(reportData);
+    result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(0));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(0));
   }
 
   private List<ProcessFilterDto> createVariableFilter(String value) {
@@ -827,13 +829,6 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       .getId();
   }
 
-  private ProcessDurationReportMapResultDto evaluateReportById(String reportId) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId)
-      .execute(ProcessDurationReportMapResultDto.class, 200);
-  }
-
   private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
 
     String id = createNewReport();
@@ -854,12 +849,22 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     return embeddedOptimizeRule.getDateTimeFormatter().format(time);
   }
 
+  private ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateReportById(String reportId) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSavedReportRequest(reportId)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
+      // @formatter:on
+  }
 
-  private ProcessDurationReportMapResultDto evaluateReport(ProcessReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(ProcessDurationReportMapResultDto.class);
+  private ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
+      // @formatter:on
   }
 
   private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {

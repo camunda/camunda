@@ -4,18 +4,18 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
 public class DecisionReportNumberResultDto extends DecisionReportResultDto {
 
-  private long result;
+  private long data;
 
-  public long getResult() {
-    return result;
+  public long getData() {
+    return data;
   }
 
-  public void setResult(long result) {
-    this.result = result;
+  public void setData(long data) {
+    this.data = data;
   }
 
   @Override
-  public ResultType getResultType() {
+  public ResultType getType() {
     return ResultType.FREQUENCY_NUMBER;
   }
 }

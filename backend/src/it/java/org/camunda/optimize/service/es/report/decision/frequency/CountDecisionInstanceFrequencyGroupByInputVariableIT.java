@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.valu
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.filter.FilterOperatorConstants;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -59,16 +60,16 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_AMOUNT_ID
-    );
+    ).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(2L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    assertThat(result.getResult().keySet().stream().findFirst().get(), is(amountValue));
-    assertThat(result.getResult().values().stream().findFirst().get(), is(2L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().keySet().stream().findFirst().get(), is(amountValue));
+    assertThat(result.getData().values().stream().findFirst().get(), is(2L));
   }
 
   @Test
@@ -95,16 +96,16 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_INVOICE_DATE_ID
-    );
+    ).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(2L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    assertThat(result.getResult().keySet().stream().findFirst().get(), is(dateGroupKey));
-    assertThat(result.getResult().values().stream().findFirst().get(), is(2L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().keySet().stream().findFirst().get(), is(dateGroupKey));
+    assertThat(result.getData().values().stream().findFirst().get(), is(2L));
   }
 
   @Test
@@ -139,19 +140,19 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_AMOUNT_ID
-    );
+    ).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(6L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(3));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(3));
     assertThat(
-      new ArrayList<>(result.getResult().keySet()),
+      new ArrayList<>(result.getData().keySet()),
       contains("100.0", "200.0", "300.0")
     );
-    final Iterator<Long> resultValuesIterator = result.getResult().values().iterator();
+    final Iterator<Long> resultValuesIterator = result.getData().values().iterator();
     assertThat(resultValuesIterator.next(), is(3L));
     assertThat(resultValuesIterator.next(), is(2L));
     assertThat(resultValuesIterator.next(), is(1L));
@@ -192,10 +193,10 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       .setVariableId(INPUT_AMOUNT_ID)
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData);
+    final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getResult();
+    final Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     assertThat(
       new ArrayList<>(resultMap.keySet()),
@@ -239,10 +240,10 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       .setVariableId(INPUT_AMOUNT_ID)
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData);
+    final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getResult();
+    final Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     final List<Long> bucketValues = new ArrayList<>(resultMap.values());
     assertThat(
@@ -293,17 +294,17 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       )))
       .build();
 
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData);
+    final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(2L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
     assertThat(
-      new ArrayList<>(result.getResult().keySet()),
+      new ArrayList<>(result.getData().keySet()),
       contains("200.0")
     );
-    final Iterator<Long> resultValuesIterator = result.getResult().values().iterator();
+    final Iterator<Long> resultValuesIterator = result.getData().values().iterator();
     assertThat(resultValuesIterator.next(), is(2L));
   }
 
@@ -333,16 +334,16 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, INPUT_AMOUNT_ID
-    );
+    ).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(4L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    assertThat(result.getResult().keySet().stream().findFirst().get(), is(amountValue));
-    assertThat(result.getResult().values().stream().findFirst().get(), is(4L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().keySet().stream().findFirst().get(), is(amountValue));
+    assertThat(result.getData().values().stream().findFirst().get(), is(4L));
   }
 
   @Test
@@ -370,16 +371,16 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, INPUT_CATEGORY_ID
-    );
+    ).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(4L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    assertThat(result.getResult().keySet().stream().findFirst().get(), is(categoryValue));
-    assertThat(result.getResult().values().stream().findFirst().get(), is(4L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().keySet().stream().findFirst().get(), is(categoryValue));
+    assertThat(result.getData().values().stream().findFirst().get(), is(4L));
   }
 
   @Test
@@ -409,16 +410,16 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, INPUT_AMOUNT_ID
-    );
+    ).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(2L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    assertThat(result.getResult().keySet().stream().findFirst().get(), is(amountValue));
-    assertThat(result.getResult().values().stream().findFirst().get(), is(2L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().keySet().stream().findFirst().get(), is(amountValue));
+    assertThat(result.getData().values().stream().findFirst().get(), is(2L));
   }
 
   @Test
@@ -436,13 +437,14 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
-      decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_AMOUNT_ID, "amount"
-    );
+    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> result =
+      evaluateDecisionInstanceFrequencyByInputVariable(
+        decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_AMOUNT_ID, "amount"
+      );
 
     // then
     final DecisionGroupByVariableValueDto value = (DecisionGroupByVariableValueDto)
-      result.getData().getGroupBy().getValue();
+      result.getReportDefinition().getData().getGroupBy().getValue();
     assertThat(value.getName().isPresent(), is(true));
     assertThat(value.getName().get(), is("amount"));
   }
@@ -491,7 +493,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     return engineRule.deployDecisionDefinition(dmnModelInstance);
   }
 
-  private DecisionReportMapResultDto evaluateDecisionInstanceFrequencyByInputVariable(
+  private DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId) {
@@ -503,7 +505,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
   }
 
-  private DecisionReportMapResultDto evaluateDecisionInstanceFrequencyByInputVariable(
+  private DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId,

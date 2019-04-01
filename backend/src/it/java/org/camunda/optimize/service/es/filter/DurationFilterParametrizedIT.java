@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.filter;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -80,7 +81,7 @@ public class DurationFilterParametrizedIT extends AbstractDurationFilterIT {
                            .operator(this.operator)
                            .add()
                            .buildList());
-    RawDataProcessReportResultDto result = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = evaluateReport(reportData);
 
     // then
     assertResult(processInstance, result);

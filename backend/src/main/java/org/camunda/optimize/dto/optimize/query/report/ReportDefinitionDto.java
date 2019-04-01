@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 
 import java.time.OffsetDateTime;
 
-public class ReportDefinitionDto implements CollectionEntity {
+public class ReportDefinitionDto<RD extends ReportDataDto> implements CollectionEntity {
 
   protected String id;
   protected String name;
@@ -13,12 +13,24 @@ public class ReportDefinitionDto implements CollectionEntity {
   protected String owner;
   protected String lastModifier;
 
+  private RD data;
+
   private final Boolean combined;
+
   private final ReportType reportType;
 
-  protected ReportDefinitionDto(Boolean combined, ReportType reportType) {
+  protected ReportDefinitionDto(RD data, Boolean combined, ReportType reportType) {
+    this.data = data;
     this.combined = combined;
     this.reportType = reportType;
+  }
+
+  public RD getData() {
+    return data;
+  }
+
+  public void setData(final RD data) {
+    this.data = data;
   }
 
   public String getId() {

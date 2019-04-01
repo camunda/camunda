@@ -7,18 +7,18 @@ import java.util.Map;
 
 public class ProcessReportMapResultDto extends ProcessReportResultDto {
 
-  private Map<String, Long> result = new LinkedHashMap<>();
+  private Map<String, Long> data = new LinkedHashMap<>();
 
-  public Map<String, Long> getResult() {
-    return result;
+  public Map<String, Long> getData() {
+    return data;
   }
 
-  public void setResult(Map<String, Long> result) {
-    this.result = result;
+  public void setData(Map<String, Long> data) {
+    this.data = data;
   }
 
   @Override
-  public ResultType getResultType() {
+  public ResultType getType() {
     return ResultType.FREQUENCY_MAP;
   }
 }

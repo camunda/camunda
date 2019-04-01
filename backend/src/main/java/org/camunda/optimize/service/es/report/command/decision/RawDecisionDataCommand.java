@@ -41,18 +41,19 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
     new RawDecisionDataResultDtoMapper(RAW_DATA_LIMIT);
 
   public SingleDecisionRawDataReportResult evaluate() {
+    final DecisionReportDataDto reportData = getReportData();
     logger.debug(
       "Evaluating raw data report for decision definition key [{}] and version [{}]",
-      getReportData().getDecisionDefinitionKey(),
-      getReportData().getDecisionDefinitionVersion()
+      reportData.getDecisionDefinitionKey(),
+      reportData.getDecisionDefinitionVersion()
     );
 
-    final DecisionReportDataDto decisionReportData = getReportData();
+    final DecisionReportDataDto decisionReportData = (DecisionReportDataDto) reportData;
     final BoolQueryBuilder query = setupBaseQuery(
-      getReportData().getDecisionDefinitionKey(),
-      getReportData().getDecisionDefinitionVersion()
+      reportData.getDecisionDefinitionKey(),
+      reportData.getDecisionDefinitionVersion()
     );
-    queryFilterEnhancer.addFilterToQuery(query, getReportData().getFilter());
+    queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
@@ -71,8 +72,8 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
       String reason =
         String.format(
           "Could not evaluate raw data report for decision definition key [%s] and version [%s]",
-          getReportData().getDecisionDefinitionKey(),
-          getReportData().getDecisionDefinitionVersion()
+          reportData.getDecisionDefinitionKey(),
+          reportData.getDecisionDefinitionVersion()
         );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -81,7 +82,7 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
     RawDataDecisionReportResultDto rawDataDecisionReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
       response, objectMapper
     );
-    return new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto);
+    return new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto, reportDefinition);
   }
 
   @Override
@@ -108,7 +109,8 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
         SortBuilders.fieldSort(sortByField).order(sortOrder)
           // this ensures the query doesn't fail on unknown properties but just ignores them
           // this is done to ensure consistent behavior compared to unknown variable names as ES doesn't fail there
-          // https://www.elastic.co/guide/en/elasticsearch/reference/6.0/search-request-sort.html#_ignoring_unmapped_fields
+          // https://www.elastic.co/guide/en/elasticsearch/reference/6.0/search-request-sort
+          // .html#_ignoring_unmapped_fields
           .unmappedType("short")
       );
     }

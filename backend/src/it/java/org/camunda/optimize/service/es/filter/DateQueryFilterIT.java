@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.filter;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
@@ -7,17 +8,16 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
-import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -61,14 +61,14 @@ public class DateQueryFilterIT {
         .add()
         .buildList();
     reportData.setFilter(fixedStartDateFilter);
-    RawDataProcessReportResultDto result = evaluateReport(reportData);
+    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
 
     //then
     assertResults(result, 0);
 
     //when
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(start).end(null).add().buildList());
-    result = evaluateReport(reportData);
+    result = evaluateReportAndReturnResult(reportData);
     //then
     assertResults(result, 1);
 
@@ -79,7 +79,7 @@ public class DateQueryFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    result = evaluateReport(reportData);
+    result = evaluateReportAndReturnResult(reportData);
     //then
     assertResults(result, 1);
   }
@@ -98,14 +98,14 @@ public class DateQueryFilterIT {
                            .end(start.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS))
                            .add()
                            .buildList());
-    RawDataProcessReportResultDto result = evaluateReport(reportData);
+    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
 
     //then
     assertResults(result, 1);
 
     //when
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(null).end(start).add().buildList());
-    result = evaluateReport(reportData);
+    result = evaluateReportAndReturnResult(reportData);
     //then
     assertResults(result, 1);
 
@@ -116,7 +116,7 @@ public class DateQueryFilterIT {
                            .end(start.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS))
                            .add()
                            .buildList());
-    result = evaluateReport(reportData);
+    result = evaluateReportAndReturnResult(reportData);
     //then
     assertResults(result, 0);
   }
@@ -135,7 +135,7 @@ public class DateQueryFilterIT {
                            .end(end.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS))
                            .add()
                            .buildList());
-    RawDataProcessReportResultDto result = evaluateReport(reportData);
+    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
 
     //then
     assertResults(result, 1);
@@ -147,7 +147,7 @@ public class DateQueryFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    result = evaluateReport(reportData);
+    result = evaluateReportAndReturnResult(reportData);
     //then
     assertResults(result, 1);
 
@@ -158,7 +158,7 @@ public class DateQueryFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    result = evaluateReport(reportData);
+    result = evaluateReportAndReturnResult(reportData);
     //then
     assertResults(result, 0);
   }
@@ -176,7 +176,7 @@ public class DateQueryFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    RawDataProcessReportResultDto result = evaluateReport(reportData);
+    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
 
     //then
     assertResults(result, 1);
@@ -188,7 +188,7 @@ public class DateQueryFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    result = evaluateReport(reportData);
+    result = evaluateReportAndReturnResult(reportData);
     //then
     assertResults(result, 0);
   }
@@ -208,7 +208,7 @@ public class DateQueryFilterIT {
                            .buildList());
 
     //when
-    RawDataProcessReportResultDto result = evaluateReport(reportData);
+    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
 
     //then
     assertResults(result, 1);
@@ -222,7 +222,7 @@ public class DateQueryFilterIT {
                            .buildList());
 
     //when
-    result = evaluateReport(reportData);
+    result = evaluateReportAndReturnResult(reportData);
 
     //then
     assertResults(result, 1);
@@ -236,7 +236,7 @@ public class DateQueryFilterIT {
                            .buildList());
 
     //when
-    result = evaluateReport(reportData);
+    result = evaluateReportAndReturnResult(reportData);
 
     //then
     assertResults(result, 0);
@@ -256,22 +256,18 @@ public class DateQueryFilterIT {
 
 
   private void assertResults(RawDataProcessReportResultDto resultMap, int size) {
-    assertThat(resultMap.getResult().size(), is(size));
+    assertThat(resultMap.getData().size(), is(size));
   }
 
-  private RawDataProcessReportResultDto evaluateReport(ProcessReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    MatcherAssert.assertThat(response.getStatus(), is(200));
-    return response.readEntity(RawDataProcessReportResultDto.class);
-  }
-
-  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
+  private RawDataProcessReportResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateSingleUnsavedReportRequest(reportData)
-            .execute();
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {})
+      // @formatter:on
+      .getResult();
   }
-
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
     return deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);

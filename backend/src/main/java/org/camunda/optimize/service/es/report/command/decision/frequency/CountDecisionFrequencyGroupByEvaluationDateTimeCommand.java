@@ -88,14 +88,14 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     }
 
     DecisionReportMapResultDto mapResultDto = new DecisionReportMapResultDto();
-    mapResultDto.setResult(processAggregations(response.getAggregations()));
+    mapResultDto.getData(processAggregations(response.getAggregations()));
     mapResultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
-    return new SingleDecisionMapReportResult(mapResultDto);
+    return new SingleDecisionMapReportResult(mapResultDto, reportDefinition);
   }
 
   @Override
   protected void sortResultData(final SingleDecisionMapReportResult evaluationResult) {
-    getReportData().getParameters().getSorting().ifPresent(
+    ((DecisionReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
   }

@@ -2,17 +2,19 @@ package org.camunda.optimize.service.es.report.result.process;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
-import org.camunda.optimize.service.es.report.result.ReportResult;
+import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.validation.constraints.NotNull;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -22,36 +24,35 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class CombinedProcessReportResult extends ReportResult<CombinedProcessReportResultDto, CombinedReportDataDto> {
+public class CombinedProcessReportResult
+  extends ReportEvaluationResult<CombinedProcessReportResultDto, CombinedReportDefinitionDto> {
 
   private final static Logger logger = LoggerFactory.getLogger(CombinedProcessReportResult.class);
 
-  public CombinedProcessReportResult(CombinedProcessReportResultDto reportResultDto) {
-    super(reportResultDto);
+  public CombinedProcessReportResult(@NotNull final CombinedProcessReportResultDto reportResult,
+                                     @NotNull final CombinedReportDefinitionDto reportDefinition) {
+    super(reportResult, reportDefinition);
   }
 
   @Override
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final Set<String> excludedColumns) {
-    Optional firstResultOptional = reportResultDto.getResult().values().stream().findFirst();
-    List<String[]> csvStrings;
+    final Optional<ReportEvaluationResult<ProcessReportResultDto, SingleProcessReportDefinitionDto>> firstResultOptional =
+      (Optional<ReportEvaluationResult<ProcessReportResultDto, SingleProcessReportDefinitionDto>>)
+        reportResult.getData()
+          .values()
+          .stream()
+          .findFirst();
+    final List<String[]> csvStrings;
     if (firstResultOptional.isPresent()) {
-      Object firstResult = firstResultOptional.get();
+      final ProcessReportResultDto firstResult = firstResultOptional.get().getResultAsDto();
       if (firstResult instanceof ProcessReportMapResultDto) {
-        CombinedProcessReportResultDto<ProcessReportMapResultDto> combinedResult =
-          (CombinedProcessReportResultDto<ProcessReportMapResultDto>) reportResultDto;
-        csvStrings = mapCombinedMapResultToCsv(limit, offset, combinedResult);
+        csvStrings = mapCombinedMapResultToCsv(limit, offset, reportResult);
       } else if (firstResult instanceof ProcessDurationReportMapResultDto) {
-        CombinedProcessReportResultDto<ProcessDurationReportMapResultDto> combinedResult =
-          (CombinedProcessReportResultDto<ProcessDurationReportMapResultDto>) reportResultDto;
-        csvStrings = mapCombinedDurationMapResultToCsv(limit, offset, combinedResult);
+        csvStrings = mapCombinedDurationMapResultToCsv(limit, offset, reportResult);
       } else if (firstResult instanceof ProcessReportNumberResultDto) {
-        CombinedProcessReportResultDto<ProcessReportNumberResultDto> combinedResult =
-          (CombinedProcessReportResultDto<ProcessReportNumberResultDto>) reportResultDto;
-        csvStrings = mapCombinedNumberResultToCsv(combinedResult);
+        csvStrings = mapCombinedNumberResultToCsv(reportResult);
       } else if (firstResult instanceof ProcessDurationReportNumberResultDto) {
-        CombinedProcessReportResultDto<ProcessDurationReportNumberResultDto> combinedResult =
-          (CombinedProcessReportResultDto<ProcessDurationReportNumberResultDto>) reportResultDto;
-        csvStrings = mapCombinedDurationNumberResultToCsv(combinedResult);
+        csvStrings = mapCombinedDurationNumberResultToCsv(reportResult);
       } else {
         String message = String.format(
           "Unsupported report type [%s] in combined report",
@@ -67,18 +68,20 @@ public class CombinedProcessReportResult extends ReportResult<CombinedProcessRep
     return csvStrings;
   }
 
-  @Override
-  public void copyReportData(CombinedReportDataDto data) {
-    reportResultDto.setData(data);
-  }
-
   private List<String[]> mapCombinedNumberResultToCsv(CombinedProcessReportResultDto<ProcessReportNumberResultDto> combinedResult) {
     final List<List<String[]>> allSingleReportsAsCsvList = mapCombinedReportResultsToCsvList(
-      1, 0, combinedResult, SingleProcessNumberReportResult::new
+      1,
+      0,
+      combinedResult,
+      evaluationResult -> new SingleProcessNumberReportResult(
+        evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
+      )
     );
     final List<String[]> mergedCsvReports = mergeSingleReportsToOneCsv(allSingleReportsAsCsvList);
 
-    final String[] reportNameHeader = createCombinedReportHeader(combinedResult, r -> new String[]{r.getName(), ""});
+    final String[] reportNameHeader = createCombinedReportHeader(
+      combinedResult, r -> new String[]{r.getReportDefinition().getName(), ""}
+    );
     mergedCsvReports.add(0, reportNameHeader);
 
     return mergedCsvReports;
@@ -86,11 +89,17 @@ public class CombinedProcessReportResult extends ReportResult<CombinedProcessRep
 
   private List<String[]> mapCombinedDurationNumberResultToCsv(CombinedProcessReportResultDto<ProcessDurationReportNumberResultDto> combinedResult) {
     final List<List<String[]>> allSingleReportsAsCsvList = mapCombinedReportResultsToCsvList(
-      1, 0, combinedResult, SingleProcessNumberDurationReportResult::new
+      1,
+      0,
+      combinedResult,
+      evaluationResult -> new SingleProcessNumberDurationReportResult(
+        evaluationResult.getResultAsDto(),
+        evaluationResult.getReportDefinition()
+      )
     );
     final List<String[]> csvStrings = mergeSingleReportsToOneCsv(allSingleReportsAsCsvList);
     final String[] reportNameHeader = createCombinedReportHeader(
-      combinedResult, r -> new String[]{r.getName(), "", "", "", ""}
+      combinedResult, r -> new String[]{r.getReportDefinition().getName(), "", "", "", ""}
     );
     csvStrings.add(0, reportNameHeader);
     return csvStrings;
@@ -100,11 +109,17 @@ public class CombinedProcessReportResult extends ReportResult<CombinedProcessRep
                                                    Integer offset,
                                                    CombinedProcessReportResultDto<ProcessReportMapResultDto> combinedResult) {
     final List<List<String[]>> allSingleReportsAsCsvList = mapCombinedReportResultsToCsvList(
-      limit, offset, combinedResult, SingleProcessMapReportResult::new
+      limit,
+      offset,
+      combinedResult,
+      evaluationResult -> new SingleProcessMapReportResult(
+        evaluationResult.getResultAsDto(),
+        evaluationResult.getReportDefinition()
+      )
     );
     final List<String[]> csvStrings = mergeSingleReportsToOneCsv(allSingleReportsAsCsvList);
     final String[] reportNameHeader = createCombinedReportHeader(
-      combinedResult, r -> new String[]{r.getName(), "", ""}
+      combinedResult, r -> new String[]{r.getReportDefinition().getName(), "", ""}
     );
     csvStrings.add(0, reportNameHeader);
     return csvStrings;
@@ -114,12 +129,18 @@ public class CombinedProcessReportResult extends ReportResult<CombinedProcessRep
                                                            Integer offset,
                                                            CombinedProcessReportResultDto<ProcessDurationReportMapResultDto> combinedResult) {
     final List<List<String[]>> allSingleReportsAsCsvList = mapCombinedReportResultsToCsvList(
-      limit, offset, combinedResult, SingleProcessMapDurationReportResult::new
+      limit,
+      offset,
+      combinedResult,
+      evaluationResult -> new SingleProcessMapDurationReportResult(
+        evaluationResult.getResultAsDto(),
+        evaluationResult.getReportDefinition()
+      )
     );
     final List<String[]> csvStrings = mergeSingleReportsToOneCsv(allSingleReportsAsCsvList);
 
     final String[] combinedReportHeader = createCombinedReportHeader(
-      combinedResult, r -> new String[]{r.getName(), "", "", "", "", ""}
+      combinedResult, r -> new String[]{r.getReportDefinition().getName(), "", "", "", "", ""}
     );
     csvStrings.add(0, combinedReportHeader);
     return csvStrings;
@@ -129,9 +150,9 @@ public class CombinedProcessReportResult extends ReportResult<CombinedProcessRep
     final Integer limit,
     final Integer offset,
     final CombinedProcessReportResultDto<T> combinedResult,
-    final Function<T, ReportResult<?, ?>> reportResultMapper) {
+    final Function<ReportEvaluationResult<T, SingleProcessReportDefinitionDto>, ReportEvaluationResult<?, ?>> reportResultMapper) {
 
-    return combinedResult.getResult().values()
+    return combinedResult.getData().values()
       .stream()
       .map(reportResultMapper::apply)
       .map(reportResult -> reportResult.getResultAsCsv(limit, offset, Collections.emptySet()))
@@ -157,9 +178,10 @@ public class CombinedProcessReportResult extends ReportResult<CombinedProcessRep
       });
   }
 
-  private <T extends ProcessReportResultDto> String[] createCombinedReportHeader(final CombinedProcessReportResultDto<T> combinedResult,
-                                                                                 final Function<T, String[]> singleResultHeaderMapper) {
-    return combinedResult.getResult()
+  private <T extends ProcessReportResultDto> String[] createCombinedReportHeader(
+    final CombinedProcessReportResultDto<T> combinedResult,
+    final Function<ReportEvaluationResult<T, SingleProcessReportDefinitionDto>, String[]> singleResultHeaderMapper) {
+    return combinedResult.getData()
       .values()
       .stream()
       .map(singleResultHeaderMapper)

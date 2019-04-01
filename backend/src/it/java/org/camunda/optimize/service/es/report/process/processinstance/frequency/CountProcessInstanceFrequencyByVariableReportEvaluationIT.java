@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.process.processinstance.frequency;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -16,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -74,11 +76,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
       "foo",
         VariableType.STRING
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
@@ -88,54 +89,13 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName(), is("foo"));
     assertThat(variableGroupByDto.getValue().getType(), is(VariableType.STRING));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    Map<String, Long> resultMap = result.getResult();
+
+    final ProcessReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.get("bar"), is(1L));
-  }
-
-  private String createAndStoreDefaultReportDefinition(String processDefinitionKey,
-                                                       String processDefinitionVersion,
-                                                       String variableName,
-                                                       VariableType variableType) {
-    String id = createNewReport();
-    ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
-        processDefinitionKey, processDefinitionVersion, variableName, variableType
-    );
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setId(id);
-    report.setLastModifier("something");
-    report.setName("something");
-    report.setCreated(OffsetDateTime.now());
-    report.setLastModified(OffsetDateTime.now());
-    report.setOwner("something");
-    updateReport(id, report);
-    return id;
-  }
-
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildUpdateReportRequest(id, updatedReport)
-            .execute();
-
-    assertThat(response.getStatus(), is(204));
-  }
-
-  private String createNewReport() {
-    return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateSingleProcessReportRequest()
-            .execute(IdDto.class, 200)
-            .getId();
-  }
-
-  private ProcessReportMapResultDto evaluateReportById(String reportId) {
-    return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateSavedReportRequest(reportId)
-            .execute(ProcessReportMapResultDto.class, 200);
   }
 
   @Test
@@ -154,11 +114,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     );
 
     // when
-    ProcessReportMapResultDto result = evaluateReportById(reportId);
+    ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluationResponse = evaluateReportById(reportId);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
@@ -168,9 +127,12 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName(), is("foo"));
     assertThat(variableGroupByDto.getValue().getType(), is(VariableType.STRING));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    Map<String, Long> resultMap = result.getResult();
+
+    final ProcessReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.get("bar"), is(1L));
   }
 
@@ -192,14 +154,16 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
       "foo",
         VariableType.STRING
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(ALL_VERSIONS));
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> variableValueToCount = result.getResult();
+
+    final ProcessReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, Long> variableValueToCount = result.getData();
     assertThat(variableValueToCount.size(), is(2));
     assertThat(variableValueToCount.get("bar"), is(1L));
     assertThat(variableValueToCount.get("bar2"), is(1L));
@@ -223,14 +187,16 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
       "foo",
         VariableType.STRING
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> variableValueToCount = result.getResult();
+
+    final ProcessReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, Long> variableValueToCount = result.getData();
     assertThat(variableValueToCount.size(), is(1));
     assertThat(variableValueToCount.get("bar"), is(1L));
   }
@@ -254,14 +220,16 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
       "foo",
         VariableType.STRING
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> variableValueToCount = result.getResult();
+
+    final ProcessReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, Long> variableValueToCount = result.getData();
     assertThat(variableValueToCount.size(), is(2));
     assertThat(variableValueToCount.get("bar1"), is(1L));
     assertThat(variableValueToCount.get("bar2"), is(2L));
@@ -293,10 +261,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
       VariableType.STRING
     );
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ProcessReportMapResultDto result = evaluateReport(reportData);
+    final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getResult();
+    final Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     assertThat(
       new ArrayList<>(resultMap.keySet()),
@@ -330,10 +298,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
       VariableType.STRING
     );
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ProcessReportMapResultDto result = evaluateReport(reportData);
+    final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getResult();
+    final Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     final List<Long> bucketValues = new ArrayList<>(resultMap.values());
     assertThat(
@@ -360,14 +328,16 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
       "foo",
         VariableType.STRING
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> variableValueToCount = result.getResult();
+
+    final ProcessReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, Long> variableValueToCount = result.getData();
     assertThat(variableValueToCount.size(), is(1));
     assertThat(variableValueToCount.get("1"), is(1L));
   }
@@ -390,14 +360,16 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
       "foo1",
         VariableType.STRING
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> variableValueToCount = result.getResult();
+
+    final ProcessReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, Long> variableValueToCount = result.getData();
     assertThat(variableValueToCount.size(), is(1));
     assertThat(variableValueToCount.get("bar1"), is(2L));
   }
@@ -427,11 +399,11 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
         entry.getKey(),
         variableType
       );
-      ProcessReportMapResultDto result = evaluateReport(reportData);
+      ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
       // then
-      assertThat(result.getResult(), is(notNullValue()));
-      Map<String, Long> variableValueToCount = result.getResult();
+      assertThat(result.getData(), is(notNullValue()));
+      Map<String, Long> variableValueToCount = result.getData();
       assertThat(variableValueToCount.size(), is(1));
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
@@ -482,20 +454,20 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
                            .end(past.minusSeconds(1L))
                            .add()
                            .buildList());
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> variableValueToCount = result.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, Long> variableValueToCount = result.getData();
     assertThat(variableValueToCount.size(), is(0));
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
-    result = evaluateReport(reportData);
+    result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getResult(), is(notNullValue()));
-    variableValueToCount = result.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    variableValueToCount = result.getData();
     assertThat(variableValueToCount.size(), is(1));
     assertThat(variableValueToCount.get("bar"), is(1L));
   }
@@ -620,11 +592,22 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     return engineRule.deployProcessAndGetProcessDefinition(processModel);
   }
 
-  private ProcessReportMapResultDto evaluateReport(ProcessReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
+  private ProcessReportEvaluationResultDto<ProcessReportMapResultDto>  evaluateReportById(String reportId) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSavedReportRequest(reportId)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessReportMapResultDto>>() {});
+      // @formatter:on
+  }
 
-    return response.readEntity(ProcessReportMapResultDto.class);
+  private ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessReportMapResultDto>>() {});
+      // @formatter:on
   }
 
   private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
@@ -635,4 +618,40 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
   }
 
 
+  private String createAndStoreDefaultReportDefinition(String processDefinitionKey,
+                                                       String processDefinitionVersion,
+                                                       String variableName,
+                                                       VariableType variableType) {
+    String id = createNewReport();
+    ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
+      processDefinitionKey, processDefinitionVersion, variableName, variableType
+    );
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    report.setData(reportData);
+    report.setId(id);
+    report.setLastModifier("something");
+    report.setName("something");
+    report.setCreated(OffsetDateTime.now());
+    report.setLastModified(OffsetDateTime.now());
+    report.setOwner("something");
+    updateReport(id, report);
+    return id;
+  }
+
+  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateReportRequest(id, updatedReport)
+      .execute();
+
+    assertThat(response.getStatus(), is(204));
+  }
+
+  private String createNewReport() {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+  }
 }

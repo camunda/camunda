@@ -4,7 +4,6 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
@@ -12,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.SharingReader;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
-import org.camunda.optimize.service.es.report.result.ReportResult;
+import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.es.writer.SharingWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
@@ -148,7 +147,7 @@ public class SharingService {
     sharingWriter.deleteDashboardShare(shareId);
   }
 
-  public ReportResultDto evaluateReportShare(String shareId) {
+  public ReportEvaluationResult evaluateReportShare(String shareId) {
     Optional<ReportShareDto> optionalReportShare = sharingReader.getReportShare(shareId);
 
     return optionalReportShare
@@ -157,9 +156,9 @@ public class SharingService {
                                                         "type"));
   }
 
-  public ReportResultDto evaluateReportForSharedDashboard(String dashboardShareId, String reportId) {
+  public ReportEvaluationResult evaluateReportForSharedDashboard(String dashboardShareId, String reportId) {
     Optional<DashboardShareDto> sharedDashboard = sharingReader.findDashboardShare(dashboardShareId);
-    ReportResultDto result;
+    ReportEvaluationResult result;
 
     DashboardShareDto share = sharedDashboard.get();
     boolean hasGivenReport = share.getReportShares().stream().anyMatch(r -> r.getId().equals(reportId));
@@ -175,10 +174,10 @@ public class SharingService {
     return result;
   }
 
-  public ReportResultDto evaluateReport(String reportId) {
+  public ReportEvaluationResult evaluateReport(String reportId) {
     try {
-      ReportResult<?, ?> reportResult = reportEvaluationHandler.evaluateSavedReport(reportId);
-      return reportResult.getResultAsDto();
+      ReportEvaluationResult<?, ?> reportResult = reportEvaluationHandler.evaluateSavedReport(reportId);
+      return reportResult;
     } catch (ReportEvaluationException e) {
       throw e;
     } catch (Exception e) {
@@ -187,7 +186,7 @@ public class SharingService {
     }
   }
 
-  private ReportResultDto constructReportShare(ReportShareDto share) {
+  private ReportEvaluationResult constructReportShare(ReportShareDto share) {
     return evaluateReport(share.getReportId());
   }
 

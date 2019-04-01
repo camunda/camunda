@@ -1,6 +1,7 @@
 package org.camunda.optimize;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -35,12 +36,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.camunda.optimize.AbstractAlertIT.ALERT;
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class OptimizeRequestExecutor {
+  private static final String ALERT = "alert";
   private static final String PUT = "put";
   private static final String GET = "get";
   private static final String POST = "post";
@@ -155,6 +156,18 @@ public class OptimizeRequestExecutor {
       builder = builder.header(headerEntry.getKey(), headerEntry.getValue());
     }
     return builder;
+  }
+
+  public <T> T execute(TypeReference<T> classToExtractFromResponse) {
+    Response response = execute();
+    assertThat(response.getStatus(), is(200));
+
+    String jsonString = response.readEntity(String.class);
+    try {
+      return objectMapper.readValue(jsonString, classToExtractFromResponse);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
   }
 
   public <T> T execute(Class<T> classToExtractFromResponse, int responseCode) {

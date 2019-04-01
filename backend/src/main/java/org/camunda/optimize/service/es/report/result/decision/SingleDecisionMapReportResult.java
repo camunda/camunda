@@ -1,33 +1,31 @@
 package org.camunda.optimize.service.es.report.result.decision;
 
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
-import org.camunda.optimize.service.es.report.result.ReportResult;
+import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.export.CSVUtils;
 
+import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Set;
 
-public class SingleDecisionMapReportResult extends ReportResult<DecisionReportMapResultDto, DecisionReportDataDto> {
+public class SingleDecisionMapReportResult
+  extends ReportEvaluationResult<DecisionReportMapResultDto, SingleDecisionReportDefinitionDto> {
 
-  public SingleDecisionMapReportResult(DecisionReportMapResultDto reportResultDto) {
-    super(reportResultDto);
+  public SingleDecisionMapReportResult(@NotNull final DecisionReportMapResultDto reportResult,
+                                       @NotNull final SingleDecisionReportDefinitionDto reportDefinition) {
+    super(reportResult, reportDefinition);
   }
 
   @Override
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, Set<String> excludedColumns) {
-    final List<String[]> csvStrings = CSVUtils.map(reportResultDto.getResult(), limit, offset);
+    final List<String[]> csvStrings = CSVUtils.map(reportResult.getData(), limit, offset);
 
     final String normalizedCommandKey =
-      reportResultDto.getData().getView().createCommandKey().replace("-", "_");
-    final String[] header =
-      new String[]{reportResultDto.getData().getGroupBy().toString(), normalizedCommandKey};
+      reportDefinition.getData().getView().createCommandKey().replace("-", "_");
+    final String[] header = new String[]{reportDefinition.getData().getGroupBy().toString(), normalizedCommandKey};
     csvStrings.add(0, header);
     return csvStrings;
   }
 
-  @Override
-  public void copyReportData(DecisionReportDataDto data) {
-    reportResultDto.setData(data);
-  }
 }

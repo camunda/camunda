@@ -57,9 +57,9 @@ public class CountProcessInstanceFrequencyGroupByNoneCommand
     }
 
     ProcessReportNumberResultDto numberResultDto = new ProcessReportNumberResultDto();
-    numberResultDto.setResult(response.getHits().getTotalHits());
+    numberResultDto.setData(response.getHits().getTotalHits());
     numberResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessNumberReportResult(numberResultDto);
+    return new SingleProcessNumberReportResult(numberResultDto, reportDefinition);
   }
 
   @Override

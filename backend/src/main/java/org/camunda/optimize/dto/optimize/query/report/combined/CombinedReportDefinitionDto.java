@@ -3,24 +3,14 @@ package org.camunda.optimize.dto.optimize.query.report.combined;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportType;
 
-public class CombinedReportDefinitionDto extends ReportDefinitionDto {
-
-  protected CombinedReportDataDto data = new CombinedReportDataDto();
-
-  public CombinedReportDefinitionDto(CombinedReportDataDto data) {
-    this();
-    setData(data);
-  }
+public class CombinedReportDefinitionDto extends ReportDefinitionDto<CombinedReportDataDto> {
 
   public CombinedReportDefinitionDto() {
-    super(true, ReportType.PROCESS);
+    this(new CombinedReportDataDto());
   }
 
-  public CombinedReportDataDto getData() {
-    return data;
+  public CombinedReportDefinitionDto(CombinedReportDataDto data) {
+    super(data, true, ReportType.PROCESS);
   }
 
-  public void setData(CombinedReportDataDto data) {
-    this.data = data;
-  }
 }

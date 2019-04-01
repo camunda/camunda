@@ -6,16 +6,14 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessRe
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
 import org.camunda.optimize.service.es.reader.ReportReader;
-import org.camunda.optimize.service.es.report.result.ReportResult;
+import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.es.report.result.process.CombinedProcessReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -50,13 +48,13 @@ public abstract class ReportEvaluationHandler {
     this.combinedReportEvaluator = combinedReportEvaluator;
   }
 
-  public ReportResult evaluateSavedReport(String userId, String reportId) {
+  public ReportEvaluationResult evaluateSavedReport(String userId, String reportId) {
     ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
     return evaluateReport(userId, reportDefinition);
   }
 
-  protected ReportResult evaluateReport(String userId, ReportDefinitionDto reportDefinition) {
-    final ReportResult result;
+  protected ReportEvaluationResult evaluateReport(String userId, ReportDefinitionDto reportDefinition) {
+    final ReportEvaluationResult result;
     if (!reportDefinition.getCombined()) {
       switch (reportDefinition.getReportType()) {
         case PROCESS:
@@ -84,7 +82,7 @@ public abstract class ReportEvaluationHandler {
                                                              CombinedReportDefinitionDto combinedReportDefinition) {
 
     ValidationHelper.validateCombinedReportDefinition(combinedReportDefinition);
-    List<ReportResult> resultList = evaluateListOfReportIds(
+    List<ReportEvaluationResult> resultList = evaluateListOfReportIds(
       userId, combinedReportDefinition.getData().getReportIds()
     );
     return transformToCombinedReportResult(combinedReportDefinition, resultList);
@@ -92,40 +90,37 @@ public abstract class ReportEvaluationHandler {
 
   private CombinedProcessReportResult transformToCombinedReportResult(
     CombinedReportDefinitionDto combinedReportDefinition,
-    List<ReportResult> singleReportResultList) {
-    final AtomicReference<Class> singleReportType = new AtomicReference<>();
-    final Map<String, ProcessReportResultDto> reportIdToMapResult = singleReportResultList
+    List<ReportEvaluationResult> singleReportResultList) {
+
+    final AtomicReference<Class> singleReportResultType = new AtomicReference<>();
+    final Map<String, ReportEvaluationResult> reportIdToMapResult = singleReportResultList
       .stream()
-      .map(ReportResult::getResultAsDto)
       .filter(this::isProcessMapOrNumberResult)
-      .map(t -> (ProcessReportResultDto) t)
-      .filter(singleReportResult -> singleReportResult.getClass().equals(singleReportType.get())
-        || singleReportType.compareAndSet(null, singleReportResult.getClass()))
+      .filter(singleReportResult -> singleReportResult.getResultAsDto().getClass().equals(singleReportResultType.get())
+        || singleReportResultType.compareAndSet(null, singleReportResult.getResultAsDto().getClass()))
       .collect(Collectors.toMap(
-        ReportResultDto::getId,
+        ReportEvaluationResult::getId,
         singleReportResultDto -> singleReportResultDto,
         (u, v) -> {
           throw new IllegalStateException(String.format("Duplicate key %s", u));
         },
         LinkedHashMap::new
       ));
-    final CombinedProcessReportResultDto<ProcessReportResultDto> combinedProcessReportResultDto =
-      new CombinedProcessReportResultDto<>();
-    combinedProcessReportResultDto.setResult(reportIdToMapResult);
-    CombinedProcessReportResult result = new CombinedProcessReportResult(combinedProcessReportResultDto);
-    result.copyMetaData(combinedReportDefinition);
-    result.copyReportData(combinedReportDefinition.getData());
-    return result;
+    final CombinedProcessReportResultDto combinedProcessReportResultDto = new CombinedProcessReportResultDto(
+      reportIdToMapResult
+    );
+    return new CombinedProcessReportResult(combinedProcessReportResultDto, combinedReportDefinition);
   }
 
-  private boolean isProcessMapOrNumberResult(Object reportResult) {
-    return reportResult instanceof ProcessReportNumberResultDto ||
-      reportResult instanceof ProcessReportMapResultDto ||
-      reportResult instanceof ProcessDurationReportNumberResultDto ||
-      reportResult instanceof ProcessDurationReportMapResultDto;
+  private boolean isProcessMapOrNumberResult(ReportEvaluationResult reportResult) {
+    final ReportResultDto resultAsDto = reportResult.getResultAsDto();
+    return resultAsDto instanceof ProcessReportNumberResultDto ||
+      resultAsDto instanceof ProcessReportMapResultDto ||
+      resultAsDto instanceof ProcessDurationReportNumberResultDto ||
+      resultAsDto instanceof ProcessDurationReportMapResultDto;
   }
 
-  private List<ReportResult> evaluateListOfReportIds(final String userId, List<String> singleReportIds) {
+  private List<ReportEvaluationResult> evaluateListOfReportIds(final String userId, List<String> singleReportIds) {
     List<SingleProcessReportDefinitionDto> singleReportDefinitions =
       reportReader.getAllSingleProcessReportsForIds(singleReportIds)
         .stream()
@@ -139,8 +134,8 @@ public abstract class ReportEvaluationHandler {
    */
   protected abstract boolean isAuthorizedToSeeReport(String userId, ReportDefinitionDto report);
 
-  private ReportResult evaluateSingleProcessReport(final String userId,
-                                                   final SingleProcessReportDefinitionDto reportDefinition) {
+  private ReportEvaluationResult evaluateSingleProcessReport(final String userId,
+                                                             final SingleProcessReportDefinitionDto reportDefinition) {
 
     if (!isAuthorizedToSeeReport(userId, reportDefinition)) {
       ProcessReportDataDto reportData = reportDefinition.getData();
@@ -150,27 +145,13 @@ public abstract class ReportEvaluationHandler {
       );
     }
 
-    ReportResult result = evaluateSingleReportWithErrorCheck(reportDefinition);
-    result.copyMetaData(reportDefinition);
+    ReportEvaluationResult result = evaluateSingleReportWithErrorCheck(reportDefinition);
 
     return result;
   }
 
-  private ReportResult evaluateSingleReportWithErrorCheck(SingleProcessReportDefinitionDto reportDefinition) {
-    ProcessReportDataDto reportData = reportDefinition.getData();
-    try {
-      return singleReportEvaluator.evaluate(reportData);
-    } catch (OptimizeException | OptimizeValidationException e) {
-      ProcessReportNumberResultDto definitionWrapper = new ProcessReportNumberResultDto();
-      definitionWrapper.setData(reportData);
-      definitionWrapper.setName(reportDefinition.getName());
-      definitionWrapper.setId(reportDefinition.getId());
-      throw new ReportEvaluationException(definitionWrapper, e);
-    }
-  }
-
-  private ReportResult evaluateSingleDecisionReport(final String userId,
-                                                    final SingleDecisionReportDefinitionDto reportDefinition) {
+  private ReportEvaluationResult evaluateSingleDecisionReport(final String userId,
+                                                              final SingleDecisionReportDefinitionDto reportDefinition) {
 
     if (!isAuthorizedToSeeReport(userId, reportDefinition)) {
       DecisionReportDataDto reportData = reportDefinition.getData();
@@ -180,21 +161,15 @@ public abstract class ReportEvaluationHandler {
       );
     }
 
-    ReportResult result = evaluateSingleReportWithErrorCheck(reportDefinition);
-    result.copyMetaData(reportDefinition);
+    ReportEvaluationResult result = evaluateSingleReportWithErrorCheck(reportDefinition);
     return result;
   }
 
-  private ReportResult evaluateSingleReportWithErrorCheck(SingleDecisionReportDefinitionDto reportDefinition) {
-    DecisionReportDataDto reportData = reportDefinition.getData();
+  private ReportEvaluationResult evaluateSingleReportWithErrorCheck(ReportDefinitionDto reportDefinition) {
     try {
-      return singleReportEvaluator.evaluate(reportData);
+      return singleReportEvaluator.evaluate(reportDefinition);
     } catch (OptimizeException | OptimizeValidationException e) {
-      DecisionReportNumberResultDto definitionWrapper = new DecisionReportNumberResultDto();
-      definitionWrapper.setData(reportData);
-      definitionWrapper.setName(reportDefinition.getName());
-      definitionWrapper.setId(reportDefinition.getId());
-      throw new ReportEvaluationException(definitionWrapper, e);
+      throw new ReportEvaluationException(reportDefinition, e);
     }
   }
 

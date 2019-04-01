@@ -7,18 +7,18 @@ import java.util.Map;
 
 public class DecisionReportMapResultDto extends DecisionReportResultDto {
 
-  private Map<String, Long> result = new HashMap<>();
+  private Map<String, Long> data = new HashMap<>();
 
-  public Map<String, Long> getResult() {
-    return result;
+  public Map<String, Long> getData() {
+    return data;
   }
 
-  public void setResult(Map<String, Long> result) {
-    this.result = result;
+  public void getData(Map<String, Long> data) {
+    this.data = data;
   }
 
   @Override
-  public ResultType getResultType() {
+  public ResultType getType() {
     return ResultType.FREQUENCY_MAP;
   }
 }

@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.security;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -8,12 +9,14 @@ import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
+import org.camunda.optimize.dto.optimize.rest.report.CombinedReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -232,17 +235,18 @@ public class ReportAuthorizationIT {
     // when
     CombinedReportDataDto combinedReport = createCombinedReport(authorizedReportId, notAuthorizedReportId);
 
-    CombinedProcessReportResultDto result = embeddedOptimizeRule
+    CombinedProcessReportResultDataDto<ProcessReportMapResultDto> result = embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute(CombinedProcessReportResultDto.class, 200);
+      .execute(new TypeReference<CombinedReportEvaluationResultDto<ProcessReportMapResultDto>>() {})
+      .getResult();
 
     // then
-    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportMapResultDto>> resultMap = result.getData();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.containsKey(notAuthorizedReportId), is(false));
-    Map<String, Long> flowNodeToCount = resultMap.get(authorizedReportId).getResult();
+    Map<String, Long> flowNodeToCount = resultMap.get(authorizedReportId).getResult().getData();
     assertThat(flowNodeToCount.size(), is(2));
   }
 

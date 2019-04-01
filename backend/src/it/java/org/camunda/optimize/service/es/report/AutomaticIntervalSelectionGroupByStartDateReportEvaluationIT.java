@@ -1,16 +1,20 @@
 package org.camunda.optimize.service.es.report;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
+import org.camunda.optimize.dto.optimize.rest.report.CombinedReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -77,10 +81,10 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
         processInstanceDto1.getProcessDefinitionVersion(),
         GroupByDateUnit.AUTOMATIC
       );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReportAndReturnResult(reportData);
 
     // then
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, Long> resultMap = result.getData();
     List<Long> resultValues = new ArrayList<>(resultMap.values());
     assertThat(resultMap.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
     assertThat(resultValues.get(0), is(2L));
@@ -110,10 +114,10 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
         processInstanceDto1.getProcessDefinitionVersion(),
         GroupByDateUnit.AUTOMATIC
       );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReportAndReturnResult(reportData);
 
     // then
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, Long> resultMap = result.getData();
     List<Long> resultValues = new ArrayList<>(resultMap.values());
     assertThat(resultMap.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
     assertThat(resultValues.stream().mapToInt(Long::intValue).sum(), is(3));
@@ -134,10 +138,10 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
         engineDto.getVersionAsString(),
         GroupByDateUnit.AUTOMATIC
       );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReportAndReturnResult(reportData);
 
     // then
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(0));
   }
 
@@ -155,10 +159,10 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
         engineDto.getProcessDefinitionVersion(),
         GroupByDateUnit.AUTOMATIC
       );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReportAndReturnResult(reportData);
 
     // then the single data point should be grouped by month
-    Map<String, Long> resultMap = result.getResult();
+    Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(1));
     ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
     String nowStrippedToMonthAsString = localDateTimeToString(nowStrippedToMonth);
@@ -178,11 +182,11 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
     String singleReportId2 = createNewSingleReport(procDefSecondRange);
 
     // when
-    CombinedProcessReportResultDto result =
+    CombinedProcessReportResultDataDto<ProcessReportMapResultDto> result =
       evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
 
     // then
-    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportMapResultDto>> resultMap = result.getData();
     assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
   }
 
@@ -198,11 +202,11 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
     String singleReportId2 = createNewSingleReport(procDefSecondRange);
 
     // when
-    CombinedProcessReportResultDto result =
+    CombinedProcessReportResultDataDto<ProcessReportMapResultDto> result =
       evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
 
     // then
-    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportMapResultDto>> resultMap = result.getData();
     assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
   }
 
@@ -218,21 +222,21 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
     String singleReportId2 = createNewSingleReport(procDefSecondRange);
 
     // when
-    CombinedProcessReportResultDto result =
+    CombinedProcessReportResultDataDto<ProcessReportMapResultDto> result =
       evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
 
     // then
-    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportEvaluationResultDto<ProcessReportMapResultDto>> resultMap = result.getData();
     assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
   }
 
   private void assertResultIsInCorrectRanges(ZonedDateTime startRange,
                                              ZonedDateTime endRange,
-                                             Map<String,ProcessReportMapResultDto> resultMap,
+                                             Map<String, ProcessReportEvaluationResultDto<ProcessReportMapResultDto>> resultMap,
                                              int resultSize) {
     assertThat(resultMap.size(), is(resultSize));
-    for (ProcessReportMapResultDto result : resultMap.values()) {
-      Map<String, Long> singleProcessResult = result.getResult();
+    for (ProcessReportEvaluationResultDto<ProcessReportMapResultDto> result : resultMap.values()) {
+      Map<String, Long> singleProcessResult = result.getResult().getData();
       assertThat(singleProcessResult.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
       LinkedList<String> strings = new LinkedList<>(singleProcessResult.keySet());
       assertThat(strings.getLast(), is(localDateTimeToString(startRange)));
@@ -268,25 +272,10 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
 
   private String createNewSingleReport() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateSingleProcessReportRequest()
-            .execute(IdDto.class, 200)
-            .getId();
-  }
-
-  private CombinedProcessReportResultDto evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
-    Response response = evaluateUnsavedCombinedReportAndReturnResponse(reportDataDto);
-
-    // then the status code is okay
-    assertThat(response.getStatus(), is(200));
-    return response.readEntity(CombinedProcessReportResultDto.class);
-  }
-
-  private Response evaluateUnsavedCombinedReportAndReturnResponse(CombinedReportDataDto reportDataDto) {
-    return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
-            .execute();
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private ProcessDefinitionEngineDto startProcessInstancesInDayRange(ZonedDateTime min,
@@ -318,35 +307,24 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
     return engineRule.deployProcessAndGetProcessDefinition(processModel);
   }
 
-  private ProcessReportMapResultDto evaluateReport(ProcessReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(ProcessReportMapResultDto.class);
+  private <T extends ProcessReportResultDto> CombinedProcessReportResultDataDto<T> evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
+      // @formatter:off
+      .execute(new TypeReference<CombinedReportEvaluationResultDto<T>>() {})
+      // @formatter:on
+      .getResult();
   }
 
-  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
+  private ProcessReportMapResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
-  }
-
-  private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
-    String id = createNewReport();
-    ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByStartDate(
-      processDefinitionKey, processDefinitionVersion, GroupByDateUnit.DAY
-    );
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setId(id);
-    report.setLastModifier("something");
-    report.setName("something");
-    report.setCreated(OffsetDateTime.now());
-    report.setLastModified(OffsetDateTime.now());
-    report.setOwner("something");
-    updateReport(id, report);
-    return id;
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessReportMapResultDto>>() {})
+      // @formatter:on
+      .getResult();
   }
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
@@ -356,14 +334,6 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
       .execute();
 
     assertThat(response.getStatus(), is(204));
-  }
-
-  private String createNewReport() {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, 200)
-      .getId();
   }
 
   private String localDateTimeToString(ZonedDateTime time) {

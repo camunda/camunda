@@ -1,27 +1,30 @@
 package org.camunda.optimize.service.es.report.result.process;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
 import org.camunda.optimize.service.es.report.result.NumberResult;
-import org.camunda.optimize.service.es.report.result.ReportResult;
+import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 
+import javax.validation.constraints.NotNull;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
 public class SingleProcessNumberDurationReportResult
-  extends ReportResult<ProcessDurationReportNumberResultDto, ProcessReportDataDto> implements NumberResult {
+  extends ReportEvaluationResult<ProcessDurationReportNumberResultDto, SingleProcessReportDefinitionDto>
+  implements NumberResult {
 
-  public SingleProcessNumberDurationReportResult(ProcessDurationReportNumberResultDto reportResultDto) {
-    super(reportResultDto);
+  public SingleProcessNumberDurationReportResult(@NotNull final ProcessDurationReportNumberResultDto reportResult,
+                                                 @NotNull final SingleProcessReportDefinitionDto reportDefinition) {
+    super(reportResult, reportDefinition);
   }
 
   @Override
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, Set<String> excludedColumns) {
     final List<String[]> csvStrings = new LinkedList<>();
-    AggregationResultDto result = reportResultDto.getResult();
+    AggregationResultDto result = reportResult.getData();
     csvStrings.add(
       new String[]{
         result.getMin().toString(),
@@ -31,7 +34,7 @@ public class SingleProcessNumberDurationReportResult
       });
 
     final String normalizedCommandKey =
-      reportResultDto.getData().getView().createCommandKey().replace("-", "_");
+      reportDefinition.getData().getView().createCommandKey().replace("-", "_");
 
     final String[] operations =
       new String[]{"minimum", "maximum", "average", "median"};
@@ -43,13 +46,8 @@ public class SingleProcessNumberDurationReportResult
   }
 
   @Override
-  public void copyReportData(ProcessReportDataDto processReportDataDto) {
-    reportResultDto.setData(processReportDataDto);
-  }
-
-  @Override
   public long getResultAsNumber() {
-    AggregationType aggregationType = reportResultDto.getData().getConfiguration().getAggregationType();
-    return reportResultDto.getResult().getResultForGivenAggregationType(aggregationType);
+    AggregationType aggregationType = reportDefinition.getData().getConfiguration().getAggregationType();
+    return reportResult.getData().getResultForGivenAggregationType(aggregationType);
   }
 }

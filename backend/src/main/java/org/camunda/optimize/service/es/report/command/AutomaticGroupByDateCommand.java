@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.report.command;
 
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.StartDateGroupByValueDto;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
@@ -17,7 +18,7 @@ public interface AutomaticGroupByDateCommand {
 
   default Optional<Stats> evaluateGroupByDateValueStats(CommandContext commandContext) {
     this.beforeEvaluate(commandContext);
-    ProcessReportDataDto reportData = (ProcessReportDataDto) commandContext.getReportData();
+    final ProcessReportDataDto reportData = (ProcessReportDataDto) commandContext.getReportDefinition().getData();
     if (reportData.getGroupBy() instanceof StartDateGroupByDto) {
       StartDateGroupByValueDto groupByStartDate = ((StartDateGroupByDto) reportData.getGroupBy()).getValue();
       if (GroupByDateUnit.AUTOMATIC.equals(groupByStartDate.getUnit())) {
@@ -34,7 +35,7 @@ public interface AutomaticGroupByDateCommand {
 
   IntervalAggregationService getIntervalAggregationService();
 
-  void beforeEvaluate(final CommandContext<ProcessReportDataDto> commandContext);
+  void beforeEvaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext);
 
   BoolQueryBuilder setupBaseQuery(ProcessReportDataDto reportDataDto);
 }

@@ -39,7 +39,7 @@ public class RawDataDecisionReportResultDtoMapperTest {
     final RawDataDecisionReportResultDto result = mapper.mapFrom(searchResponse, objectMapper);
 
     // then
-    assertThat(result.getResult().size(), is(rawDataLimit.intValue()));
+    assertThat(result.getData().size(), is(rawDataLimit.intValue()));
     assertThat(result.getDecisionInstanceCount(), is(actualInstanceCount));
   }
 
@@ -76,12 +76,12 @@ public class RawDataDecisionReportResultDtoMapperTest {
     final RawDataDecisionReportResultDto result = mapper.mapFrom(searchResponse, objectMapper);
 
     // then
-    assertThat(result.getResult().size(), is(rawDataLimit.intValue()));
+    assertThat(result.getData().size(), is(rawDataLimit.intValue()));
     assertThat(result.getDecisionInstanceCount(), is(actualInstanceCount));
     IntStream.range(0, rawDataLimit.intValue())
       .forEach(i -> {
-        assertThat(result.getResult().get(i).getInputVariables().size(), is(rawDataLimit.intValue()));
-        assertThat(result.getResult().get(i).getOutputVariables().size(), is(rawDataLimit.intValue()));
+        assertThat(result.getData().get(i).getInputVariables().size(), is(rawDataLimit.intValue()));
+        assertThat(result.getData().get(i).getOutputVariables().size(), is(rawDataLimit.intValue()));
       });
   }
 

@@ -34,7 +34,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
@@ -93,9 +92,9 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
     }
 
     ProcessDurationReportMapResultDto mapResultDto = new ProcessDurationReportMapResultDto();
-    mapResultDto.setResult(processAggregations(response.getAggregations()));
+    mapResultDto.setData(processAggregations(response.getAggregations()));
     mapResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessMapDurationReportResult(mapResultDto);
+    return new SingleProcessMapDurationReportResult(mapResultDto, reportDefinition);
   }
 
   @Override
@@ -105,13 +104,9 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
 
   @Override
   protected void sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
-    getReportData().getParameters().getSorting().ifPresent(
+    ((ProcessReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
-  }
-
-  private static Collector<Map.Entry<String, AggregationResultDto>, ?, LinkedHashMap<String, AggregationResultDto>> toLinkedHashMapCollector() {
-    return Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (x, y) -> y, LinkedHashMap::new);
   }
 
   private AggregationBuilder createAggregation(GroupByDateUnit unit, QueryBuilder query) throws OptimizeException {

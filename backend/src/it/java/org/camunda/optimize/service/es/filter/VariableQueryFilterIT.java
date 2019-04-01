@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.filter;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -8,10 +9,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -47,10 +48,14 @@ public class VariableQueryFilterIT {
 
   private final String TEST_DEFINITION_KEY = "testDefinition";
 
-  private RawDataProcessReportResultDto evaluateReport(ProcessReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    MatcherAssert.assertThat(response.getStatus(), is(200));
-    return response.readEntity(RawDataProcessReportResultDto.class);
+  private RawDataProcessReportResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {})
+      // @formatter:on
+      .getResult();
   }
 
   private Response evaluateReportWithFilterAndGetResponse(String processDefinitionKey, List<ProcessFilterDto> filterList) {
@@ -81,7 +86,7 @@ public class VariableQueryFilterIT {
     ProcessReportDataDto reportData =
       createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(filter);
-    return evaluateReport(reportData);
+    return evaluateReportAndReturnResult(reportData);
   }
 
   @Test
@@ -1077,7 +1082,7 @@ public class VariableQueryFilterIT {
   }
 
   private void assertResults(RawDataProcessReportResultDto report, int piCount) {
-    assertThat("PI count", report.getResult().size(), is(piCount));
+    assertThat("PI count", report.getData().size(), is(piCount));
   }
 
   private ProcessDefinitionEngineDto deploySimpleProcessDefinition() throws IOException {

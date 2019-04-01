@@ -1,9 +1,9 @@
 package org.camunda.optimize.service.es.report;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.Command;
@@ -31,7 +31,7 @@ import org.camunda.optimize.service.es.report.command.process.user_task.duration
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.UserTaskTotalDurationByUserTaskCommand;
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.UserTaskWorkDurationByUserTaskCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
-import org.camunda.optimize.service.es.report.result.ReportResult;
+import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -201,34 +201,34 @@ public class SingleReportEvaluator {
     );
   }
 
-  ReportResult evaluate(ReportDataDto reportData) throws OptimizeException {
-    CommandContext<ReportDataDto> commandContext = createCommandContext(reportData);
-    Command<ReportDataDto> evaluationCommand = extractCommandWithValidation(reportData);
+  <T extends ReportDefinitionDto> ReportEvaluationResult<?, T> evaluate(T reportDefinition) throws OptimizeException {
+    CommandContext<T> commandContext = createCommandContext(reportDefinition);
+    Command<T> evaluationCommand = extractCommandWithValidation(reportDefinition);
     return evaluationCommand.evaluate(commandContext);
   }
 
-  @SuppressWarnings(value = "unchecked")
-  Command<ReportDataDto> extractCommand(ReportDataDto reportData) {
-    return commandSuppliers.getOrDefault(reportData.createCommandKey(), NotSupportedCommand::new).get();
-  }
-
-  protected CommandContext<ReportDataDto> createCommandContext(ReportDataDto reportData) {
-    CommandContext<ReportDataDto> commandContext = new CommandContext<>();
+  protected <T extends ReportDefinitionDto> CommandContext<T> createCommandContext(T reportDefinition) {
+    CommandContext<T> commandContext = new CommandContext<>();
     commandContext.setConfigurationService(configurationService);
     commandContext.setEsClient(esClient);
     commandContext.setObjectMapper(objectMapper);
     commandContext.setIntervalAggregationService(intervalAggregationService);
-    if (reportData instanceof ProcessReportDataDto) {
+    if (reportDefinition instanceof SingleProcessReportDefinitionDto) {
       commandContext.setQueryFilterEnhancer(processQueryFilterEnhancer);
-    } else if (reportData instanceof DecisionReportDataDto) {
+    } else if (reportDefinition instanceof SingleDecisionReportDefinitionDto) {
       commandContext.setQueryFilterEnhancer(decisionQueryFilterEnhancer);
     }
-    commandContext.setReportData(reportData);
+    commandContext.setReportDefinition(reportDefinition);
     return commandContext;
   }
 
-  private Command<ReportDataDto> extractCommandWithValidation(ReportDataDto reportData) {
-    ValidationHelper.validate(reportData);
-    return extractCommand(reportData);
+  private <T extends ReportDefinitionDto> Command<T> extractCommandWithValidation(T reportDefinition) {
+    ValidationHelper.validate(reportDefinition.getData());
+    return extractCommand(reportDefinition);
+  }
+
+  @SuppressWarnings(value = "unchecked")
+  <T extends ReportDefinitionDto> Command<T> extractCommand(T reportDefinition) {
+    return commandSuppliers.getOrDefault(reportDefinition.getData().createCommandKey(), NotSupportedCommand::new).get();
   }
 }

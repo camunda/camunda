@@ -1,10 +1,12 @@
 package org.camunda.optimize.service.importing;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -15,7 +17,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -353,26 +354,21 @@ public class VariableImportIT {
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
       processDefinitionKey, ALL_VERSIONS
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData);
-    assertThat(result.getResult(), is(notNullValue()));
-    Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
+    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    Map<String, Long> flowNodeIdToExecutionFrequency = result.getData();
     for (Long frequency : flowNodeIdToExecutionFrequency.values()) {
       assertThat(frequency, is(4L));
     }
   }
 
-  private ProcessReportMapResultDto evaluateReport(ProcessReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(ProcessReportMapResultDto.class);
-  }
-
-  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
+  protected ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateSingleUnsavedReportRequest(reportData)
-            .execute();
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessReportMapResultDto>>() {});
+      // @formatter:on
   }
 
 }

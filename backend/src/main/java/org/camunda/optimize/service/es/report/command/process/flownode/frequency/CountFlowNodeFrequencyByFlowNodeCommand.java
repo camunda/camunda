@@ -75,14 +75,14 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCom
     Map<String, Long> resultMap = processAggregations(response.getAggregations());
     ProcessReportMapResultDto resultDto =
       new ProcessReportMapResultDto();
-    resultDto.setResult(resultMap);
+    resultDto.setData(resultMap);
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessMapReportResult(resultDto);
+    return new SingleProcessMapReportResult(resultDto, reportDefinition);
   }
 
   @Override
   protected void sortResultData(final SingleProcessMapReportResult evaluationResult) {
-    getReportData().getParameters().getSorting().ifPresent(
+    ((ProcessReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
   }

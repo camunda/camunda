@@ -73,14 +73,14 @@ public class CountDecisionFrequencyGroupByMatchedRuleCommand
 
 
     DecisionReportMapResultDto mapResultDto = new DecisionReportMapResultDto();
-    mapResultDto.setResult(mapAggregationsToMapResult(response.getAggregations()));
+    mapResultDto.getData(mapAggregationsToMapResult(response.getAggregations()));
     mapResultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
-    return new SingleDecisionMapReportResult(mapResultDto);
+    return new SingleDecisionMapReportResult(mapResultDto, reportDefinition);
   }
 
   @Override
   protected void sortResultData(final SingleDecisionMapReportResult evaluationResult) {
-    getReportData().getParameters().getSorting().ifPresent(
+    ((DecisionReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
   }

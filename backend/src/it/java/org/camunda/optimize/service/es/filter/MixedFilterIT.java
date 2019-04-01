@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.filter;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -7,17 +8,15 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,26 +40,6 @@ public class MixedFilterIT {
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
-
-  private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<ProcessFilterDto> filter) {
-    ProcessReportDataDto reportData =
-      createProcessReportDataViewRawAsTable(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
-    reportData.setFilter(filter);
-    return evaluateReport(reportData);
-  }
-
-  private RawDataProcessReportResultDto evaluateReport(ProcessReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    MatcherAssert.assertThat(response.getStatus(), is(200));
-    return response.readEntity(RawDataProcessReportResultDto.class);
-  }
-
-  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateSingleUnsavedReportRequest(reportData)
-            .execute();
-  }
 
 
   @Test
@@ -117,11 +96,26 @@ public class MixedFilterIT {
     RawDataProcessReportResultDto rawDataReportResultDto = evaluateReportWithFilter(processDefinition, filterList);
 
     // then
-    assertThat(rawDataReportResultDto.getResult().size(), is(1));
+    assertThat(rawDataReportResultDto.getData().size(), is(1));
   }
 
+  private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<ProcessFilterDto> filter) {
+    ProcessReportDataDto reportData =
+      createProcessReportDataViewRawAsTable(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+    reportData.setFilter(filter);
+    return evaluateReport(reportData).getResult();
+  }
 
-  private ProcessDefinitionEngineDto deploySimpleProcessDefinition() throws IOException {
+  private ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReport(final ProcessReportDataDto reportData) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
+      // @formatter:on
+  }
+
+  private ProcessDefinitionEngineDto deploySimpleProcessDefinition() {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent()
       .userTask(USER_TASK_ACTIVITY_ID)
@@ -129,6 +123,5 @@ public class MixedFilterIT {
       .done();
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
-
 
 }

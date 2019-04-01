@@ -1,6 +1,8 @@
 package org.camunda.optimize.service.export;
 
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionRawDataReportResult;
@@ -47,9 +49,9 @@ public class ExportServiceTest {
   public void rawProcessReportCsvExport() throws IOException {
     // given
     final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
-    rawDataProcessReportResultDto.setResult(RawDataHelper.getRawDataProcessInstanceDtos());
+    rawDataProcessReportResultDto.setData(RawDataHelper.getRawDataProcessInstanceDtos());
     SingleProcessRawDataReportResult rawDataReportResult =
-      new SingleProcessRawDataReportResult(rawDataProcessReportResultDto);
+      new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, new SingleProcessReportDefinitionDto());
     when(reportService.evaluateSavedReport(any(), any())).thenReturn(rawDataReportResult);
 
     // when
@@ -65,9 +67,9 @@ public class ExportServiceTest {
   public void rawDecisionReportCsvExport() throws IOException {
     // given
     final RawDataDecisionReportResultDto rawDataDecisionReportResultDto = new RawDataDecisionReportResultDto();
-    rawDataDecisionReportResultDto.setResult(RawDataHelper.getRawDataDecisionInstanceDtos());
+    rawDataDecisionReportResultDto.setData(RawDataHelper.getRawDataDecisionInstanceDtos());
     SingleDecisionRawDataReportResult rawDataReportResult =
-      new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto);
+      new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto, new SingleDecisionReportDefinitionDto());
     when(reportService.evaluateSavedReport(any(), any())).thenReturn(rawDataReportResult);
 
     // when

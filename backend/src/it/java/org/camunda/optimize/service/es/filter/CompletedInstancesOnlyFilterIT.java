@@ -1,12 +1,13 @@
 package org.camunda.optimize.service.es.filter;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -15,10 +16,6 @@ import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-
-import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.util.Collections;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -53,28 +50,25 @@ public class CompletedInstancesOnlyFilterIT {
     ProcessReportDataDto reportData =
       ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
     reportData.setFilter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList());
-    RawDataProcessReportResultDto result = evaluateReport(reportData);
+    RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
 
     // then
-    assertThat(result.getResult().size(), is(2));
-    assertThat(result.getResult().get(0).getProcessInstanceId(), is(not(thirdProcInst.getId())));
-    assertThat(result.getResult().get(1).getProcessInstanceId(), is(not(thirdProcInst.getId())));
+    assertThat(result.getData().size(), is(2));
+    assertThat(result.getData().get(0).getProcessInstanceId(), is(not(thirdProcInst.getId())));
+    assertThat(result.getData().get(1).getProcessInstanceId(), is(not(thirdProcInst.getId())));
   }
 
-  private RawDataProcessReportResultDto evaluateReport(ProcessReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
-    return response.readEntity(RawDataProcessReportResultDto.class);
-  }
-
-  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
+  private RawDataProcessReportResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateSingleUnsavedReportRequest(reportData)
-            .execute();
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {})
+      // @formatter:on
+      .getResult();
   }
 
-  private ProcessDefinitionEngineDto deployUserTaskProcess() throws IOException {
+  private ProcessDefinitionEngineDto deployUserTaskProcess() {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent()

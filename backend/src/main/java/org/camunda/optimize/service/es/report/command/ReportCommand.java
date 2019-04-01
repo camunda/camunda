@@ -3,7 +3,8 @@ package org.camunda.optimize.service.es.report.command;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.service.es.report.result.ReportResult;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -12,20 +13,20 @@ import org.slf4j.LoggerFactory;
 
 import java.time.OffsetDateTime;
 
-public abstract class ReportCommand<R extends ReportResult, RD extends ReportDataDto> implements Command<RD> {
+public abstract class ReportCommand<R extends ReportEvaluationResult, RD extends ReportDefinitionDto<?>>
+  implements Command<RD> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
-  protected RD reportData;
+  protected RD reportDefinition;
   protected RestHighLevelClient esClient;
   protected ConfigurationService configurationService;
   protected ObjectMapper objectMapper;
   protected Range<OffsetDateTime> dateIntervalRange;
 
-
   @Override
   public R evaluate(CommandContext<RD> commandContext) throws OptimizeException {
-    reportData = commandContext.getReportData();
+    reportDefinition = commandContext.getReportDefinition();
     esClient = commandContext.getEsClient();
     configurationService = commandContext.getConfigurationService();
     objectMapper = commandContext.getObjectMapper();
@@ -33,7 +34,6 @@ public abstract class ReportCommand<R extends ReportResult, RD extends ReportDat
     beforeEvaluate(commandContext);
 
     final R evaluationResult = evaluate();
-    evaluationResult.copyReportData(reportData);
     final R filteredResultData = filterResultData(commandContext, evaluationResult);
     sortResultData(filteredResultData);
     return filteredResultData;
@@ -49,7 +49,8 @@ public abstract class ReportCommand<R extends ReportResult, RD extends ReportDat
     return evaluationResult;
   }
 
-  public RD getReportData() {
-    return reportData;
+  @SuppressWarnings("unchecked")
+  public <T extends ReportDataDto> T getReportData() {
+    return (T) reportDefinition.getData();
   }
 }

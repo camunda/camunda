@@ -2,6 +2,7 @@ package org.camunda.optimize.rest.queryparam.adjustment;
 
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OffsetResultListDecorator;
@@ -32,10 +33,10 @@ public class QueryParamAdjustmentUtil {
 
   static {
     reportComparators.put(
-      LAST_MODIFIED, Comparator.comparing(ReportDefinitionDto::getLastModified).reversed()
+      LAST_MODIFIED, Comparator.comparing(ReportDefinitionDto<ReportDataDto>::getLastModified).reversed()
     );
     reportComparators.put(
-      NAME, Comparator.comparing(ReportDefinitionDto::getName)
+      NAME, Comparator.comparing(ReportDefinitionDto<ReportDataDto>::getName)
     );
 
     variableComparators.put(NAME, Comparator.comparing(VariableRetrievalDto::getName));

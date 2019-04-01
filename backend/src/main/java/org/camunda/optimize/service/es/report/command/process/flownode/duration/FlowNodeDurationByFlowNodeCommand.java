@@ -91,14 +91,14 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
     Map<String, AggregationResultDto> resultMap = processAggregations(response.getAggregations());
     ProcessDurationReportMapResultDto resultDto =
       new ProcessDurationReportMapResultDto();
-    resultDto.setResult(resultMap);
+    resultDto.setData(resultMap);
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessMapDurationReportResult(resultDto);
+    return new SingleProcessMapDurationReportResult(resultDto, reportDefinition);
   }
 
   @Override
   protected void sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
-    getReportData().getParameters().getSorting().ifPresent(
+    ((ProcessReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
   }

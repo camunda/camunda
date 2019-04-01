@@ -60,9 +60,9 @@ public class CountDecisionFrequencyGroupByNoneCommand extends DecisionReportComm
     }
 
     DecisionReportNumberResultDto numberResultDto = new DecisionReportNumberResultDto();
-    numberResultDto.setResult(response.getHits().getTotalHits());
+    numberResultDto.setData(response.getHits().getTotalHits());
     numberResultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
-    return new SingleDecisionNumberReportResult(numberResultDto);
+    return new SingleDecisionNumberReportResult(numberResultDto, reportDefinition);
   }
 
   @Override

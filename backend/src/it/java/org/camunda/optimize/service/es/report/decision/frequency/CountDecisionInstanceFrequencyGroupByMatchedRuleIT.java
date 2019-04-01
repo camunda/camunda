@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.filter.FilterOperatorConstants;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
@@ -79,21 +80,21 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
       decisionDefinitionDto1, decisionDefinitionVersion1
-    );
+    ).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(6L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(4));
-    assertThat(new ArrayList<>(result.getResult().keySet()), containsInAnyOrder(
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(4));
+    assertThat(new ArrayList<>(result.getData().keySet()), containsInAnyOrder(
       INVOICE_RULE_1_ID, INVOICE_RULE_2_ID, INVOICE_RULE_3_ID, INVOICE_RULE_4_ID
     ));
-    assertThat(result.getResult().get(INVOICE_RULE_1_ID), is(2L));
-    assertThat(result.getResult().get(INVOICE_RULE_2_ID), is(1L));
-    assertThat(result.getResult().get(INVOICE_RULE_3_ID), is(2L));
-    assertThat(result.getResult().get(INVOICE_RULE_4_ID), is(1L));
+    assertThat(result.getData().get(INVOICE_RULE_1_ID), is(2L));
+    assertThat(result.getData().get(INVOICE_RULE_2_ID), is(1L));
+    assertThat(result.getData().get(INVOICE_RULE_3_ID), is(2L));
+    assertThat(result.getData().get(INVOICE_RULE_4_ID), is(1L));
   }
 
   @Test
@@ -134,10 +135,10 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData);
+    final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getResult();
+    final Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(4));
     assertThat(
       new ArrayList<>(resultMap.keySet()),
@@ -184,10 +185,10 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData);
+    final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getResult();
+    final Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(4));
     final List<Long> bucketValues = new ArrayList<>(resultMap.values());
     assertThat(
@@ -238,22 +239,22 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS
-    );
+    ).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(8L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(4));
-    assertThat(new ArrayList<>(result.getResult().keySet()), containsInAnyOrder(
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(4));
+    assertThat(new ArrayList<>(result.getData().keySet()), containsInAnyOrder(
       INVOICE_RULE_1_ID, INVOICE_RULE_2_ID, INVOICE_RULE_3_ID, INVOICE_RULE_4_ID
     ));
 
-    assertThat(result.getResult().get(INVOICE_RULE_1_ID), is(4L));
-    assertThat(result.getResult().get(INVOICE_RULE_2_ID), is(1L));
-    assertThat(result.getResult().get(INVOICE_RULE_3_ID), is(2L));
-    assertThat(result.getResult().get(INVOICE_RULE_4_ID), is(1L));
+    assertThat(result.getData().get(INVOICE_RULE_1_ID), is(4L));
+    assertThat(result.getData().get(INVOICE_RULE_2_ID), is(1L));
+    assertThat(result.getData().get(INVOICE_RULE_3_ID), is(2L));
+    assertThat(result.getData().get(INVOICE_RULE_4_ID), is(1L));
   }
 
   @Test
@@ -285,15 +286,15 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
         INPUT_AMOUNT_ID, FilterOperatorConstants.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();
-    DecisionReportMapResultDto result = evaluateMapReport(reportData);
+    final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(1L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
     // only matched rule 2 is present
-    assertThat(new ArrayList<>(result.getResult().keySet()), containsInAnyOrder(INVOICE_RULE_2_ID));
-    assertThat(result.getResult().get(INVOICE_RULE_2_ID), is(1L));
+    assertThat(new ArrayList<>(result.getData().keySet()), containsInAnyOrder(INVOICE_RULE_2_ID));
+    assertThat(result.getData().get(INVOICE_RULE_2_ID), is(1L));
   }
 
   @Test
@@ -317,20 +318,20 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS
-    );
+    ).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(3L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(3));
-    assertThat(new ArrayList<>(result.getResult().keySet()), containsInAnyOrder(
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(3));
+    assertThat(new ArrayList<>(result.getData().keySet()), containsInAnyOrder(
       BEVERAGES_RULE_3_ID, BEVERAGES_RULE_5_ID, BEVERAGES_RULE_6_ID
     ));
-    assertThat(result.getResult().get(BEVERAGES_RULE_3_ID), is(2L));
-    assertThat(result.getResult().get(BEVERAGES_RULE_5_ID), is(2L));
-    assertThat(result.getResult().get(BEVERAGES_RULE_6_ID), is(1L));
+    assertThat(result.getData().get(BEVERAGES_RULE_3_ID), is(2L));
+    assertThat(result.getData().get(BEVERAGES_RULE_5_ID), is(2L));
+    assertThat(result.getData().get(BEVERAGES_RULE_6_ID), is(1L));
   }
 
   @Test
@@ -354,15 +355,15 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS
-    );
+    ).getResult();
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(2L));
-    assertThat(result.getResult(), is(notNullValue()));
-    assertThat(result.getResult().size(), is(1));
-    assertThat(result.getResult().values().stream().findFirst().get(), is(2L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().values().stream().findFirst().get(), is(2L));
   }
 
   @Test
@@ -429,7 +430,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     }};
   }
 
-  private DecisionReportMapResultDto evaluateDecisionInstanceFrequencyByMatchedRule(
+  private DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByMatchedRule(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion) {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()

@@ -31,7 +31,7 @@ public class ProcessInstanceDurationGroupByStartDateWithProcessPartCommand
 
   @Override
   protected List<AggregationBuilder> createOperationsAggregations() {
-    ProcessPartDto processPart = getReportData().getParameters().getProcessPart();
+    ProcessPartDto processPart = ((ProcessReportDataDto) getReportData()).getParameters().getProcessPart();
     return ImmutableList.of(
       ProcessPartQueryUtil.createProcessPartAggregation(processPart.getStart(), processPart.getEnd())
     );

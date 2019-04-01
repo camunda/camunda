@@ -1,5 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.result.duration;
 
+import com.google.common.base.MoreObjects;
 import net.minidev.json.annotate.JsonIgnore;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -89,5 +90,15 @@ public class AggregationResultDto {
   @Override
   public int hashCode() {
     return Objects.hash(min, max, avg, median);
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+      .add("min", min)
+      .add("max", max)
+      .add("avg", avg)
+      .add("median", median)
+      .toString();
   }
 }

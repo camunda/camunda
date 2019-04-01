@@ -7,18 +7,18 @@ import java.util.List;
 
 public class RawDataDecisionReportResultDto extends DecisionReportResultDto {
 
-  protected List<RawDataDecisionInstanceDto> result;
+  protected List<RawDataDecisionInstanceDto> data;
 
-  public List<RawDataDecisionInstanceDto> getResult() {
-    return result;
+  public List<RawDataDecisionInstanceDto> getData() {
+    return data;
   }
 
-  public void setResult(List<RawDataDecisionInstanceDto> result) {
-    this.result = result;
+  public void setData(List<RawDataDecisionInstanceDto> data) {
+    this.data = data;
   }
 
   @Override
-  public ResultType getResultType() {
+  public ResultType getType() {
     return ResultType.RAW;
   }
 

@@ -30,7 +30,7 @@ public class RawDataProcessReportResultDtoMapperTest {
     final RawDataProcessReportResultDto result = mapper.mapFrom(searchResponse, objectMapper);
 
     // then
-    assertThat(result.getResult().size(), is(rawDataLimit.intValue()));
+    assertThat(result.getData().size(), is(rawDataLimit.intValue()));
     assertThat(result.getProcessInstanceCount(), is(actualInstanceCount));
   }
 
