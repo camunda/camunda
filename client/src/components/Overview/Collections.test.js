@@ -4,6 +4,8 @@ import {shallow} from 'enzyme';
 import {Button} from 'components';
 
 import CollectionsWithStore from './Collections';
+import ReportItem from './subComponents/ReportItem';
+import DashboardItem from './subComponents/DashboardItem';
 const Collections = CollectionsWithStore.WrappedComponent;
 
 const processReport = {
@@ -97,8 +99,8 @@ it('should render dashboard and report list items', () => {
   const node = shallow(<Collections {...props} />);
   node.setState({[collection.id]: true});
 
-  expect(node.find('ReportItem')).toBePresent();
-  expect(node.find('DashboardItem')).toBePresent();
+  expect(node.find(ReportItem)).toBePresent();
+  expect(node.find(DashboardItem)).toBePresent();
 });
 
 it('should show no result found text when no matching reports were found', () => {

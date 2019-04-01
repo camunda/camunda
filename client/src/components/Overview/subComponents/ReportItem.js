@@ -1,20 +1,23 @@
 import React from 'react';
-import {Button, Icon} from 'components';
+import {Button, Icon, CollectionsDropdown} from 'components';
 import {getReportInfo, getReportIcon} from '../service';
 import LastModified from './LastModified';
 import {Link} from 'react-router-dom';
-import CollectionsDropdown from './CollectionsDropdown';
 import {formatters} from 'services';
+import {withStore} from '../OverviewStore';
 
-export default function ReportItem({
+export default withStore(function ReportItem({
+  store: {searchQuery, collections},
   report,
-  searchQuery,
   duplicateEntity,
   showDeleteModalFor,
-  collection
+  collection,
+  entitiesCollections,
+  toggleEntityCollection,
+  setCollectionToUpdate
 }) {
   const {Icon: ReportIcon, label} = getReportIcon(report);
-
+  const reportCollections = entitiesCollections[report.id];
   return (
     <li className="ReportItem listItem">
       <Link className="info" to={`/report/${report.id}`}>
@@ -37,7 +40,14 @@ export default function ReportItem({
           </div>
         </div>
       </Link>
-      <CollectionsDropdown entity={report} currentCollection={collection} />
+      <CollectionsDropdown
+        entity={report}
+        currentCollection={collection}
+        toggleEntityCollection={toggleEntityCollection}
+        setCollectionToUpdate={setCollectionToUpdate}
+        collections={collections}
+        entityCollections={reportCollections}
+      />
       <div className="operations">
         <Link title="Edit Report" to={`/report/${report.id}/edit`}>
           <Icon title="Edit Report" type="edit" className="editLink" />
@@ -54,4 +64,4 @@ export default function ReportItem({
       </div>
     </li>
   );
-}
+});

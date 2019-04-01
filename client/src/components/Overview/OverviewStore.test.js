@@ -1,15 +1,17 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import {StoreProvider} from './OverviewStore';
-import {load, create, update} from './service';
-import {checkDeleteConflict} from 'services';
+import {load, create} from './service';
+import {checkDeleteConflict, toggleEntityCollection} from 'services';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
 
   return {
     ...rest,
-    checkDeleteConflict: jest.fn().mockReturnValue([])
+    getEntitiesCollections: jest.fn().mockReturnValue({}),
+    checkDeleteConflict: jest.fn().mockReturnValue([]),
+    toggleEntityCollection: jest.fn().mockReturnValue(jest.fn())
   };
 });
 
@@ -91,9 +93,7 @@ it('should add the entity to the collection that was duplicated from', async () 
     target: {blur: jest.fn()}
   });
 
-  expect(update).toHaveBeenCalledWith('collection', 'aCollectionId', {
-    data: {entities: ['reportID', 'newReport']}
-  });
+  expect(toggleEntityCollection()).toHaveBeenCalledWith({id: 'newReport'}, collection, false);
 });
 
 it('should check for deletion conflicts for reports and dashboards', async () => {
@@ -141,18 +141,4 @@ it('should duplicate dashboards', () => {
     ...dashboard,
     name: dashboard.name + ' - Copy'
   });
-});
-
-it('should correctly add report to a collection', async () => {
-  const node = shallow(<OverviewStore {...props} />);
-  await node.instance().toggleEntityCollection(processReport, collection, false)();
-  expect(update).toHaveBeenCalledWith('collection', 'aCollectionId', {
-    data: {entities: ['reportID', 'reportID']}
-  });
-});
-
-it('should correctly remove report to a collection', async () => {
-  const node = shallow(<OverviewStore {...props} />);
-  await node.instance().toggleEntityCollection(processReport, collection, true)();
-  expect(update).toHaveBeenCalledWith('collection', 'aCollectionId', {data: {entities: []}});
 });

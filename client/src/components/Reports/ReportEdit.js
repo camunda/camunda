@@ -1,19 +1,25 @@
 import React, {Component} from 'react';
 import update from 'immutability-helper';
 import {withErrorHandling} from 'HOC';
-
+import moment from 'moment';
 import {Redirect} from 'react-router-dom';
 import {
   ReportRenderer,
   LoadingIndicator,
   Message,
   ConfirmationModal,
-  EntityNameForm
+  EntityNameForm,
+  CollectionsDropdown
 } from 'components';
 
 import {evaluateReport, saveReport} from './service';
 
-import {loadDefinitions, incompatibleFilters, loadProcessDefinitionXml} from 'services';
+import {
+  loadDefinitions,
+  incompatibleFilters,
+  loadProcessDefinitionXml,
+  toggleEntityCollection
+} from 'services';
 import {addNotification} from 'notifications';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
@@ -167,6 +173,7 @@ export default withErrorHandling(
         saveLoading
       } = this.state;
       const {id, name, lastModifier, lastModified, data, combined, reportType} = report;
+      const {collections, reportCollections, openEditCollectionModal, loadCollections} = this.props;
 
       if (redirect) {
         return <Redirect to={redirect} />;
@@ -187,14 +194,24 @@ export default withErrorHandling(
               <EntityNameForm
                 id={id}
                 initialName={name}
-                lastModified={lastModified}
-                lastModifier={lastModifier}
                 entity="Report"
                 autofocus={this.props.isNew}
                 onSave={this.save}
                 onCancel={this.cancel}
                 disabledButtons={saveLoading}
               />
+              <div className="subHead">
+                <div className="metadata">
+                  Last modified {moment(lastModified).format('lll')} by {lastModifier}
+                </div>
+                <CollectionsDropdown
+                  entity={report}
+                  collections={collections}
+                  toggleEntityCollection={toggleEntityCollection(loadCollections)}
+                  entityCollections={reportCollections}
+                  setCollectionToUpdate={openEditCollectionModal}
+                />
+              </div>
             </div>
 
             {!combined && reportType === 'process' && (

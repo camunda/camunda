@@ -1,0 +1,33 @@
+.CollectionsDropdown {
+  align-self: center;
+  margin: 0 10px;
+  min-width: 150px;
+
+  .menu ul li:nth-last-child(2) {
+    border-bottom: 1px solid #bbb;
+  }
+
+  .Button {
+    border-radius: 15px;
+    height: 30px;
+    border: 1px solid transparent;
+    background: none;
+    position: relative;
+
+    &:hover {
+      background: rgba(#d8dce3, 0.5);
+    }
+
+    &:focus {
+      background: rgba(#d8dce3, 0.8);
+      .Icon,
+      .noCollection {
+        visibility: visible;
+      }
+    }
+
+    &:active {
+      background: rgba(#d8dce3, 0.8);
+    }
+  }
+}

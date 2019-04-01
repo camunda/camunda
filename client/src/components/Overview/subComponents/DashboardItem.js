@@ -1,20 +1,24 @@
 import React from 'react';
-import {Button, Icon} from 'components';
+import {Button, Icon, CollectionsDropdown} from 'components';
 import LastModified from './LastModified';
 import {Link} from 'react-router-dom';
 import entityIcons from '../entityIcons';
-import CollectionsDropdown from './CollectionsDropdown';
 import {formatters} from 'services';
+import {withStore} from '../OverviewStore';
 
 const EntityIcon = entityIcons.dashboard.generic.Component;
 
-export default function DashboardItem({
+export default withStore(function DashboardItem({
+  store: {searchQuery, collections},
   dashboard,
+  collection,
+  entitiesCollections,
   duplicateEntity,
   showDeleteModalFor,
-  collection,
-  searchQuery
+  toggleEntityCollection,
+  setCollectionToUpdate
 }) {
+  const dashboardCollections = entitiesCollections[dashboard.id];
   return (
     <li className="DashboardItem listItem">
       <Link className="info" to={`/dashboard/${dashboard.id}`}>
@@ -38,7 +42,14 @@ export default function DashboardItem({
           </div>
         </div>
       </Link>
-      <CollectionsDropdown entity={dashboard} currentCollection={collection} />
+      <CollectionsDropdown
+        entity={dashboard}
+        currentCollection={collection}
+        toggleEntityCollection={toggleEntityCollection}
+        setCollectionToUpdate={setCollectionToUpdate}
+        collections={collections}
+        entityCollections={dashboardCollections}
+      />
       <div className="operations">
         <Link title="Edit Dashboard" to={`/dashboard/${dashboard.id}/edit`}>
           <Icon title="Edit Dashboard" type="edit" className="editLink" />
@@ -61,4 +72,4 @@ export default function DashboardItem({
       </div>
     </li>
   );
-}
+});

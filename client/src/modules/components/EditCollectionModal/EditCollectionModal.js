@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import {Button, Input, Modal} from 'components';
 
-export default class UpdateCollectionModal extends Component {
+export default class EditCollectionModal extends Component {
   constructor(props) {
     super(props);
     this.state = {

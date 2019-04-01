@@ -139,3 +139,9 @@ it('should set conflict state when conflict happens on delete button click', asy
   expect(node.state().conflict.type).toEqual('Delete');
   expect(node.state().conflict.items).toEqual(conflictedItems);
 });
+
+it('should render collections dropdown', async () => {
+  const node = shallow(<ReportView report={report} />);
+
+  expect(node.find('CollectionsDropdown')).toBePresent();
+});

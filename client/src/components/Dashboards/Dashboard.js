@@ -5,7 +5,13 @@ import Fullscreen from 'react-full-screen';
 import {default as updateState} from 'immutability-helper';
 import {Link, Redirect} from 'react-router-dom';
 import {withErrorHandling} from 'HOC';
-import {checkDeleteConflict} from 'services';
+import {
+  checkDeleteConflict,
+  toggleEntityCollection,
+  loadEntity,
+  createEntity,
+  getEntitiesCollections
+} from 'services';
 
 import {
   Button,
@@ -17,7 +23,9 @@ import {
   ErrorPage,
   LoadingIndicator,
   ConfirmationModal,
-  EntityNameForm
+  EntityNameForm,
+  CollectionsDropdown,
+  EditCollectionModal
 } from 'components';
 
 import {addNotification} from 'notifications';
@@ -72,7 +80,9 @@ export default themed(
           isAuthorizedToShare: false,
           sharingEnabled: false,
           conflicts: [],
-          deleteLoading: false
+          deleteLoading: false,
+          collections: [],
+          creatingCollection: false
         };
       }
 
@@ -104,6 +114,7 @@ export default themed(
               isAuthorizedToShare: await isAuthorizedToShareDashboard(this.id),
               ...(sharingEnabled !== 'undefined' ? {sharingEnabled} : {})
             });
+            await this.loadCollections();
           },
           error => {
             addNotification({text: 'Dashboard could not be opened.', type: 'error'});
@@ -114,6 +125,21 @@ export default themed(
             return;
           }
         );
+      };
+
+      loadCollections = async () => {
+        const collections = await loadEntity('collection', null, 'created');
+        this.setState({collections});
+      };
+
+      openEditCollectionModal = () => {
+        this.setState({creatingCollection: true});
+      };
+
+      createCollection = async collection => {
+        await createEntity('collection', collection);
+        await this.loadCollections();
+        this.setState({creatingCollection: false});
       };
 
       deleteDashboard = async evt => {
@@ -259,7 +285,8 @@ export default themed(
       };
 
       renderEditMode = state => {
-        const {name, lastModifier, lastModified} = state;
+        const {name, lastModifier, lastModified, collections} = state;
+        const dashboardCollections = getEntitiesCollections(collections)[this.id];
 
         return (
           <div className="Dashboard editMode">
@@ -274,6 +301,18 @@ export default themed(
                 onSave={this.saveChanges}
                 onCancel={this.cancelChanges}
               />
+              <div className="subHead">
+                <div className="metadata">
+                  Last modified {moment(lastModified).format('lll')} by {lastModifier}
+                </div>
+                <CollectionsDropdown
+                  entity={{id: this.id}}
+                  collections={collections}
+                  toggleEntityCollection={toggleEntityCollection(this.loadCollections)}
+                  entityCollections={dashboardCollections}
+                  setCollectionToUpdate={this.openEditCollectionModal}
+                />
+              </div>
             </div>
             <DashboardView
               disableReportScrolling
@@ -314,8 +353,12 @@ export default themed(
           isAuthorizedToShare,
           sharingEnabled,
           conflicts,
-          deleteLoading
+          deleteLoading,
+          collections
         } = state;
+
+        const dashboardCollections = getEntitiesCollections(collections)[this.id];
+
         return (
           <Fullscreen enabled={this.state.fullScreenActive} onChange={this.changeFullScreen}>
             <div
@@ -324,74 +367,88 @@ export default themed(
               })}
             >
               <div className="Dashboard__header">
-                <div className="name-container">
-                  <h1 className="name">{name}</h1>
+                <div className="head">
+                  <div className="name-container">
+                    <h1 className="name">{name}</h1>
+                  </div>
+                  <div className="tools">
+                    {!this.state.fullScreenActive && (
+                      <React.Fragment>
+                        <Link
+                          className="tool-button edit-button"
+                          to={`/dashboard/${this.id}/edit`}
+                          onClick={this.setAutorefresh(null)}
+                        >
+                          <Button>
+                            <Icon type="edit" />
+                            Edit
+                          </Button>
+                        </Link>
+                        <Button
+                          onClick={this.showDeleteModal}
+                          className="tool-button delete-button"
+                        >
+                          <Icon type="delete" />
+                          Delete
+                        </Button>
+                        <Popover
+                          className="tool-button share-button"
+                          icon="share"
+                          title="Share"
+                          disabled={!sharingEnabled || !isAuthorizedToShare}
+                          tooltip={this.createShareTooltip()}
+                        >
+                          <ShareEntity
+                            type="dashboard"
+                            resourceId={this.id}
+                            shareEntity={shareDashboard}
+                            revokeEntitySharing={revokeDashboardSharing}
+                            getSharedEntity={getSharedDashboard}
+                          />
+                        </Popover>
+                      </React.Fragment>
+                    )}
+                    {this.state.fullScreenActive && (
+                      <Button onClick={this.props.toggleTheme} className="tool-button">
+                        Toggle Theme
+                      </Button>
+                    )}
+                    <Button
+                      onClick={this.toggleFullscreen}
+                      className="tool-button Dashboard__fullscreen-button"
+                    >
+                      <Icon type={this.state.fullScreenActive ? 'exit-fullscreen' : 'fullscreen'} />
+                      {this.state.fullScreenActive ? ' Leave' : ' Enter'} Fullscreen
+                    </Button>
+                    <Dropdown
+                      label={
+                        <React.Fragment>
+                          <AutoRefreshIcon interval={this.state.autoRefreshInterval} /> Auto Refresh
+                        </React.Fragment>
+                      }
+                      active={!!this.state.autoRefreshInterval}
+                    >
+                      {this.autoRefreshOption(null, 'Off')}
+                      {this.autoRefreshOption(1 * 60 * 1000, '1 Minute')}
+                      {this.autoRefreshOption(5 * 60 * 1000, '5 Minutes')}
+                      {this.autoRefreshOption(10 * 60 * 1000, '10 Minutes')}
+                      {this.autoRefreshOption(15 * 60 * 1000, '15 Minutes')}
+                      {this.autoRefreshOption(30 * 60 * 1000, '30 Minutes')}
+                      {this.autoRefreshOption(60 * 60 * 1000, '60 Minutes')}
+                    </Dropdown>
+                  </div>
+                </div>
+                <div className="subHead">
                   <div className="metadata">
                     Last modified {moment(lastModified).format('lll')} by {lastModifier}
                   </div>
-                </div>
-                <div className="tools">
-                  {!this.state.fullScreenActive && (
-                    <React.Fragment>
-                      <Link
-                        className="tool-button edit-button"
-                        to={`/dashboard/${this.id}/edit`}
-                        onClick={this.setAutorefresh(null)}
-                      >
-                        <Button>
-                          <Icon type="edit" />
-                          Edit
-                        </Button>
-                      </Link>
-                      <Button onClick={this.showDeleteModal} className="tool-button delete-button">
-                        <Icon type="delete" />
-                        Delete
-                      </Button>
-                      <Popover
-                        className="tool-button share-button"
-                        icon="share"
-                        title="Share"
-                        disabled={!sharingEnabled || !isAuthorizedToShare}
-                        tooltip={this.createShareTooltip()}
-                      >
-                        <ShareEntity
-                          type="dashboard"
-                          resourceId={this.id}
-                          shareEntity={shareDashboard}
-                          revokeEntitySharing={revokeDashboardSharing}
-                          getSharedEntity={getSharedDashboard}
-                        />
-                      </Popover>
-                    </React.Fragment>
-                  )}
-                  {this.state.fullScreenActive && (
-                    <Button onClick={this.props.toggleTheme} className="tool-button">
-                      Toggle Theme
-                    </Button>
-                  )}
-                  <Button
-                    onClick={this.toggleFullscreen}
-                    className="tool-button Dashboard__fullscreen-button"
-                  >
-                    <Icon type={this.state.fullScreenActive ? 'exit-fullscreen' : 'fullscreen'} />
-                    {this.state.fullScreenActive ? ' Leave' : ' Enter'} Fullscreen
-                  </Button>
-                  <Dropdown
-                    label={
-                      <React.Fragment>
-                        <AutoRefreshIcon interval={this.state.autoRefreshInterval} /> Auto Refresh
-                      </React.Fragment>
-                    }
-                    active={!!this.state.autoRefreshInterval}
-                  >
-                    {this.autoRefreshOption(null, 'Off')}
-                    {this.autoRefreshOption(1 * 60 * 1000, '1 Minute')}
-                    {this.autoRefreshOption(5 * 60 * 1000, '5 Minutes')}
-                    {this.autoRefreshOption(10 * 60 * 1000, '10 Minutes')}
-                    {this.autoRefreshOption(15 * 60 * 1000, '15 Minutes')}
-                    {this.autoRefreshOption(30 * 60 * 1000, '30 Minutes')}
-                    {this.autoRefreshOption(60 * 60 * 1000, '60 Minutes')}
-                  </Dropdown>
+                  <CollectionsDropdown
+                    entity={{id: this.id}}
+                    collections={collections}
+                    toggleEntityCollection={toggleEntityCollection(this.loadCollections)}
+                    entityCollections={dashboardCollections}
+                    setCollectionToUpdate={this.openEditCollectionModal}
+                  />
                 </div>
               </div>
               <ConfirmationModal
@@ -463,6 +520,14 @@ export default themed(
             {viewMode === 'edit'
               ? this.renderEditMode(this.state)
               : this.renderViewMode(this.state)}
+
+            {this.state.creatingCollection && (
+              <EditCollectionModal
+                collection={{data: {entities: [this.id]}}}
+                onClose={() => this.setState({creatingCollection: false})}
+                onConfirm={this.createCollection}
+              />
+            )}
           </div>
         );
       }

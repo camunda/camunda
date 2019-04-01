@@ -17,6 +17,7 @@ const props = {
 };
 
 const report = {
+  id: 'reportID',
   name: 'name',
   lastModifier: 'lastModifier',
   lastModified: '2017-11-11T11:11:11.1111+0200',
@@ -65,7 +66,7 @@ it('should render ReportEdit component if viewMode is edit', async () => {
   props.match.params.viewMode = 'edit';
 
   const node = await shallow(<Report {...props} />).dive();
-  node.setState({loaded: true});
+  node.setState({loaded: true, report});
 
   expect(node.find('ReportEditErrorHandler')).toBePresent();
 });
@@ -74,7 +75,24 @@ it('should render ReportView component if viewMode is view', async () => {
   props.match.params.viewMode = 'view';
 
   const node = await shallow(<Report {...props} />).dive();
-  node.setState({loaded: true});
+  node.setState({loaded: true, report});
 
   expect(node.find('ReportView')).toBePresent();
+});
+
+it('should open editCollectionModal when calling openEditCollectionModal', async () => {
+  const node = await shallow(<Report {...props} />).dive();
+  node.setState({loaded: true, report});
+
+  node.instance().openEditCollectionModal();
+
+  expect(node.find('EditCollectionModal')).toBePresent();
+});
+
+it('should invoke loadCollections on mount', async () => {
+  const node = await shallow(<Report {...props} />).dive();
+  node.instance().loadCollections = jest.fn();
+  await node.instance().componentDidMount();
+
+  expect(node.instance().loadCollections).toHaveBeenCalled();
 });

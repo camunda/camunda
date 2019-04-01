@@ -14,27 +14,37 @@
 }
 
 .Report__header {
-  display: flex;
-  flex-shrink: 0;
-  margin-bottom: 32px;
+  margin-bottom: 27px;
 
-  .name-container {
-    flex-grow: 1;
-    padding-right: 48px;
-    overflow: hidden;
-    width: 100%;
+  .head {
+    display: flex;
+    flex-shrink: 0;
+
+    .name-container {
+      flex-grow: 1;
+      padding-right: 48px;
+      width: 100%;
+
+      .name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+      }
+    }
   }
 
-  .metadata {
-    font-size: 14px;
-    color: #666666;
-    margin-top: 6px;
-  }
+  .subHead {
+    .metadata {
+      font-size: 14px;
+      color: #666666;
+      display: inline;
 
-  .name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    width: 100%;
+      &:after {
+        content: '|';
+        color: #d8d8d8;
+        margin-left: 15px;
+      }
+    }
   }
 
   .tools {

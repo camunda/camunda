@@ -1,5 +1,4 @@
 import React, {Component} from 'react';
-import moment from 'moment';
 
 import {Input, Icon, ErrorMessage} from 'components';
 import {Link} from 'react-router-dom';
@@ -29,10 +28,10 @@ export default class EntityNameForm extends Component {
   };
 
   render() {
-    const {id, lastModified, lastModifier, entity} = this.props;
+    const {id, entity} = this.props;
     const {name} = this.state;
     return (
-      <>
+      <div className="EntityNameForm head">
         <div className="name-container">
           <Input
             id="name"
@@ -47,9 +46,6 @@ export default class EntityNameForm extends Component {
           {!name && (
             <ErrorMessage className="warning">{`${entity}'s name can not be empty`}</ErrorMessage>
           )}
-          <div className="metadata">
-            Last modified {moment(lastModified).format('lll')} by {lastModifier}
-          </div>
         </div>
         <div className="tools">
           <button
@@ -70,7 +66,7 @@ export default class EntityNameForm extends Component {
             Cancel
           </Link>
         </div>
-      </>
+      </div>
     );
   }
 }

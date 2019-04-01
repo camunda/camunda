@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import UpdateCollectionModal from './UpdateCollectionModal';
+import EditCollectionModal from './EditCollectionModal';
 import {Input} from 'components';
 
 const processReport = {
@@ -25,7 +25,7 @@ const props = {
 };
 
 it('should add isInvalid prop to the name input if name is empty', async () => {
-  const node = await shallow(<UpdateCollectionModal {...props} />);
+  const node = await shallow(<EditCollectionModal {...props} />);
   await node.instance().componentDidMount();
 
   await node.setState({
@@ -36,21 +36,21 @@ it('should add isInvalid prop to the name input if name is empty', async () => {
 });
 
 it('should provide name edit input', async () => {
-  const node = await shallow(<UpdateCollectionModal {...props} />);
+  const node = await shallow(<EditCollectionModal {...props} />);
   node.setState({name: 'test name'});
 
   expect(node.find(Input)).toBePresent();
 });
 
 it('have a cancel and save collection button', async () => {
-  const node = await shallow(<UpdateCollectionModal {...props} />);
+  const node = await shallow(<EditCollectionModal {...props} />);
 
   expect(node.find('.confirm')).toBePresent();
   expect(node.find('.cancel')).toBePresent();
 });
 
 it('should invoke onConfirm on save button click', async () => {
-  const node = await shallow(<UpdateCollectionModal {...props} />);
+  const node = await shallow(<EditCollectionModal {...props} />);
 
   node.find('.confirm').simulate('click');
 
@@ -58,14 +58,14 @@ it('should invoke onConfirm on save button click', async () => {
 });
 
 it('should disable save button if report name is empty', async () => {
-  const node = await shallow(<UpdateCollectionModal {...props} />);
+  const node = await shallow(<EditCollectionModal {...props} />);
   node.setState({name: ''});
 
   expect(node.find('.confirm')).toBeDisabled();
 });
 
 it('should update name on input change', async () => {
-  const node = await shallow(<UpdateCollectionModal {...props} />);
+  const node = await shallow(<EditCollectionModal {...props} />);
   node.setState({name: 'test name'});
 
   const input = 'asdf';
@@ -74,14 +74,14 @@ it('should update name on input change', async () => {
 });
 
 it('should invoke onClose on cancel', async () => {
-  const node = await shallow(<UpdateCollectionModal {...props} />);
+  const node = await shallow(<EditCollectionModal {...props} />);
 
   await node.find('.cancel').simulate('click');
   expect(props.onClose).toHaveBeenCalled();
 });
 
 it('should select the name input field when the component is mounted', async () => {
-  const node = await shallow(<UpdateCollectionModal {...props} />);
+  const node = await shallow(<EditCollectionModal {...props} />);
 
   const input = {focus: jest.fn(), select: jest.fn()};
   node.instance().inputRef(input);

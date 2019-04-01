@@ -6,7 +6,6 @@ export {
   loadDefinitions,
   loadProcessDefinitionXml,
   loadDecisionDefinitionXml,
-  loadEntity,
   checkDeleteConflict
 } from './dataLoaders';
 export {numberParser} from './NumberParser';
@@ -18,6 +17,8 @@ export {default as getDataKeys} from './getDataKeys';
 export {flatten} from './tableServices';
 export {default as getTooltipText} from './getTooltipText';
 export {extractDefinitionName} from './definitionService';
+export {toggleEntityCollection, getEntitiesCollections} from './collectionService';
+export {loadEntity, createEntity, updateEntity} from './entityService';
 
 export {isDurationReport} from './reportService';
 

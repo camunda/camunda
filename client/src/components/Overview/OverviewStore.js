@@ -1,11 +1,10 @@
 import React, {Component} from 'react';
 
 import {Redirect} from 'react-router-dom';
-import {checkDeleteConflict} from 'services';
+import {checkDeleteConflict, getEntitiesCollections, toggleEntityCollection} from 'services';
 import {withErrorHandling} from 'HOC';
 
 import {load, remove, create, update} from './service';
-import {getEntitiesCollections} from './service';
 const OverviewContext = React.createContext();
 
 class OverviewStore extends Component {
@@ -100,7 +99,7 @@ class OverviewStore extends Component {
     }
 
     if (collection) {
-      this.toggleEntityCollection({id}, collection, false)();
+      toggleEntityCollection(this.loadData)({id}, collection, false);
     } else {
       this.loadData();
     }
@@ -118,20 +117,6 @@ class OverviewStore extends Component {
   };
 
   hideDeleteModal = () => this.setState({deleting: false, conflicts: []});
-
-  toggleEntityCollection = (report, collection, isRemove) => async evt => {
-    const collectionReportsIds = collection.data.entities.map(report => report.id);
-
-    const change = {data: {}};
-    if (isRemove) {
-      change.data.entities = collectionReportsIds.filter(id => id !== report.id);
-    } else {
-      change.data.entities = [...collectionReportsIds, report.id];
-    }
-
-    await update('collection', collection.id, change);
-    await this.loadData();
-  };
 
   render() {
     const {redirect} = this.state;
@@ -152,7 +137,6 @@ class OverviewStore extends Component {
       setCollectionToUpdate,
       showDeleteModalFor,
       hideDeleteModal,
-      toggleEntityCollection,
       filter,
       state
     } = this;
@@ -168,7 +152,7 @@ class OverviewStore extends Component {
       showDeleteModalFor,
       hideDeleteModal,
       setCollectionToUpdate,
-      toggleEntityCollection,
+      toggleEntityCollection: toggleEntityCollection(this.loadData),
       filter,
       store: state,
       entitiesCollections,

@@ -28,26 +28,30 @@
 }
 
 .Dashboard__header {
-  display: flex;
-  margin-bottom: 32px;
+  margin-bottom: 27px;
 
-  .name-container {
-    flex-grow: 1;
-    padding-right: 48px;
-    overflow: hidden;
-    width: 100%;
+  .head {
+    display: flex;
+
+    .name-container {
+      flex-grow: 1;
+      padding-right: 48px;
+      width: 100%;
+
+      .name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+      }
+    }
   }
 
-  .metadata {
-    font-size: 14px;
-    color: #666666;
-    margin-top: 6px;
-  }
-
-  .name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    width: 100%;
+  .subHead {
+    .metadata {
+      font-size: 14px;
+      color: #666666;
+      display: inline;
+    }
   }
 
   .tools {

@@ -1,20 +1,19 @@
 import React from 'react';
 import {Dropdown} from 'components';
-import {withStore} from '../OverviewStore';
+import './CollectionsDropdown.scss';
 
-export default withStore(function CollectionsDropdown({
-  store: {collections},
-  entity,
+export default function CollectionsDropdown({
+  collections,
   toggleEntityCollection,
-  currentCollection,
+  entity,
+  entityCollections = [],
   setCollectionToUpdate,
-  entitiesCollections
+  currentCollection
 }) {
-  const entityCollections = entitiesCollections[entity.id] || [];
   const collectionsCount = entityCollections.length;
   let label = <span className="noCollection">Add to Collection</span>;
   if (collectionsCount) {
-    label = `${collectionsCount} Collection${collectionsCount !== 1 ? 's' : ''}`;
+    label = `In ${collectionsCount} Collection${collectionsCount !== 1 ? 's' : ''}`;
   }
 
   let reorderedCollections = collections;
@@ -22,9 +21,8 @@ export default withStore(function CollectionsDropdown({
     reorderedCollections = collections.filter(collection => collection.id !== currentCollection.id);
     reorderedCollections.unshift(currentCollection);
   }
-
   return (
-    <Dropdown className="entityCollections" label={label}>
+    <Dropdown className="CollectionsDropdown" label={label}>
       {reorderedCollections.map(collection => {
         const isEntityInCollection = entityCollections.some(
           entityCollections => entityCollections.id === collection.id
@@ -33,7 +31,7 @@ export default withStore(function CollectionsDropdown({
           <Dropdown.Option
             key={collection.id}
             checked={isEntityInCollection}
-            onClick={toggleEntityCollection(entity, collection, isEntityInCollection)}
+            onClick={evt => toggleEntityCollection(entity, collection, isEntityInCollection)}
           >
             {collection.name}
           </Dropdown.Option>
@@ -44,4 +42,4 @@ export default withStore(function CollectionsDropdown({
       </Dropdown.Option>
     </Dropdown>
   );
-});
+}

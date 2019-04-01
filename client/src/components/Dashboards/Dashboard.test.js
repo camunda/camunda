@@ -58,7 +58,9 @@ jest.mock('components', () => {
         {props.children}
       </div>
     ),
-    EntityNameForm: ({children}) => <div>{children}</div>
+    EntityNameForm: ({children}) => <div>{children}</div>,
+    CollectionsDropdown: () => <div />,
+    EditCollectionModal: () => <div />
   };
 });
 
@@ -93,7 +95,12 @@ jest.mock('moment', () => () => {
   };
 });
 
-jest.mock('services', () => ({checkDeleteConflict: jest.fn()}));
+jest.mock('services', () => ({
+  getEntitiesCollections: jest.fn().mockReturnValue({}),
+  toggleEntityCollection: fn => fn(),
+  checkDeleteConflict: jest.fn(),
+  loadEntity: jest.fn().mockReturnValue([])
+}));
 
 jest.mock('react-full-screen', () => ({children}) => <div>{children}</div>);
 
@@ -456,6 +463,33 @@ describe('edit mode', async () => {
 
     const shareButton = node.find('.share-button');
     expect(shareButton).not.toBeDisabled();
+  });
+
+  it('should open editCollectionModal when calling openEditCollectionModal', async () => {
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
+    node.setState({loaded: true});
+
+    node.instance().openEditCollectionModal();
+    await node.update();
+
+    expect(node.find('EditCollectionModal')).toBePresent();
+  });
+
+  it('should invoke loadCollections on mount', async () => {
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
+    node.instance().loadCollections = jest.fn();
+    await node.instance().componentDidMount();
+
+    expect(node.instance().loadCollections).toHaveBeenCalled();
+  });
+
+  it('should render collections dropdown', async () => {
+    const node = mount(shallow(<Dashboard {...props} />).get(0));
+    node.setState({
+      loaded: true
+    });
+
+    expect(node.find('CollectionsDropdown')).toBePresent();
   });
 
   // re-enable this test once https://github.com/airbnb/enzyme/issues/1604 is fixed

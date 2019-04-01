@@ -1,9 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
-import CollectionsDropdownWithStore from './CollectionsDropdown';
+import CollectionsDropdown from './CollectionsDropdown';
 import {Dropdown} from 'components';
-
-const CollectionsDropdown = CollectionsDropdownWithStore.WrappedComponent;
 
 const processReport = {
   id: 'reportID',
@@ -26,11 +24,9 @@ const collection = {
 };
 
 const props = {
-  store: {
-    collections: [collection]
-  },
+  collections: [collection],
   entity: processReport,
-  entitiesCollections: {reportID: [collection]},
+  entityCollections: [collection],
   toggleEntityCollection: jest.fn(),
   setCollectionToUpdate: jest.fn()
 };
@@ -38,7 +34,7 @@ const props = {
 it('should show for each entity the collection count', () => {
   const node = shallow(<CollectionsDropdown {...props} />);
 
-  expect(node.find('.entityCollections').props().label).toBe('1 Collection');
+  expect(node.find('.CollectionsDropdown').props().label).toBe('In 1 Collection');
 });
 
 it('should show for each report a dropdown with all collections', () => {
@@ -58,7 +54,7 @@ it('should invoke toggleEntityCollection to remove entity from collection when c
 });
 
 it('should invoke toggleEntityCollection on collections dropdown click to add an entity to collection ', () => {
-  const node = shallow(<CollectionsDropdown {...props} entitiesCollections={{}} />);
+  const node = shallow(<CollectionsDropdown {...props} entityCollections={[]} />);
 
   node
     .find(Dropdown.Option)

@@ -2,7 +2,16 @@ import React, {Component} from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 
-import {Button, ShareEntity, ReportRenderer, Popover, Icon, ConfirmationModal} from 'components';
+import {
+  Button,
+  ShareEntity,
+  ReportRenderer,
+  Popover,
+  Icon,
+  ConfirmationModal,
+  CollectionsDropdown
+} from 'components';
+
 import {
   shareReport,
   revokeReportSharing,
@@ -10,7 +19,8 @@ import {
   remove,
   isSharingEnabled
 } from './service';
-import {checkDeleteConflict} from 'services';
+
+import {checkDeleteConflict, toggleEntityCollection} from 'services';
 
 import './ReportView.scss';
 
@@ -80,7 +90,13 @@ export default class ReportView extends Component {
 
   render() {
     const {confirmModalVisible, conflict, redirect, sharingEnabled, deleteLoading} = this.state;
-    const {report} = this.props;
+    const {
+      report,
+      collections,
+      reportCollections,
+      openEditCollectionModal,
+      loadCollections
+    } = this.props;
     const {id, name, lastModifier, lastModified} = report;
 
     if (redirect) {
@@ -99,49 +115,60 @@ export default class ReportView extends Component {
         />
         <div className="ReportView Report">
           <div className="Report__header">
-            <div className="name-container">
-              <h1 className="name">{name}</h1>
+            <div className="head">
+              <div className="name-container">
+                <h1 className="name">{name}</h1>
+              </div>
+              <div className="tools">
+                <Link className="tool-button edit-button" to={`/report/${id}/edit`}>
+                  <Button>
+                    <Icon type="edit" />
+                    Edit
+                  </Button>
+                </Link>
+                <Button className="tool-button delete-button" onClick={this.showDeleteModal}>
+                  <Icon type="delete" />
+                  Delete
+                </Button>
+                <Popover
+                  className="tool-button share-button"
+                  icon="share"
+                  title="Share"
+                  tooltip={!sharingEnabled ? 'Sharing is disabled per configuration' : ''}
+                  disabled={!sharingEnabled}
+                >
+                  <ShareEntity
+                    type="report"
+                    resourceId={id}
+                    shareEntity={shareReport}
+                    revokeEntitySharing={revokeReportSharing}
+                    getSharedEntity={getSharedReport}
+                  />
+                </Popover>
+                {this.shouldShowCSVDownload() && (
+                  <a
+                    className="Report__tool-button Report__csv-download-button"
+                    href={this.constructCSVDownloadLink()}
+                  >
+                    <Button>
+                      <Icon type="save" />
+                      Download CSV
+                    </Button>
+                  </a>
+                )}
+              </div>
+            </div>
+            <div className="subHead">
               <div className="metadata">
                 Last modified {moment(lastModified).format('lll')} by {lastModifier}
               </div>
-            </div>
-            <div className="tools">
-              <Link className="tool-button edit-button" to={`/report/${id}/edit`}>
-                <Button>
-                  <Icon type="edit" />
-                  Edit
-                </Button>
-              </Link>
-              <Button className="tool-button delete-button" onClick={this.showDeleteModal}>
-                <Icon type="delete" />
-                Delete
-              </Button>
-              <Popover
-                className="tool-button share-button"
-                icon="share"
-                title="Share"
-                tooltip={!sharingEnabled ? 'Sharing is disabled per configuration' : ''}
-                disabled={!sharingEnabled}
-              >
-                <ShareEntity
-                  type="report"
-                  resourceId={id}
-                  shareEntity={shareReport}
-                  revokeEntitySharing={revokeReportSharing}
-                  getSharedEntity={getSharedReport}
-                />
-              </Popover>
-              {this.shouldShowCSVDownload() && (
-                <a
-                  className="Report__tool-button Report__csv-download-button"
-                  href={this.constructCSVDownloadLink()}
-                >
-                  <Button>
-                    <Icon type="save" />
-                    Download CSV
-                  </Button>
-                </a>
-              )}
+              <CollectionsDropdown
+                entity={report}
+                collections={collections}
+                toggleEntityCollection={toggleEntityCollection(loadCollections)}
+                entityCollections={reportCollections}
+                setCollectionToUpdate={openEditCollectionModal}
+              />
             </div>
           </div>
           <div className="Report__view">

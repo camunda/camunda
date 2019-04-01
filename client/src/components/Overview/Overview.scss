@@ -184,16 +184,31 @@
       display: flex;
       border-bottom: 1px solid #ededed;
 
-      &:not(.NoEntities):hover {
+      &:hover {
         background: #f7f7f7;
-
-        .entityCollections .Icon,
-        .entityCollections .noCollection {
-          visibility: visible;
-        }
 
         .operations {
           visibility: visible;
+        }
+
+        .CollectionsDropdown {
+          .Button {
+            .downIcon,
+            .noCollection {
+              visibility: visible;
+            }
+          }
+        }
+      }
+
+      &:not(:hover) {
+        .CollectionsDropdown {
+          .Button:not(:focus) {
+            .downIcon,
+            .noCollection {
+              visibility: hidden;
+            }
+          }
         }
       }
 
@@ -264,45 +279,6 @@
               flex-shrink: 0;
               flex-basis: 50%;
             }
-          }
-        }
-      }
-
-      .entityCollections {
-        align-self: center;
-        margin: 0 10px;
-        min-width: 150px;
-
-        .menu ul li:nth-last-child(2) {
-          border-bottom: 1px solid #bbb;
-        }
-
-        .Button {
-          border-radius: 15px;
-          height: 30px;
-          border: none;
-          background: none;
-          position: relative;
-
-          .Icon,
-          .noCollection {
-            visibility: hidden;
-          }
-
-          &:hover {
-            background: rgba(#d8dce3, 0.5);
-          }
-
-          &:focus {
-            background: rgba(#d8dce3, 0.8);
-            .Icon,
-            .noCollection {
-              visibility: visible;
-            }
-          }
-
-          &:active {
-            background: rgba(#d8dce3, 0.8);
           }
         }
       }

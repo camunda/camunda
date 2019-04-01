@@ -97,22 +97,6 @@ export async function deleteAlert(id) {
   return await del('api/alert/' + id);
 }
 
-export function getEntitiesCollections(collections) {
-  const entitiesCollections = {};
-
-  collections.forEach(collection => {
-    collection.data.entities.forEach(entity => {
-      if (entitiesCollections[entity.id]) {
-        entitiesCollections[entity.id].push(collection);
-      } else {
-        entitiesCollections[entity.id] = [collection];
-      }
-    });
-  });
-
-  return entitiesCollections;
-}
-
 export function filterEntitiesBySearch(entities, searchQuery) {
   return entities.filter(entity => entity.name.toLowerCase().includes(searchQuery.toLowerCase()));
 }

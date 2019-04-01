@@ -3,8 +3,10 @@ import {shallow} from 'enzyme';
 
 import {Button} from 'components';
 
-import DashboardItem from './DashboardItem';
+import DashboardItemWithStore from './DashboardItem';
 import {formatters} from 'services';
+
+const DashboardItem = DashboardItemWithStore.WrappedComponent;
 
 jest.mock('../service');
 
@@ -22,7 +24,11 @@ const dashboard = {
 };
 
 const props = {
+  store: {searchQuery: '', collections: []},
   dashboard,
+  entitiesCollections: {dashboardID: [{id: 'aCollectionId'}]},
+  toggleEntityCollection: jest.fn(),
+  setCollectionToUpdate: jest.fn(),
   duplicateEntity: jest.fn(),
   showDeleteModalFor: jest.fn(),
   renderCollectionsDropdown: jest.fn()
@@ -60,7 +66,7 @@ it('should invok duplicate dashboards when clicking duplicate icon', () => {
 });
 
 it('should invoke getHighlightedText with the name and the searchQuery', () => {
-  shallow(<DashboardItem {...props} searchQuery="some" />);
+  shallow(<DashboardItem {...props} store={{searchQuery: 'some'}} />);
 
   expect(formatters.getHighlightedText).toHaveBeenCalledWith('Some Dashboard', 'some');
 });

@@ -3,9 +3,11 @@ import {shallow} from 'enzyme';
 
 import {Button} from 'components';
 
-import ReportItem from './ReportItem';
+import ReportItemWithStore from './ReportItem';
 import {getReportIcon} from '../service';
 import {formatters} from 'services';
+
+const ReportItem = ReportItemWithStore.WrappedComponent;
 
 jest.mock('../service');
 jest.mock('services', () => {
@@ -55,8 +57,11 @@ const decisionReport = {
 };
 
 const props = {
-  searchQuery: '',
+  store: {searchQuery: '', collections: []},
   report: processReport,
+  entitiesCollections: {reportID: [{id: 'aCollectionId'}]},
+  toggleEntityCollection: jest.fn(),
+  setCollectionToUpdate: jest.fn(),
   duplicateEntity: jest.fn(),
   showDeleteModalFor: jest.fn(),
   renderCollectionsDropdown: jest.fn()
@@ -130,7 +135,7 @@ it('should display decision tag for decision reports', () => {
 });
 
 it('should invoke getHighlightedText with the name and the searchQuery', () => {
-  shallow(<ReportItem {...props} searchQuery="some" />);
+  shallow(<ReportItem {...props} store={{searchQuery: 'some'}} />);
 
   expect(formatters.getHighlightedText).toHaveBeenCalledWith('Some Report', 'some');
 });

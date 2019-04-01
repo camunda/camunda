@@ -1,7 +1,5 @@
 import React from 'react';
-import {Button} from 'components';
-
-import UpdateCollectionModal from './subComponents/UpdateCollectionModal';
+import {Button, EditCollectionModal} from 'components';
 import CollectionItem from './subComponents/CollectionItem';
 import ReportItem from './subComponents/ReportItem';
 
@@ -61,21 +59,9 @@ class Collections extends React.Component {
                     .slice(0, this.state.showAllId === collection.id ? undefined : 5)
                     .map(entity =>
                       this.isDashboard(entity) ? (
-                        <DashboardItem
-                          key={entity.id}
-                          dashboard={entity}
-                          collection={collection}
-                          duplicateEntity={this.props.duplicateEntity}
-                          showDeleteModalFor={this.props.showDeleteModalFor}
-                        />
+                        <DashboardItem key={entity.id} dashboard={entity} collection={collection} />
                       ) : (
-                        <ReportItem
-                          key={entity.id}
-                          report={entity}
-                          collection={collection}
-                          showDeleteModalFor={this.props.showDeleteModalFor}
-                          duplicateEntity={this.props.duplicateEntity}
-                        />
+                        <ReportItem key={entity.id} report={entity} collection={collection} />
                       )
                     )}
                 </ul>
@@ -102,7 +88,7 @@ class Collections extends React.Component {
           ))}
         </ul>
         {updating && (
-          <UpdateCollectionModal
+          <EditCollectionModal
             collection={updating}
             onClose={() => this.props.setCollectionToUpdate(null)}
             onConfirm={this.props.updateOrCreateCollection}

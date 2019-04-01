@@ -207,3 +207,9 @@ it('should invok updateOverview when saving the report', async () => {
 
   expect(spy).toHaveBeenCalled();
 });
+
+it('should render collections dropdown', async () => {
+  const node = shallow(<ReportEdit report={report} />).dive();
+
+  expect(node.find('CollectionsDropdown')).toBePresent();
+});
