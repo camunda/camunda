@@ -34,7 +34,7 @@ echo "Downloading Zeebe distribution ${VERSION}."
 
 
 echo "Building Zeebe Docker image ${RELEASE_VERSION}."
-docker build --no-cache -t camunda/zeebe:${RELEASE_VERSION} --build-arg DISTBALL=zeebe-distribution.tar.gz .
+docker build --no-cache -t camunda/zeebe:${RELEASE_VERSION} --build-arg DISTBALL=zeebe-distribution.tar.gz -f Dockerfile.debian .
 
 echo "Authenticating with DockerHub and pushing image."
 docker login --username ${DOCKER_HUB_USERNAME} --password ${DOCKER_HUB_PASSWORD} --email ci@camunda.com
