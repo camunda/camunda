@@ -59,13 +59,13 @@ export default function Variables({
           </Styled.Placeholder>
         ) : (
           <Styled.Table>
-            <thead>
+            <Styled.THead>
               <Styled.TR>
-                <Styled.TH>Key</Styled.TH>
+                <Styled.TH>Variable</Styled.TH>
                 <Styled.TH>Value</Styled.TH>
                 <Styled.TH />
               </Styled.TR>
-            </thead>
+            </Styled.THead>
             <tbody>
               {variables.map(({name, value, hasActiveOperation}) => (
                 <Styled.TR

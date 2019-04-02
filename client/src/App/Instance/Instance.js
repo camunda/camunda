@@ -12,7 +12,7 @@ import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import Diagram from 'modules/components/Diagram';
 import IncidentsWrapper from './IncidentsWrapper';
 import {PAGE_TITLE, UNNAMED_ACTIVITY, STATE} from 'modules/constants';
-import {compactObject} from 'modules/utils';
+import {compactObject, immutableArraySet} from 'modules/utils';
 import {getWorkflowName} from 'modules/utils/instance';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {formatDate} from 'modules/utils/date';
@@ -354,8 +354,18 @@ export default class Instance extends Component {
       variables
     } = this.state;
 
+    const keyIdx = variables.findIndex(variable => variable.name === key);
+
     this.setState({
-      variables: [...variables, {name: key, value, hasActiveOperation: true}]
+      variables: immutableArraySet(
+        variables,
+        keyIdx > -1 ? keyIdx : variables.length,
+        {
+          name: key,
+          value,
+          hasActiveOperation: true
+        }
+      )
     });
 
     return await api.applyOperation(id, {
@@ -387,8 +397,8 @@ export default class Instance extends Component {
   };
 
   setVariables = variables => {
+    this.resetPolling();
     this.setState({variables, isEditMode: false});
-    return this.resetPolling();
   };
 
   setEditMode = isEditMode => {

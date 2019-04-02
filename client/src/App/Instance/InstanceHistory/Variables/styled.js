@@ -23,11 +23,13 @@ export const Variables = themed(styled(Panel)`
     dark: 'rgba(255, 255, 255, 0.8)',
     light: 'rgba(98, 98, 110, 0.8)'
   })};
+  border-top: none;
 `);
 
 export const VariablesContent = styled(Panel.Body)`
   position: relative;
   overflow: auto;
+  border-top: none;
 `;
 
 export const Placeholder = themed(styled.span`
@@ -68,6 +70,7 @@ export const TD = themed(styled.td`
   font-weight: ${props => (props.isBold ? 'bold' : 'normal')};
   padding-left: 17px;
   height: 32px;
+  min-width: 191px;
 
   &:not(:nth-child(2)) {
     white-space: nowrap;
@@ -105,7 +108,17 @@ export const TR = themed(styled.tr`
     !hasActiveOperation ? '' : rowWithActiveOperationStyle};
 `);
 
-export const VariablesFooter = styled(Panel.Footer)``;
+export const THead = styled.thead`
+  tr:first-child {
+    border-top: none;
+  }
+`;
+
+export const VariablesFooter = styled(Panel.Footer)`
+  display: flex;
+  align-items: center;
+  height: 41px;
+`;
 
 export const Button = styled(DefaultButton)`
   display: flex;
