@@ -15,6 +15,7 @@
  */
 package io.zeebe.logstreams.processor;
 
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
@@ -38,24 +39,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 
 public class StreamProcessorController extends Actor {
+
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
-      "Stream processor '%s' failed to recover. Cannot find event with the snapshot position in target log stream.";
-  private static final String ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT =
-      "Stream processor '%s' failed to reprocess. Cannot find source event position: %d";
-
-  private static final String ERROR_MESSAGE_PROCESSING_FAILED =
-      "Stream processor '{}' failed to process event. It stop processing further events.";
-  private static final String ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT =
-      "Stream processor '{}' failed to process event. Skip this event {}.";
-  private static final String ERROR_MESSAGE_REPROCESSING_FAILED_SKIP_EVENT =
-      "Stream processor '{}' failed to reprocess event. Skip this event {}.";
+      "Expected to find event with the snapshot position in log stream, but nothing was found. Failed to recover with processor '%s'.";
 
   private final StreamProcessorFactory streamProcessorFactory;
   private StreamProcessor streamProcessor;
   private final StreamProcessorContext streamProcessorContext;
   private final SnapshotController snapshotController;
+  private String partitionId;
 
   private final LogStreamReader logStreamReader;
   private final LogStreamRecordWriter logStreamWriter;
@@ -66,25 +60,15 @@ public class StreamProcessorController extends Actor {
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   private Phase phase = Phase.REPROCESSING;
 
-  private final EventFilter eventFilter;
-  private final boolean isReadOnlyProcessor;
-
-  private final Runnable readNextEvent = this::readNextEvent;
-
   private long snapshotPosition = -1L;
-  private long lastSourceEventPosition = -1L;
-  private long eventPosition = -1L;
-  private long lastSuccessfulProcessedEventPosition = -1L;
-  private long lastWrittenEventPosition = -1L;
 
-  private LoggedEvent currentEvent;
-  private EventProcessor eventProcessor;
   private ActorCondition onCommitPositionUpdatedCondition;
 
   private boolean suspended = false;
 
   private StreamProcessorMetrics metrics;
-  private ZeebeDb zeebeDb;
+  private DbContext dbContext;
+  private ProcessingStateMachine processingStateMachine;
 
   public StreamProcessorController(final StreamProcessorContext context) {
     this.streamProcessorContext = context;
@@ -101,8 +85,6 @@ public class StreamProcessorController extends Actor {
     this.logStreamReader = context.getLogStreamReader();
     this.logStreamWriter = context.getLogStreamWriter();
     this.snapshotPeriod = context.getSnapshotPeriod();
-    this.eventFilter = context.getEventFilter();
-    this.isReadOnlyProcessor = context.isReadOnlyProcessor();
   }
 
   @Override
@@ -123,7 +105,7 @@ public class StreamProcessorController extends Actor {
     final LogStream logStream = streamProcessorContext.getLogStream();
 
     final MetricsManager metricsManager = actorScheduler.getMetricsManager();
-    final String partitionId = String.valueOf(logStream.getPartitionId());
+    partitionId = String.valueOf(logStream.getPartitionId());
     final String processorName = getName();
 
     metrics = new StreamProcessorMetrics(metricsManager, processorName, partitionId);
@@ -132,27 +114,57 @@ public class StreamProcessorController extends Actor {
     logStreamWriter.wrap(logStream);
 
     try {
-
+      LOG.info("Recovering state of partition {} from snapshot", partitionId);
       snapshotPosition = recoverFromSnapshot(logStream.getCommitPosition(), logStream.getTerm());
-      lastSourceEventPosition = seekFromSnapshotPositionToLastSourceEvent();
+      final ZeebeDb zeebeDb = snapshotController.openDb();
+      LOG.info(
+          "Recovered state of partition {} from snapshot at position {}",
+          partitionId,
+          snapshotPosition);
 
-      zeebeDb = snapshotController.openDb();
-      streamProcessor = streamProcessorFactory.createProcessor(zeebeDb);
+      dbContext = zeebeDb.createContext();
+      streamProcessor = streamProcessorFactory.createProcessor(zeebeDb, dbContext);
       streamProcessor.onOpen(streamProcessorContext);
     } catch (final Exception e) {
       onFailure();
       LangUtil.rethrowUnchecked(e);
     }
+
+    processingStateMachine =
+        ProcessingStateMachine.builder()
+            .setStreamProcessorContext(streamProcessorContext)
+            .setMetrics(metrics)
+            .setStreamProcessor(streamProcessor)
+            .setDbContext(dbContext)
+            .setShouldProcessNext(() -> isOpened() && !isSuspended())
+            .setAbortCondition(this::isClosed)
+            .build();
   }
 
   @Override
   protected void onActorStarted() {
     try {
-      if (lastSourceEventPosition > snapshotPosition) {
-        reprocessNextEvent();
-      } else {
-        onRecovered();
-      }
+      final ReProcessingStateMachine reProcessingStateMachine =
+          ReProcessingStateMachine.builder()
+              .setStreamProcessorContext(streamProcessorContext)
+              .setStreamProcessor(streamProcessor)
+              .setDbContext(dbContext)
+              .setAbortCondition(this::isClosed)
+              .build();
+
+      final ActorFuture<Void> recoverFuture =
+          reProcessingStateMachine.startRecover(snapshotPosition);
+
+      actor.runOnCompletion(
+          recoverFuture,
+          (v, throwable) -> {
+            if (throwable != null) {
+              LOG.error("Unexpected error on recovery happens.", throwable);
+              onFailure();
+            } else {
+              onRecovered();
+            }
+          });
     } catch (final RuntimeException e) {
       onFailure();
       throw e;
@@ -192,86 +204,12 @@ public class StreamProcessorController extends Actor {
     return isValid;
   }
 
-  private long seekFromSnapshotPositionToLastSourceEvent() {
-    long lastSourceEventPosition = -1L;
-
-    if (!isReadOnlyProcessor && logStreamReader.hasNext()) {
-      lastSourceEventPosition = snapshotPosition;
-      while (logStreamReader.hasNext()) {
-        final LoggedEvent newEvent = logStreamReader.next();
-
-        // ignore events from other producers
-        if (newEvent.getProducerId() == streamProcessorContext.getId()) {
-          final long sourceEventPosition = newEvent.getSourceEventPosition();
-          if (sourceEventPosition > 0 && sourceEventPosition > lastSourceEventPosition) {
-            lastSourceEventPosition = sourceEventPosition;
-          }
-        }
-      }
-
-      // reset position
-      logStreamReader.seek(snapshotPosition + 1);
-    }
-
-    return lastSourceEventPosition;
-  }
-
-  private void reprocessNextEvent() {
-    try {
-      if (logStreamReader.hasNext()) {
-        currentEvent = logStreamReader.next();
-        if (currentEvent.getPosition() > lastSourceEventPosition) {
-          throw new IllegalStateException(
-              String.format(
-                  ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT, getName(), lastSourceEventPosition));
-        }
-
-        reprocessEvent(currentEvent);
-      } else {
-        throw new IllegalStateException(
-            String.format(
-                ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT, getName(), lastSourceEventPosition));
-      }
-    } catch (final RuntimeException e) {
-      onFailure();
-      throw e;
-    }
-  }
-
-  private void reprocessEvent(final LoggedEvent currentEvent) {
-    if (eventFilter == null || eventFilter.applies(currentEvent)) {
-      try {
-        final EventProcessor eventProcessor = streamProcessor.onEvent(currentEvent);
-        if (eventProcessor != null) {
-          try {
-            // don't execute side effects or write events
-            zeebeDb.transaction(eventProcessor::processEvent);
-          } catch (final Exception e) {
-            LOG.error(ERROR_MESSAGE_REPROCESSING_FAILED_SKIP_EVENT, getName(), currentEvent, e);
-            zeebeDb.transaction(() -> eventProcessor.processingFailed(e));
-          }
-        }
-      } catch (final Exception e) {
-        LOG.error(ERROR_MESSAGE_REPROCESSING_FAILED_SKIP_EVENT, getName(), currentEvent, e);
-      }
-    }
-
-    onRecordReprocessed(currentEvent);
-  }
-
-  private void onRecordReprocessed(final LoggedEvent currentEvent) {
-    if (currentEvent.getPosition() == lastSourceEventPosition) {
-      onRecovered();
-    } else {
-      actor.submit(this::reprocessNextEvent);
-    }
-  }
-
   private void onRecovered() {
     phase = Phase.PROCESSING;
 
     onCommitPositionUpdatedCondition =
-        actor.onCondition(getName() + "-on-commit-position-updated", readNextEvent);
+        actor.onCondition(
+            getName() + "-on-commit-position-updated", processingStateMachine::readNextEvent);
     streamProcessorContext.logStream.registerOnCommitPositionUpdatedCondition(
         onCommitPositionUpdatedCondition);
 
@@ -279,116 +217,7 @@ public class StreamProcessorController extends Actor {
 
     // start reading
     streamProcessor.onRecovered();
-    actor.submit(readNextEvent);
-  }
-
-  private void readNextEvent() {
-    if (isOpened() && !isSuspended() && logStreamReader.hasNext() && eventProcessor == null) {
-      currentEvent = logStreamReader.next();
-
-      if (eventFilter == null || eventFilter.applies(currentEvent)) {
-        processEvent(currentEvent);
-      } else {
-        skipRecord();
-      }
-    }
-  }
-
-  private void processEvent(final LoggedEvent event) {
-    try {
-      eventProcessor = streamProcessor.onEvent(event);
-
-      if (eventProcessor != null) {
-        try {
-          zeebeDb.transaction(eventProcessor::processEvent);
-          metrics.incrementEventsProcessedCount();
-          actor.runUntilDone(this::executeSideEffects);
-        } catch (final Exception e) {
-          LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, getName(), event, e);
-          zeebeDb.transaction(() -> eventProcessor.processingFailed(e));
-          // send rejection etc
-          actor.runUntilDone(this::executeSideEffects);
-        }
-      } else {
-        skipRecord();
-      }
-    } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, getName(), event, e);
-      eventProcessor = null;
-      skipRecord();
-    }
-  }
-
-  private void skipRecord() {
-    actor.submit(readNextEvent);
-    metrics.incrementEventsSkippedCount();
-  }
-
-  private void executeSideEffects() {
-    try {
-      final boolean success = eventProcessor.executeSideEffects();
-      if (success) {
-        actor.done();
-
-        actor.runUntilDone(this::writeEvent);
-      } else if (isOpened()) {
-        // try again
-        actor.yield();
-      } else {
-        actor.done();
-      }
-    } catch (final Exception e) {
-      actor.done();
-
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
-      onFailure();
-    }
-  }
-
-  private void writeEvent() {
-    try {
-      logStreamWriter
-          .producerId(streamProcessorContext.getId())
-          .sourceRecordPosition(currentEvent.getPosition());
-
-      eventPosition = eventProcessor.writeEvent(logStreamWriter);
-
-      if (eventPosition >= 0) {
-        actor.done();
-
-        metrics.incrementEventsWrittenCount();
-
-        updateState();
-      } else if (isOpened()) {
-        // try again
-        actor.yield();
-      } else {
-        actor.done();
-      }
-    } catch (final Exception e) {
-      actor.done();
-
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
-      onFailure();
-    }
-  }
-
-  private void updateState() {
-    try {
-      lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
-
-      final boolean hasWrittenEvent = eventPosition > 0;
-      if (hasWrittenEvent) {
-        lastWrittenEventPosition = eventPosition;
-      }
-
-      // continue with next event
-      eventProcessor = null;
-      actor.submit(readNextEvent);
-    } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
-      onFailure();
-    }
+    actor.submit(processingStateMachine::readNextEvent);
   }
 
   private void createSnapshot() {
@@ -402,21 +231,23 @@ public class StreamProcessorController extends Actor {
   }
 
   private void doCreateSnapshot() {
-    if (currentEvent != null) {
-      final long lastWrittenPosition =
-          lastWrittenEventPosition > lastSuccessfulProcessedEventPosition
-              ? lastWrittenEventPosition
-              : lastSuccessfulProcessedEventPosition;
 
-      final StateSnapshotMetadata metadata =
-          new StateSnapshotMetadata(
-              lastSuccessfulProcessedEventPosition,
-              lastWrittenPosition,
-              streamProcessorContext.getLogStream().getTerm(),
-              false);
+    final long lastWrittenEventPosition = processingStateMachine.getLastWrittenEventPosition();
+    final long lastSuccessfulProcessedEventPosition =
+        processingStateMachine.getLastSuccessfulProcessedEventPosition();
+    final long lastWrittenPosition =
+        lastWrittenEventPosition > lastSuccessfulProcessedEventPosition
+            ? lastWrittenEventPosition
+            : lastSuccessfulProcessedEventPosition;
 
-      writeSnapshot(metadata);
-    }
+    final StateSnapshotMetadata metadata =
+        new StateSnapshotMetadata(
+            lastSuccessfulProcessedEventPosition,
+            lastWrittenPosition,
+            streamProcessorContext.getLogStream().getTerm(),
+            false);
+
+    writeSnapshot(metadata);
 
     // reset to cpu bound
     actor.setSchedulingHints(SchedulingHints.cpuBound(ActorPriority.REGULAR));
@@ -437,7 +268,7 @@ public class StreamProcessorController extends Actor {
       LOG.info("Creation of snapshot {} took {} ms.", name, snapshotCreationTime);
       metrics.recordSnapshotCreationTime(snapshotCreationTime);
 
-      snapshotPosition = lastSuccessfulProcessedEventPosition;
+      snapshotPosition = processingStateMachine.getLastSuccessfulProcessedEventPosition();
     } catch (final Exception e) {
       LOG.error("Stream processor '{}' failed. Can not write snapshot.", getName(), e);
     }
@@ -476,9 +307,11 @@ public class StreamProcessorController extends Actor {
 
     streamProcessorContext.getLogStreamReader().close();
 
-    streamProcessorContext.logStream.removeOnCommitPositionUpdatedCondition(
-        onCommitPositionUpdatedCondition);
-    onCommitPositionUpdatedCondition = null;
+    if (onCommitPositionUpdatedCondition != null) {
+      streamProcessorContext.logStream.removeOnCommitPositionUpdatedCondition(
+          onCommitPositionUpdatedCondition);
+      onCommitPositionUpdatedCondition = null;
+    }
   }
 
   private void onFailure() {
@@ -491,6 +324,10 @@ public class StreamProcessorController extends Actor {
 
   public boolean isOpened() {
     return isOpened.get();
+  }
+
+  public boolean isClosed() {
+    return !isOpened.get();
   }
 
   public boolean isFailed() {
@@ -511,7 +348,7 @@ public class StreamProcessorController extends Actor {
     // if state is REPROCESSING, we do nothing, because
     // processing will be triggered once reprocessing is finished anyway
     if (phase == Phase.PROCESSING) {
-      actor.submit(readNextEvent);
+      actor.submit(processingStateMachine::readNextEvent);
     }
   }
 

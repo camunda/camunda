@@ -15,7 +15,7 @@
  */
 package io.zeebe.exporter;
 
-import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.api.record.Record;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import org.elasticsearch.ElasticsearchStatusException;

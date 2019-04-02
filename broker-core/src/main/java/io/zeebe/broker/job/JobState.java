@@ -20,6 +20,7 @@ package io.zeebe.broker.job;
 import io.zeebe.broker.logstreams.state.UnpackedObjectValue;
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbByte;
 import io.zeebe.db.impl.DbCompositeKey;
@@ -55,46 +56,47 @@ public class JobState {
   private final DbLong deadlineKey;
   private final DbCompositeKey<DbLong, DbLong> deadlineJobKey;
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> deadlinesColumnFamily;
-  private final ZeebeDb<ZbColumnFamilies> zeebeDb;
 
-  public JobState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public JobState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+
     jobRecordToRead = new UnpackedObjectValue();
     jobRecordToRead.wrapObject(new JobRecord());
 
     jobRecordToWrite = new UnpackedObjectValue();
     jobKey = new DbLong();
-    jobsColumnFamily = zeebeDb.createColumnFamily(ZbColumnFamilies.JOBS, jobKey, jobRecordToRead);
+    jobsColumnFamily =
+        zeebeDb.createColumnFamily(ZbColumnFamilies.JOBS, dbContext, jobKey, jobRecordToRead);
 
     jobState = new DbByte();
     statesJobColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.JOB_STATES, jobKey, jobState);
+        zeebeDb.createColumnFamily(ZbColumnFamilies.JOB_STATES, dbContext, jobKey, jobState);
 
     jobTypeKey = new DbString();
     typeJobKey = new DbCompositeKey<>(jobTypeKey, jobKey);
     activatableColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.JOB_ACTIVATABLE, typeJobKey, DbNil.INSTANCE);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.JOB_ACTIVATABLE, dbContext, typeJobKey, DbNil.INSTANCE);
 
     deadlineKey = new DbLong();
     deadlineJobKey = new DbCompositeKey<>(deadlineKey, jobKey);
     deadlinesColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.JOB_DEADLINES, deadlineJobKey, DbNil.INSTANCE);
-
-    this.zeebeDb = zeebeDb;
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.JOB_DEADLINES, dbContext, deadlineJobKey, DbNil.INSTANCE);
   }
 
   public void create(final long key, final JobRecord record) {
     final DirectBuffer type = record.getType();
-    zeebeDb.transaction(() -> createJob(key, record, type));
+    createJob(key, record, type);
   }
 
   private void createJob(long key, JobRecord record, DirectBuffer type) {
-    resetPayloadAndUpdateJobRecord(key, record);
+    resetVariablesAndUpdateJobRecord(key, record);
     updateJobState(State.ACTIVATABLE);
     makeJobActivatable(type);
   }
 
   /**
-   * <b>Note:</b> calling this method will reset the payload of the job record. Make sure to write
+   * <b>Note:</b> calling this method will reset the variables of the job record. Make sure to write
    * the job record to the log before updating it in the state.
    *
    * <p>related to https://github.com/zeebe-io/zeebe/issues/2182
@@ -105,17 +107,14 @@ public class JobState {
 
     validateParameters(type, deadline);
 
-    zeebeDb.transaction(
-        () -> {
-          resetPayloadAndUpdateJobRecord(key, record);
+    resetVariablesAndUpdateJobRecord(key, record);
 
-          updateJobState(State.ACTIVATED);
+    updateJobState(State.ACTIVATED);
 
-          makeJobNotActivatable(type);
+    makeJobNotActivatable(type);
 
-          deadlineKey.wrapLong(deadline);
-          deadlinesColumnFamily.put(deadlineJobKey, DbNil.INSTANCE);
-        });
+    deadlineKey.wrapLong(deadline);
+    deadlinesColumnFamily.put(deadlineJobKey, DbNil.INSTANCE);
   }
 
   public void timeout(final long key, final JobRecord record) {
@@ -123,29 +122,22 @@ public class JobState {
     final long deadline = record.getDeadline();
     validateParameters(type, deadline);
 
-    zeebeDb.transaction(
-        () -> {
-          createJob(key, record, type);
-
-          removeJobDeadline(deadline);
-        });
+    createJob(key, record, type);
+    removeJobDeadline(deadline);
   }
 
   public void delete(long key, JobRecord record) {
     final DirectBuffer type = record.getType();
     final long deadline = record.getDeadline();
 
-    zeebeDb.transaction(
-        () -> {
-          jobKey.wrapLong(key);
-          jobsColumnFamily.delete(jobKey);
+    jobKey.wrapLong(key);
+    jobsColumnFamily.delete(jobKey);
 
-          statesJobColumnFamily.delete(jobKey);
+    statesJobColumnFamily.delete(jobKey);
 
-          makeJobNotActivatable(type);
+    makeJobNotActivatable(type);
 
-          removeJobDeadline(deadline);
-        });
+    removeJobDeadline(deadline);
   }
 
   public void fail(long key, JobRecord updatedValue) {
@@ -154,19 +146,16 @@ public class JobState {
 
     validateParameters(type, deadline);
 
-    zeebeDb.transaction(
-        () -> {
-          resetPayloadAndUpdateJobRecord(key, updatedValue);
+    resetVariablesAndUpdateJobRecord(key, updatedValue);
 
-          final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
-          updateJobState(newState);
+    final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
+    updateJobState(newState);
 
-          if (newState == State.ACTIVATABLE) {
-            makeJobActivatable(type);
-          }
+    if (newState == State.ACTIVATABLE) {
+      makeJobActivatable(type);
+    }
 
-          removeJobDeadline(deadline);
-        });
+    removeJobDeadline(deadline);
   }
 
   private void validateParameters(DirectBuffer type, long deadline) {
@@ -177,12 +166,9 @@ public class JobState {
   public void resolve(long key, final JobRecord updatedValue) {
     final DirectBuffer type = updatedValue.getType();
 
-    zeebeDb.transaction(
-        () -> {
-          resetPayloadAndUpdateJobRecord(key, updatedValue);
-          updateJobState(State.ACTIVATABLE);
-          makeJobActivatable(type);
-        });
+    resetVariablesAndUpdateJobRecord(key, updatedValue);
+    updateJobState(State.ACTIVATABLE);
+    makeJobActivatable(type);
   }
 
   public void forEachTimedOutEntry(
@@ -246,7 +232,7 @@ public class JobState {
     final JobRecord job = getJob(jobKey);
     if (job != null) {
       job.setRetries(retries);
-      resetPayloadAndUpdateJobRecord(jobKey, job);
+      resetVariablesAndUpdateJobRecord(jobKey, job);
     }
     return job;
   }
@@ -283,10 +269,10 @@ public class JobState {
     }
   }
 
-  private void resetPayloadAndUpdateJobRecord(long key, JobRecord updatedValue) {
+  private void resetVariablesAndUpdateJobRecord(long key, JobRecord updatedValue) {
     jobKey.wrapLong(key);
-    // do not persist payload in job state
-    updatedValue.resetPayload();
+    // do not persist variables in job state
+    updatedValue.resetVariables();
     jobRecordToWrite.wrapObject(updatedValue);
     jobsColumnFamily.put(jobKey, jobRecordToWrite);
   }

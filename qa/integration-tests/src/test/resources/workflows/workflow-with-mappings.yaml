@@ -6,5 +6,5 @@ tasks:
       type: foo
       retries: 3
       inputs:
-            - source: $.foo
-              target: $.bar
+            - source: foo
+              target: bar

@@ -18,9 +18,10 @@ package io.zeebe.test.exporter;
 import com.moandjiezana.toml.Toml;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
-import io.zeebe.exporter.context.Configuration;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.spi.Exporter;
+import io.zeebe.exporter.api.context.Configuration;
+import io.zeebe.exporter.api.context.Controller;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.spi.Exporter;
 import io.zeebe.test.exporter.record.MockRecord;
 import io.zeebe.test.exporter.record.MockRecordMetadata;
 import io.zeebe.test.exporter.record.MockRecordStream;
@@ -246,7 +247,7 @@ public class ExporterTestHarness {
 
   /**
    * Returns the last position as reported by the exporter through {@link
-   * io.zeebe.exporter.context.Controller#updateLastExportedRecordPosition(long)}
+   * Controller#updateLastExportedRecordPosition(long)}
    *
    * @return the last exported record position
    */

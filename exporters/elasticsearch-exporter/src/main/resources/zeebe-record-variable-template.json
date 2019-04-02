@@ -16,12 +16,15 @@
               "type": "keyword"
             },
             "value": {
-              "type": "text"
+              "type": "keyword"
             },
             "scopeKey": {
               "type": "long"
             },
             "workflowInstanceKey": {
+              "type": "long"
+            },
+            "workflowKey": {
               "type": "long"
             }
           }

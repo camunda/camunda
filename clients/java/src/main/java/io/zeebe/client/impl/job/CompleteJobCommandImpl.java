@@ -17,7 +17,7 @@ package io.zeebe.client.impl.job;
 
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.CompleteJobCommandStep1;
-import io.zeebe.client.impl.CommandWithPayload;
+import io.zeebe.client.impl.CommandWithVariables;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
 import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -25,7 +25,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest.Builder;
 
-public class CompleteJobCommandImpl extends CommandWithPayload<CompleteJobCommandStep1>
+public class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobCommandStep1>
     implements CompleteJobCommandStep1 {
 
   private final GatewayStub asyncStub;
@@ -50,8 +50,8 @@ public class CompleteJobCommandImpl extends CommandWithPayload<CompleteJobComman
   }
 
   @Override
-  protected CompleteJobCommandStep1 setPayloadInternal(String payload) {
-    builder.setPayload(payload);
+  protected CompleteJobCommandStep1 setVariablesInternal(String variables) {
+    builder.setVariables(variables);
     return this;
   }
 }

@@ -19,7 +19,8 @@ package io.zeebe.broker.exporter.record.value;
 
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueImpl;
-import io.zeebe.exporter.record.value.VariableRecordValue;
+import io.zeebe.exporter.api.record.value.VariableRecordValue;
+import java.util.Objects;
 
 public class VariableRecordValueImpl extends RecordValueImpl implements VariableRecordValue {
 
@@ -27,18 +28,21 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
   private final String value;
   private final long scopeKey;
   private final long workflowInstanceKey;
+  private final long workflowKey;
 
   public VariableRecordValueImpl(
       final ExporterObjectMapper objectMapper,
       String name,
       String value,
       long variableScopeKey,
-      long workflowInstanceKey) {
+      long workflowInstanceKey,
+      long workflowKey) {
     super(objectMapper);
     this.name = name;
     this.value = value;
     this.scopeKey = variableScopeKey;
     this.workflowInstanceKey = workflowInstanceKey;
+    this.workflowKey = workflowKey;
   }
 
   @Override
@@ -62,58 +66,46 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
   }
 
   @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((name == null) ? 0 : name.hashCode());
-    result = prime * result + (int) (scopeKey ^ (scopeKey >>> 32));
-    result = prime * result + (int) (workflowInstanceKey ^ (workflowInstanceKey >>> 32));
-    result = prime * result + ((value == null) ? 0 : value.hashCode());
-    return result;
+  public long getWorkflowKey() {
+    return workflowKey;
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
+  public boolean equals(Object o) {
+    if (this == o) {
       return true;
     }
-    if (obj == null) {
+    if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    final VariableRecordValueImpl other = (VariableRecordValueImpl) obj;
-    if (name == null) {
-      if (other.name != null) {
-        return false;
-      }
-    } else if (!name.equals(other.name)) {
-      return false;
-    }
-    if (scopeKey != other.scopeKey) {
-      return false;
-    }
-    if (workflowInstanceKey != other.workflowInstanceKey) {
-      return false;
-    }
-    if (value == null) {
-      return other.value == null;
-    } else {
-      return value.equals(other.value);
-    }
+    final VariableRecordValueImpl that = (VariableRecordValueImpl) o;
+    return scopeKey == that.scopeKey
+        && workflowInstanceKey == that.workflowInstanceKey
+        && workflowKey == that.workflowKey
+        && Objects.equals(name, that.name)
+        && Objects.equals(value, that.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, value, scopeKey, workflowInstanceKey, workflowKey);
   }
 
   @Override
   public String toString() {
-    return "VariableRecordValueImpl [name="
+    return "VariableRecordValueImpl{"
+        + "name='"
         + name
-        + ", value="
+        + '\''
+        + ", value='"
         + value
+        + '\''
         + ", scopeKey="
         + scopeKey
         + ", workflowInstanceKey="
         + workflowInstanceKey
-        + "]";
+        + ", workflowKey="
+        + workflowKey
+        + '}';
   }
 }

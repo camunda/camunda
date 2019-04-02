@@ -9,7 +9,7 @@ pom.
     <dependencies>
       <dependency>
         <groupId>io.zeebe</groupId>
-        <artifactId>zb-bom</artifactId>
+        <artifactId>zeebe-bom</artifactId>
         <version>X.Y.Z</version>
         <scope>import</scope>
         <type>pom</type>

@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.exporter.record.value.deployment;
 
-import io.zeebe.exporter.record.value.deployment.DeployedWorkflow;
+import io.zeebe.exporter.api.record.value.deployment.DeployedWorkflow;
 import java.util.Objects;
 
 public class DeployedWorkflowImpl implements DeployedWorkflow {

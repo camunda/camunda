@@ -15,9 +15,9 @@
  */
 package io.zeebe.test.util.record;
 
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.RaftRecordValue;
-import io.zeebe.exporter.record.value.raft.RaftMember;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.RaftRecordValue;
+import io.zeebe.exporter.api.record.value.raft.RaftMember;
 import java.util.List;
 import java.util.stream.Stream;
 

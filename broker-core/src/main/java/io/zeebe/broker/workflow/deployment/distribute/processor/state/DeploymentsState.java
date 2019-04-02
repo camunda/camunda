@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.deployment.distribute.processor.state;
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.broker.workflow.deployment.distribute.processor.PendingDeploymentDistribution;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import java.util.function.ObjLongConsumer;
@@ -31,13 +32,16 @@ public class DeploymentsState {
   private final DbLong deploymentKey;
   private final ColumnFamily<DbLong, PendingDeploymentDistribution> pendingDeploymentColumnFamily;
 
-  public DeploymentsState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public DeploymentsState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
 
     deploymentKey = new DbLong();
     pendingDeploymentDistribution = new PendingDeploymentDistribution(new UnsafeBuffer(0, 0), -1);
     pendingDeploymentColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PENDING_DEPLOYMENT, deploymentKey, pendingDeploymentDistribution);
+            ZbColumnFamilies.PENDING_DEPLOYMENT,
+            dbContext,
+            deploymentKey,
+            pendingDeploymentDistribution);
   }
 
   public void putPendingDeployment(

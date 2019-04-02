@@ -56,6 +56,6 @@ public class ClientReconnectTest {
         b -> {
           b.zeebeTaskHeader("k1", "a").zeebeTaskHeader("k2", "b");
         },
-        "{\"payload\":123}");
+        "{\"variables\":123}");
   }
 }

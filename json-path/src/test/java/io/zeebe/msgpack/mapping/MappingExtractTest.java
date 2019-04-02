@@ -16,7 +16,6 @@
 package io.zeebe.msgpack.mapping;
 
 import static io.zeebe.msgpack.mapping.MappingBuilder.createMapping;
-import static io.zeebe.msgpack.mapping.MappingBuilder.createMappings;
 import static io.zeebe.msgpack.mapping.MappingTestUtil.JSON_MAPPER;
 import static io.zeebe.msgpack.mapping.MappingTestUtil.MSGPACK_MAPPER;
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
@@ -38,64 +37,16 @@ public class MappingExtractTest {
 
   @Test
   public void shouldThrowExceptionIfMappingDoesNotMatchInStrictMode() throws Throwable {
-    // given payload
+    // given variables
     final DirectBuffer sourceDocument = new UnsafeBuffer(EMTPY_OBJECT);
-    final Mapping[] mapping = createMapping("$.foo", "$");
+    final Mapping[] mapping = createMapping("foo", "bar");
 
     // expect
     expectedException.expect(MappingException.class);
-    expectedException.expectMessage("No data found for query $.foo.");
+    expectedException.expectMessage("No data found for query foo.");
 
     // when
     mergeTool.mergeDocumentStrictly(sourceDocument, mapping);
-  }
-
-  @Test
-  public void shouldThrowExceptionIfResultDocumentIsNoObjectInStrictMode() throws Throwable {
-    // given payload
-    final DirectBuffer sourceDocument =
-        new UnsafeBuffer(MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
-    final Mapping[] mapping = createMapping("$.foo", "$");
-
-    mergeTool.mergeDocumentStrictly(sourceDocument, mapping);
-
-    // expect
-    expectedException.expect(MappingException.class);
-    expectedException.expectMessage(
-        "Processing failed, since mapping will result in a non map object (json object).");
-
-    // when
-    mergeTool.writeResultToBuffer();
-  }
-
-  @Test
-  public void shouldExtractTwice() throws Throwable {
-    // given documents
-    final DirectBuffer sourceDocument =
-        new UnsafeBuffer(
-            MSGPACK_MAPPER.writeValueAsBytes(
-                JSON_MAPPER.readTree(
-                    "{'arr':[{'deepObj':{'value':123}}, 1], 'obj':{'int':1}, 'test':'value'}")));
-    Mapping[] extractMapping = createMappings().mapping("$.arr[0]", "$").build();
-
-    // when merge
-    mergeTool.mergeDocument(sourceDocument, extractMapping);
-    byte result[] = BufferUtil.bufferAsArray(mergeTool.writeResultToBuffer());
-
-    // then expect result
-    assertThat(MSGPACK_MAPPER.readTree(result))
-        .isEqualTo(JSON_MAPPER.readTree("{'deepObj':{'value':123}}"));
-
-    // new source and mappings
-    sourceDocument.wrap(result);
-    extractMapping = createMappings().mapping("$.deepObj", "$").build();
-
-    // when again merge after that
-    mergeTool.mergeDocument(sourceDocument, extractMapping);
-    result = BufferUtil.bufferAsArray(mergeTool.writeResultToBuffer());
-
-    // then expect result
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'value':123}"));
   }
 
   @Test
@@ -139,10 +90,10 @@ public class MappingExtractTest {
     final DirectBuffer document3 = asMsgPack("{'att3':'val3'}");
 
     // when
-    mergeTool.mergeDocument(document1, createMapping("$.att1", "$.newAtt1"));
-    mergeTool.mergeDocument(document2, createMapping("$.att2", "$.newAtt2"));
+    mergeTool.mergeDocument(document1, createMapping("att1", "newAtt1"));
+    mergeTool.mergeDocument(document2, createMapping("att2", "newAtt2"));
     mergeTool.mergeDocument(
-        document3, createMapping("$.att3", "$.newAtt2")); // overwriting the last one
+        document3, createMapping("att3", "newAtt2")); // overwriting the last one
 
     // then
     final DirectBuffer mergedDocument = mergeTool.writeResultToBuffer();
@@ -159,9 +110,9 @@ public class MappingExtractTest {
     final DirectBuffer document3 = asMsgPack("{'att3':'val3'}");
 
     // when
-    mergeTool.mergeDocument(document1, createMapping("$.att1", "$.array", Mapping.Type.COLLECT));
-    mergeTool.mergeDocument(document2, createMapping("$.att2", "$.array", Mapping.Type.COLLECT));
-    mergeTool.mergeDocument(document3, createMapping("$.att3", "$.array", Mapping.Type.COLLECT));
+    mergeTool.mergeDocument(document1, createMapping("att1", "array", Mapping.Type.COLLECT));
+    mergeTool.mergeDocument(document2, createMapping("att2", "array", Mapping.Type.COLLECT));
+    mergeTool.mergeDocument(document3, createMapping("att3", "array", Mapping.Type.COLLECT));
 
     // then
     final DirectBuffer mergedDocument = mergeTool.writeResultToBuffer();

@@ -30,7 +30,7 @@ public class MessageSubscription implements DbValue {
 
   private final DirectBuffer messageName = new UnsafeBuffer();
   private final DirectBuffer correlationKey = new UnsafeBuffer();
-  private final DirectBuffer messagePayload = new UnsafeBuffer();
+  private final DirectBuffer messageVariables = new UnsafeBuffer();
 
   private long workflowInstanceKey;
   private long elementInstanceKey;
@@ -65,12 +65,12 @@ public class MessageSubscription implements DbValue {
     return correlationKey;
   }
 
-  public DirectBuffer getMessagePayload() {
-    return messagePayload;
+  public DirectBuffer getMessageVariables() {
+    return messageVariables;
   }
 
-  public void setMessagePayload(DirectBuffer payload) {
-    this.messagePayload.wrap(payload);
+  public void setMessageVariables(DirectBuffer variables) {
+    this.messageVariables.wrap(variables);
   }
 
   public long getWorkflowInstanceKey() {
@@ -117,7 +117,7 @@ public class MessageSubscription implements DbValue {
 
     offset = readIntoBuffer(buffer, offset, messageName);
     offset = readIntoBuffer(buffer, offset, correlationKey);
-    readIntoBuffer(buffer, offset, messagePayload);
+    readIntoBuffer(buffer, offset, messageVariables);
   }
 
   @Override
@@ -127,7 +127,7 @@ public class MessageSubscription implements DbValue {
         + Integer.BYTES * 3
         + messageName.capacity()
         + correlationKey.capacity()
-        + messagePayload.capacity();
+        + messageVariables.capacity();
   }
 
   @Override
@@ -146,7 +146,7 @@ public class MessageSubscription implements DbValue {
 
     offset = writeIntoBuffer(buffer, offset, messageName);
     offset = writeIntoBuffer(buffer, offset, correlationKey);
-    offset = writeIntoBuffer(buffer, offset, messagePayload);
+    offset = writeIntoBuffer(buffer, offset, messageVariables);
     assert offset == getLength() : "End offset differs with getLength()";
   }
 }

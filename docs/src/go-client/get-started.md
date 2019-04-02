@@ -199,14 +199,12 @@ workflowKey:1 bpmnProcessId:"order-process" version:1 workflowInstanceKey:6
 
 You did it! You want to see how the workflow instance is executed?
 
-Start the Zeebe Monitor using `java -jar zeebe-simple-monitor.jar`.
+Start the Zeebe Monitor using `java -jar zeebe-simple-monitor-app-*.jar`.
 
 Open a web browser and go to <http://localhost:8080/>.
 
-Connect to the broker and switch to the workflow instances view.
-Here, you see the current state of the workflow instance which includes active jobs, completed activities, the payload and open incidents.
-
-![zeebe-monitor-step-1](/java-client/zeebe-monitor-1.png)
+Here, you see the current state of the workflow instance.
+![zeebe-monitor-step-1](/java-client/java-get-started-monitor-1.gif)
 
 
 ## Work on a task
@@ -231,86 +229,86 @@ complete a job of the first task type:
 package main
 
 import (
-	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go/entities"
-	"github.com/zeebe-io/zeebe/clients/go/worker"
-	"github.com/zeebe-io/zeebe/clients/go/zbc"
-	"log"
+    "fmt"
+    "github.com/zeebe-io/zeebe/clients/go/entities"
+    "github.com/zeebe-io/zeebe/clients/go/worker"
+    "github.com/zeebe-io/zeebe/clients/go/zbc"
+    "log"
 )
 
 const brokerAddr = "0.0.0.0:26500"
 
 func main() {
-	client, err := zbc.NewZBClient(brokerAddr)
-	if err != nil {
-		panic(err)
-	}
+    client, err := zbc.NewZBClient(brokerAddr)
+    if err != nil {
+        panic(err)
+    }
 
-	// deploy workflow
-	response, err := client.NewDeployWorkflowCommand().AddResourceFile("order-process.bpmn").Send()
-	if err != nil {
-		panic(err)
-	}
+    // deploy workflow
+    response, err := client.NewDeployWorkflowCommand().AddResourceFile("order-process.bpmn").Send()
+    if err != nil {
+        panic(err)
+    }
 
-	fmt.Println(response.String())
+    fmt.Println(response.String())
 
-	// create a new workflow instance
-	payload := make(map[string]interface{})
-	payload["orderId"] = "31243"
+    // create a new workflow instance
+    payload := make(map[string]interface{})
+    payload["orderId"] = "31243"
 
-	request, err := client.NewCreateInstanceCommand().BPMNProcessId("order-process").LatestVersion().VariablesFromMap(payload)
-	if err != nil {
-		panic(err)
-	}
+    request, err := client.NewCreateInstanceCommand().BPMNProcessId("order-process").LatestVersion().VariablesFromMap(payload)
+    if err != nil {
+        panic(err)
+    }
 
-	result, err := request.Send()
-	if err != nil {
-		panic(err)
-	}
+    result, err := request.Send()
+    if err != nil {
+        panic(err)
+    }
 
-	fmt.Println(result.String())
+    fmt.Println(result.String())
 
-	jobWorker := client.NewJobWorker().JobType("payment-service").Handler(handleJob).Open()
-	defer jobWorker.Close()
+    jobWorker := client.NewJobWorker().JobType("payment-service").Handler(handleJob).Open()
+    defer jobWorker.Close()
 
-	jobWorker.AwaitClose()
+    jobWorker.AwaitClose()
 }
 
 func handleJob(client worker.JobClient, job entities.Job) {
-	jobKey := job.GetKey()
+    jobKey := job.GetKey()
 
-	headers, err := job.GetCustomHeadersAsMap()
-	if err != nil {
-		// failed to handle job as we require the custom job headers
-		failJob(client, job)
-		return
-	}
+    headers, err := job.GetCustomHeadersAsMap()
+    if err != nil {
+        // failed to handle job as we require the custom job headers
+        failJob(client, job)
+        return
+    }
 
-	payload, err := job.GetPayloadAsMap()
-	if err != nil {
-		// failed to handle job as we require the payload
-		failJob(client, job)
-		return
-	}
+    variables, err := job.GetVariablesAsMap()
+    if err != nil {
+        // failed to handle job as we require the variables
+        failJob(client, job)
+        return
+    }
 
-	payload["totalPrice"] = 46.50;
-	request, err := client.NewCompleteJobCommand().JobKey(jobKey).PayloadFromMap(payload)
-	if err != nil {
-		// failed to set the updated payload
-		failJob(client, job)
-		return
-	}
+    variables["totalPrice"] = 46.50;
+    request, err := client.NewCompleteJobCommand().JobKey(jobKey).VariablesFromMap(variables)
+    if err != nil {
+        // failed to set the updated variables
+        failJob(client, job)
+        return
+    }
 
-	log.Println("Complete job", jobKey, "of type", job.Type)
-	log.Println("Processing order:", payload["orderId"])
-	log.Println("Collect money using payment method:", headers["method"])
+    log.Println("Complete job", jobKey, "of type", job.Type)
+    log.Println("Processing order:", variables["orderId"])
+    log.Println("Collect money using payment method:", headers["method"])
 
-	request.Send()
+    request.Send()
 }
 
 func failJob(client worker.JobClient, job entities.Job) {
-	log.Println("Failed to complete job", job.GetKey())
-	client.NewFailJobCommand().JobKey(job.GetKey()).Retries(job.Retries - 1).Send()
+    log.Println("Failed to complete job", job.GetKey())
+    client.NewFailJobCommand().JobKey(job.GetKey()).Retries(job.Retries - 1).Send()
 }
 ```
 
@@ -322,7 +320,7 @@ it encounters a problem while processing the job.
 
 When you have a look at the Zeebe Monitor, then you can see that the workflow instance moved from the first service task to the next one:
 
-![zeebe-monitor-step-2](/go-client/zeebe-monitor-2.png)
+![zeebe-monitor-step-2](/java-client/java-get-started-monitor-2.gif)
 
 When you run the above example you should see similar output:
 

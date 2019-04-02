@@ -34,7 +34,7 @@ public class WorkflowInstanceSubscriptionRecord extends UnpackedObject
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
-  private final DocumentProperty payloadProp = new DocumentProperty("payload");
+  private final DocumentProperty variablesProp = new DocumentProperty("variables");
   private final BooleanProperty closeOnCorrelateProp =
       new BooleanProperty("closeOnCorrelate", true);
 
@@ -43,7 +43,7 @@ public class WorkflowInstanceSubscriptionRecord extends UnpackedObject
         .declareProperty(workflowInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(messageNameProp)
-        .declareProperty(payloadProp)
+        .declareProperty(variablesProp)
         .declareProperty(closeOnCorrelateProp);
   }
 
@@ -83,12 +83,12 @@ public class WorkflowInstanceSubscriptionRecord extends UnpackedObject
     return this;
   }
 
-  public DirectBuffer getPayload() {
-    return payloadProp.getValue();
+  public DirectBuffer getVariables() {
+    return variablesProp.getValue();
   }
 
-  public WorkflowInstanceSubscriptionRecord setPayload(DirectBuffer payload) {
-    payloadProp.setValue(payload);
+  public WorkflowInstanceSubscriptionRecord setVariables(DirectBuffer variables) {
+    variablesProp.setValue(variables);
     return this;
   }
 

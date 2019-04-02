@@ -21,11 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.VariableRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.IntermediateCatchEventBuilder;
-import io.zeebe.model.bpmn.builder.ZeebePayloadMappingBuilder;
+import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -55,7 +55,6 @@ public class MessageOutputMappingTest {
   private static final String PROCESS_ID = "process";
   private static final String MESSAGE_NAME = "message";
   private static final String CORRELATION_VARIABLE = "key";
-  private static final String CORRELATION_VARIABLE_PATH = "$." + CORRELATION_VARIABLE;
 
   public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
@@ -67,7 +66,7 @@ public class MessageOutputMappingTest {
       new RecordingExporterTestWatcher();
 
   @Parameter(0)
-  public String messagePayload;
+  public String messageVariables;
 
   @Parameter(1)
   public Consumer<IntermediateCatchEventBuilder> mappings;
@@ -85,19 +84,19 @@ public class MessageOutputMappingTest {
       {"{'x': 1}", mapping(b -> {}), activityVariables(), scopeVariables(tuple("x", "1"))},
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeOutput("$.x", "$.x")),
+        mapping(b -> b.zeebeOutput("x", "x")),
         activityVariables(tuple("x", "1")),
         scopeVariables(tuple("x", "1"))
       },
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeOutput("$.x", "$.y")),
+        mapping(b -> b.zeebeOutput("x", "y")),
         activityVariables(tuple("x", "1")),
         scopeVariables(tuple("y", "1"))
       },
       {
         "{'x': 1, 'y': 2}",
-        mapping(b -> b.zeebeOutput("$.y", "$.z")),
+        mapping(b -> b.zeebeOutput("y", "z")),
         activityVariables(tuple("x", "1"), tuple("y", "2")),
         scopeVariables(tuple("z", "2"))
       },
@@ -109,13 +108,13 @@ public class MessageOutputMappingTest {
       },
       {
         "{'x': {'y': 2}}",
-        mapping(b -> b.zeebeOutput("$.x", "$.y")),
+        mapping(b -> b.zeebeOutput("x", "y")),
         activityVariables(tuple("x", "{\"y\":2}")),
         scopeVariables(tuple("y", "{\"y\":2}"))
       },
       {
         "{'x': {'y': 2}}",
-        mapping(b -> b.zeebeOutput("$.x.y", "$.y")),
+        mapping(b -> b.zeebeOutput("x.y", "y")),
         activityVariables(tuple("x", "{\"y\":2}")),
         scopeVariables(tuple("y", "2"))
       },
@@ -123,13 +122,13 @@ public class MessageOutputMappingTest {
       {"{'i': 1}", mapping(b -> {}), activityVariables(), scopeVariables(tuple("i", "1"))},
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeOutput("$.x", "$.i")),
+        mapping(b -> b.zeebeOutput("x", "i")),
         activityVariables(tuple("x", "1")),
         scopeVariables(tuple("i", "1"))
       },
       {
         "{'i': 2, 'x': 1}",
-        mapping(b -> b.zeebeInput("$.i", "$.x")),
+        mapping(b -> b.zeebeInput("i", "x")),
         activityVariables(tuple("x", "0")),
         scopeVariables(tuple("i", "2"))
       },
@@ -155,9 +154,7 @@ public class MessageOutputMappingTest {
                         "catch-event",
                         b -> {
                           b.message(
-                              m ->
-                                  m.name(MESSAGE_NAME)
-                                      .zeebeCorrelationKey(CORRELATION_VARIABLE_PATH));
+                              m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE));
 
                           mappings.accept(b);
                         })
@@ -168,18 +165,18 @@ public class MessageOutputMappingTest {
             .get(0)
             .getWorkflowKey();
 
-    final Map<String, Object> payload = new HashMap<>();
-    payload.put("i", 0);
-    payload.put(CORRELATION_VARIABLE, correlationKey);
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("i", 0);
+    variables.put(CORRELATION_VARIABLE, correlationKey);
 
     // when
     final long workflowInstanceKey =
         apiRule
             .partitionClient()
             .createWorkflowInstance(
-                r -> r.setKey(workflowKey).setVariables(MsgPackUtil.asMsgPack(payload)))
+                r -> r.setKey(workflowKey).setVariables(MsgPackUtil.asMsgPack(variables)))
             .getInstanceKey();
-    apiRule.publishMessage(MESSAGE_NAME, correlationKey, MsgPackUtil.asMsgPack(messagePayload));
+    apiRule.publishMessage(MESSAGE_NAME, correlationKey, MsgPackUtil.asMsgPack(messageVariables));
 
     // then
     final long elementInstanceKey =
@@ -218,8 +215,8 @@ public class MessageOutputMappingTest {
         .containsAll(expectedScopeVariables);
   }
 
-  private static Consumer<ZeebePayloadMappingBuilder<IntermediateCatchEventBuilder>> mapping(
-      Consumer<ZeebePayloadMappingBuilder<IntermediateCatchEventBuilder>> mappingBuilder) {
+  private static Consumer<ZeebeVariablesMappingBuilder<IntermediateCatchEventBuilder>> mapping(
+      Consumer<ZeebeVariablesMappingBuilder<IntermediateCatchEventBuilder>> mappingBuilder) {
     return mappingBuilder;
   }
 

@@ -15,7 +15,7 @@
  */
 package io.zeebe.broker.it.job;
 
-import static io.zeebe.exporter.record.Assertions.assertThat;
+import static io.zeebe.exporter.api.record.Assertions.assertThat;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
@@ -27,8 +27,8 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobWorker;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.TestUtil;
@@ -134,7 +134,7 @@ public class JobWorkerTest {
     // when
     final RecordingJobHandler jobHandler =
         new RecordingJobHandler(
-            (c, t) -> c.newCompleteCommand(t.getKey()).payload("{\"a\":3}").send());
+            (c, t) -> c.newCompleteCommand(t.getKey()).variables("{\"a\":3}").send());
 
     client
         .newWorker()
@@ -157,7 +157,7 @@ public class JobWorkerTest {
     waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
 
     final Record<JobRecordValue> completedRecord = jobRecords(JobIntent.COMPLETED).getFirst();
-    assertThat(completedRecord.getValue().getPayload()).isEqualTo("{\"a\":3}");
+    assertThat(completedRecord.getValue().getVariables()).isEqualTo("{\"a\":3}");
     assertThat(completedRecord.getValue()).hasCustomHeaders(Collections.singletonMap("b", "2"));
   }
 
@@ -209,7 +209,7 @@ public class JobWorkerTest {
         .handler(handler)
         .timeout(Duration.ofMinutes(5))
         .name("test")
-        .bufferSize(10)
+        .maxJobsActive(10)
         .open();
 
     // when
@@ -449,8 +449,8 @@ public class JobWorkerTest {
         .jobType(jobType)
         .handler(
             (c, job) -> {
-              final Map<String, Object> payload = job.getPayloadAsMap();
-              capturedVariables.addAll(payload.keySet());
+              final Map<String, Object> variables = job.getVariablesAsMap();
+              capturedVariables.addAll(variables.keySet());
               latch.countDown();
             })
         .fetchVariables(fetchVariables)
@@ -477,8 +477,8 @@ public class JobWorkerTest {
         .jobType(jobType)
         .handler(
             (c, job) -> {
-              final Map<String, Object> payload = job.getPayloadAsMap();
-              capturedVariables.addAll(payload.keySet());
+              final Map<String, Object> variables = job.getVariablesAsMap();
+              capturedVariables.addAll(variables.keySet());
               latch.countDown();
             })
         .fetchVariables(fetchVariables)

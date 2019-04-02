@@ -17,8 +17,8 @@ package io.zeebe.test.util.record;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.TimerRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.TimerRecordValue;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 
@@ -55,5 +55,9 @@ public class TimerRecordStream extends ExporterRecordStream<TimerRecordValue, Ti
 
   public TimerRecordStream withWorkflowKey(final long workflowKey) {
     return valueFilter(v -> v.getWorkflowKey() == workflowKey);
+  }
+
+  public TimerRecordStream withWorkflowInstanceKey(final long workflowInstanceKey) {
+    return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
   }
 }

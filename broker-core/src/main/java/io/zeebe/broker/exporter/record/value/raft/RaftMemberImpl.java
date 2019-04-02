@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.exporter.record.value.raft;
 
-import io.zeebe.exporter.record.value.raft.RaftMember;
+import io.zeebe.exporter.api.record.value.raft.RaftMember;
 import java.util.Objects;
 
 public class RaftMemberImpl implements RaftMember {

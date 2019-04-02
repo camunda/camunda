@@ -15,8 +15,8 @@
  */
 package io.zeebe.test.util.record;
 
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.WorkflowInstanceCreationRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.test.util.collection.Maps;
 import java.util.Map;

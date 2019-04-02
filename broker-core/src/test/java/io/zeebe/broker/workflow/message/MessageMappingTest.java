@@ -20,12 +20,12 @@ package io.zeebe.broker.workflow.message;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Assertions;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.VariableRecordValue;
+import io.zeebe.exporter.api.record.Assertions;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.ZeebePayloadMappingBuilder;
+import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
@@ -53,20 +53,19 @@ public class MessageMappingTest {
   private static final String PROCESS_ID = "process";
   private static final String MESSAGE_NAME = "message";
   private static final String CORRELATION_VARIABLE = "key";
-  private static final String CORRELATION_VARIABLE_PATH = "$." + CORRELATION_VARIABLE;
 
   private static final BpmnModelInstance CATCH_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("catch")
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
           .done();
 
   private static final BpmnModelInstance RECEIVE_TASK_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .receiveTask("catch")
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
           .done();
 
   private static final BpmnModelInstance INTERRUPTING_BOUNDARY_EVENT_WORKFLOW =
@@ -74,7 +73,7 @@ public class MessageMappingTest {
           .startEvent()
           .serviceTask("task", b -> b.zeebeTaskType("type"))
           .boundaryEvent("catch")
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
           .endEvent()
           .done();
 
@@ -83,7 +82,7 @@ public class MessageMappingTest {
           .startEvent()
           .serviceTask("task", b -> b.zeebeTaskType("type"))
           .boundaryEvent("catch", b -> b.cancelActivity(false))
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
           .endEvent()
           .done();
 
@@ -94,9 +93,7 @@ public class MessageMappingTest {
           .id("gateway")
           .intermediateCatchEvent(
               "catch",
-              c ->
-                  c.message(
-                      m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH)))
+              c -> c.message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE)))
           .sequenceFlowId("to-end1")
           .endEvent("end1")
           .moveToLastGateway()
@@ -140,7 +137,7 @@ public class MessageMappingTest {
   }
 
   @Test
-  public void shouldMergeMessagePayloadByDefault() {
+  public void shouldMergeMessageVariablesByDefault() {
     // given
     final long workflowKey = deployWorkflowWithMapping(e -> {});
 
@@ -169,7 +166,7 @@ public class MessageMappingTest {
   }
 
   @Test
-  public void shouldMergeMessagePayload() {
+  public void shouldMergeMessageVariables() {
     // given
     final long workflowKey = deployWorkflowWithMapping(e -> {});
 
@@ -198,10 +195,9 @@ public class MessageMappingTest {
   }
 
   @Test
-  public void shouldMapMessagePayloadIntoInstancePayload() {
+  public void shouldMapMessageVariablesIntoInstanceVariables() {
     // given
-    final long workflowKey =
-        deployWorkflowWithMapping(e -> e.zeebeOutput("$.foo", "$." + MESSAGE_NAME));
+    final long workflowKey = deployWorkflowWithMapping(e -> e.zeebeOutput("foo", MESSAGE_NAME));
     final long workflowInstanceKey =
         apiRule
             .partitionClient()
@@ -226,7 +222,7 @@ public class MessageMappingTest {
         .hasScopeKey(workflowInstanceKey);
   }
 
-  private long deployWorkflowWithMapping(Consumer<ZeebePayloadMappingBuilder<?>> c) {
+  private long deployWorkflowWithMapping(Consumer<ZeebeVariablesMappingBuilder<?>> c) {
     final BpmnModelInstance modifiedWorkflow = workflow.clone();
     final ModelElementInstance element = modifiedWorkflow.getModelElementById("catch");
     if (element instanceof IntermediateCatchEvent) {

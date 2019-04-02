@@ -21,10 +21,10 @@ import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.JobRecordValue;
-import io.zeebe.exporter.record.value.VariableDocumentRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.value.VariableDocumentRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobIntent;

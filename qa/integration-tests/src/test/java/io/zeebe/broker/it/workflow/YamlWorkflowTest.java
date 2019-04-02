@@ -29,9 +29,9 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.VariableRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.VariableRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -91,7 +91,7 @@ public class YamlWorkflowTest {
         .getClient()
         .newWorker()
         .jobType("foo")
-        .handler((client, job) -> client.newCompleteCommand(job.getKey()).payload("{ }").send())
+        .handler((client, job) -> client.newCompleteCommand(job.getKey()).variables("{ }").send())
         .open();
 
     // then
@@ -126,7 +126,7 @@ public class YamlWorkflowTest {
   }
 
   @Test
-  public void shouldCompleteTaskWithPayload() {
+  public void shouldCompleteTaskWithVariables() {
     // given
     final ZeebeClient zeebeClient = clientRule.getClient();
     final String resource = "workflows/workflow-with-mappings.yaml";
@@ -145,7 +145,7 @@ public class YamlWorkflowTest {
     final RecordingJobHandler recordingTaskHandler =
         new RecordingJobHandler(
             (client, job) ->
-                client.newCompleteCommand(job.getKey()).payload("{\"result\":3}").send());
+                client.newCompleteCommand(job.getKey()).variables("{\"result\":3}").send());
 
     zeebeClient.newWorker().jobType("foo").handler(recordingTaskHandler).open();
 
@@ -153,7 +153,7 @@ public class YamlWorkflowTest {
     waitUntil(() -> recordingTaskHandler.getHandledJobs().size() >= 1);
 
     final ActivatedJob jobEvent = recordingTaskHandler.getHandledJobs().get(0);
-    JsonUtil.assertEquality(jobEvent.getPayload(), "{'bar': 1, 'foo': 1}");
+    JsonUtil.assertEquality(jobEvent.getVariables(), "{'bar': 1, 'foo': 1}");
 
     final List<Record<VariableRecordValue>> variableRecords = getFinalVariableRecords(event);
 

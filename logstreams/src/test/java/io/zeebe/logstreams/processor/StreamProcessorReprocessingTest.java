@@ -19,14 +19,17 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
@@ -42,6 +45,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -61,6 +65,8 @@ public class StreamProcessorReprocessingTest {
   private static final DirectBuffer EVENT = wrapString("FOO");
 
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private ZeebeDb<DefaultColumnFamily> zeebeDb;
+  private DbContext dbContext;
   private final LogStreamRule logStreamRule =
       new LogStreamRule(
           temporaryFolder,
@@ -69,7 +75,20 @@ public class StreamProcessorReprocessingTest {
             final StateStorage stateStorage = new StateStorage(logDirectory);
             stateSnapshotController =
                 new StateSnapshotController(
-                    ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), stateStorage);
+                    (path) -> {
+                      final ZeebeDb<DefaultColumnFamily> db =
+                          ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class).createDb(path);
+                      zeebeDb = spy(db);
+                      doAnswer(
+                              invocationOnMock -> {
+                                dbContext = (DbContext) spy(invocationOnMock.callRealMethod());
+                                return dbContext;
+                              })
+                          .when(zeebeDb)
+                          .createContext();
+                      return zeebeDb;
+                    },
+                    stateStorage);
           });
   private final LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
 
@@ -100,7 +119,7 @@ public class StreamProcessorReprocessingTest {
   private ActorFuture<StreamProcessorService> openStreamProcessorControllerAsync(
       Runnable runnable) {
     return openStreamProcessorControllerAsync(
-        zeebeDb -> {
+        (zeebeDb, dbContext) -> {
           createStreamProcessor(zeebeDb);
           runnable.run();
           return streamProcessor;
@@ -183,7 +202,7 @@ public class StreamProcessorReprocessingTest {
   }
 
   @Test
-  public void shouldCallProcessingFailedOnReprocessingError() {
+  public void shouldRetryProcessingOnReprocessingError() {
     // given
     final long eventPosition1 = writeEvent();
     final long eventPosition2 = writeEvent();
@@ -206,6 +225,32 @@ public class StreamProcessorReprocessingTest {
               .when(eventProcessorSpy)
               .processEvent();
         });
+    waitUntilProcessedAndFailedCountReached(3, 0);
+
+    // then
+    assertThat(streamProcessor.getEvents())
+        .extracting(LoggedEvent::getPosition)
+        .containsExactly(eventPosition1, eventPosition2, eventPosition3);
+
+    verify(eventProcessor, times(4)).processEvent();
+    verify(eventProcessor, times(0)).onError(any());
+    verify(eventProcessor, times(1)).executeSideEffects();
+    verify(eventProcessor, times(1)).writeEvent(any());
+  }
+
+  @Test
+  public void shouldCallOnErrorForFailedEvent() {
+    // given
+    final long eventPosition1 = writeEvent();
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 =
+        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition2));
+
+    // when
+    openStreamProcessorController(
+        () -> {
+          streamProcessor.setFailedEventPosition(eventPosition2);
+        });
     waitUntilProcessedAndFailedCountReached(2, 1);
 
     // then
@@ -213,10 +258,43 @@ public class StreamProcessorReprocessingTest {
         .extracting(LoggedEvent::getPosition)
         .containsExactly(eventPosition1, eventPosition2, eventPosition3);
 
-    verify(eventProcessor, times(3)).processEvent();
-    verify(eventProcessor, times(1)).processingFailed(any());
+    verify(eventProcessor, times(2)).processEvent();
+    verify(eventProcessor, times(1)).onError(any());
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
+  }
+
+  @Test
+  public void shouldRetryReprocessingOnException() throws Exception {
+    // given
+    final CountDownLatch latch = new CountDownLatch(2);
+
+    final long eventPosition1 = writeEvent();
+    final long eventPosition2 =
+        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
+
+    // when
+    openStreamProcessorController(
+        () -> {
+          doThrow(new RuntimeException("expected"))
+              .doAnswer(
+                  (invocationOnMock -> {
+                    latch.countDown();
+                    return invocationOnMock.callRealMethod();
+                  }))
+              .when(eventProcessor)
+              .processEvent();
+        });
+    latch.await();
+
+    // then
+    assertThat(streamProcessor.getEvents())
+        .extracting(LoggedEvent::getPosition)
+        .containsOnly(eventPosition1, eventPosition2);
+
+    verify(streamProcessor, times(2)).onEvent(any());
+    verify(dbContext, atLeast(3)).getCurrentTransaction();
+    verify(eventProcessor, times(3)).processEvent();
   }
 
   @Test
@@ -335,38 +413,12 @@ public class StreamProcessorReprocessingTest {
   }
 
   @Test
-  public void shouldSkipEventOnReprocessingError() {
-    // given [1|S:-] --> [2|S:1]
-    final long eventPosition1 = writeEvent();
-    final long eventPosition2 = writeEvent();
-    final long eventPosition3 =
-        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition2));
-
-    openStreamProcessorController(
-        () -> {
-          doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent();
-        });
-
-    // when
-    waitUntilProcessedAndFailedCountReached(0, 3);
-
-    // then
-    assertThat(streamProcessor.getEvents())
-        .extracting(LoggedEvent::getPosition)
-        .containsExactly(eventPosition1, eventPosition2, eventPosition3);
-
-    verify(streamProcessor, times(1)).onRecovered();
-    verify(eventProcessor, times(3)).processEvent();
-    verify(eventProcessor, times(3)).processingFailed(any());
-  }
-
-  @Test
   public void shouldNotReprocessEventsIfReadOnly() {
     final StreamProcessorBuilder builder =
         LogStreams.createStreamProcessor("read-only", PROCESSOR_ID)
             .logStream(logStreamRule.getLogStream())
             .snapshotController(stateSnapshotController)
-            .streamProcessorFactory(this::createStreamProcessor)
+            .streamProcessorFactory((zeebeDb1, dbContext) -> createStreamProcessor(zeebeDb1))
             .actorScheduler(logStreamRule.getActorScheduler())
             .serviceContainer(logStreamRule.getServiceContainer())
             .readOnly(true);
@@ -425,7 +477,7 @@ public class StreamProcessorReprocessingTest {
             });
 
     // when
-    openStreamProcessorController(zeebeDb -> processor);
+    openStreamProcessorController((zeebeDb, dbContext) -> processor);
 
     // then
     waitUntil(() -> processedRecords.get() == numberOfRecords + 2);
@@ -458,7 +510,7 @@ public class StreamProcessorReprocessingTest {
                 }
               }
             });
-    openStreamProcessorController(zeebeDb -> processor);
+    openStreamProcessorController((zeebeDb, dbContext) -> processor);
 
     // when
     waitUntil(() -> barrier.getNumberWaiting() == 1);
@@ -508,7 +560,7 @@ public class StreamProcessorReprocessingTest {
   private long writeEventWith(final Consumer<LogStreamRecordWriter> wr) {
     return writer.writeEvent(
         w -> {
-          w.positionAsKey().value(EVENT);
+          w.key(-1).value(EVENT);
           wr.accept(w);
         },
         true);

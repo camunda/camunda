@@ -18,15 +18,15 @@
 package io.zeebe.broker.incident;
 
 import static io.zeebe.broker.incident.IncidentAssert.assertIncidentRecordValue;
-import static io.zeebe.exporter.record.Assertions.assertThat;
+import static io.zeebe.exporter.api.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.IncidentRecordValue;
-import io.zeebe.exporter.record.value.JobRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.ErrorType;
@@ -59,13 +59,13 @@ public class JobFailIncidentTest {
   private static final BpmnModelInstance WORKFLOW_INPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("$.foo", "$.foo"))
+          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("foo", "foo"))
           .done();
 
-  private static final DirectBuffer PAYLOAD;
+  private static final DirectBuffer VARIABLES;
 
   static {
-    PAYLOAD =
+    VARIABLES =
         MsgPackUtil.encodeMsgPack(
             p -> {
               p.packMapHeader(1);
@@ -87,7 +87,7 @@ public class JobFailIncidentTest {
 
     final long workflowInstanceKey =
         testClient
-            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(PAYLOAD))
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(VARIABLES))
             .getInstanceKey();
 
     // when
@@ -121,7 +121,7 @@ public class JobFailIncidentTest {
 
     final long workflowInstanceKey =
         testClient
-            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(PAYLOAD))
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(VARIABLES))
             .getInstanceKey();
 
     // when
@@ -155,7 +155,7 @@ public class JobFailIncidentTest {
 
     final long workflowInstanceKey =
         testClient
-            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(PAYLOAD))
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(VARIABLES))
             .getInstanceKey();
 
     // when
@@ -185,7 +185,7 @@ public class JobFailIncidentTest {
 
     final long workflowInstanceKey =
         testClient
-            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(PAYLOAD))
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(VARIABLES))
             .getInstanceKey();
 
     failJobWithNoRetriesLeft();
@@ -254,7 +254,7 @@ public class JobFailIncidentTest {
 
     final long workflowInstanceKey =
         testClient
-            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(PAYLOAD))
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process").setVariables(VARIABLES))
             .getInstanceKey();
 
     failJobWithNoRetriesLeft();

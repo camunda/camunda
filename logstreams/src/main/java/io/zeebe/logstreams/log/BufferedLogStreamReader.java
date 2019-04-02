@@ -19,6 +19,7 @@ import io.zeebe.logstreams.impl.CompleteEventsInBlockProcessor;
 import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
+import io.zeebe.logstreams.impl.log.index.LogBlockIndexContext;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.ReadResultProcessor;
 import io.zeebe.util.allocation.AllocatedBuffer;
@@ -46,6 +47,7 @@ public class BufferedLogStreamReader implements LogStreamReader {
   private LogStream logStream;
   private LogStorage logStorage;
   private LogBlockIndex logBlockIndex;
+  private LogBlockIndexContext indexContext;
 
   // state
   private IteratorState state;
@@ -99,6 +101,7 @@ public class BufferedLogStreamReader implements LogStreamReader {
       final LogStorage logStorage, final LogBlockIndex logBlockIndex, final long position) {
     this.logStorage = logStorage;
     this.logBlockIndex = logBlockIndex;
+    this.indexContext = logBlockIndex.createLogBlockIndexContext();
 
     if (isClosed()) {
       allocateBuffer(DEFAULT_INITIAL_BUFFER_CAPACITY);
@@ -332,7 +335,7 @@ public class BufferedLogStreamReader implements LogStreamReader {
   }
 
   private long lookUpBlockAddressForPosition(final long position) {
-    long address = logBlockIndex.lookupBlockAddress(position);
+    long address = logBlockIndex.lookupBlockAddress(indexContext, position);
     if (address < 0) {
       // position not found in index fallback to first block
       address = logStorage.getFirstBlockAddress();

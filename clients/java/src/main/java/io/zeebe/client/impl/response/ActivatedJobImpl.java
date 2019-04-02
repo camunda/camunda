@@ -34,7 +34,7 @@ public class ActivatedJobImpl implements ActivatedJob {
   private final String worker;
   private final int retries;
   private final Instant deadline;
-  private final String payload;
+  private final String variables;
 
   public ActivatedJobImpl(ZeebeObjectMapper objectMapper, GatewayOuterClass.ActivatedJob job) {
     this.objectMapper = objectMapper;
@@ -46,7 +46,7 @@ public class ActivatedJobImpl implements ActivatedJob {
     worker = job.getWorker();
     retries = job.getRetries();
     deadline = Instant.ofEpochMilli(job.getDeadline());
-    payload = job.getPayload();
+    variables = job.getVariables();
   }
 
   @Override
@@ -85,18 +85,18 @@ public class ActivatedJobImpl implements ActivatedJob {
   }
 
   @Override
-  public String getPayload() {
-    return payload;
+  public String getVariables() {
+    return variables;
   }
 
   @Override
-  public Map<String, Object> getPayloadAsMap() {
-    return objectMapper.fromJsonAsMap(payload);
+  public Map<String, Object> getVariablesAsMap() {
+    return objectMapper.fromJsonAsMap(variables);
   }
 
   @Override
-  public <T> T getPayloadAsType(Class<T> payloadType) {
-    return objectMapper.fromJson(payload, payloadType);
+  public <T> T getVariablesAsType(Class<T> variableType) {
+    return objectMapper.fromJson(variables, variableType);
   }
 
   @Override

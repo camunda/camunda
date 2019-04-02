@@ -21,15 +21,15 @@ import (
 
 var (
 	publishMessageCorrelationKey string
-	publishMessageId string
-	publishMessageTtl time.Duration
-	publishMessagePayload string
+	publishMessageId             string
+	publishMessageTtl            time.Duration
+	publishMessageVariables      string
 )
 
 var publishMessageCmd = &cobra.Command{
-	Use:   "message <messageName>",
-	Short: "Publish a message by message name and correlation key",
-	Args: cobra.ExactArgs(1),
+	Use:     "message <messageName>",
+	Short:   "Publish a message by message name and correlation key",
+	Args:    cobra.ExactArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		request, err := client.NewPublishMessageCommand().
@@ -37,7 +37,7 @@ var publishMessageCmd = &cobra.Command{
 			CorrelationKey(publishMessageCorrelationKey).
 			MessageId(publishMessageId).
 			TimeToLive(publishMessageTtl).
-			PayloadFromString(publishMessagePayload)
+			VariablesFromString(publishMessageVariables)
 
 		if err != nil {
 			return err
@@ -53,8 +53,8 @@ func init() {
 
 	publishMessageCmd.Flags().StringVar(&publishMessageCorrelationKey, "correlationKey", "", "Specify message correlation key")
 	publishMessageCmd.Flags().StringVar(&publishMessageId, "messageId", "", "Specify the unique id of the message")
-	publishMessageCmd.Flags().DurationVar(&publishMessageTtl, "ttl", 5 * time.Second, "Specify the time to live of the message")
-	publishMessageCmd.Flags().StringVar(&publishMessagePayload, "payload", "{}", "Specify message payload as JSON string")
+	publishMessageCmd.Flags().DurationVar(&publishMessageTtl, "ttl", 5*time.Second, "Specify the time to live of the message")
+	publishMessageCmd.Flags().StringVar(&publishMessageVariables, "variables", "{}", "Specify message variables as JSON string")
 
 	publishMessageCmd.MarkFlagRequired("correlationKey")
 }

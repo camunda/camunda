@@ -88,8 +88,8 @@ public class IncidentStreamProcessorRule extends ExternalResource {
         .thenReturn(true);
 
     environmentRule.runStreamProcessor(
-        (typedEventStreamProcessorBuilder, zeebeDb) -> {
-          this.zeebeState = new ZeebeState(zeebeDb);
+        (typedEventStreamProcessorBuilder, zeebeDb, dbContext) -> {
+          this.zeebeState = new ZeebeState(zeebeDb, dbContext);
           this.workflowState = zeebeState.getWorkflowState();
           final BpmnStepProcessor stepProcessor =
               WorkflowEventProcessors.addWorkflowProcessors(
@@ -145,22 +145,22 @@ public class IncidentStreamProcessorRule extends ExternalResource {
   }
 
   public TypedRecord<WorkflowInstanceRecord> createWorkflowInstance(
-      final String processId, final DirectBuffer payload) {
+      final String processId, final DirectBuffer variables) {
     environmentRule.writeCommand(
         WorkflowInstanceCreationIntent.CREATE,
-        workflowInstanceCreationRecord(BufferUtil.wrapString(processId), payload));
+        workflowInstanceCreationRecord(BufferUtil.wrapString(processId), variables));
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
         awaitAndGetFirstRecordInState(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     return createdEvent;
   }
 
   private static WorkflowInstanceCreationRecord workflowInstanceCreationRecord(
-      final DirectBuffer processId, final DirectBuffer payload) {
+      final DirectBuffer processId, final DirectBuffer variables) {
     final WorkflowInstanceCreationRecord record = new WorkflowInstanceCreationRecord();
 
     record.setKey(1);
     record.setBpmnProcessId(processId);
-    record.setVariables(payload);
+    record.setVariables(variables);
 
     return record;
   }

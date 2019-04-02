@@ -21,6 +21,7 @@ import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementActivatedHandler;
+import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.IndexedRecord;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.broker.workflow.state.WorkflowState;
@@ -52,14 +53,17 @@ public class ContainerElementActivatedHandler<T extends ExecutableFlowElementCon
     final ExecutableCatchEventElement firstStartEvent = element.getStartEvents().get(0);
 
     // workflows with none start event only have a single none start event and no other types of
-    // start events
+    // start events; note that embedded sub-processes only have a single none start event, so
+    // publishing a deferred record only applies to processes
     if (firstStartEvent.isNone()) {
       activateNoneStartEvent(context, firstStartEvent);
     } else {
       publishDeferredRecord(context);
     }
 
-    context.getElementInstance().spawnToken();
+    final ElementInstance elementInstance = context.getElementInstance();
+    elementInstance.spawnToken();
+    context.getStateDb().getElementInstanceState().updateInstance(elementInstance);
     return true;
   }
 

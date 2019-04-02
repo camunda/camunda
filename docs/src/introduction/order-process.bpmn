@@ -14,9 +14,6 @@
         <zeebe:taskHeaders>
           <zeebe:header key="method" value="VISA" />
         </zeebe:taskHeaders>
-        <zeebe:ioMapping>
-          <zeebe:input source="$.orderId" target="$.orderId" />
-        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_18tqka5</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_10zt7r3</bpmn:outgoing>

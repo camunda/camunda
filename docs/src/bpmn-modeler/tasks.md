@@ -1,17 +1,21 @@
 # Tasks
 
-## Create a Service Task
+## Service Task
 
-![create-task](/bpmn-modeler/tasks/tasks4.png)
+Create a service task and configure the job type.
 
-## Configure Job Type
+![service-task](/bpmn-modeler/tasks/service-task.gif)
 
-![task-type](/bpmn-modeler/tasks/tasks1.png)
+Optional, add task headers.
 
-## Add Task Header
+![task-headers](/bpmn-modeler/tasks/task-headers.gif)
 
-![task-header](/bpmn-modeler/tasks/tasks2.png)
+Optional, add Input/Output Variable Mappings.
 
-## Add Input/Output Mapping
+![variable-mappings](/bpmn-modeler/tasks/variable-mappings.gif)
 
-![task-mapping](/bpmn-modeler/tasks/tasks3.png)
+## Receive Task
+
+Create a receive task and a message.
+
+![receive-task](/bpmn-modeler/tasks/receive-task.gif)

@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.processor.handlers.element;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.handlers.AbstractHandler;
+import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.EventTrigger;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -53,7 +54,7 @@ public class EventOccurredHandler<T extends ExecutableFlowElement> extends Abstr
 
   /**
    * Returns the latest event trigger but does not consume it from the state. It will be consumed
-   * once the caller calls {@link #handleEvent(BpmnStepContext, long, long, EventTrigger)}.
+   * once the caller calls {@link #processEventTrigger(BpmnStepContext, long, long, EventTrigger)}.
    */
   protected EventTrigger getTriggeredEvent(BpmnStepContext<T> context, long scopeKey) {
     return context.getStateDb().getEventScopeInstanceState().peekEventTrigger(scopeKey);
@@ -80,7 +81,7 @@ public class EventOccurredHandler<T extends ExecutableFlowElement> extends Abstr
             .getOutput()
             .deferRecord(flowScopeKey, record, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
-    handleEvent(context, eventScopeKey, eventInstanceKey, event);
+    processEventTrigger(context, eventScopeKey, eventInstanceKey, event);
     return eventInstanceKey;
   }
 
@@ -101,8 +102,10 @@ public class EventOccurredHandler<T extends ExecutableFlowElement> extends Abstr
       EventTrigger event) {
     final long eventInstanceKey =
         context.getOutput().appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, record);
-    handleEvent(context, eventScopeKey, eventInstanceKey, event);
-    context.getFlowScopeInstance().spawnToken();
+    processEventTrigger(context, eventScopeKey, eventInstanceKey, event);
+    final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
+    flowScopeInstance.spawnToken();
+    context.getStateDb().getElementInstanceState().updateInstance(flowScopeInstance);
 
     return eventInstanceKey;
   }
@@ -116,7 +119,7 @@ public class EventOccurredHandler<T extends ExecutableFlowElement> extends Abstr
    * @param variableScopeKey the variable scope key on which the event trigger payload will be set
    * @param event the event trigger to handle
    */
-  protected void handleEvent(
+  protected void processEventTrigger(
       BpmnStepContext<T> context, long eventScopeKey, long variableScopeKey, EventTrigger event) {
     context
         .getElementInstanceState()

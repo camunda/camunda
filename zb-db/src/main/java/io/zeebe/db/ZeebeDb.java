@@ -22,24 +22,13 @@ import java.io.File;
  * are defined via the specified {@link ColumnFamilyType} enum.
  *
  * <p>To access and store key-value pairs in a specific column family the user needs to create a
- * ColumnFamily instance via {@link #createColumnFamily(Enum, DbKey, DbValue)}. If the column family
- * instances are created they are type save, which makes it possible that only the defined key and
- * value types are stored in the column family.
+ * ColumnFamily instance via {@link #createColumnFamily(Enum, DbContext, DbKey, DbValue)}. If the
+ * column family instances are created they are type save, which makes it possible that only the
+ * defined key and value types are stored in the column family.
  *
  * @param <ColumnFamilyType>
  */
 public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extends AutoCloseable {
-
-  /**
-   * Runs the commands like delete, put etc. in a transaction. Access of different column families
-   * inside this transaction are possible.
-   *
-   * <p>Reading key-value pairs via get or an iterator is also possible and will reflect changes,
-   * which are made during the transaction.
-   *
-   * @param operations the operations
-   */
-  void transaction(TransactionOperation operations);
 
   /**
    * Creates an instance of a specific column family to access and store key-value pairs in that
@@ -48,16 +37,20 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
    * <p>If the column family instance is created only the defined key and value types can be stored
    * in the column family.
    *
-   * @param columnFamily the enum instance of the column family
-   * @param keyInstance this instance defines the type of the column family key type
-   * @param valueInstance this instance defines the type of the column family value type
    * @param <KeyType> the key type of the column family
    * @param <ValueType> the value type of the column family
+   * @param columnFamily the enum instance of the column family
+   * @param context
+   * @param keyInstance this instance defines the type of the column family key type
+   * @param valueInstance this instance defines the type of the column family value type
    * @return the created column family instance
    */
   <KeyType extends DbKey, ValueType extends DbValue>
       ColumnFamily<KeyType, ValueType> createColumnFamily(
-          ColumnFamilyType columnFamily, KeyType keyInstance, ValueType valueInstance);
+          ColumnFamilyType columnFamily,
+          DbContext context,
+          KeyType keyInstance,
+          ValueType valueInstance);
 
   /**
    * Creates a snapshot of the current database in the given directory.
@@ -65,4 +58,6 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
    * @param snapshotDir the directory where the snapshot should be stored
    */
   void createSnapshot(File snapshotDir);
+
+  DbContext createContext();
 }

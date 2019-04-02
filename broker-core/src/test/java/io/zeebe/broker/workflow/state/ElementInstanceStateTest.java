@@ -40,6 +40,8 @@ import org.junit.Test;
 
 public class ElementInstanceStateTest {
 
+  private static final long WORKFLOW_KEY = 123;
+
   @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private ElementInstanceState elementInstanceState;
@@ -179,7 +181,6 @@ public class ElementInstanceStateTest {
     workflowInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
         parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    elementInstanceState.flushDirtyState();
     elementInstanceState.removeInstance(101L);
 
     // when
@@ -209,7 +210,6 @@ public class ElementInstanceStateTest {
     workflowInstanceRecord.setElementId("subProcess2");
     elementInstanceState.newInstance(
         parentInstance, 102, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    elementInstanceState.flushDirtyState();
 
     // when
     elementInstanceState.removeInstance(101L);
@@ -240,7 +240,7 @@ public class ElementInstanceStateTest {
     instance.spawnToken();
     instance.setState(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     instance.setJobKey(5);
-    elementInstanceState.flushDirtyState();
+    elementInstanceState.updateInstance(instance);
 
     // then
     final ElementInstance updatedInstance = elementInstanceState.getInstance(100);
@@ -259,7 +259,7 @@ public class ElementInstanceStateTest {
   }
 
   @Test
-  public void shouldUpdateElementInstanceInCache() {
+  public void shouldNotUpdateElementInstance() {
     // given
     final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
     final ElementInstance instance =
@@ -275,13 +275,13 @@ public class ElementInstanceStateTest {
     final ElementInstance updatedInstance = elementInstanceState.getInstance(100);
 
     assertThat(updatedInstance.getKey()).isEqualTo(100);
-    assertThat(updatedInstance.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    assertThat(updatedInstance.getJobKey()).isEqualTo(5);
+    assertThat(updatedInstance.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    assertThat(updatedInstance.getJobKey()).isEqualTo(0L);
     assertThat(updatedInstance.canTerminate()).isTrue();
 
     assertThat(updatedInstance.getNumberOfActiveElementInstances()).isEqualTo(0);
-    assertThat(updatedInstance.getNumberOfActiveExecutionPaths()).isEqualTo(1);
-    assertThat(updatedInstance.getNumberOfActiveTokens()).isEqualTo(1);
+    assertThat(updatedInstance.getNumberOfActiveExecutionPaths()).isEqualTo(0);
+    assertThat(updatedInstance.getNumberOfActiveTokens()).isEqualTo(0);
 
     final WorkflowInstanceRecord record = updatedInstance.getValue();
     assertWorkflowInstanceRecord(record);
@@ -294,7 +294,6 @@ public class ElementInstanceStateTest {
     final ElementInstance instance =
         elementInstanceState.newInstance(
             100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    elementInstanceState.flushDirtyState();
 
     // when
     instance.spawnToken();
@@ -320,7 +319,6 @@ public class ElementInstanceStateTest {
     workflowInstanceRecord.setElementId("subProcess2");
     elementInstanceState.newInstance(
         parentInstance, 102, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    elementInstanceState.flushDirtyState();
 
     // when
     final List<ElementInstance> children = elementInstanceState.getChildren(100L);
@@ -405,18 +403,12 @@ public class ElementInstanceStateTest {
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
             parent, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    elementInstanceState
-        .getVariablesState()
-        .setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
 
     workflowInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
         parentInstance, child, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    elementInstanceState
-        .getVariablesState()
-        .setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
-
-    elementInstanceState.flushDirtyState();
+    setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
 
     // when
     elementInstanceState.removeInstance(101);
@@ -496,5 +488,12 @@ public class ElementInstanceStateTest {
     assertThat(record.getVersion()).isEqualTo(1);
     assertThat(record.getWorkflowKey()).isEqualTo(2);
     assertThat(record.getBpmnElementType()).isEqualTo(BpmnElementType.START_EVENT);
+  }
+
+  public void setVariableLocal(long scopeKey, DirectBuffer name, DirectBuffer value) {
+    elementInstanceState
+        .getVariablesState()
+        .setVariableLocal(
+            scopeKey, WORKFLOW_KEY, name, 0, name.capacity(), value, 0, value.capacity());
   }
 }

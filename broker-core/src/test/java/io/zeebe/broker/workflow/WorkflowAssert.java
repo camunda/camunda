@@ -19,11 +19,11 @@ package io.zeebe.broker.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.exporter.record.Assertions;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
+import io.zeebe.exporter.api.record.Assertions;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.MessageSubscriptionRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
 
 public class WorkflowAssert {
 
@@ -100,12 +100,12 @@ public class WorkflowAssert {
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled");
 
-    assertThat(subscription.getValue().getPayload()).isEqualTo("{}");
+    assertThat(subscription.getValue().getVariables()).isEqualTo("{}");
   }
 
   public static void assertWorkflowSubscription(
       long workflowInstanceKey,
-      String payload,
+      String variables,
       Record catchEventEntered,
       Record<WorkflowInstanceSubscriptionRecordValue> subscription) {
     Assertions.assertThat(subscription.getValue())
@@ -113,6 +113,6 @@ public class WorkflowAssert {
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled");
 
-    assertThat(subscription.getValue().getPayload()).isEqualTo(payload);
+    assertThat(subscription.getValue().getVariables()).isEqualTo(variables);
   }
 }

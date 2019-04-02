@@ -18,8 +18,8 @@
 package io.zeebe.broker.workflow.variables;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.intent.JobIntent;
@@ -54,13 +54,13 @@ public class JobInputMappingTest {
       new RecordingExporterTestWatcher();
 
   @Parameter(0)
-  public String initialPayload;
+  public String initialVariables;
 
   @Parameter(1)
   public Consumer<ServiceTaskBuilder> mappings;
 
   @Parameter(2)
-  public String expectedPayload;
+  public String expectedVariables;
 
   @Parameters(name = "from {0} to {2}")
   public static Object[][] parameters() {
@@ -68,13 +68,13 @@ public class JobInputMappingTest {
       {"{}", mapping(b -> {}), "{}"},
       {"{'x': 1, 'y': 2}", mapping(b -> {}), "{'x': 1, 'y': 2}"},
       {"{'x': {'y': 2}}", mapping(b -> {}), "{'x': {'y': 2}}"},
-      {"{'x': 1}", mapping(b -> b.zeebeInput("$.x", "$.y")), "{'x': 1, 'y': 1}"},
+      {"{'x': 1}", mapping(b -> b.zeebeInput("x", "y")), "{'x': 1, 'y': 1}"},
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeInput("$.x", "$.y").zeebeInput("$.x", "$.z")),
+        mapping(b -> b.zeebeInput("x", "y").zeebeInput("x", "z")),
         "{'x': 1, 'y': 1, 'z': 1}"
       },
-      {"{'x': {'y': 2}}", mapping(b -> b.zeebeInput("$.x.y", "$.y")), "{'x': {'y': 2}, 'y': 2}"},
+      {"{'x': {'y': 2}}", mapping(b -> b.zeebeInput("x.y", "y")), "{'x': {'y': 2}, 'y': 2}"},
     };
   }
 
@@ -100,7 +100,7 @@ public class JobInputMappingTest {
             .getWorkflowKey();
 
     // when
-    final DirectBuffer variables = MsgPackUtil.asMsgPack(initialPayload);
+    final DirectBuffer variables = MsgPackUtil.asMsgPack(initialVariables);
     final long workflowInstanceKey =
         apiRule
             .partitionClient()
@@ -115,7 +115,7 @@ public class JobInputMappingTest {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
-    JsonUtil.assertEquality(jobCreated.getValue().getPayload(), expectedPayload);
+    JsonUtil.assertEquality(jobCreated.getValue().getVariables(), expectedVariables);
   }
 
   private static Consumer<ServiceTaskBuilder> mapping(Consumer<ServiceTaskBuilder> mappingBuilder) {

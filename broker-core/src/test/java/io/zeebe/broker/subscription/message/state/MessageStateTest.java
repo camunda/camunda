@@ -335,7 +335,7 @@ public class MessageStateTest {
   }
 
   @Test
-  public void shouldNotRemoveDifferenMessage() {
+  public void shouldNotRemoveDifferentMessage() {
     // given
     final Message message = createMessage(1L, "name", "correlationKey", "{}", "id1", 1234);
     final Message message2 = createMessage(2L, "name", "correlationKey", "{}", "id2", 4567);
@@ -395,24 +395,24 @@ public class MessageStateTest {
   }
 
   private Message createMessage(
-      long key, String name, String correlationKey, String payload, String id) {
+      long key, String name, String correlationKey, String variables, String id) {
     return new Message(
         key,
         wrapString(name),
         wrapString(correlationKey),
-        wrapString(payload),
+        wrapString(variables),
         wrapString(id),
         10_000,
         0L);
   }
 
   private Message createMessage(
-      long key, String name, String correlationKey, String payload, String id, long deadline) {
+      long key, String name, String correlationKey, String variables, String id, long deadline) {
     return new Message(
         key,
         wrapString(name),
         wrapString(correlationKey),
-        wrapString(payload),
+        wrapString(variables),
         wrapString(id),
         10_000L,
         deadline);

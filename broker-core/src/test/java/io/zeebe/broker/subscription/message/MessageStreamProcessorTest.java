@@ -77,8 +77,8 @@ public class MessageStreamProcessorTest {
 
     streamProcessor =
         rule.runStreamProcessor(
-            (typedEventStreamProcessorBuilder, zeebeDb) -> {
-              final ZeebeState zeebeState = new ZeebeState(zeebeDb);
+            (typedEventStreamProcessorBuilder, zeebeDb, dbContext) -> {
+              final ZeebeState zeebeState = new ZeebeState(zeebeDb, dbContext);
               MessageEventProcessors.addMessageProcessors(
                   typedEventStreamProcessorBuilder,
                   zeebeState,
@@ -142,7 +142,7 @@ public class MessageStreamProcessorTest {
             subscription.getWorkflowInstanceKey(),
             subscription.getElementInstanceKey(),
             subscription.getMessageName(),
-            message.getPayload());
+            message.getVariables());
   }
 
   @Test
@@ -172,7 +172,7 @@ public class MessageStreamProcessorTest {
             subscription.getWorkflowInstanceKey(),
             subscription.getElementInstanceKey(),
             subscription.getMessageName(),
-            message.getPayload());
+            message.getVariables());
   }
 
   @Test
@@ -262,7 +262,7 @@ public class MessageStreamProcessorTest {
             subscription.getWorkflowInstanceKey(),
             subscription.getElementInstanceKey(),
             subscription.getMessageName(),
-            message.getPayload());
+            message.getVariables());
   }
 
   @Test
@@ -291,15 +291,15 @@ public class MessageStreamProcessorTest {
             subscription.getWorkflowInstanceKey(),
             subscription.getElementInstanceKey(),
             subscription.getMessageName(),
-            message.getPayload());
+            message.getVariables());
   }
 
   @Test
   public void shouldCorrelateMultipleMessagesOneBeforeOpenOneAfter() {
     // given
     final MessageSubscriptionRecord subscription = messageSubscription().setCloseOnCorrelate(false);
-    final MessageRecord first = message().setPayload(asMsgPack("foo", "bar"));
-    final MessageRecord second = message().setPayload(asMsgPack("foo", "baz"));
+    final MessageRecord first = message().setVariables(asMsgPack("foo", "bar"));
+    final MessageRecord second = message().setVariables(asMsgPack("foo", "baz"));
 
     // when
     streamProcessor.blockAfterMessageSubscriptionEvent(
@@ -321,8 +321,8 @@ public class MessageStreamProcessorTest {
   public void shouldCorrelateMultipleMessagesTwoBeforeOpen() {
     // given
     final MessageSubscriptionRecord subscription = messageSubscription().setCloseOnCorrelate(false);
-    final MessageRecord first = message().setPayload(asMsgPack("foo", "bar"));
-    final MessageRecord second = message().setPayload(asMsgPack("foo", "baz"));
+    final MessageRecord first = message().setVariables(asMsgPack("foo", "bar"));
+    final MessageRecord second = message().setVariables(asMsgPack("foo", "baz"));
 
     // when
     streamProcessor.blockAfterMessageSubscriptionEvent(
@@ -343,16 +343,17 @@ public class MessageStreamProcessorTest {
   private void assertAllMessagesReceived(
       MessageSubscriptionRecord subscription, MessageRecord first, MessageRecord second) {
     final ArgumentCaptor<DirectBuffer> nameCaptor = ArgumentCaptor.forClass(DirectBuffer.class);
-    final ArgumentCaptor<DirectBuffer> payloadCaptor = ArgumentCaptor.forClass(DirectBuffer.class);
+    final ArgumentCaptor<DirectBuffer> variablesCaptor =
+        ArgumentCaptor.forClass(DirectBuffer.class);
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
         .correlateWorkflowInstanceSubscription(
             eq(subscription.getWorkflowInstanceKey()),
             eq(subscription.getElementInstanceKey()),
             nameCaptor.capture(),
-            payloadCaptor.capture());
+            variablesCaptor.capture());
     assertThat(nameCaptor.getValue()).isEqualTo(subscription.getMessageName());
-    assertThat(payloadCaptor.getAllValues().get(0)).isEqualTo(first.getPayload());
-    assertThat(payloadCaptor.getAllValues().get(1)).isEqualTo(second.getPayload());
+    assertThat(variablesCaptor.getAllValues().get(0)).isEqualTo(first.getVariables());
+    assertThat(variablesCaptor.getAllValues().get(1)).isEqualTo(second.getVariables());
   }
 
   private MessageSubscriptionRecord messageSubscription() {
@@ -373,7 +374,7 @@ public class MessageStreamProcessorTest {
         .setName(wrapString("order canceled"))
         .setCorrelationKey(wrapString("order-123"))
         .setTimeToLive(1L)
-        .setPayload(asMsgPack("orderId", "order-123"));
+        .setVariables(asMsgPack("orderId", "order-123"));
 
     return message;
   }

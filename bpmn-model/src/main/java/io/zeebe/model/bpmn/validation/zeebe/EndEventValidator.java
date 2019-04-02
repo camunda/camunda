@@ -31,5 +31,10 @@ public class EndEventValidator implements ModelElementValidator<EndEvent> {
     if (!element.getEventDefinitions().isEmpty()) {
       validationResultCollector.addError(0, "Must be a none end event");
     }
+
+    if (!element.getOutgoing().isEmpty()) {
+      validationResultCollector.addError(
+          0, "End events must not have outgoing sequence flows to other elements.");
+    }
   }
 }

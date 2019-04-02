@@ -4,5 +4,4 @@
 * [Get Started](java-client/get-started.html)
 * [Logging](java-client/logging.html)
 * [Testing](java-client/testing.html)
-
-See also the [Java Client Examples](java-client-examples/README.html) section.
+* [Examples](java-client-examples/README.html)

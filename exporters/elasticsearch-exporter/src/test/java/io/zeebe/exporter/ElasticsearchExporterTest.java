@@ -22,11 +22,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.api.record.Record;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.exporter.ExporterTestHarness;
@@ -35,6 +34,7 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class ElasticsearchExporterTest {
 
@@ -51,7 +51,8 @@ public class ElasticsearchExporterTest {
   @Test
   public void shouldNotFailOnOpenIfElasticIsUnreachable() {
     // given
-    final ElasticsearchClient client = spy(new ElasticsearchClient(config, new ZbLogger("test")));
+    final ElasticsearchClient client =
+        Mockito.spy(new ElasticsearchClient(config, new ZbLogger("test")));
     final ElasticsearchExporter exporter = createExporter(client);
     config.index.createTemplate = true;
 

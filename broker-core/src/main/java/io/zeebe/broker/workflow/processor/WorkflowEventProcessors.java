@@ -68,12 +68,12 @@ public class WorkflowEventProcessors {
     final WorkflowEngineState workflowEngineState = new WorkflowEngineState(workflowState);
     typedProcessorBuilder.withListener(workflowEngineState);
 
-    addWorkflowInstanceCommandProcessor(typedProcessorBuilder, workflowEngineState);
+    addWorkflowInstanceCommandProcessor(typedProcessorBuilder, workflowEngineState, zeebeState);
 
-    final CatchEventBehavior catchEventOutput =
+    final CatchEventBehavior catchEventBehavior =
         new CatchEventBehavior(zeebeState, subscriptionCommandSender, partitionsCount);
     final BpmnStepProcessor bpmnStepProcessor =
-        new BpmnStepProcessor(workflowEngineState, zeebeState, catchEventOutput);
+        new BpmnStepProcessor(workflowEngineState, zeebeState, catchEventBehavior);
     addBpmnStepProcessor(typedProcessorBuilder, bpmnStepProcessor);
 
     addMessageStreamProcessors(
@@ -81,8 +81,8 @@ public class WorkflowEventProcessors {
         subscriptionState,
         topologyManager,
         subscriptionCommandSender,
-        workflowState);
-    addTimerStreamProcessors(typedProcessorBuilder, timerChecker, workflowState, catchEventOutput);
+        zeebeState);
+    addTimerStreamProcessors(typedProcessorBuilder, timerChecker, zeebeState, catchEventBehavior);
     addVariableDocumentStreamProcessors(typedProcessorBuilder, zeebeState);
     addWorkflowInstanceCreationStreamProcessors(typedProcessorBuilder, zeebeState);
 
@@ -90,10 +90,12 @@ public class WorkflowEventProcessors {
   }
 
   private static void addWorkflowInstanceCommandProcessor(
-      final TypedEventStreamProcessorBuilder builder, WorkflowEngineState workflowEngineState) {
+      final TypedEventStreamProcessorBuilder builder,
+      WorkflowEngineState workflowEngineState,
+      final ZeebeState zeebeState) {
 
     final WorkflowInstanceCommandProcessor commandProcessor =
-        new WorkflowInstanceCommandProcessor(workflowEngineState);
+        new WorkflowInstanceCommandProcessor(workflowEngineState, zeebeState.getKeyGenerator());
 
     WORKFLOW_INSTANCE_COMMANDS.forEach(
         intent -> builder.onCommand(ValueType.WORKFLOW_INSTANCE, intent, commandProcessor));
@@ -116,7 +118,7 @@ public class WorkflowEventProcessors {
       WorkflowInstanceSubscriptionState subscriptionState,
       TopologyManager topologyManager,
       SubscriptionCommandSender subscriptionCommandSender,
-      WorkflowState workflowState) {
+      ZeebeState zeebeState) {
     streamProcessorBuilder
         .onCommand(
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
@@ -126,7 +128,7 @@ public class WorkflowEventProcessors {
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
             WorkflowInstanceSubscriptionIntent.CORRELATE,
             new CorrelateWorkflowInstanceSubscription(
-                topologyManager, subscriptionState, subscriptionCommandSender, workflowState))
+                topologyManager, subscriptionState, subscriptionCommandSender, zeebeState))
         .onCommand(
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
             WorkflowInstanceSubscriptionIntent.CLOSE,
@@ -136,17 +138,17 @@ public class WorkflowEventProcessors {
   private static void addTimerStreamProcessors(
       final TypedEventStreamProcessorBuilder streamProcessorBuilder,
       DueDateTimerChecker timerChecker,
-      WorkflowState workflowState,
+      ZeebeState zeebeState,
       CatchEventBehavior catchEventOutput) {
+    final WorkflowState workflowState = zeebeState.getWorkflowState();
+
     streamProcessorBuilder
         .onCommand(
-            ValueType.TIMER,
-            TimerIntent.CREATE,
-            new CreateTimerProcessor(timerChecker, workflowState))
+            ValueType.TIMER, TimerIntent.CREATE, new CreateTimerProcessor(zeebeState, timerChecker))
         .onCommand(
             ValueType.TIMER,
             TimerIntent.TRIGGER,
-            new TriggerTimerProcessor(workflowState, catchEventOutput))
+            new TriggerTimerProcessor(zeebeState, catchEventOutput))
         .onCommand(ValueType.TIMER, TimerIntent.CANCEL, new CancelTimerProcessor(workflowState))
         .withListener(timerChecker);
   }

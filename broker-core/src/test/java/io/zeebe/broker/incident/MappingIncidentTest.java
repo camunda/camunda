@@ -18,9 +18,7 @@
 package io.zeebe.broker.incident;
 
 import static io.zeebe.broker.incident.IncidentAssert.assertIOMappingIncidentWithNoData;
-import static io.zeebe.broker.incident.IncidentAssert.assertIncidentContainErrorDetails;
 import static io.zeebe.broker.incident.IncidentAssert.assertIncidentRecordValue;
-import static io.zeebe.broker.test.MsgPackConstants.NODE_STRING_PATH;
 import static io.zeebe.protocol.intent.IncidentIntent.CREATED;
 import static io.zeebe.protocol.intent.IncidentIntent.RESOLVE;
 import static io.zeebe.protocol.intent.IncidentIntent.RESOLVED;
@@ -30,10 +28,10 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.UnstableTest;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Assertions;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.IncidentRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Assertions;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.BpmnElementType;
@@ -66,18 +64,18 @@ public class MappingIncidentTest {
   private static final BpmnModelInstance WORKFLOW_INPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("$.foo", "$.foo"))
+          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("foo", "foo"))
           .done();
 
   private static final BpmnModelInstance WORKFLOW_OUTPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeOutput("$.foo", "$.foo"))
+          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeOutput("foo", "foo"))
           .done();
 
-  private static final Map<String, Object> PAYLOAD = Maps.of(entry("foo", "bar"));
+  private static final Map<String, Object> VARIABLES = Maps.of(entry("foo", "bar"));
 
-  private static final DirectBuffer MSGPACK_PAYLOAD =
+  private static final DirectBuffer VARIABLES_MSGPACK =
       MsgPackUtil.asMsgPack("{'string':'value', 'jsonObject':{'testAttr':'test'}}");
 
   @Before
@@ -122,14 +120,14 @@ public class MappingIncidentTest {
                 "service",
                 t ->
                     t.zeebeTaskType("external")
-                        .zeebeInput("$.notExisting", "$.nullVal")
-                        .zeebeInput(NODE_STRING_PATH, "$.existing"))
+                        .zeebeInput("notExisting", "nullVal")
+                        .zeebeInput("string", "existing"))
             .endEvent()
             .done());
 
     // when
     testClient.createWorkflowInstance(
-        r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD));
+        r -> r.setBpmnProcessId("process").setVariables(VARIABLES_MSGPACK));
     final Record<WorkflowInstanceRecordValue> failureEvent =
         testClient.receiveElementInState("service", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<IncidentRecordValue> incidentEvent =
@@ -140,7 +138,7 @@ public class MappingIncidentTest {
     assertThat(incidentEvent.getValue().getVariableScopeKey()).isEqualTo(failureEvent.getKey());
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
-        "No data found for query $.notExisting.",
+        "No data found for query notExisting.",
         "service",
         incidentEvent);
   }
@@ -154,7 +152,7 @@ public class MappingIncidentTest {
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
 
-    testClient.completeJobOfType("test", BufferUtil.bufferAsArray(MSGPACK_PAYLOAD));
+    testClient.completeJobOfType("test", BufferUtil.bufferAsArray(VARIABLES_MSGPACK));
 
     // then
     final Record failureEvent =
@@ -187,7 +185,7 @@ public class MappingIncidentTest {
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updateVariables(failureEvent.getValue().getFlowScopeKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getValue().getFlowScopeKey(), VARIABLES);
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -213,7 +211,7 @@ public class MappingIncidentTest {
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
 
-    testClient.completeJobOfType("test", BufferUtil.bufferAsArray(MSGPACK_PAYLOAD));
+    testClient.completeJobOfType("test", BufferUtil.bufferAsArray(VARIABLES_MSGPACK));
 
     final Record failureEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
@@ -221,7 +219,7 @@ public class MappingIncidentTest {
     final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updateVariables(failureEvent.getKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getKey(), VARIABLES);
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -241,295 +239,6 @@ public class MappingIncidentTest {
   }
 
   @Test
-  public void shouldCreateIncidentForInvalidResultOnInputMapping() {
-    // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask(
-                "failingTask", t -> t.zeebeTaskType("external").zeebeInput("$.string", "$"))
-            .done());
-
-    // when
-    testClient.createWorkflowInstance(
-        r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD));
-
-    // then incident is created
-    final Record<IncidentRecordValue> incidentEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-
-    assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertIncidentContainErrorDetails(incidentEvent);
-  }
-
-  @Test
-  public void shouldResolveIncidentForInvalidResultOnInputMapping() {
-    // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("service", t -> t.zeebeTaskType("external").zeebeInput("$.string", "$"))
-            .done());
-
-    // when
-    final long workflowInstanceKey =
-        testClient
-            .createWorkflowInstance(
-                r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD))
-            .getInstanceKey();
-
-    // then incident is created
-    final Record<WorkflowInstanceRecordValue> failureEvent =
-        testClient.receiveElementInState("service", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    final Record<IncidentRecordValue> incidentEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-
-    // when
-    testClient.updateVariables(
-        failureEvent.getValue().getFlowScopeKey(),
-        Maps.of(entry("string", Maps.of(entry("obj", "test")))));
-    testClient.resolveIncident(incidentEvent.getKey());
-
-    // then
-    final Record<WorkflowInstanceRecordValue> followUpEvent =
-        testClient.receiveElementInState("service", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    final Record<IncidentRecordValue> incidentResolvedEvent =
-        testClient.receiveFirstIncidentEvent(RESOLVED);
-    assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentEvent.getKey());
-    assertIncidentRecordValue(
-        ErrorType.IO_MAPPING_ERROR.name(),
-        "Processing failed, since mapping will result in a non map object (json object).",
-        workflowInstanceKey,
-        "service",
-        followUpEvent,
-        incidentResolvedEvent);
-  }
-
-  @Test
-  public void shouldCreateIncidentForInvalidResultOnOutputMapping() {
-    // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask(
-                "failingTask",
-                t ->
-                    t.zeebeTaskType("external")
-                        .zeebeInput("$.jsonObject", "$")
-                        .zeebeOutput("$.testAttr", "$"))
-            .done());
-
-    testClient.createWorkflowInstance(
-        r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD));
-
-    // when
-    testClient.completeJobOfType(
-        "external", MsgPackUtil.asMsgPackReturnArray("{'testAttr':'test'}"));
-    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    // then incident is created
-    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-
-    assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertIncidentContainErrorDetails(incidentEvent);
-  }
-
-  @Test
-  public void shouldResolveIncidentForInvalidResultOnOutputMapping() {
-    // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask(
-                "service",
-                t ->
-                    t.zeebeTaskType("external")
-                        .zeebeInput("$.jsonObject", "$")
-                        .zeebeOutput("$.testAttr", "$"))
-            .done());
-
-    final long workflowInstanceKey =
-        testClient
-            .createWorkflowInstance(
-                r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD))
-            .getInstanceKey();
-
-    // when
-    testClient.receiveFirstWorkflowInstanceEvent(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.SERVICE_TASK);
-    testClient.completeJobOfType(
-        "external", MsgPackUtil.asMsgPackReturnArray("{'testAttr':'test'}"));
-
-    // then incident is created
-    final Record failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnElementType.SERVICE_TASK);
-    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-
-    // when
-    testClient.updateVariables(
-        failureEvent.getKey(), Maps.of(entry("testAttr", Maps.of(entry("obj", "test")))));
-    testClient.resolveIncident(incidentEvent.getKey());
-
-    // then
-    final Record<WorkflowInstanceRecordValue> followUpEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.SERVICE_TASK);
-
-    final Record incidentResolvedEvent = testClient.receiveFirstIncidentEvent(RESOLVED);
-    assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentEvent.getKey());
-    assertIncidentRecordValue(
-        ErrorType.IO_MAPPING_ERROR.name(),
-        "Processing failed, since mapping will result in a non map object (json object).",
-        workflowInstanceKey,
-        "service",
-        followUpEvent,
-        incidentResolvedEvent);
-  }
-
-  @Test
-  public void shouldCreateIncidentForInAndOutputMappingAndNoTaskCompletePayload() {
-    // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask(
-                "failingTask",
-                t ->
-                    t.zeebeTaskType("external")
-                        .zeebeInput("$.jsonObject", "$")
-                        .zeebeOutput("$.foo", "$"))
-            .done());
-
-    testClient.createWorkflowInstance(
-        r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD));
-
-    // when
-    testClient.completeJobOfType("external");
-
-    // then incident is created
-    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-
-    assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertIncidentContainErrorDetails(incidentEvent, "No data found for query $.foo.");
-  }
-
-  @Test
-  public void shouldResolveIncidentForInAndOutputMappingAndNoTaskCompletePayload() {
-    // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask(
-                "service",
-                t ->
-                    t.zeebeTaskType("external")
-                        .zeebeInput("$.jsonObject", "$")
-                        .zeebeOutput("$.foo", "$"))
-            .done());
-
-    final long workflowInstanceKey =
-        testClient
-            .createWorkflowInstance(
-                r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD))
-            .getInstanceKey();
-
-    // when
-    testClient.completeJobOfType("external");
-
-    // then incident is created
-    final Record failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnElementType.SERVICE_TASK);
-    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-
-    // when
-    testClient.updateVariables(
-        failureEvent.getKey(), Maps.of(entry("foo", Maps.of(entry("obj", "test")))));
-    testClient.resolveIncident(incidentEvent.getKey());
-
-    // then
-    final Record<WorkflowInstanceRecordValue> followUpEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(
-            ELEMENT_COMPLETED, BpmnElementType.SERVICE_TASK);
-
-    final Record incidentResolvedEvent = testClient.receiveFirstIncidentEvent(RESOLVED);
-    assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentEvent.getKey());
-
-    assertIOMappingIncidentWithNoData(
-        workflowInstanceKey, "service", followUpEvent, incidentResolvedEvent);
-  }
-
-  @Test
-  public void shouldCreateIncidentForOutputMappingAndNoTaskCompletePayload() {
-    // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask(
-                "failingTask", t -> t.zeebeTaskType("external").zeebeOutput("$.testAttr", "$"))
-            .done());
-
-    testClient.createWorkflowInstance(
-        r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD));
-
-    // when
-    testClient.completeJobOfType("external");
-
-    // then incident is created
-    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-    assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertIncidentContainErrorDetails(incidentEvent, "No data found for query $.testAttr.");
-  }
-
-  @Test
-  public void shouldResolveIncidentForOutputMappingAndNoTaskCompletePayload() {
-    // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("service", t -> t.zeebeTaskType("external").zeebeOutput("$.testAttr", "$"))
-            .done());
-
-    final long workflowInstanceKey =
-        testClient
-            .createWorkflowInstance(
-                r -> r.setBpmnProcessId("process").setVariables(MSGPACK_PAYLOAD))
-            .getInstanceKey();
-
-    // when
-    testClient.completeJobOfType("external");
-
-    // then incident is created
-    final Record failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnElementType.SERVICE_TASK);
-    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-
-    // when
-    testClient.updateVariables(
-        failureEvent.getKey(), Maps.of(entry("testAttr", Maps.of(entry("obj", "test")))));
-    testClient.resolveIncident(incidentEvent.getKey());
-
-    // then
-    final Record<WorkflowInstanceRecordValue> followUpEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(
-            ELEMENT_COMPLETED, BpmnElementType.SERVICE_TASK);
-
-    final Record incidentResolvedEvent = testClient.receiveFirstIncidentEvent(RESOLVED);
-    assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentEvent.getKey());
-
-    assertIncidentRecordValue(
-        ErrorType.IO_MAPPING_ERROR.name(),
-        "No data found for query $.testAttr.",
-        workflowInstanceKey,
-        "service",
-        followUpEvent,
-        incidentResolvedEvent);
-  }
-
-  @Test
   public void shouldCreateNewIncidentAfterResolvedFirstOne() {
     // given
     final BpmnModelInstance modelInstance =
@@ -537,10 +246,7 @@ public class MappingIncidentTest {
             .startEvent()
             .serviceTask(
                 "failingTask",
-                t ->
-                    t.zeebeTaskType("external")
-                        .zeebeInput("$.foo", "$.foo")
-                        .zeebeInput("$.bar", "$.bar"))
+                t -> t.zeebeTaskType("external").zeebeInput("foo", "foo").zeebeInput("bar", "bar"))
             .done();
 
     testClient.deploy(modelInstance);
@@ -553,11 +259,10 @@ public class MappingIncidentTest {
     final Record<IncidentRecordValue> incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
-    Assertions.assertThat(incidentEvent.getValue())
-        .hasErrorMessage("No data found for query $.foo.");
+    Assertions.assertThat(incidentEvent.getValue()).hasErrorMessage("No data found for query foo.");
 
     // when
-    testClient.updateVariables(failureEvent.getKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getKey(), VARIABLES);
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -573,7 +278,7 @@ public class MappingIncidentTest {
 
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
-        "No data found for query $.foo.",
+        "No data found for query foo.",
         workflowInstanceKey,
         "failingTask",
         failureEvent,
@@ -602,7 +307,7 @@ public class MappingIncidentTest {
             .getFirst();
 
     // when
-    testClient.updateVariables(failureEvent.getKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getKey(), VARIABLES);
     testClient.resolveIncident(secondIncident.getKey());
 
     // then
@@ -617,7 +322,7 @@ public class MappingIncidentTest {
     assertThat(secondResolvedIncident.getKey()).isGreaterThan(firstIncident.getKey());
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
-        "No data found for query $.foo.",
+        "No data found for query foo.",
         workflowInstanceKey,
         "failingTask",
         failureEvent,
@@ -634,7 +339,7 @@ public class MappingIncidentTest {
     Record failureEvent =
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<IncidentRecordValue> firstIncident = testClient.receiveFirstIncidentEvent(CREATED);
-    testClient.updateVariables(failureEvent.getKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getKey(), VARIABLES);
     testClient.resolveIncident(firstIncident.getKey());
 
     // create a second incident
@@ -647,7 +352,7 @@ public class MappingIncidentTest {
         testClient.receiveFirstIncidentEvent(workflowInstanceKey, IncidentIntent.CREATED);
 
     // when
-    testClient.updateVariables(failureEvent.getKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getKey(), VARIABLES);
     testClient.resolveIncident(secondIncidentEvent.getKey());
 
     // then
@@ -673,7 +378,7 @@ public class MappingIncidentTest {
     // then
     final Record activityTerminating =
         testClient.receiveFirstWorkflowInstanceEvent(
-            workflowInstanceKey, "failingTask", WorkflowInstanceIntent.ELEMENT_TERMINATING);
+            workflowInstanceKey, "failingTask", WorkflowInstanceIntent.ELEMENT_TERMINATED);
     final Record<IncidentRecordValue> incidentResolvedEvent =
         testClient.receiveFirstIncidentEvent(RESOLVED);
 
@@ -683,7 +388,7 @@ public class MappingIncidentTest {
 
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
-        "No data found for query $.foo.",
+        "No data found for query foo.",
         workflowInstanceKey,
         "failingTask",
         incidentResolvedEvent.getValue().getElementInstanceKey(),
@@ -705,7 +410,7 @@ public class MappingIncidentTest {
     workflowInstanceKey =
         testClient
             .createWorkflowInstance(
-                r -> r.setBpmnProcessId("process").setVariables(MsgPackUtil.asMsgPack(PAYLOAD)))
+                r -> r.setBpmnProcessId("process").setVariables(MsgPackUtil.asMsgPack(VARIABLES)))
             .getInstanceKey();
     testClient.cancelWorkflowInstance(workflowInstanceKey);
 
@@ -725,7 +430,7 @@ public class MappingIncidentTest {
     assertThat(incidentEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
-        "No data found for query $.foo.",
+        "No data found for query foo.",
         workflowInstanceKey,
         "failingTask",
         incidentEvent.getValue().getElementInstanceKey(),

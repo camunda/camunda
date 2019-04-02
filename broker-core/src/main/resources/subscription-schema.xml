@@ -53,7 +53,7 @@
     <field name="workflowInstanceKey" id="1" type="uint64"/>
     <field name="elementInstanceKey" id="2" type="uint64"/>
     <data name="messageName" id="3" type="varDataEncoding"/>
-    <data name="payload" id="4" type="varDataEncoding"/>
+    <data name="variables" id="4" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="CorrelateMessageSubscription" id="3">

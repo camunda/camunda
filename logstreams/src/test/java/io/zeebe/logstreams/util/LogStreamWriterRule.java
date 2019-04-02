@@ -75,7 +75,7 @@ public class LogStreamWriterRule extends ExternalResource {
   }
 
   public long writeEvent(final DirectBuffer event, final boolean commit) {
-    return writeEvent(w -> w.positionAsKey().value(event), commit);
+    return writeEvent(w -> w.value(event), commit);
   }
 
   public long writeEvent(final Consumer<LogStreamRecordWriter> writer, final boolean commit) {

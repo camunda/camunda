@@ -54,6 +54,7 @@ pipeline {
         stage('Install') {
             steps {
                 withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
+                    sh setupGoPath()
                     sh 'mvn -B clean com.mycila:license-maven-plugin:check com.coveo:fmt-maven-plugin:check install -DskipTests -Dskip-zbctl=false -Pspotbugs'
                 }
             }
@@ -121,13 +122,6 @@ pipeline {
                     string(name: 'RELEASE_VERSION', value: "SNAPSHOT"),
                     booleanParam(name: 'IS_LATEST', value: false)
                 ]
-            }
-        }
-
-        stage('Trigger Performance Tests') {
-            when { branch 'develop' }
-            steps {
-                build job: 'zeebe-cluster-performance-tests', wait: false
             }
         }
     }

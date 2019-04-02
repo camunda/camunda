@@ -7,40 +7,40 @@
 
   <parent>
     <groupId>io.zeebe</groupId>
-    <artifactId>zb-parent</artifactId>
-    <version>0.17.0-SNAPSHOT</version>
+    <artifactId>zeebe-parent</artifactId>
+    <version>0.18.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-protocol</artifactId>
+      <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-protocol-impl</artifactId>
+      <artifactId>zeebe-protocol-impl</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-transport</artifactId>
+      <artifactId>zeebe-transport</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-exporter-api</artifactId>
+      <artifactId>zeebe-exporter-api</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-util</artifactId>
+      <artifactId>zeebe-util</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-msgpack-value</artifactId>
+      <artifactId>zeebe-msgpack-value</artifactId>
     </dependency>
 
     <dependency>
@@ -54,12 +54,12 @@
     </dependency>
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-test-util</artifactId>
+      <artifactId>zeebe-test-util</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-bpmn-model</artifactId>
+      <artifactId>zeebe-bpmn-model</artifactId>
     </dependency>
 
     <dependency>

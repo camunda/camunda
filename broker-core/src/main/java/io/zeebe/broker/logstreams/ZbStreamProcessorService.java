@@ -115,8 +115,8 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
     streamProcessorServiceBuilder
         .snapshotController(stateSnapshotController)
         .streamProcessorFactory(
-            (zeebeDb) -> {
-              final ZeebeState zeebeState = new ZeebeState(partitionId, zeebeDb);
+            (zeebeDb, dbContext) -> {
+              final ZeebeState zeebeState = new ZeebeState(partitionId, zeebeDb, dbContext);
               final TypedStreamEnvironment streamEnvironment =
                   new TypedStreamEnvironment(
                       partition.getLogStream(), clientApiTransport.getOutput());

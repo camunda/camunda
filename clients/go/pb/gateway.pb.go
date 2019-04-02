@@ -3,13 +3,14 @@
 
 package pb
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-
 import (
-	context "golang.org/x/net/context"
+	context "context"
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -21,7 +22,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type WorkflowRequestObject_ResourceType int32
 
@@ -38,6 +39,7 @@ var WorkflowRequestObject_ResourceType_name = map[int32]string{
 	1: "BPMN",
 	2: "YAML",
 }
+
 var WorkflowRequestObject_ResourceType_value = map[string]int32{
 	"FILE": 0,
 	"BPMN": 1,
@@ -47,8 +49,9 @@ var WorkflowRequestObject_ResourceType_value = map[string]int32{
 func (x WorkflowRequestObject_ResourceType) String() string {
 	return proto.EnumName(WorkflowRequestObject_ResourceType_name, int32(x))
 }
+
 func (WorkflowRequestObject_ResourceType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{11, 0}
+	return fileDescriptor_f1a937782ebbded5, []int{11, 0}
 }
 
 // Describes the Raft role of the broker for a given partition
@@ -63,6 +66,7 @@ var Partition_PartitionBrokerRole_name = map[int32]string{
 	0: "LEADER",
 	1: "FOLLOWER",
 }
+
 var Partition_PartitionBrokerRole_value = map[string]int32{
 	"LEADER":   0,
 	"FOLLOWER": 1,
@@ -71,8 +75,9 @@ var Partition_PartitionBrokerRole_value = map[string]int32{
 func (x Partition_PartitionBrokerRole) String() string {
 	return proto.EnumName(Partition_PartitionBrokerRole_name, int32(x))
 }
+
 func (Partition_PartitionBrokerRole) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{27, 0}
+	return fileDescriptor_f1a937782ebbded5, []int{27, 0}
 }
 
 type ActivateJobsRequest struct {
@@ -84,10 +89,10 @@ type ActivateJobsRequest struct {
 	// a job returned after this call will not be activated by another call until the
 	// timeout has been reached
 	Timeout int64 `protobuf:"varint,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
-	// the maximum number of jobs to fetch in a single call
-	Amount int32 `protobuf:"varint,4,opt,name=amount,proto3" json:"amount,omitempty"`
-	// a list of variables to fetch as the job payload; if empty, all visible variables at
-	// the time of activation for the scope of the job will be returned as the job payload
+	// the maximum jobs to activate by this request
+	MaxJobsToActivate int32 `protobuf:"varint,4,opt,name=maxJobsToActivate,proto3" json:"maxJobsToActivate,omitempty"`
+	// a list of variables to fetch as the job variables; if empty, all visible variables at
+	// the time of activation for the scope of the job will be returned
 	FetchVariable        []string `protobuf:"bytes,5,rep,name=fetchVariable,proto3" json:"fetchVariable,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -98,16 +103,17 @@ func (m *ActivateJobsRequest) Reset()         { *m = ActivateJobsRequest{} }
 func (m *ActivateJobsRequest) String() string { return proto.CompactTextString(m) }
 func (*ActivateJobsRequest) ProtoMessage()    {}
 func (*ActivateJobsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{0}
+	return fileDescriptor_f1a937782ebbded5, []int{0}
 }
+
 func (m *ActivateJobsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ActivateJobsRequest.Unmarshal(m, b)
 }
 func (m *ActivateJobsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ActivateJobsRequest.Marshal(b, m, deterministic)
 }
-func (dst *ActivateJobsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ActivateJobsRequest.Merge(dst, src)
+func (m *ActivateJobsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ActivateJobsRequest.Merge(m, src)
 }
 func (m *ActivateJobsRequest) XXX_Size() int {
 	return xxx_messageInfo_ActivateJobsRequest.Size(m)
@@ -139,9 +145,9 @@ func (m *ActivateJobsRequest) GetTimeout() int64 {
 	return 0
 }
 
-func (m *ActivateJobsRequest) GetAmount() int32 {
+func (m *ActivateJobsRequest) GetMaxJobsToActivate() int32 {
 	if m != nil {
-		return m.Amount
+		return m.MaxJobsToActivate
 	}
 	return 0
 }
@@ -165,16 +171,17 @@ func (m *ActivateJobsResponse) Reset()         { *m = ActivateJobsResponse{} }
 func (m *ActivateJobsResponse) String() string { return proto.CompactTextString(m) }
 func (*ActivateJobsResponse) ProtoMessage()    {}
 func (*ActivateJobsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{1}
+	return fileDescriptor_f1a937782ebbded5, []int{1}
 }
+
 func (m *ActivateJobsResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ActivateJobsResponse.Unmarshal(m, b)
 }
 func (m *ActivateJobsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ActivateJobsResponse.Marshal(b, m, deterministic)
 }
-func (dst *ActivateJobsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ActivateJobsResponse.Merge(dst, src)
+func (m *ActivateJobsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ActivateJobsResponse.Merge(m, src)
 }
 func (m *ActivateJobsResponse) XXX_Size() int {
 	return xxx_messageInfo_ActivateJobsResponse.Size(m)
@@ -210,7 +217,7 @@ type ActivatedJob struct {
 	Deadline int64 `protobuf:"varint,7,opt,name=deadline,proto3" json:"deadline,omitempty"`
 	// JSON document, computed at activation time, consisting of all visible variables to
 	// the task scope
-	Payload              string   `protobuf:"bytes,8,opt,name=payload,proto3" json:"payload,omitempty"`
+	Variables            string   `protobuf:"bytes,8,opt,name=variables,proto3" json:"variables,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -220,16 +227,17 @@ func (m *ActivatedJob) Reset()         { *m = ActivatedJob{} }
 func (m *ActivatedJob) String() string { return proto.CompactTextString(m) }
 func (*ActivatedJob) ProtoMessage()    {}
 func (*ActivatedJob) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{2}
+	return fileDescriptor_f1a937782ebbded5, []int{2}
 }
+
 func (m *ActivatedJob) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ActivatedJob.Unmarshal(m, b)
 }
 func (m *ActivatedJob) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ActivatedJob.Marshal(b, m, deterministic)
 }
-func (dst *ActivatedJob) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ActivatedJob.Merge(dst, src)
+func (m *ActivatedJob) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ActivatedJob.Merge(m, src)
 }
 func (m *ActivatedJob) XXX_Size() int {
 	return xxx_messageInfo_ActivatedJob.Size(m)
@@ -289,9 +297,9 @@ func (m *ActivatedJob) GetDeadline() int64 {
 	return 0
 }
 
-func (m *ActivatedJob) GetPayload() string {
+func (m *ActivatedJob) GetVariables() string {
 	if m != nil {
-		return m.Payload
+		return m.Variables
 	}
 	return ""
 }
@@ -319,16 +327,17 @@ func (m *JobHeaders) Reset()         { *m = JobHeaders{} }
 func (m *JobHeaders) String() string { return proto.CompactTextString(m) }
 func (*JobHeaders) ProtoMessage()    {}
 func (*JobHeaders) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{3}
+	return fileDescriptor_f1a937782ebbded5, []int{3}
 }
+
 func (m *JobHeaders) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_JobHeaders.Unmarshal(m, b)
 }
 func (m *JobHeaders) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_JobHeaders.Marshal(b, m, deterministic)
 }
-func (dst *JobHeaders) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_JobHeaders.Merge(dst, src)
+func (m *JobHeaders) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_JobHeaders.Merge(m, src)
 }
 func (m *JobHeaders) XXX_Size() int {
 	return xxx_messageInfo_JobHeaders.Size(m)
@@ -394,16 +403,17 @@ func (m *CancelWorkflowInstanceRequest) Reset()         { *m = CancelWorkflowIns
 func (m *CancelWorkflowInstanceRequest) String() string { return proto.CompactTextString(m) }
 func (*CancelWorkflowInstanceRequest) ProtoMessage()    {}
 func (*CancelWorkflowInstanceRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{4}
+	return fileDescriptor_f1a937782ebbded5, []int{4}
 }
+
 func (m *CancelWorkflowInstanceRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CancelWorkflowInstanceRequest.Unmarshal(m, b)
 }
 func (m *CancelWorkflowInstanceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CancelWorkflowInstanceRequest.Marshal(b, m, deterministic)
 }
-func (dst *CancelWorkflowInstanceRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CancelWorkflowInstanceRequest.Merge(dst, src)
+func (m *CancelWorkflowInstanceRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CancelWorkflowInstanceRequest.Merge(m, src)
 }
 func (m *CancelWorkflowInstanceRequest) XXX_Size() int {
 	return xxx_messageInfo_CancelWorkflowInstanceRequest.Size(m)
@@ -431,16 +441,17 @@ func (m *CancelWorkflowInstanceResponse) Reset()         { *m = CancelWorkflowIn
 func (m *CancelWorkflowInstanceResponse) String() string { return proto.CompactTextString(m) }
 func (*CancelWorkflowInstanceResponse) ProtoMessage()    {}
 func (*CancelWorkflowInstanceResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{5}
+	return fileDescriptor_f1a937782ebbded5, []int{5}
 }
+
 func (m *CancelWorkflowInstanceResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CancelWorkflowInstanceResponse.Unmarshal(m, b)
 }
 func (m *CancelWorkflowInstanceResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CancelWorkflowInstanceResponse.Marshal(b, m, deterministic)
 }
-func (dst *CancelWorkflowInstanceResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CancelWorkflowInstanceResponse.Merge(dst, src)
+func (m *CancelWorkflowInstanceResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CancelWorkflowInstanceResponse.Merge(m, src)
 }
 func (m *CancelWorkflowInstanceResponse) XXX_Size() int {
 	return xxx_messageInfo_CancelWorkflowInstanceResponse.Size(m)
@@ -455,7 +466,7 @@ type CompleteJobRequest struct {
 	// the unique job identifier, as obtained from ActivateJobsResponse
 	JobKey int64 `protobuf:"varint,1,opt,name=jobKey,proto3" json:"jobKey,omitempty"`
 	// a JSON document representing the variables in the current task scope
-	Payload              string   `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
+	Variables            string   `protobuf:"bytes,2,opt,name=variables,proto3" json:"variables,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -465,16 +476,17 @@ func (m *CompleteJobRequest) Reset()         { *m = CompleteJobRequest{} }
 func (m *CompleteJobRequest) String() string { return proto.CompactTextString(m) }
 func (*CompleteJobRequest) ProtoMessage()    {}
 func (*CompleteJobRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{6}
+	return fileDescriptor_f1a937782ebbded5, []int{6}
 }
+
 func (m *CompleteJobRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CompleteJobRequest.Unmarshal(m, b)
 }
 func (m *CompleteJobRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CompleteJobRequest.Marshal(b, m, deterministic)
 }
-func (dst *CompleteJobRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CompleteJobRequest.Merge(dst, src)
+func (m *CompleteJobRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CompleteJobRequest.Merge(m, src)
 }
 func (m *CompleteJobRequest) XXX_Size() int {
 	return xxx_messageInfo_CompleteJobRequest.Size(m)
@@ -492,9 +504,9 @@ func (m *CompleteJobRequest) GetJobKey() int64 {
 	return 0
 }
 
-func (m *CompleteJobRequest) GetPayload() string {
+func (m *CompleteJobRequest) GetVariables() string {
 	if m != nil {
-		return m.Payload
+		return m.Variables
 	}
 	return ""
 }
@@ -509,16 +521,17 @@ func (m *CompleteJobResponse) Reset()         { *m = CompleteJobResponse{} }
 func (m *CompleteJobResponse) String() string { return proto.CompactTextString(m) }
 func (*CompleteJobResponse) ProtoMessage()    {}
 func (*CompleteJobResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{7}
+	return fileDescriptor_f1a937782ebbded5, []int{7}
 }
+
 func (m *CompleteJobResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CompleteJobResponse.Unmarshal(m, b)
 }
 func (m *CompleteJobResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CompleteJobResponse.Marshal(b, m, deterministic)
 }
-func (dst *CompleteJobResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CompleteJobResponse.Merge(dst, src)
+func (m *CompleteJobResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CompleteJobResponse.Merge(m, src)
 }
 func (m *CompleteJobResponse) XXX_Size() int {
 	return xxx_messageInfo_CompleteJobResponse.Size(m)
@@ -552,16 +565,17 @@ func (m *CreateWorkflowInstanceRequest) Reset()         { *m = CreateWorkflowIns
 func (m *CreateWorkflowInstanceRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateWorkflowInstanceRequest) ProtoMessage()    {}
 func (*CreateWorkflowInstanceRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{8}
+	return fileDescriptor_f1a937782ebbded5, []int{8}
 }
+
 func (m *CreateWorkflowInstanceRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateWorkflowInstanceRequest.Unmarshal(m, b)
 }
 func (m *CreateWorkflowInstanceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CreateWorkflowInstanceRequest.Marshal(b, m, deterministic)
 }
-func (dst *CreateWorkflowInstanceRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CreateWorkflowInstanceRequest.Merge(dst, src)
+func (m *CreateWorkflowInstanceRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateWorkflowInstanceRequest.Merge(m, src)
 }
 func (m *CreateWorkflowInstanceRequest) XXX_Size() int {
 	return xxx_messageInfo_CreateWorkflowInstanceRequest.Size(m)
@@ -620,16 +634,17 @@ func (m *CreateWorkflowInstanceResponse) Reset()         { *m = CreateWorkflowIn
 func (m *CreateWorkflowInstanceResponse) String() string { return proto.CompactTextString(m) }
 func (*CreateWorkflowInstanceResponse) ProtoMessage()    {}
 func (*CreateWorkflowInstanceResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{9}
+	return fileDescriptor_f1a937782ebbded5, []int{9}
 }
+
 func (m *CreateWorkflowInstanceResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateWorkflowInstanceResponse.Unmarshal(m, b)
 }
 func (m *CreateWorkflowInstanceResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CreateWorkflowInstanceResponse.Marshal(b, m, deterministic)
 }
-func (dst *CreateWorkflowInstanceResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CreateWorkflowInstanceResponse.Merge(dst, src)
+func (m *CreateWorkflowInstanceResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateWorkflowInstanceResponse.Merge(m, src)
 }
 func (m *CreateWorkflowInstanceResponse) XXX_Size() int {
 	return xxx_messageInfo_CreateWorkflowInstanceResponse.Size(m)
@@ -680,16 +695,17 @@ func (m *DeployWorkflowRequest) Reset()         { *m = DeployWorkflowRequest{} }
 func (m *DeployWorkflowRequest) String() string { return proto.CompactTextString(m) }
 func (*DeployWorkflowRequest) ProtoMessage()    {}
 func (*DeployWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{10}
+	return fileDescriptor_f1a937782ebbded5, []int{10}
 }
+
 func (m *DeployWorkflowRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeployWorkflowRequest.Unmarshal(m, b)
 }
 func (m *DeployWorkflowRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DeployWorkflowRequest.Marshal(b, m, deterministic)
 }
-func (dst *DeployWorkflowRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DeployWorkflowRequest.Merge(dst, src)
+func (m *DeployWorkflowRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeployWorkflowRequest.Merge(m, src)
 }
 func (m *DeployWorkflowRequest) XXX_Size() int {
 	return xxx_messageInfo_DeployWorkflowRequest.Size(m)
@@ -724,16 +740,17 @@ func (m *WorkflowRequestObject) Reset()         { *m = WorkflowRequestObject{} }
 func (m *WorkflowRequestObject) String() string { return proto.CompactTextString(m) }
 func (*WorkflowRequestObject) ProtoMessage()    {}
 func (*WorkflowRequestObject) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{11}
+	return fileDescriptor_f1a937782ebbded5, []int{11}
 }
+
 func (m *WorkflowRequestObject) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WorkflowRequestObject.Unmarshal(m, b)
 }
 func (m *WorkflowRequestObject) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_WorkflowRequestObject.Marshal(b, m, deterministic)
 }
-func (dst *WorkflowRequestObject) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WorkflowRequestObject.Merge(dst, src)
+func (m *WorkflowRequestObject) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowRequestObject.Merge(m, src)
 }
 func (m *WorkflowRequestObject) XXX_Size() int {
 	return xxx_messageInfo_WorkflowRequestObject.Size(m)
@@ -779,16 +796,17 @@ func (m *DeployWorkflowResponse) Reset()         { *m = DeployWorkflowResponse{}
 func (m *DeployWorkflowResponse) String() string { return proto.CompactTextString(m) }
 func (*DeployWorkflowResponse) ProtoMessage()    {}
 func (*DeployWorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{12}
+	return fileDescriptor_f1a937782ebbded5, []int{12}
 }
+
 func (m *DeployWorkflowResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeployWorkflowResponse.Unmarshal(m, b)
 }
 func (m *DeployWorkflowResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DeployWorkflowResponse.Marshal(b, m, deterministic)
 }
-func (dst *DeployWorkflowResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DeployWorkflowResponse.Merge(dst, src)
+func (m *DeployWorkflowResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeployWorkflowResponse.Merge(m, src)
 }
 func (m *DeployWorkflowResponse) XXX_Size() int {
 	return xxx_messageInfo_DeployWorkflowResponse.Size(m)
@@ -833,16 +851,17 @@ func (m *WorkflowMetadata) Reset()         { *m = WorkflowMetadata{} }
 func (m *WorkflowMetadata) String() string { return proto.CompactTextString(m) }
 func (*WorkflowMetadata) ProtoMessage()    {}
 func (*WorkflowMetadata) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{13}
+	return fileDescriptor_f1a937782ebbded5, []int{13}
 }
+
 func (m *WorkflowMetadata) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WorkflowMetadata.Unmarshal(m, b)
 }
 func (m *WorkflowMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_WorkflowMetadata.Marshal(b, m, deterministic)
 }
-func (dst *WorkflowMetadata) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WorkflowMetadata.Merge(dst, src)
+func (m *WorkflowMetadata) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowMetadata.Merge(m, src)
 }
 func (m *WorkflowMetadata) XXX_Size() int {
 	return xxx_messageInfo_WorkflowMetadata.Size(m)
@@ -899,16 +918,17 @@ func (m *FailJobRequest) Reset()         { *m = FailJobRequest{} }
 func (m *FailJobRequest) String() string { return proto.CompactTextString(m) }
 func (*FailJobRequest) ProtoMessage()    {}
 func (*FailJobRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{14}
+	return fileDescriptor_f1a937782ebbded5, []int{14}
 }
+
 func (m *FailJobRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FailJobRequest.Unmarshal(m, b)
 }
 func (m *FailJobRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_FailJobRequest.Marshal(b, m, deterministic)
 }
-func (dst *FailJobRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FailJobRequest.Merge(dst, src)
+func (m *FailJobRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FailJobRequest.Merge(m, src)
 }
 func (m *FailJobRequest) XXX_Size() int {
 	return xxx_messageInfo_FailJobRequest.Size(m)
@@ -950,16 +970,17 @@ func (m *FailJobResponse) Reset()         { *m = FailJobResponse{} }
 func (m *FailJobResponse) String() string { return proto.CompactTextString(m) }
 func (*FailJobResponse) ProtoMessage()    {}
 func (*FailJobResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{15}
+	return fileDescriptor_f1a937782ebbded5, []int{15}
 }
+
 func (m *FailJobResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FailJobResponse.Unmarshal(m, b)
 }
 func (m *FailJobResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_FailJobResponse.Marshal(b, m, deterministic)
 }
-func (dst *FailJobResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FailJobResponse.Merge(dst, src)
+func (m *FailJobResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FailJobResponse.Merge(m, src)
 }
 func (m *FailJobResponse) XXX_Size() int {
 	return xxx_messageInfo_FailJobResponse.Size(m)
@@ -987,16 +1008,17 @@ func (m *GetWorkflowRequest) Reset()         { *m = GetWorkflowRequest{} }
 func (m *GetWorkflowRequest) String() string { return proto.CompactTextString(m) }
 func (*GetWorkflowRequest) ProtoMessage()    {}
 func (*GetWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{16}
+	return fileDescriptor_f1a937782ebbded5, []int{16}
 }
+
 func (m *GetWorkflowRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetWorkflowRequest.Unmarshal(m, b)
 }
 func (m *GetWorkflowRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GetWorkflowRequest.Marshal(b, m, deterministic)
 }
-func (dst *GetWorkflowRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetWorkflowRequest.Merge(dst, src)
+func (m *GetWorkflowRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetWorkflowRequest.Merge(m, src)
 }
 func (m *GetWorkflowRequest) XXX_Size() int {
 	return xxx_messageInfo_GetWorkflowRequest.Size(m)
@@ -1049,16 +1071,17 @@ func (m *GetWorkflowResponse) Reset()         { *m = GetWorkflowResponse{} }
 func (m *GetWorkflowResponse) String() string { return proto.CompactTextString(m) }
 func (*GetWorkflowResponse) ProtoMessage()    {}
 func (*GetWorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{17}
+	return fileDescriptor_f1a937782ebbded5, []int{17}
 }
+
 func (m *GetWorkflowResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetWorkflowResponse.Unmarshal(m, b)
 }
 func (m *GetWorkflowResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GetWorkflowResponse.Marshal(b, m, deterministic)
 }
-func (dst *GetWorkflowResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetWorkflowResponse.Merge(dst, src)
+func (m *GetWorkflowResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetWorkflowResponse.Merge(m, src)
 }
 func (m *GetWorkflowResponse) XXX_Size() int {
 	return xxx_messageInfo_GetWorkflowResponse.Size(m)
@@ -1117,16 +1140,17 @@ func (m *ListWorkflowsRequest) Reset()         { *m = ListWorkflowsRequest{} }
 func (m *ListWorkflowsRequest) String() string { return proto.CompactTextString(m) }
 func (*ListWorkflowsRequest) ProtoMessage()    {}
 func (*ListWorkflowsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{18}
+	return fileDescriptor_f1a937782ebbded5, []int{18}
 }
+
 func (m *ListWorkflowsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListWorkflowsRequest.Unmarshal(m, b)
 }
 func (m *ListWorkflowsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ListWorkflowsRequest.Marshal(b, m, deterministic)
 }
-func (dst *ListWorkflowsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListWorkflowsRequest.Merge(dst, src)
+func (m *ListWorkflowsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListWorkflowsRequest.Merge(m, src)
 }
 func (m *ListWorkflowsRequest) XXX_Size() int {
 	return xxx_messageInfo_ListWorkflowsRequest.Size(m)
@@ -1156,16 +1180,17 @@ func (m *ListWorkflowsResponse) Reset()         { *m = ListWorkflowsResponse{} }
 func (m *ListWorkflowsResponse) String() string { return proto.CompactTextString(m) }
 func (*ListWorkflowsResponse) ProtoMessage()    {}
 func (*ListWorkflowsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{19}
+	return fileDescriptor_f1a937782ebbded5, []int{19}
 }
+
 func (m *ListWorkflowsResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListWorkflowsResponse.Unmarshal(m, b)
 }
 func (m *ListWorkflowsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ListWorkflowsResponse.Marshal(b, m, deterministic)
 }
-func (dst *ListWorkflowsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListWorkflowsResponse.Merge(dst, src)
+func (m *ListWorkflowsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListWorkflowsResponse.Merge(m, src)
 }
 func (m *ListWorkflowsResponse) XXX_Size() int {
 	return xxx_messageInfo_ListWorkflowsResponse.Size(m)
@@ -1193,9 +1218,9 @@ type PublishMessageRequest struct {
 	// the unique ID of the message; can be omitted. only useful to ensure only one message
 	// with the given ID will ever be published (during its lifetime)
 	MessageId string `protobuf:"bytes,4,opt,name=messageId,proto3" json:"messageId,omitempty"`
-	// the message payload as a JSON document; to be valid, the root of the document must be an
+	// the message variables as a JSON document; to be valid, the root of the document must be an
 	// object, e.g. { "a": "foo" }. [ "foo" ] would not be valid.
-	Payload              string   `protobuf:"bytes,5,opt,name=payload,proto3" json:"payload,omitempty"`
+	Variables            string   `protobuf:"bytes,5,opt,name=variables,proto3" json:"variables,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -1205,16 +1230,17 @@ func (m *PublishMessageRequest) Reset()         { *m = PublishMessageRequest{} }
 func (m *PublishMessageRequest) String() string { return proto.CompactTextString(m) }
 func (*PublishMessageRequest) ProtoMessage()    {}
 func (*PublishMessageRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{20}
+	return fileDescriptor_f1a937782ebbded5, []int{20}
 }
+
 func (m *PublishMessageRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PublishMessageRequest.Unmarshal(m, b)
 }
 func (m *PublishMessageRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_PublishMessageRequest.Marshal(b, m, deterministic)
 }
-func (dst *PublishMessageRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PublishMessageRequest.Merge(dst, src)
+func (m *PublishMessageRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PublishMessageRequest.Merge(m, src)
 }
 func (m *PublishMessageRequest) XXX_Size() int {
 	return xxx_messageInfo_PublishMessageRequest.Size(m)
@@ -1253,9 +1279,9 @@ func (m *PublishMessageRequest) GetMessageId() string {
 	return ""
 }
 
-func (m *PublishMessageRequest) GetPayload() string {
+func (m *PublishMessageRequest) GetVariables() string {
 	if m != nil {
-		return m.Payload
+		return m.Variables
 	}
 	return ""
 }
@@ -1270,16 +1296,17 @@ func (m *PublishMessageResponse) Reset()         { *m = PublishMessageResponse{}
 func (m *PublishMessageResponse) String() string { return proto.CompactTextString(m) }
 func (*PublishMessageResponse) ProtoMessage()    {}
 func (*PublishMessageResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{21}
+	return fileDescriptor_f1a937782ebbded5, []int{21}
 }
+
 func (m *PublishMessageResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PublishMessageResponse.Unmarshal(m, b)
 }
 func (m *PublishMessageResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_PublishMessageResponse.Marshal(b, m, deterministic)
 }
-func (dst *PublishMessageResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PublishMessageResponse.Merge(dst, src)
+func (m *PublishMessageResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PublishMessageResponse.Merge(m, src)
 }
 func (m *PublishMessageResponse) XXX_Size() int {
 	return xxx_messageInfo_PublishMessageResponse.Size(m)
@@ -1302,16 +1329,17 @@ func (m *ResolveIncidentRequest) Reset()         { *m = ResolveIncidentRequest{}
 func (m *ResolveIncidentRequest) String() string { return proto.CompactTextString(m) }
 func (*ResolveIncidentRequest) ProtoMessage()    {}
 func (*ResolveIncidentRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{22}
+	return fileDescriptor_f1a937782ebbded5, []int{22}
 }
+
 func (m *ResolveIncidentRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResolveIncidentRequest.Unmarshal(m, b)
 }
 func (m *ResolveIncidentRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ResolveIncidentRequest.Marshal(b, m, deterministic)
 }
-func (dst *ResolveIncidentRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ResolveIncidentRequest.Merge(dst, src)
+func (m *ResolveIncidentRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResolveIncidentRequest.Merge(m, src)
 }
 func (m *ResolveIncidentRequest) XXX_Size() int {
 	return xxx_messageInfo_ResolveIncidentRequest.Size(m)
@@ -1339,16 +1367,17 @@ func (m *ResolveIncidentResponse) Reset()         { *m = ResolveIncidentResponse
 func (m *ResolveIncidentResponse) String() string { return proto.CompactTextString(m) }
 func (*ResolveIncidentResponse) ProtoMessage()    {}
 func (*ResolveIncidentResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{23}
+	return fileDescriptor_f1a937782ebbded5, []int{23}
 }
+
 func (m *ResolveIncidentResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResolveIncidentResponse.Unmarshal(m, b)
 }
 func (m *ResolveIncidentResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ResolveIncidentResponse.Marshal(b, m, deterministic)
 }
-func (dst *ResolveIncidentResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ResolveIncidentResponse.Merge(dst, src)
+func (m *ResolveIncidentResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResolveIncidentResponse.Merge(m, src)
 }
 func (m *ResolveIncidentResponse) XXX_Size() int {
 	return xxx_messageInfo_ResolveIncidentResponse.Size(m)
@@ -1369,16 +1398,17 @@ func (m *TopologyRequest) Reset()         { *m = TopologyRequest{} }
 func (m *TopologyRequest) String() string { return proto.CompactTextString(m) }
 func (*TopologyRequest) ProtoMessage()    {}
 func (*TopologyRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{24}
+	return fileDescriptor_f1a937782ebbded5, []int{24}
 }
+
 func (m *TopologyRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TopologyRequest.Unmarshal(m, b)
 }
 func (m *TopologyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_TopologyRequest.Marshal(b, m, deterministic)
 }
-func (dst *TopologyRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TopologyRequest.Merge(dst, src)
+func (m *TopologyRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TopologyRequest.Merge(m, src)
 }
 func (m *TopologyRequest) XXX_Size() int {
 	return xxx_messageInfo_TopologyRequest.Size(m)
@@ -1407,16 +1437,17 @@ func (m *TopologyResponse) Reset()         { *m = TopologyResponse{} }
 func (m *TopologyResponse) String() string { return proto.CompactTextString(m) }
 func (*TopologyResponse) ProtoMessage()    {}
 func (*TopologyResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{25}
+	return fileDescriptor_f1a937782ebbded5, []int{25}
 }
+
 func (m *TopologyResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TopologyResponse.Unmarshal(m, b)
 }
 func (m *TopologyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_TopologyResponse.Marshal(b, m, deterministic)
 }
-func (dst *TopologyResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TopologyResponse.Merge(dst, src)
+func (m *TopologyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TopologyResponse.Merge(m, src)
 }
 func (m *TopologyResponse) XXX_Size() int {
 	return xxx_messageInfo_TopologyResponse.Size(m)
@@ -1473,16 +1504,17 @@ func (m *BrokerInfo) Reset()         { *m = BrokerInfo{} }
 func (m *BrokerInfo) String() string { return proto.CompactTextString(m) }
 func (*BrokerInfo) ProtoMessage()    {}
 func (*BrokerInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{26}
+	return fileDescriptor_f1a937782ebbded5, []int{26}
 }
+
 func (m *BrokerInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BrokerInfo.Unmarshal(m, b)
 }
 func (m *BrokerInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_BrokerInfo.Marshal(b, m, deterministic)
 }
-func (dst *BrokerInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BrokerInfo.Merge(dst, src)
+func (m *BrokerInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BrokerInfo.Merge(m, src)
 }
 func (m *BrokerInfo) XXX_Size() int {
 	return xxx_messageInfo_BrokerInfo.Size(m)
@@ -1535,16 +1567,17 @@ func (m *Partition) Reset()         { *m = Partition{} }
 func (m *Partition) String() string { return proto.CompactTextString(m) }
 func (*Partition) ProtoMessage()    {}
 func (*Partition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{27}
+	return fileDescriptor_f1a937782ebbded5, []int{27}
 }
+
 func (m *Partition) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Partition.Unmarshal(m, b)
 }
 func (m *Partition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Partition.Marshal(b, m, deterministic)
 }
-func (dst *Partition) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Partition.Merge(dst, src)
+func (m *Partition) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Partition.Merge(m, src)
 }
 func (m *Partition) XXX_Size() int {
 	return xxx_messageInfo_Partition.Size(m)
@@ -1583,16 +1616,17 @@ func (m *UpdateJobRetriesRequest) Reset()         { *m = UpdateJobRetriesRequest
 func (m *UpdateJobRetriesRequest) String() string { return proto.CompactTextString(m) }
 func (*UpdateJobRetriesRequest) ProtoMessage()    {}
 func (*UpdateJobRetriesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{28}
+	return fileDescriptor_f1a937782ebbded5, []int{28}
 }
+
 func (m *UpdateJobRetriesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpdateJobRetriesRequest.Unmarshal(m, b)
 }
 func (m *UpdateJobRetriesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_UpdateJobRetriesRequest.Marshal(b, m, deterministic)
 }
-func (dst *UpdateJobRetriesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpdateJobRetriesRequest.Merge(dst, src)
+func (m *UpdateJobRetriesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateJobRetriesRequest.Merge(m, src)
 }
 func (m *UpdateJobRetriesRequest) XXX_Size() int {
 	return xxx_messageInfo_UpdateJobRetriesRequest.Size(m)
@@ -1627,16 +1661,17 @@ func (m *UpdateJobRetriesResponse) Reset()         { *m = UpdateJobRetriesRespon
 func (m *UpdateJobRetriesResponse) String() string { return proto.CompactTextString(m) }
 func (*UpdateJobRetriesResponse) ProtoMessage()    {}
 func (*UpdateJobRetriesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{29}
+	return fileDescriptor_f1a937782ebbded5, []int{29}
 }
+
 func (m *UpdateJobRetriesResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpdateJobRetriesResponse.Unmarshal(m, b)
 }
 func (m *UpdateJobRetriesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_UpdateJobRetriesResponse.Marshal(b, m, deterministic)
 }
-func (dst *UpdateJobRetriesResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpdateJobRetriesResponse.Merge(dst, src)
+func (m *UpdateJobRetriesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateJobRetriesResponse.Merge(m, src)
 }
 func (m *UpdateJobRetriesResponse) XXX_Size() int {
 	return xxx_messageInfo_UpdateJobRetriesResponse.Size(m)
@@ -1672,16 +1707,17 @@ func (m *SetVariablesRequest) Reset()         { *m = SetVariablesRequest{} }
 func (m *SetVariablesRequest) String() string { return proto.CompactTextString(m) }
 func (*SetVariablesRequest) ProtoMessage()    {}
 func (*SetVariablesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{30}
+	return fileDescriptor_f1a937782ebbded5, []int{30}
 }
+
 func (m *SetVariablesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SetVariablesRequest.Unmarshal(m, b)
 }
 func (m *SetVariablesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_SetVariablesRequest.Marshal(b, m, deterministic)
 }
-func (dst *SetVariablesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SetVariablesRequest.Merge(dst, src)
+func (m *SetVariablesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SetVariablesRequest.Merge(m, src)
 }
 func (m *SetVariablesRequest) XXX_Size() int {
 	return xxx_messageInfo_SetVariablesRequest.Size(m)
@@ -1723,16 +1759,17 @@ func (m *SetVariablesResponse) Reset()         { *m = SetVariablesResponse{} }
 func (m *SetVariablesResponse) String() string { return proto.CompactTextString(m) }
 func (*SetVariablesResponse) ProtoMessage()    {}
 func (*SetVariablesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_ee29cb73518c2b1d, []int{31}
+	return fileDescriptor_f1a937782ebbded5, []int{31}
 }
+
 func (m *SetVariablesResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SetVariablesResponse.Unmarshal(m, b)
 }
 func (m *SetVariablesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_SetVariablesResponse.Marshal(b, m, deterministic)
 }
-func (dst *SetVariablesResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SetVariablesResponse.Merge(dst, src)
+func (m *SetVariablesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SetVariablesResponse.Merge(m, src)
 }
 func (m *SetVariablesResponse) XXX_Size() int {
 	return xxx_messageInfo_SetVariablesResponse.Size(m)
@@ -1744,6 +1781,8 @@ func (m *SetVariablesResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_SetVariablesResponse proto.InternalMessageInfo
 
 func init() {
+	proto.RegisterEnum("gateway_protocol.WorkflowRequestObject_ResourceType", WorkflowRequestObject_ResourceType_name, WorkflowRequestObject_ResourceType_value)
+	proto.RegisterEnum("gateway_protocol.Partition_PartitionBrokerRole", Partition_PartitionBrokerRole_name, Partition_PartitionBrokerRole_value)
 	proto.RegisterType((*ActivateJobsRequest)(nil), "gateway_protocol.ActivateJobsRequest")
 	proto.RegisterType((*ActivateJobsResponse)(nil), "gateway_protocol.ActivateJobsResponse")
 	proto.RegisterType((*ActivatedJob)(nil), "gateway_protocol.ActivatedJob")
@@ -1776,8 +1815,103 @@ func init() {
 	proto.RegisterType((*UpdateJobRetriesResponse)(nil), "gateway_protocol.UpdateJobRetriesResponse")
 	proto.RegisterType((*SetVariablesRequest)(nil), "gateway_protocol.SetVariablesRequest")
 	proto.RegisterType((*SetVariablesResponse)(nil), "gateway_protocol.SetVariablesResponse")
-	proto.RegisterEnum("gateway_protocol.WorkflowRequestObject_ResourceType", WorkflowRequestObject_ResourceType_name, WorkflowRequestObject_ResourceType_value)
-	proto.RegisterEnum("gateway_protocol.Partition_PartitionBrokerRole", Partition_PartitionBrokerRole_name, Partition_PartitionBrokerRole_value)
+}
+
+func init() { proto.RegisterFile("gateway.proto", fileDescriptor_f1a937782ebbded5) }
+
+var fileDescriptor_f1a937782ebbded5 = []byte{
+	// 1451 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x58, 0xcd, 0x73, 0xdb, 0x44,
+	0x14, 0xb7, 0xfc, 0x91, 0x8f, 0x17, 0x37, 0x71, 0x37, 0x89, 0xab, 0x9a, 0x36, 0xe3, 0xee, 0xf4,
+	0xc3, 0x30, 0x1d, 0xb7, 0x13, 0x18, 0x0e, 0xd0, 0x43, 0xdb, 0x34, 0x69, 0x9d, 0x3a, 0x6d, 0x50,
+	0x43, 0x4b, 0x19, 0x86, 0x8e, 0x24, 0x6f, 0x1a, 0x25, 0xb2, 0x56, 0x48, 0x72, 0x8a, 0x3b, 0xc3,
+	0x8d, 0x0b, 0x57, 0x4e, 0xdc, 0x38, 0xf0, 0x07, 0xf4, 0x02, 0xc3, 0x1f, 0x00, 0x7f, 0x18, 0xb3,
+	0xf2, 0xae, 0xbc, 0x92, 0xd6, 0x8e, 0x0b, 0xc3, 0x6d, 0xf7, 0xed, 0xdb, 0xf7, 0xf1, 0x7b, 0x4f,
+	0xbf, 0x7d, 0x36, 0x9c, 0x7b, 0x6d, 0x46, 0xe4, 0x8d, 0x39, 0x6c, 0xfb, 0x01, 0x8d, 0x28, 0xaa,
+	0xf1, 0xed, 0xab, 0x78, 0x6b, 0x53, 0x17, 0xbf, 0xd3, 0x60, 0xf5, 0x9e, 0x1d, 0x39, 0xa7, 0x66,
+	0x44, 0x76, 0xa9, 0x15, 0x1a, 0xe4, 0xbb, 0x01, 0x09, 0x23, 0x84, 0xa0, 0x1c, 0x0d, 0x7d, 0xa2,
+	0x6b, 0x4d, 0xad, 0xb5, 0x68, 0xc4, 0x6b, 0x54, 0x87, 0xb9, 0x37, 0x34, 0x38, 0x21, 0x81, 0x5e,
+	0x8c, 0xa5, 0x7c, 0x87, 0x74, 0x98, 0x8f, 0x9c, 0x3e, 0xa1, 0x83, 0x48, 0x2f, 0x35, 0xb5, 0x56,
+	0xc9, 0x10, 0x5b, 0x74, 0x13, 0xce, 0xf7, 0xcd, 0xef, 0x99, 0xdd, 0x03, 0x2a, 0xbc, 0xe8, 0xe5,
+	0xa6, 0xd6, 0xaa, 0x18, 0xf9, 0x03, 0x74, 0x15, 0xce, 0x1d, 0x92, 0xc8, 0x3e, 0x7a, 0x6e, 0x06,
+	0x8e, 0x69, 0xb9, 0x44, 0xaf, 0x34, 0x4b, 0xad, 0x45, 0x23, 0x2d, 0xc4, 0xbb, 0xb0, 0x96, 0x0e,
+	0x38, 0xf4, 0xa9, 0x17, 0x12, 0xb4, 0x09, 0xe5, 0x63, 0x6a, 0x85, 0xba, 0xd6, 0x2c, 0xb5, 0x96,
+	0x36, 0x37, 0xda, 0xd9, 0x54, 0xdb, 0xe2, 0x56, 0x6f, 0x97, 0x5a, 0x46, 0xac, 0x8b, 0x7f, 0x2c,
+	0x42, 0x55, 0x16, 0xa3, 0x1a, 0x94, 0x4e, 0xc8, 0x30, 0xce, 0xba, 0x64, 0xb0, 0x65, 0x02, 0x44,
+	0x51, 0x02, 0xe2, 0x0e, 0xc0, 0x31, 0xb5, 0x1e, 0x11, 0xb3, 0x47, 0x82, 0x30, 0xce, 0x79, 0x69,
+	0xf3, 0x52, 0xde, 0xe1, 0x6e, 0xa2, 0x63, 0x48, 0xfa, 0x2c, 0x4d, 0x7b, 0x10, 0x46, 0xb4, 0x2f,
+	0x0c, 0x94, 0x63, 0xd3, 0x69, 0xa1, 0x04, 0x76, 0x25, 0x0b, 0x76, 0x40, 0xa2, 0xc0, 0x21, 0xa1,
+	0x3e, 0x17, 0x03, 0x29, 0xb6, 0xa8, 0x01, 0x0b, 0x3d, 0x62, 0xf6, 0x5c, 0xc7, 0x23, 0xfa, 0x7c,
+	0x9c, 0x40, 0xb2, 0x47, 0x97, 0x60, 0xf1, 0x94, 0x03, 0x18, 0xea, 0x0b, 0xb1, 0xc1, 0xb1, 0x00,
+	0xff, 0x5c, 0x04, 0x18, 0x07, 0x8b, 0x6e, 0xc3, 0x2a, 0x73, 0x76, 0xe8, 0xd2, 0x37, 0x1d, 0x2f,
+	0x8c, 0x4c, 0xcf, 0x26, 0x8f, 0x13, 0x50, 0x54, 0x47, 0x2c, 0x25, 0xcb, 0xef, 0x7b, 0xfb, 0x01,
+	0xb5, 0x49, 0x18, 0x76, 0x7a, 0x1c, 0xad, 0xb4, 0x10, 0xdd, 0x81, 0x8b, 0xe2, 0xf2, 0x03, 0x72,
+	0xe8, 0x78, 0x4e, 0xe4, 0x50, 0xef, 0x39, 0x09, 0x42, 0x87, 0x7a, 0x31, 0x8a, 0x15, 0x63, 0xb2,
+	0x02, 0x6a, 0xc2, 0x92, 0x38, 0x64, 0xd1, 0x94, 0xe3, 0x68, 0x64, 0x11, 0x4b, 0x92, 0xb8, 0xa4,
+	0x4f, 0xbc, 0xa8, 0xd3, 0xe3, 0xa8, 0x8d, 0x05, 0xa8, 0x0d, 0x48, 0x6c, 0xa4, 0xa4, 0xe6, 0x62,
+	0x33, 0x8a, 0x13, 0xfc, 0x05, 0x5c, 0xde, 0x62, 0x6b, 0xf7, 0x45, 0x26, 0x61, 0xf1, 0x89, 0xbc,
+	0x37, 0x4c, 0xb8, 0x09, 0x1b, 0x93, 0x4c, 0x8e, 0x9a, 0x18, 0xef, 0x02, 0xda, 0xa2, 0x7d, 0xdf,
+	0x25, 0x71, 0x73, 0x0b, 0x4f, 0x75, 0x98, 0x3b, 0xa6, 0xd6, 0xd8, 0x38, 0xdf, 0xa5, 0xab, 0x5a,
+	0xcc, 0x56, 0x75, 0x1d, 0x56, 0x53, 0xb6, 0xb8, 0x8b, 0x5f, 0x35, 0xb8, 0xbc, 0x15, 0x10, 0x33,
+	0x22, 0x93, 0x12, 0xcb, 0x20, 0xad, 0xe5, 0x91, 0x9e, 0xad, 0xde, 0x3a, 0xcc, 0x9f, 0xa6, 0xaa,
+	0x2b, 0xb6, 0xe9, 0xc0, 0xcb, 0xd9, 0xc0, 0x7f, 0xd7, 0x60, 0x63, 0x52, 0x84, 0xfc, 0x63, 0xff,
+	0xff, 0x43, 0x9c, 0x50, 0xdd, 0xca, 0xe4, 0xea, 0x7e, 0x0b, 0xeb, 0x0f, 0x88, 0xef, 0xd2, 0xa1,
+	0x88, 0x5a, 0xe0, 0xb9, 0x0d, 0x8b, 0x42, 0x5f, 0xd0, 0xd3, 0x8d, 0x3c, 0x5b, 0x64, 0x6e, 0x3d,
+	0xb5, 0x8e, 0x89, 0x1d, 0x19, 0xe3, 0x9b, 0xf8, 0x2f, 0x0d, 0xd6, 0x95, 0x4a, 0x8c, 0xa3, 0x3c,
+	0xb3, 0x9f, 0x90, 0x35, 0x5b, 0xa3, 0x47, 0x12, 0x6f, 0x2d, 0x6f, 0x7e, 0x32, 0xa3, 0xbf, 0xb6,
+	0x41, 0x42, 0x3a, 0x08, 0x6c, 0x72, 0x30, 0xf4, 0x09, 0x67, 0xbb, 0x0d, 0x80, 0x5e, 0xf2, 0x35,
+	0xc6, 0x30, 0x55, 0x0d, 0x49, 0x82, 0x6f, 0x42, 0x55, 0xbe, 0x85, 0x16, 0xa0, 0xbc, 0xd3, 0xe9,
+	0x6e, 0xd7, 0x0a, 0x6c, 0x75, 0x7f, 0x7f, 0xef, 0x49, 0x4d, 0x63, 0xab, 0x97, 0xf7, 0xf6, 0xba,
+	0xb5, 0x22, 0x76, 0xa1, 0x9e, 0x45, 0x89, 0xd7, 0x34, 0xcf, 0xbd, 0x77, 0x65, 0xe0, 0x8a, 0x31,
+	0x70, 0x78, 0x72, 0x22, 0x7b, 0x24, 0x32, 0x7b, 0x66, 0x64, 0xca, 0x98, 0xfd, 0xa2, 0x41, 0x2d,
+	0x7b, 0x9e, 0x6f, 0x0d, 0xed, 0x8c, 0xd6, 0x28, 0xa6, 0x5b, 0x23, 0xd3, 0x7c, 0xa5, 0x7c, 0xf3,
+	0x61, 0xa8, 0x06, 0x1c, 0x92, 0x27, 0xac, 0x30, 0xa3, 0x16, 0x4f, 0xc9, 0xf0, 0x21, 0x2c, 0xef,
+	0x98, 0x8e, 0x3b, 0xc3, 0x67, 0x2e, 0x51, 0x7e, 0x31, 0x4d, 0xf9, 0x18, 0xaa, 0x24, 0x08, 0x68,
+	0xb0, 0x47, 0xc2, 0xd0, 0x7c, 0x4d, 0xe2, 0x50, 0x16, 0x8d, 0x94, 0x0c, 0x9f, 0x87, 0x95, 0xc4,
+	0x0f, 0xa7, 0x80, 0x53, 0x40, 0x0f, 0x49, 0x94, 0x6d, 0xd3, 0xb3, 0xbf, 0xa9, 0xc9, 0x90, 0xe4,
+	0x20, 0x2d, 0x29, 0x20, 0xc5, 0x7f, 0x68, 0xb0, 0x9a, 0x72, 0x3c, 0xf3, 0xd7, 0xfc, 0x1f, 0x3d,
+	0xcf, 0x52, 0x10, 0xe6, 0x83, 0x5d, 0xfa, 0xaa, 0xef, 0xf2, 0xc7, 0x43, 0x6c, 0xf1, 0x1d, 0x58,
+	0xeb, 0x3a, 0x61, 0x12, 0x77, 0x32, 0x24, 0xcd, 0xd4, 0x48, 0xf8, 0x25, 0xac, 0x67, 0x6e, 0xf3,
+	0xb4, 0xef, 0xe6, 0x79, 0xe1, 0x3d, 0xdb, 0xfb, 0x9d, 0x06, 0xeb, 0xfb, 0x03, 0xcb, 0x75, 0xc2,
+	0x23, 0x5e, 0x6e, 0x69, 0x7e, 0xcb, 0x51, 0xc2, 0x75, 0x58, 0xb6, 0x69, 0x10, 0x10, 0xd7, 0x64,
+	0xdf, 0x2d, 0x43, 0x7a, 0xc4, 0x89, 0x19, 0x29, 0xfb, 0xe0, 0xd9, 0x00, 0x77, 0x40, 0xbb, 0xce,
+	0x29, 0xe1, 0xed, 0x2d, 0x49, 0x18, 0x7b, 0xf7, 0x47, 0xde, 0x3a, 0x3d, 0xc1, 0xde, 0x89, 0x20,
+	0xcd, 0xed, 0x95, 0x2c, 0xb7, 0xeb, 0x50, 0xcf, 0x06, 0xcc, 0x9b, 0xf2, 0x33, 0xa8, 0x33, 0x1a,
+	0x71, 0x4f, 0x49, 0xc7, 0xb3, 0x9d, 0x1e, 0xf1, 0x22, 0xa9, 0x31, 0x1d, 0x2e, 0x92, 0xda, 0x43,
+	0x12, 0xe1, 0x8b, 0x70, 0x21, 0x77, 0x97, 0x9b, 0x3d, 0x0f, 0x2b, 0x07, 0xd4, 0xa7, 0x2e, 0x7d,
+	0x3d, 0xe4, 0xf6, 0xf0, 0xdf, 0x1a, 0xd4, 0xc6, 0x32, 0x5e, 0x8c, 0x4f, 0x61, 0xde, 0x0a, 0xe8,
+	0x09, 0x9b, 0xc7, 0x46, 0xa5, 0x50, 0x0c, 0x74, 0xf7, 0x63, 0x85, 0x8e, 0x77, 0x48, 0x0d, 0xa1,
+	0xcc, 0x82, 0xb3, 0xdd, 0x41, 0x18, 0x91, 0xe0, 0x99, 0xf3, 0x96, 0xf0, 0xee, 0x94, 0x45, 0xa8,
+	0x05, 0x2b, 0xbe, 0x19, 0x44, 0x31, 0x59, 0x86, 0x5b, 0x74, 0xe0, 0x45, 0xfc, 0xad, 0xc9, 0x8a,
+	0xd9, 0xb8, 0x1c, 0x10, 0xdf, 0x75, 0xec, 0xb8, 0x14, 0x3b, 0xa6, 0x1d, 0xd1, 0x40, 0x8c, 0xcb,
+	0xb9, 0x03, 0xfc, 0x93, 0x06, 0x30, 0x8e, 0x88, 0xb1, 0x87, 0x47, 0x7b, 0x84, 0x77, 0x61, 0xc5,
+	0xe0, 0x3b, 0xd6, 0x09, 0x47, 0x34, 0x8c, 0xc4, 0x00, 0xcb, 0xd6, 0x4c, 0xe6, 0xd3, 0x40, 0xc4,
+	0x11, 0xaf, 0xd1, 0xe7, 0x00, 0xe3, 0x78, 0xf4, 0x72, 0x8c, 0xc1, 0x07, 0x79, 0x0c, 0xf6, 0x85,
+	0x8e, 0x21, 0xa9, 0xe3, 0xdf, 0x34, 0x58, 0x4c, 0x4e, 0x18, 0x26, 0xc9, 0x59, 0x12, 0x8f, 0x2c,
+	0x42, 0x5b, 0x50, 0x0e, 0xa8, 0x3b, 0x6a, 0xae, 0xe5, 0xcd, 0x5b, 0x53, 0xdc, 0x8c, 0x57, 0xa3,
+	0x5c, 0x0d, 0xea, 0x12, 0x23, 0xbe, 0x8c, 0x6f, 0xc1, 0xaa, 0xe2, 0x10, 0x01, 0xcc, 0x75, 0xb7,
+	0xef, 0x3d, 0xd8, 0x36, 0x6a, 0x05, 0x54, 0x85, 0x85, 0x9d, 0xa7, 0xdd, 0xee, 0xd3, 0x17, 0xdb,
+	0x46, 0x4d, 0xc3, 0x8f, 0xe1, 0xc2, 0x97, 0x7e, 0xcf, 0xe4, 0xf3, 0x50, 0x4c, 0xa1, 0xff, 0x9a,
+	0x7b, 0x71, 0x03, 0xf4, 0xbc, 0x31, 0xde, 0x74, 0x43, 0x58, 0x7d, 0x46, 0x22, 0xf1, 0x93, 0x25,
+	0x71, 0xa2, 0x1e, 0x41, 0xb5, 0x49, 0x23, 0xe8, 0xf4, 0xf9, 0x0e, 0xad, 0x41, 0xc5, 0xa5, 0xb6,
+	0xe9, 0xc6, 0x20, 0x2e, 0x18, 0xa3, 0x0d, 0xae, 0xc3, 0x5a, 0xda, 0xf5, 0x28, 0xa4, 0xcd, 0x3f,
+	0x01, 0xe6, 0x1f, 0x8e, 0x50, 0x46, 0xe6, 0xf8, 0x57, 0x0f, 0xfb, 0x09, 0x85, 0xae, 0x4d, 0xfe,
+	0xb1, 0x24, 0xfd, 0x26, 0x6c, 0x5c, 0x3f, 0x4b, 0x8d, 0x67, 0x5f, 0xb8, 0xad, 0xa1, 0x1f, 0xa0,
+	0xae, 0x1e, 0x75, 0x91, 0xa2, 0xd8, 0x53, 0xe7, 0xec, 0xc6, 0xed, 0xd9, 0x2f, 0x88, 0x00, 0xd0,
+	0x37, 0xb0, 0x24, 0xcd, 0xbe, 0xe8, 0xaa, 0xc2, 0x44, 0x6e, 0xcc, 0x6e, 0x5c, 0x3b, 0x43, 0x2b,
+	0xb1, 0xce, 0x92, 0x53, 0xce, 0xa7, 0xca, 0xe4, 0xa6, 0xcd, 0xda, 0xca, 0xe4, 0xa6, 0x8e, 0xbe,
+	0xb8, 0x80, 0x08, 0x2c, 0xa7, 0x47, 0x28, 0xa4, 0x18, 0x27, 0x95, 0xa3, 0x68, 0xa3, 0x75, 0xb6,
+	0x62, 0xe2, 0x66, 0x1f, 0xe6, 0xf9, 0xe0, 0x80, 0x9a, 0xf9, 0x6b, 0xe9, 0xd9, 0xa5, 0x71, 0x65,
+	0x8a, 0x86, 0x5c, 0x15, 0xe9, 0xf9, 0x57, 0x55, 0x25, 0x3f, 0x96, 0xa8, 0xaa, 0xa2, 0x98, 0x21,
+	0x70, 0x01, 0x59, 0x70, 0x2e, 0xf5, 0xce, 0x22, 0x45, 0xbf, 0xaa, 0x9e, 0xf1, 0xc6, 0x8d, 0x33,
+	0xf5, 0x64, 0xe8, 0xd3, 0xcf, 0x97, 0x0a, 0x7a, 0xe5, 0x8b, 0xac, 0x82, 0x7e, 0xc2, 0x4b, 0x58,
+	0x40, 0x47, 0xb0, 0x92, 0x79, 0xcf, 0x90, 0xe2, 0xba, 0xfa, 0xb9, 0x6c, 0x7c, 0x38, 0x83, 0x66,
+	0xe2, 0xe9, 0x15, 0x54, 0x65, 0xba, 0x50, 0x51, 0x81, 0x82, 0xc9, 0x54, 0x54, 0xa0, 0x62, 0x1d,
+	0x5c, 0x40, 0xcf, 0x60, 0x41, 0xbc, 0xb5, 0x48, 0xd1, 0x24, 0x99, 0xb7, 0xb9, 0x81, 0xa7, 0xa9,
+	0x24, 0x46, 0x4f, 0xa0, 0x96, 0xe5, 0x5e, 0xa4, 0x48, 0x7b, 0x02, 0xd9, 0x37, 0x3e, 0x9a, 0x45,
+	0x55, 0x38, 0xbb, 0x7f, 0x05, 0x2e, 0x3a, 0xb4, 0xfd, 0x96, 0x10, 0x8b, 0xb4, 0x53, 0x7f, 0xa7,
+	0xd9, 0xd4, 0xdd, 0x2f, 0x7c, 0x5d, 0xf4, 0x2d, 0x6b, 0x2e, 0xde, 0x7f, 0xfc, 0x4f, 0x00, 0x00,
+	0x00, 0xff, 0xff, 0x05, 0xf3, 0xd5, 0xf7, 0x6f, 0x13, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1793,141 +1927,141 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type GatewayClient interface {
 	//
-	// Iterates through all known partitions in a round-robin and activates up to the requested amount
-	// of jobs and streams them back to the client as they are activated.
+	//Iterates through all known partitions round-robin and activates up to the requested
+	//maximum and streams them back to the client as they are activated.
 	//
-	// Errors:
-	// INVALID_ARGUMENT:
-	// - type is blank (empty string, null)
-	// - worker is blank (empty string, null)
-	// - timeout less than 1
-	// - amount is less than 1
+	//Errors:
+	//INVALID_ARGUMENT:
+	//- type is blank (empty string, null)
+	//- worker is blank (empty string, null)
+	//- timeout less than 1
+	//- maxJobsToActivate is less than 1
 	ActivateJobs(ctx context.Context, in *ActivateJobsRequest, opts ...grpc.CallOption) (Gateway_ActivateJobsClient, error)
 	//
-	// Cancels a running workflow instance
+	//Cancels a running workflow instance
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no workflow instance exists with the given key
+	//Errors:
+	//NOT_FOUND:
+	//- no workflow instance exists with the given key
 	CancelWorkflowInstance(ctx context.Context, in *CancelWorkflowInstanceRequest, opts ...grpc.CallOption) (*CancelWorkflowInstanceResponse, error)
 	//
-	// Completes a job with the given payload, which allows completing the associated service task.
+	//Completes a job with the given variables, which allows completing the associated service task.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no job exists with the given job key. Note that since jobs are removed once completed,
-	// it could be that this job did exist at some point.
+	//Errors:
+	//NOT_FOUND:
+	//- no job exists with the given job key. Note that since jobs are removed once completed,
+	//it could be that this job did exist at some point.
 	//
-	// FAILED_PRECONDITION:
-	// - the job was marked as failed. In that case, the related incident must be resolved before
-	// the job can be activated again and completed.
+	//FAILED_PRECONDITION:
+	//- the job was marked as failed. In that case, the related incident must be resolved before
+	//the job can be activated again and completed.
 	CompleteJob(ctx context.Context, in *CompleteJobRequest, opts ...grpc.CallOption) (*CompleteJobResponse, error)
 	//
-	// Creates and starts an instance of the specified workflow. The workflow definition to use to
-	// create the instance can be specified either using its unique key (as returned by
-	// DeployWorkflow), or using the BPMN process ID and a version. Pass -1 as the version to use the
-	// latest deployed version. Note that only workflows with none start events can be started through
-	// this command.
+	//Creates and starts an instance of the specified workflow. The workflow definition to use to
+	//create the instance can be specified either using its unique key (as returned by
+	//DeployWorkflow), or using the BPMN process ID and a version. Pass -1 as the version to use the
+	//latest deployed version. Note that only workflows with none start events can be started through
+	//this command.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no workflow with the given key exists (if workflowKey was given)
-	// - no workflow with the given process ID exists (if bpmnProcessId was given but version was -1)
-	// - no workflow with the given process ID and version exists (if both bpmnProcessId and version were given)
+	//Errors:
+	//NOT_FOUND:
+	//- no workflow with the given key exists (if workflowKey was given)
+	//- no workflow with the given process ID exists (if bpmnProcessId was given but version was -1)
+	//- no workflow with the given process ID and version exists (if both bpmnProcessId and version were given)
 	//
-	// FAILED_PRECONDITION:
-	// - the workflow definition does not contain a none start event; only workflows with none
-	// start event can be started manually.
+	//FAILED_PRECONDITION:
+	//- the workflow definition does not contain a none start event; only workflows with none
+	//start event can be started manually.
 	//
-	// INVALID_ARGUMENT:
-	// - the given variables argument is not a valid JSON document; it is expected to be a valid
-	// JSON document where the root node is an object.
+	//INVALID_ARGUMENT:
+	//- the given variables argument is not a valid JSON document; it is expected to be a valid
+	//JSON document where the root node is an object.
 	CreateWorkflowInstance(ctx context.Context, in *CreateWorkflowInstanceRequest, opts ...grpc.CallOption) (*CreateWorkflowInstanceResponse, error)
 	//
-	// Deploys one or more workflows to Zeebe. Note that this is an atomic call,
-	// i.e. either all workflows are deployed, or none of them are.
+	//Deploys one or more workflows to Zeebe. Note that this is an atomic call,
+	//i.e. either all workflows are deployed, or none of them are.
 	//
-	// Errors:
-	// INVALID_ARGUMENT:
-	// - no resources given.
-	// - if at least one resource is invalid. A resource is considered invalid if:
-	// - it is not a BPMN or YAML file (currently detected through the file extension)
-	// - the resource data is not deserializable (e.g. detected as BPMN, but it's broken XML)
-	// - the workflow is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
+	//Errors:
+	//INVALID_ARGUMENT:
+	//- no resources given.
+	//- if at least one resource is invalid. A resource is considered invalid if:
+	//- it is not a BPMN or YAML file (currently detected through the file extension)
+	//- the resource data is not deserializable (e.g. detected as BPMN, but it's broken XML)
+	//- the workflow is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
 	DeployWorkflow(ctx context.Context, in *DeployWorkflowRequest, opts ...grpc.CallOption) (*DeployWorkflowResponse, error)
 	//
-	// Marks the job as failed; if the retries argument is positive, then the job will be immediately
-	// activatable again, and a worker could try again to process it. If it is zero or negative however,
-	// an incident will be raised, tagged with the given errorMessage, and the job will not be
-	// activatable until the incident is resolved.
+	//Marks the job as failed; if the retries argument is positive, then the job will be immediately
+	//activatable again, and a worker could try again to process it. If it is zero or negative however,
+	//an incident will be raised, tagged with the given errorMessage, and the job will not be
+	//activatable until the incident is resolved.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no job was found with the given key
+	//Errors:
+	//NOT_FOUND:
+	//- no job was found with the given key
 	//
-	// FAILED_PRECONDITION:
-	// - the job was not activated
-	// - the job is already in a failed state, i.e. ran out of retries
+	//FAILED_PRECONDITION:
+	//- the job was not activated
+	//- the job is already in a failed state, i.e. ran out of retries
 	FailJob(ctx context.Context, in *FailJobRequest, opts ...grpc.CallOption) (*FailJobResponse, error)
 	//
-	// Fetches the workflow definition either by workflow key, or BPMN process ID and version.
-	// At least one of workflowKey or bpmnProcessId must be specified.
+	//Fetches the workflow definition either by workflow key, or BPMN process ID and version.
+	//At least one of workflowKey or bpmnProcessId must be specified.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no workflow with the given key exists (if workflowKey was given)
-	// - no workflow with the given process ID exists (if bpmnProcessId was given but version was -1)
-	// - no workflow with the given process ID and version exists (if both bpmnProcessId and version were given)
+	//Errors:
+	//NOT_FOUND:
+	//- no workflow with the given key exists (if workflowKey was given)
+	//- no workflow with the given process ID exists (if bpmnProcessId was given but version was -1)
+	//- no workflow with the given process ID and version exists (if both bpmnProcessId and version were given)
 	GetWorkflow(ctx context.Context, in *GetWorkflowRequest, opts ...grpc.CallOption) (*GetWorkflowResponse, error)
 	//
-	// Lists all workflows matching the request criteria currently deployed in the cluster.
+	//Lists all workflows matching the request criteria currently deployed in the cluster.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no workflows have been deployed yet (if no bpmnProcessId was given)
-	// - no workflow with the given process ID exists (if bpmnProcessId was given)
+	//Errors:
+	//NOT_FOUND:
+	//- no workflows have been deployed yet (if no bpmnProcessId was given)
+	//- no workflow with the given process ID exists (if bpmnProcessId was given)
 	ListWorkflows(ctx context.Context, in *ListWorkflowsRequest, opts ...grpc.CallOption) (*ListWorkflowsResponse, error)
 	//
-	// Publishes a single message. Messages are published to specific partitions computed from their
-	// correlation keys.
+	//Publishes a single message. Messages are published to specific partitions computed from their
+	//correlation keys.
 	//
-	// Errors:
-	// ALREADY_EXISTS:
-	// - a message with the same ID was previously published (and is still alive)
+	//Errors:
+	//ALREADY_EXISTS:
+	//- a message with the same ID was previously published (and is still alive)
 	PublishMessage(ctx context.Context, in *PublishMessageRequest, opts ...grpc.CallOption) (*PublishMessageResponse, error)
 	//
-	// Resolves a given incident. This simply marks the incident as resolved; most likely a call to
-	// UpdateJobRetries or SetVariables will be necessary to actually resolve the
-	// problem, following by this call.
+	//Resolves a given incident. This simply marks the incident as resolved; most likely a call to
+	//UpdateJobRetries or SetVariables will be necessary to actually resolve the
+	//problem, following by this call.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no incident with the given key exists
+	//Errors:
+	//NOT_FOUND:
+	//- no incident with the given key exists
 	ResolveIncident(ctx context.Context, in *ResolveIncidentRequest, opts ...grpc.CallOption) (*ResolveIncidentResponse, error)
 	//
-	// Updates all the variables of a particular scope (e.g. workflow instance, flow element instance)
-	// from the given JSON document.
+	//Updates all the variables of a particular scope (e.g. workflow instance, flow element instance)
+	//from the given JSON document.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no element with the given elementInstanceKey exists
-	// INVALID_ARGUMENT:
-	// - the given variables document is not a valid JSON document; valid documents are expected to
-	// be JSON documents where the root node is an object.
+	//Errors:
+	//NOT_FOUND:
+	//- no element with the given elementInstanceKey exists
+	//INVALID_ARGUMENT:
+	//- the given variables document is not a valid JSON document; valid documents are expected to
+	//be JSON documents where the root node is an object.
 	SetVariables(ctx context.Context, in *SetVariablesRequest, opts ...grpc.CallOption) (*SetVariablesResponse, error)
 	//
-	// Obtains the current topology of the cluster the gateway is part of.
+	//Obtains the current topology of the cluster the gateway is part of.
 	Topology(ctx context.Context, in *TopologyRequest, opts ...grpc.CallOption) (*TopologyResponse, error)
 	//
-	// Updates the number of retries a job has left. This is mostly useful for jobs that have run out of
-	// retries, should the underlying problem be solved.
+	//Updates the number of retries a job has left. This is mostly useful for jobs that have run out of
+	//retries, should the underlying problem be solved.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no job exists with the given key
+	//Errors:
+	//NOT_FOUND:
+	//- no job exists with the given key
 	//
-	// INVALID_ARGUMENT:
-	// - retries is not greater than 0
+	//INVALID_ARGUMENT:
+	//- retries is not greater than 0
 	UpdateJobRetries(ctx context.Context, in *UpdateJobRetriesRequest, opts ...grpc.CallOption) (*UpdateJobRetriesResponse, error)
 }
 
@@ -2082,142 +2216,186 @@ func (c *gatewayClient) UpdateJobRetries(ctx context.Context, in *UpdateJobRetri
 // GatewayServer is the server API for Gateway service.
 type GatewayServer interface {
 	//
-	// Iterates through all known partitions in a round-robin and activates up to the requested amount
-	// of jobs and streams them back to the client as they are activated.
+	//Iterates through all known partitions round-robin and activates up to the requested
+	//maximum and streams them back to the client as they are activated.
 	//
-	// Errors:
-	// INVALID_ARGUMENT:
-	// - type is blank (empty string, null)
-	// - worker is blank (empty string, null)
-	// - timeout less than 1
-	// - amount is less than 1
+	//Errors:
+	//INVALID_ARGUMENT:
+	//- type is blank (empty string, null)
+	//- worker is blank (empty string, null)
+	//- timeout less than 1
+	//- maxJobsToActivate is less than 1
 	ActivateJobs(*ActivateJobsRequest, Gateway_ActivateJobsServer) error
 	//
-	// Cancels a running workflow instance
+	//Cancels a running workflow instance
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no workflow instance exists with the given key
+	//Errors:
+	//NOT_FOUND:
+	//- no workflow instance exists with the given key
 	CancelWorkflowInstance(context.Context, *CancelWorkflowInstanceRequest) (*CancelWorkflowInstanceResponse, error)
 	//
-	// Completes a job with the given payload, which allows completing the associated service task.
+	//Completes a job with the given variables, which allows completing the associated service task.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no job exists with the given job key. Note that since jobs are removed once completed,
-	// it could be that this job did exist at some point.
+	//Errors:
+	//NOT_FOUND:
+	//- no job exists with the given job key. Note that since jobs are removed once completed,
+	//it could be that this job did exist at some point.
 	//
-	// FAILED_PRECONDITION:
-	// - the job was marked as failed. In that case, the related incident must be resolved before
-	// the job can be activated again and completed.
+	//FAILED_PRECONDITION:
+	//- the job was marked as failed. In that case, the related incident must be resolved before
+	//the job can be activated again and completed.
 	CompleteJob(context.Context, *CompleteJobRequest) (*CompleteJobResponse, error)
 	//
-	// Creates and starts an instance of the specified workflow. The workflow definition to use to
-	// create the instance can be specified either using its unique key (as returned by
-	// DeployWorkflow), or using the BPMN process ID and a version. Pass -1 as the version to use the
-	// latest deployed version. Note that only workflows with none start events can be started through
-	// this command.
+	//Creates and starts an instance of the specified workflow. The workflow definition to use to
+	//create the instance can be specified either using its unique key (as returned by
+	//DeployWorkflow), or using the BPMN process ID and a version. Pass -1 as the version to use the
+	//latest deployed version. Note that only workflows with none start events can be started through
+	//this command.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no workflow with the given key exists (if workflowKey was given)
-	// - no workflow with the given process ID exists (if bpmnProcessId was given but version was -1)
-	// - no workflow with the given process ID and version exists (if both bpmnProcessId and version were given)
+	//Errors:
+	//NOT_FOUND:
+	//- no workflow with the given key exists (if workflowKey was given)
+	//- no workflow with the given process ID exists (if bpmnProcessId was given but version was -1)
+	//- no workflow with the given process ID and version exists (if both bpmnProcessId and version were given)
 	//
-	// FAILED_PRECONDITION:
-	// - the workflow definition does not contain a none start event; only workflows with none
-	// start event can be started manually.
+	//FAILED_PRECONDITION:
+	//- the workflow definition does not contain a none start event; only workflows with none
+	//start event can be started manually.
 	//
-	// INVALID_ARGUMENT:
-	// - the given variables argument is not a valid JSON document; it is expected to be a valid
-	// JSON document where the root node is an object.
+	//INVALID_ARGUMENT:
+	//- the given variables argument is not a valid JSON document; it is expected to be a valid
+	//JSON document where the root node is an object.
 	CreateWorkflowInstance(context.Context, *CreateWorkflowInstanceRequest) (*CreateWorkflowInstanceResponse, error)
 	//
-	// Deploys one or more workflows to Zeebe. Note that this is an atomic call,
-	// i.e. either all workflows are deployed, or none of them are.
+	//Deploys one or more workflows to Zeebe. Note that this is an atomic call,
+	//i.e. either all workflows are deployed, or none of them are.
 	//
-	// Errors:
-	// INVALID_ARGUMENT:
-	// - no resources given.
-	// - if at least one resource is invalid. A resource is considered invalid if:
-	// - it is not a BPMN or YAML file (currently detected through the file extension)
-	// - the resource data is not deserializable (e.g. detected as BPMN, but it's broken XML)
-	// - the workflow is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
+	//Errors:
+	//INVALID_ARGUMENT:
+	//- no resources given.
+	//- if at least one resource is invalid. A resource is considered invalid if:
+	//- it is not a BPMN or YAML file (currently detected through the file extension)
+	//- the resource data is not deserializable (e.g. detected as BPMN, but it's broken XML)
+	//- the workflow is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
 	DeployWorkflow(context.Context, *DeployWorkflowRequest) (*DeployWorkflowResponse, error)
 	//
-	// Marks the job as failed; if the retries argument is positive, then the job will be immediately
-	// activatable again, and a worker could try again to process it. If it is zero or negative however,
-	// an incident will be raised, tagged with the given errorMessage, and the job will not be
-	// activatable until the incident is resolved.
+	//Marks the job as failed; if the retries argument is positive, then the job will be immediately
+	//activatable again, and a worker could try again to process it. If it is zero or negative however,
+	//an incident will be raised, tagged with the given errorMessage, and the job will not be
+	//activatable until the incident is resolved.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no job was found with the given key
+	//Errors:
+	//NOT_FOUND:
+	//- no job was found with the given key
 	//
-	// FAILED_PRECONDITION:
-	// - the job was not activated
-	// - the job is already in a failed state, i.e. ran out of retries
+	//FAILED_PRECONDITION:
+	//- the job was not activated
+	//- the job is already in a failed state, i.e. ran out of retries
 	FailJob(context.Context, *FailJobRequest) (*FailJobResponse, error)
 	//
-	// Fetches the workflow definition either by workflow key, or BPMN process ID and version.
-	// At least one of workflowKey or bpmnProcessId must be specified.
+	//Fetches the workflow definition either by workflow key, or BPMN process ID and version.
+	//At least one of workflowKey or bpmnProcessId must be specified.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no workflow with the given key exists (if workflowKey was given)
-	// - no workflow with the given process ID exists (if bpmnProcessId was given but version was -1)
-	// - no workflow with the given process ID and version exists (if both bpmnProcessId and version were given)
+	//Errors:
+	//NOT_FOUND:
+	//- no workflow with the given key exists (if workflowKey was given)
+	//- no workflow with the given process ID exists (if bpmnProcessId was given but version was -1)
+	//- no workflow with the given process ID and version exists (if both bpmnProcessId and version were given)
 	GetWorkflow(context.Context, *GetWorkflowRequest) (*GetWorkflowResponse, error)
 	//
-	// Lists all workflows matching the request criteria currently deployed in the cluster.
+	//Lists all workflows matching the request criteria currently deployed in the cluster.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no workflows have been deployed yet (if no bpmnProcessId was given)
-	// - no workflow with the given process ID exists (if bpmnProcessId was given)
+	//Errors:
+	//NOT_FOUND:
+	//- no workflows have been deployed yet (if no bpmnProcessId was given)
+	//- no workflow with the given process ID exists (if bpmnProcessId was given)
 	ListWorkflows(context.Context, *ListWorkflowsRequest) (*ListWorkflowsResponse, error)
 	//
-	// Publishes a single message. Messages are published to specific partitions computed from their
-	// correlation keys.
+	//Publishes a single message. Messages are published to specific partitions computed from their
+	//correlation keys.
 	//
-	// Errors:
-	// ALREADY_EXISTS:
-	// - a message with the same ID was previously published (and is still alive)
+	//Errors:
+	//ALREADY_EXISTS:
+	//- a message with the same ID was previously published (and is still alive)
 	PublishMessage(context.Context, *PublishMessageRequest) (*PublishMessageResponse, error)
 	//
-	// Resolves a given incident. This simply marks the incident as resolved; most likely a call to
-	// UpdateJobRetries or SetVariables will be necessary to actually resolve the
-	// problem, following by this call.
+	//Resolves a given incident. This simply marks the incident as resolved; most likely a call to
+	//UpdateJobRetries or SetVariables will be necessary to actually resolve the
+	//problem, following by this call.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no incident with the given key exists
+	//Errors:
+	//NOT_FOUND:
+	//- no incident with the given key exists
 	ResolveIncident(context.Context, *ResolveIncidentRequest) (*ResolveIncidentResponse, error)
 	//
-	// Updates all the variables of a particular scope (e.g. workflow instance, flow element instance)
-	// from the given JSON document.
+	//Updates all the variables of a particular scope (e.g. workflow instance, flow element instance)
+	//from the given JSON document.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no element with the given elementInstanceKey exists
-	// INVALID_ARGUMENT:
-	// - the given variables document is not a valid JSON document; valid documents are expected to
-	// be JSON documents where the root node is an object.
+	//Errors:
+	//NOT_FOUND:
+	//- no element with the given elementInstanceKey exists
+	//INVALID_ARGUMENT:
+	//- the given variables document is not a valid JSON document; valid documents are expected to
+	//be JSON documents where the root node is an object.
 	SetVariables(context.Context, *SetVariablesRequest) (*SetVariablesResponse, error)
 	//
-	// Obtains the current topology of the cluster the gateway is part of.
+	//Obtains the current topology of the cluster the gateway is part of.
 	Topology(context.Context, *TopologyRequest) (*TopologyResponse, error)
 	//
-	// Updates the number of retries a job has left. This is mostly useful for jobs that have run out of
-	// retries, should the underlying problem be solved.
+	//Updates the number of retries a job has left. This is mostly useful for jobs that have run out of
+	//retries, should the underlying problem be solved.
 	//
-	// Errors:
-	// NOT_FOUND:
-	// - no job exists with the given key
+	//Errors:
+	//NOT_FOUND:
+	//- no job exists with the given key
 	//
-	// INVALID_ARGUMENT:
-	// - retries is not greater than 0
+	//INVALID_ARGUMENT:
+	//- retries is not greater than 0
 	UpdateJobRetries(context.Context, *UpdateJobRetriesRequest) (*UpdateJobRetriesResponse, error)
+}
+
+// UnimplementedGatewayServer can be embedded to have forward compatible implementations.
+type UnimplementedGatewayServer struct {
+}
+
+func (*UnimplementedGatewayServer) ActivateJobs(req *ActivateJobsRequest, srv Gateway_ActivateJobsServer) error {
+	return status.Errorf(codes.Unimplemented, "method ActivateJobs not implemented")
+}
+func (*UnimplementedGatewayServer) CancelWorkflowInstance(ctx context.Context, req *CancelWorkflowInstanceRequest) (*CancelWorkflowInstanceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CancelWorkflowInstance not implemented")
+}
+func (*UnimplementedGatewayServer) CompleteJob(ctx context.Context, req *CompleteJobRequest) (*CompleteJobResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CompleteJob not implemented")
+}
+func (*UnimplementedGatewayServer) CreateWorkflowInstance(ctx context.Context, req *CreateWorkflowInstanceRequest) (*CreateWorkflowInstanceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateWorkflowInstance not implemented")
+}
+func (*UnimplementedGatewayServer) DeployWorkflow(ctx context.Context, req *DeployWorkflowRequest) (*DeployWorkflowResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeployWorkflow not implemented")
+}
+func (*UnimplementedGatewayServer) FailJob(ctx context.Context, req *FailJobRequest) (*FailJobResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FailJob not implemented")
+}
+func (*UnimplementedGatewayServer) GetWorkflow(ctx context.Context, req *GetWorkflowRequest) (*GetWorkflowResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetWorkflow not implemented")
+}
+func (*UnimplementedGatewayServer) ListWorkflows(ctx context.Context, req *ListWorkflowsRequest) (*ListWorkflowsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListWorkflows not implemented")
+}
+func (*UnimplementedGatewayServer) PublishMessage(ctx context.Context, req *PublishMessageRequest) (*PublishMessageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PublishMessage not implemented")
+}
+func (*UnimplementedGatewayServer) ResolveIncident(ctx context.Context, req *ResolveIncidentRequest) (*ResolveIncidentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResolveIncident not implemented")
+}
+func (*UnimplementedGatewayServer) SetVariables(ctx context.Context, req *SetVariablesRequest) (*SetVariablesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetVariables not implemented")
+}
+func (*UnimplementedGatewayServer) Topology(ctx context.Context, req *TopologyRequest) (*TopologyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Topology not implemented")
+}
+func (*UnimplementedGatewayServer) UpdateJobRetries(ctx context.Context, req *UpdateJobRetriesRequest) (*UpdateJobRetriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateJobRetries not implemented")
 }
 
 func RegisterGatewayServer(s *grpc.Server, srv GatewayServer) {
@@ -2522,101 +2700,4 @@ var _Gateway_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Metadata: "gateway.proto",
-}
-
-func init() { proto.RegisterFile("gateway.proto", fileDescriptor_gateway_ee29cb73518c2b1d) }
-
-var fileDescriptor_gateway_ee29cb73518c2b1d = []byte{
-	// 1456 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x58, 0x4b, 0x6f, 0xdb, 0xc6,
-	0x13, 0x17, 0xf5, 0xf0, 0x63, 0xec, 0xd8, 0xca, 0xfa, 0x11, 0x46, 0xff, 0xc4, 0x50, 0x16, 0x79,
-	0xe8, 0x5f, 0x04, 0x4a, 0xe0, 0x16, 0x3d, 0xb4, 0x39, 0x24, 0x71, 0xec, 0x44, 0x8e, 0x9c, 0xb8,
-	0x4c, 0x9a, 0x34, 0x45, 0xd1, 0x80, 0xa4, 0xd6, 0x31, 0x6d, 0x8a, 0xcb, 0x92, 0x94, 0x03, 0x05,
-	0x28, 0xd0, 0x6b, 0xaf, 0x3d, 0xb5, 0xa7, 0x1e, 0x7a, 0xec, 0xb5, 0x45, 0x3f, 0x40, 0xfb, 0xc1,
-	0x8a, 0x5d, 0xed, 0x52, 0x4b, 0x72, 0x65, 0x2b, 0x2d, 0x7a, 0xdb, 0x19, 0xce, 0xce, 0xe3, 0x37,
-	0xb3, 0x33, 0x23, 0xc1, 0xb9, 0x37, 0x76, 0x42, 0xde, 0xda, 0xc3, 0x76, 0x18, 0xd1, 0x84, 0xa2,
-	0xba, 0x20, 0x5f, 0x73, 0xd2, 0xa5, 0x3e, 0xfe, 0xc9, 0x80, 0x95, 0x7b, 0x6e, 0xe2, 0x9d, 0xd8,
-	0x09, 0xd9, 0xa5, 0x4e, 0x6c, 0x91, 0x6f, 0x06, 0x24, 0x4e, 0x10, 0x82, 0x6a, 0x32, 0x0c, 0x89,
-	0x69, 0x34, 0x8d, 0xd6, 0xbc, 0xc5, 0xcf, 0x68, 0x1d, 0x66, 0xde, 0xd2, 0xe8, 0x98, 0x44, 0x66,
-	0x99, 0x73, 0x05, 0x85, 0x4c, 0x98, 0x4d, 0xbc, 0x3e, 0xa1, 0x83, 0xc4, 0xac, 0x34, 0x8d, 0x56,
-	0xc5, 0x92, 0x24, 0xbb, 0x61, 0xf7, 0xe9, 0x20, 0x48, 0xcc, 0x6a, 0xd3, 0x68, 0xd5, 0x2c, 0x41,
-	0xa1, 0xab, 0x70, 0xee, 0x80, 0x24, 0xee, 0xe1, 0x0b, 0x3b, 0xf2, 0x6c, 0xc7, 0x27, 0x66, 0xad,
-	0x59, 0x69, 0xcd, 0x5b, 0x59, 0x26, 0xde, 0x85, 0xd5, 0xac, 0x6b, 0x71, 0x48, 0x83, 0x98, 0xa0,
-	0x4d, 0xa8, 0x1e, 0x51, 0x27, 0x36, 0x8d, 0x66, 0xa5, 0xb5, 0xb0, 0xb9, 0xd1, 0xce, 0x07, 0xd5,
-	0x96, 0xb7, 0x7a, 0xbb, 0xd4, 0xb1, 0xb8, 0x2c, 0xfe, 0xae, 0x0c, 0x8b, 0x2a, 0x1b, 0xd5, 0xa1,
-	0x72, 0x4c, 0x86, 0x3c, 0xbe, 0x8a, 0xc5, 0x8e, 0x69, 0xc8, 0x65, 0x25, 0xe4, 0x3b, 0x00, 0x47,
-	0xd4, 0x79, 0x44, 0xec, 0x1e, 0x89, 0x62, 0x1e, 0xdd, 0xc2, 0xe6, 0xa5, 0xa2, 0xc1, 0xdd, 0x54,
-	0xc6, 0x52, 0xe4, 0x59, 0x98, 0xee, 0x20, 0x4e, 0x68, 0x5f, 0x2a, 0xa8, 0x72, 0xd5, 0x59, 0xa6,
-	0x02, 0x6b, 0x2d, 0x0f, 0x6b, 0x44, 0x92, 0xc8, 0x23, 0xb1, 0x39, 0xc3, 0xd1, 0x93, 0x24, 0x6a,
-	0xc0, 0x5c, 0x8f, 0xd8, 0x3d, 0xdf, 0x0b, 0x88, 0x39, 0xcb, 0x03, 0x48, 0x69, 0x76, 0x2b, 0xb4,
-	0x87, 0x3e, 0xb5, 0x7b, 0xe6, 0x1c, 0x57, 0x27, 0x49, 0xfc, 0x43, 0x19, 0x60, 0xec, 0x28, 0xba,
-	0x0d, 0x2b, 0xcc, 0xd0, 0x81, 0x4f, 0xdf, 0x76, 0x82, 0x38, 0xb1, 0x03, 0x97, 0x3c, 0x4e, 0x01,
-	0xd1, 0x7d, 0x62, 0xe1, 0x38, 0x61, 0x3f, 0xd8, 0x8f, 0xa8, 0x4b, 0xe2, 0xb8, 0xd3, 0x13, 0x48,
-	0x65, 0x99, 0xe8, 0x0e, 0x5c, 0x94, 0x97, 0x1f, 0x90, 0x03, 0x2f, 0xf0, 0x12, 0x8f, 0x06, 0x2f,
-	0x48, 0x14, 0x7b, 0x34, 0xe0, 0x08, 0xd6, 0xac, 0xc9, 0x02, 0xa8, 0x09, 0x0b, 0xf2, 0x23, 0xf3,
-	0xa6, 0xca, 0xbd, 0x51, 0x59, 0xe8, 0x12, 0xcc, 0x13, 0x9f, 0xf4, 0x49, 0x90, 0x74, 0x7a, 0x02,
-	0xb1, 0x31, 0x03, 0xb5, 0x01, 0x49, 0x42, 0x09, 0x6a, 0x86, 0xab, 0xd1, 0x7c, 0xc1, 0x9f, 0xc1,
-	0xe5, 0x2d, 0x76, 0xf6, 0x5f, 0xe6, 0x02, 0x96, 0x0f, 0xe1, 0xbd, 0x61, 0xc2, 0x4d, 0xd8, 0x98,
-	0xa4, 0x72, 0x54, 0xc0, 0x78, 0x07, 0xd0, 0x16, 0xed, 0x87, 0x3e, 0xe1, 0x85, 0x2d, 0x2d, 0xad,
-	0xc3, 0xcc, 0x11, 0x75, 0xc6, 0xca, 0x05, 0xa5, 0x66, 0xb4, 0x9c, 0xcd, 0xe8, 0x1a, 0xac, 0x64,
-	0xf4, 0x08, 0xf5, 0x3f, 0x1b, 0x70, 0x79, 0x2b, 0x22, 0x76, 0x42, 0x26, 0x05, 0x95, 0x43, 0xd9,
-	0x28, 0xa2, 0x3c, 0x5d, 0xae, 0x4d, 0x98, 0x3d, 0xc9, 0x64, 0x56, 0x92, 0x2c, 0x4b, 0x27, 0xe2,
-	0x1d, 0xcb, 0xb2, 0x1f, 0x33, 0xf0, 0x6f, 0x06, 0x6c, 0x4c, 0xf2, 0x50, 0x3c, 0xf2, 0xff, 0xde,
-	0xc5, 0x09, 0x99, 0xad, 0x4d, 0xce, 0xec, 0xd7, 0xb0, 0xf6, 0x80, 0x84, 0x3e, 0x1d, 0x4a, 0xaf,
-	0x25, 0x9e, 0xdb, 0x30, 0x2f, 0xe5, 0x65, 0x5b, 0xba, 0x51, 0xec, 0x12, 0xb9, 0x5b, 0x4f, 0x9d,
-	0x23, 0xe2, 0x26, 0xd6, 0xf8, 0x26, 0xfe, 0xd3, 0x80, 0x35, 0xad, 0x10, 0xeb, 0x4d, 0x81, 0xdd,
-	0x4f, 0xdb, 0x31, 0x3b, 0xa3, 0x47, 0x4a, 0xbf, 0x5a, 0xda, 0xfc, 0x68, 0x4a, 0x7b, 0x6d, 0x8b,
-	0xc4, 0x74, 0x10, 0xb9, 0xe4, 0xf9, 0x30, 0x24, 0xa2, 0xcb, 0x6d, 0x00, 0xf4, 0xd2, 0x97, 0xc8,
-	0x61, 0x5a, 0xb4, 0x14, 0x0e, 0xbe, 0x09, 0x8b, 0xea, 0x2d, 0x34, 0x07, 0xd5, 0x9d, 0x4e, 0x77,
-	0xbb, 0x5e, 0x62, 0xa7, 0xfb, 0xfb, 0x7b, 0x4f, 0xea, 0x06, 0x3b, 0xbd, 0xba, 0xb7, 0xd7, 0xad,
-	0x97, 0xb1, 0x0f, 0xeb, 0x79, 0x94, 0x44, 0x4e, 0x8b, 0x3d, 0xf7, 0xae, 0x0a, 0x5c, 0x99, 0x03,
-	0x87, 0x27, 0x07, 0xb2, 0x47, 0x12, 0xbb, 0x67, 0x27, 0xb6, 0x8a, 0xd9, 0x8f, 0x06, 0xd4, 0xf3,
-	0xdf, 0x8b, 0xa5, 0x61, 0x9c, 0x51, 0x1a, 0xe5, 0x6c, 0x69, 0xe4, 0x8a, 0xaf, 0x52, 0x2c, 0x3e,
-	0x0c, 0x8b, 0x91, 0x80, 0xe4, 0x09, 0x4b, 0xcc, 0xa8, 0xc4, 0x33, 0x3c, 0x7c, 0x00, 0x4b, 0x3b,
-	0xb6, 0xe7, 0x4f, 0xf7, 0xc4, 0x65, 0xab, 0x2f, 0x67, 0x5b, 0x3d, 0x86, 0x45, 0x12, 0x45, 0x34,
-	0xda, 0x23, 0x71, 0x6c, 0xbf, 0x21, 0xdc, 0x95, 0x79, 0x2b, 0xc3, 0xc3, 0xe7, 0x61, 0x39, 0xb5,
-	0x23, 0x5a, 0xc0, 0x09, 0xa0, 0x87, 0x24, 0xc9, 0x97, 0xe9, 0xd9, 0x6f, 0x6a, 0x32, 0x24, 0x05,
-	0x48, 0x2b, 0x1a, 0x48, 0xf1, 0xef, 0x06, 0xac, 0x64, 0x0c, 0x4f, 0xfd, 0x9a, 0xff, 0xa5, 0xe5,
-	0x69, 0x12, 0xc2, 0x6c, 0xb0, 0x4b, 0x5f, 0xf4, 0x7d, 0x31, 0x38, 0x24, 0x89, 0xef, 0xc0, 0x6a,
-	0xd7, 0x8b, 0x53, 0xbf, 0xd3, 0x35, 0x68, 0xaa, 0x42, 0xc2, 0xaf, 0x60, 0x2d, 0x77, 0x5b, 0x84,
-	0x7d, 0xb7, 0xd8, 0x17, 0xde, 0xb3, 0xbc, 0x7f, 0x35, 0x60, 0x6d, 0x7f, 0xe0, 0xf8, 0x5e, 0x7c,
-	0x28, 0xd2, 0xad, 0x6c, 0x68, 0x85, 0x96, 0x70, 0x1d, 0x96, 0x5c, 0x1a, 0x45, 0xc4, 0xb7, 0xd9,
-	0xbb, 0x65, 0x48, 0x8f, 0x7a, 0x62, 0x8e, 0xcb, 0x1e, 0x3c, 0x5b, 0xd1, 0x9e, 0xd3, 0xae, 0x77,
-	0x42, 0x44, 0x79, 0x2b, 0x1c, 0xd6, 0xbd, 0xfb, 0x23, 0x6b, 0x9d, 0x9e, 0xec, 0xde, 0x29, 0x43,
-	0x1d, 0x48, 0xb5, 0xec, 0x40, 0x32, 0x61, 0x3d, 0xef, 0xac, 0x28, 0xc8, 0x4f, 0x60, 0x9d, 0xb5,
-	0x10, 0xff, 0x84, 0x74, 0x02, 0xd7, 0xeb, 0x91, 0x20, 0x51, 0x8a, 0xd2, 0x13, 0x2c, 0xa5, 0x34,
-	0x14, 0x16, 0xbe, 0x08, 0x17, 0x0a, 0x77, 0x85, 0xda, 0xf3, 0xb0, 0xfc, 0x9c, 0x86, 0xd4, 0xa7,
-	0x6f, 0x86, 0x42, 0x1f, 0xfe, 0xcb, 0x80, 0xfa, 0x98, 0x27, 0x12, 0xf1, 0x31, 0xcc, 0x3a, 0x11,
-	0x3d, 0x66, 0x3b, 0xd8, 0x28, 0x0d, 0x9a, 0x25, 0xee, 0x3e, 0x17, 0xe8, 0x04, 0x07, 0xd4, 0x92,
-	0xc2, 0xcc, 0x39, 0xd7, 0x1f, 0xc4, 0x09, 0x89, 0x9e, 0x79, 0xef, 0x88, 0xa8, 0x4c, 0x95, 0x85,
-	0x5a, 0xb0, 0x1c, 0xda, 0x51, 0xc2, 0x1b, 0x65, 0xbc, 0xc5, 0x77, 0xdd, 0xd1, 0x9c, 0xc9, 0xb3,
-	0xd1, 0x4d, 0x38, 0x1f, 0x91, 0xd0, 0xf7, 0x5c, 0x9e, 0x86, 0x1d, 0xdb, 0x4d, 0x68, 0x24, 0xf6,
-	0xe2, 0xe2, 0x07, 0xfc, 0xbd, 0x01, 0x30, 0xf6, 0x88, 0x75, 0x8e, 0x80, 0xf6, 0x88, 0xa8, 0xc0,
-	0x9a, 0x25, 0x28, 0x56, 0x05, 0x87, 0x34, 0x4e, 0xe4, 0xd2, 0xca, 0xce, 0x8c, 0x17, 0xd2, 0x48,
-	0xfa, 0xc1, 0xcf, 0xe8, 0x53, 0x80, 0xb1, 0x3f, 0x66, 0x95, 0x63, 0xf0, 0xbf, 0x22, 0x06, 0xfb,
-	0x52, 0xc6, 0x52, 0xc4, 0xf1, 0x2f, 0x06, 0xcc, 0xa7, 0x5f, 0x18, 0x26, 0xe9, 0xb7, 0xd4, 0x1f,
-	0x95, 0x85, 0xb6, 0xa0, 0x1a, 0x51, 0x7f, 0x54, 0x58, 0x4b, 0x9b, 0xb7, 0x4e, 0x31, 0x33, 0x3e,
-	0x8d, 0x62, 0xb5, 0xa8, 0x4f, 0x2c, 0x7e, 0x19, 0xdf, 0x82, 0x15, 0xcd, 0x47, 0x04, 0x30, 0xd3,
-	0xdd, 0xbe, 0xf7, 0x60, 0xdb, 0xaa, 0x97, 0xd0, 0x22, 0xcc, 0xed, 0x3c, 0xed, 0x76, 0x9f, 0xbe,
-	0xdc, 0xb6, 0xea, 0x06, 0x7e, 0x0c, 0x17, 0x3e, 0x0f, 0x7b, 0xb6, 0xd8, 0x85, 0x78, 0xfb, 0xfc,
-	0xc7, 0x7d, 0x17, 0x37, 0xc0, 0x2c, 0x2a, 0x13, 0x45, 0x37, 0x84, 0x95, 0x67, 0x24, 0x91, 0x3f,
-	0x53, 0x52, 0x23, 0xfa, 0xd5, 0xd3, 0x98, 0xb4, 0x7a, 0x66, 0x57, 0xa4, 0x72, 0x6e, 0x45, 0x42,
-	0xab, 0x50, 0xf3, 0xa9, 0x6b, 0xfb, 0x1c, 0xc4, 0x39, 0x6b, 0x44, 0xe0, 0x75, 0x58, 0xcd, 0x9a,
-	0x1e, 0xb9, 0xb4, 0xf9, 0x07, 0xc0, 0xec, 0xc3, 0x11, 0xca, 0xc8, 0x1e, 0xff, 0xd2, 0x61, 0x3f,
-	0x9b, 0xd0, 0xb5, 0xc9, 0x3f, 0x90, 0x94, 0x5f, 0x7c, 0x8d, 0xeb, 0x67, 0x89, 0x89, 0xe8, 0x4b,
-	0xb7, 0x0d, 0xf4, 0x2d, 0xac, 0xeb, 0x57, 0x5c, 0xa4, 0x49, 0xf6, 0xa9, 0xfb, 0x75, 0xe3, 0xf6,
-	0xf4, 0x17, 0xa4, 0x03, 0xe8, 0x2b, 0x58, 0x50, 0xf6, 0x5e, 0x74, 0x55, 0xa3, 0xa2, 0xb0, 0x5e,
-	0x37, 0xae, 0x9d, 0x21, 0x95, 0x6a, 0x67, 0xc1, 0x69, 0x77, 0x53, 0x6d, 0x70, 0xa7, 0xed, 0xd9,
-	0xda, 0xe0, 0x4e, 0x5d, 0x7b, 0x71, 0x09, 0x11, 0x58, 0xca, 0xae, 0x4f, 0x48, 0xb3, 0x4a, 0x6a,
-	0xd7, 0xd0, 0x46, 0xeb, 0x6c, 0xc1, 0xd4, 0xcc, 0x3e, 0xcc, 0x8a, 0xa5, 0x01, 0x35, 0x8b, 0xd7,
-	0xb2, 0x7b, 0x4b, 0xe3, 0xca, 0x29, 0x12, 0x6a, 0x56, 0x94, 0xd1, 0xaf, 0xcb, 0x4a, 0x71, 0x25,
-	0xd1, 0x65, 0x45, 0xb3, 0x3f, 0xe0, 0x12, 0x72, 0xe0, 0x5c, 0x66, 0xc6, 0x22, 0x4d, 0xbd, 0xea,
-	0x46, 0x78, 0xe3, 0xc6, 0x99, 0x72, 0x2a, 0xf4, 0xd9, 0xf1, 0xa5, 0x83, 0x5e, 0x3b, 0x8d, 0x75,
-	0xd0, 0x4f, 0x98, 0x84, 0x25, 0x74, 0x08, 0xcb, 0xb9, 0x79, 0x86, 0x34, 0xd7, 0xf5, 0xe3, 0xb2,
-	0xf1, 0xff, 0x29, 0x24, 0x53, 0x4b, 0xaf, 0x61, 0x51, 0x6d, 0x17, 0xba, 0x56, 0xa0, 0xe9, 0x64,
-	0xba, 0x56, 0xa0, 0xeb, 0x3a, 0xb8, 0x84, 0x9e, 0xc1, 0x9c, 0x9c, 0xb5, 0x48, 0x53, 0x24, 0xb9,
-	0xd9, 0xdc, 0xc0, 0xa7, 0x89, 0xa4, 0x4a, 0x8f, 0xa1, 0x9e, 0xef, 0xbd, 0x48, 0x13, 0xf6, 0x84,
-	0x66, 0xdf, 0xf8, 0x60, 0x1a, 0x51, 0x69, 0xec, 0xfe, 0x15, 0xb8, 0xe8, 0xd1, 0xf6, 0x3b, 0x42,
-	0x1c, 0xd2, 0xce, 0xfc, 0x59, 0xe6, 0x52, 0x7f, 0xbf, 0xf4, 0x65, 0x39, 0x74, 0x9c, 0x19, 0x4e,
-	0x7f, 0xf8, 0x77, 0x00, 0x00, 0x00, 0xff, 0xff, 0xc5, 0x86, 0x82, 0x2f, 0x4d, 0x13, 0x00, 0x00,
 }

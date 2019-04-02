@@ -18,8 +18,10 @@ package io.zeebe.db.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
+import io.zeebe.db.ZeebeDbTransaction;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +38,7 @@ public class DbTransactionTest {
   private final ZeebeDbFactory<ColumnFamilies> dbFactory =
       DefaultZeebeDbFactory.getDefaultFactory(ColumnFamilies.class);
 
-  private ZeebeDb<ColumnFamilies> zeebeDb;
+  private DbContext dbContext;
 
   private ColumnFamily<DbLong, DbLong> oneColumnFamily;
   private ColumnFamily<DbLong, DbLong> twoColumnFamily;
@@ -59,19 +61,21 @@ public class DbTransactionTest {
   @Before
   public void setup() throws Exception {
     final File pathName = temporaryFolder.newFolder();
-    zeebeDb = dbFactory.createDb(pathName);
+    final ZeebeDb<ColumnFamilies> zeebeDb = dbFactory.createDb(pathName);
+    dbContext = zeebeDb.createContext();
 
     oneKey = new DbLong();
     oneValue = new DbLong();
-    oneColumnFamily = zeebeDb.createColumnFamily(ColumnFamilies.ONE, oneKey, oneValue);
+    oneColumnFamily = zeebeDb.createColumnFamily(ColumnFamilies.ONE, dbContext, oneKey, oneValue);
 
     twoKey = new DbLong();
     twoValue = new DbLong();
-    twoColumnFamily = zeebeDb.createColumnFamily(ColumnFamilies.TWO, twoKey, twoValue);
+    twoColumnFamily = zeebeDb.createColumnFamily(ColumnFamilies.TWO, dbContext, twoKey, twoValue);
 
     threeKey = new DbLong();
     threeValue = new DbLong();
-    threeColumnFamily = zeebeDb.createColumnFamily(ColumnFamilies.THREE, threeKey, threeValue);
+    threeColumnFamily =
+        zeebeDb.createColumnFamily(ColumnFamilies.THREE, dbContext, threeKey, threeValue);
   }
 
   @Test
@@ -87,7 +91,7 @@ public class DbTransactionTest {
     threeValue.wrapLong(Integer.MAX_VALUE);
 
     // when
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           oneColumnFamily.put(oneKey, oneValue);
           twoColumnFamily.put(twoKey, twoValue);
@@ -101,6 +105,149 @@ public class DbTransactionTest {
   }
 
   @Test
+  public void shouldStartNewTransaction() throws Exception {
+    // given
+    oneKey.wrapLong(1);
+    oneValue.wrapLong(-1);
+
+    twoKey.wrapLong(52000);
+    twoValue.wrapLong(192313);
+
+    threeKey.wrapLong(Short.MAX_VALUE);
+    threeValue.wrapLong(Integer.MAX_VALUE);
+
+    final ZeebeDbTransaction transaction = dbContext.getCurrentTransaction();
+    transaction.run(
+        () -> {
+          oneColumnFamily.put(oneKey, oneValue);
+          twoColumnFamily.put(twoKey, twoValue);
+          threeColumnFamily.put(threeKey, threeValue);
+        });
+
+    // when
+    transaction.commit();
+
+    // then
+    assertThat(oneColumnFamily.exists(oneKey)).isTrue();
+    assertThat(twoColumnFamily.exists(twoKey)).isTrue();
+    assertThat(threeColumnFamily.exists(threeKey)).isTrue();
+  }
+
+  @Test
+  public void shouldAccessOnOpenTransaction() throws Exception {
+    // given
+    oneKey.wrapLong(1);
+    oneValue.wrapLong(-1);
+
+    twoKey.wrapLong(52000);
+    twoValue.wrapLong(192313);
+
+    threeKey.wrapLong(Short.MAX_VALUE);
+    threeValue.wrapLong(Integer.MAX_VALUE);
+
+    final ZeebeDbTransaction transaction = dbContext.getCurrentTransaction();
+    transaction.run(
+        () -> {
+          oneColumnFamily.put(oneKey, oneValue);
+          twoColumnFamily.put(twoKey, twoValue);
+          threeColumnFamily.put(threeKey, threeValue);
+        });
+
+    // when
+    // no commit
+
+    // then
+    // uses the same transaction
+    assertThat(oneColumnFamily.exists(oneKey)).isTrue();
+    assertThat(twoColumnFamily.exists(twoKey)).isTrue();
+    assertThat(threeColumnFamily.exists(threeKey)).isTrue();
+  }
+
+  @Test
+  public void shouldNotReopenTransaction() throws Exception {
+    // given
+    final ZeebeDbTransaction transaction = dbContext.getCurrentTransaction();
+
+    transaction.run(
+        () -> {
+
+          // when
+          final ZeebeDbTransaction sameTransaction = dbContext.getCurrentTransaction();
+
+          // then
+          assertThat(transaction).isEqualTo(sameTransaction);
+        });
+  }
+
+  @Test
+  public void shouldNotReopenTransactionWithOperations() {
+    // given
+    oneKey.wrapLong(1);
+    oneValue.wrapLong(-1);
+
+    twoKey.wrapLong(52000);
+    twoValue.wrapLong(192313);
+
+    threeKey.wrapLong(Short.MAX_VALUE);
+    threeValue.wrapLong(Integer.MAX_VALUE);
+
+    dbContext.runInTransaction(
+        () -> {
+
+          // when
+          final ZeebeDbTransaction sameTransaction = dbContext.getCurrentTransaction();
+          sameTransaction.run(
+              () -> {
+                oneColumnFamily.put(oneKey, oneValue);
+                twoColumnFamily.put(twoKey, twoValue);
+                threeColumnFamily.put(threeKey, threeValue);
+              });
+          sameTransaction.commit();
+
+          // then it is committed but available in this transaction
+          assertThat(oneColumnFamily.exists(oneKey)).isTrue();
+          oneColumnFamily.delete(oneKey);
+
+          assertThat(twoColumnFamily.exists(twoKey)).isTrue();
+          assertThat(threeColumnFamily.exists(threeKey)).isTrue();
+        });
+
+    // then it is committed but available in this transaction
+    assertThat(oneColumnFamily.exists(oneKey)).isFalse();
+    assertThat(twoColumnFamily.exists(twoKey)).isTrue();
+    assertThat(threeColumnFamily.exists(threeKey)).isTrue();
+  }
+
+  @Test
+  public void shouldRollbackTransaction() throws Exception {
+    // given
+    oneKey.wrapLong(1);
+    oneValue.wrapLong(-1);
+
+    twoKey.wrapLong(52000);
+    twoValue.wrapLong(192313);
+
+    threeKey.wrapLong(Short.MAX_VALUE);
+    threeValue.wrapLong(Integer.MAX_VALUE);
+
+    final ZeebeDbTransaction transaction = dbContext.getCurrentTransaction();
+    transaction.run(
+        () -> {
+          oneColumnFamily.put(oneKey, oneValue);
+          twoColumnFamily.put(twoKey, twoValue);
+          threeColumnFamily.put(threeKey, threeValue);
+        });
+
+    // when
+    transaction.rollback();
+
+    // then
+    assertThat(oneColumnFamily.exists(oneKey)).isFalse();
+    assertThat(twoColumnFamily.exists(twoKey)).isFalse();
+    assertThat(threeColumnFamily.exists(threeKey)).isFalse();
+  }
+
+  @Test
   public void shouldGetValueInTransaction() {
     // given
     final AtomicLong actualValue = new AtomicLong(0);
@@ -108,7 +255,7 @@ public class DbTransactionTest {
     oneValue.wrapLong(-1);
 
     // when
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           oneColumnFamily.put(oneKey, oneValue);
           final DbLong value = oneColumnFamily.get(oneKey);
@@ -129,7 +276,7 @@ public class DbTransactionTest {
     oneColumnFamily.put(oneKey, oneValue);
 
     // when
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           // update value
           oneKey.wrapLong(1);
@@ -167,7 +314,7 @@ public class DbTransactionTest {
     oneColumnFamily.put(oneKey, oneValue);
 
     // when
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           // update old value
           oneKey.wrapLong(2);
@@ -202,7 +349,7 @@ public class DbTransactionTest {
     oneColumnFamily.put(oneKey, oneValue);
 
     // when
-    zeebeDb.transaction(() -> oneColumnFamily.forEach((k, v) -> oneColumnFamily.delete(k)));
+    dbContext.runInTransaction(() -> oneColumnFamily.forEach((k, v) -> oneColumnFamily.delete(k)));
 
     // then
     assertThat(oneColumnFamily.exists(oneKey)).isFalse();
@@ -222,9 +369,9 @@ public class DbTransactionTest {
 
     // when
     oneColumnFamily.put(oneKey, oneValue);
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
-          zeebeDb.transaction(() -> oneColumnFamily.put(oneKey, twoValue));
+          dbContext.runInTransaction(() -> oneColumnFamily.put(oneKey, twoValue));
           final DbLong value = oneColumnFamily.get(oneKey);
           actualValue.set(value.getValue());
         });
@@ -249,7 +396,7 @@ public class DbTransactionTest {
     threeColumnFamily.put(threeKey, threeValue);
 
     // when
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           // create
           oneColumnFamily.put(oneKey, oneValue);
@@ -279,7 +426,7 @@ public class DbTransactionTest {
     oneValue.wrapLong(-1);
 
     // when
-    zeebeDb.transaction(
+    dbContext.runInTransaction(
         () -> {
           // create
           oneColumnFamily.put(oneKey, oneValue);
@@ -308,7 +455,7 @@ public class DbTransactionTest {
     // when
     assertThat(twoColumnFamily.exists(twoKey)).isTrue();
     try {
-      zeebeDb.transaction(
+      dbContext.runInTransaction(
           () -> {
             oneColumnFamily.put(oneKey, oneValue);
             twoColumnFamily.delete(twoKey);

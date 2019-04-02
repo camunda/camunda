@@ -20,6 +20,7 @@ import static io.zeebe.raft.AppendRequestEncoder.previousEventTermNullValue;
 
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
+import io.zeebe.logstreams.impl.log.index.LogBlockIndexContext;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -51,6 +52,8 @@ public class MemberReplicateLogController extends Actor implements Service<Void>
   private final AppendRequest appendRequest = new AppendRequest();
 
   private final BackpressureHelper backpressureHelper = new BackpressureHelper(REMOTE_BUFFER_SIZE);
+  private final LogBlockIndex logBlockIndex;
+  private final LogBlockIndexContext indexContext;
 
   private long lastRequestTimestamp;
 
@@ -84,6 +87,10 @@ public class MemberReplicateLogController extends Actor implements Service<Void>
     this.heartbeatInterval = raft.getConfiguration().getHeartbeatIntervalDuration();
     this.clientOutput = clientTransport.getOutput();
     this.logStream = raft.getLogStream();
+
+    this.logBlockIndex = logStream.getLogBlockIndex();
+    this.indexContext = logBlockIndex.createLogBlockIndexContext();
+
     this.reader = new BufferedLogStreamReader(logStream, true);
   }
 
@@ -250,8 +257,7 @@ public class MemberReplicateLogController extends Actor implements Service<Void>
       if (previousEvent != null) {
         setPreviousEvent(previousEvent);
       } else {
-        final LogBlockIndex logBlockIndex = logStream.getLogBlockIndex();
-        final long blockPosition = logBlockIndex.lookupBlockPosition(eventPosition);
+        final long blockPosition = logBlockIndex.lookupBlockPosition(indexContext, eventPosition);
 
         if (blockPosition > 0) {
           reader.seek(blockPosition);

@@ -2,13 +2,13 @@
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Build Tools</name>
-  <artifactId>zb-build-tools</artifactId>
+  <artifactId>zeebe-build-tools</artifactId>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.zeebe</groupId>
-    <artifactId>zb-bom</artifactId>
-    <version>0.17.0-SNAPSHOT</version>
+    <artifactId>zeebe-bom</artifactId>
+    <version>0.18.0-SNAPSHOT</version>
     <relativePath>../bom</relativePath>
   </parent>
 

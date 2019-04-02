@@ -19,10 +19,10 @@ package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.workflow.gateway.ParallelGatewayStreamProcessorTest.PROCESS_ID;
 
-import io.zeebe.exporter.record.Assertions;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.JobRecordValue;
-import io.zeebe.exporter.record.value.job.Headers;
+import io.zeebe.exporter.api.record.Assertions;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.value.job.Headers;
 import io.zeebe.test.util.MsgPackUtil;
 
 public class JobAssert {
@@ -31,9 +31,9 @@ public class JobAssert {
     Assertions.assertThat(createJobCmd.getValue()).hasRetries(5).hasType("bar");
   }
 
-  public static void assertJobPayload(Record<JobRecordValue> event, String expectedPayload) {
-    final byte[] payload = MsgPackUtil.asMsgPackReturnArray(event.getValue().getPayload());
-    MsgPackUtil.assertEquality(payload, expectedPayload);
+  public static void assertJobVariables(Record<JobRecordValue> event, String expectedVariables) {
+    final byte[] variables = MsgPackUtil.asMsgPackReturnArray(event.getValue().getVariables());
+    MsgPackUtil.assertEquality(variables, expectedVariables);
   }
 
   public static void assertJobHeaders(long workflowInstanceKey, Record<JobRecordValue> jobRecord) {

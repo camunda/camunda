@@ -46,7 +46,6 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   private LogStream logStream;
 
-  protected boolean positionAsKey;
   protected long key;
 
   protected long sourceRecordPosition = -1L;
@@ -73,12 +72,6 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
   @Override
   public LogStreamRecordWriter keyNull() {
     return key(LogEntryDescriptor.KEY_NULL_VALUE);
-  }
-
-  @Override
-  public LogStreamRecordWriter positionAsKey() {
-    positionAsKey = true;
-    return this;
   }
 
   @Override
@@ -135,7 +128,6 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   @Override
   public void reset() {
-    positionAsKey = false;
     key = LogEntryDescriptor.KEY_NULL_VALUE;
     metadataWriter = metadataWriterInstance;
     valueWriter = null;
@@ -165,14 +157,12 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
         final MutableDirectBuffer writeBuffer = claimedFragment.getBuffer();
         final int bufferOffset = claimedFragment.getOffset();
 
-        final long keyToWrite = positionAsKey ? claimedPosition : key;
-
         // write log entry header
         setPosition(writeBuffer, bufferOffset, claimedPosition);
         setRaftTerm(writeBuffer, bufferOffset, logStream.getTerm());
         setProducerId(writeBuffer, bufferOffset, producerId);
         setSourceEventPosition(writeBuffer, bufferOffset, sourceRecordPosition);
-        setKey(writeBuffer, bufferOffset, keyToWrite);
+        setKey(writeBuffer, bufferOffset, key);
         setTimestamp(writeBuffer, bufferOffset, ActorClock.currentTimeMillis());
         setMetadataLength(writeBuffer, bufferOffset, (short) metadataLength);
 

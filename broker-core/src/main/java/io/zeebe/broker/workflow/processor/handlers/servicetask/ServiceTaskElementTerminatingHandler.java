@@ -22,6 +22,7 @@ import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.job.JobState;
 import io.zeebe.broker.workflow.model.element.ExecutableServiceTask;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
+import io.zeebe.broker.workflow.processor.handlers.CatchEventSubscriber;
 import io.zeebe.broker.workflow.processor.handlers.activity.ActivityElementTerminatingHandler;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -31,16 +32,23 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class ServiceTaskElementTerminatingHandler<T extends ExecutableServiceTask>
     extends ActivityElementTerminatingHandler<T> {
+  private final IncidentState incidentState;
   private final JobState jobState;
 
-  public ServiceTaskElementTerminatingHandler(IncidentState incidentState, JobState jobState) {
-    super(incidentState);
+  public ServiceTaskElementTerminatingHandler(
+      IncidentState incidentState, CatchEventSubscriber catchEventSubscriber, JobState jobState) {
+    super(catchEventSubscriber);
+    this.incidentState = incidentState;
     this.jobState = jobState;
   }
 
   public ServiceTaskElementTerminatingHandler(
-      WorkflowInstanceIntent nextState, IncidentState incidentState, JobState jobState) {
-    super(nextState, incidentState);
+      WorkflowInstanceIntent nextState,
+      IncidentState incidentState,
+      CatchEventSubscriber catchEventSubscriber,
+      JobState jobState) {
+    super(nextState, catchEventSubscriber);
+    this.incidentState = incidentState;
     this.jobState = jobState;
   }
 

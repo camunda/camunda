@@ -24,8 +24,6 @@ public interface LogStreamRecordWriter extends LogStreamWriter {
 
   LogStreamRecordWriter keyNull();
 
-  LogStreamRecordWriter positionAsKey();
-
   LogStreamRecordWriter key(long key);
 
   LogStreamRecordWriter sourceRecordPosition(long position);

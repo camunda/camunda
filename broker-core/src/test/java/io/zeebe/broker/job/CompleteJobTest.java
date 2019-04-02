@@ -23,8 +23,8 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.test.MsgPackConstants;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -66,7 +66,7 @@ public class CompleteJobTest {
     // when
     final JobRecordValue jobEventValue = jobEvent.getValue();
     final ExecuteCommandResponse response =
-        testClient.completeJob(jobEvent.getKey(), jobEventValue.getPayload());
+        testClient.completeJob(jobEvent.getKey(), jobEventValue.getVariables());
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
@@ -92,7 +92,7 @@ public class CompleteJobTest {
 
     // when
     final ExecuteCommandResponse response =
-        testClient.completeJob(key, MsgPackConstants.MSGPACK_PAYLOAD);
+        testClient.completeJob(key, MsgPackConstants.MSGPACK_VARIABLES);
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
@@ -101,7 +101,7 @@ public class CompleteJobTest {
   }
 
   @Test
-  public void shouldCompleteJobWithPayload() {
+  public void shouldCompleteJobWithVariables() {
     // given
     createJob(JOB_TYPE);
 
@@ -111,16 +111,17 @@ public class CompleteJobTest {
 
     // when
     final ExecuteCommandResponse response =
-        testClient.completeJob(jobEvent.getKey(), MsgPackConstants.MSGPACK_PAYLOAD);
+        testClient.completeJob(jobEvent.getKey(), MsgPackConstants.MSGPACK_VARIABLES);
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
-    assertThat(response.getValue()).contains(entry("payload", MsgPackConstants.MSGPACK_PAYLOAD));
+    assertThat(response.getValue())
+        .contains(entry("variables", MsgPackConstants.MSGPACK_VARIABLES));
   }
 
   @Test
-  public void shouldCompleteJobWithNilPayload() {
+  public void shouldCompleteJobWithNilVariables() {
     // given
     createJob(JOB_TYPE);
     apiRule.activateJobs(JOB_TYPE).await();
@@ -133,11 +134,11 @@ public class CompleteJobTest {
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
-    assertThat(response.getValue()).contains(entry("payload", MsgPackHelper.EMTPY_OBJECT));
+    assertThat(response.getValue()).contains(entry("variables", MsgPackHelper.EMTPY_OBJECT));
   }
 
   @Test
-  public void shouldCompleteJobWithZeroLengthPayload() {
+  public void shouldCompleteJobWithZeroLengthVariables() {
     // given
     createJob(JOB_TYPE);
 
@@ -151,11 +152,11 @@ public class CompleteJobTest {
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
-    assertThat(response.getValue()).contains(entry("payload", MsgPackHelper.EMTPY_OBJECT));
+    assertThat(response.getValue()).contains(entry("variables", MsgPackHelper.EMTPY_OBJECT));
   }
 
   @Test
-  public void shouldCompleteJobWithNoPayload() {
+  public void shouldCompleteJobWithNoVariables() {
     // given
     createJob(JOB_TYPE);
     apiRule.activateJobs(JOB_TYPE).await();
@@ -164,30 +165,30 @@ public class CompleteJobTest {
 
     // when
     final ExecuteCommandResponse response =
-        testClient.completeJob(jobEvent.getKey(), jobEvent.getValue().getPayload());
+        testClient.completeJob(jobEvent.getKey(), jobEvent.getValue().getVariables());
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
-    assertThat(response.getValue()).contains(entry("payload", MsgPackHelper.EMTPY_OBJECT));
+    assertThat(response.getValue()).contains(entry("variables", MsgPackHelper.EMTPY_OBJECT));
   }
 
   @Test
-  public void shouldThrowExceptionOnCompletionIfPayloadIsInvalid() {
+  public void shouldThrowExceptionOnCompletionIfVariablesAreInvalid() {
     // given
     createJob(JOB_TYPE);
     apiRule.activateJobs(JOB_TYPE).await();
 
     final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
-    final byte[] invalidPayload = new byte[] {1}; // positive fixnum, i.e. no object
+    final byte[] invalidVariables = new byte[] {1}; // positive fixnum, i.e. no object
 
     // when
     final Throwable throwable =
-        catchThrowable(() -> testClient.completeJob(jobEvent.getKey(), invalidPayload));
+        catchThrowable(() -> testClient.completeJob(jobEvent.getKey(), invalidVariables));
 
     // then
     assertThat(throwable).isInstanceOf(RuntimeException.class);
-    assertThat(throwable.getMessage()).contains("Could not read property 'payload'");
+    assertThat(throwable.getMessage()).contains("Could not read property 'variables'");
     assertThat(throwable.getMessage())
         .contains("Expected document to be a root level object, but was 'INTEGER'");
   }
@@ -200,12 +201,12 @@ public class CompleteJobTest {
     apiRule.activateJobs(JOB_TYPE).await();
 
     final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
-    testClient.completeJob(jobEvent.getKey(), jobEvent.getValue().getPayload());
+    testClient.completeJob(jobEvent.getKey(), jobEvent.getValue().getVariables());
 
     // when
 
     final ExecuteCommandResponse response =
-        testClient.completeJob(jobEvent.getKey(), jobEvent.getValue().getPayload());
+        testClient.completeJob(jobEvent.getKey(), jobEvent.getValue().getVariables());
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
@@ -223,7 +224,7 @@ public class CompleteJobTest {
     final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
     failJob(jobEvent.getKey());
     final ExecuteCommandResponse response =
-        testClient.completeJob(jobEvent.getKey(), jobEvent.getValue().getPayload());
+        testClient.completeJob(jobEvent.getKey(), jobEvent.getValue().getVariables());
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);

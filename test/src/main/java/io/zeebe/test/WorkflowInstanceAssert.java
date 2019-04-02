@@ -17,8 +17,8 @@ package io.zeebe.test;
 
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.impl.ZeebeObjectMapper;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -153,7 +153,7 @@ public class WorkflowInstanceAssert
     if (record.isPresent()) {
       hasVariables(record.get(), key, expectedValue);
     } else {
-      failWithMessage("Expected workflow instance to contain payload but instance is not ended");
+      failWithMessage("Expected workflow instance to contain variables but instance is not ended");
     }
 
     return this;

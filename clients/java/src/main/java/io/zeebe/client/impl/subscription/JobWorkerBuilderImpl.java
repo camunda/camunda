@@ -49,7 +49,7 @@ public class JobWorkerBuilderImpl
   private JobHandler handler;
   private long timeout;
   private String workerName;
-  private int bufferSize;
+  private int maxJobsActive;
   private Duration pollInterval;
   private List<String> fetchVariables;
 
@@ -68,7 +68,7 @@ public class JobWorkerBuilderImpl
 
     this.timeout = configuration.getDefaultJobTimeout().toMillis();
     this.workerName = configuration.getDefaultJobWorkerName();
-    this.bufferSize = configuration.getDefaultJobWorkerBufferSize();
+    this.maxJobsActive = configuration.getDefaultJobWorkerMaxJobsActive();
     this.pollInterval = configuration.getDefaultJobPollInterval();
   }
 
@@ -102,8 +102,8 @@ public class JobWorkerBuilderImpl
   }
 
   @Override
-  public JobWorkerBuilderStep3 bufferSize(int numberOfJobs) {
-    this.bufferSize = numberOfJobs;
+  public JobWorkerBuilderStep3 maxJobsActive(int maxJobsActive) {
+    this.maxJobsActive = maxJobsActive;
     return this;
   }
 
@@ -130,14 +130,14 @@ public class JobWorkerBuilderImpl
     ensureNotNull("jobHandler", handler);
     ensureGreaterThan("timeout", timeout, 0L);
     ensureNotNullNorEmpty("workerName", workerName);
-    ensureGreaterThan("bufferSize", bufferSize, 0);
+    ensureGreaterThan("maxJobsActive", maxJobsActive, 0);
 
     final Builder requestBuilder =
         ActivateJobsRequest.newBuilder()
             .setType(jobType)
             .setTimeout(timeout)
             .setWorker(workerName)
-            .setAmount(bufferSize);
+            .setMaxJobsToActivate(maxJobsActive);
 
     if (fetchVariables != null) {
       requestBuilder.addAllFetchVariable(fetchVariables);
@@ -147,7 +147,8 @@ public class JobWorkerBuilderImpl
     final JobPoller jobPoller = new JobPoller(gatewayStub, requestBuilder, objectMapper);
 
     final JobWorkerImpl jobWorker =
-        new JobWorkerImpl(bufferSize, executorService, pollInterval, jobRunnableFactory, jobPoller);
+        new JobWorkerImpl(
+            maxJobsActive, executorService, pollInterval, jobRunnableFactory, jobPoller);
     closeables.add(jobWorker);
     return jobWorker;
   }

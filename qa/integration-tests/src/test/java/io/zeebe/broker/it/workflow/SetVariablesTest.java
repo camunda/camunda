@@ -47,13 +47,15 @@ public class SetVariablesTest {
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process")
           .startEvent("start")
-          .serviceTask("task-1", t -> t.zeebeTaskType("task-1").zeebeOutput("$.result", "$.result"))
+          .serviceTask("task-1", t -> t.zeebeTaskType("task-1").zeebeOutput("result", "result"))
           .endEvent("end")
           .done();
 
-  public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public static GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
-  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
+  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+
+  @ClassRule
+  public static final RuleChain RULE_CHAIN = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
 
   @Rule
   public RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -64,14 +66,14 @@ public class SetVariablesTest {
   @BeforeClass
   public static void init() {
     final DeploymentEvent deploymentEvent =
-        clientRule
+        CLIENT_RULE
             .getClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .send()
             .join();
 
-    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
+    CLIENT_RULE.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }
 
   @Test
@@ -80,7 +82,7 @@ public class SetVariablesTest {
     final long workflowInstanceKey = createWorkflowInstanceAndAwaitTaskActivation();
 
     // when
-    clientRule
+    CLIENT_RULE
         .getClient()
         .newSetVariablesCommand(workflowInstanceKey)
         .variables(VARIABLES)
@@ -100,7 +102,7 @@ public class SetVariablesTest {
     final long workflowInstanceKey = createWorkflowInstanceAndAwaitTaskActivation();
 
     // when
-    clientRule
+    CLIENT_RULE
         .getClient()
         .newSetVariablesCommand(workflowInstanceKey)
         .variables("null")
@@ -127,7 +129,7 @@ public class SetVariablesTest {
             "Property 'document' is invalid: Expected document to be a root level object, but was 'ARRAY'"));
 
     // when
-    clientRule
+    CLIENT_RULE
         .getClient()
         .newSetVariablesCommand(workflowInstanceKey)
         .variables("[]")
@@ -141,7 +143,7 @@ public class SetVariablesTest {
     final long workflowInstanceKey = createWorkflowInstanceAndAwaitTaskActivation();
 
     // when
-    clientRule
+    CLIENT_RULE
         .getClient()
         .newSetVariablesCommand(workflowInstanceKey)
         .variables(VARIABLES)
@@ -149,13 +151,13 @@ public class SetVariablesTest {
         .join();
     assertVariableDocumentUpdated();
 
-    clientRule
+    CLIENT_RULE
         .getClient()
         .newWorker()
         .jobType("task-1")
         .handler(
             (client, job) ->
-                client.newCompleteCommand(job.getKey()).payload("{\"result\": \"ok\"}").send())
+                client.newCompleteCommand(job.getKey()).variables("{\"result\": \"ok\"}").send())
         .open();
 
     // then
@@ -170,7 +172,7 @@ public class SetVariablesTest {
     final long workflowInstanceKey = createWorkflowInstanceAndAwaitTaskActivation();
 
     // when
-    clientRule
+    CLIENT_RULE
         .getClient()
         .newSetVariablesCommand(workflowInstanceKey)
         .variables(Collections.singletonMap("foo", "bar"))
@@ -192,7 +194,7 @@ public class SetVariablesTest {
     newVariables.foo = "bar";
 
     // when
-    clientRule
+    CLIENT_RULE
         .getClient()
         .newSetVariablesCommand(workflowInstanceKey)
         .variables(newVariables)
@@ -210,22 +212,22 @@ public class SetVariablesTest {
   public void shouldFailSetVariablesIfWorkflowInstanceIsCompleted() {
     // given
     final long workflowInstanceKey = createWorkflowInstanceAndAwaitTaskActivation();
-    clientRule
+    CLIENT_RULE
         .getClient()
         .newWorker()
         .jobType("task-1")
         .handler(
             (client, job) ->
-                client.newCompleteCommand(job.getKey()).payload("{\"result\": \"done\"}").send())
+                client.newCompleteCommand(job.getKey()).variables("{\"result\": \"done\"}").send())
         .open();
-    assertWorkflowInstanceCompleted("process");
+    assertWorkflowInstanceCompleted("process", workflowInstanceKey);
 
     // then
     thrown.expect(ClientStatusException.class);
     thrown.expect(hasStatusCode(Code.NOT_FOUND));
 
     // when
-    clientRule
+    CLIENT_RULE
         .getClient()
         .newSetVariablesCommand(workflowInstanceKey)
         .variables(VARIABLES)
@@ -235,7 +237,7 @@ public class SetVariablesTest {
 
   private long createWorkflowInstanceAndAwaitTaskActivation() {
     final long workflowInstanceKey =
-        clientRule
+        CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")

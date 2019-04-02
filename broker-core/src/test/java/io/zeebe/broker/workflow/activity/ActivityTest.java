@@ -21,10 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.JobRecordValue;
-import io.zeebe.exporter.record.value.TimerRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.value.TimerRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.DeploymentIntent;
@@ -51,10 +51,7 @@ public class ActivityTest {
           .startEvent()
           .serviceTask(
               "task",
-              b ->
-                  b.zeebeTaskType("type")
-                      .zeebeInput("$.foo", "$.bar")
-                      .zeebeOutput("$.bar", "$.oof"))
+              b -> b.zeebeTaskType("type").zeebeInput("foo", "bar").zeebeOutput("bar", "oof"))
           .endEvent()
           .done();
 
@@ -120,7 +117,7 @@ public class ActivityTest {
 
     // when
     final Record<JobRecordValue> jobRecord = testClient.receiveFirstJobEvent(JobIntent.CREATED);
-    testClient.completeJob(jobRecord.getKey(), jobRecord.getValue().getPayload());
+    testClient.completeJob(jobRecord.getKey(), jobRecord.getValue().getVariables());
 
     // then
     final Record<WorkflowInstanceRecordValue> record =
@@ -163,7 +160,7 @@ public class ActivityTest {
 
     // when
     final Record<JobRecordValue> job = testClient.receiveFirstJobEvent(JobIntent.CREATED);
-    testClient.completeJob(job.getKey(), job.getValue().getPayload());
+    testClient.completeJob(job.getKey(), job.getValue().getVariables());
     testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     // then

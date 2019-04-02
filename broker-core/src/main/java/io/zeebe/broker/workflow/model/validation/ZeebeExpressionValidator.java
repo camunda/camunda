@@ -21,13 +21,9 @@ import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionFactory;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
-import java.util.regex.Pattern;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class ZeebeExpressionValidator {
-
-  private static final String PROHIBITED_PATHS_REGEX = "(\\.\\*)|(\\[.*,.*\\])";
-  private static final Pattern PROHIBITED_PATHS_PATTERN = Pattern.compile(PROHIBITED_PATHS_REGEX);
 
   public void validateExpression(String expression, ValidationResultCollector resultCollector) {
     final CompiledJsonCondition condition = JsonConditionFactory.createCondition(expression);
@@ -50,10 +46,6 @@ public class ZeebeExpressionValidator {
     if (!compiledQuery.isValid()) {
       resultCollector.addError(
           0, String.format("JSON path query is invalid: %s", compiledQuery.getErrorReason()));
-    }
-
-    if (PROHIBITED_PATHS_PATTERN.matcher(jsonPath).find()) {
-      resultCollector.addError(0, String.format("This JSON path query is not supported"));
     }
   }
 }

@@ -126,7 +126,7 @@ public class SubscriptionCommandSender {
       final long workflowInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer messageName,
-      final DirectBuffer payload) {
+      final DirectBuffer variables) {
 
     final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
 
@@ -134,7 +134,7 @@ public class SubscriptionCommandSender {
     correlateWorkflowInstanceSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
     correlateWorkflowInstanceSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
     correlateWorkflowInstanceSubscriptionCommand.getMessageName().wrap(messageName);
-    correlateWorkflowInstanceSubscriptionCommand.getPayload().wrap(payload);
+    correlateWorkflowInstanceSubscriptionCommand.getVariables().wrap(variables);
 
     return sendSubscriptionCommand(
         workflowInstancePartitionId, correlateWorkflowInstanceSubscriptionCommand);

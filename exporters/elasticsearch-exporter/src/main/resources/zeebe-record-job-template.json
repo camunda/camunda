@@ -50,7 +50,7 @@
             "deadline": {
               "type": "date"
             },
-            "payload": {
+            "variables": {
               "type": "text"
             },
             "errorMessage": {

@@ -55,7 +55,7 @@ public class DeploymentCreatedProcessor implements TypedRecordProcessor<Deployme
     }
 
     for (final Workflow workflowRecord : deploymentEvent.workflows()) {
-      if (workflowRecord.getVersion() != 1) { // if not the first version
+      if (workflowRecord.getVersion() != 1) {
         closeExistingMessageStartEventSubscriptions(workflowState, workflowRecord, streamWriter);
       }
       openMessageStartEventSubscriptions(workflowState, workflowRecord, streamWriter);
@@ -65,10 +65,15 @@ public class DeploymentCreatedProcessor implements TypedRecordProcessor<Deployme
   private void closeExistingMessageStartEventSubscriptions(
       WorkflowState workflowState, Workflow workflowRecord, TypedStreamWriter streamWriter) {
     final int previousVersion = workflowRecord.getVersion() - 1;
-    final long previousWorkflowKey =
-        workflowState
-            .getWorkflowByProcessIdAndVersion(workflowRecord.getBpmnProcessId(), previousVersion)
-            .getKey();
+    final DeployedWorkflow previousWorkflow =
+        workflowState.getWorkflowByProcessIdAndVersion(
+            workflowRecord.getBpmnProcessId(), previousVersion);
+    if (previousWorkflow == null
+        || previousWorkflow.getWorkflow().getStartEvents().stream().noneMatch(e -> e.isMessage())) {
+      return;
+    }
+
+    final long previousWorkflowKey = previousWorkflow.getKey();
     final MessageStartEventSubscriptionRecord subscriptionRecord =
         new MessageStartEventSubscriptionRecord();
     subscriptionRecord.setWorkflowKey(previousWorkflowKey);

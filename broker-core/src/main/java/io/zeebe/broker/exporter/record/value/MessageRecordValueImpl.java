@@ -18,11 +18,11 @@
 package io.zeebe.broker.exporter.record.value;
 
 import io.zeebe.broker.exporter.ExporterObjectMapper;
-import io.zeebe.broker.exporter.record.RecordValueWithPayloadImpl;
-import io.zeebe.exporter.record.value.MessageRecordValue;
+import io.zeebe.broker.exporter.record.RecordValueWithVariablesImpl;
+import io.zeebe.exporter.api.record.value.MessageRecordValue;
 import java.util.Objects;
 
-public class MessageRecordValueImpl extends RecordValueWithPayloadImpl
+public class MessageRecordValueImpl extends RecordValueWithVariablesImpl
     implements MessageRecordValue {
   private final String name;
   private final String messageId;
@@ -31,12 +31,12 @@ public class MessageRecordValueImpl extends RecordValueWithPayloadImpl
 
   public MessageRecordValueImpl(
       final ExporterObjectMapper objectMapper,
-      final String payload,
+      final String variables,
       final String name,
       final String messageId,
       final String correlationKey,
       final long timeToLive) {
-    super(objectMapper, payload);
+    super(objectMapper, variables);
     this.name = name;
     this.messageId = messageId;
     this.correlationKey = correlationKey;
@@ -100,8 +100,8 @@ public class MessageRecordValueImpl extends RecordValueWithPayloadImpl
         + '\''
         + ", timeToLive="
         + timeToLive
-        + ", payload='"
-        + payload
+        + ", variables='"
+        + variables
         + '\''
         + '}';
   }

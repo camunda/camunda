@@ -26,9 +26,9 @@ import static org.assertj.core.api.Assertions.entry;
 import io.zeebe.broker.subscription.message.processor.MessageObserver;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.test.MsgPackConstants;
-import io.zeebe.exporter.record.Assertions;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.MessageRecordValue;
+import io.zeebe.exporter.api.record.Assertions;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.MessageRecordValue;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -77,13 +77,13 @@ public class PublishMessageTest {
             entry("name", "order canceled"),
             entry("correlationKey", "order-123"),
             entry("timeToLive", 1_000L),
-            entry("payload", EMTPY_OBJECT),
+            entry("variables", EMTPY_OBJECT),
             entry("messageId", ""));
 
     final Record<MessageRecordValue> publishedEvent =
         testClient.receiveFirstMessageEvent(MessageIntent.PUBLISHED);
     assertThat(publishedEvent.getKey()).isEqualTo(response.getKey());
-    assertThat(MsgPackUtil.asMsgPackReturnArray(publishedEvent.getValue().getPayload()))
+    assertThat(MsgPackUtil.asMsgPackReturnArray(publishedEvent.getValue().getVariables()))
         .isEqualTo(EMTPY_OBJECT);
 
     Assertions.assertThat(publishedEvent.getValue())
@@ -94,7 +94,7 @@ public class PublishMessageTest {
   }
 
   @Test
-  public void shouldPublishMessageWithPayload() {
+  public void shouldPublishMessageWithVariables() {
 
     final ExecuteCommandResponse response =
         apiRule
@@ -104,12 +104,13 @@ public class PublishMessageTest {
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
             .put("timeToLive", 1_000)
-            .put("payload", MsgPackConstants.MSGPACK_PAYLOAD)
+            .put("variables", MsgPackConstants.MSGPACK_VARIABLES)
             .done()
             .sendAndAwait();
 
     assertThat(response.getIntent()).isEqualTo(MessageIntent.PUBLISHED);
-    assertThat(response.getValue()).contains(entry("payload", MsgPackConstants.MSGPACK_PAYLOAD));
+    assertThat(response.getValue())
+        .contains(entry("variables", MsgPackConstants.MSGPACK_VARIABLES));
   }
 
   @Test
@@ -168,7 +169,7 @@ public class PublishMessageTest {
   }
 
   @Test
-  public void shouldPublishSecondMessageWithDifferenId() {
+  public void shouldPublishSecondMessageWithDifferentId() {
 
     publishMessage("order canceled", "order-123", "msg-1");
 
@@ -188,7 +189,7 @@ public class PublishMessageTest {
   }
 
   @Test
-  public void shouldPublishSecondMessageWithDiffentCorrelationKey() {
+  public void shouldPublishSecondMessageWithDifferentCorrelationKey() {
 
     publishMessage("order canceled", "order-123", "msg-1");
 
@@ -277,7 +278,7 @@ public class PublishMessageTest {
     final Record<MessageRecordValue> deletedEvent =
         testClient.receiveFirstMessageEvent(MessageIntent.DELETED);
     assertThat(deletedEvent.getKey()).isEqualTo(response.getKey());
-    assertThat(MsgPackUtil.asMsgPackReturnArray(deletedEvent.getValue().getPayload()))
+    assertThat(MsgPackUtil.asMsgPackReturnArray(deletedEvent.getValue().getVariables()))
         .isEqualTo(EMTPY_OBJECT);
 
     Assertions.assertThat(deletedEvent.getValue())
@@ -309,7 +310,7 @@ public class PublishMessageTest {
         testClient.receiveFirstMessageEvent(MessageIntent.DELETED);
 
     assertThat(deletedEvent.getKey()).isEqualTo(response.getKey());
-    assertThat(MsgPackUtil.asMsgPackReturnArray(deletedEvent.getValue().getPayload()))
+    assertThat(MsgPackUtil.asMsgPackReturnArray(deletedEvent.getValue().getVariables()))
         .isEqualTo(EMTPY_OBJECT);
 
     Assertions.assertThat(deletedEvent.getValue())
@@ -331,7 +332,7 @@ public class PublishMessageTest {
             .put("timeToLive", 1_000)
             .done();
 
-    assertThatThrownBy(() -> request.sendAndAwait())
+    assertThatThrownBy(request::sendAndAwait)
         .hasMessageContaining("Property 'name' has no valid value");
   }
 
@@ -347,7 +348,7 @@ public class PublishMessageTest {
             .put("timeToLive", 1_000)
             .done();
 
-    assertThatThrownBy(() -> request.sendAndAwait())
+    assertThatThrownBy(request::sendAndAwait)
         .hasMessageContaining("Property 'correlationKey' has no valid value");
   }
 

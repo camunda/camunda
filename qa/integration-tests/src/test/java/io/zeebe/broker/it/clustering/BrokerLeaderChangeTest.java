@@ -101,7 +101,7 @@ public class BrokerLeaderChangeTest {
               .handler(
                   (client, job) -> {
                     if (job.getKey() == jobKey) {
-                      client.newCompleteCommand(job.getKey()).payload(NULL_PAYLOAD).send();
+                      client.newCompleteCommand(job.getKey()).variables(NULL_PAYLOAD).send();
                       latch.countDown();
                     }
                   })

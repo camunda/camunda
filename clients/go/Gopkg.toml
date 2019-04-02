@@ -31,11 +31,11 @@ required = [
 
 [[constraint]]
   name = "github.com/golang/protobuf"
-  version = ">=1.3.0"
+  version = ">=1.3.1"
 
 [[constraint]]
   name = "google.golang.org/grpc"
-  version = "=1.19.0"
+  version = "=1.19.1"
 
 [[constraint]]
   name = "github.com/golang/mock"

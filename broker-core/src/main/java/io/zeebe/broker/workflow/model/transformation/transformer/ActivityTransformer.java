@@ -40,6 +40,8 @@ public class ActivityTransformer implements ModelElementTransformer<Activity> {
     activity.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.ACTIVITY_ELEMENT_ACTIVATING);
     activity.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.ACTIVITY_ELEMENT_ACTIVATED);
+    activity.bindLifecycleState(
         WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.ACTIVITY_EVENT_OCCURRED);
     activity.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.ACTIVITY_ELEMENT_COMPLETING);

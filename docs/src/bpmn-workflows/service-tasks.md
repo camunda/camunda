@@ -8,8 +8,6 @@ When the workflow instance arrives a service task then it creates a correspondin
 A worker can subscribe to these jobs and complete them when the work is done.
 When a job is completed, the token flow continues.
 
-Read more about [job handling](basics/job-workers.html).
-
 XML representation:
 
 ```
@@ -23,20 +21,18 @@ XML representation:
 </bpmn:serviceTask>
 ```
 
-BPMN Modeler: [Click Here](/bpmn-modeler/tasks.html#create-a-service-task)
+BPMN Modeler: [Click Here](/bpmn-modeler/tasks.html#service-task)
 
 ## Task Definition
 
 Each service task must have a task definition.
-It specifies the type of the job which workers can subscribe to.
+It specifies the type of job which workers can subscribe to.
 
-Optionally, a task definition can specify the amount of times the job is retried when a worker signals failure (default = 3).
+Optionally, a task definition can specify the number of times the job is retried when a worker signals failure (default = 3).
 
 ```
 <zeebe:taskDefinition type="payment-service" retries="5" />
 ```
-
-BPMN Modeler: [Click Here](/bpmn-modeler/tasks.html#configure-job-type)
 
 ## Task Headers
 
@@ -49,11 +45,9 @@ Task headers are metadata that are handed to workers along with the job. They ca
 </zeebe:taskHeaders>
 ```
 
-BPMN Modeler: [Click Here](/bpmn-modeler/tasks.html#add-task-header)
+## Variable Mappings
 
-## Payload Mapping
-
-In order to map workflow instance payload to a format that is accepted by the job worker, payload input and output mappings can be configured. See the [Input/Output Mappings](/bpmn-workflows/data-flow.html#inputoutput-mappings) section for details on this concept.
+By default, all job variables are merged into the workflow instance. This behavior can be customized by defining an output mapping at the service task. Input mappings can be used to transform the variables into a format that is accepted by the job worker.
 
 XML representation:
 
@@ -61,11 +55,15 @@ XML representation:
 <serviceTask id="collectMoney">
   <extensionElements>
     <zeebe:ioMapping>
-      <zeebe:input source="$.price" target="$.total"/>
-      <zeebe:output source="$.paymentMethod" target="$.paymentMethod"/>
+      <zeebe:input source="price" target="total"/>
+      <zeebe:output source="method" target="paymentMethod"/>
      </zeebe:ioMapping>
   </extensionElements>
 </serviceTask>
 ```
 
-BPMN Modeler: [Click Here](/bpmn-modeler/tasks.html#add-inputoutput-mapping)
+## Additional Resources
+
+* [Job Handling](basics/job-workers.html)
+* [Variable Mappings](reference/variables.html#inputoutput-variable-mappings)
+* [Incidents](/reference/incidents.html)

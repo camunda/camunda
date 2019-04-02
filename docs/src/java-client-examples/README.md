@@ -25,7 +25,7 @@ Import the Maven project in the `samples` directory into your IDE to start hacki
 
 ## Data
 
-* [Handle the payload as POJO](java-client-examples/data-pojo.html)
+* [Handle variables as POJO](java-client-examples/data-pojo.html)
 
 ## Cluster
 

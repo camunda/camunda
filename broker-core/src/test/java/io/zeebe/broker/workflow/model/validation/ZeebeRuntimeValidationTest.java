@@ -24,7 +24,6 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.zeebe.model.bpmn.traversal.ModelWalker;
@@ -70,100 +69,86 @@ public class ZeebeRuntimeValidationTest {
         Arrays.asList(
             expect(
                 ConditionExpression.class,
-                "Condition expression is invalid: [1.1] failure: expected comparison, disjunction or conjunction.\n"
+                "Condition expression is invalid: [1.4] failure: expected comparison operator ('==', '!=', '<', '<=', '>', '>=')\n"
                     + "\n"
                     + "foo\n"
-                    + "^"))
+                    + "   ^"))
       },
       {
         // not a json path expression
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", s -> s.zeebeInput("foo", "$.foo"))
+            .serviceTask("task", s -> s.zeebeInput("$.foo", "foo"))
             .endEvent()
             .done(),
         Arrays.asList(
             expect(
-                ZeebeInput.class, "JSON path query is invalid: Unexpected json-path token LITERAL"))
+                ZeebeInput.class,
+                "JSON path query is invalid: Unexpected json-path token ROOT_OBJECT"))
       },
       { // not a json path expression
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", s -> s.zeebeOutput("foo", "$.foo"))
+            .serviceTask("task", s -> s.zeebeOutput("$.foo", "foo"))
             .endEvent()
             .done(),
         Arrays.asList(
             expect(
                 ZeebeOutput.class,
-                "JSON path query is invalid: Unexpected json-path token LITERAL"))
+                "JSON path query is invalid: Unexpected json-path token ROOT_OBJECT"))
       },
       {
         // input source expression is not supported
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", s -> s.zeebeInput("$.*", "$.foo"))
+            .serviceTask("task", s -> s.zeebeInput("foo[1]", "foo"))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeInput.class, "This JSON path query is not supported"))
+        Arrays.asList(
+            expect(
+                ZeebeInput.class,
+                "JSON path query is invalid: Unexpected json-path token SUBSCRIPT_OPERATOR_BEGIN"))
       },
       {
         // output target expression is not supported
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", s -> s.zeebeInput("$.foo", "$.a[0,1]"))
-            .endEvent()
-            .done(),
-        Arrays.asList(expect(ZeebeInput.class, "This JSON path query is not supported"))
-      },
-      {
-        // root mapping + specific
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task", s -> s.zeebeInput("$", "$").zeebeInput("$.foo", "$.foo"))
+            .serviceTask("task", s -> s.zeebeInput("foo", "a[1]"))
             .endEvent()
             .done(),
         Arrays.asList(
             expect(
-                ZeebeIoMapping.class,
-                "Invalid inputs: When using $ as target, no other input can be defined"))
+                ZeebeInput.class,
+                "JSON path query is invalid: Unexpected json-path token SUBSCRIPT_OPERATOR_BEGIN"))
       },
       {
-        // root mapping + specific
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task", s -> s.zeebeOutput("$", "$").zeebeOutput("$.foo", "$.foo"))
-            .endEvent()
-            .done(),
-        Arrays.asList(
-            expect(
-                ZeebeIoMapping.class,
-                "Invalid outputs: When using $ as target, no other output can be defined"))
-      },
-      {
+        // correlation key expression is not supported
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .intermediateCatchEvent("catch")
-            .message(b -> b.name("message").zeebeCorrelationKey("foo"))
+            .message(b -> b.name("message").zeebeCorrelationKey("$.foo"))
             .endEvent()
             .done(),
         Arrays.asList(
             expect(
                 ZeebeSubscription.class,
-                "JSON path query is invalid: Unexpected json-path token LITERAL"))
+                "JSON path query is invalid: Unexpected json-path token ROOT_OBJECT"))
       },
       {
+        // correlation key expression is not supported
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .receiveTask("catch")
-            .message(b -> b.name("message").zeebeCorrelationKey("foo"))
+            .message(b -> b.name("message").zeebeCorrelationKey("$.foo"))
             .endEvent()
             .done(),
         Arrays.asList(
             expect(
                 ZeebeSubscription.class,
-                "JSON path query is invalid: Unexpected json-path token LITERAL"))
+                "JSON path query is invalid: Unexpected json-path token ROOT_OBJECT"))
       },
       {
+        // correlation key expression is empty
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .receiveTask("catch")

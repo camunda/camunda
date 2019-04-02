@@ -34,7 +34,7 @@ public class JobRecord extends UnpackedObject implements WorkflowInstanceRelated
   public static final String RETRIES = "retries";
   public static final String TYPE = "type";
   public static final String CUSTOM_HEADERS = "customHeaders";
-  public static final String PAYLOAD = "payload";
+  public static final String VARIABLES = "variables";
   public static final String ERROR_MESSAGE = "errorMessage";
 
   private final LongProperty deadlineProp =
@@ -45,7 +45,7 @@ public class JobRecord extends UnpackedObject implements WorkflowInstanceRelated
   private final ObjectProperty<JobHeaders> headersProp =
       new ObjectProperty<>("headers", new JobHeaders());
   private final PackedProperty customHeadersProp = new PackedProperty(CUSTOM_HEADERS, NO_HEADERS);
-  private final DocumentProperty payloadProp = new DocumentProperty(PAYLOAD);
+  private final DocumentProperty variableProp = new DocumentProperty(VARIABLES);
   private final StringProperty errorMessageProp = new StringProperty(ERROR_MESSAGE, "");
 
   public JobRecord() {
@@ -55,7 +55,7 @@ public class JobRecord extends UnpackedObject implements WorkflowInstanceRelated
         .declareProperty(typeProp)
         .declareProperty(headersProp)
         .declareProperty(customHeadersProp)
-        .declareProperty(payloadProp)
+        .declareProperty(variableProp)
         .declareProperty(errorMessageProp);
   }
 
@@ -113,18 +113,18 @@ public class JobRecord extends UnpackedObject implements WorkflowInstanceRelated
     return this;
   }
 
-  public DirectBuffer getPayload() {
-    return payloadProp.getValue();
+  public DirectBuffer getVariables() {
+    return variableProp.getValue();
   }
 
-  public JobRecord setPayload(DirectBuffer payload) {
-    payloadProp.setValue(payload);
+  public JobRecord setVariables(DirectBuffer variables) {
+    variableProp.setValue(variables);
 
     return this;
   }
 
-  public JobRecord resetPayload() {
-    payloadProp.reset();
+  public JobRecord resetVariables() {
+    variableProp.reset();
     return this;
   }
 

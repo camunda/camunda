@@ -2,13 +2,13 @@
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Util</name>
-  <artifactId>zb-util</artifactId>
+  <artifactId>zeebe-util</artifactId>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.zeebe</groupId>
-    <artifactId>zb-parent</artifactId>
-    <version>0.17.0-SNAPSHOT</version>
+    <artifactId>zeebe-parent</artifactId>
+    <version>0.18.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 

@@ -19,8 +19,8 @@ package io.zeebe.broker.exporter.record.value;
 
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueImpl;
-import io.zeebe.exporter.record.value.RaftRecordValue;
-import io.zeebe.exporter.record.value.raft.RaftMember;
+import io.zeebe.exporter.api.record.value.RaftRecordValue;
+import io.zeebe.exporter.api.record.value.raft.RaftMember;
 import java.util.List;
 import java.util.Objects;
 

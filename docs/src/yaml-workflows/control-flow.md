@@ -46,9 +46,9 @@ In the above example, we have reversed the order of `fetch-items` and `ship-parc
 
 ## Data-based Conditions
 
-Some workflows do not always execute the same tasks but need to pick and choose different tasks, based on workflow instance payload.
+Some workflows do not always execute the same tasks but need to pick and choose different tasks, based on variables of the workflow instance.
 
-To achieve this, the `switch` attribute together with JSON-Path-based conditions can be used.
+We can use the `switch` attribute and conditions to decide on the next task.
 
 ```yaml
 name: order-process
@@ -60,7 +60,7 @@ tasks:
     - id: fetch-items
       type: inventory-service
       switch:
-          - case: $.totalPrice > 100
+          - case: totalPrice > 100
             goto: ship-parcel-with-insurance
 
           - default: ship-parcel
@@ -74,10 +74,10 @@ tasks:
 ```
 
 In the above example, the order-process starts with `collect-money`, followed by `fetch-items`.
-If the `totalPrice` value in the workflow instance payload is greater than 100, then it continues with `ship-parcel-with-insurance`. Otherwise, `ship-parcel` is chosen. In either case, the workflow instance ends after that.
+If the variable `totalPrice` is greater than 100, then it continues with `ship-parcel-with-insurance`. Otherwise, `ship-parcel` is chosen. In either case, the workflow instance ends after that.
 
 In the `switch` element, there is one `case` element per alternative to choose from. If none of the conditions evaluates to `true`, then the `default` element is evaluated. While `default` is not required, it is best practice to include to avoid errors at workflow runtime. Should such an error occur (i.e. no case is fulfilled and there is no default), then workflow execution stops and an incident is raised.
 
-Related resources:
+## Additional Resources
 
-* [JSON Condition Reference](reference/json-conditions.html)
+* [Conditions](reference/conditions.html)

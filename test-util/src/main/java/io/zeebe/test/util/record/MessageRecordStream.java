@@ -15,12 +15,12 @@
  */
 package io.zeebe.test.util.record;
 
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.MessageRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.MessageRecordValue;
 import java.util.stream.Stream;
 
 public class MessageRecordStream
-    extends ExporterRecordWithPayloadStream<MessageRecordValue, MessageRecordStream> {
+    extends ExporterRecordWithVariablesStream<MessageRecordValue, MessageRecordStream> {
 
   public MessageRecordStream(final Stream<Record<MessageRecordValue>> wrappedStream) {
     super(wrappedStream);

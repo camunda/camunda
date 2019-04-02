@@ -209,7 +209,7 @@ public class ResponseMapper {
               .setWorker(bufferAsString(job.getWorker()))
               .setRetries(job.getRetries())
               .setDeadline(job.getDeadline())
-              .setPayload(bufferAsJson(job.getPayload()))
+              .setVariables(bufferAsJson(job.getVariables()))
               .build();
 
       responseBuilder.addJobs(activatedJob);

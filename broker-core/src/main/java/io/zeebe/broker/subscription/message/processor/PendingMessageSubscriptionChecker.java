@@ -50,10 +50,10 @@ public class PendingMessageSubscriptionChecker implements Runnable {
             subscription.getWorkflowInstanceKey(),
             subscription.getElementInstanceKey(),
             subscription.getMessageName(),
-            subscription.getMessagePayload());
+            subscription.getMessageVariables());
 
     if (success) {
-      subscriptionState.updateSentTime(subscription, ActorClock.currentTimeMillis());
+      subscriptionState.updateSentTimeInTransaction(subscription, ActorClock.currentTimeMillis());
     }
 
     return success;

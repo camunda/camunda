@@ -51,7 +51,9 @@ public class DbCompositeKeyColumnFamilyTest {
     secondKey = new DbLong();
     compositeKey = new DbCompositeKey<>(firstKey, secondKey);
     value = new DbString();
-    columnFamily = zeebeDb.createColumnFamily(DefaultColumnFamily.DEFAULT, compositeKey, value);
+    columnFamily =
+        zeebeDb.createColumnFamily(
+            DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), compositeKey, value);
   }
 
   @Test

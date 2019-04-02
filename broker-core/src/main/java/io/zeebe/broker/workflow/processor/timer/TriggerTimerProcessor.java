@@ -21,10 +21,12 @@ package io.zeebe.broker.workflow.processor.timer;
 import static io.zeebe.broker.workflow.state.TimerInstance.NO_ELEMENT_INSTANCE;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.element.AbstractFlowElement;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.processor.CatchEventBehavior;
@@ -53,10 +55,11 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
   private final CatchEventBehavior catchEventBehavior;
   private final WorkflowState workflowState;
   private final WorkflowInstanceRecord eventOccurredRecord = new WorkflowInstanceRecord();
+  private final KeyGenerator keyGenerator;
 
-  public TriggerTimerProcessor(
-      final WorkflowState workflowState, CatchEventBehavior catchEventBehavior) {
-    this.workflowState = workflowState;
+  public TriggerTimerProcessor(final ZeebeState zeebeState, CatchEventBehavior catchEventBehavior) {
+    this.workflowState = zeebeState.getWorkflowState();
+    this.keyGenerator = zeebeState.getKeyGenerator();
     this.catchEventBehavior = catchEventBehavior;
   }
 
@@ -117,7 +120,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
 
   private boolean tryTriggerTimer(
       long eventScopeKey, TypedStreamWriter streamWriter, TimerRecord timer) {
-    final long eventKey = streamWriter.getKeyGenerator().nextKey();
+    final long eventKey = keyGenerator.nextKey();
     return workflowState
         .getEventScopeInstanceState()
         .triggerEvent(
@@ -131,7 +134,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     eventOccurredRecord.reset();
     if (isTimerStartEvent(elementInstanceKey)) {
 
-      eventOccurredKey = streamWriter.getKeyGenerator().nextKey();
+      eventOccurredKey = keyGenerator.nextKey();
       eventOccurredRecord
           .setBpmnElementType(BpmnElementType.START_EVENT)
           .setWorkflowKey(timer.getWorkflowKey())

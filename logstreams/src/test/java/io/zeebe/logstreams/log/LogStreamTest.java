@@ -334,7 +334,7 @@ public class LogStreamTest {
     long position = -1L;
 
     while (position < 0) {
-      position = writer.positionAsKey().value(wrapString("event")).tryWrite();
+      position = writer.value(wrapString("event")).tryWrite();
     }
 
     final long writtenEventPosition = position;

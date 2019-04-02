@@ -25,10 +25,10 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.RecordMetadata;
-import io.zeebe.exporter.record.value.IncidentRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.RecordMetadata;
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.ErrorType;
@@ -56,7 +56,7 @@ public class ExpressionIncidentTest {
 
   private PartitionTestClient testClient;
 
-  private static final byte[] PAYLOAD;
+  private static final byte[] VARIABLES;
 
   static {
     final DirectBuffer buffer =
@@ -66,8 +66,8 @@ public class ExpressionIncidentTest {
               p.packString("foo");
               p.packString("bar");
             });
-    PAYLOAD = new byte[buffer.capacity()];
-    buffer.getBytes(0, PAYLOAD);
+    VARIABLES = new byte[buffer.capacity()];
+    buffer.getBytes(0, VARIABLES);
   }
 
   @Before
@@ -80,11 +80,11 @@ public class ExpressionIncidentTest {
             .startEvent()
             .exclusiveGateway("xor")
             .sequenceFlowId("s1")
-            .condition("$.foo < 5")
+            .condition("foo < 5")
             .endEvent()
             .moveToLastGateway()
             .sequenceFlowId("s2")
-            .condition("$.foo >= 5 && $.foo < 10")
+            .condition("foo >= 5 && foo < 10")
             .endEvent()
             .done());
   }
@@ -134,7 +134,7 @@ public class ExpressionIncidentTest {
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertIncidentRecordValue(
         ErrorType.CONDITION_ERROR.name(),
-        "Expected to evaluate condition '$.foo >= 5 && $.foo < 10' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER",
+        "Expected to evaluate condition 'foo >= 5 && foo < 10' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER",
         "xor",
         incidentEvent);
   }
@@ -156,7 +156,7 @@ public class ExpressionIncidentTest {
     final Record<WorkflowInstanceRecordValue> failureEvent =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
-    // when correct payload is used
+    // when correct variables is used
     testClient.updateVariables(failureEvent.getKey(), Maps.of(entry("foo", 7)));
     testClient.resolveIncident(incidentEvent.getKey());
 
@@ -176,7 +176,7 @@ public class ExpressionIncidentTest {
     // RESOLVE triggers RESOLVED
     assertThat(incidentRecords)
         .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getRecordType, RecordMetadata::getIntent)
+        .extracting(m -> tuple(m.getRecordType(), m.getIntent()))
         .containsSubsequence(
             tuple(RecordType.COMMAND, IncidentIntent.RESOLVE),
             tuple(RecordType.EVENT, IncidentIntent.RESOLVED));
@@ -197,7 +197,7 @@ public class ExpressionIncidentTest {
   }
 
   @Test
-  public void shouldResolveIncidentForFailedConditionAfterUploadingWrongPayload() {
+  public void shouldResolveIncidentForFailedConditionAfterUploadingWrongVariables() {
     // given
     testClient
         .createWorkflowInstance(
@@ -220,7 +220,7 @@ public class ExpressionIncidentTest {
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
-    // when correct payload is used
+    // when correct variables is used
     testClient.updateVariables(failedEventKey, Maps.of(entry("foo", 7)));
     testClient.resolveIncident(secondIncident.getKey());
 
@@ -246,7 +246,7 @@ public class ExpressionIncidentTest {
     // RESOLVE triggers RESOLVED
     assertThat(incidentRecords)
         .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getRecordType, RecordMetadata::getIntent)
+        .extracting(m -> tuple(m.getRecordType(), m.getIntent()))
         .containsSubsequence(
             tuple(RecordType.COMMAND, IncidentIntent.RESOLVE),
             tuple(RecordType.EVENT, IncidentIntent.RESOLVED));
@@ -311,7 +311,7 @@ public class ExpressionIncidentTest {
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertIncidentRecordValue(
         ErrorType.CONDITION_ERROR.name(),
-        "Expected to evaluate condition '$.foo >= 5 && $.foo < 10' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER",
+        "Expected to evaluate condition 'foo >= 5 && foo < 10' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER",
         "xor",
         incidentEvent);
   }

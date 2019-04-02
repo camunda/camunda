@@ -18,6 +18,7 @@
 package io.zeebe.broker.subscription.message.processor;
 
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
@@ -44,6 +45,7 @@ public class MessageEventProcessors {
         zeebeState.getMessageStartEventSubscriptionState();
     final EventScopeInstanceState eventScopeInstanceState =
         zeebeState.getWorkflowState().getEventScopeInstanceState();
+    final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
 
     typedProcessorBuilder
         .onCommand(
@@ -54,7 +56,8 @@ public class MessageEventProcessors {
                 subscriptionState,
                 startEventSubscriptionState,
                 eventScopeInstanceState,
-                subscriptionCommandSender))
+                subscriptionCommandSender,
+                keyGenerator))
         .onCommand(
             ValueType.MESSAGE, MessageIntent.DELETE, new DeleteMessageProcessor(messageState))
         .onCommand(

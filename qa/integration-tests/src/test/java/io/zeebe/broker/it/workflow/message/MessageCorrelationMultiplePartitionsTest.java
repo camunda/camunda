@@ -54,7 +54,7 @@ public class MessageCorrelationMultiplePartitionsTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent()
-          .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
+          .message(m -> m.name("message").zeebeCorrelationKey("key"))
           .endEvent("end")
           .done();
 
@@ -157,6 +157,7 @@ public class MessageCorrelationMultiplePartitionsTest {
 
     // when
     brokerRule.stopBroker();
+    RecordingExporter.reset();
     brokerRule.startBroker();
 
     IntStream.range(0, 5)
@@ -190,13 +191,13 @@ public class MessageCorrelationMultiplePartitionsTest {
         .getWorkflowInstanceKey();
   }
 
-  private void publishMessage(String correlationKey, Object payload) {
+  private void publishMessage(String correlationKey, Object variables) {
     clientRule
         .getClient()
         .newPublishMessageCommand()
         .messageName("message")
         .correlationKey(correlationKey)
-        .payload(payload)
+        .variables(variables)
         .send()
         .join();
   }

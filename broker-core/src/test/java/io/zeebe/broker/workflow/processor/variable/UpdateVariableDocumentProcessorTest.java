@@ -45,6 +45,9 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
 public class UpdateVariableDocumentProcessorTest
     extends CommandProcessorTestCase<VariableDocumentRecord> {
+
+  public static final int WORKFLOW_KEY = -1;
+
   private ElementInstanceState elementInstanceState;
   private VariablesState variablesState;
   private UpdateVariableDocumentProcessor processor;
@@ -108,7 +111,8 @@ public class UpdateVariableDocumentProcessorTest
     processor.onCommand(command, controller);
 
     // then
-    verify(variablesState, times(1)).setVariablesFromDocument(instance.getKey(), document);
+    verify(variablesState, times(1))
+        .setVariablesFromDocument(instance.getKey(), WORKFLOW_KEY, document);
   }
 
   @Test
@@ -127,7 +131,8 @@ public class UpdateVariableDocumentProcessorTest
     processor.onCommand(command, controller);
 
     // then
-    verify(variablesState, times(1)).setVariablesLocalFromDocument(instance.getKey(), document);
+    verify(variablesState, times(1))
+        .setVariablesLocalFromDocument(instance.getKey(), WORKFLOW_KEY, document);
   }
 
   @Test

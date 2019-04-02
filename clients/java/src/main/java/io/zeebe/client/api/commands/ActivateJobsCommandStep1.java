@@ -32,13 +32,13 @@ public interface ActivateJobsCommandStep1 {
   interface ActivateJobsCommandStep2 {
 
     /**
-     * Set the maximal amount of jobs to activate. If less jobs are avaiable for activation the
-     * command will return a list with fewer jobs.
+     * Set the maximum of jobs to activate. If less jobs are available for activation the command
+     * will return a list with fewer jobs.
      *
-     * @param amount the maximal number of jobs to activate
+     * @param maxJobsToActivate the maximal number of jobs to activate
      * @return the builder for this command
      */
-    ActivateJobsCommandStep3 amount(int amount);
+    ActivateJobsCommandStep3 maxJobsToActivate(int maxJobsToActivate);
   }
 
   interface ActivateJobsCommandStep3 extends FinalCommandStep<ActivateJobsResponse> {
@@ -91,10 +91,9 @@ public interface ActivateJobsCommandStep1 {
     /**
      * Set a list of variable names which should be fetch on job activation.
      *
-     * <p>The jobs which are activated by this command will only contain variables from this list in
-     * their payload.
+     * <p>The jobs which are activated by this command will only contain variables from this list.
      *
-     * <p>This can be used to limit the number of variables in the payload of the activated jobs.
+     * <p>This can be used to limit the number of variables of the activated jobs.
      *
      * @param fetchVariables list of variables names to fetch on activation
      * @return the builder for this command. Call {@link #send()} to complete the command and send
@@ -105,10 +104,9 @@ public interface ActivateJobsCommandStep1 {
     /**
      * Set a list of variable names which should be fetch on job activation.
      *
-     * <p>The jobs which are activated by this command will only contain variables from this list in
-     * their payload.
+     * <p>The jobs which are activated by this command will only contain variables from this list.
      *
-     * <p>This can be used to limit the number of variables in the payload of the activated jobs.
+     * <p>This can be used to limit the number of variables of the activated jobs.
      *
      * @param fetchVariables list of variables names to fetch on activation
      * @return the builder for this command. Call {@link #send()} to complete the command and send

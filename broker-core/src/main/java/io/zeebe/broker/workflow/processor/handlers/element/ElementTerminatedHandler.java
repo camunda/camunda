@@ -21,6 +21,7 @@ import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceLifecycle;
 import io.zeebe.broker.workflow.processor.handlers.AbstractTerminalStateHandler;
+import io.zeebe.broker.workflow.processor.handlers.IncidentResolver;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
@@ -32,8 +33,11 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
  */
 public class ElementTerminatedHandler<T extends ExecutableFlowNode>
     extends AbstractTerminalStateHandler<T> {
-  public ElementTerminatedHandler() {
+  private final IncidentResolver incidentResolver;
+
+  public ElementTerminatedHandler(IncidentResolver incidentResolver) {
     super();
+    this.incidentResolver = incidentResolver;
   }
 
   @Override
@@ -49,6 +53,7 @@ public class ElementTerminatedHandler<T extends ExecutableFlowNode>
             && WorkflowInstanceLifecycle.canTransition(
                 flowScopeInstance.getState(), WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
+    incidentResolver.resolveIncidents(context);
     if (isScopeTerminating && isLastActiveExecutionPathInScope(context)) {
       context
           .getOutput()

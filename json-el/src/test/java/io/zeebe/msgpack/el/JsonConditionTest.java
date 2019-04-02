@@ -33,7 +33,7 @@ public class JsonConditionTest {
 
   @Test
   public void shouldEvaluateConditionWithLiteral() {
-    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("$.foo == 'bar'");
+    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("foo == 'bar'");
     assertThat(condition.isValid()).isTrue();
 
     boolean result = interpreter.eval(condition, asMsgPack("foo", "bar"));
@@ -46,7 +46,7 @@ public class JsonConditionTest {
   @Test
   public void shouldEvaluateConditionWithJsonPath() {
     final CompiledJsonCondition condition =
-        JsonConditionFactory.createCondition("$.foo == $.bar || $.foo > 2 || $.bar <= 2");
+        JsonConditionFactory.createCondition("foo == bar || foo > 2 || bar <= 2");
     assertThat(condition.isValid()).isTrue();
 
     boolean result = interpreter.eval(condition, asMsgPack(c -> c.put("foo", 2).put("bar", 2)));
@@ -58,7 +58,7 @@ public class JsonConditionTest {
 
   @Test
   public void shouldReportParseFailure() {
-    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("$.foo ==");
+    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("foo ==");
 
     assertThat(condition.isValid()).isFalse();
     assertThat(condition.getErrorMessage()).contains("expected literal");
@@ -66,7 +66,7 @@ public class JsonConditionTest {
 
   @Test
   public void shouldFailIfTypeDoesntMatch() {
-    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("$.foo > 3");
+    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("foo > 3");
     assertThat(condition.isValid()).isTrue();
 
     thrown.expect(JsonConditionException.class);
@@ -77,7 +77,7 @@ public class JsonConditionTest {
 
   @Test
   public void shouldFailIfMissingPropertyComparedRelatively() {
-    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("$.foo > 3");
+    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("foo > 3");
     assertThat(condition.isValid()).isTrue();
 
     thrown.expect(JsonConditionException.class);
@@ -88,7 +88,7 @@ public class JsonConditionTest {
 
   @Test
   public void shouldEqualToNullIfJsonPathDoesntMatch() {
-    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("$.foo == null");
+    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("foo == null");
     assertThat(condition.isValid()).isTrue();
 
     final boolean result = interpreter.eval(condition, asMsgPack("bar", 4));
@@ -98,8 +98,7 @@ public class JsonConditionTest {
 
   @Test
   public void shouldEqualToNullIfAnySegmentInJsonPathDoesntMatch() {
-    final CompiledJsonCondition condition =
-        JsonConditionFactory.createCondition("$.foo.baz == null");
+    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("foo.baz == null");
     assertThat(condition.isValid()).isTrue();
 
     final boolean result = interpreter.eval(condition, asMsgPack("bar", 4));
@@ -109,7 +108,7 @@ public class JsonConditionTest {
 
   @Test
   public void shouldFailIfTypeIsNil() {
-    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("$.foo > 3");
+    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("foo > 3");
     assertThat(condition.isValid()).isTrue();
 
     thrown.expect(JsonConditionException.class);
@@ -120,7 +119,7 @@ public class JsonConditionTest {
 
   @Test
   public void shouldFailIfTypeIsArray() {
-    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("$.foo == $.bar");
+    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("foo == bar");
     assertThat(condition.isValid()).isTrue();
 
     thrown.expect(JsonConditionException.class);
@@ -135,7 +134,7 @@ public class JsonConditionTest {
 
   @Test
   public void shouldFailIfTypeIsMap() {
-    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("$.foo == $.bar");
+    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("foo == bar");
     assertThat(condition.isValid()).isTrue();
 
     thrown.expect(JsonConditionException.class);
@@ -150,7 +149,7 @@ public class JsonConditionTest {
 
   @Test
   public void shouldFailIfTypeIsNotNumber() {
-    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("$.foo < $.bar");
+    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("foo < bar");
     assertThat(condition.isValid()).isTrue();
 
     thrown.expect(JsonConditionException.class);
@@ -162,7 +161,7 @@ public class JsonConditionTest {
   @Test
   public void shouldIncludeExpressionInExceptionMessage() {
     // given
-    final String expression = "$.foo == null && $.bar > 23 || $.foo != true";
+    final String expression = "foo == null && bar > 23 || foo != true";
     final CompiledJsonCondition condition = JsonConditionFactory.createCondition(expression);
     assertThat(condition.isValid()).isTrue();
 

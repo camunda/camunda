@@ -22,13 +22,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Assertions;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.IncidentRecordValue;
-import io.zeebe.exporter.record.value.JobRecordValue;
-import io.zeebe.exporter.record.value.TimerRecordValue;
-import io.zeebe.exporter.record.value.VariableRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Assertions;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.value.TimerRecordValue;
+import io.zeebe.exporter.api.record.value.VariableRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.BpmnElementType;
@@ -148,8 +148,8 @@ public class BoundaryEventTest {
             .startEvent()
             .serviceTask("task", b -> b.zeebeTaskType("type"))
             .boundaryEvent("event")
-            .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
-            .zeebeOutput("$.foo", "$.bar")
+            .message(m -> m.name("message").zeebeCorrelationKey("key"))
+            .zeebeOutput("foo", "bar")
             .endEvent("endTimer")
             .moveToActivity("task")
             .endEvent()
@@ -183,7 +183,7 @@ public class BoundaryEventTest {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type").zeebeInput("$.oof", "$.baz"))
+            .serviceTask("task", b -> b.zeebeTaskType("type").zeebeInput("oof", "baz"))
             .boundaryEvent("timer")
             .cancelActivity(true)
             .timerWithDuration("PT1S")
@@ -292,9 +292,9 @@ public class BoundaryEventTest {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
-            .serviceTask("task", c -> c.zeebeTaskType("type").zeebeInput("$.bar", "$.foo"))
+            .serviceTask("task", c -> c.zeebeTaskType("type").zeebeInput("bar", "foo"))
             .boundaryEvent(
-                "event", b -> b.message(m -> m.zeebeCorrelationKey("$.foo").name("message")))
+                "event", b -> b.message(m -> m.zeebeCorrelationKey("foo").name("message")))
             .endEvent()
             .moveToActivity("task")
             .endEvent()
@@ -326,7 +326,7 @@ public class BoundaryEventTest {
             .startEvent()
             .serviceTask("task", c -> c.zeebeTaskType("type"))
             .boundaryEvent(
-                "event", b -> b.message(m -> m.zeebeCorrelationKey("$.orderId").name("message")))
+                "event", b -> b.message(m -> m.zeebeCorrelationKey("orderId").name("message")))
             .endEvent()
             .moveToActivity("task")
             .endEvent()

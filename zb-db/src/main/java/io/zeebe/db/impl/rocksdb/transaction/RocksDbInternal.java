@@ -15,15 +15,30 @@
  */
 package io.zeebe.db.impl.rocksdb.transaction;
 
+import static org.rocksdb.Status.Code.Aborted;
+import static org.rocksdb.Status.Code.Busy;
+import static org.rocksdb.Status.Code.Expired;
+import static org.rocksdb.Status.Code.IOError;
+import static org.rocksdb.Status.Code.MergeInProgress;
+import static org.rocksdb.Status.Code.Ok;
+import static org.rocksdb.Status.Code.TimedOut;
+import static org.rocksdb.Status.Code.TryAgain;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.EnumSet;
 import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.RocksObject;
+import org.rocksdb.Status;
+import org.rocksdb.Status.Code;
 import org.rocksdb.Transaction;
 
 public class RocksDbInternal {
+  static final EnumSet<Code> RECOVERABLE_ERROR_CODES =
+      EnumSet.of(Ok, Aborted, Expired, IOError, Busy, TimedOut, TryAgain, MergeInProgress);
 
   static Field nativeHandle;
 
@@ -102,5 +117,10 @@ public class RocksDbInternal {
     } catch (IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException("Unexpected error occurred trying to seek with RocksIterator", e);
     }
+  }
+
+  static boolean isRocksDbExceptionRecoverable(RocksDBException rdbex) {
+    final Status status = rdbex.getStatus();
+    return RECOVERABLE_ERROR_CODES.contains(status.getCode());
   }
 }

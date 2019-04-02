@@ -7,8 +7,8 @@
 
   <parent>
     <groupId>io.zeebe</groupId>
-    <artifactId>zb-parent</artifactId>
-    <version>0.17.0-SNAPSHOT</version>
+    <artifactId>zeebe-parent</artifactId>
+    <version>0.18.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -20,42 +20,37 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-util</artifactId>
+      <artifactId>zeebe-util</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-protocol</artifactId>
+      <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-protocol-impl</artifactId>
+      <artifactId>zeebe-protocol-impl</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-msgpack-value</artifactId>
+      <artifactId>zeebe-msgpack-value</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-dispatcher</artifactId>
+      <artifactId>zeebe-dispatcher</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-transport</artifactId>
+      <artifactId>zeebe-transport</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.msgpack</groupId>
       <artifactId>msgpack-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zb-msgpack-core</artifactId>
     </dependency>
 
     <dependency>
@@ -116,7 +111,7 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-test-util</artifactId>
+      <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -137,85 +132,7 @@
       <artifactId>hamcrest</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <!-- required for jmh tests -->
-    <dependency>
-      <groupId>org.openjdk.jmh</groupId>
-      <artifactId>jmh-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>jmh</id>
-
-      <dependencies>
-        <dependency>
-          <groupId>org.openjdk.jmh</groupId>
-          <artifactId>jmh-generator-annprocess</artifactId>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-
-      <build>
-        <plugins>
-
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>package-jmh-tests</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-                <configuration>
-                  <attach>true</attach>
-                  <archive>
-                    <manifest>
-                      <mainClass>org.openjdk.jmh.Main</mainClass>
-                    </manifest>
-                  </archive>
-                  <descriptor>src/test/jmh/assembly.xml</descriptor>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>run-jmh-tests</id>
-                <phase>integration-test</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <classpathScope>test</classpathScope>
-                  <executable>java</executable>
-                  <arguments>
-                    <argument>-classpath</argument>
-                    <classpath />
-                    <argument>org.openjdk.jmh.Main</argument>
-                    <argument>.*</argument>
-                    <argument>-rf</argument>
-                    <argument>json</argument>
-                    <argument>-rff</argument>
-                    <argument>${project.build.directory}/jmh-result.json</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 
 </project>
 

@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.state;
 
 import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import java.util.Collection;
@@ -32,12 +33,13 @@ public class WorkflowState {
   private final ElementInstanceState elementInstanceState;
   private final EventScopeInstanceState eventScopeInstanceState;
 
-  public WorkflowState(ZeebeDb<ZbColumnFamilies> zeebeDb, KeyGenerator keyGenerator) {
-    versionManager = new NextValueManager(zeebeDb, ZbColumnFamilies.WORKFLOW_VERSION);
-    workflowPersistenceCache = new WorkflowPersistenceCache(zeebeDb);
-    timerInstanceState = new TimerInstanceState(zeebeDb);
-    elementInstanceState = new ElementInstanceState(zeebeDb, keyGenerator);
-    eventScopeInstanceState = new EventScopeInstanceState(zeebeDb);
+  public WorkflowState(
+      ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext, KeyGenerator keyGenerator) {
+    versionManager = new NextValueManager(zeebeDb, dbContext, ZbColumnFamilies.WORKFLOW_VERSION);
+    workflowPersistenceCache = new WorkflowPersistenceCache(zeebeDb, dbContext);
+    timerInstanceState = new TimerInstanceState(zeebeDb, dbContext);
+    elementInstanceState = new ElementInstanceState(zeebeDb, dbContext, keyGenerator);
+    eventScopeInstanceState = new EventScopeInstanceState(zeebeDb, dbContext);
   }
 
   public int getNextWorkflowVersion(String bpmnProcessId) {

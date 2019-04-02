@@ -49,7 +49,7 @@ public class MessageTimeToLiveChecker implements Runnable {
         .setName(message.getName())
         .setCorrelationKey(message.getCorrelationKey())
         .setTimeToLive(message.getTimeToLive())
-        .setPayload(message.getPayload());
+        .setVariables(message.getVariables());
 
     if (message.getId() != null) {
       deleteMessageCommand.setMessageId(message.getId());

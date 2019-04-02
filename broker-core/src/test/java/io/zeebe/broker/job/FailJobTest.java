@@ -24,10 +24,10 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.RecordMetadata;
-import io.zeebe.exporter.record.value.JobBatchRecordValue;
-import io.zeebe.exporter.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.RecordMetadata;
+import io.zeebe.exporter.api.record.value.JobBatchRecordValue;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -225,7 +225,7 @@ public class FailJobTest {
     apiRule.activateJobs(JOB_TYPE).await();
 
     final Record<JobRecordValue> jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
-    client.completeJob(jobEvent.getKey(), jobEvent.getValue().getPayload());
+    client.completeJob(jobEvent.getKey(), jobEvent.getValue().getVariables());
 
     // when
     final ExecuteCommandResponse response = client.failJob(jobEvent.getKey(), 3);

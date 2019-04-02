@@ -39,8 +39,8 @@ import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobWorker;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.IncidentRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -77,7 +77,7 @@ import org.junit.runners.Parameterized.Parameters;
 public class BrokerReprocessingTest {
 
   private static final String PROCESS_ID = "process";
-  private static final String NULL_PAYLOAD = "{}";
+  private static final String NULL_VARIABLES = "{}";
 
   @Parameters(name = "{index}: {1}")
   public static Object[][] reprocessingTriggers() {
@@ -116,7 +116,7 @@ public class BrokerReprocessingTest {
   private static final BpmnModelInstance WORKFLOW_INCIDENT =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
-          .serviceTask("task", t -> t.zeebeTaskType("test").zeebeInput("$.foo", "$.foo"))
+          .serviceTask("task", t -> t.zeebeTaskType("test").zeebeInput("foo", "foo"))
           .endEvent("end")
           .done();
 
@@ -124,7 +124,7 @@ public class BrokerReprocessingTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("catch-event")
-          .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
+          .message(m -> m.name("order canceled").zeebeCorrelationKey("orderId"))
           .sequenceFlowId("to-end")
           .endEvent()
           .done();
@@ -191,7 +191,8 @@ public class BrokerReprocessingTest {
         .newWorker()
         .jobType("foo")
         .handler(
-            (client, job) -> client.newCompleteCommand(job.getKey()).payload(NULL_PAYLOAD).send())
+            (client, job) ->
+                client.newCompleteCommand(job.getKey()).variables(NULL_VARIABLES).send())
         .open();
 
     // then
@@ -252,7 +253,8 @@ public class BrokerReprocessingTest {
         .newWorker()
         .jobType("foo")
         .handler(
-            (client, job) -> client.newCompleteCommand(job.getKey()).payload(NULL_PAYLOAD).send())
+            (client, job) ->
+                client.newCompleteCommand(job.getKey()).variables(NULL_VARIABLES).send())
         .open();
 
     final CountDownLatch latch = new CountDownLatch(1);
@@ -278,7 +280,8 @@ public class BrokerReprocessingTest {
         .newWorker()
         .jobType("bar")
         .handler(
-            (client, job) -> client.newCompleteCommand(job.getKey()).payload(NULL_PAYLOAD).send())
+            (client, job) ->
+                client.newCompleteCommand(job.getKey()).variables(NULL_VARIABLES).send())
         .open();
 
     // then
@@ -351,7 +354,7 @@ public class BrokerReprocessingTest {
             .getClient()
             .newActivateJobsCommand()
             .jobType("foo")
-            .amount(10)
+            .maxJobsToActivate(10)
             .workerName("this")
             .send()
             .join();
@@ -698,13 +701,13 @@ public class BrokerReprocessingTest {
   }
 
   protected void publishMessage(
-      final String messageName, final String correlationKey, final Map<String, Object> payload) {
+      final String messageName, final String correlationKey, final Map<String, Object> variables) {
     clientRule
         .getClient()
         .newPublishMessageCommand()
         .messageName(messageName)
         .correlationKey(correlationKey)
-        .payload(payload)
+        .variables(variables)
         .send()
         .join();
   }

@@ -51,4 +51,8 @@ public interface StreamProcessor {
   default void onClose() {
     // no nothing
   }
+
+  default long getFailedPosition(LoggedEvent currentEvent) {
+    return -1;
+  }
 }

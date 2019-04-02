@@ -21,6 +21,7 @@ import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.BpmnTransformer;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -62,22 +63,26 @@ public class WorkflowPersistenceCache {
   private final DbString workflowId;
   private final DbLong workflowVersion;
 
-  public WorkflowPersistenceCache(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public WorkflowPersistenceCache(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
     workflowKey = new DbLong();
     persistedWorkflow = new PersistedWorkflow();
     workflowColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.WORKFLOW_CACHE, workflowKey, persistedWorkflow);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.WORKFLOW_CACHE, dbContext, workflowKey, persistedWorkflow);
 
     workflowId = new DbString();
     workflowVersion = new DbLong();
     idAndVersionKey = new DbCompositeKey<>(workflowId, workflowVersion);
     workflowByIdAndVersionColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.WORKFLOW_CACHE_BY_ID_AND_VERSION, idAndVersionKey, persistedWorkflow);
+            ZbColumnFamilies.WORKFLOW_CACHE_BY_ID_AND_VERSION,
+            dbContext,
+            idAndVersionKey,
+            persistedWorkflow);
 
     latestWorkflowColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.WORKFLOW_CACHE_LATEST_KEY, workflowId, workflowVersion);
+            ZbColumnFamilies.WORKFLOW_CACHE_LATEST_KEY, dbContext, workflowId, workflowVersion);
 
     deployments = new LongHashSet();
     workflowsByKey = new Long2ObjectHashMap<>();

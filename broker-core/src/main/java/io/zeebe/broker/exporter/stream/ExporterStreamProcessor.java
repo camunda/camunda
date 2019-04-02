@@ -22,10 +22,11 @@ import io.zeebe.broker.exporter.context.ExporterContext;
 import io.zeebe.broker.exporter.record.RecordMetadataImpl;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.exporter.context.Controller;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.spi.Exporter;
+import io.zeebe.exporter.api.context.Controller;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.spi.Exporter;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -59,9 +60,10 @@ public class ExporterStreamProcessor implements StreamProcessor {
 
   public ExporterStreamProcessor(
       ZeebeDb<ExporterColumnFamilies> zeebeDb,
+      DbContext dbContext,
       final int partitionId,
       final Collection<ExporterDescriptor> descriptors) {
-    state = new ExporterStreamProcessorState(zeebeDb);
+    state = new ExporterStreamProcessorState(zeebeDb, dbContext);
 
     this.partitionId = partitionId;
 
@@ -251,7 +253,7 @@ public class ExporterStreamProcessor implements StreamProcessor {
             .valueType(ValueType.EXPORTER)
             .intent(ExporterIntent.EXPORTED);
 
-        return writer.positionAsKey().valueWriter(record).metadataWriter(rawMetadata).tryWrite();
+        return writer.valueWriter(record).metadataWriter(rawMetadata).tryWrite();
       }
 
       return 0;

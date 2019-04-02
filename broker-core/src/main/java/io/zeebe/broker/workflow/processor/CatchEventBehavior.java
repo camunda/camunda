@@ -81,7 +81,7 @@ public class CatchEventBehavior {
         new MessageCorrelationKeyContext(
             variablesSupplier, context.getRecord().getValue().getFlowScopeKey());
 
-    // collect all message correlation keys from their respective payload, as this might fail and
+    // collect all message correlation keys from their respective variables, as this might fail and
     // we might need to raise an incident
     final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys =
         extractMessageCorrelationKeys(events, elementContext, scopeContext);

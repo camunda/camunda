@@ -21,30 +21,36 @@ import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import com.google.common.collect.Sets;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
-import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class ExclusiveGatewayTest {
+  private static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  private static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @Rule
+  public RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   private PartitionTestClient testClient;
 
@@ -55,43 +61,46 @@ public class ExclusiveGatewayTest {
 
   @Test
   public void shouldSplitOnExclusiveGateway() {
+    final String processId = Strings.newRandomValidBpmnId();
     final BpmnModelInstance workflowDefinition =
-        Bpmn.createExecutableProcess("workflow")
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .exclusiveGateway("xor")
             .sequenceFlowId("s1")
-            .condition("$.foo < 5")
+            .condition("foo < 5")
             .endEvent("a")
             .moveToLastGateway()
             .sequenceFlowId("s2")
-            .condition("$.foo >= 5 && $.foo < 10")
+            .condition("foo >= 5 && foo < 10")
             .endEvent("b")
             .moveToLastExclusiveGateway()
             .defaultFlow()
             .sequenceFlowId("s3")
             .endEvent("c")
             .done();
-
     testClient.deploy(workflowDefinition);
 
     final long workflowInstance1 =
         testClient
             .createWorkflowInstance(
-                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 4)))
+                r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 4)))
             .getInstanceKey();
     final long workflowInstance2 =
         testClient
             .createWorkflowInstance(
-                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 8)))
+                r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 8)))
             .getInstanceKey();
     final long workflowInstance3 =
         testClient
             .createWorkflowInstance(
-                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 12)))
+                r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 12)))
             .getInstanceKey();
+    final Set<Long> workflowInstanceKeys =
+        Sets.newHashSet(workflowInstance1, workflowInstance2, workflowInstance3);
 
     assertThat(
             RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                .valueFilter(r -> workflowInstanceKeys.contains(r.getWorkflowInstanceKey()))
                 .withElementType(BpmnElementType.END_EVENT)
                 .limit(3))
         .extracting(Record::getValue)
@@ -104,12 +113,13 @@ public class ExclusiveGatewayTest {
 
   @Test
   public void shouldJoinOnExclusiveGateway() {
+    final String processId = Strings.newRandomValidBpmnId();
     final BpmnModelInstance workflowDefinition =
-        Bpmn.createExecutableProcess("workflow")
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .exclusiveGateway("split")
             .sequenceFlowId("s1")
-            .condition("$.foo < 5")
+            .condition("foo < 5")
             .exclusiveGateway("joinRequest")
             .moveToLastExclusiveGateway()
             .defaultFlow()
@@ -123,18 +133,18 @@ public class ExclusiveGatewayTest {
     final long workflowInstance1 =
         testClient
             .createWorkflowInstance(
-                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 4)))
+                r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 4)))
             .getInstanceKey();
     final long workflowInstance2 =
         testClient
             .createWorkflowInstance(
-                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 8)))
+                r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 8)))
             .getInstanceKey();
 
     testClient.receiveElementInState(
-        workflowInstance1, "workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        workflowInstance1, processId, WorkflowInstanceIntent.ELEMENT_COMPLETED);
     testClient.receiveElementInState(
-        workflowInstance2, "workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        workflowInstance2, processId, WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     List<String> takenSequenceFlows =
         testClient
@@ -160,12 +170,13 @@ public class ExclusiveGatewayTest {
   @Test
   public void shouldSetSourceRecordPositionCorrectOnJoinXor() {
     // given
+    final String processId = Strings.newRandomValidBpmnId();
     final BpmnModelInstance workflowDefinition =
-        Bpmn.createExecutableProcess("workflow")
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .exclusiveGateway("split")
             .sequenceFlowId("s1")
-            .condition("$.foo < 5")
+            .condition("foo < 5")
             .exclusiveGateway("joinRequest")
             .moveToLastExclusiveGateway()
             .defaultFlow()
@@ -180,17 +191,18 @@ public class ExclusiveGatewayTest {
     final long workflowInstance1 =
         testClient
             .createWorkflowInstance(
-                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 4)))
+                r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 4)))
             .getInstanceKey();
 
     // then
     testClient.receiveElementInState(
-        workflowInstance1, "workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        workflowInstance1, processId, WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     List<Record<WorkflowInstanceRecordValue>> sequenceFlows =
         testClient
             .receiveWorkflowInstances()
             .withIntent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
+            .withWorkflowInstanceKey(workflowInstance1)
             .limit(3)
             .collect(Collectors.toList());
 
@@ -199,6 +211,7 @@ public class ExclusiveGatewayTest {
             .receiveWorkflowInstances()
             .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withElementType(BpmnElementType.EXCLUSIVE_GATEWAY)
+            .withWorkflowInstanceKey(workflowInstance1)
             .limit(2)
             .collect(Collectors.toList());
 
@@ -212,12 +225,12 @@ public class ExclusiveGatewayTest {
     final long workflowInstance2 =
         testClient
             .createWorkflowInstance(
-                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 8)))
+                r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 8)))
             .getInstanceKey();
 
     // then
     testClient.receiveElementInState(
-        workflowInstance2, "workflow", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+        workflowInstance2, processId, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     sequenceFlows =
         testClient
@@ -246,12 +259,13 @@ public class ExclusiveGatewayTest {
   @Test
   public void testWorkflowInstanceStatesWithExclusiveGateway() {
     // given
+    final String processId = Strings.newRandomValidBpmnId();
     final BpmnModelInstance workflowDefinition =
-        Bpmn.createExecutableProcess("workflow")
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .exclusiveGateway("xor")
             .sequenceFlowId("s1")
-            .condition("$.foo < 5")
+            .condition("foo < 5")
             .endEvent("a")
             .moveToLastExclusiveGateway()
             .defaultFlow()
@@ -262,15 +276,17 @@ public class ExclusiveGatewayTest {
     testClient.deploy(workflowDefinition);
 
     // when
-    testClient
-        .createWorkflowInstance(
-            r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 4)))
-        .getInstanceKey();
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 4)))
+            .getInstanceKey();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowEvents =
         testClient
             .receiveWorkflowInstances()
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .skipUntil(r -> r.getValue().getElementId().equals("xor"))
             .limitToWorkflowInstanceCompleted()
             .collect(Collectors.toList());
@@ -294,28 +310,31 @@ public class ExclusiveGatewayTest {
 
   @Test
   public void shouldSplitIfDefaultFlowIsDeclaredFirst() {
+    final String processId = Strings.newRandomValidBpmnId();
     final BpmnModelInstance workflowDefinition =
-        Bpmn.createExecutableProcess("workflow")
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .exclusiveGateway()
             .defaultFlow()
             .endEvent("a")
             .moveToLastExclusiveGateway()
-            .condition("$.foo < 5")
+            .condition("foo < 5")
             .endEvent("b")
             .done();
 
     testClient.deploy(workflowDefinition);
 
     // when
-    testClient
-        .createWorkflowInstance(
-            r1 -> r1.setBpmnProcessId("workflow").setVariables(MsgPackUtil.asMsgPack("foo", 10)))
-        .getInstanceKey();
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r1 -> r1.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 10)))
+            .getInstanceKey();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> completedEvents =
         RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .limitToWorkflowInstanceCompleted()
             .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
             .withElementType(BpmnElementType.END_EVENT)
@@ -326,21 +345,24 @@ public class ExclusiveGatewayTest {
 
   @Test
   public void shouldEndScopeIfGatewayHasNoOutgoingFlows() {
+    final String processId = Strings.newRandomValidBpmnId();
     final BpmnModelInstance workflowDefinition =
-        Bpmn.createExecutableProcess("workflow").startEvent().exclusiveGateway("xor").done();
+        Bpmn.createExecutableProcess(processId).startEvent().exclusiveGateway("xor").done();
 
     testClient.deploy(workflowDefinition);
 
     // when
-    testClient
-        .createWorkflowInstance(
-            r1 -> r1.setBpmnProcessId("workflow").setVariables(MsgPackUtil.asMsgPack("foo", 10)))
-        .getInstanceKey();
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r1 -> r1.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 10)))
+            .getInstanceKey();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> completedEvents =
         RecordingExporter.workflowInstanceRecords()
             .onlyEvents()
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .skipUntil(r -> r.getValue().getElementId().equals("xor"))
             .limitToWorkflowInstanceCompleted()
             .collect(Collectors.toList());

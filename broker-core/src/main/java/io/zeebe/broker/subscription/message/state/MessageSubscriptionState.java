@@ -19,6 +19,7 @@ package io.zeebe.broker.subscription.message.state;
 
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -28,7 +29,7 @@ import org.agrona.DirectBuffer;
 
 public class MessageSubscriptionState {
 
-  private final ZeebeDb<ZbColumnFamilies> zeebeDb;
+  private final DbContext dbContext;
 
   // (elementInstanceKey, messageName) => MessageSubscription
   private final DbLong elementInstanceKey;
@@ -52,8 +53,8 @@ public class MessageSubscriptionState {
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, DbNil>
       messageNameAndCorrelationKeyColumnFamily;
 
-  public MessageSubscriptionState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
-    this.zeebeDb = zeebeDb;
+  public MessageSubscriptionState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+    this.dbContext = dbContext;
 
     elementInstanceKey = new DbLong();
     messageName = new DbString();
@@ -62,6 +63,7 @@ public class MessageSubscriptionState {
     subscriptionColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_KEY,
+            dbContext,
             elementKeyAndMessageName,
             messageSubscription);
 
@@ -70,6 +72,7 @@ public class MessageSubscriptionState {
     sentTimeColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_SENT_TIME,
+            dbContext,
             sentTimeCompositeKey,
             DbNil.INSTANCE);
 
@@ -80,6 +83,7 @@ public class MessageSubscriptionState {
     messageNameAndCorrelationKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY,
+            dbContext,
             nameCorrelationAndElementInstanceKey,
             DbNil.INSTANCE);
   }
@@ -91,16 +95,13 @@ public class MessageSubscriptionState {
   }
 
   public void put(final MessageSubscription subscription) {
-    zeebeDb.transaction(
-        () -> {
-          elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
-          messageName.wrapBuffer(subscription.getMessageName());
-          subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
+    elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
+    messageName.wrapBuffer(subscription.getMessageName());
+    subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
 
-          correlationKey.wrapBuffer(subscription.getCorrelationKey());
-          messageNameAndCorrelationKeyColumnFamily.put(
-              nameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
-        });
+    correlationKey.wrapBuffer(subscription.getCorrelationKey());
+    messageNameAndCorrelationKeyColumnFamily.put(
+        nameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
   }
 
   public void visitSubscriptions(
@@ -135,8 +136,8 @@ public class MessageSubscriptionState {
   }
 
   public void updateToCorrelatingState(
-      final MessageSubscription subscription, DirectBuffer messagePayload, long sentTime) {
-    subscription.setMessagePayload(messagePayload);
+      final MessageSubscription subscription, DirectBuffer messageVariables, long sentTime) {
+    subscription.setMessageVariables(messageVariables);
     updateSentTime(subscription, sentTime);
   }
 
@@ -144,22 +145,23 @@ public class MessageSubscriptionState {
     updateSentTime(subscription, 0);
   }
 
-  public void updateSentTime(final MessageSubscription subscription, long sentTime) {
-    zeebeDb.transaction(
-        () -> {
-          elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
-          messageName.wrapBuffer(subscription.getMessageName());
+  public void updateSentTimeInTransaction(final MessageSubscription subscription, long sentTime) {
+    dbContext.runInTransaction((() -> updateSentTime(subscription, sentTime)));
+  }
 
-          removeSubscriptionFromSentTimeColumnFamily(subscription);
+  void updateSentTime(final MessageSubscription subscription, long sentTime) {
+    elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
+    messageName.wrapBuffer(subscription.getMessageName());
 
-          subscription.setCommandSentTime(sentTime);
-          subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
+    removeSubscriptionFromSentTimeColumnFamily(subscription);
 
-          if (sentTime > 0) {
-            this.sentTime.wrapLong(subscription.getCommandSentTime());
-            sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
-          }
-        });
+    subscription.setCommandSentTime(sentTime);
+    subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
+
+    if (sentTime > 0) {
+      this.sentTime.wrapLong(subscription.getCommandSentTime());
+      sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
+    }
   }
 
   public void visitSubscriptionBefore(final long deadline, MessageSubscriptionVisitor visitor) {
@@ -196,16 +198,13 @@ public class MessageSubscriptionState {
   }
 
   public void remove(final MessageSubscription subscription) {
-    zeebeDb.transaction(
-        () -> {
-          subscriptionColumnFamily.delete(elementKeyAndMessageName);
+    subscriptionColumnFamily.delete(elementKeyAndMessageName);
 
-          messageName.wrapBuffer(subscription.getMessageName());
-          correlationKey.wrapBuffer(subscription.getCorrelationKey());
-          messageNameAndCorrelationKeyColumnFamily.delete(nameCorrelationAndElementInstanceKey);
+    messageName.wrapBuffer(subscription.getMessageName());
+    correlationKey.wrapBuffer(subscription.getCorrelationKey());
+    messageNameAndCorrelationKeyColumnFamily.delete(nameCorrelationAndElementInstanceKey);
 
-          removeSubscriptionFromSentTimeColumnFamily(subscription);
-        });
+    removeSubscriptionFromSentTimeColumnFamily(subscription);
   }
 
   private void removeSubscriptionFromSentTimeColumnFamily(MessageSubscription subscription) {

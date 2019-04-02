@@ -20,13 +20,13 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.record.value.IncidentRecordValue;
-import io.zeebe.exporter.record.value.JobRecordValue;
-import io.zeebe.exporter.record.value.MessageRecordValue;
-import io.zeebe.exporter.record.value.TimerRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.value.MessageRecordValue;
+import io.zeebe.exporter.api.record.value.TimerRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
@@ -85,7 +85,7 @@ public class PartitionTestClient {
 
   public static final String PROP_WORKFLOW_RESOURCES = "resources";
   public static final String PROP_WORKFLOW_VERSION = "version";
-  public static final String PROP_WORKFLOW_PAYLOAD = "payload";
+  public static final String PROP_WORKFLOW_VARIABLES = "variable";
   public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
   public static final String PROP_WORKFLOW_KEY = "workflowKey";
 
@@ -247,7 +247,8 @@ public class PartitionTestClient {
     return createJob(type, b -> {}, "{}");
   }
 
-  public long createJob(final String type, Consumer<ServiceTaskBuilder> consumer, String payload) {
+  public long createJob(
+      final String type, Consumer<ServiceTaskBuilder> consumer, String variables) {
     deploy(
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -261,7 +262,7 @@ public class PartitionTestClient {
 
     final long workflowInstance =
         createWorkflowInstance(
-                r -> r.setBpmnProcessId("process").setVariables(MsgPackUtil.asMsgPack(payload)))
+                r -> r.setBpmnProcessId("process").setVariables(MsgPackUtil.asMsgPack(variables)))
             .getInstanceKey();
 
     return RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -280,14 +281,14 @@ public class PartitionTestClient {
     final JobBatchRecord request =
         new JobBatchRecord()
             .setType(jobType)
-            .setAmount(1)
+            .setMaxJobsToActivate(1)
             .setTimeout(1000)
             .setWorker("partition-" + partitionId + "-" + jobType);
 
     return doRepeatedly(
             () -> {
               final JobBatchRecord response = activateJobBatch(request);
-              if (response.getAmount() > 0) {
+              if (response.getMaxJobsToActivate() > 0) {
                 final JobRecord job = response.jobs().iterator().next();
                 if (filter.test(job)) {
                   return new Tuple<>(response.jobKeys().iterator().next().getValue(), job);
@@ -336,32 +337,32 @@ public class PartitionTestClient {
     completeJobOfType(jobType, "{}");
   }
 
-  public void completeJobOfType(final String jobType, final byte[] payload) {
-    completeJob(jobType, payload, e -> true);
+  public void completeJobOfType(final String jobType, final byte[] variables) {
+    completeJob(jobType, variables, e -> true);
   }
 
-  public void completeJobOfType(final String jobType, final String jsonPayload) {
-    completeJob(jobType, MsgPackUtil.asMsgPackReturnArray(jsonPayload), e -> true);
+  public void completeJobOfType(final String jobType, final String jsonVariables) {
+    completeJob(jobType, MsgPackUtil.asMsgPackReturnArray(jsonVariables), e -> true);
   }
 
-  public ExecuteCommandResponse completeJob(long key, String payload) {
-    return completeJob(key, MsgPackUtil.asMsgPackReturnArray(payload));
+  public ExecuteCommandResponse completeJob(long key, String variables) {
+    return completeJob(key, MsgPackUtil.asMsgPackReturnArray(variables));
   }
 
-  public ExecuteCommandResponse completeJob(long key, byte[] payload) {
+  public ExecuteCommandResponse completeJob(long key, byte[] variables) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.JOB, JobIntent.COMPLETE)
         .key(key)
         .command()
-        .put("payload", payload)
+        .put("variables", variables)
         .done()
         .sendAndAwait();
   }
 
   public void completeJob(
       final String jobType,
-      final byte[] payload,
+      final byte[] variables,
       final Predicate<Record<JobRecordValue>> jobEventFilter) {
     apiRule.activateJobs(partitionId, jobType, 1000L).await();
 
@@ -373,7 +374,7 @@ public class PartitionTestClient {
             .findFirst()
             .orElseThrow(() -> new AssertionError("Expected job locked event but not found."));
 
-    final ExecuteCommandResponse response = completeJob(jobEvent.getKey(), payload);
+    final ExecuteCommandResponse response = completeJob(jobEvent.getKey(), variables);
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
@@ -437,30 +438,33 @@ public class PartitionTestClient {
   }
 
   public ExecuteCommandResponse publishMessage(
-      final String messageName, final String correlationKey, final DirectBuffer payload) {
-    return publishMessage(messageName, correlationKey, BufferUtil.bufferAsArray(payload));
+      final String messageName, final String correlationKey, final DirectBuffer variables) {
+    return publishMessage(messageName, correlationKey, BufferUtil.bufferAsArray(variables));
   }
 
   public ExecuteCommandResponse publishMessage(
-      final String messageName, final String correlationKey, final String payload) {
-    return publishMessage(messageName, correlationKey, MsgPackUtil.asMsgPackReturnArray(payload));
+      final String messageName, final String correlationKey, final String variables) {
+    return publishMessage(messageName, correlationKey, MsgPackUtil.asMsgPackReturnArray(variables));
   }
 
   public ExecuteCommandResponse publishMessage(
       final String messageName,
       final String correlationKey,
-      final DirectBuffer payload,
+      final DirectBuffer variables,
       final long ttl) {
-    return publishMessage(messageName, correlationKey, BufferUtil.bufferAsArray(payload), ttl);
+    return publishMessage(messageName, correlationKey, BufferUtil.bufferAsArray(variables), ttl);
   }
 
   public ExecuteCommandResponse publishMessage(
-      final String messageName, final String correlationKey, final byte[] payload) {
-    return publishMessage(messageName, correlationKey, payload, Duration.ofHours(1).toMillis());
+      final String messageName, final String correlationKey, final byte[] variables) {
+    return publishMessage(messageName, correlationKey, variables, Duration.ofHours(1).toMillis());
   }
 
   public ExecuteCommandResponse publishMessage(
-      final String messageName, final String correlationKey, final byte[] payload, final long ttl) {
+      final String messageName,
+      final String correlationKey,
+      final byte[] variables,
+      final long ttl) {
     return apiRule
         .createCmdRequest()
         .partitionId(partitionId)
@@ -469,7 +473,7 @@ public class PartitionTestClient {
         .put("name", messageName)
         .put("correlationKey", correlationKey)
         .put("timeToLive", ttl)
-        .put("payload", payload)
+        .put("variables", variables)
         .done()
         .sendAndAwait();
   }

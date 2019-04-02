@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.logstreams.state;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.job.JobState;
 import io.zeebe.broker.logstreams.processor.KeyGenerator;
@@ -27,12 +28,19 @@ import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
 import io.zeebe.broker.workflow.deployment.distribute.processor.state.DeploymentsState;
 import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.WorkflowInstanceRelated;
+import org.slf4j.Logger;
 
 public class ZeebeState {
+
+  public static final String BLACKLIST_INSTANCE_MESSAGE =
+      "Blacklist workflow instance {}, due to previous errors.";
+
+  private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final KeyState keyState;
   private final WorkflowState workflowState;
@@ -45,21 +53,21 @@ public class ZeebeState {
   private final IncidentState incidentState;
   private final BlackList blackList;
 
-  public ZeebeState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
-    this(Protocol.DEPLOYMENT_PARTITION, zeebeDb);
+  public ZeebeState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+    this(Protocol.DEPLOYMENT_PARTITION, zeebeDb, dbContext);
   }
 
-  public ZeebeState(int partitionId, ZeebeDb<ZbColumnFamilies> zeebeDb) {
-    keyState = new KeyState(partitionId, zeebeDb);
-    workflowState = new WorkflowState(zeebeDb, keyState);
-    deploymentState = new DeploymentsState(zeebeDb);
-    jobState = new JobState(zeebeDb);
-    messageState = new MessageState(zeebeDb);
-    messageSubscriptionState = new MessageSubscriptionState(zeebeDb);
-    messageStartEventSubscriptionState = new MessageStartEventSubscriptionState(zeebeDb);
-    workflowInstanceSubscriptionState = new WorkflowInstanceSubscriptionState(zeebeDb);
-    incidentState = new IncidentState(zeebeDb);
-    blackList = new BlackList(zeebeDb);
+  public ZeebeState(int partitionId, ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+    keyState = new KeyState(partitionId, zeebeDb, dbContext);
+    workflowState = new WorkflowState(zeebeDb, dbContext, keyState);
+    deploymentState = new DeploymentsState(zeebeDb, dbContext);
+    jobState = new JobState(zeebeDb, dbContext);
+    messageState = new MessageState(zeebeDb, dbContext);
+    messageSubscriptionState = new MessageSubscriptionState(zeebeDb, dbContext);
+    messageStartEventSubscriptionState = new MessageStartEventSubscriptionState(zeebeDb, dbContext);
+    workflowInstanceSubscriptionState = new WorkflowInstanceSubscriptionState(zeebeDb, dbContext);
+    incidentState = new IncidentState(zeebeDb, dbContext);
+    blackList = new BlackList(zeebeDb, dbContext);
   }
 
   public DeploymentsState getDeploymentState() {
@@ -98,13 +106,10 @@ public class ZeebeState {
     return keyState;
   }
 
-  public void blacklist(TypedRecord record) {
-    final UnpackedObject value = record.getValue();
-    if (value instanceof WorkflowInstanceRelated) {
-      final long workflowInstanceKey = ((WorkflowInstanceRelated) value).getWorkflowInstanceKey();
-      if (workflowInstanceKey >= 0) {
-        blackList.blacklist(workflowInstanceKey);
-      }
+  public void blacklist(long workflowInstanceKey) {
+    if (workflowInstanceKey >= 0) {
+      LOG.warn(BLACKLIST_INSTANCE_MESSAGE, workflowInstanceKey);
+      blackList.blacklist(workflowInstanceKey);
     }
   }
 

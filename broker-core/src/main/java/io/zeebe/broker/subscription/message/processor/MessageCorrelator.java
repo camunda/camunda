@@ -31,7 +31,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class MessageCorrelator {
 
-  private final DirectBuffer messagePayload = new UnsafeBuffer();
+  private final DirectBuffer messageVariables = new UnsafeBuffer();
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
@@ -70,10 +70,10 @@ public class MessageCorrelator {
 
     if (!isCorrelatedBefore) {
       subscriptionState.updateToCorrelatingState(
-          subscription, message.getPayload(), ActorClock.currentTimeMillis());
+          subscription, message.getVariables(), ActorClock.currentTimeMillis());
 
       // send the correlate instead of acknowledge command
-      messagePayload.wrap(message.getPayload());
+      messageVariables.wrap(message.getVariables());
       sideEffect.accept(this::sendCorrelateCommand);
 
       messageState.putMessageCorrelation(
@@ -88,6 +88,6 @@ public class MessageCorrelator {
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getMessageName(),
-        messagePayload);
+        messageVariables);
   }
 }

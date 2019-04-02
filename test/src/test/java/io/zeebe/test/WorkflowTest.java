@@ -58,7 +58,7 @@ public class WorkflowTest {
   }
 
   @Test
-  public void shouldCompleteWorkflowInstanceWithPayload() {
+  public void shouldCompleteWorkflowInstanceWithVariables() {
     final WorkflowInstanceEvent workflowInstance =
         client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
@@ -68,7 +68,7 @@ public class WorkflowTest {
         .handler(
             (c, j) ->
                 c.newCompleteCommand(j.getKey())
-                    .payload(Collections.singletonMap("result", 123))
+                    .variables(Collections.singletonMap("result", 123))
                     .send()
                     .join())
         .name("test")

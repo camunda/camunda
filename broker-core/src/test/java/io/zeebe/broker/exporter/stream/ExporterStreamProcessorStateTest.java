@@ -52,7 +52,7 @@ public class ExporterStreamProcessorStateTest {
   public void setup() throws Exception {
     final File dbDirectory = temporaryFolder.newFolder();
     db = DefaultZeebeDbFactory.defaultFactory(ExporterColumnFamilies.class).createDb(dbDirectory);
-    state = new ExporterStreamProcessorState(db);
+    state = new ExporterStreamProcessorState(db, db.createContext());
   }
 
   @After

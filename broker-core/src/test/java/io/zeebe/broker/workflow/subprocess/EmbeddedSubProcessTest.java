@@ -22,11 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Assertions;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.JobRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.exporter.record.value.job.Headers;
+import io.zeebe.exporter.api.record.Assertions;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.value.job.Headers;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.SubProcessBuilder;
@@ -92,7 +92,7 @@ public class EmbeddedSubProcessTest {
     final Record<JobRecordValue> jobCreatedEvent =
         testClient.receiveFirstJobEvent(JobIntent.CREATED);
     MsgPackUtil.assertEquality(
-        DocumentValue.EMPTY_DOCUMENT, jobCreatedEvent.getValue().getPayload());
+        DocumentValue.EMPTY_DOCUMENT, jobCreatedEvent.getValue().getVariables());
 
     final Headers headers = jobCreatedEvent.getValue().getHeaders();
     Assertions.assertThat(headers).hasElementId("subProcessTask");
@@ -317,7 +317,7 @@ public class EmbeddedSubProcessTest {
             .startEvent()
             .subProcess("outerSubProcess", outSubProcess)
             .boundaryEvent("event")
-            .message(m -> m.name("msg").zeebeCorrelationKey("$.key"))
+            .message(m -> m.name("msg").zeebeCorrelationKey("key"))
             .endEvent("msgEnd")
             .moveToActivity("outerSubProcess")
             .endEvent()

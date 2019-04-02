@@ -18,11 +18,14 @@
 package io.zeebe.broker.logstreams.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor.DelegatingEventProcessor;
 import io.zeebe.broker.util.ZeebeStateRule;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.WorkflowInstanceRelated;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -265,12 +268,14 @@ public class BlacklistInstanceTest {
     metadata.intent(recordIntent);
     metadata.valueType(recordValueType);
     final TypedEventImpl typedEvent = new TypedEventImpl();
+    final LoggedEvent loggedEvent = mock(LoggedEvent.class);
+    when(loggedEvent.getPosition()).thenReturn(1024L);
 
-    typedEvent.wrap(null, metadata, new Value());
+    typedEvent.wrap(loggedEvent, metadata, new Value());
     delegatingEventProcessor.wrap(processor, typedEvent, 1024);
 
     // when
-    delegatingEventProcessor.processingFailed(new Exception("expected"));
+    delegatingEventProcessor.onError(new Exception("expected"));
 
     // then
     metadata.intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);

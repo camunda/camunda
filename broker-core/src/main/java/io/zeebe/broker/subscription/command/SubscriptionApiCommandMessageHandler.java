@@ -174,7 +174,7 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
         .setWorkflowInstanceKey(workflowInstanceKey)
         .setElementInstanceKey(correlateWorkflowInstanceSubscriptionCommand.getElementInstanceKey())
         .setMessageName(correlateWorkflowInstanceSubscriptionCommand.getMessageName())
-        .setPayload(correlateWorkflowInstanceSubscriptionCommand.getPayload());
+        .setVariables(correlateWorkflowInstanceSubscriptionCommand.getVariables());
 
     return writeCommand(
         workflowInstancePartitionId,
@@ -251,11 +251,7 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
     recordMetadata.reset().recordType(RecordType.COMMAND).valueType(valueType).intent(intent);
 
     final long position =
-        logStreamWriter
-            .positionAsKey()
-            .metadataWriter(recordMetadata)
-            .valueWriter(command)
-            .tryWrite();
+        logStreamWriter.key(-1).metadataWriter(recordMetadata).valueWriter(command).tryWrite();
 
     return position > 0;
   }

@@ -2,16 +2,16 @@
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
-  <artifactId>zb-parent</artifactId>
-  <version>0.17.0-SNAPSHOT</version>
+  <artifactId>zeebe-parent</artifactId>
+  <version>0.18.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <inceptionYear>2017</inceptionYear>
   <url>http://zeebe.io/</url>
 
   <parent>
     <groupId>io.zeebe</groupId>
-    <artifactId>zb-bom</artifactId>
-    <version>0.17.0-SNAPSHOT</version>
+    <artifactId>zeebe-bom</artifactId>
+    <version>0.18.0-SNAPSHOT</version>
     <relativePath>../bom</relativePath>
   </parent>
 
@@ -24,15 +24,15 @@
     <spotbugs.include>spotbugs/spotbugs-include.xml</spotbugs.include>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>0.9.34</version.agrona>
+    <version.agrona>0.9.35</version.agrona>
     <version.animal-sniffer>1.17</version.animal-sniffer>
-    <version.assertj>3.12.1</version.assertj>
+    <version.assertj>3.12.2</version.assertj>
     <version.atomix>3.1.5</version.atomix>
     <version.camunda>7.10.0</version.camunda>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.12</version.commons-codec>
-    <version.elasticsearch>6.6.1</version.elasticsearch>
+    <version.elasticsearch>6.7.0</version.elasticsearch>
     <version.embedded-elasticsearch>2.10.0</version.embedded-elasticsearch>
     <version.error-prone>2.3.3</version.error-prone>
     <version.grpc>1.19.0</version.grpc>
@@ -47,14 +47,14 @@
     <version.jmh>1.21</version.jmh>
     <version.junit>4.12</version.junit>
     <version.log4j>2.11.2</version.log4j>
-    <version.mockito>2.25.0</version.mockito>
+    <version.mockito>2.25.1</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.16</version.msgpack>
     <version.netty>4.1.34.Final</version.netty>
     <version.objenesis>3.0.1</version.objenesis>
     <version.protobuf>3.7.0</version.protobuf>
     <version.rocksdbjni>5.17.2</version.rocksdbjni>
-    <version.sbe>1.12.3</version.sbe>
+    <version.sbe>1.12.4</version.sbe>
     <version.scala-parser>1.0.6</version.scala-parser>
     <version.scala>2.12.8</version.scala>
     <version.slf4j>1.7.26</version.slf4j>
@@ -425,7 +425,7 @@
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-build-tools</artifactId>
+      <artifactId>zeebe-build-tools</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -495,7 +495,7 @@
           <dependencies>
             <dependency>
               <groupId>io.zeebe</groupId>
-              <artifactId>zb-build-tools</artifactId>
+              <artifactId>zeebe-build-tools</artifactId>
               <version>${project.version}</version>
             </dependency>
           </dependencies>
@@ -786,7 +786,7 @@
                 <ignoredUnusedDeclaredDependencies>
                   <dep>org.apache.logging.log4j:log4j-slf4j-impl</dep>
                   <dep>org.apache.logging.log4j:log4j-core</dep>
-                  <dep>io.zeebe:zb-build-tools</dep>
+                  <dep>io.zeebe:zeebe-build-tools</dep>
                 </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>
@@ -950,7 +950,7 @@
             <dependencies>
               <dependency>
                 <groupId>io.zeebe</groupId>
-                <artifactId>zb-build-tools</artifactId>
+                <artifactId>zeebe-build-tools</artifactId>
                 <version>${project.version}</version>
               </dependency>
             </dependencies>

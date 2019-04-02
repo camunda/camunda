@@ -48,7 +48,9 @@ public class DbStringColumnFamilyTest {
 
     key = new DbString();
     value = new DbString();
-    columnFamily = zeebeDb.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+    columnFamily =
+        zeebeDb.createColumnFamily(
+            DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), key, value);
   }
 
   @Test
@@ -228,7 +230,7 @@ public class DbStringColumnFamilyTest {
                           });
                     }))
         .hasRootCauseInstanceOf(IllegalStateException.class)
-        .hasMessage("Unexpected error occurred during RocksDB transaction.")
+        .hasMessage("Unexpected error occurred during zeebe db transaction operation.")
         .hasStackTraceContaining(
             "Currently nested prefix iterations are not supported! This will cause unexpected behavior.");
   }

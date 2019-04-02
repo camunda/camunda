@@ -19,30 +19,38 @@ package io.zeebe.broker.workflow.processor.handlers.catchevent;
 
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
+import io.zeebe.broker.workflow.processor.handlers.CatchEventSubscriber;
 import io.zeebe.broker.workflow.processor.handlers.IOMappingHelper;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementCompletingHandler;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class IntermediateCatchEventElementCompletingHandler<T extends ExecutableCatchEventElement>
     extends ElementCompletingHandler<T> {
+  private final CatchEventSubscriber catchEventSubscriber;
 
-  public IntermediateCatchEventElementCompletingHandler() {
+  public IntermediateCatchEventElementCompletingHandler(CatchEventSubscriber catchEventSubscriber) {
     super();
-  }
-
-  public IntermediateCatchEventElementCompletingHandler(IOMappingHelper ioMappingHelper) {
-    super(ioMappingHelper);
+    this.catchEventSubscriber = catchEventSubscriber;
   }
 
   public IntermediateCatchEventElementCompletingHandler(
-      WorkflowInstanceIntent nextState, IOMappingHelper ioMappingHelper) {
+      IOMappingHelper ioMappingHelper, CatchEventSubscriber catchEventSubscriber) {
+    super(ioMappingHelper);
+    this.catchEventSubscriber = catchEventSubscriber;
+  }
+
+  public IntermediateCatchEventElementCompletingHandler(
+      WorkflowInstanceIntent nextState,
+      IOMappingHelper ioMappingHelper,
+      CatchEventSubscriber catchEventSubscriber) {
     super(nextState, ioMappingHelper);
+    this.catchEventSubscriber = catchEventSubscriber;
   }
 
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
     if (super.handleState(context)) {
-      context.getCatchEventBehavior().unsubscribeFromEvents(context.getRecord().getKey(), context);
+      catchEventSubscriber.unsubscribeFromEvents(context);
       return true;
     }
 

@@ -28,6 +28,7 @@ import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.test.util.TestUtil;
 import java.util.NoSuchElementException;
+import java.util.Random;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -40,6 +41,7 @@ public class LogStreamReaderTest {
   private static final UnsafeBuffer EVENT_VALUE = new UnsafeBuffer(getBytes("test"));
   private static final UnsafeBuffer BIG_EVENT_VALUE =
       new UnsafeBuffer(new byte[BufferedLogStreamReader.DEFAULT_INITIAL_BUFFER_CAPACITY * 2]);
+  private final Random random = new Random();
 
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
@@ -53,9 +55,11 @@ public class LogStreamReaderTest {
       RuleChain.outerRule(temporaryFolder).around(logStreamRule).around(readerRule).around(writer);
 
   private LogStreamReader reader;
+  private long eventKey;
 
   @Before
   public void setUp() {
+    eventKey = random.nextLong();
     reader = readerRule.getLogStreamReader();
     logStreamRule.setCommitPosition(Long.MAX_VALUE);
   }
@@ -95,12 +99,12 @@ public class LogStreamReaderTest {
   @Test
   public void shouldHaveNext() {
     // given
-    final long position = writer.writeEvent(EVENT_VALUE);
+    final long position = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE), false);
 
     // then
     assertThat(reader.hasNext()).isEqualTo(true);
     final LoggedEvent next = reader.next();
-    assertThat(next.getKey()).isEqualTo(position);
+    assertThat(next.getKey()).isEqualTo(eventKey);
     assertThat(next.getPosition()).isEqualTo(position);
     assertThat(reader.hasNext()).isFalse();
   }
@@ -154,12 +158,12 @@ public class LogStreamReaderTest {
   public void shouldReopenAndReturnLoggedEvent() {
     // given
     reader.close();
-    final long position = writer.writeEvent(EVENT_VALUE);
+    final long position = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE), false);
     reader.wrap(logStreamRule.getLogStream());
 
     // then
     final LoggedEvent loggedEvent = readerRule.nextEvent();
-    assertThat(loggedEvent.getKey()).isEqualTo(position);
+    assertThat(loggedEvent.getKey()).isEqualTo(eventKey);
     assertThat(loggedEvent.getPosition()).isEqualTo(position);
   }
 
@@ -169,7 +173,7 @@ public class LogStreamReaderTest {
     final BufferedLogStreamReader reader = new BufferedLogStreamReader(true);
 
     logStreamRule.setCommitPosition(Long.MIN_VALUE);
-    final long position = writer.writeEvent(EVENT_VALUE);
+    final long position = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE), false);
     reader.wrap(logStreamRule.getLogStream());
 
     // when
@@ -177,7 +181,7 @@ public class LogStreamReaderTest {
 
     // then
     final LoggedEvent loggedEvent = reader.next();
-    assertThat(loggedEvent.getKey()).isEqualTo(position);
+    assertThat(loggedEvent.getKey()).isEqualTo(eventKey);
     assertThat(loggedEvent.getPosition()).isEqualTo(position);
 
     reader.close();
@@ -186,14 +190,15 @@ public class LogStreamReaderTest {
   @Test
   public void shouldNotReturnUncommittedLoggedEvent() {
     // given
-    final long firstPos = writer.writeEvent(EVENT_VALUE);
+    final long firstPos = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE), false);
     logStreamRule.setCommitPosition(firstPos);
+
     writer.writeEvent(EVENT_VALUE);
 
     // then
     assertThat(reader.hasNext()).isTrue();
     final LoggedEvent loggedEvent = reader.next();
-    assertThat(loggedEvent.getKey()).isEqualTo(firstPos);
+    assertThat(loggedEvent.getKey()).isEqualTo(eventKey);
     assertThat(loggedEvent.getPosition()).isEqualTo(firstPos);
 
     assertThat(reader.hasNext()).isFalse();
@@ -202,7 +207,7 @@ public class LogStreamReaderTest {
   @Test
   public void shouldNotReturnLoggedEventUntilCommitted() {
     // given
-    final long position = writer.writeEvent(EVENT_VALUE);
+    final long position = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE), false);
     logStreamRule.setCommitPosition(Long.MIN_VALUE);
 
     // then
@@ -214,7 +219,7 @@ public class LogStreamReaderTest {
     // then
     assertThat(reader.hasNext()).isTrue();
     final LoggedEvent loggedEvent = reader.next();
-    assertThat(loggedEvent.getKey()).isEqualTo(position);
+    assertThat(loggedEvent.getKey()).isEqualTo(eventKey);
     assertThat(loggedEvent.getPosition()).isEqualTo(position);
   }
 
@@ -238,7 +243,7 @@ public class LogStreamReaderTest {
     final BufferedLogStreamReader reader = new BufferedLogStreamReader(true);
     final long firstPos = writer.writeEvent(EVENT_VALUE);
     logStreamRule.setCommitPosition(firstPos);
-    final long secondPos = writer.writeEvent(EVENT_VALUE);
+    final long secondPos = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE), false);
     reader.wrap(logStreamRule.getLogStream());
 
     // when
@@ -247,7 +252,7 @@ public class LogStreamReaderTest {
     // then
     assertThat(reader.hasNext()).isTrue();
     final LoggedEvent loggedEvent = reader.next();
-    assertThat(loggedEvent.getKey()).isEqualTo(secondPos);
+    assertThat(loggedEvent.getKey()).isEqualTo(eventKey);
     assertThat(loggedEvent.getPosition()).isEqualTo(secondPos);
 
     reader.close();
@@ -257,14 +262,14 @@ public class LogStreamReaderTest {
   public void shouldWrapAndSeekToEvent() {
     // given
     writer.writeEvent(EVENT_VALUE);
-    final long secondPos = writer.writeEvent(EVENT_VALUE);
+    final long secondPos = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE), false);
 
     // when
     reader.wrap(logStreamRule.getLogStream(), secondPos);
 
     // then
     final LoggedEvent loggedEvent = reader.next();
-    assertThat(loggedEvent.getKey()).isEqualTo(secondPos);
+    assertThat(loggedEvent.getKey()).isEqualTo(eventKey);
     assertThat(loggedEvent.getPosition()).isEqualTo(secondPos);
 
     assertThat(reader.hasNext()).isFalse();
@@ -274,7 +279,6 @@ public class LogStreamReaderTest {
   public void shouldReturnLastEventAfterSeekToLastEvent() {
     // given
     final int eventCount = 10;
-
     final long lastPosition = writer.writeEvents(eventCount, EVENT_VALUE);
 
     // when
@@ -318,7 +322,8 @@ public class LogStreamReaderTest {
     assertThat(reader.hasNext()).isTrue();
 
     // when
-    final long bigEventPosition = writer.writeEvent(BIG_EVENT_VALUE);
+    final long bigEventPosition =
+        writer.writeEvent(w -> w.key(eventKey).value(BIG_EVENT_VALUE), false);
 
     // then
     LoggedEvent loggedEvent = readerRule.nextEvent();
@@ -326,7 +331,7 @@ public class LogStreamReaderTest {
     assertThat(loggedEvent.getPosition()).isEqualTo(lastPosition);
 
     loggedEvent = readerRule.nextEvent();
-    assertThat(loggedEvent.getKey()).isEqualTo(bigEventPosition);
+    assertThat(loggedEvent.getKey()).isEqualTo(eventKey);
     assertThat(loggedEvent.getPosition()).isEqualTo(bigEventPosition);
     assertThat(reader.hasNext()).isFalse();
   }
@@ -334,11 +339,11 @@ public class LogStreamReaderTest {
   @Test
   public void shouldReturnBigLoggedEvent() {
     // given
-    final long position = writer.writeEvent(BIG_EVENT_VALUE);
+    final long position = writer.writeEvent(w -> w.key(eventKey).value(BIG_EVENT_VALUE), false);
 
     // then
     final LoggedEvent loggedEvent = readerRule.nextEvent();
-    assertThat(loggedEvent.getKey()).isEqualTo(position);
+    assertThat(loggedEvent.getKey()).isEqualTo(eventKey);
     assertThat(loggedEvent.getPosition()).isEqualTo(position);
     assertThat(reader.hasNext()).isFalse();
   }
@@ -347,7 +352,6 @@ public class LogStreamReaderTest {
   public void shouldSeekToLastBigLoggedEvents() {
     // given
     final int eventCount = 1000;
-
     final long lastPosition = writer.writeEvents(eventCount, BIG_EVENT_VALUE);
 
     // when

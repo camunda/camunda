@@ -28,12 +28,14 @@ public class VariableRecord extends UnpackedObject implements WorkflowInstanceRe
   private final BinaryProperty valueProp = new BinaryProperty("value");
   private final LongProperty scopeKeyProp = new LongProperty("scopeKey");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
+  private final LongProperty workflowKeyProp = new LongProperty("workflowKey");
 
   public VariableRecord() {
     this.declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeKeyProp)
-        .declareProperty(workflowInstanceKeyProp);
+        .declareProperty(workflowInstanceKeyProp)
+        .declareProperty(workflowKeyProp);
   }
 
   public DirectBuffer getName() {
@@ -69,6 +71,15 @@ public class VariableRecord extends UnpackedObject implements WorkflowInstanceRe
 
   public VariableRecord setWorkflowInstanceKey(long workflowInstanceKey) {
     this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    return this;
+  }
+
+  public long getWorkflowKey() {
+    return workflowKeyProp.getValue();
+  }
+
+  public VariableRecord setWorkflowKey(long workflowKey) {
+    this.workflowKeyProp.setValue(workflowKey);
     return this;
   }
 }

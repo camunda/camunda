@@ -18,7 +18,7 @@
 package io.zeebe.broker.exporter.record;
 
 import io.zeebe.broker.exporter.ExporterObjectMapper;
-import io.zeebe.exporter.record.RecordValue;
+import io.zeebe.exporter.api.record.RecordValue;
 
 public abstract class RecordValueImpl implements RecordValue {
   protected final ExporterObjectMapper objectMapper;

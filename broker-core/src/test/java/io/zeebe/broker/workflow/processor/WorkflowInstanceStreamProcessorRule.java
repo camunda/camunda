@@ -116,8 +116,8 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
 
     streamProcessor =
         environmentRule.runStreamProcessor(
-            (typedEventStreamProcessorBuilder, zeebeDb) -> {
-              zeebeState = new ZeebeState(zeebeDb);
+            (typedEventStreamProcessorBuilder, zeebeDb, dbContext) -> {
+              zeebeState = new ZeebeState(zeebeDb, dbContext);
               workflowState = zeebeState.getWorkflowState();
               WorkflowEventProcessors.addWorkflowProcessors(
                   typedEventStreamProcessorBuilder,

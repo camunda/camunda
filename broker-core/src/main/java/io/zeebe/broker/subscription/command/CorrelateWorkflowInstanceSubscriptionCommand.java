@@ -19,8 +19,8 @@ package io.zeebe.broker.subscription.command;
 
 import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.elementInstanceKeyNullValue;
 import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength;
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.payloadHeaderLength;
 import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue;
+import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.variablesHeaderLength;
 import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue;
 
 import io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder;
@@ -45,7 +45,7 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
   private long elementInstanceKey;
 
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
-  private final UnsafeBuffer payload = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer variables = new UnsafeBuffer(0, 0);
 
   @Override
   protected CorrelateWorkflowInstanceSubscriptionEncoder getBodyEncoder() {
@@ -62,8 +62,8 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     return super.getLength()
         + messageNameHeaderLength()
         + messageName.capacity()
-        + payloadHeaderLength()
-        + payload.capacity();
+        + variablesHeaderLength()
+        + variables.capacity();
   }
 
   @Override
@@ -75,7 +75,7 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
         .workflowInstanceKey(workflowInstanceKey)
         .elementInstanceKey(elementInstanceKey)
         .putMessageName(messageName, 0, messageName.capacity())
-        .putPayload(payload, 0, payload.capacity());
+        .putVariables(variables, 0, variables.capacity());
   }
 
   @Override
@@ -94,10 +94,10 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     offset += messageNameLength;
     decoder.limit(offset);
 
-    offset += payloadHeaderLength();
-    final int paylaodLength = decoder.payloadLength();
-    payload.wrap(buffer, offset, paylaodLength);
-    offset += paylaodLength;
+    offset += variablesHeaderLength();
+    final int variablesLength = decoder.variablesLength();
+    variables.wrap(buffer, offset, variablesLength);
+    offset += variablesLength;
     decoder.limit(offset);
   }
 
@@ -107,7 +107,7 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     workflowInstanceKey = workflowInstanceKeyNullValue();
     elementInstanceKey = elementInstanceKeyNullValue();
     messageName.wrap(0, 0);
-    payload.wrap(0, 0);
+    variables.wrap(0, 0);
   }
 
   public int getSubscriptionPartitionId() {
@@ -138,7 +138,7 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     return messageName;
   }
 
-  public DirectBuffer getPayload() {
-    return payload;
+  public DirectBuffer getVariables() {
+    return variables;
   }
 }

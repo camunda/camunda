@@ -17,11 +17,24 @@ if [ "${RELEASE_VERSION}" = "SNAPSHOT" ]; then
     VERSION=$(curl -sL https://raw.githubusercontent.com/zeebe-io/zeebe/develop/pom.xml | grep '<version>' | head -n 1 | cut -d '>' -f 2 | cut -d '<' -f 1  )
 fi
 
+echo "Downloading maven"
+mkdir -p /tmp/maven
+curl -sL http://mirror.synyx.de/apache/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.tar.gz | tar xzvf - -C /tmp/maven --strip 1
+
 echo "Downloading Zeebe distribution ${VERSION}."
-curl -sL "https://app.camunda.com/nexus/service/local/artifact/maven/redirect?r=public&g=io.zeebe&a=zeebe-distribution&v=${VERSION}&p=tar.gz" > zeebe.tar.gz
+/tmp/maven/bin/mvn dependency:get -B \
+    -DremoteRepositories="camunda-nexus::::https://app.camunda.com/nexus/content/repositories/public" \
+    -DgroupId="io.zeebe" -DartifactId="zeebe-distribution" \
+    -Dversion="${VERSION}" -Dpackaging="tar.gz" -Dtransitive=false
+
+/tmp/maven/bin/mvn dependency:copy -B \
+    -Dartifact="io.zeebe:zeebe-distribution:${VERSION}:tar.gz" \
+    -DoutputDirectory=${WORKSPACE} \
+    -Dmdep.stripVersion=true
+
 
 echo "Building Zeebe Docker image ${RELEASE_VERSION}."
-docker build --no-cache -t camunda/zeebe:${RELEASE_VERSION} --build-arg DISTBALL=zeebe.tar.gz .
+docker build --no-cache -t camunda/zeebe:${RELEASE_VERSION} --build-arg DISTBALL=zeebe-distribution.tar.gz -f Dockerfile.debian .
 
 echo "Authenticating with DockerHub and pushing image."
 docker login --username ${DOCKER_HUB_USERNAME} --password ${DOCKER_HUB_PASSWORD} --email ci@camunda.com

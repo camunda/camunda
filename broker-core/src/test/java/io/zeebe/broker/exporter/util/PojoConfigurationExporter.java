@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.exporter.util;
 
-import io.zeebe.exporter.context.Context;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.spi.Exporter;
+import io.zeebe.exporter.api.context.Context;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.spi.Exporter;
 
 public class PojoConfigurationExporter implements Exporter {
 

@@ -17,10 +17,10 @@
  */
 package io.zeebe.broker.incident;
 
-import io.zeebe.exporter.record.Assertions;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.IncidentRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Assertions;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.ErrorType;
 
 public class IncidentAssert {
@@ -40,7 +40,7 @@ public class IncidentAssert {
       Record<IncidentRecordValue> incidentRecord) {
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
-        "No data found for query $.foo.",
+        "No data found for query foo.",
         workflowInstanceKey,
         activityId,
         followUpEvent,

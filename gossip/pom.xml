@@ -2,31 +2,31 @@
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Gossip</name>
-  <artifactId>zb-gossip</artifactId>
-  <version>0.17.0-SNAPSHOT</version>
+  <artifactId>zeebe-gossip</artifactId>
+  <version>0.18.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.zeebe</groupId>
-    <artifactId>zb-parent</artifactId>
-    <version>0.17.0-SNAPSHOT</version>
+    <artifactId>zeebe-parent</artifactId>
+    <version>0.18.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-dispatcher</artifactId>
+      <artifactId>zeebe-dispatcher</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-transport</artifactId>
+      <artifactId>zeebe-transport</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-util</artifactId>
+      <artifactId>zeebe-util</artifactId>
     </dependency>
 
     <dependency>
@@ -41,7 +41,7 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-test-util</artifactId>
+      <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
     </dependency>
 

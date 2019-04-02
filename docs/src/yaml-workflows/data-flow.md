@@ -1,6 +1,8 @@
 # Data Flow
 
-Zeebe carries a JSON document from task to task. This is called the *workflow instance payload*. For every task, we can define input and output mappings in order to transform the workflow instance payload JSON to a JSON document that the job worker can work with.
+Zeebe carries custom data from task to task in form of variables. Variables are key-value-pairs and part of the workflow instance.
+
+By default, all job variables are merged into the workflow instance. This behavior can be customized by defining an output mapping at the task. Input mappings can be used to transform the variables into a format that is accepted by the job worker.
 
 ```yaml
 name: order-process
@@ -9,11 +11,11 @@ tasks:
     - id: collect-money
       type: payment-service
       inputs:
-          - source: $.totalPrice
-            target: $.price
+          - source: totalPrice
+            target: price
       outputs:
-          - source: $.success
-            target: $.paymentSuccess
+          - source: success
+            target: paymentSuccess
 
     - id: fetch-items
       type: inventory-service
@@ -22,10 +24,9 @@ tasks:
       type: shipment-service
 ```
 
-Every mapping element has a `source` and a `target` element which must be a JSON Path expression. `source` defines which data is extracted from the source payload and `target` defines how the value is inserted into the target payload.
+Every mapping element has a `source` and a `target` element which must be a [variable expression](reference/variables.html#access-variables).
 
-Related resources:
+## Additional Resources
 
-* [More detailed introduction on data flow in the BPMN reference](bpmn-workflows/data-flow.html)
-* [JSON Path Reference](reference/json-path.html)
-* [Payload Mapping Reference](reference/json-payload-mapping.html)
+* [Data Flow](bpmn-workflows/data-flow.html)
+* [Variable Mappings](reference/variables.html#inputoutput-variable-mappings)

@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	createInstanceVersionFlag int32
+	createInstanceVersionFlag   int32
 	createInstanceVariablesFlag string
 )
 

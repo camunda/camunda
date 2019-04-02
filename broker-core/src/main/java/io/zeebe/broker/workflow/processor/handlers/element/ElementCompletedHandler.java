@@ -40,15 +40,11 @@ public class ElementCompletedHandler<T extends ExecutableFlowNode>
   protected boolean shouldHandleState(BpmnStepContext<T> context) {
     return super.shouldHandleState(context)
         && isStateSameAsElementState(context)
-        && isElementActive(context.getFlowScopeInstance());
+        && (isRootScope(context) || isElementActive(context.getFlowScopeInstance()));
   }
 
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
-    // todo: move this to some catch event supplier handler
-    // https://github.com/zeebe-io/zeebe/issues/1968
-    publishDeferredRecords(context);
-
     if (isLastActiveExecutionPathInScope(context)) {
       completeFlowScope(context);
     }

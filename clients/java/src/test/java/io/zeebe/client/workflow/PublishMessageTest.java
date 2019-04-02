@@ -52,75 +52,76 @@ public class PublishMessageTest extends ClientTest {
   }
 
   @Test
-  public void shouldPublishMessageWithStringPayload() {
+  public void shouldPublishMessageWithStringVariables() {
     // when
     client
         .newPublishMessageCommand()
         .messageName("name")
         .correlationKey("key")
-        .payload("{\"foo\":\"bar\"}")
+        .variables("{\"foo\":\"bar\"}")
         .send()
         .join();
 
     // then
     final PublishMessageRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getPayload())).contains(entry("foo", "bar"));
+    assertThat(fromJsonAsMap(request.getVariables())).contains(entry("foo", "bar"));
   }
 
   @Test
-  public void shouldPublishMessageWithInputStreamPayload() {
+  public void shouldPublishMessageWithInputStreamVariables() {
     // given
-    final String payload = "{\"foo\":\"bar\"}";
-    final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(payload.getBytes());
+    final String variables = "{\"foo\":\"bar\"}";
+    final ByteArrayInputStream byteArrayInputStream =
+        new ByteArrayInputStream(variables.getBytes());
 
     // when
     client
         .newPublishMessageCommand()
         .messageName("name")
         .correlationKey("key")
-        .payload(byteArrayInputStream)
+        .variables(byteArrayInputStream)
         .send()
         .join();
 
     // then
     final PublishMessageRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getPayload())).contains(entry("foo", "bar"));
+    assertThat(fromJsonAsMap(request.getVariables())).contains(entry("foo", "bar"));
   }
 
   @Test
-  public void shouldPublishMessageWithMapPayload() {
+  public void shouldPublishMessageWithMapVariables() {
     // given
-    final Map<String, Object> payload = new HashMap<>();
-    payload.put("foo", "bar");
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("foo", "bar");
 
     // when
     client
         .newPublishMessageCommand()
         .messageName("name")
         .correlationKey("key")
-        .payload(payload)
+        .variables(variables)
         .send()
         .join();
 
     // then
     final PublishMessageRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getPayload())).contains(entry("foo", "bar"));
+    assertThat(fromJsonAsMap(request.getVariables())).contains(entry("foo", "bar"));
   }
 
   @Test
-  public void shouldPublishMessageWithObjectPayload() {
+  public void shouldPublishMessageWithObjectVariables() {
     // when
     client
         .newPublishMessageCommand()
         .messageName("name")
         .correlationKey("key")
-        .payload(new Payload())
+        .variables(new Variables())
         .send()
         .join();
 
     // then
     final PublishMessageRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getPayload())).contains(entry("foo", "bar"));
+    assertThat(fromJsonAsMap(request.getVariables())).contains(entry("foo", "bar"));
   }
 
   @Test
@@ -143,11 +144,11 @@ public class PublishMessageTest extends ClientTest {
         .hasMessageContaining("Invalid request");
   }
 
-  public static class Payload {
+  public static class Variables {
 
     private final String foo = "bar";
 
-    Payload() {}
+    Variables() {}
 
     public String getFoo() {
       return foo;

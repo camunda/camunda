@@ -19,6 +19,7 @@ package io.zeebe.broker.subscription.message.state;
 
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -79,13 +80,11 @@ public class MessageState {
   private final DbLong workflowInstanceKey;
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> correlatedMessageColumnFamily;
 
-  private final ZeebeDb<ZbColumnFamilies> zeebeDb;
-
-  public MessageState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public MessageState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
     messageKey = new DbLong();
     message = new Message();
     messageColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.MESSAGE_KEY, messageKey, message);
+        zeebeDb.createColumnFamily(ZbColumnFamilies.MESSAGE_KEY, dbContext, messageKey, message);
 
     messageName = new DbString();
     correlationKey = new DbString();
@@ -93,48 +92,43 @@ public class MessageState {
     nameCorrelationMessageKey = new DbCompositeKey<>(nameAndCorrelationKey, messageKey);
     nameCorrelationMessageColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGES, nameCorrelationMessageKey, DbNil.INSTANCE);
+            ZbColumnFamilies.MESSAGES, dbContext, nameCorrelationMessageKey, DbNil.INSTANCE);
 
     deadline = new DbLong();
     deadlineMessageKey = new DbCompositeKey<>(deadline, messageKey);
     deadlineColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGE_DEADLINES, deadlineMessageKey, DbNil.INSTANCE);
+            ZbColumnFamilies.MESSAGE_DEADLINES, dbContext, deadlineMessageKey, DbNil.INSTANCE);
 
     messageId = new DbString();
     nameCorrelationMessageIdKey = new DbCompositeKey<>(nameAndCorrelationKey, messageId);
     messageIdColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGE_IDS, nameCorrelationMessageIdKey, DbNil.INSTANCE);
+            ZbColumnFamilies.MESSAGE_IDS, dbContext, nameCorrelationMessageIdKey, DbNil.INSTANCE);
 
     workflowInstanceKey = new DbLong();
     messageWorkflowKey = new DbCompositeKey<>(messageKey, workflowInstanceKey);
     correlatedMessageColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGE_CORRELATED, messageWorkflowKey, DbNil.INSTANCE);
-
-    this.zeebeDb = zeebeDb;
+            ZbColumnFamilies.MESSAGE_CORRELATED, dbContext, messageWorkflowKey, DbNil.INSTANCE);
   }
 
   public void put(final Message message) {
-    zeebeDb.transaction(
-        () -> {
-          messageKey.wrapLong(message.getKey());
-          messageColumnFamily.put(messageKey, message);
+    messageKey.wrapLong(message.getKey());
+    messageColumnFamily.put(messageKey, message);
 
-          messageName.wrapBuffer(message.getName());
-          correlationKey.wrapBuffer(message.getCorrelationKey());
-          nameCorrelationMessageColumnFamily.put(nameCorrelationMessageKey, DbNil.INSTANCE);
+    messageName.wrapBuffer(message.getName());
+    correlationKey.wrapBuffer(message.getCorrelationKey());
+    nameCorrelationMessageColumnFamily.put(nameCorrelationMessageKey, DbNil.INSTANCE);
 
-          deadline.wrapLong(message.getDeadline());
-          deadlineColumnFamily.put(deadlineMessageKey, DbNil.INSTANCE);
+    deadline.wrapLong(message.getDeadline());
+    deadlineColumnFamily.put(deadlineMessageKey, DbNil.INSTANCE);
 
-          final DirectBuffer messageId = message.getId();
-          if (messageId.capacity() > 0) {
-            this.messageId.wrapBuffer(messageId);
-            messageIdColumnFamily.put(nameCorrelationMessageIdKey, DbNil.INSTANCE);
-          }
-        });
+    final DirectBuffer messageId = message.getId();
+    if (messageId.capacity() > 0) {
+      this.messageId.wrapBuffer(messageId);
+      messageIdColumnFamily.put(nameCorrelationMessageIdKey, DbNil.INSTANCE);
+    }
   }
 
   public void putMessageCorrelation(long messageKey, long workflowInstanceKey) {
@@ -198,31 +192,28 @@ public class MessageState {
       return;
     }
 
-    zeebeDb.transaction(
-        () -> {
-          messageKey.wrapLong(message.getKey());
-          messageColumnFamily.delete(messageKey);
+    messageKey.wrapLong(message.getKey());
+    messageColumnFamily.delete(messageKey);
 
-          messageName.wrapBuffer(message.getName());
-          this.correlationKey.wrapBuffer(message.getCorrelationKey());
+    messageName.wrapBuffer(message.getName());
+    this.correlationKey.wrapBuffer(message.getCorrelationKey());
 
-          nameCorrelationMessageColumnFamily.delete(nameCorrelationMessageKey);
+    nameCorrelationMessageColumnFamily.delete(nameCorrelationMessageKey);
 
-          final DirectBuffer messageId = message.getId();
-          if (messageId.capacity() > 0) {
-            this.messageId.wrapBuffer(messageId);
-            messageIdColumnFamily.delete(nameCorrelationMessageIdKey);
-          }
+    final DirectBuffer messageId = message.getId();
+    if (messageId.capacity() > 0) {
+      this.messageId.wrapBuffer(messageId);
+      messageIdColumnFamily.delete(nameCorrelationMessageIdKey);
+    }
 
-          deadline.wrapLong(message.getDeadline());
-          deadlineColumnFamily.delete(deadlineMessageKey);
+    deadline.wrapLong(message.getDeadline());
+    deadlineColumnFamily.delete(deadlineMessageKey);
 
-          correlatedMessageColumnFamily.whileEqualPrefix(
-              messageKey,
-              ((compositeKey, zbNil) -> {
-                correlatedMessageColumnFamily.delete(compositeKey);
-              }));
-        });
+    correlatedMessageColumnFamily.whileEqualPrefix(
+        messageKey,
+        ((compositeKey, zbNil) -> {
+          correlatedMessageColumnFamily.delete(compositeKey);
+        }));
   }
 
   @FunctionalInterface

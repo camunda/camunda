@@ -218,15 +218,6 @@ public class LogStreamWriterTest {
   }
 
   @Test
-  public void shouldWriteEventWithPositionAsKey() {
-    // when
-    final long position = writer.positionAsKey().value(EVENT_VALUE).tryWrite();
-
-    // then
-    assertThat(getWrittenEvent(position).getKey()).isEqualTo(position);
-  }
-
-  @Test
   public void shouldWriteEventWithSourceEvent() {
     // when
     final long position = writer.value(EVENT_VALUE).sourceRecordPosition(123L).tryWrite();

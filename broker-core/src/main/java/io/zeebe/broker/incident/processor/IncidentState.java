@@ -20,6 +20,7 @@ package io.zeebe.broker.incident.processor;
 import io.zeebe.broker.logstreams.state.UnpackedObjectValue;
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -27,8 +28,6 @@ import java.util.function.ObjLongConsumer;
 
 public class IncidentState {
   public static final int MISSING_INCIDENT = -1;
-
-  private final ZeebeDb zeebeDb;
 
   /** incident key -> incident record */
   private final DbLong incidentKey;
@@ -49,41 +48,40 @@ public class IncidentState {
 
   private final ColumnFamily<DbLong, DbLong> jobIncidentColumnFamily;
 
-  public IncidentState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
-    this.zeebeDb = zeebeDb;
-
+  public IncidentState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
     incidentKey = new DbLong();
     incidenRecordToRead = new UnpackedObjectValue();
     incidenRecordToRead.wrapObject(new IncidentRecord());
     incidentRecordToWrite = new UnpackedObjectValue();
     incidentColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.INCIDENTS, incidentKey, incidenRecordToRead);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.INCIDENTS, dbContext, incidentKey, incidenRecordToRead);
 
     elementInstanceKey = new DbLong();
     workflowInstanceIncidentColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.INCIDENT_WORKFLOW_INSTANCES, elementInstanceKey, incidentKey);
+            ZbColumnFamilies.INCIDENT_WORKFLOW_INSTANCES,
+            dbContext,
+            elementInstanceKey,
+            incidentKey);
 
     jobKey = new DbLong();
     jobIncidentColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.INCIDENT_JOBS, jobKey, incidentKey);
+        zeebeDb.createColumnFamily(ZbColumnFamilies.INCIDENT_JOBS, dbContext, jobKey, incidentKey);
   }
 
   public void createIncident(long incidentKey, IncidentRecord incident) {
-    zeebeDb.transaction(
-        () -> {
-          this.incidentKey.wrapLong(incidentKey);
-          this.incidentRecordToWrite.wrapObject(incident);
-          incidentColumnFamily.put(this.incidentKey, this.incidentRecordToWrite);
+    this.incidentKey.wrapLong(incidentKey);
+    this.incidentRecordToWrite.wrapObject(incident);
+    incidentColumnFamily.put(this.incidentKey, this.incidentRecordToWrite);
 
-          if (isJobIncident(incident)) {
-            jobKey.wrapLong(incident.getJobKey());
-            jobIncidentColumnFamily.put(jobKey, this.incidentKey);
-          } else {
-            elementInstanceKey.wrapLong(incident.getElementInstanceKey());
-            workflowInstanceIncidentColumnFamily.put(elementInstanceKey, this.incidentKey);
-          }
-        });
+    if (isJobIncident(incident)) {
+      jobKey.wrapLong(incident.getJobKey());
+      jobIncidentColumnFamily.put(jobKey, this.incidentKey);
+    } else {
+      elementInstanceKey.wrapLong(incident.getElementInstanceKey());
+      workflowInstanceIncidentColumnFamily.put(elementInstanceKey, this.incidentKey);
+    }
   }
 
   public IncidentRecord getIncidentRecord(long incidentKey) {
@@ -100,18 +98,15 @@ public class IncidentState {
     final IncidentRecord incidentRecord = getIncidentRecord(key);
 
     if (incidentRecord != null) {
-      zeebeDb.transaction(
-          () -> {
-            incidentColumnFamily.delete(incidentKey);
+      incidentColumnFamily.delete(incidentKey);
 
-            if (isJobIncident(incidentRecord)) {
-              jobKey.wrapLong(incidentRecord.getJobKey());
-              jobIncidentColumnFamily.delete(jobKey);
-            } else {
-              elementInstanceKey.wrapLong(incidentRecord.getElementInstanceKey());
-              workflowInstanceIncidentColumnFamily.delete(elementInstanceKey);
-            }
-          });
+      if (isJobIncident(incidentRecord)) {
+        jobKey.wrapLong(incidentRecord.getJobKey());
+        jobIncidentColumnFamily.delete(jobKey);
+      } else {
+        elementInstanceKey.wrapLong(incidentRecord.getElementInstanceKey());
+        workflowInstanceIncidentColumnFamily.delete(elementInstanceKey);
+      }
     }
   }
 

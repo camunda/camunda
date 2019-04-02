@@ -20,7 +20,7 @@ import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.PublishMessageCommandStep1;
 import io.zeebe.client.api.commands.PublishMessageCommandStep1.PublishMessageCommandStep2;
 import io.zeebe.client.api.commands.PublishMessageCommandStep1.PublishMessageCommandStep3;
-import io.zeebe.client.impl.CommandWithPayload;
+import io.zeebe.client.impl.CommandWithVariables;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
 import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -28,7 +28,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import java.time.Duration;
 
-public class PublishMessageCommandImpl extends CommandWithPayload<PublishMessageCommandImpl>
+public class PublishMessageCommandImpl extends CommandWithVariables<PublishMessageCommandImpl>
     implements PublishMessageCommandStep1, PublishMessageCommandStep2, PublishMessageCommandStep3 {
 
   private final GatewayStub asyncStub;
@@ -45,8 +45,8 @@ public class PublishMessageCommandImpl extends CommandWithPayload<PublishMessage
   }
 
   @Override
-  protected PublishMessageCommandImpl setPayloadInternal(String payload) {
-    builder.setPayload(payload);
+  protected PublishMessageCommandImpl setVariablesInternal(String variables) {
+    builder.setVariables(variables);
     return this;
   }
 

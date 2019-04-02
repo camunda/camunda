@@ -24,10 +24,10 @@ public class BrokerCompleteJobRequest extends BrokerExecuteCommand<JobRecord> {
 
   private final JobRecord requestDto = new JobRecord();
 
-  public BrokerCompleteJobRequest(long key, DirectBuffer payload) {
+  public BrokerCompleteJobRequest(long key, DirectBuffer variables) {
     super(ValueType.JOB, JobIntent.COMPLETE);
     request.setKey(key);
-    requestDto.setPayload(payload);
+    requestDto.setVariables(variables);
   }
 
   @Override

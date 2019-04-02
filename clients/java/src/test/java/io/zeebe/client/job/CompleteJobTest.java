@@ -39,26 +39,26 @@ public class CompleteJobTest extends ClientTest {
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(jobKey);
-    assertThat(request.getPayload()).isEmpty();
+    assertThat(request.getVariables()).isEmpty();
   }
 
   @Test
-  public void shouldCompleteWithJsonStringPayload() {
+  public void shouldCompleteWithJsonStringVariables() {
     // given
     final long jobKey = 12;
     final String json = JsonUtil.toJson(Collections.singletonMap("key", "val"));
 
     // when
-    client.newCompleteCommand(jobKey).payload(json).send().join();
+    client.newCompleteCommand(jobKey).variables(json).send().join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(jobKey);
-    JsonUtil.assertEquality(request.getPayload(), json);
+    JsonUtil.assertEquality(request.getVariables(), json);
   }
 
   @Test
-  public void shouldCompleteWithJsonStreamPayload() {
+  public void shouldCompleteWithJsonStreamVariables() {
     // given
     final long jobKey = 12;
     final String json = JsonUtil.toJson(Collections.singletonMap("key", "val"));
@@ -66,35 +66,35 @@ public class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(jobKey)
-        .payload(new ByteArrayInputStream(StringUtil.getBytes(json)))
+        .variables(new ByteArrayInputStream(StringUtil.getBytes(json)))
         .send()
         .join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(jobKey);
-    JsonUtil.assertEquality(request.getPayload(), json);
+    JsonUtil.assertEquality(request.getVariables(), json);
   }
 
   @Test
-  public void shouldCompleteWithJsonMapPayload() {
+  public void shouldCompleteWithJsonMapVariables() {
     // given
     final long jobKey = 12;
     final Map<String, Object> map = Collections.singletonMap("key", "val");
 
     // when
-    client.newCompleteCommand(jobKey).payload(map).send().join();
+    client.newCompleteCommand(jobKey).variables(map).send().join();
 
     // then
     final String expectedJson = JsonUtil.toJson(map);
 
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(jobKey);
-    JsonUtil.assertEquality(request.getPayload(), expectedJson);
+    JsonUtil.assertEquality(request.getVariables(), expectedJson);
   }
 
   @Test
-  public void shouldCompleteWithJsonPOJOPayload() {
+  public void shouldCompleteWithJsonPOJOVariables() {
 
     // given
     final long jobKey = 12;
@@ -102,14 +102,14 @@ public class CompleteJobTest extends ClientTest {
     pojo.setKey("val");
 
     // when
-    client.newCompleteCommand(jobKey).payload(pojo).send().join();
+    client.newCompleteCommand(jobKey).variables(pojo).send().join();
 
     // then
     final String expectedJson = JsonUtil.toJson(pojo);
 
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(jobKey);
-    JsonUtil.assertEquality(request.getPayload(), expectedJson);
+    JsonUtil.assertEquality(request.getVariables(), expectedJson);
   }
 
   public static class POJO {

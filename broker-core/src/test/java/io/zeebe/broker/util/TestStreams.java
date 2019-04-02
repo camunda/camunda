@@ -48,6 +48,7 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -96,6 +97,7 @@ public class TestStreams {
     VALUE_TYPES.put(VariableRecord.class, ValueType.VARIABLE);
     VALUE_TYPES.put(VariableDocumentRecord.class, ValueType.VARIABLE_DOCUMENT);
     VALUE_TYPES.put(WorkflowInstanceCreationRecord.class, ValueType.WORKFLOW_INSTANCE_CREATION);
+    VALUE_TYPES.put(ErrorRecord.class, ValueType.ERROR);
 
     VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
   }
@@ -406,8 +408,8 @@ public class TestStreams {
           .actorScheduler(actorScheduler)
           .serviceContainer(serviceContainer)
           .streamProcessorFactory(
-              zeebeDb -> {
-                currentStreamProcessor.wrap(factory.createProcessor(zeebeDb));
+              (zeebeDb, dbContext) -> {
+                currentStreamProcessor.wrap(factory.createProcessor(zeebeDb, dbContext));
                 return currentStreamProcessor;
               })
           .build()
@@ -421,6 +423,8 @@ public class TestStreams {
     protected AtomicReference<Predicate<LoggedEvent>> blockAfterCondition =
         new AtomicReference<>(null);
 
+    private final RecordMetadata metadata = new RecordMetadata();
+    private final ErrorRecord errorRecord = new ErrorRecord();
     protected boolean blockAfterCurrentEvent;
     private StreamProcessorContext context;
 
@@ -458,9 +462,9 @@ public class TestStreams {
         }
 
         @Override
-        public void processingFailed(Exception exception) {
+        public void onError(Throwable throwable) {
           if (actualProcessor != null) {
-            actualProcessor.processingFailed(exception);
+            actualProcessor.onError(throwable);
           }
         }
 
@@ -497,6 +501,18 @@ public class TestStreams {
     public void onClose() {
       wrappedProcessor.onClose();
     }
+
+    @Override
+    public long getFailedPosition(LoggedEvent currentEvent) {
+      metadata.reset();
+      currentEvent.readMetadata(metadata);
+
+      if (metadata.getValueType() == ValueType.ERROR) {
+        currentEvent.readValue(errorRecord);
+        return errorRecord.getErrorEventPosition();
+      }
+      return -1;
+    }
   }
 
   public static class FluentLogWriter {
@@ -505,6 +521,8 @@ public class TestStreams {
     protected UnpackedObject value;
     protected LogStream logStream;
     protected long key = -1;
+    private long sourceRecordPosition = -1;
+    private int producerId = -1;
 
     public FluentLogWriter(final LogStream logStream) {
       this.logStream = logStream;
@@ -519,6 +537,16 @@ public class TestStreams {
 
     public FluentLogWriter requestId(final long requestId) {
       this.metadata.requestId(requestId);
+      return this;
+    }
+
+    public FluentLogWriter producerId(final int producerId) {
+      this.producerId = producerId;
+      return this;
+    }
+
+    public FluentLogWriter sourceRecordPosition(final long sourceRecordPosition) {
+      this.sourceRecordPosition = sourceRecordPosition;
       return this;
     }
 
@@ -551,10 +579,13 @@ public class TestStreams {
     public long write() {
       final LogStreamRecordWriter writer = new LogStreamWriterImpl(logStream);
 
+      writer.sourceRecordPosition(sourceRecordPosition);
+      writer.producerId(producerId);
+
       if (key >= 0) {
         writer.key(key);
       } else {
-        writer.positionAsKey();
+        writer.keyNull();
       }
 
       writer.metadataWriter(metadata);

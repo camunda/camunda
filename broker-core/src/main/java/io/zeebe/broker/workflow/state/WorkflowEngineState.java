@@ -103,6 +103,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
     scopeInstance.setState(state);
     scopeInstance.setValue(value);
+    elementInstanceState.updateInstance(scopeInstance);
   }
 
   private void removeElementInstance(long key, WorkflowInstanceRecord value) {

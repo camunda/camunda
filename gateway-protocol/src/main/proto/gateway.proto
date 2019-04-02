@@ -17,10 +17,10 @@ message ActivateJobsRequest {
   // a job returned after this call will not be activated by another call until the
   // timeout has been reached
   int64 timeout = 3;
-  // the maximum number of jobs to fetch in a single call
-  int32 amount = 4;
-  // a list of variables to fetch as the job payload; if empty, all visible variables at
-  // the time of activation for the scope of the job will be returned as the job payload
+  // the maximum jobs to activate by this request
+  int32 maxJobsToActivate = 4;
+  // a list of variables to fetch as the job variables; if empty, all visible variables at
+  // the time of activation for the scope of the job will be returned
   repeated string fetchVariable = 5;
 }
 
@@ -47,7 +47,7 @@ message ActivatedJob {
   int64 deadline = 7;
   // JSON document, computed at activation time, consisting of all visible variables to
   // the task scope
-  string payload = 8;
+  string variables = 8;
 }
 
 message JobHeaders {
@@ -79,7 +79,7 @@ message CompleteJobRequest {
   // the unique job identifier, as obtained from ActivateJobsResponse
   int64 jobKey = 1;
   // a JSON document representing the variables in the current task scope
-  string payload = 2;
+  string variables = 2;
 }
 
 message CompleteJobResponse {
@@ -216,9 +216,9 @@ message PublishMessageRequest {
   // the unique ID of the message; can be omitted. only useful to ensure only one message
   // with the given ID will ever be published (during its lifetime)
   string messageId = 4;
-  // the message payload as a JSON document; to be valid, the root of the document must be an
+  // the message variables as a JSON document; to be valid, the root of the document must be an
   // object, e.g. { "a": "foo" }. [ "foo" ] would not be valid.
-  string payload = 5;
+  string variables = 5;
 }
 
 message PublishMessageResponse {
@@ -302,15 +302,15 @@ message SetVariablesResponse {
 
 service Gateway {
   /*
-    Iterates through all known partitions in a round-robin and activates up to the requested amount
-    of jobs and streams them back to the client as they are activated.
+    Iterates through all known partitions round-robin and activates up to the requested
+    maximum and streams them back to the client as they are activated.
 
     Errors:
      INVALID_ARGUMENT:
       - type is blank (empty string, null)
       - worker is blank (empty string, null)
       - timeout less than 1
-      - amount is less than 1
+      - maxJobsToActivate is less than 1
    */
   rpc ActivateJobs (ActivateJobsRequest) returns (stream ActivateJobsResponse) {
   }
@@ -326,7 +326,7 @@ service Gateway {
   }
 
   /*
-    Completes a job with the given payload, which allows completing the associated service task.
+    Completes a job with the given variables, which allows completing the associated service task.
 
     Errors:
       NOT_FOUND:

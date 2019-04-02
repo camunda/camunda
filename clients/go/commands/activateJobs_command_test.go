@@ -34,10 +34,10 @@ func TestActivateJobsCommand(t *testing.T) {
 	stream := mock_pb.NewMockGateway_ActivateJobsClient(ctrl)
 
 	request := &pb.ActivateJobsRequest{
-		Type:    "foo",
-		Amount:  5,
-		Timeout: DefaultJobTimeoutInMs,
-		Worker:  DefaultJobWorkerName,
+		Type:              "foo",
+		MaxJobsToActivate: 5,
+		Timeout:           DefaultJobTimeoutInMs,
+		Worker:            DefaultJobWorkerName,
 	}
 
 	response1 := &pb.ActivateJobsResponse{
@@ -57,7 +57,7 @@ func TestActivateJobsCommand(t *testing.T) {
 					WorkflowDefinitionVersion: 12345,
 				},
 				CustomHeaders: "{\"foo\": \"bar\"}",
-				Payload:       "{\"foo\": \"bar\"}",
+				Variables:     "{\"foo\": \"bar\"}",
 			},
 		},
 	}
@@ -81,7 +81,7 @@ func TestActivateJobsCommand(t *testing.T) {
 					WorkflowDefinitionVersion: 12345,
 				},
 				CustomHeaders: "{\"foo\": \"bar\"}",
-				Payload:       "{\"foo\": \"bar\"}",
+				Variables:     "{\"foo\": \"bar\"}",
 			},
 			{
 				Key:           123,
@@ -91,7 +91,7 @@ func TestActivateJobsCommand(t *testing.T) {
 				Worker:        DefaultJobWorkerName,
 				JobHeaders:    &pb.JobHeaders{},
 				CustomHeaders: "{}",
-				Payload:       "{}",
+				Variables:     "{}",
 			},
 		},
 	}
@@ -116,7 +116,7 @@ func TestActivateJobsCommand(t *testing.T) {
 
 	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
-	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout).JobType("foo").Amount(5).Send()
+	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout).JobType("foo").MaxJobsToActivate(5).Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -141,16 +141,16 @@ func TestActivateJobsCommandWithTimeout(t *testing.T) {
 	stream := mock_pb.NewMockGateway_ActivateJobsClient(ctrl)
 
 	request := &pb.ActivateJobsRequest{
-		Type:    "foo",
-		Amount:  5,
-		Timeout: 60 * 1000,
-		Worker:  DefaultJobWorkerName,
+		Type:              "foo",
+		MaxJobsToActivate: 5,
+		Timeout:           60 * 1000,
+		Worker:            DefaultJobWorkerName,
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
-	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout).JobType("foo").Amount(5).Timeout(1 * time.Minute).Send()
+	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout).JobType("foo").MaxJobsToActivate(5).Timeout(1 * time.Minute).Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -169,16 +169,16 @@ func TestActivateJobsCommandWithWorkerName(t *testing.T) {
 	stream := mock_pb.NewMockGateway_ActivateJobsClient(ctrl)
 
 	request := &pb.ActivateJobsRequest{
-		Type:    "foo",
-		Amount:  5,
-		Timeout: DefaultJobTimeoutInMs,
-		Worker:  "bar",
+		Type:              "foo",
+		MaxJobsToActivate: 5,
+		Timeout:           DefaultJobTimeoutInMs,
+		Worker:            "bar",
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
-	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout).JobType("foo").Amount(5).WorkerName("bar").Send()
+	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout).JobType("foo").MaxJobsToActivate(5).WorkerName("bar").Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -199,17 +199,17 @@ func TestActivateJobsCommandWithFetchVariables(t *testing.T) {
 	fetchVariables := []string{"foo", "bar", "baz"}
 
 	request := &pb.ActivateJobsRequest{
-		Type:          "foo",
-		Amount:        5,
-		Worker:        DefaultJobWorkerName,
-		Timeout:       DefaultJobTimeoutInMs,
-		FetchVariable: fetchVariables,
+		Type:              "foo",
+		MaxJobsToActivate: 5,
+		Worker:            DefaultJobWorkerName,
+		Timeout:           DefaultJobTimeoutInMs,
+		FetchVariable:     fetchVariables,
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
-	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout).JobType("foo").Amount(5).FetchVariables(fetchVariables...).Send()
+	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout).JobType("foo").MaxJobsToActivate(5).FetchVariables(fetchVariables...).Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")

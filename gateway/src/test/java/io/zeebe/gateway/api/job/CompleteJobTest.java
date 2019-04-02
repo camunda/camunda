@@ -37,10 +37,10 @@ public class CompleteJobTest extends GatewayTest {
     final CompleteJobStub stub = new CompleteJobStub();
     stub.registerWith(gateway);
 
-    final String payload = JsonUtil.toJson(Collections.singletonMap("key", "value"));
+    final String variables = JsonUtil.toJson(Collections.singletonMap("key", "value"));
 
     final CompleteJobRequest request =
-        CompleteJobRequest.newBuilder().setJobKey(stub.getKey()).setPayload(payload).build();
+        CompleteJobRequest.newBuilder().setJobKey(stub.getKey()).setVariables(variables).build();
 
     // when
     final CompleteJobResponse response = client.completeJob(request);
@@ -54,17 +54,17 @@ public class CompleteJobTest extends GatewayTest {
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.JOB);
 
     final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
-    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getPayload(), payload);
+    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariables(), variables);
   }
 
   @Test
-  public void shouldConvertEmptyPayload() {
+  public void shouldConvertEmptyVariables() {
     // given
     final CompleteJobStub stub = new CompleteJobStub();
     stub.registerWith(gateway);
 
     final CompleteJobRequest request =
-        CompleteJobRequest.newBuilder().setJobKey(stub.getKey()).setPayload("").build();
+        CompleteJobRequest.newBuilder().setJobKey(stub.getKey()).setVariables("").build();
 
     // when
     final CompleteJobResponse response = client.completeJob(request);
@@ -76,6 +76,6 @@ public class CompleteJobTest extends GatewayTest {
     assertThat(brokerRequest.getKey()).isEqualTo(stub.getKey());
 
     final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
-    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getPayload(), "{}");
+    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariables(), "{}");
   }
 }

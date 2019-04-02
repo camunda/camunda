@@ -20,8 +20,8 @@ package io.zeebe.broker.workflow;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.BpmnElementType;
@@ -132,7 +132,7 @@ public class BpmnElementTypeTest {
               return Bpmn.createExecutableProcess(processId())
                   .startEvent()
                   .intermediateCatchEvent(elementId())
-                  .message(b -> b.name(messageName()).zeebeCorrelationKey("$.id"))
+                  .message(b -> b.name(messageName()).zeebeCorrelationKey("id"))
                   .done();
             }
 
@@ -178,7 +178,7 @@ public class BpmnElementTypeTest {
                   .startEvent()
                   .serviceTask("task", b -> b.zeebeTaskType(taskType()))
                   .boundaryEvent(elementId())
-                  .message(b -> b.name(messageName()).zeebeCorrelationKey("$.id"))
+                  .message(b -> b.name(messageName()).zeebeCorrelationKey("id"))
                   .endEvent()
                   .done();
             }
@@ -231,7 +231,7 @@ public class BpmnElementTypeTest {
               return Bpmn.createExecutableProcess(processId())
                   .startEvent()
                   .receiveTask(elementId())
-                  .message(b -> b.name(messageName()).zeebeCorrelationKey("$.id"))
+                  .message(b -> b.name(messageName()).zeebeCorrelationKey("id"))
                   .done();
             }
 
@@ -275,7 +275,7 @@ public class BpmnElementTypeTest {
                   .startEvent()
                   .eventBasedGateway(elementId())
                   .intermediateCatchEvent()
-                  .message(b -> b.name(messageName()).zeebeCorrelationKey("$.id"))
+                  .message(b -> b.name(messageName()).zeebeCorrelationKey("id"))
                   .moveToLastGateway()
                   .intermediateCatchEvent()
                   .timerWithDuration("PT0.01S")
@@ -386,10 +386,10 @@ public class BpmnElementTypeTest {
       testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId()));
     }
 
-    void executeInstance(Map<String, String> payload) {
+    void executeInstance(Map<String, String> variables) {
       final String json =
           "{ "
-              + payload.entrySet().stream()
+              + variables.entrySet().stream()
                   .map(e -> String.format("\"%s\":\"%s\"", e.getKey(), e.getValue()))
                   .collect(Collectors.joining(","))
               + " }";

@@ -21,6 +21,7 @@ import static io.zeebe.logstreams.impl.LogEntryDescriptor.getPosition;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
+import io.zeebe.logstreams.impl.log.index.LogBlockIndexContext;
 import io.zeebe.logstreams.spi.LogStorage;
 import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
@@ -41,7 +42,6 @@ public class LogStreamUtil {
   }
 
   private static final class LogEntryAddressSupplier {
-
     private static final class InstanceHolder {
       static final LogEntryAddressSupplier INSTANCE = new LogEntryAddressSupplier();
     }
@@ -50,6 +50,7 @@ public class LogStreamUtil {
       return InstanceHolder.INSTANCE;
     }
 
+    protected LogBlockIndexContext indexContext;
     protected LogStream logStream;
     protected LogBlockIndex blockIndex;
     protected LogStorage logStorage;
@@ -67,6 +68,7 @@ public class LogStreamUtil {
     public void wrap(LogStream logStream) {
       this.logStream = logStream;
       this.blockIndex = logStream.getLogBlockIndex();
+      this.indexContext = blockIndex.createLogBlockIndexContext();
       this.logStorage = logStream.getLogStorage();
       clear();
     }
@@ -87,8 +89,8 @@ public class LogStreamUtil {
     }
 
     private boolean findStartAddress(long position) {
-      if (!blockIndex.isEmpty()) {
-        nextReadAddress = blockIndex.lookupBlockAddress(position);
+      if (!blockIndex.isEmpty(indexContext)) {
+        nextReadAddress = blockIndex.lookupBlockAddress(indexContext, position);
       } else {
         // fallback: get first block address
         nextReadAddress = logStorage.getFirstBlockAddress();

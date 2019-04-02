@@ -15,8 +15,8 @@
  */
 package io.zeebe.exporter;
 
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.RecordMetadata;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.RecordMetadata;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 

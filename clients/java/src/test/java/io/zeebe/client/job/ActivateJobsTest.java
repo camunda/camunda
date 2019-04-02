@@ -54,7 +54,7 @@ public class ActivateJobsTest extends ClientTest {
             .setWorker("worker1")
             .setRetries(34)
             .setDeadline(1231)
-            .setPayload("{\"key\": \"val\"}")
+            .setVariables("{\"key\": \"val\"}")
             .build();
 
     final JobHeaders jobHeaders2 =
@@ -75,7 +75,7 @@ public class ActivateJobsTest extends ClientTest {
             .setWorker("worker1")
             .setRetries(334)
             .setDeadline(3131)
-            .setPayload("{\"bar\": 3}")
+            .setVariables("{\"bar\": 3}")
             .build();
 
     gatewayService.onActivateJobsRequest(activatedJob1, activatedJob2);
@@ -85,7 +85,7 @@ public class ActivateJobsTest extends ClientTest {
         client
             .newActivateJobsCommand()
             .jobType("foo")
-            .amount(3)
+            .maxJobsToActivate(3)
             .timeout(1000)
             .workerName("worker1")
             .send()
@@ -102,7 +102,7 @@ public class ActivateJobsTest extends ClientTest {
     assertThat(job.getWorker()).isEqualTo(activatedJob1.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob1.getRetries());
     assertThat(job.getDeadline()).isEqualTo(Instant.ofEpochMilli(activatedJob1.getDeadline()));
-    assertThat(job.getPayload()).isEqualTo(activatedJob1.getPayload());
+    assertThat(job.getVariables()).isEqualTo(activatedJob1.getVariables());
 
     job = response.getJobs().get(1);
     assertThat(job.getKey()).isEqualTo(activatedJob2.getKey());
@@ -112,11 +112,11 @@ public class ActivateJobsTest extends ClientTest {
     assertThat(job.getWorker()).isEqualTo(activatedJob2.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob2.getRetries());
     assertThat(job.getDeadline()).isEqualTo(Instant.ofEpochMilli(activatedJob2.getDeadline()));
-    assertThat(job.getPayload()).isEqualTo(activatedJob2.getPayload());
+    assertThat(job.getVariables()).isEqualTo(activatedJob2.getVariables());
 
     final ActivateJobsRequest request = gatewayService.getLastRequest();
     assertThat(request.getType()).isEqualTo("foo");
-    assertThat(request.getAmount()).isEqualTo(3);
+    assertThat(request.getMaxJobsToActivate()).isEqualTo(3);
     assertThat(request.getTimeout()).isEqualTo(1000);
     assertThat(request.getWorker()).isEqualTo("worker1");
   }
@@ -127,7 +127,13 @@ public class ActivateJobsTest extends ClientTest {
     final Duration timeout = Duration.ofMinutes(2);
 
     // when
-    client.newActivateJobsCommand().jobType("foo").amount(3).timeout(timeout).send().join();
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(3)
+        .timeout(timeout)
+        .send()
+        .join();
 
     // then
     final ActivateJobsRequest request = gatewayService.getLastRequest();
@@ -143,7 +149,7 @@ public class ActivateJobsTest extends ClientTest {
     client
         .newActivateJobsCommand()
         .jobType("foo")
-        .amount(3)
+        .maxJobsToActivate(3)
         .fetchVariables(fetchVariables)
         .send()
         .join();
@@ -162,7 +168,7 @@ public class ActivateJobsTest extends ClientTest {
     client
         .newActivateJobsCommand()
         .jobType("foo")
-        .amount(3)
+        .maxJobsToActivate(3)
         .fetchVariables(fetchVariables)
         .send()
         .join();
@@ -175,7 +181,7 @@ public class ActivateJobsTest extends ClientTest {
   @Test
   public void shouldSetDefaultValues() {
     // when
-    client.newActivateJobsCommand().jobType("foo").amount(3).send().join();
+    client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join();
 
     // then
     final ActivateJobsRequest request = gatewayService.getLastRequest();
@@ -191,7 +197,8 @@ public class ActivateJobsTest extends ClientTest {
         ActivateJobsRequest.class, () -> new ClientException("Invalid request"));
 
     // when
-    assertThatThrownBy(() -> client.newActivateJobsCommand().jobType("foo").amount(3).send().join())
+    assertThatThrownBy(
+            () -> client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
   }

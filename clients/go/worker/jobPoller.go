@@ -29,7 +29,7 @@ type jobPoller struct {
 	client         pb.GatewayClient
 	request        pb.ActivateJobsRequest
 	requestTimeout time.Duration
-	bufferSize     int
+	maxJobsActive  int
 	pollInterval   time.Duration
 
 	jobQueue       chan entities.Job
@@ -71,7 +71,7 @@ func (poller *jobPoller) activateJobs() {
 	ctx, cancel := context.WithTimeout(context.Background(), poller.requestTimeout)
 	defer cancel()
 
-	poller.request.Amount = int32(poller.bufferSize - poller.remaining)
+	poller.request.MaxJobsToActivate = int32(poller.maxJobsActive - poller.remaining)
 	stream, err := poller.client.ActivateJobs(ctx, &poller.request)
 	if err != nil {
 		log.Println("Failed to request jobs for worker", poller.request.Worker, err)

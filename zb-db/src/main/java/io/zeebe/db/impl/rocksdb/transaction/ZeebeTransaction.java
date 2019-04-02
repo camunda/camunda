@@ -15,16 +15,22 @@
  */
 package io.zeebe.db.impl.rocksdb.transaction;
 
+import static io.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRocksDbExceptionRecoverable;
+
+import io.zeebe.db.TransactionOperation;
+import io.zeebe.db.ZeebeDbException;
+import io.zeebe.db.ZeebeDbTransaction;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.Transaction;
 
-public class ZeebeTransaction {
+public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
   private final Transaction transaction;
   private final long nativeHandle;
+  private boolean inCurrentTransaction;
 
   public ZeebeTransaction(Transaction transaction) {
     this.transaction = transaction;
@@ -35,8 +41,7 @@ public class ZeebeTransaction {
     }
   }
 
-  protected void put(
-      long columnFamilyHandle, byte[] key, int keyLength, byte[] value, int valueLength)
+  public void put(long columnFamilyHandle, byte[] key, int keyLength, byte[] value, int valueLength)
       throws Exception {
     RocksDbInternal.putWithHandle.invoke(
         transaction, nativeHandle, key, keyLength, value, valueLength, columnFamilyHandle);
@@ -58,8 +63,61 @@ public class ZeebeTransaction {
     return transaction.getIterator(options, handle);
   }
 
-  public void commit() throws RocksDBException {
+  void resetTransaction() {
+    inCurrentTransaction = true;
+  }
+
+  boolean isInCurrentTransaction() {
+    return inCurrentTransaction;
+  }
+
+  @Override
+  public void run(TransactionOperation operations) throws Exception {
+    try {
+      operations.run();
+    } catch (RocksDBException rdbex) {
+      final String errorMessage = "Unexpected error occurred during RocksDB transaction commit.";
+      if (isRocksDbExceptionRecoverable(rdbex)) {
+        throw new ZeebeDbException(errorMessage, rdbex);
+      }
+      throw rdbex;
+    }
+  }
+
+  void commitInternal() throws RocksDBException {
+    inCurrentTransaction = false;
     transaction.commit();
+  }
+
+  @Override
+  public void commit() throws RocksDBException {
+    try {
+      commitInternal();
+    } catch (RocksDBException rdbex) {
+      final String errorMessage = "Unexpected error occurred during RocksDB transaction commit.";
+      if (isRocksDbExceptionRecoverable(rdbex)) {
+        throw new ZeebeDbException(errorMessage, rdbex);
+      }
+      throw rdbex;
+    }
+  }
+
+  void rollbackInternal() throws RocksDBException {
+    inCurrentTransaction = false;
+    transaction.rollback();
+  }
+
+  @Override
+  public void rollback() throws RocksDBException {
+    try {
+      rollbackInternal();
+    } catch (RocksDBException rdbex) {
+      final String errorMessage = "Unexpected error occurred during RocksDB transaction rollback.";
+      if (isRocksDbExceptionRecoverable(rdbex)) {
+        throw new ZeebeDbException(errorMessage, rdbex);
+      }
+      throw rdbex;
+    }
   }
 
   public void close() {

@@ -30,7 +30,8 @@ public class RocksDBWrapper {
   public void wrap(ZeebeDb<DefaultColumnFamily> db) {
     key = new DbString();
     value = new DbLong();
-    defaultColumnFamily = db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+    defaultColumnFamily =
+        db.createColumnFamily(DefaultColumnFamily.DEFAULT, db.createContext(), key, value);
   }
 
   public int getInt(String key) {

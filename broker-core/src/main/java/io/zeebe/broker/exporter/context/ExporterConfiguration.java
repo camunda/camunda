@@ -21,7 +21,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import io.zeebe.broker.exporter.ExporterException;
-import io.zeebe.exporter.context.Configuration;
+import io.zeebe.exporter.api.context.Configuration;
 import java.util.Map;
 
 public class ExporterConfiguration implements Configuration {

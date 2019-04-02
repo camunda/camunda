@@ -21,6 +21,7 @@ import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.impl.log.index.LogBlockColumnFamilies;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
+import io.zeebe.logstreams.impl.log.index.LogBlockIndexContext;
 import io.zeebe.logstreams.state.StateStorage;
 import org.junit.After;
 import org.junit.Before;
@@ -35,6 +36,7 @@ public class LogBlockIndexTest {
   public static final int ENTRY_OFFSET = 5;
 
   private LogBlockIndex blockIndex;
+  private LogBlockIndexContext indexContext;
 
   @Rule public ExpectedException exception = ExpectedException.none();
   @Rule public TemporaryFolder runtimeDirectory = new TemporaryFolder();
@@ -48,7 +50,7 @@ public class LogBlockIndexTest {
     startBlockIndexDb();
   }
 
-  private void startBlockIndexDb() throws Exception {
+  private void startBlockIndexDb() {
     final ZeebeDbFactory<LogBlockColumnFamilies> dbFactory =
         ZeebeRocksDbFactory.newFactory(LogBlockColumnFamilies.class);
 
@@ -56,8 +58,7 @@ public class LogBlockIndexTest {
         new StateStorage(runtimeDirectory.getRoot(), snapshotDirectory.getRoot());
 
     blockIndex = new LogBlockIndex(dbFactory, stateStorage);
-    blockIndex.recoverFromSnapshot();
-    blockIndex.openDb();
+    indexContext = blockIndex.createLogBlockIndexContext();
   }
 
   @After
@@ -81,61 +82,61 @@ public class LogBlockIndexTest {
 
     // then
     lookupAndAssert(numBlocks);
-    assertThat(blockIndex.isEmpty()).isFalse();
+    assertThat(blockIndex.isEmpty(indexContext)).isFalse();
     assertThat(blockIndex.getLastPosition()).isEqualTo(lastPosition);
   }
 
   @Test
   public void shouldNotAddBlockWithEqualPos() {
     // given
-    blockIndex.addBlock(10, 0);
+    blockIndex.addBlock(indexContext, 10, 0);
 
     // then
     exception.expect(IllegalArgumentException.class);
     exception.expectMessage("Illegal value for position");
 
     // when
-    blockIndex.addBlock(10, 0);
+    blockIndex.addBlock(indexContext, 10, 0);
   }
 
   @Test
   public void shouldNotAddBlockWithSmallerPos() {
     // given
-    blockIndex.addBlock(10, 0);
+    blockIndex.addBlock(indexContext, 10, 0);
 
     // then
     exception.expect(IllegalArgumentException.class);
     exception.expectMessage("Illegal value for position");
 
     // when
-    blockIndex.addBlock(9, 0);
+    blockIndex.addBlock(indexContext, 9, 0);
   }
 
   @Test
   public void shouldReturnMinusOneForEmptyBlockIndex() {
-    assertThat(blockIndex.lookupBlockAddress(-1)).isEqualTo(-1);
-    assertThat(blockIndex.lookupBlockAddress(1)).isEqualTo(-1);
+    assertThat(blockIndex.lookupBlockAddress(indexContext, -1)).isEqualTo(-1);
+    assertThat(blockIndex.lookupBlockAddress(indexContext, 1)).isEqualTo(-1);
   }
 
   @Test
   public void shouldNotReturnFirstBlockAddress() {
     // given
-    blockIndex.addBlock(10, 1000);
+    blockIndex.addBlock(indexContext, 10, 1000);
 
     // then
     for (int i = 0; i < 10; i++) {
-      assertThat(blockIndex.lookupBlockAddress(i)).isEqualTo(-1);
+      assertThat(blockIndex.lookupBlockAddress(indexContext, i)).isEqualTo(-1);
     }
   }
 
   @Test
   public void shouldReturnFirstBlockAddress() {
     // given
-    blockIndex.addBlock(10, 1000);
+    blockIndex.addBlock(indexContext, 10, 1000);
 
     // then
     for (int i = 10; i < 100; i++) {
-      assertThat(blockIndex.lookupBlockAddress(i)).isEqualTo(1000);
+      assertThat(blockIndex.lookupBlockAddress(indexContext, i)).isEqualTo(1000);
     }
   }
 
@@ -149,7 +150,7 @@ public class LogBlockIndexTest {
       final int pos = (i + 1) * 10;
       final int addr = (i + 1) * 100;
 
-      blockIndex.addBlock(pos, addr);
+      blockIndex.addBlock(indexContext, pos, addr);
     }
 
     // then
@@ -160,7 +161,7 @@ public class LogBlockIndexTest {
       for (int j = 0; j < 10; j++) {
         final int pos = ((i + 1) * 10) + j;
 
-        assertThat(blockIndex.lookupBlockAddress(pos)).isEqualTo(expectedAddr);
+        assertThat(blockIndex.lookupBlockAddress(indexContext, pos)).isEqualTo(expectedAddr);
       }
     }
   }
@@ -168,22 +169,22 @@ public class LogBlockIndexTest {
   @Test
   public void shouldNotReturnFirstBlockPosition() {
     // given
-    blockIndex.addBlock(10, 1000);
+    blockIndex.addBlock(indexContext, 10, 1000);
 
     // then
     for (int i = 0; i < 10; i++) {
-      assertThat(blockIndex.lookupBlockPosition(i)).isEqualTo(-1);
+      assertThat(blockIndex.lookupBlockPosition(indexContext, i)).isEqualTo(-1);
     }
   }
 
   @Test
   public void shouldReturnFirstBlockPosition() {
     // given
-    blockIndex.addBlock(10, 1000);
+    blockIndex.addBlock(indexContext, 10, 1000);
 
     // then
     for (int i = 10; i < 100; i++) {
-      assertThat(blockIndex.lookupBlockPosition(i)).isEqualTo(10);
+      assertThat(blockIndex.lookupBlockPosition(indexContext, i)).isEqualTo(10);
     }
   }
 
@@ -197,7 +198,7 @@ public class LogBlockIndexTest {
       final int pos = (i + 1) * 10;
       final int addr = (i + 1) * 100;
 
-      blockIndex.addBlock(pos, addr);
+      blockIndex.addBlock(indexContext, pos, addr);
     }
 
     // then
@@ -208,7 +209,7 @@ public class LogBlockIndexTest {
       for (int j = 0; j < 10; j++) {
         final int pos = ((i + 1) * 10) + j;
 
-        assertThat(blockIndex.lookupBlockPosition(pos)).isEqualTo(expectedPos);
+        assertThat(blockIndex.lookupBlockPosition(indexContext, pos)).isEqualTo(expectedPos);
       }
     }
   }
@@ -222,7 +223,6 @@ public class LogBlockIndexTest {
 
     // when
     blockIndex.closeDb(); // close and reopen DB
-    blockIndex.recoverFromSnapshot();
     startBlockIndexDb();
 
     // then
@@ -234,7 +234,7 @@ public class LogBlockIndexTest {
   private long addBlocks(int numBlocks) {
     for (int blockPos = 0; blockPos < numBlocks * ENTRY_OFFSET; blockPos += ENTRY_OFFSET) {
       final int address = blockPos * ADDRESS_MULTIPLIER;
-      blockIndex.addBlock(blockPos, address);
+      blockIndex.addBlock(indexContext, blockPos, address);
     }
 
     return (numBlocks - 1) * ENTRY_OFFSET;
@@ -245,8 +245,8 @@ public class LogBlockIndexTest {
       final int address = blockPos * ADDRESS_MULTIPLIER;
 
       for (int entryPos = blockPos; entryPos < blockPos + ENTRY_OFFSET; entryPos++) {
-        assertThat(blockIndex.lookupBlockPosition(entryPos)).isEqualTo(blockPos);
-        assertThat(blockIndex.lookupBlockAddress(entryPos)).isEqualTo(address);
+        assertThat(blockIndex.lookupBlockPosition(indexContext, entryPos)).isEqualTo(blockPos);
+        assertThat(blockIndex.lookupBlockAddress(indexContext, entryPos)).isEqualTo(address);
       }
     }
   }

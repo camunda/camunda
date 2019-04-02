@@ -6,9 +6,9 @@ Business Process Model And Notation 2.0 (BPMN) is an industry standard for workf
 
 This is the corresponding XML: <a href="/bpmn-workflows/workflow.bpmn" target="_blank">Click here</a>.
 
-This duality makes BPMN very powerful. The XML document contains all the necessary information to be interpreted by workflow engines and modelling tools like Zeebe. At the same time, the visual representation contains just enough information to be quickly understood by humans, even when they are non-technical people. The BPMN model is source code and documentation in one artifact.
+This duality makes BPMN very powerful. The XML document contains all the necessary information to be interpreted by workflow engines and modeling tools like Zeebe. At the same time, the visual representation contains just enough information to be quickly understood by humans, even when they are non-technical people. The BPMN model is source code and documentation in one artifact.
 
-The following is an introduction to BPMN 2.0, its elements and their execution semantics. It tries to briefly provide an intuitive understanding of BPMN's power, but does not cover the entire feature set. For more exhaustive BPMN resources, see the [reference links](#additional-resources) at the end of this section.
+The following is an introduction to BPMN 2.0, its elements and their execution semantics. It tries to briefly provide an intuitive understanding of BPMN's power but does not cover the entire feature set. For more exhaustive BPMN resources, see the [reference links](#additional-resources) at the end of this section.
 
 ## Modeling BPMN Diagrams
 
@@ -18,7 +18,7 @@ The best tool for modeling BPMN diagrams for Zeebe is [Zeebe Modeler](https://gi
 
 ### Sequence Flow: Controlling the Flow of Execution
 
-A core concept of BPMN is *sequence flow* that defines the order in which steps in the workflow happen. In BPMN's visual representation, a sequence flow is an arrow connecting two elements. The direction of the arrow indicates their order of execution.
+A core concept of BPMN is a *sequence flow* that defines the order in which steps in the workflow happen. In BPMN's visual representation, a sequence flow is an arrow connecting two elements. The direction of the arrow indicates their order of execution.
 
 <center>
 ![workflow](/bpmn-workflows/sequenceflow.png)
@@ -76,13 +76,9 @@ See the [Events](/bpmn-workflows/events.html) section on which types of events a
 
 ### Sub Processes: Grouping Elements
 
-*Sub Processes* are element containers that allow to define common functionality. For example, we can attach an event to a sub process's border:
+*Sub Processes* are element containers that allow defining common functionality. For example, we can attach an event to a sub process's border:
 
-<!-- TODO: replace by token sim gif -->
-
-<center>
-![payload](/bpmn-workflows/sub-process.png)
-</center>
+![payload](/bpmn-workflows/sub-process.gif)
 
 When the event is triggered, the sub process is interrupted regardless which of its elements is currently active.
 

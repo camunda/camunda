@@ -63,7 +63,7 @@ public class ServiceTaskElementActivatedHandler<T extends ExecutableServiceTask>
     jobCommand
         .setType(serviceTask.getType())
         .setRetries(serviceTask.getRetries())
-        .setPayload(DocumentValue.EMPTY_DOCUMENT)
+        .setVariables(DocumentValue.EMPTY_DOCUMENT)
         .setCustomHeaders(headers)
         .getHeaders()
         .setBpmnProcessId(value.getBpmnProcessId())

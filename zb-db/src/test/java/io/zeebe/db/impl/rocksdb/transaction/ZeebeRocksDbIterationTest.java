@@ -16,6 +16,7 @@
 package io.zeebe.db.impl.rocksdb.transaction;
 
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -54,7 +55,8 @@ public class ZeebeRocksDbIterationTest {
     secondKey = new DbLong();
     compositeKey = new DbCompositeKey<>(firstKey, secondKey);
     columnFamily =
-        zeebeDb.createColumnFamily(DefaultColumnFamily.DEFAULT, compositeKey, DbNil.INSTANCE);
+        zeebeDb.createColumnFamily(
+            DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), compositeKey, DbNil.INSTANCE);
   }
 
   @Test
@@ -68,7 +70,8 @@ public class ZeebeRocksDbIterationTest {
               return spy;
             })
         .when(zeebeDb)
-        .newIterator(Mockito.anyLong(), Mockito.any(ReadOptions.class));
+        .newIterator(
+            Mockito.anyLong(), Mockito.any(DbContext.class), Mockito.any(ReadOptions.class));
 
     final long prefixes = 3;
     final long suffixes = 5;

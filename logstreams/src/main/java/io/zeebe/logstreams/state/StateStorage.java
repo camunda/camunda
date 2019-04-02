@@ -113,7 +113,7 @@ public class StateStorage {
             snapshots.add(metadata);
           }
         } catch (final Exception ex) {
-          LOG.warn("error listing snapshot {}", folder.getAbsolutePath());
+          LOG.warn("error listing snapshot {}", folder.getAbsolutePath(), ex);
         }
       }
     }

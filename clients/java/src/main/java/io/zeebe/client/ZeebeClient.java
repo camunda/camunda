@@ -149,7 +149,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .newPublishMessageCommand()
    *  .messageName("order canceled")
    *  .correlationKey(orderId)
-   *  .payload(json)
+   *  .variables(json)
    *  .send();
    * </pre>
    *
@@ -223,7 +223,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * </pre>
    *
    * <p>If the given retries are greater than zero then this job will be picked up again by a job
-   * subscription and a related incident will be marked as resolved.
+   * worker. This will not close a related incident, which still has to be marked as resolved with
+   * {@link #newResolveIncidentCommand newResolveIncidentCommand(long incidentKey)} .
    *
    * @param jobKey the key of the job to update
    * @return a builder for the command
@@ -256,13 +257,13 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *   &#64;Override
    *   public void handle(JobClient client, JobEvent jobEvent)
    *   {
-   *     String json = jobEvent.getPayload();
-   *     // modify payload
+   *     String json = jobEvent.getVariables();
+   *     // modify variables
    *
    *     client
    *      .newCompleteCommand()
    *      .event(jobEvent)
-   *      .payload(json)
+   *      .variables(json)
    *      .send();
    *   }
    * };
@@ -279,15 +280,15 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * zeebeClient
    *  .newActivateJobsCommand()
    *  .jobType("payment")
-   *  .amount(10)
+   *  .maxJobsToActivate(10)
    *  .workerName("paymentWorker")
    *  .timeout(Duration.ofMinutes(10))
    *  .send();
    * </pre>
    *
-   * <p>The command will try to activate maximal {@code amount} jobs of given {@code jobType}. If
-   * less then {@code amount} jobs of the {@code jobType} are available for activation the returned
-   * list will have fewer elements.
+   * <p>The command will try to use {@code maxJobsToActivate} for given {@code jobType}. If less
+   * then the requested {@code maxJobsToActivate} jobs of the {@code jobType} are available for
+   * activation the returned list will have fewer elements.
    *
    * @return a builder for the command
    */

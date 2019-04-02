@@ -26,8 +26,8 @@ import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.cmd.ClientException;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.JobIntent;
@@ -109,7 +109,7 @@ public class CancelWorkflowInstanceTest {
                         .getClient()
                         .newActivateJobsCommand()
                         .jobType("test")
-                        .amount(1)
+                        .maxJobsToActivate(1)
                         .send()
                         .join())
             .until(response -> !response.getJobs().isEmpty())

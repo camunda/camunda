@@ -19,6 +19,7 @@ package io.zeebe.broker.job;
 
 import static io.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
@@ -44,13 +45,16 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
 
-  private final JobState state;
+  private final JobState jobState;
   private final VariablesState variablesState;
+  private final KeyGenerator keyGenerator;
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
 
-  public JobBatchActivateProcessor(JobState state, VariablesState variablesState) {
-    this.state = state;
+  public JobBatchActivateProcessor(
+      JobState jobState, VariablesState variablesState, KeyGenerator keyGenerator) {
+    this.jobState = jobState;
     this.variablesState = variablesState;
+    this.keyGenerator = keyGenerator;
   }
 
   @Override
@@ -67,7 +71,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
   }
 
   private boolean isValid(final JobBatchRecord record) {
-    return record.getAmount() > 0
+    return record.getMaxJobsToActivate() > 0
         && record.getTimeout() > 0
         && record.getType().capacity() > 0
         && record.getWorker().capacity() > 0;
@@ -79,9 +83,9 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
       final TypedStreamWriter streamWriter) {
     final JobBatchRecord value = record.getValue();
 
-    final long jobBatchKey = streamWriter.getKeyGenerator().nextKey();
+    final long jobBatchKey = keyGenerator.nextKey();
 
-    final AtomicInteger amount = new AtomicInteger(value.getAmount());
+    final AtomicInteger amount = new AtomicInteger(value.getMaxJobsToActivate());
     collectJobsToActivate(record, amount);
 
     // Collecting of jobs and update state and write ACTIVATED job events should be separate,
@@ -102,29 +106,29 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
 
     // collect jobs for activation
     variableNames.clear();
-    final ValueArray<StringValue> variables = value.variables();
+    final ValueArray<StringValue> jobBatchVariables = value.variables();
 
-    variables.forEach(
+    jobBatchVariables.forEach(
         v -> {
           final MutableDirectBuffer nameCopy = new UnsafeBuffer(new byte[v.getValue().capacity()]);
           nameCopy.putBytes(0, v.getValue(), 0, v.getValue().capacity());
           variableNames.add(nameCopy);
         });
 
-    state.forEachActivatableJobs(
+    jobState.forEachActivatableJobs(
         value.getType(),
         (key, jobRecord) -> {
           int remainingAmount = amount.get();
           final long deadline = currentTimeMillis() + value.getTimeout();
           jobRecord.setDeadline(deadline).setWorker(value.getWorker());
 
-          // fetch and set payload, required here to already have the full size of the job record
+          // fetch and set variables, required here to already have the full size of the job record
           final long elementInstanceKey = jobRecord.getHeaders().getElementInstanceKey();
           if (elementInstanceKey >= 0) {
-            final DirectBuffer payload = collectPayload(variableNames, elementInstanceKey);
-            jobRecord.setPayload(payload);
+            final DirectBuffer variables = collectVariables(variableNames, elementInstanceKey);
+            jobRecord.setVariables(variables);
           } else {
-            jobRecord.setPayload(DocumentValue.EMPTY_DOCUMENT);
+            jobRecord.setVariables(DocumentValue.EMPTY_DOCUMENT);
           }
 
           if (remainingAmount >= 0
@@ -164,19 +168,19 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
 
       // first write follow up event as state.activate will clear the payload
       streamWriter.appendFollowUpEvent(key, JobIntent.ACTIVATED, copiedJob);
-      state.activate(key, copiedJob);
+      jobState.activate(key, copiedJob);
     }
   }
 
-  private DirectBuffer collectPayload(
+  private DirectBuffer collectVariables(
       Collection<DirectBuffer> variableNames, long elementInstanceKey) {
-    final DirectBuffer payload;
+    final DirectBuffer variables;
     if (variableNames.isEmpty()) {
-      payload = variablesState.getVariablesAsDocument(elementInstanceKey);
+      variables = variablesState.getVariablesAsDocument(elementInstanceKey);
     } else {
-      payload = variablesState.getVariablesAsDocument(elementInstanceKey, variableNames);
+      variables = variablesState.getVariablesAsDocument(elementInstanceKey, variableNames);
     }
-    return payload;
+    return variables;
   }
 
   private void rejectCommand(
@@ -190,11 +194,14 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
 
     final String format = "Expected to activate job batch with %s to be %s, but it was %s";
 
-    if (value.getAmount() < 1) {
+    if (value.getMaxJobsToActivate() < 1) {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason =
           String.format(
-              format, "amount", "greater than zero", String.format("'%d'", value.getAmount()));
+              format,
+              "max jobs to activate",
+              "greater than zero",
+              String.format("'%d'", value.getMaxJobsToActivate()));
     } else if (value.getTimeout() < 1) {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason =

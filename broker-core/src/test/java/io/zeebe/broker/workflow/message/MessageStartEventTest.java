@@ -17,14 +17,14 @@
  */
 package io.zeebe.broker.workflow.message;
 
-import static io.zeebe.exporter.record.Assertions.assertThat;
+import static io.zeebe.exporter.api.record.Assertions.assertThat;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.test.util.record.RecordingExporter.messageStartEventSubscriptionRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
@@ -123,7 +123,7 @@ public class MessageStartEventTest {
   }
 
   @Test
-  public void shouldMergeMessagePayload() {
+  public void shouldMergeMessageVariables() {
     // given
     testClient.deployWithResponse(createWorkflowWithOneMessageStartEvent());
 
@@ -288,7 +288,7 @@ public class MessageStartEventTest {
   private static BpmnModelInstance createWorkflowWithMessageStartEventOutputMapping() {
     return Bpmn.createExecutableProcess("processId")
         .startEvent(EVENT_ID1)
-        .zeebeOutput("$.foo", "$.mappedfoo")
+        .zeebeOutput("foo", "mappedfoo")
         .message(m -> m.name(MESSAGE_NAME1).id("startmsgId"))
         .endEvent()
         .done();

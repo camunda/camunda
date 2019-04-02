@@ -21,11 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.VariableRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
-import io.zeebe.model.bpmn.builder.ZeebePayloadMappingBuilder;
+import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -62,7 +62,7 @@ public class JobOutputMappingTest {
       new RecordingExporterTestWatcher();
 
   @Parameter(0)
-  public String jobPayload;
+  public String jobVariables;
 
   @Parameter(1)
   public Consumer<ServiceTaskBuilder> mappings;
@@ -80,19 +80,19 @@ public class JobOutputMappingTest {
       {"{'x': 1}", mapping(b -> {}), activityVariables(), scopeVariables(tuple("x", "1"))},
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeOutput("$.x", "$.x")),
+        mapping(b -> b.zeebeOutput("x", "x")),
         activityVariables(tuple("x", "1")),
         scopeVariables(tuple("x", "1"))
       },
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeOutput("$.x", "$.y")),
+        mapping(b -> b.zeebeOutput("x", "y")),
         activityVariables(tuple("x", "1")),
         scopeVariables(tuple("y", "1"))
       },
       {
         "{'x': 1, 'y': 2}",
-        mapping(b -> b.zeebeOutput("$.y", "$.z")),
+        mapping(b -> b.zeebeOutput("y", "z")),
         activityVariables(tuple("x", "1"), tuple("y", "2")),
         scopeVariables(tuple("z", "2"))
       },
@@ -104,13 +104,13 @@ public class JobOutputMappingTest {
       },
       {
         "{'x': {'y': 2}}",
-        mapping(b -> b.zeebeOutput("$.x", "$.y")),
+        mapping(b -> b.zeebeOutput("x", "y")),
         activityVariables(tuple("x", "{\"y\":2}")),
         scopeVariables(tuple("y", "{\"y\":2}"))
       },
       {
         "{'x': {'y': 2}}",
-        mapping(b -> b.zeebeOutput("$.x.y", "$.y")),
+        mapping(b -> b.zeebeOutput("x.y", "y")),
         activityVariables(tuple("x", "{\"y\":2}")),
         scopeVariables(tuple("y", "2"))
       },
@@ -118,38 +118,38 @@ public class JobOutputMappingTest {
       {"{'i': 1}", mapping(b -> {}), activityVariables(), scopeVariables(tuple("i", "1"))},
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeOutput("$.x", "$.i")),
+        mapping(b -> b.zeebeOutput("x", "i")),
         activityVariables(tuple("x", "1")),
         scopeVariables(tuple("i", "1"))
       },
       // combine input and output mapping
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeInput("$.i", "$.y").zeebeOutput("$.y", "$.z")),
+        mapping(b -> b.zeebeInput("i", "y").zeebeOutput("y", "z")),
         activityVariables(tuple("x", "1"), tuple("y", "0")),
         scopeVariables(tuple("z", "0"))
       },
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeInput("$.i", "$.x").zeebeOutput("$.x", "$.y")),
+        mapping(b -> b.zeebeInput("i", "x").zeebeOutput("x", "y")),
         activityVariables(tuple("x", "0"), tuple("x", "1")),
         scopeVariables(tuple("y", "1"))
       },
       {
         "{'x': 1, 'y': 2}",
-        mapping(b -> b.zeebeInput("$.i", "$.x").zeebeInput("$.i", "$.y").zeebeOutput("$.y", "$.z")),
+        mapping(b -> b.zeebeInput("i", "x").zeebeInput("i", "y").zeebeOutput("y", "z")),
         activityVariables(tuple("x", "0"), tuple("y", "0"), tuple("x", "1"), tuple("y", "2")),
         scopeVariables(tuple("z", "2"))
       },
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeInput("$.i", "$.y")),
+        mapping(b -> b.zeebeInput("i", "y")),
         activityVariables(tuple("y", "0")),
         scopeVariables(tuple("x", "1"))
       },
       {
         "{'z': 1, 'j': 1}",
-        mapping(b -> b.zeebeInput("$.i", "$.z")),
+        mapping(b -> b.zeebeInput("i", "z")),
         activityVariables(tuple("z", "0")),
         scopeVariables(tuple("j", "1"))
       },
@@ -191,7 +191,7 @@ public class JobOutputMappingTest {
             .createWorkflowInstance(
                 r -> r.setKey(workflowKey).setVariables(MsgPackUtil.asMsgPack("i", 0)))
             .getInstanceKey();
-    apiRule.completeJob(jobType, MsgPackUtil.asMsgPack(jobPayload));
+    apiRule.completeJob(jobType, MsgPackUtil.asMsgPack(jobVariables));
 
     // then
     final long elementInstanceKey =
@@ -230,8 +230,8 @@ public class JobOutputMappingTest {
         .containsAll(expectedScopeVariables);
   }
 
-  private static Consumer<ZeebePayloadMappingBuilder<ServiceTaskBuilder>> mapping(
-      Consumer<ZeebePayloadMappingBuilder<ServiceTaskBuilder>> mappingBuilder) {
+  private static Consumer<ZeebeVariablesMappingBuilder<ServiceTaskBuilder>> mapping(
+      Consumer<ZeebeVariablesMappingBuilder<ServiceTaskBuilder>> mappingBuilder) {
     return mappingBuilder;
   }
 

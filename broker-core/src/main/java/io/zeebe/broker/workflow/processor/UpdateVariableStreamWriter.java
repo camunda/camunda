@@ -35,24 +35,36 @@ public class UpdateVariableStreamWriter implements VariableListener {
 
   @Override
   public void onCreate(
-      long key, DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
+      long key,
+      long workflowKey,
+      DirectBuffer name,
+      DirectBuffer value,
+      long variableScopeKey,
+      long rootScopeKey) {
     record
         .setName(name)
         .setValue(value)
         .setScopeKey(variableScopeKey)
-        .setWorkflowInstanceKey(rootScopeKey);
+        .setWorkflowInstanceKey(rootScopeKey)
+        .setWorkflowKey(workflowKey);
 
     streamWriter.appendFollowUpEvent(key, VariableIntent.CREATED, record);
   }
 
   @Override
   public void onUpdate(
-      long key, DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
+      long key,
+      long workflowKey,
+      DirectBuffer name,
+      DirectBuffer value,
+      long variableScopeKey,
+      long rootScopeKey) {
     record
         .setName(name)
         .setValue(value)
         .setScopeKey(variableScopeKey)
-        .setWorkflowInstanceKey(rootScopeKey);
+        .setWorkflowInstanceKey(rootScopeKey)
+        .setWorkflowKey(workflowKey);
 
     streamWriter.appendFollowUpEvent(key, VariableIntent.UPDATED, record);
   }

@@ -20,9 +20,9 @@ package io.zeebe.broker.workflow.variables;
 import static io.zeebe.broker.workflow.gateway.ParallelGatewayStreamProcessorTest.PROCESS_ID;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Assertions;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.VariableRecordValue;
+import io.zeebe.exporter.api.record.Assertions;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.VariableIntent;
@@ -57,12 +57,12 @@ public class WorkflowInstanceVariableTypeTest {
       new RecordingExporterTestWatcher();
 
   @Parameter(0)
-  public String payload;
+  public String variables;
 
   @Parameter(1)
   public String expectedValue;
 
-  @Parameters(name = "with payload: {0}")
+  @Parameters(name = "with variables: {0}")
   public static Object[][] parameters() {
     return new Object[][] {
       {"{'x':'foo'}", "\"foo\""},
@@ -77,13 +77,13 @@ public class WorkflowInstanceVariableTypeTest {
 
   @BeforeClass
   public static void deployWorkflow() {
-    apiRule.deployWorkflow(WORKFLOW);
+    apiRule.deployWorkflow(WORKFLOW).getValue().getDeployedWorkflows().get(0).getWorkflowKey();
   }
 
   @Test
   public void shouldWriteVariableCreatedEvent() {
     // when
-    final DirectBuffer variables = MsgPackUtil.asMsgPack(payload);
+    final DirectBuffer variables = MsgPackUtil.asMsgPack(this.variables);
     final long workflowInstanceKey =
         apiRule
             .partitionClient()

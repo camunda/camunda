@@ -34,7 +34,7 @@ public interface JobClient {
    *
    * jobClient
    *  .newCompleteCommand(jobKey)
-   *  .payload(json)
+   *  .variables(json)
    *  .send();
    * </pre>
    *

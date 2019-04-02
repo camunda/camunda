@@ -7,8 +7,8 @@
 
   <parent>
     <groupId>io.zeebe</groupId>
-    <artifactId>zb-parent</artifactId>
-    <version>0.17.0-SNAPSHOT</version>
+    <artifactId>zeebe-parent</artifactId>
+    <version>0.18.0-SNAPSHOT</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath>../parent</relativePath>
   </parent>
@@ -26,17 +26,17 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-util</artifactId>
+      <artifactId>zeebe-util</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-exporter-api</artifactId>
+      <artifactId>zeebe-exporter-api</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-bpmn-model</artifactId>
+      <artifactId>zeebe-bpmn-model</artifactId>
     </dependency>
 
     <dependency>
@@ -46,23 +46,23 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-service-container</artifactId>
+      <artifactId>zeebe-service-container</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-protocol</artifactId>
+      <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-transport</artifactId>
+      <artifactId>zeebe-transport</artifactId>
     </dependency>
 
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-test-util</artifactId>
+      <artifactId>zeebe-test-util</artifactId>
     </dependency>
 
     <dependency>

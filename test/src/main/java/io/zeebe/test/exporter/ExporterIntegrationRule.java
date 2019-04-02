@@ -25,9 +25,9 @@ import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.api.subscription.JobHandler;
 import io.zeebe.client.api.subscription.JobWorker;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.IncidentRecordValue;
-import io.zeebe.exporter.spi.Exporter;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
+import io.zeebe.exporter.api.spi.Exporter;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.IncidentIntent;
@@ -125,7 +125,7 @@ public class ExporterIntegrationRule extends ExternalResource {
       Bpmn.createExecutableProcess("testProcess")
           .startEvent()
           .intermediateCatchEvent(
-              "message", e -> e.message(m -> m.name("catch").zeebeCorrelationKey("$.orderId")))
+              "message", e -> e.message(m -> m.name("catch").zeebeCorrelationKey("orderId")))
           .serviceTask("task", t -> t.zeebeTaskType("work").zeebeTaskHeader("foo", "bar"))
           .endEvent()
           .done();
@@ -317,19 +317,19 @@ public class ExporterIntegrationRule extends ExternalResource {
   }
 
   /**
-   * Creates a workflow instance for the given process ID, with the given payload.
+   * Creates a workflow instance for the given process ID, with the given variables.
    *
    * @param processId BPMN process ID
-   * @param payload initial payload for the instance
+   * @param variables initial variables for the instance
    * @return unique ID used to interact with the instance
    */
-  public long createWorkflowInstance(String processId, Map<String, Object> payload) {
+  public long createWorkflowInstance(String processId, Map<String, Object> variables) {
     return clientRule
         .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(processId)
         .latestVersion()
-        .variables(payload)
+        .variables(variables)
         .send()
         .join()
         .getWorkflowInstanceKey();

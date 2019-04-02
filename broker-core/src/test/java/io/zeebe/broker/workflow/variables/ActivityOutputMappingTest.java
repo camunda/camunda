@@ -21,11 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.SubProcessBuilder;
-import io.zeebe.model.bpmn.builder.ZeebePayloadMappingBuilder;
+import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.util.MsgPackUtil;
@@ -61,7 +61,7 @@ public class ActivityOutputMappingTest {
       new RecordingExporterTestWatcher();
 
   @Parameter(0)
-  public String initialPayload;
+  public String initialVariables;
 
   @Parameter(1)
   public Consumer<SubProcessBuilder> mappings;
@@ -72,32 +72,24 @@ public class ActivityOutputMappingTest {
   @Parameters(name = "from {0} to {2}")
   public static Object[][] parameters() {
     return new Object[][] {
-      {"{'x': 1}", mapping(b -> b.zeebeOutput("$.x", "$.y")), scopeVariables(tuple("y", "1"))},
-      {
-        "{'x': 1, 'y': 2}",
-        mapping(b -> b.zeebeOutput("$.y", "$.z")),
-        scopeVariables(tuple("z", "2"))
-      },
+      {"{'x': 1}", mapping(b -> b.zeebeOutput("x", "y")), scopeVariables(tuple("y", "1"))},
+      {"{'x': 1, 'y': 2}", mapping(b -> b.zeebeOutput("y", "z")), scopeVariables(tuple("z", "2"))},
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeInput("$.x", "$.y").zeebeOutput("$.y", "$.z")),
+        mapping(b -> b.zeebeInput("x", "y").zeebeOutput("y", "z")),
         scopeVariables(tuple("z", "1"))
       },
       {
         "{'x': 1}",
-        mapping(b -> b.zeebeInput("$.x", "$.y").zeebeOutput("$.x", "$.z")),
+        mapping(b -> b.zeebeInput("x", "y").zeebeOutput("x", "z")),
         scopeVariables(tuple("z", "1"))
       },
       {
         "{'x': {'y': 2}}",
-        mapping(b -> b.zeebeOutput("$.x", "$.z")),
+        mapping(b -> b.zeebeOutput("x", "z")),
         scopeVariables(tuple("z", "{\"y\":2}"))
       },
-      {
-        "{'x': {'y': 2}}",
-        mapping(b -> b.zeebeOutput("$.x.y", "$.z")),
-        scopeVariables(tuple("z", "2"))
-      },
+      {"{'x': {'y': 2}}", mapping(b -> b.zeebeOutput("x.y", "z")), scopeVariables(tuple("z", "2"))},
     };
   }
 
@@ -129,7 +121,7 @@ public class ActivityOutputMappingTest {
             .getWorkflowKey();
 
     // when
-    final DirectBuffer variables = MsgPackUtil.asMsgPack(initialPayload);
+    final DirectBuffer variables = MsgPackUtil.asMsgPack(initialVariables);
     final long workflowInstanceKey =
         apiRule
             .partitionClient()
@@ -157,8 +149,8 @@ public class ActivityOutputMappingTest {
         .containsAll(expectedScopeVariables);
   }
 
-  private static Consumer<ZeebePayloadMappingBuilder<SubProcessBuilder>> mapping(
-      Consumer<ZeebePayloadMappingBuilder<SubProcessBuilder>> mappingBuilder) {
+  private static Consumer<ZeebeVariablesMappingBuilder<SubProcessBuilder>> mapping(
+      Consumer<ZeebeVariablesMappingBuilder<SubProcessBuilder>> mappingBuilder) {
     return mappingBuilder;
   }
 

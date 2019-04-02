@@ -19,7 +19,7 @@ import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.db.impl.DbLong;
-import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateSnapshotMetadata;
 import io.zeebe.logstreams.state.StateStorage;
@@ -37,32 +37,43 @@ import java.util.concurrent.atomic.AtomicLong;
  * block in which it resides in storage. Then, the block can be scanned for the event position
  * requested.
  */
-public class LogBlockIndex implements SnapshotSupport {
+public class LogBlockIndex {
+
+  public static final int VALUE_NOT_FOUND = -1;
+  private long lastVirtualPosition = VALUE_NOT_FOUND;
 
   private final StateSnapshotController stateSnapshotController;
-  private ColumnFamily<DbLong, DbLong> blockPositionToAddress;
-
-  private final DbLong blockPosition = new DbLong();
-  private final DbLong value = new DbLong();
-  private ZeebeDb db;
-
-  private long lastVirtualPosition = -1;
+  private ZeebeDb zeebeDb;
+  private ColumnFamily<DbLong, DbLong> indexColumnFamily;
 
   public LogBlockIndex(
       ZeebeDbFactory<LogBlockColumnFamilies> dbFactory, StateStorage stateStorage) {
     this.stateSnapshotController = new StateSnapshotController(dbFactory, stateStorage);
+    tryToRestoreAndOpen();
   }
 
-  public void openDb() {
-    db = stateSnapshotController.openDb();
-    blockPositionToAddress =
-        db.createColumnFamily(LogBlockColumnFamilies.BLOCK_POSITION_ADDRESS, blockPosition, value);
+  private void tryToRestoreAndOpen() {
+    final StateSnapshotMetadata snapshotMetadata;
+    try {
+      snapshotMetadata = stateSnapshotController.recoverFromLatestSnapshot();
+      lastVirtualPosition = snapshotMetadata.getLastWrittenEventPosition();
+    } catch (Exception e) {
+      Loggers.ROCKSDB_LOGGER.debug("Log block index failed to recover from snapshot", e);
+    }
+
+    zeebeDb = stateSnapshotController.openDb();
+    indexColumnFamily =
+        zeebeDb.createColumnFamily(
+            LogBlockColumnFamilies.BLOCK_POSITION_ADDRESS,
+            zeebeDb.createContext(),
+            new DbLong(),
+            new DbLong());
   }
 
   public void closeDb() throws Exception {
-    if (db != null) {
+    if (zeebeDb != null) {
       stateSnapshotController.close();
-      db = null;
+      zeebeDb = null;
     }
   }
 
@@ -70,34 +81,41 @@ public class LogBlockIndex implements SnapshotSupport {
    * Returns the physical address of the block in which the log entry identified by the provided
    * position resides.
    *
+   * @param indexContext the log block index context
    * @param entryPosition a virtual log position
    * @return the physical address of the block containing the log entry identified by the provided
    *     virtual position
    */
-  public synchronized long lookupBlockAddress(final long entryPosition) {
-    final long blockPosition = lookupBlockPosition(entryPosition);
-    if (blockPosition == -1) {
-      return -1;
+  public long lookupBlockAddress(
+      final LogBlockIndexContext indexContext, final long entryPosition) {
+    final long blockPosition = lookupBlockPosition(indexContext, entryPosition);
+    if (blockPosition == VALUE_NOT_FOUND) {
+      return VALUE_NOT_FOUND;
     }
 
-    this.blockPosition.wrapLong(blockPosition);
-    final DbLong address = blockPositionToAddress.get(this.blockPosition);
+    final DbLong dbBlockPosition = indexContext.writeKeyInstance(blockPosition);
+    final DbLong address =
+        indexColumnFamily.get(
+            indexContext.getDbContext(), dbBlockPosition, indexContext.getValueInstance());
 
-    return address != null ? address.getValue() : -1;
+    return address != null ? address.getValue() : VALUE_NOT_FOUND;
   }
 
   /**
    * Returns the position of the first log entry of the the block in which the log entry identified
    * by the provided position resides.
    *
+   * @param indexContext the log block index context
    * @param entryPosition a virtual log position
    * @return the position of the block containing the log entry identified by the provided virtual
    *     position
    */
-  public synchronized long lookupBlockPosition(final long entryPosition) {
-    final AtomicLong blockPosition = new AtomicLong(-1);
+  public long lookupBlockPosition(
+      final LogBlockIndexContext indexContext, final long entryPosition) {
+    final AtomicLong blockPosition = new AtomicLong(VALUE_NOT_FOUND);
 
-    blockPositionToAddress.whileTrue(
+    indexColumnFamily.whileTrue(
+        indexContext.getDbContext(),
         (key, val) -> {
           final long currentBlockPosition = key.getValue();
 
@@ -107,12 +125,22 @@ public class LogBlockIndex implements SnapshotSupport {
           } else {
             return false;
           }
-        });
+        },
+        indexContext.getKeyInstance(),
+        indexContext.getValueInstance());
 
     return blockPosition.get();
   }
 
-  public synchronized void addBlock(long blockPosition, long blockAddress) {
+  /**
+   * Adds a mapping between a block's position and its address to the log block index.
+   *
+   * @param indexContext the log block index context
+   * @param blockPosition the block's position
+   * @param blockAddress the block's address
+   */
+  public void addBlock(
+      final LogBlockIndexContext indexContext, final long blockPosition, final long blockAddress) {
     if (lastVirtualPosition >= blockPosition) {
       final String errorMessage =
           String.format(
@@ -122,30 +150,48 @@ public class LogBlockIndex implements SnapshotSupport {
     }
 
     lastVirtualPosition = blockPosition;
-    this.blockPosition.wrapLong(blockPosition);
-    value.wrapLong(blockAddress);
+    final DbLong dbBlockPosition = indexContext.writeKeyInstance(blockPosition);
+    final DbLong dbBlockAddress = indexContext.writeValueInstance(blockAddress);
 
-    blockPositionToAddress.put(this.blockPosition, value);
+    indexColumnFamily.put(indexContext.getDbContext(), dbBlockPosition, dbBlockAddress);
   }
 
-  @Override
+  /**
+   * Checks if the log block index has entries.
+   *
+   * @param indexContext the log block index context
+   * @return <code>true</code> if the index has no entry
+   */
+  public boolean isEmpty(final LogBlockIndexContext indexContext) {
+    return indexColumnFamily.isEmpty(indexContext.getDbContext());
+  }
+
+  /**
+   * Writes a snapshot with the provided position as last written position
+   *
+   * @param snapshotEventPosition last written position
+   */
   public void writeSnapshot(final long snapshotEventPosition) {
     final StateSnapshotMetadata snapshotMetadata = new StateSnapshotMetadata(snapshotEventPosition);
     stateSnapshotController.takeSnapshot(snapshotMetadata);
   }
 
-  @Override
-  public void recoverFromSnapshot() throws Exception {
-    final StateSnapshotMetadata snapshotMetadata =
-        stateSnapshotController.recoverFromLatestSnapshot();
-    lastVirtualPosition = snapshotMetadata.getLastWrittenEventPosition();
-  }
-
-  public synchronized boolean isEmpty() {
-    return blockPositionToAddress.isEmpty();
-  }
-
+  /**
+   * Returns the last position written to the index or read from a snapshot.
+   *
+   * @return the last written position
+   */
   public long getLastPosition() {
     return lastVirtualPosition;
+  }
+
+  /**
+   * Returns a log block index context which contain the required state to use the index in a
+   * thread-safe manner, including the DbContext required to interact with the database.
+   *
+   * @return a newly created log block index context
+   */
+  public LogBlockIndexContext createLogBlockIndexContext() {
+    return new LogBlockIndexContext(zeebeDb.createContext());
   }
 }

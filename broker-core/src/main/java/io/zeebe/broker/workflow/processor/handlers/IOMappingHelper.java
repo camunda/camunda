@@ -37,15 +37,16 @@ public class IOMappingHelper {
     final WorkflowInstanceRecord record = context.getValue();
     final long elementInstanceKey = context.getRecord().getKey();
     final long flowScopeKey = record.getFlowScopeKey();
+    final long workflowKey = record.getWorkflowKey();
     final Mapping[] outputMappings = element.getOutputMappings();
     final boolean hasOutputMappings = outputMappings.length > 0;
 
     final DirectBuffer payload = variablesState.getPayload(elementInstanceKey);
     if (payload != null) {
       if (hasOutputMappings) {
-        variablesState.setVariablesLocalFromDocument(elementInstanceKey, payload);
+        variablesState.setVariablesLocalFromDocument(elementInstanceKey, workflowKey, payload);
       } else {
-        variablesState.setVariablesFromDocument(elementInstanceKey, payload);
+        variablesState.setVariablesFromDocument(elementInstanceKey, workflowKey, payload);
       }
 
       variablesState.removePayload(elementInstanceKey);
@@ -60,7 +61,7 @@ public class IOMappingHelper {
       mergeTool.mergeDocumentStrictly(variables, outputMappings);
       final DirectBuffer mergedPayload = mergeTool.writeResultToBuffer();
 
-      variablesState.setVariablesFromDocument(flowScopeKey, mergedPayload);
+      variablesState.setVariablesFromDocument(flowScopeKey, workflowKey, mergedPayload);
     }
   }
 
@@ -80,19 +81,21 @@ public class IOMappingHelper {
       mergeTool.mergeDocumentStrictly(scopeVariables, mappings);
       final DirectBuffer mappedPayload = mergeTool.writeResultToBuffer();
 
+      final long scopeKey = context.getRecord().getKey();
+      final long workflowKey = context.getRecord().getValue().getWorkflowKey();
       context
           .getElementInstanceState()
           .getVariablesState()
-          .setVariablesLocalFromDocument(context.getRecord().getKey(), mappedPayload);
+          .setVariablesLocalFromDocument(scopeKey, workflowKey, mappedPayload);
     }
   }
 
   private DirectBuffer determineVariables(
       VariablesState variablesState, long elementInstanceKey, Mapping[] outputMappings) {
-    final Set<DirectBuffer> actualNeededVariables = new HashSet<>();
+    final Set<DirectBuffer> variableNames = new HashSet<>();
     for (Mapping m : outputMappings) {
-      actualNeededVariables.add(m.getSource().getTopLevelVariable());
+      variableNames.add(m.getSource().getVariableName());
     }
-    return variablesState.getVariablesAsDocument(elementInstanceKey, actualNeededVariables);
+    return variablesState.getVariablesAsDocument(elementInstanceKey, variableNames);
   }
 }

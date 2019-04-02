@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 /**
-  * Copyright © 2017 camunda services GmbH (info@camunda.com)
-  *
-  * Licensed under the Apache License, Version 2.0 (the "License");
-  * you may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at
-  *
-  * http://www.apache.org/licenses/LICENSE-2.0
-  *
-  * Unless required by applicable law or agreed to in writing, software
-  * distributed under the License is distributed on an "AS IS" BASIS,
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
-  */
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.zeebe.msgpack.el
 
-import io.zeebe.msgpack.jsonpath.{JsonPathQuery, JsonPathQueryCompiler}
+import io.zeebe.msgpack.jsonpath.{ JsonPathQuery, JsonPathQueryCompiler }
 import io.zeebe.msgpack.spec.MsgPackToken
 import io.zeebe.msgpack.spec.MsgPackType._
 import org.agrona.DirectBuffer
+import io.zeebe.util.buffer.BufferUtil.bufferAsString
 
 trait JsonConstant {
   val token = new MsgPackToken()
@@ -65,9 +66,9 @@ case class JsonString(value: DirectBuffer) extends JsonObject with JsonConstant 
   token.setValue(value, 0, value.capacity())
 }
 
-case class JsonPath(value: String) extends JsonObject {
-  val query: JsonPathQuery = new JsonPathQueryCompiler().compile(value)
-  val variableName = query.getTopLevelVariable
+case class JsonPath(variableName: DirectBuffer, path: List[String]) extends JsonObject {
+  val jsonPath = (bufferAsString(variableName) :: path).mkString(".")
+  val query: JsonPathQuery = new JsonPathQueryCompiler().compile(jsonPath)
 
   var id_ = -1
 

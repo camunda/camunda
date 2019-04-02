@@ -2,25 +2,25 @@
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Exporter AssertJ Assertions</name>
-  <artifactId>zb-exporter-asserts</artifactId>
+  <artifactId>zeebe-exporter-asserts</artifactId>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.zeebe</groupId>
-    <artifactId>zb-parent</artifactId>
-    <version>0.17.0-SNAPSHOT</version>
+    <artifactId>zeebe-parent</artifactId>
+    <version>0.18.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-exporter-api</artifactId>
+      <artifactId>zeebe-exporter-api</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-protocol</artifactId>
+      <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
     <dependency>
@@ -45,7 +45,7 @@
         </executions>
         <configuration>
           <packages>
-            <param>io.zeebe.exporter.record</param>
+            <param>io.zeebe.exporter.api.record</param>
           </packages>
           <generatedSourcesScope>compile</generatedSourcesScope>
           <targetDir>${project.build.directory}/generated-sources/assertj-assertions</targetDir>
@@ -71,7 +71,7 @@
         </executions>
         <configuration>
           <file>
-            ${project.build.directory}/generated-sources/assertj-assertions/io/zeebe/exporter/record/AbstractRecordAssert.java
+            ${project.build.directory}/generated-sources/assertj-assertions/io/zeebe/exporter/api/record/AbstractRecordAssert.java
           </file>
           <replacements>
             <replacement>

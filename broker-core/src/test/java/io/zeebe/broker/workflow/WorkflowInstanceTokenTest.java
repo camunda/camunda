@@ -21,11 +21,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.IncidentRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
@@ -43,10 +44,10 @@ import org.junit.rules.RuleChain;
 
 public class WorkflowInstanceTokenTest {
 
-  private static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  private static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
+  private static final ClientApiRule API_RULE = new ClientApiRule(BROKER_RULE::getClientAddress);
 
-  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(API_RULE);
 
   @Rule
   public RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -57,7 +58,8 @@ public class WorkflowInstanceTokenTest {
 
   @Before
   public void setUp() {
-    testClient = apiRule.partitionClient();
+    BROKER_RULE.getClock().reset();
+    testClient = API_RULE.partitionClient();
     processId = Strings.newRandomValidBpmnId();
   }
 
@@ -168,7 +170,7 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-1")
             .moveToLastGateway()
             .intermediateCatchEvent(
-                "catch", e -> e.message(m -> m.name("msg").zeebeCorrelationKey("$.key")))
+                "catch", e -> e.message(m -> m.name("msg").zeebeCorrelationKey("key")))
             .endEvent("end-2")
             .done());
 
@@ -191,7 +193,7 @@ public class WorkflowInstanceTokenTest {
   @Test
   public void shouldCompleteInstanceAfterTimerIntermediateCatchEvent() {
     // given
-    brokerRule.getClock().pinCurrentTime();
+    BROKER_RULE.getClock().pinCurrentTime();
 
     testClient.deploy(
         Bpmn.createExecutableProcess(processId)
@@ -210,7 +212,7 @@ public class WorkflowInstanceTokenTest {
     // when
     testClient.completeJobOfType(workflowInstanceKey, "task");
 
-    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    BROKER_RULE.getClock().addTime(Duration.ofSeconds(1));
 
     // then
     assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
@@ -259,11 +261,11 @@ public class WorkflowInstanceTokenTest {
             .moveToLastGateway()
             .eventBasedGateway("gateway")
             .intermediateCatchEvent(
-                "catch-1", e -> e.message(m -> m.name("msg-1").zeebeCorrelationKey("$.key")))
+                "catch-1", e -> e.message(m -> m.name("msg-1").zeebeCorrelationKey("key")))
             .endEvent("end-2")
             .moveToNode("gateway")
             .intermediateCatchEvent(
-                "catch-2", e -> e.message(m -> m.name("msg-2").zeebeCorrelationKey("$.key")))
+                "catch-2", e -> e.message(m -> m.name("msg-2").zeebeCorrelationKey("key")))
             .endEvent("end-3")
             .done());
 
@@ -300,9 +302,12 @@ public class WorkflowInstanceTokenTest {
         testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
-    testClient.receiveElementInState(
-        workflowInstanceKey, "task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    testClient
+        .receiveJobs()
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withIntent(JobIntent.CREATED)
+        .getFirst();
+    BROKER_RULE.getClock().addTime(Duration.ofSeconds(1));
 
     // then
     assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
@@ -326,9 +331,12 @@ public class WorkflowInstanceTokenTest {
         testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
-    testClient.receiveElementInState(
-        workflowInstanceKey, "task-1", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    testClient
+        .receiveJobs()
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withIntent(JobIntent.CREATED)
+        .getFirst();
+    BROKER_RULE.getClock().addTime(Duration.ofSeconds(1));
     testClient.completeJobOfType(workflowInstanceKey, "task-2");
     testClient.completeJobOfType(workflowInstanceKey, "task-1");
 
@@ -348,7 +356,7 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-1")
             .moveToLastGateway()
             .intermediateCatchEvent(
-                "catch", e -> e.message(m -> m.name("msg").zeebeCorrelationKey("$.key")))
+                "catch", e -> e.message(m -> m.name("msg").zeebeCorrelationKey("key")))
             .endEvent("end-2")
             .done());
 
@@ -383,7 +391,7 @@ public class WorkflowInstanceTokenTest {
             .serviceTask("task-1", t -> t.zeebeTaskType("task-1"))
             .endEvent("end-1")
             .moveToLastGateway()
-            .serviceTask("task-2", t -> t.zeebeTaskType("task-2").zeebeOutput("$.result", "$.r"))
+            .serviceTask("task-2", t -> t.zeebeTaskType("task-2").zeebeOutput("result", "r"))
             .endEvent("end-2")
             .done());
 
@@ -423,7 +431,7 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .moveToNode("gateway")
             .sequenceFlowId("to-end-3")
-            .condition("$.x < 21")
+            .condition("x < 21")
             .endEvent("end-3")
             .done());
 

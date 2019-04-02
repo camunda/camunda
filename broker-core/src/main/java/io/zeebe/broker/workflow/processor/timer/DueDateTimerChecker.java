@@ -108,9 +108,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
     this.actor = streamProcessor.getActor();
 
     final TypedStreamEnvironment env = streamProcessor.getEnvironment();
-    streamWriter =
-        new TypedStreamWriterImpl(
-            env.getStream(), env.getEventRegistry(), streamProcessor.getKeyGenerator());
+    streamWriter = new TypedStreamWriterImpl(env.getStream(), env.getEventRegistry());
   }
 
   @Override

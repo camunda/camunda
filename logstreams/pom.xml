@@ -2,31 +2,31 @@
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Logstreams</name>
-  <artifactId>zb-logstreams</artifactId>
-  <version>0.17.0-SNAPSHOT</version>
+  <artifactId>zeebe-logstreams</artifactId>
+  <version>0.18.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.zeebe</groupId>
-    <artifactId>zb-parent</artifactId>
-    <version>0.17.0-SNAPSHOT</version>
+    <artifactId>zeebe-parent</artifactId>
+    <version>0.18.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-dispatcher</artifactId>
+      <artifactId>zeebe-dispatcher</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-service-container</artifactId>
+      <artifactId>zeebe-service-container</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-util</artifactId>
+      <artifactId>zeebe-util</artifactId>
     </dependency>
 
     <dependency>
@@ -59,7 +59,7 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-test-util</artifactId>
+      <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -71,12 +71,12 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-protocol</artifactId>
+      <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-db</artifactId>
+      <artifactId>zeebe-db</artifactId>
     </dependency>
   </dependencies>
 

@@ -35,7 +35,7 @@ public class MsgPackQueryProcessorTest {
 
   @Test
   public void shouldBeEmpty() {
-    final QueryResults results = processor.process(path("$.foo"), EMPTY_DOCUMENT);
+    final QueryResults results = processor.process(path("foo"), EMPTY_DOCUMENT);
 
     assertThat(results.size()).isEqualTo(0);
   }
@@ -44,7 +44,7 @@ public class MsgPackQueryProcessorTest {
   public void shouldGetSingleResultString() {
     final QueryResults results =
         processor.process(
-            path("$.foo"),
+            path("foo"),
             encodeMsgPack(
                 p -> {
                   p.packMapHeader(1);
@@ -63,7 +63,7 @@ public class MsgPackQueryProcessorTest {
   public void shouldGetSingleResultLongAsString() {
     final QueryResults results =
         processor.process(
-            path("$.foo"),
+            path("foo"),
             encodeMsgPack(
                 p -> {
                   p.packMapHeader(1);
@@ -81,7 +81,7 @@ public class MsgPackQueryProcessorTest {
 
   @Test
   public void shouldThrowExceptionIfEmpty() {
-    final QueryResults results = processor.process(path("$.foo"), EMPTY_DOCUMENT);
+    final QueryResults results = processor.process(path("foo"), EMPTY_DOCUMENT);
 
     assertThatThrownBy(() -> results.getSingleResult())
         .isInstanceOf(RuntimeException.class)
@@ -89,27 +89,10 @@ public class MsgPackQueryProcessorTest {
   }
 
   @Test
-  public void shouldThrowExceptionIfNotSingleResult() {
-    final QueryResults results =
-        processor.process(
-            path("$.*"),
-            encodeMsgPack(
-                p -> {
-                  p.packMapHeader(2);
-                  p.packString("x").packInt(0);
-                  p.packString("y").packInt(1);
-                }));
-
-    assertThatThrownBy(() -> results.getSingleResult())
-        .isInstanceOf(RuntimeException.class)
-        .hasMessage("found more than one result");
-  }
-
-  @Test
   public void shouldThrowExceptionIfNotString() {
     final QueryResults results =
         processor.process(
-            path("$.foo"),
+            path("foo"),
             encodeMsgPack(
                 p -> {
                   p.packMapHeader(1);
@@ -127,7 +110,7 @@ public class MsgPackQueryProcessorTest {
   public void shouldThrowExceptionIfNotLong() {
     final QueryResults results =
         processor.process(
-            path("$.foo"),
+            path("foo"),
             encodeMsgPack(
                 p -> {
                   p.packMapHeader(1);

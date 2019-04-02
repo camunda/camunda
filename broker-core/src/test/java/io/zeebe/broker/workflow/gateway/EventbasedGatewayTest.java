@@ -22,11 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Assertions;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.TimerRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
+import io.zeebe.exporter.api.record.Assertions;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.TimerRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.BpmnElementType;
@@ -84,12 +84,12 @@ public class EventbasedGatewayTest {
           .eventBasedGateway()
           .id("gateway")
           .intermediateCatchEvent(
-              "message-1", c -> c.message(m -> m.name("msg-1").zeebeCorrelationKey("$.key")))
+              "message-1", c -> c.message(m -> m.name("msg-1").zeebeCorrelationKey("key")))
           .sequenceFlowId("to-end1")
           .endEvent("end1")
           .moveToLastGateway()
           .intermediateCatchEvent(
-              "message-2", c -> c.message(m -> m.name("msg-2").zeebeCorrelationKey("$.key")))
+              "message-2", c -> c.message(m -> m.name("msg-2").zeebeCorrelationKey("key")))
           .sequenceFlowId("to-end2")
           .endEvent("end2")
           .done();
@@ -104,7 +104,7 @@ public class EventbasedGatewayTest {
           .endEvent("end1")
           .moveToLastGateway()
           .intermediateCatchEvent(
-              "message", c -> c.message(m -> m.name("msg").zeebeCorrelationKey("$.key")))
+              "message", c -> c.message(m -> m.name("msg").zeebeCorrelationKey("key")))
           .sequenceFlowId("to-end2")
           .endEvent("end2")
           .done();

@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow.processor.handlers.element;
 
-import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.handlers.AbstractHandler;
@@ -29,15 +28,12 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
  * @param <T>
  */
 public class ElementTerminatingHandler<T extends ExecutableFlowNode> extends AbstractHandler<T> {
-  protected final IncidentState incidentState;
-
-  public ElementTerminatingHandler(IncidentState incidentState) {
-    this(WorkflowInstanceIntent.ELEMENT_TERMINATED, incidentState);
+  public ElementTerminatingHandler() {
+    this(WorkflowInstanceIntent.ELEMENT_TERMINATED);
   }
 
-  public ElementTerminatingHandler(WorkflowInstanceIntent nextState, IncidentState incidentState) {
+  public ElementTerminatingHandler(WorkflowInstanceIntent nextState) {
     super(nextState);
-    this.incidentState = incidentState;
   }
 
   @Override
@@ -47,13 +43,6 @@ public class ElementTerminatingHandler<T extends ExecutableFlowNode> extends Abs
 
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
-    // todo: this is used to be executed after the child class' terminate logic; see if it matters
-    // could perhaps be moved to the terminated phase
-    // https://github.com/zeebe-io/zeebe/issues/1978
-    incidentState.forExistingWorkflowIncident(
-        context.getRecord().getKey(),
-        (record, key) -> context.getOutput().appendResolvedIncidentEvent(key, record));
-
     return true;
   }
 }

@@ -27,15 +27,14 @@ public class MessageRecord extends UnpackedObject {
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey");
   // TTL in milliseconds
   private final LongProperty timeToLiveProp = new LongProperty("timeToLive");
-
-  private final DocumentProperty payloadProp = new DocumentProperty("payload");
+  private final DocumentProperty variablesProp = new DocumentProperty("variables");
   private final StringProperty messageIdProp = new StringProperty("messageId", "");
 
   public MessageRecord() {
     this.declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(timeToLiveProp)
-        .declareProperty(payloadProp)
+        .declareProperty(variablesProp)
         .declareProperty(messageIdProp);
   }
 
@@ -67,12 +66,12 @@ public class MessageRecord extends UnpackedObject {
     return this;
   }
 
-  public DirectBuffer getPayload() {
-    return payloadProp.getValue();
+  public DirectBuffer getVariables() {
+    return variablesProp.getValue();
   }
 
-  public MessageRecord setPayload(DirectBuffer payload) {
-    payloadProp.setValue(payload);
+  public MessageRecord setVariables(DirectBuffer variables) {
+    variablesProp.setValue(variables);
     return this;
   }
 

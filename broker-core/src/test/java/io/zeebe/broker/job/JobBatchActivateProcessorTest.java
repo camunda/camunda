@@ -21,7 +21,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
@@ -63,8 +62,8 @@ public class JobBatchActivateProcessorTest {
                 .getZeebeState()
                 .getWorkflowState()
                 .getElementInstanceState()
-                .getVariablesState());
-    when(streamWriter.getKeyGenerator()).thenReturn(zeebeState.getZeebeState().getKeyGenerator());
+                .getVariablesState(),
+            zeebeState.getKeyGenerator());
   }
 
   @Test
@@ -114,7 +113,7 @@ public class JobBatchActivateProcessorTest {
   private TypedRecord<JobBatchRecord> newRecord(int amount, String type, int maxValueLength) {
     final JobBatchRecord record =
         new JobBatchRecord()
-            .setAmount(amount)
+            .setMaxJobsToActivate(amount)
             .setType(type)
             .setWorker("testWorker")
             .setTimeout(Duration.ofSeconds(1).toMillis());

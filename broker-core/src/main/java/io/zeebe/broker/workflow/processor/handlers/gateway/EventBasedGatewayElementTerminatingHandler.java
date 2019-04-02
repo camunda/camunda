@@ -17,27 +17,31 @@
  */
 package io.zeebe.broker.workflow.processor.handlers.gateway;
 
-import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.workflow.model.element.ExecutableEventBasedGateway;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
+import io.zeebe.broker.workflow.processor.handlers.CatchEventSubscriber;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementTerminatingHandler;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class EventBasedGatewayElementTerminatingHandler<T extends ExecutableEventBasedGateway>
     extends ElementTerminatingHandler<T> {
-  public EventBasedGatewayElementTerminatingHandler(IncidentState incidentState) {
-    super(incidentState);
+  private final CatchEventSubscriber catchEventSubscriber;
+
+  public EventBasedGatewayElementTerminatingHandler(CatchEventSubscriber catchEventSubscriber) {
+    super();
+    this.catchEventSubscriber = catchEventSubscriber;
   }
 
   public EventBasedGatewayElementTerminatingHandler(
-      WorkflowInstanceIntent nextState, IncidentState incidentState) {
-    super(nextState, incidentState);
+      WorkflowInstanceIntent nextState, CatchEventSubscriber catchEventSubscriber) {
+    super(nextState);
+    this.catchEventSubscriber = catchEventSubscriber;
   }
 
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
     if (super.handleState(context)) {
-      context.getCatchEventBehavior().unsubscribeFromEvents(context.getRecord().getKey(), context);
+      catchEventSubscriber.unsubscribeFromEvents(context);
       return true;
     }
 

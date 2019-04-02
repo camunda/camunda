@@ -15,7 +15,7 @@
  */
 package io.zeebe.test.exporter;
 
-import io.zeebe.exporter.context.Configuration;
+import io.zeebe.exporter.api.context.Configuration;
 import java.util.Map;
 
 /** A mock implementation of {@link Configuration} providing easy control over all properties. */

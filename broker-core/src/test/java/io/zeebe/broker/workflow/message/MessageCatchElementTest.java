@@ -24,11 +24,11 @@ import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Assertions;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
+import io.zeebe.exporter.api.record.Assertions;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.MessageSubscriptionRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -66,7 +66,7 @@ public class MessageCatchElementTest {
       Bpmn.createExecutableProcess(CATCH_EVENT_WORKFLOW_PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent(ELEMENT_ID)
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey("$." + CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
           .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
@@ -76,7 +76,7 @@ public class MessageCatchElementTest {
       Bpmn.createExecutableProcess(RECEIVE_TASK_WORKFLOW_PROCESS_ID)
           .startEvent()
           .receiveTask(ELEMENT_ID)
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey("$." + CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
           .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
@@ -87,7 +87,7 @@ public class MessageCatchElementTest {
           .startEvent()
           .serviceTask(ELEMENT_ID, b -> b.zeebeTaskType("type"))
           .boundaryEvent()
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey("$." + CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
           .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
@@ -100,7 +100,7 @@ public class MessageCatchElementTest {
           .serviceTask(ELEMENT_ID, b -> b.zeebeTaskType("type"))
           .boundaryEvent("event")
           .cancelActivity(false)
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey("$." + CORRELATION_VARIABLE))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
           .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();

@@ -23,6 +23,7 @@ import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
+import io.zeebe.logstreams.impl.log.index.LogBlockIndexContext;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.logstreams.util.LogStreamRule;
@@ -68,11 +69,13 @@ public class LogBlockIndexWriterTest {
   private LogBlockIndex blockIndex;
   private LogStorage logStorage;
   private StateStorage stateStorage;
+  private LogBlockIndexContext indexContext;
 
   @Before
   public void setup() {
     final LogStream logStream = logStreamRule.getLogStream();
     blockIndex = logStream.getLogBlockIndex();
+    indexContext = blockIndex.createLogBlockIndexContext();
     logStorage = logStream.getLogStorage();
     stateStorage = logStreamRule.getStateStorage();
   }
@@ -84,7 +87,7 @@ public class LogBlockIndexWriterTest {
     writer.writeEvent(EVENT_2, true);
 
     // when
-    waitUntil(() -> !blockIndex.isEmpty());
+    waitUntil(() -> !blockIndex.isEmpty(indexContext));
 
     // then
     assertThat(blockIndex.getLastPosition()).isEqualTo(firstEventPosition);
@@ -97,11 +100,11 @@ public class LogBlockIndexWriterTest {
     writer.writeEvent(EVENT_2, true);
 
     // when
-    waitUntil(() -> !blockIndex.isEmpty());
+    waitUntil(() -> !blockIndex.isEmpty(indexContext));
 
     // then
     final long indexPosition = blockIndex.getLastPosition();
-    final long indexAddress = blockIndex.lookupBlockAddress(indexPosition);
+    final long indexAddress = blockIndex.lookupBlockAddress(indexContext, indexPosition);
 
     assertThat(indexPosition).isEqualTo(firstEventPosition);
     assertThat(readEventAtAddress(indexAddress)).isEqualTo(EVENT_1);
@@ -148,7 +151,7 @@ public class LogBlockIndexWriterTest {
     writer.writeEvent(EVENT_2, true);
 
     // when
-    waitUntil(() -> !blockIndex.isEmpty());
+    waitUntil(() -> !blockIndex.isEmpty(indexContext));
     assertThat(stateStorage.list()).isEmpty();
 
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
@@ -189,6 +192,7 @@ public class LogBlockIndexWriterTest {
     logStreamRule.getLogStream().setCommitPosition(lastEventPosition);
     logStorage = logStreamRule.getLogStream().getLogStorage();
     final LogBlockIndex newIndex = logStreamRule.getLogStream().getLogBlockIndex();
+    indexContext = newIndex.createLogBlockIndexContext();
 
     // then
     waitUntil(() -> newIndex.getLastPosition() == lastBlockPosition);
@@ -210,8 +214,9 @@ public class LogBlockIndexWriterTest {
     logStreamRule.getLogStream().setCommitPosition(lastPos);
     logStorage = logStreamRule.getLogStream().getLogStorage();
     final LogBlockIndex newIndex = logStreamRule.getLogStream().getLogBlockIndex();
+    indexContext = newIndex.createLogBlockIndexContext();
 
-    waitUntil(() -> !newIndex.isEmpty());
+    waitUntil(() -> !newIndex.isEmpty(indexContext));
 
     writer.wrap(logStreamRule);
     final long lastBlockPosition = writer.writeEvents(1, EVENT_2, true);
@@ -240,6 +245,7 @@ public class LogBlockIndexWriterTest {
     logStreamRule.openLogStream();
     logStorage = logStreamRule.getLogStream().getLogStorage();
     final LogBlockIndex newIndex = logStreamRule.getLogStream().getLogBlockIndex();
+    indexContext = newIndex.createLogBlockIndexContext();
 
     // then
     waitUntil(() -> newIndex.getLastPosition() == lastBlockPosition);
@@ -252,6 +258,8 @@ public class LogBlockIndexWriterTest {
     logStreamRule.getClock().pinCurrentTime();
     writer.writeEvents(2, EVENT_1, true);
 
+    waitUntil(() -> !blockIndex.isEmpty(indexContext));
+
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
     waitUntil(() -> getSnapshotCount() > 0);
 
@@ -263,6 +271,7 @@ public class LogBlockIndexWriterTest {
     logStreamRule.setCommitPosition(commitPosition);
     logStorage = logStreamRule.getLogStream().getLogStorage();
     final LogBlockIndex newIndex = logStreamRule.getLogStream().getLogBlockIndex();
+    indexContext = newIndex.createLogBlockIndexContext();
 
     writer.wrap(logStreamRule);
     final long lastBlockPosition = writer.writeEvents(1, EVENT_2, true);
@@ -278,8 +287,10 @@ public class LogBlockIndexWriterTest {
       long expectedBlockPosition,
       long lastEventPosition,
       DirectBuffer event) {
-    assertThat(newIndex.lookupBlockPosition(lastEventPosition)).isEqualTo(expectedBlockPosition);
-    assertThat(readEventAtAddress(newIndex.lookupBlockAddress(lastEventPosition))).isEqualTo(event);
+    assertThat(newIndex.lookupBlockPosition(indexContext, lastEventPosition))
+        .isEqualTo(expectedBlockPosition);
+    assertThat(readEventAtAddress(newIndex.lookupBlockAddress(indexContext, lastEventPosition)))
+        .isEqualTo(event);
   }
 
   private UnsafeBuffer readEventAtAddress(final long indexAddress) {

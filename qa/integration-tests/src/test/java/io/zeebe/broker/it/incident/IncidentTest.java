@@ -31,8 +31,8 @@ import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobHandler;
 import io.zeebe.client.cmd.ClientException;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.IncidentRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.IncidentIntent;
@@ -49,7 +49,7 @@ public class IncidentTest {
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("$.foo", "$.foo"))
+          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("foo", "foo"))
           .done();
 
   private static final String PAYLOAD = "{\"foo\": \"bar\"}";
@@ -315,7 +315,7 @@ public class IncidentTest {
       if (failJob) {
         throw new RuntimeException("expected failure");
       } else {
-        client.newCompleteCommand(job.getKey()).payload("{}").send().join();
+        client.newCompleteCommand(job.getKey()).variables("{}").send().join();
         jobCompleteCount.incrementAndGet();
       }
     }

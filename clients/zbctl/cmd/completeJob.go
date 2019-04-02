@@ -20,8 +20,8 @@ import (
 )
 
 var (
-	completeJobKey         int64
-	completeJobPayloadFlag string
+	completeJobKey           int64
+	completeJobVariablesFlag string
 )
 
 var completeJobCmd = &cobra.Command{
@@ -30,14 +30,14 @@ var completeJobCmd = &cobra.Command{
 	Args:    keyArg(&completeJobKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		request, err := client.NewCompleteJobCommand().JobKey(completeJobKey).PayloadFromString(completeJobPayloadFlag)
+		request, err := client.NewCompleteJobCommand().JobKey(completeJobKey).VariablesFromString(completeJobVariablesFlag)
 		if err != nil {
 			return err
 		}
 
 		_, err = request.Send()
 		if err == nil {
-			log.Println("Completed job with key", completeJobKey, "and payload", completeJobPayloadFlag)
+			log.Println("Completed job with key", completeJobKey, "and variables", completeJobVariablesFlag)
 		}
 		return err
 	},
@@ -45,5 +45,5 @@ var completeJobCmd = &cobra.Command{
 
 func init() {
 	completeCmd.AddCommand(completeJobCmd)
-	completeJobCmd.Flags().StringVar(&completeJobPayloadFlag, "payload", "{}", "Specify payload as JSON object string")
+	completeJobCmd.Flags().StringVar(&completeJobVariablesFlag, "variables", "{}", "Specify variables as JSON object string")
 }

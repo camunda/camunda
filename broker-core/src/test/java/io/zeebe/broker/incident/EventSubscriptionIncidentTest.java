@@ -20,11 +20,11 @@ package io.zeebe.broker.incident;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Assertions;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.IncidentRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
+import io.zeebe.exporter.api.record.Assertions;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.ErrorType;
@@ -55,22 +55,20 @@ public class EventSubscriptionIncidentTest {
 
   private static final String MESSAGE_NAME_1 = "msg-1";
   private static final String MESSAGE_NAME_2 = "msg-2";
-  private static final String CORRELATION_VARIABLE_1 = "key-1";
-  private static final String CORRELATION_VARIABLE_2 = "key-2";
-  private static final String CORRELATION_VARIABLE_PATH_1 = "$." + CORRELATION_VARIABLE_1;
-  private static final String CORRELATION_VARIABLE_PATH_2 = "$." + CORRELATION_VARIABLE_2;
+  private static final String CORRELATION_VARIABLE_1 = "key1";
+  private static final String CORRELATION_VARIABLE_2 = "key2";
 
   private static final String WF_RECEIVE_TASK_ID = "wf-receive-task";
   private static final BpmnModelInstance WF_RECEIVE_TASK =
       Bpmn.createExecutableProcess(WF_RECEIVE_TASK_ID)
           .startEvent()
           .receiveTask("task")
-          .message(m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_1))
+          .message(m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_1))
           .boundaryEvent(
               MESSAGE_NAME_2,
               c ->
                   c.message(
-                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_2)))
+                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_2)))
           .endEvent()
           .done();
 
@@ -79,12 +77,12 @@ public class EventSubscriptionIncidentTest {
       Bpmn.createExecutableProcess(WF_RECEIVE_TASK_2_ID)
           .startEvent()
           .receiveTask("task")
-          .message(m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_2))
+          .message(m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_2))
           .boundaryEvent(
               MESSAGE_NAME_1,
               c ->
                   c.message(
-                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_1)))
+                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_1)))
           .endEvent()
           .done();
 
@@ -97,14 +95,14 @@ public class EventSubscriptionIncidentTest {
               MESSAGE_NAME_1,
               i ->
                   i.message(
-                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_1)))
+                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_1)))
           .endEvent()
           .moveToLastGateway()
           .intermediateCatchEvent(
               MESSAGE_NAME_2,
               i ->
                   i.message(
-                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_2)))
+                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_2)))
           .endEvent()
           .done();
 
@@ -117,14 +115,14 @@ public class EventSubscriptionIncidentTest {
               MESSAGE_NAME_2,
               i ->
                   i.message(
-                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_2)))
+                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_2)))
           .endEvent()
           .moveToLastGateway()
           .intermediateCatchEvent(
               MESSAGE_NAME_1,
               i ->
                   i.message(
-                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_1)))
+                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_1)))
           .endEvent()
           .done();
 
@@ -137,14 +135,14 @@ public class EventSubscriptionIncidentTest {
               MESSAGE_NAME_1,
               c ->
                   c.message(
-                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_1)))
+                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_1)))
           .endEvent()
           .moveToActivity("task")
           .boundaryEvent(
               MESSAGE_NAME_2,
               c ->
                   c.message(
-                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_2)))
+                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_2)))
           .endEvent()
           .done();
 
@@ -157,14 +155,14 @@ public class EventSubscriptionIncidentTest {
               MESSAGE_NAME_2,
               c ->
                   c.message(
-                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_2)))
+                      m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_2)))
           .endEvent()
           .moveToActivity("task")
           .boundaryEvent(
               MESSAGE_NAME_1,
               c ->
                   c.message(
-                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_PATH_1)))
+                      m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_1)))
           .endEvent()
           .done();
 
@@ -291,7 +289,7 @@ public class EventSubscriptionIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR.name())
         .hasErrorMessage(
             "Failed to extract the correlation-key by '"
-                + CORRELATION_VARIABLE_PATH_2
+                + CORRELATION_VARIABLE_2
                 + "': no value found")
         .hasBpmnProcessId(processId)
         .hasWorkflowInstanceKey(workflowInstanceKey)
@@ -303,15 +301,15 @@ public class EventSubscriptionIncidentTest {
   @Test
   public void shouldCreateIncidentIfMessageCorrelationKeyHasInvalidType() {
     // when
-    final Map<String, Object> payload = new HashMap<>();
-    payload.put(CORRELATION_VARIABLE_1, correlationKey1);
-    payload.put(CORRELATION_VARIABLE_2, Arrays.asList(1, 2, 3));
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put(CORRELATION_VARIABLE_1, correlationKey1);
+    variables.put(CORRELATION_VARIABLE_2, Arrays.asList(1, 2, 3));
 
     final long workflowInstanceKey =
         apiRule
             .partitionClient()
             .createWorkflowInstance(
-                r -> r.setBpmnProcessId(processId).setVariables(MsgPackUtil.asMsgPack(payload)))
+                r -> r.setBpmnProcessId(processId).setVariables(MsgPackUtil.asMsgPack(variables)))
             .getInstanceKey();
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
@@ -330,7 +328,7 @@ public class EventSubscriptionIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR.name())
         .hasErrorMessage(
             "Failed to extract the correlation-key by '"
-                + CORRELATION_VARIABLE_PATH_2
+                + CORRELATION_VARIABLE_2
                 + "': the value must be either a string or a number")
         .hasBpmnProcessId(processId)
         .hasWorkflowInstanceKey(workflowInstanceKey)

@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.state;
 
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
@@ -38,18 +39,20 @@ public class EventScopeInstanceState {
   private final EventTrigger eventTrigger;
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, EventTrigger> eventTriggerColumnFamily;
 
-  public EventScopeInstanceState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+  public EventScopeInstanceState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
     eventScopeKey = new DbLong();
     eventScopeInstance = new EventScopeInstance();
     eventScopeInstanceColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.EVENT_SCOPE, eventScopeKey, eventScopeInstance);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.EVENT_SCOPE, dbContext, eventScopeKey, eventScopeInstance);
 
     eventTriggerScopeKey = new DbLong();
     eventTriggerEventKey = new DbLong();
     eventTriggerKey = new DbCompositeKey<>(eventTriggerScopeKey, eventTriggerEventKey);
     eventTrigger = new EventTrigger();
     eventTriggerColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.EVENT_TRIGGER, eventTriggerKey, eventTrigger);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.EVENT_TRIGGER, dbContext, eventTriggerKey, eventTrigger);
   }
 
   /**
@@ -92,6 +95,8 @@ public class EventScopeInstanceState {
    * @param interruptingIds list of element IDs which should set accepting to false
    */
   public void createInstance(long eventScopeKey, Collection<DirectBuffer> interruptingIds) {
+    eventScopeInstance.reset();
+
     this.eventScopeKey.wrapLong(eventScopeKey);
     eventScopeInstance.setAccepting(true);
     for (DirectBuffer interruptingId : interruptingIds) {

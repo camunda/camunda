@@ -21,12 +21,12 @@ import static io.zeebe.broker.workflow.state.TimerInstance.NO_ELEMENT_INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.record.Assertions;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.record.value.TimerRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.exporter.record.value.deployment.DeployedWorkflow;
+import io.zeebe.exporter.api.record.Assertions;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
+import io.zeebe.exporter.api.record.value.TimerRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.value.deployment.DeployedWorkflow;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
@@ -96,13 +96,13 @@ public class TimerStartEventTest {
 
   @Before
   public void setUp() {
-    brokerRule.getClock().pinCurrentTime();
     testClient = apiRule.partitionClient();
   }
 
   @Test
   public void shouldCreateTimer() {
     // when
+    brokerRule.getClock().pinCurrentTime();
     testClient.deploy(SIMPLE_MODEL);
 
     // then
@@ -292,6 +292,7 @@ public class TimerStartEventTest {
   @Test
   public void shouldUpdateTimerPeriod() {
     // when
+    brokerRule.getClock().pinCurrentTime();
     long beginTime = brokerRule.getClock().getCurrentTimeInMillis();
     testClient.deploy(THREE_SEC_MODEL);
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).exists()).isTrue();

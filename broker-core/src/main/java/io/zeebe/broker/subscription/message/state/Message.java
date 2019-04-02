@@ -30,7 +30,7 @@ public final class Message implements DbValue {
 
   private final DirectBuffer name = new UnsafeBuffer();
   private final DirectBuffer correlationKey = new UnsafeBuffer();
-  private final DirectBuffer payload = new UnsafeBuffer();
+  private final DirectBuffer variables = new UnsafeBuffer();
   private final DirectBuffer id = new UnsafeBuffer();
   private long key;
   private long timeToLive;
@@ -42,13 +42,13 @@ public final class Message implements DbValue {
       long key,
       DirectBuffer name,
       DirectBuffer correlationKey,
-      DirectBuffer payload,
+      DirectBuffer variables,
       DirectBuffer id,
       long timeToLive,
       long deadline) {
     this.name.wrap(name);
     this.correlationKey.wrap(correlationKey);
-    this.payload.wrap(payload);
+    this.variables.wrap(variables);
     this.id.wrap(id);
 
     this.key = key;
@@ -64,8 +64,8 @@ public final class Message implements DbValue {
     return correlationKey;
   }
 
-  public DirectBuffer getPayload() {
-    return payload;
+  public DirectBuffer getVariables() {
+    return variables;
   }
 
   public DirectBuffer getId() {
@@ -88,7 +88,7 @@ public final class Message implements DbValue {
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
     offset = readIntoBuffer(buffer, offset, name);
     offset = readIntoBuffer(buffer, offset, correlationKey);
-    offset = readIntoBuffer(buffer, offset, payload);
+    offset = readIntoBuffer(buffer, offset, variables);
     offset = readIntoBuffer(buffer, offset, id);
 
     timeToLive = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
@@ -102,7 +102,7 @@ public final class Message implements DbValue {
   public int getLength() {
     return name.capacity()
         + correlationKey.capacity()
-        + payload.capacity()
+        + variables.capacity()
         + id.capacity()
         + Integer.BYTES * 4
         + Long.BYTES * 3;
@@ -113,7 +113,7 @@ public final class Message implements DbValue {
     int valueOffset = offset;
     valueOffset = writeIntoBuffer(buffer, valueOffset, name);
     valueOffset = writeIntoBuffer(buffer, valueOffset, correlationKey);
-    valueOffset = writeIntoBuffer(buffer, valueOffset, payload);
+    valueOffset = writeIntoBuffer(buffer, valueOffset, variables);
     valueOffset = writeIntoBuffer(buffer, valueOffset, id);
 
     buffer.putLong(valueOffset, timeToLive, ZB_DB_BYTE_ORDER);

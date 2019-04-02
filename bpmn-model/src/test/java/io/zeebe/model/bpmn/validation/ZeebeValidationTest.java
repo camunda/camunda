@@ -21,6 +21,7 @@ import static java.util.Collections.singletonList;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
 import io.zeebe.model.bpmn.instance.CompensateEventDefinition;
+import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
@@ -48,6 +49,17 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
         Arrays.asList(
             expect("end", "Must be a none end event"),
             expect("eventDefinition", "Event definition of this type is not supported"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .endEvent()
+            .serviceTask("task", tb -> tb.zeebeTaskType("task"))
+            .done(),
+        singletonList(
+            expect(
+                EndEvent.class,
+                "End events must not have outgoing sequence flows to other elements."))
       },
       {
         Bpmn.createExecutableProcess("process")

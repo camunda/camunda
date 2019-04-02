@@ -20,6 +20,7 @@ package io.zeebe.broker.subscription.message.processor;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
@@ -54,6 +55,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
   private final MessageSubscriptionState subscriptionState;
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
   private final SubscriptionCommandSender commandSender;
+  private final KeyGenerator keyGenerator;
   private final EventScopeInstanceState scopeEventInstanceState;
 
   private TypedResponseWriter responseWriter;
@@ -67,12 +69,14 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       final MessageSubscriptionState subscriptionState,
       final MessageStartEventSubscriptionState startEventSubscriptionState,
       final EventScopeInstanceState scopeEventInstanceState,
-      final SubscriptionCommandSender commandSender) {
+      final SubscriptionCommandSender commandSender,
+      final KeyGenerator keyGenerator) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
     this.startEventSubscriptionState = startEventSubscriptionState;
     this.scopeEventInstanceState = scopeEventInstanceState;
     this.commandSender = commandSender;
+    this.keyGenerator = keyGenerator;
   }
 
   @Override
@@ -105,8 +109,9 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
+    final long key = keyGenerator.nextKey();
 
-    final long key = streamWriter.appendNewEvent(MessageIntent.PUBLISHED, command.getValue());
+    streamWriter.appendNewEvent(key, MessageIntent.PUBLISHED, command.getValue());
     responseWriter.writeEventOnCommand(key, MessageIntent.PUBLISHED, command.getValue(), command);
 
     correlatedWorkflowInstances.clear();
@@ -124,7 +129,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
               && !correlatedWorkflowInstances.containsLong(workflowInstanceKey)) {
 
             subscriptionState.updateToCorrelatingState(
-                subscription, messageRecord.getPayload(), ActorClock.currentTimeMillis());
+                subscription, messageRecord.getVariables(), ActorClock.currentTimeMillis());
 
             correlatedWorkflowInstances.addLong(workflowInstanceKey);
             correlatedElementInstances.addLong(elementInstanceKey);
@@ -143,7 +148,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
               key,
               messageRecord.getName(),
               messageRecord.getCorrelationKey(),
-              messageRecord.getPayload(),
+              messageRecord.getVariables(),
               messageRecord.getMessageId(),
               messageRecord.getTimeToLive(),
               messageRecord.getTimeToLive() + ActorClock.currentTimeMillis());
@@ -170,7 +175,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
               workflowInstanceKey,
               elementInstanceKey,
               messageRecord.getName(),
-              messageRecord.getPayload());
+              messageRecord.getVariables());
 
       if (!success) {
         return false;
@@ -200,13 +205,13 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
             .setElementId(startEventId)
             .setBpmnElementType(BpmnElementType.START_EVENT);
 
-    final long eventKey = streamWriter.getKeyGenerator().nextKey();
+    final long eventKey = keyGenerator.nextKey();
     final boolean wasTriggered =
         scopeEventInstanceState.triggerEvent(
-            workflowKey, eventKey, startEventId, command.getValue().getPayload());
+            workflowKey, eventKey, startEventId, command.getValue().getVariables());
 
     if (wasTriggered) {
-      streamWriter.appendNewEvent(WorkflowInstanceIntent.EVENT_OCCURRED, record);
+      streamWriter.appendNewEvent(eventKey, WorkflowInstanceIntent.EVENT_OCCURRED, record);
     } else {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
           String.format(ERROR_START_EVENT_NOT_TRIGGERED_MESSAGE, workflowKey));

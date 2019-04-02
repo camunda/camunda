@@ -22,6 +22,7 @@ import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -108,6 +109,12 @@ public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
     return new TypedRecordStream<>(
         filter(Records::isWorkflowInstanceCreationRecord)
             .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceCreationRecord.class)));
+  }
+
+  public TypedRecordStream<ErrorRecord> onlyErrorRecords() {
+    return new TypedRecordStream<>(
+        filter(Records::isErrorRecord)
+            .map(e -> CopiedTypedEvent.toTypedEvent(e, ErrorRecord.class)));
   }
 
   /**

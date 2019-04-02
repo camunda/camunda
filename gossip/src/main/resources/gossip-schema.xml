@@ -57,7 +57,7 @@
       <field name="senderGossipHeartbeat" id="11" type="uint64"/>
       <field name="senderId" id="12" type="uint16"/>
       <data name="eventType" id="14" type="varDataEncoding"/>
-      <data name="payload" id="15" type="varDataEncoding"/>
+      <data name="variables" id="15" type="varDataEncoding"/>
     </group>
   </sbe:message>
 

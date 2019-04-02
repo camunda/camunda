@@ -57,16 +57,20 @@ public class UpdateVariableDocumentProcessor implements CommandProcessor<Variabl
       return;
     }
 
-    if (mergeDocument(record, controller)) {
+    final long workflowKey = scope.getValue().getWorkflowKey();
+
+    if (mergeDocument(record, workflowKey, controller)) {
       controller.accept(VariableDocumentIntent.UPDATED, record);
     }
   }
 
   private boolean mergeDocument(
-      VariableDocumentRecord record, CommandControl<VariableDocumentRecord> controller) {
+      VariableDocumentRecord record,
+      long workflowKey,
+      CommandControl<VariableDocumentRecord> controller) {
     try {
       getUpdateOperation(record.getUpdateSemantics())
-          .apply(record.getScopeKey(), record.getDocument());
+          .apply(record.getScopeKey(), workflowKey, record.getDocument());
       return true;
     } catch (MsgpackReaderException e) {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
@@ -95,6 +99,6 @@ public class UpdateVariableDocumentProcessor implements CommandProcessor<Variabl
 
   @FunctionalInterface
   private interface UpdateOperation {
-    void apply(long scopeKey, DirectBuffer document);
+    void apply(long scopeKey, long workflowKey, DirectBuffer document);
   }
 }

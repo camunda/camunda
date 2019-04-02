@@ -88,7 +88,7 @@ public class WorkflowInstanceStreamProcessorTest {
           .startEvent()
           .intermediateCatchEvent(
               "catch-event",
-              c -> c.message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId")))
+              c -> c.message(m -> m.name("order canceled").zeebeCorrelationKey("orderId")))
           .done();
 
   private static final BpmnModelInstance TIMER_BOUNDARY_EVENT_WORKFLOW =

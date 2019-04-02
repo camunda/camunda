@@ -18,12 +18,14 @@
 package io.zeebe.broker.workflow.processor.message;
 
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
@@ -58,6 +60,7 @@ public final class CorrelateWorkflowInstanceSubscription
   private final WorkflowInstanceSubscriptionState subscriptionState;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final WorkflowState workflowState;
+  private final KeyGenerator keyGenerator;
 
   private WorkflowInstanceSubscriptionRecord subscriptionRecord;
 
@@ -65,11 +68,12 @@ public final class CorrelateWorkflowInstanceSubscription
       final TopologyManager topologyManager,
       final WorkflowInstanceSubscriptionState subscriptionState,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final WorkflowState workflowState) {
+      final ZeebeState zeebeState) {
     this.topologyManager = topologyManager;
     this.subscriptionState = subscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
-    this.workflowState = workflowState;
+    this.workflowState = zeebeState.getWorkflowState();
+    this.keyGenerator = zeebeState.getKeyGenerator();
   }
 
   @Override
@@ -127,7 +131,7 @@ public final class CorrelateWorkflowInstanceSubscription
 
     final ElementInstance elementInstance =
         workflowState.getElementInstanceState().getInstance(subscription.getElementInstanceKey());
-    final long eventKey = streamWriter.getKeyGenerator().nextKey();
+    final long eventKey = keyGenerator.nextKey();
     final boolean isOccurred =
         workflowState
             .getEventScopeInstanceState()
@@ -135,7 +139,7 @@ public final class CorrelateWorkflowInstanceSubscription
                 subscriptionRecord.getElementInstanceKey(),
                 eventKey,
                 subscription.getHandlerNodeId(),
-                record.getValue().getPayload());
+                record.getValue().getVariables());
 
     if (isOccurred) {
       streamWriter.appendFollowUpEvent(

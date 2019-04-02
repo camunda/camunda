@@ -75,7 +75,7 @@ public class RequestMapper {
     brokerRequest
         .setMessageId(grpcRequest.getMessageId())
         .setTimeToLive(grpcRequest.getTimeToLive())
-        .setPayload(ensureJsonSet(grpcRequest.getPayload()));
+        .setVariables(ensureJsonSet(grpcRequest.getVariables()));
 
     return brokerRequest;
   }
@@ -92,7 +92,7 @@ public class RequestMapper {
 
   public static BrokerCompleteJobRequest toCompleteJobRequest(CompleteJobRequest grpcRequest) {
     return new BrokerCompleteJobRequest(
-        grpcRequest.getJobKey(), ensureJsonSet(grpcRequest.getPayload()));
+        grpcRequest.getJobKey(), ensureJsonSet(grpcRequest.getVariables()));
   }
 
   public static BrokerCreateWorkflowInstanceRequest toCreateWorkflowInstanceRequest(
@@ -145,7 +145,7 @@ public class RequestMapper {
     return new BrokerActivateJobsRequest(grpcRequest.getType())
         .setTimeout(grpcRequest.getTimeout())
         .setWorker(grpcRequest.getWorker())
-        .setAmount(grpcRequest.getAmount())
+        .setMaxJobsToActivate(grpcRequest.getMaxJobsToActivate())
         .setVariables(grpcRequest.getFetchVariableList());
   }
 

@@ -22,7 +22,7 @@ import io.zeebe.broker.exporter.context.ExporterContext;
 import io.zeebe.broker.exporter.jar.ExporterJarLoadException;
 import io.zeebe.broker.exporter.jar.ExporterJarRepository;
 import io.zeebe.broker.system.configuration.ExporterCfg;
-import io.zeebe.exporter.spi.Exporter;
+import io.zeebe.exporter.api.spi.Exporter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;

@@ -136,7 +136,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromString(t *testing.T) {
 
 	request := &pb.CreateWorkflowInstanceRequest{
 		WorkflowKey: 123,
-		Variables:     variables,
+		Variables:   variables,
 	}
 	stub := &pb.CreateWorkflowInstanceResponse{
 		WorkflowKey:         123,
@@ -175,7 +175,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromStringer(t *testing.T) {
 
 	request := &pb.CreateWorkflowInstanceRequest{
 		WorkflowKey: 123,
-		Variables:     variables,
+		Variables:   variables,
 	}
 	stub := &pb.CreateWorkflowInstanceResponse{
 		WorkflowKey:         123,
@@ -214,7 +214,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromObject(t *testing.T) {
 
 	request := &pb.CreateWorkflowInstanceRequest{
 		WorkflowKey: 123,
-		Variables:     variables,
+		Variables:   variables,
 	}
 	stub := &pb.CreateWorkflowInstanceResponse{
 		WorkflowKey:         123,
@@ -253,7 +253,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromObjectOmitempty(t *testin
 
 	request := &pb.CreateWorkflowInstanceRequest{
 		WorkflowKey: 123,
-		Variables:     variables,
+		Variables:   variables,
 	}
 	stub := &pb.CreateWorkflowInstanceResponse{
 		WorkflowKey:         123,
@@ -292,7 +292,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromObjectIgnoreOmitempty(t *
 
 	request := &pb.CreateWorkflowInstanceRequest{
 		WorkflowKey: 123,
-		Variables:     variables,
+		Variables:   variables,
 	}
 	stub := &pb.CreateWorkflowInstanceResponse{
 		WorkflowKey:         123,
@@ -333,7 +333,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromMap(t *testing.T) {
 
 	request := &pb.CreateWorkflowInstanceRequest{
 		WorkflowKey: 123,
-		Variables:     variables,
+		Variables:   variables,
 	}
 	stub := &pb.CreateWorkflowInstanceResponse{
 		WorkflowKey:         123,

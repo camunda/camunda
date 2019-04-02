@@ -23,32 +23,23 @@ import io.zeebe.broker.workflow.processor.handlers.activity.ActivityEventOccurre
 import io.zeebe.broker.workflow.state.EventTrigger;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-/**
- * Differs from {@link ActivityEventOccurredHandler} in the case where the triggered event is the
- * receive task's message trigger, at which point the task will complete.
- *
- * @param <T>
- */
 public class ReceiveTaskEventOccurredHandler<T extends ExecutableReceiveTask>
     extends ActivityEventOccurredHandler<T> {
-  public ReceiveTaskEventOccurredHandler() {
-    this(null);
-  }
-
-  public ReceiveTaskEventOccurredHandler(WorkflowInstanceIntent nextState) {
-    super(nextState);
-  }
 
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
     final EventTrigger event = getTriggeredEvent(context, context.getRecord().getKey());
-    if (event.getElementId().equals(context.getElement().getId())) {
-      handleEvent(context, context.getRecord().getKey(), context.getRecord().getKey(), event);
+    if (isActivityEventHandler(context, event)) {
+      processEventTrigger(
+          context, context.getRecord().getKey(), context.getRecord().getKey(), event);
       transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
-
       return true;
     }
 
     return super.handleState(context);
+  }
+
+  private boolean isActivityEventHandler(BpmnStepContext<T> context, EventTrigger event) {
+    return event.getElementId().equals(context.getElement().getId());
   }
 }

@@ -101,9 +101,9 @@ public class TypedStreamProcessorTest {
             STREAM_NAME,
             STREAM_PROCESSOR_ID,
             DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-            (db) ->
+            (db, dbContext) ->
                 env.newStreamProcessor()
-                    .zeebeState(new ZeebeState(db))
+                    .zeebeState(new ZeebeState(db, dbContext))
                     .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new BatchProcessor())
                     .build());
     streamProcessorControl.start();
@@ -143,9 +143,9 @@ public class TypedStreamProcessorTest {
             STREAM_NAME,
             STREAM_PROCESSOR_ID,
             DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-            (db) ->
+            (db, dbContext) ->
                 env.newStreamProcessor()
-                    .zeebeState(new ZeebeState(db))
+                    .zeebeState(new ZeebeState(db, dbContext))
                     .onCommand(
                         ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new ErrorProneProcessor())
                     .build());
@@ -247,14 +247,14 @@ public class TypedStreamProcessorTest {
     }
   }
 
-  protected static class BatchProcessor implements TypedRecordProcessor<DeploymentRecord> {
-
+  protected class BatchProcessor implements TypedRecordProcessor<DeploymentRecord> {
     @Override
     public void processRecord(
         final TypedRecord<DeploymentRecord> record,
         final TypedResponseWriter responseWriter,
         final TypedStreamWriter streamWriter) {
-      streamWriter.appendNewEvent(DeploymentIntent.CREATED, record.getValue());
+      streamWriter.appendNewEvent(
+          keyGenerator.nextKey(), DeploymentIntent.CREATED, record.getValue());
       streamWriter.flush();
     }
   }

@@ -30,10 +30,17 @@ import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.FutureUtil;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.Arrays;
+import java.util.function.BiFunction;
 import org.agrona.DirectBuffer;
 
 /** Component for sending and receiving messages between different threads. */
 public class Dispatcher extends Actor implements AutoCloseable {
+
+  private static final String ERROR_MESSAGE_CLAIM_FAILED =
+      "Expected to claim segment of size %d, but can't claim more then %d bytes.";
+  private static final String ERROR_MESSAGE_SUBSCRIPTION_NOT_FOUND =
+      "Expected to find subscription with name '%s', but was not registered.";
+
   public static final int MODE_PUB_SUB = 1;
   public static final int MODE_PIPELINE = 2;
 
@@ -57,7 +64,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
 
   private ActorCondition dataConsumed;
 
-  private Runnable backgroundTask = this::runBackgroundTask;
+  private final Runnable backgroundTask = this::runBackgroundTask;
 
   private final Runnable onClaimComplete = this::signalSubsciptions;
 
@@ -168,39 +175,10 @@ public class Dispatcher extends Actor implements AutoCloseable {
    *     return value is negative.
    */
   public long offer(DirectBuffer msg, int start, int length, int streamId) {
-    long newPosition = -1;
-
-    if (!isClosed) {
-      final long limit = publisherLimit.get();
-
-      final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
-      final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
-
-      final int partitionOffset = partition.getTailCounterVolatile();
-      final long position = position(activePartitionId, partitionOffset);
-
-      if (position < limit) {
-        final int newOffset;
-
-        if (length < maxFrameLength) {
-          newOffset =
-              logAppender.appendFrame(partition, activePartitionId, msg, start, length, streamId);
-        } else {
-          final String exceptionMessage =
-              String.format(
-                  "Message length of %s is larger than max frame length of %s",
-                  length, maxFrameLength);
-          throw new RuntimeException(exceptionMessage);
-        }
-
-        newPosition = updatePublisherPosition(activePartitionId, newOffset);
-
-        publisherPosition.proposeMaxOrdered(newPosition);
-        signalSubsciptions();
-      }
-    }
-
-    return newPosition;
+    return offer(
+        (partition, activePartitionId) ->
+            logAppender.appendFrame(partition, activePartitionId, msg, start, length, streamId),
+        length);
   }
 
   private void signalSubsciptions() {
@@ -233,45 +211,34 @@ public class Dispatcher extends Actor implements AutoCloseable {
    *     return value is negative.
    */
   public long claim(ClaimedFragment claim, int length, int streamId) {
-    final long limit = publisherLimit.get();
-
-    final int activePartitionId = logBuffer.getActivePartitionIdVolatile();
-    final LogBufferPartition partition = logBuffer.getPartition(activePartitionId);
-
-    final int partitionOffset = partition.getTailCounterVolatile();
-    final long position = position(activePartitionId, partitionOffset);
-
-    long newPosition = -1;
-
-    if (position < limit) {
-      final int newOffset;
-
-      if (length < maxFrameLength) {
-        newOffset =
+    return offer(
+        (partition, activePartitionId) ->
             logAppender.claim(
-                partition, activePartitionId, claim, length, streamId, onClaimComplete);
-      } else {
-        throw new RuntimeException("Cannot claim more than " + maxFrameLength + " bytes.");
-      }
-
-      newPosition = updatePublisherPosition(activePartitionId, newOffset);
-      publisherPosition.proposeMaxOrdered(newPosition);
-      signalSubsciptions();
-    }
-    return newPosition;
+                partition, activePartitionId, claim, length, streamId, onClaimComplete),
+        length);
   }
 
   /**
-   * Claim a batch of fragments on the buffer with the given length. Use {@link #nextFragment(int,
-   * int)} to add a new fragment to the batch. Write the fragment message using {@link #getBuffer()}
-   * and {@link #getFragmentOffset()} to get the buffer offset of this fragment. Complete the whole
-   * batch operation by calling either {@link #commit()} or {@link #abort()}. Note that the claim
-   * operation can fail if the publisher limit or the buffer partition size is reached.
+   * Claim a batch of fragments on the buffer with the given length. Use {@link
+   * ClaimedFragmentBatch#nextFragment(int, int)} to add a new fragment to the batch. Write the
+   * fragment message using {@link ClaimedFragmentBatch#getBuffer()} and {@link
+   * ClaimedFragmentBatch#getFragmentOffset()} to get the buffer offset of this fragment. Complete
+   * the whole batch operation by calling either {@link ClaimedFragmentBatch#commit()} or {@link
+   * ClaimedFragmentBatch#abort()}. Note that the claim operation can fail if the publisher limit or
+   * the buffer partition size is reached.
    *
    * @return the new publisher position if the batch was claimed successfully. Otherwise, the return
    *     value is negative.
    */
   public long claim(ClaimedFragmentBatch batch, int fragmentCount, int batchLength) {
+    return offer(
+        (partition, activePartitionId) ->
+            logAppender.claim(
+                partition, activePartitionId, batch, fragmentCount, batchLength, onClaimComplete),
+        batchLength);
+  }
+
+  private long offer(BiFunction<LogBufferPartition, Integer, Integer> claimer, int length) {
     long newPosition = -1;
 
     if (!isClosed) {
@@ -286,12 +253,11 @@ public class Dispatcher extends Actor implements AutoCloseable {
       if (position < limit) {
         final int newOffset;
 
-        if (batchLength < maxFrameLength) {
-          newOffset =
-              logAppender.claim(
-                  partition, activePartitionId, batch, fragmentCount, batchLength, onClaimComplete);
+        if (length < maxFrameLength) {
+          newOffset = claimer.apply(partition, activePartitionId);
         } else {
-          throw new RuntimeException("Cannot claim more than " + maxFrameLength + " bytes.");
+          throw new IllegalArgumentException(
+              String.format(ERROR_MESSAGE_CLAIM_FAILED, length, maxFrameLength));
         }
 
         newPosition = updatePublisherPosition(activePartitionId, newOffset);
@@ -512,13 +478,14 @@ public class Dispatcher extends Actor implements AutoCloseable {
    * Returns the subscription with the given name.
    *
    * @return the subscription
-   * @throws exception if no such subscription is opened
+   * @throws RuntimeException if no such subscription was opened
    */
   private Subscription getSubscriptionByName(String subscriptionName) {
     final Subscription subscription = findSubscriptionByName(subscriptionName);
 
     if (subscription == null) {
-      throw new RuntimeException("Subscription with name " + subscriptionName + " not registered");
+      throw new IllegalStateException(
+          String.format(ERROR_MESSAGE_SUBSCRIPTION_NOT_FOUND, subscriptionName));
     } else {
       return subscription;
     }
@@ -574,10 +541,6 @@ public class Dispatcher extends Actor implements AutoCloseable {
     } else {
       return publisherLimit.get();
     }
-  }
-
-  public int getSubscriberCount() {
-    return subscriptions.length;
   }
 
   @Override

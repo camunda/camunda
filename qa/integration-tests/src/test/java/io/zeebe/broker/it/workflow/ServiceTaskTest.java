@@ -31,9 +31,9 @@ import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.response.JobHeaders;
 import io.zeebe.client.api.subscription.JobHandler;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.VariableRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.VariableRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.JobIntent;
@@ -184,12 +184,12 @@ public class ServiceTaskTest {
   }
 
   @Test
-  public void shouldMapPayloadIntoTask() {
+  public void shouldMapVariablesIntoTask() {
     // given
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
-            .serviceTask("task", t -> t.zeebeTaskType("foo").zeebeInput("$.foo", "$.bar"))
+            .serviceTask("task", t -> t.zeebeTaskType("foo").zeebeInput("foo", "bar"))
             .endEvent("end")
             .done();
     deploy(modelInstance);
@@ -212,16 +212,16 @@ public class ServiceTaskTest {
     waitUntil(() -> recordingJobHandler.getHandledJobs().size() >= 1);
 
     final ActivatedJob jobEvent = recordingJobHandler.getHandledJobs().get(0);
-    JsonUtil.assertEquality(jobEvent.getPayload(), "{'bar': 1, 'foo': 1}");
+    JsonUtil.assertEquality(jobEvent.getVariables(), "{'bar': 1, 'foo': 1}");
   }
 
   @Test
-  public void shouldMapPayloadFromTask() {
+  public void shouldMapVariablesFromTask() {
     // given
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
-            .serviceTask("task", t -> t.zeebeTaskType("foo").zeebeOutput("$.foo", "$.bar"))
+            .serviceTask("task", t -> t.zeebeTaskType("foo").zeebeOutput("foo", "bar"))
             .endEvent("end")
             .done();
     deploy(modelInstance);
@@ -241,7 +241,8 @@ public class ServiceTaskTest {
         .newWorker()
         .jobType("foo")
         .handler(
-            (client, job) -> client.newCompleteCommand(job.getKey()).payload("{\"foo\":2}").send())
+            (client, job) ->
+                client.newCompleteCommand(job.getKey()).variables("{\"foo\":2}").send())
         .open();
 
     // then
@@ -255,17 +256,14 @@ public class ServiceTaskTest {
   }
 
   @Test
-  public void shouldModifyPayloadInTask() {
+  public void shouldModifyVariablesInTask() {
     // given
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
             .serviceTask(
                 "task",
-                t ->
-                    t.zeebeTaskType("foo")
-                        .zeebeInput("$.foo", "$.foo")
-                        .zeebeOutput("$.foo", "$.foo"))
+                t -> t.zeebeTaskType("foo").zeebeInput("foo", "foo").zeebeOutput("foo", "foo"))
             .endEvent("end")
             .done();
     deploy(modelInstance);
@@ -287,8 +285,8 @@ public class ServiceTaskTest {
         .jobType("foo")
         .handler(
             (client, job) -> {
-              final String modifiedPayload = job.getPayload().replaceAll("1", "2");
-              client.newCompleteCommand(job.getKey()).payload(modifiedPayload).send();
+              final String modifiedVariables = job.getVariables().replaceAll("1", "2");
+              client.newCompleteCommand(job.getKey()).variables(modifiedVariables).send();
             })
         .open();
 
@@ -303,7 +301,7 @@ public class ServiceTaskTest {
   }
 
   @Test
-  public void shouldCompleteTasksAndMergePayload() throws Exception {
+  public void shouldCompleteTasksAndMergeVariables() throws Exception {
 
     // given
     clientRule
@@ -325,7 +323,7 @@ public class ServiceTaskTest {
 
     // when
     final JobHandler defaultHandler =
-        (client, job) -> client.newCompleteCommand(job.getKey()).payload("{}").send().join();
+        (client, job) -> client.newCompleteCommand(job.getKey()).variables("{}").send().join();
     clientRule.getClient().newWorker().jobType("collect-money").handler(defaultHandler).open();
 
     clientRule
@@ -334,7 +332,7 @@ public class ServiceTaskTest {
         .jobType("fetch-items")
         .handler(
             (client, job) -> {
-              client.newCompleteCommand(job.getKey()).payload("{\"foo\":\"bar\"}").send().join();
+              client.newCompleteCommand(job.getKey()).variables("{\"foo\":\"bar\"}").send().join();
             })
         .open();
     clientRule.getClient().newWorker().jobType("ship-parcel").handler(defaultHandler).open();
@@ -357,10 +355,7 @@ public class ServiceTaskTest {
             .startEvent("start")
             .serviceTask(
                 "task",
-                t ->
-                    t.zeebeTaskType("foo")
-                        .zeebeInput("$.foo", "$.foo")
-                        .zeebeOutput("$.foo", "$.foo"))
+                t -> t.zeebeTaskType("foo").zeebeInput("foo", "foo").zeebeOutput("foo", "foo"))
             .endEvent("end")
             .done();
     deploy(modelInstance);
@@ -386,7 +381,8 @@ public class ServiceTaskTest {
         .newWorker()
         .jobType("foo")
         .handler(
-            (client, job) -> client.newCompleteCommand(job.getKey()).payload("{\"foo\":2}").send())
+            (client, job) ->
+                client.newCompleteCommand(job.getKey()).variables("{\"foo\":2}").send())
         .open();
 
     // then

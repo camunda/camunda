@@ -46,6 +46,7 @@ import org.junit.Test;
 
 public class VariableStateTest {
 
+  private static final long WORKFLOW_KEY = 123;
   private static final AtomicLong PARENT_KEY = new AtomicLong(0);
   private static final AtomicLong CHILD_KEY = new AtomicLong(1);
   private static final AtomicLong SECOND_CHILD_KEY = new AtomicLong(2);
@@ -91,10 +92,10 @@ public class VariableStateTest {
     declareScope(parent);
 
     final DirectBuffer var1Value = MsgPackUtil.asMsgPack("a", 1);
-    variablesState.setVariableLocal(parent, BufferUtil.wrapString("var1"), var1Value);
+    setVariableLocal(parent, BufferUtil.wrapString("var1"), var1Value);
 
     final DirectBuffer var2Value = MsgPackUtil.asMsgPack("x", 10);
-    variablesState.setVariableLocal(parent, BufferUtil.wrapString("var2"), var2Value);
+    setVariableLocal(parent, BufferUtil.wrapString("var2"), var2Value);
 
     // when
     final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(parent);
@@ -125,10 +126,9 @@ public class VariableStateTest {
     declareScope(grandparent, parent);
     declareScope(parent, child);
 
-    variablesState.setVariableLocal(
-        grandparent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
-    variablesState.setVariableLocal(parent, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
-    variablesState.setVariableLocal(child, BufferUtil.wrapString("c"), MsgPackUtil.asMsgPack("3"));
+    setVariableLocal(grandparent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    setVariableLocal(parent, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
+    setVariableLocal(child, BufferUtil.wrapString("c"), MsgPackUtil.asMsgPack("3"));
 
     // when
     final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(child);
@@ -143,9 +143,9 @@ public class VariableStateTest {
     declareScope(parent);
     declareScope(parent, child);
 
-    variablesState.setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
-    variablesState.setVariableLocal(parent, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
-    variablesState.setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("3"));
+    setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    setVariableLocal(parent, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
+    setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("3"));
 
     // when
     final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(child);
@@ -160,8 +160,8 @@ public class VariableStateTest {
     declareScope(parent);
     declareScope(parent, child);
 
-    variablesState.setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
-    variablesState.setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("3"));
+    setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("3"));
 
     // when
     final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(parent);
@@ -177,9 +177,9 @@ public class VariableStateTest {
     declareScope(parent, child);
     declareScope(parent, child2);
 
-    variablesState.setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
-    variablesState.setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
-    variablesState.setVariableLocal(child2, BufferUtil.wrapString("c"), MsgPackUtil.asMsgPack("3"));
+    setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
+    setVariableLocal(child2, BufferUtil.wrapString("c"), MsgPackUtil.asMsgPack("3"));
 
     // when
     final DirectBuffer variablesDocument = variablesState.getVariablesAsDocument(child);
@@ -194,8 +194,8 @@ public class VariableStateTest {
     declareScope(parent);
     declareScope(parent, child);
 
-    variablesState.setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
-    variablesState.setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("3"));
+    setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("3"));
 
     // then
     MsgPackUtil.assertEquality(variablesState.getVariablesLocalAsDocument(parent), "{'a': 1}");
@@ -207,9 +207,9 @@ public class VariableStateTest {
     // given
     declareScope(parent);
 
-    variablesState.setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
-    variablesState.setVariableLocal(parent, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
-    variablesState.setVariableLocal(parent, BufferUtil.wrapString("c"), MsgPackUtil.asMsgPack("3"));
+    setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    setVariableLocal(parent, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
+    setVariableLocal(parent, BufferUtil.wrapString("c"), MsgPackUtil.asMsgPack("3"));
 
     // when
     final DirectBuffer variablesDocument =
@@ -227,9 +227,9 @@ public class VariableStateTest {
     declareScope(parent, child);
     declareScope(child, child2);
 
-    variablesState.setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
-    variablesState.setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
-    variablesState.setVariableLocal(child2, BufferUtil.wrapString("c"), MsgPackUtil.asMsgPack("3"));
+    setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
+    setVariableLocal(child2, BufferUtil.wrapString("c"), MsgPackUtil.asMsgPack("3"));
 
     // when
     final DirectBuffer variablesDocument =
@@ -245,7 +245,7 @@ public class VariableStateTest {
     // given
     declareScope(parent);
 
-    variablesState.setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
 
     // when
     final DirectBuffer variablesDocument =
@@ -264,7 +264,7 @@ public class VariableStateTest {
     final DirectBuffer document = MsgPackUtil.asMsgPack(b -> b.put("a", 1).put("b", 2));
 
     // when
-    variablesState.setVariablesLocalFromDocument(parent, document);
+    setVariablesLocalFromDocument(parent, document);
 
     // then
     final DirectBuffer varA = variablesState.getVariableLocal(parent, BufferUtil.wrapString("a"));
@@ -283,7 +283,7 @@ public class VariableStateTest {
     final DirectBuffer document = MsgPackUtil.asMsgPack(b -> b.put("a", 1).put("b", 2));
 
     // when
-    variablesState.setVariablesLocalFromDocument(child, document);
+    setVariablesLocalFromDocument(child, document);
 
     // then
     final DirectBuffer varA = variablesState.getVariableLocal(child, BufferUtil.wrapString("a"));
@@ -304,7 +304,7 @@ public class VariableStateTest {
         MsgPackUtil.asMsgPack(b -> b.put("var", Collections.singletonMap("a", 1)));
 
     // when
-    variablesState.setVariablesLocalFromDocument(parent, document);
+    setVariablesLocalFromDocument(parent, document);
 
     // then
     final DirectBuffer varA = variablesState.getVariableLocal(parent, BufferUtil.wrapString("var"));
@@ -316,12 +316,12 @@ public class VariableStateTest {
     // given
     declareScope(parent);
 
-    variablesState.setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
 
     final DirectBuffer document = MsgPackUtil.asMsgPack("a", 2);
 
     // when
-    variablesState.setVariablesLocalFromDocument(parent, document);
+    setVariablesLocalFromDocument(parent, document);
 
     // then
     final DirectBuffer varA = variablesState.getVariableLocal(parent, BufferUtil.wrapString("a"));
@@ -347,12 +347,9 @@ public class VariableStateTest {
     declareScope(parent);
     declareScope(parent, child);
 
-    variablesState.setVariableLocal(
-        parent, BufferUtil.wrapString("parentVar1"), MsgPackUtil.asMsgPack("1"));
-    variablesState.setVariableLocal(
-        child, BufferUtil.wrapString("childVar1"), MsgPackUtil.asMsgPack("2"));
-    variablesState.setVariableLocal(
-        child, BufferUtil.wrapString("childVar2"), MsgPackUtil.asMsgPack("3"));
+    setVariableLocal(parent, BufferUtil.wrapString("parentVar1"), MsgPackUtil.asMsgPack("1"));
+    setVariableLocal(child, BufferUtil.wrapString("childVar1"), MsgPackUtil.asMsgPack("2"));
+    setVariableLocal(child, BufferUtil.wrapString("childVar2"), MsgPackUtil.asMsgPack("3"));
 
     // when
     variablesState.removeAllVariables(child);
@@ -369,12 +366,9 @@ public class VariableStateTest {
     declareScope(parent);
     declareScope(parent, child);
 
-    variablesState.setVariableLocal(
-        parent, BufferUtil.wrapString("parentVar1"), MsgPackUtil.asMsgPack("1"));
-    variablesState.setVariableLocal(
-        child, BufferUtil.wrapString("childVar1"), MsgPackUtil.asMsgPack("2"));
-    variablesState.setVariableLocal(
-        child, BufferUtil.wrapString("childVar2"), MsgPackUtil.asMsgPack("3"));
+    setVariableLocal(parent, BufferUtil.wrapString("parentVar1"), MsgPackUtil.asMsgPack("1"));
+    setVariableLocal(child, BufferUtil.wrapString("childVar1"), MsgPackUtil.asMsgPack("2"));
+    setVariableLocal(child, BufferUtil.wrapString("childVar2"), MsgPackUtil.asMsgPack("3"));
 
     // when
     variablesState.removeScope(child);
@@ -395,18 +389,18 @@ public class VariableStateTest {
     declareScope(grandparent, parent);
     declareScope(parent, child);
 
-    variablesState.setVariableLocal(
+    setVariableLocal(
         grandparent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("'should-overwrite-this'"));
-    variablesState.setVariableLocal(
+    setVariableLocal(
         parent, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("'should-overwrite-this'"));
-    variablesState.setVariableLocal(
+    setVariableLocal(
         child, BufferUtil.wrapString("c"), MsgPackUtil.asMsgPack("'should-overwrite-this'"));
 
     final DirectBuffer document =
         MsgPackUtil.asMsgPack(b -> b.put("a", 1).put("b", 2).put("c", 3).put("d", 4));
 
     // when
-    variablesState.setVariablesFromDocument(child, document);
+    setVariablesFromDocument(child, document);
 
     // then
     final DirectBuffer varA =
@@ -430,13 +424,13 @@ public class VariableStateTest {
     declareScope(parent);
     declareScope(parent, child);
 
-    variablesState.setVariableLocal(
+    setVariableLocal(
         child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("'should-not-overwrite-this'"));
 
     final DirectBuffer document = MsgPackUtil.asMsgPack(b -> b.put("a", 1).put("b", 2));
 
     // when
-    variablesState.setVariablesFromDocument(parent, document);
+    setVariablesFromDocument(parent, document);
 
     // then
     final DirectBuffer varA = variablesState.getVariableLocal(parent, BufferUtil.wrapString("a"));
@@ -460,7 +454,7 @@ public class VariableStateTest {
         MsgPackUtil.asMsgPack(b -> b.put("a", Collections.singletonMap("x", 1)));
 
     // when
-    variablesState.setVariablesFromDocument(parent, document);
+    setVariablesFromDocument(parent, document);
 
     // then
     final DirectBuffer varA = variablesState.getVariableLocal(parent, BufferUtil.wrapString("a"));
@@ -473,15 +467,15 @@ public class VariableStateTest {
     declareScope(parent);
     declareScope(parent, child);
 
-    variablesState.setVariableLocal(
+    setVariableLocal(
         parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("'should-not-overwrite-this'"));
-    variablesState.setVariableLocal(
+    setVariableLocal(
         child, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("'should-overwrite-this'"));
 
     final DirectBuffer document = MsgPackUtil.asMsgPack(b -> b.put("a", 1).put("b", 2));
 
     // when
-    variablesState.setVariablesFromDocument(child, document);
+    setVariablesFromDocument(child, document);
 
     // then
     final DirectBuffer varParent =
@@ -506,10 +500,10 @@ public class VariableStateTest {
     declareScope(parent1);
     declareScope(parent2);
 
-    variablesState.setVariablesFromDocument(parent1, MsgPackUtil.asMsgPack("{'a': 1, 'b': 2}"));
+    setVariablesFromDocument(parent1, MsgPackUtil.asMsgPack("{'a': 1, 'b': 2}"));
 
     // when
-    variablesState.setVariablesFromDocument(parent2, MsgPackUtil.asMsgPack("{'x': 3}"));
+    setVariablesFromDocument(parent2, MsgPackUtil.asMsgPack("{'x': 3}"));
 
     // then
     final DirectBuffer parent1Doc = variablesState.getVariablesAsDocument(parent1);
@@ -524,7 +518,7 @@ public class VariableStateTest {
     // given
 
     // when
-    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("foo"));
+    setVariableLocal(parent, wrapString("x"), wrapString("foo"));
 
     // then
     assertThat(listener.created).hasSize(1);
@@ -541,8 +535,8 @@ public class VariableStateTest {
     // given
 
     // when
-    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("foo"));
-    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("bar"));
+    setVariableLocal(parent, wrapString("x"), wrapString("foo"));
+    setVariableLocal(parent, wrapString("x"), wrapString("bar"));
 
     // then
     assertThat(listener.created).hasSize(1);
@@ -559,8 +553,8 @@ public class VariableStateTest {
     // given
 
     // when
-    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("foo"));
-    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("foo"));
+    setVariableLocal(parent, wrapString("x"), wrapString("foo"));
+    setVariableLocal(parent, wrapString("x"), wrapString("foo"));
 
     // then
     assertThat(listener.created).hasSize(1);
@@ -573,8 +567,7 @@ public class VariableStateTest {
     // given
 
     // when
-    variablesState.setVariablesLocalFromDocument(
-        parent, MsgPackUtil.asMsgPack("{'x':'foo', 'y':'bar'}"));
+    setVariablesLocalFromDocument(parent, MsgPackUtil.asMsgPack("{'x':'foo', 'y':'bar'}"));
 
     // then
     assertThat(listener.created).hasSize(2);
@@ -600,11 +593,10 @@ public class VariableStateTest {
     declareScope(parentScope);
     declareScope(parentScope, childScope);
 
-    variablesState.setVariablesLocalFromDocument(childScope, MsgPackUtil.asMsgPack("{'x':'foo'}"));
+    setVariablesLocalFromDocument(childScope, MsgPackUtil.asMsgPack("{'x':'foo'}"));
 
     // when
-    variablesState.setVariablesFromDocument(
-        childScope, MsgPackUtil.asMsgPack("{'x':'bar', 'y':'bar'}"));
+    setVariablesFromDocument(childScope, MsgPackUtil.asMsgPack("{'x':'bar', 'y':'bar'}"));
 
     // then
     assertThat(listener.created).hasSize(2);
@@ -650,8 +642,8 @@ public class VariableStateTest {
     // given
 
     // when
-    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("foo"));
-    variablesState.setVariableLocal(parent, wrapString("x"), wrapString("bar"));
+    setVariableLocal(parent, wrapString("x"), wrapString("foo"));
+    setVariableLocal(parent, wrapString("x"), wrapString("bar"));
 
     // then
     final long variableKey = listener.created.get(0).key;
@@ -673,7 +665,6 @@ public class VariableStateTest {
     final TypedRecord<WorkflowInstanceRecord> record = mockTypedRecord(key, parentKey);
     elementInstanceState.newInstance(
         parent, key, record.getValue(), WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    elementInstanceState.flushDirtyState();
   }
 
   private TypedRecord<WorkflowInstanceRecord> mockTypedRecord(long key, long parentKey) {
@@ -723,7 +714,12 @@ public class VariableStateTest {
 
     @Override
     public void onCreate(
-        long key, DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
+        long key,
+        long workflowKey,
+        DirectBuffer name,
+        DirectBuffer value,
+        long variableScopeKey,
+        long rootScopeKey) {
       final VariableChange change =
           new VariableChange(
               key,
@@ -736,7 +732,12 @@ public class VariableStateTest {
 
     @Override
     public void onUpdate(
-        long key, DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
+        long key,
+        long workflowKey,
+        DirectBuffer name,
+        DirectBuffer value,
+        long variableScopeKey,
+        long rootScopeKey) {
       final VariableChange change =
           new VariableChange(
               key,
@@ -751,5 +752,18 @@ public class VariableStateTest {
       updated.clear();
       created.clear();
     }
+  }
+
+  private void setVariablesFromDocument(long scope, DirectBuffer document) {
+    variablesState.setVariablesFromDocument(scope, WORKFLOW_KEY, document);
+  }
+
+  private void setVariablesLocalFromDocument(long scope, DirectBuffer document) {
+    variablesState.setVariablesLocalFromDocument(scope, WORKFLOW_KEY, document);
+  }
+
+  public void setVariableLocal(long scopeKey, DirectBuffer name, DirectBuffer value) {
+    variablesState.setVariableLocal(
+        scopeKey, WORKFLOW_KEY, name, 0, name.capacity(), value, 0, value.capacity());
   }
 }

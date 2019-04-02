@@ -49,14 +49,14 @@ public interface ActivatedJob {
    */
   Instant getDeadline();
 
-  /** @return JSON-formatted payload */
-  String getPayload();
+  /** @return JSON-formatted variables */
+  String getVariables();
 
-  /** @return de-serialized payload as map */
-  Map<String, Object> getPayloadAsMap();
+  /** @return de-serialized variables as map */
+  Map<String, Object> getVariablesAsMap();
 
-  /** @return de-serialized payload as the given type */
-  <T> T getPayloadAsType(Class<T> payloadType);
+  /** @return de-serialized variables as the given type */
+  <T> T getVariablesAsType(Class<T> variableType);
 
   /** @return the record encoded as JSON */
   String toJson();

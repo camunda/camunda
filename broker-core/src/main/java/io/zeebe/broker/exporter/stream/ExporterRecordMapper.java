@@ -19,6 +19,7 @@ package io.zeebe.broker.exporter.stream;
 
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordImpl;
+import io.zeebe.broker.exporter.record.value.ErrorRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
@@ -38,29 +39,31 @@ import io.zeebe.broker.exporter.record.value.raft.RaftMemberImpl;
 import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.RecordMetadata;
-import io.zeebe.exporter.record.RecordValue;
-import io.zeebe.exporter.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.record.value.IncidentRecordValue;
-import io.zeebe.exporter.record.value.JobRecordValue;
-import io.zeebe.exporter.record.value.MessageRecordValue;
-import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
-import io.zeebe.exporter.record.value.RaftRecordValue;
-import io.zeebe.exporter.record.value.VariableDocumentRecordValue;
-import io.zeebe.exporter.record.value.VariableRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceCreationRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
-import io.zeebe.exporter.record.value.deployment.DeployedWorkflow;
-import io.zeebe.exporter.record.value.deployment.DeploymentResource;
-import io.zeebe.exporter.record.value.deployment.ResourceType;
-import io.zeebe.exporter.record.value.raft.RaftMember;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.RecordMetadata;
+import io.zeebe.exporter.api.record.RecordValue;
+import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
+import io.zeebe.exporter.api.record.value.ErrorRecordValue;
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.value.MessageRecordValue;
+import io.zeebe.exporter.api.record.value.MessageSubscriptionRecordValue;
+import io.zeebe.exporter.api.record.value.RaftRecordValue;
+import io.zeebe.exporter.api.record.value.VariableDocumentRecordValue;
+import io.zeebe.exporter.api.record.value.VariableRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
+import io.zeebe.exporter.api.record.value.deployment.DeployedWorkflow;
+import io.zeebe.exporter.api.record.value.deployment.DeploymentResource;
+import io.zeebe.exporter.api.record.value.deployment.ResourceType;
+import io.zeebe.exporter.api.record.value.raft.RaftMember;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
+import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobHeaders;
@@ -139,6 +142,9 @@ public class ExporterRecordMapper {
       case WORKFLOW_INSTANCE_CREATION:
         valueSupplier = this::ofWorkflowInstanceCreationRecord;
         break;
+      case ERROR:
+        valueSupplier = this::ofErrorRecord;
+        break;
       default:
         return null;
     }
@@ -202,7 +208,7 @@ public class ExporterRecordMapper {
 
     return new JobRecordValueImpl(
         objectMapper,
-        asJson(record.getPayload()),
+        asJson(record.getVariables()),
         asString(record.getType()),
         asString(record.getWorker()),
         deadline,
@@ -263,7 +269,7 @@ public class ExporterRecordMapper {
 
     return new io.zeebe.broker.exporter.record.value.MessageRecordValueImpl(
         objectMapper,
-        asJson(record.getPayload()),
+        asJson(record.getVariables()),
         asString(record.getName()),
         asString(record.getMessageId()),
         asString(record.getCorrelationKey()),
@@ -316,7 +322,7 @@ public class ExporterRecordMapper {
 
     return new WorkflowInstanceSubscriptionRecordValueImpl(
         objectMapper,
-        asJson(record.getPayload()),
+        asJson(record.getVariables()),
         asString(record.getMessageName()),
         record.getWorkflowInstanceKey(),
         record.getElementInstanceKey());
@@ -341,7 +347,7 @@ public class ExporterRecordMapper {
         asString(record.getType()),
         asString(record.getWorker()),
         Duration.ofMillis(record.getTimeout()),
-        record.getAmount(),
+        record.getMaxJobsToActivate(),
         jobKeys,
         jobs,
         record.getTruncated());
@@ -370,7 +376,8 @@ public class ExporterRecordMapper {
         asString(record.getName()),
         asJson(record.getValue()),
         record.getScopeKey(),
-        record.getWorkflowInstanceKey());
+        record.getWorkflowInstanceKey(),
+        record.getWorkflowKey());
   }
 
   private VariableDocumentRecordValue ofVariableDocumentRecord(LoggedEvent event) {
@@ -395,6 +402,18 @@ public class ExporterRecordMapper {
         record.getKey(),
         record.getInstanceKey(),
         asMsgPackMap(record.getVariables()));
+  }
+
+  private ErrorRecordValue ofErrorRecord(LoggedEvent loggedEvent) {
+    final ErrorRecord record = new ErrorRecord();
+    loggedEvent.readValue(record);
+
+    return new ErrorRecordValueImpl(
+        objectMapper,
+        asString(record.getExceptionMessage()),
+        asString(record.getStacktrace()),
+        record.getErrorEventPosition(),
+        record.getWorkflowInstanceKey());
   }
 
   private byte[] asByteArray(final DirectBuffer buffer) {

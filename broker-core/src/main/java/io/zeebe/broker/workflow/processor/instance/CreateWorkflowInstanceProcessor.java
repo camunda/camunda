@@ -86,12 +86,11 @@ public class CreateWorkflowInstanceProcessor
     }
 
     final long workflowInstanceKey = keyGenerator.nextKey();
-    if (!setVariablesFromDocument(controller, record, workflowInstanceKey)) {
+    if (!setVariablesFromDocument(controller, record, workflow.getKey(), workflowInstanceKey)) {
       return;
     }
 
-    final ElementInstance workflowInstance =
-        createElementInstance(workflow, workflowInstanceKey, record.getVariables());
+    final ElementInstance workflowInstance = createElementInstance(workflow, workflowInstanceKey);
     streamWriter.appendFollowUpEvent(
         workflowInstanceKey,
         WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -118,9 +117,11 @@ public class CreateWorkflowInstanceProcessor
   private boolean setVariablesFromDocument(
       CommandControl<WorkflowInstanceCreationRecord> controller,
       WorkflowInstanceCreationRecord record,
+      long workflowKey,
       long workflowInstanceKey) {
     try {
-      variablesState.setVariablesLocalFromDocument(workflowInstanceKey, record.getVariables());
+      variablesState.setVariablesLocalFromDocument(
+          workflowInstanceKey, workflowKey, record.getVariables());
     } catch (MsgpackReaderException e) {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(ERROR_INVALID_VARIABLES_LOGGED_MESSAGE, e);
       controller.reject(
@@ -134,7 +135,7 @@ public class CreateWorkflowInstanceProcessor
   }
 
   private ElementInstance createElementInstance(
-      DeployedWorkflow workflow, long workflowInstanceKey, DirectBuffer variables) {
+      DeployedWorkflow workflow, long workflowInstanceKey) {
     newWorkflowInstance.reset();
     newWorkflowInstance.setBpmnProcessId(workflow.getBpmnProcessId());
     newWorkflowInstance.setVersion(workflow.getVersion());
@@ -147,7 +148,6 @@ public class CreateWorkflowInstanceProcessor
     final ElementInstance instance =
         elementInstanceState.newInstance(
             workflowInstanceKey, newWorkflowInstance, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    elementInstanceState.flushDirtyState();
 
     return instance;
   }

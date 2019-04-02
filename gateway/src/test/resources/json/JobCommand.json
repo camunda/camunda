@@ -25,7 +25,7 @@
   "worker": "",
   "retries": 3,
   "type": "task",
-  "payload": {
+  "variables": {
     "foo": "bar"
   },
   "deadline": null

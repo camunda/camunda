@@ -103,4 +103,9 @@ public class IndexedRecord implements DbValue {
         : "End offset differs with getLength()";
     value.write(buffer, offset);
   }
+
+  @Override
+  public String toString() {
+    return "IndexedRecord{" + "key=" + key + ", state=" + state + ", value=" + value + '}';
+  }
 }

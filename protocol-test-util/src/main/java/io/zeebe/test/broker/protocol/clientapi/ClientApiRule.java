@@ -19,9 +19,9 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
@@ -155,7 +155,10 @@ public class ClientApiRule extends ExternalResource {
   }
 
   public ExecuteCommandRequest activateJobs(
-      final int partitionId, final String type, final long lockDuration, final int amount) {
+      final int partitionId,
+      final String type,
+      final long lockDuration,
+      final int maxJobsToActivate) {
     // to make sure that job already exist
     partitionClient(partitionId)
         .receiveJobs()
@@ -169,7 +172,7 @@ public class ClientApiRule extends ExternalResource {
         .put("type", type)
         .put("worker", DEFAULT_WORKER)
         .put("timeout", lockDuration)
-        .put("amount", amount)
+        .put("maxJobsToActivate", maxJobsToActivate)
         .put("jobs", Collections.emptyList())
         .done()
         .send();
@@ -250,12 +253,12 @@ public class ClientApiRule extends ExternalResource {
     publishMessage(messageName, correlationKey, MsgPackUtil.asMsgPack("{}"));
   }
 
-  public void publishMessage(String messageName, String correlationKey, DirectBuffer payload) {
-    publishMessage(messageName, correlationKey, payload, Duration.ofHours(1).toMillis());
+  public void publishMessage(String messageName, String correlationKey, DirectBuffer variables) {
+    publishMessage(messageName, correlationKey, variables, Duration.ofHours(1).toMillis());
   }
 
   public void publishMessage(
-      String messageName, String correlationKey, DirectBuffer payload, long ttl) {
+      String messageName, String correlationKey, DirectBuffer variables, long ttl) {
     final ExecuteCommandResponse response =
         createCmdRequest()
             .partitionId(partitionForCorrelationKey(correlationKey))
@@ -264,7 +267,7 @@ public class ClientApiRule extends ExternalResource {
             .put("name", messageName)
             .put("correlationKey", correlationKey)
             .put("timeToLive", ttl)
-            .put("payload", BufferUtil.bufferAsArray(payload))
+            .put("variables", BufferUtil.bufferAsArray(variables))
             .done()
             .sendAndAwait();
 
@@ -290,7 +293,7 @@ public class ClientApiRule extends ExternalResource {
     completeJob(jobType, MsgPackUtil.asMsgPack("{}"));
   }
 
-  public void completeJob(String jobType, DirectBuffer payload) {
+  public void completeJob(String jobType, DirectBuffer variables) {
     activateJobs(jobType).await();
 
     final Record<JobRecordValue> jobRecord =
@@ -301,7 +304,7 @@ public class ClientApiRule extends ExternalResource {
             .type(ValueType.JOB, JobIntent.COMPLETE)
             .key(jobRecord.getKey())
             .command()
-            .put("payload", BufferUtil.bufferAsArray(payload))
+            .put("variables", BufferUtil.bufferAsArray(variables))
             .done()
             .sendAndAwait();
 
