@@ -4,17 +4,21 @@
 
 #### Breaking Changes
 
-* **broker:**  renamed payload to variables ([e2fed8bc](https://github.com/zeebe-io/zeebe/commit/e2fed8bc7d15092deb701cba5f0b158d250c2485), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-* **clients:**  rename bufferSize to maxJobsActive ([2373c264](https://github.com/zeebe-io/zeebe/commit/2373c2649da13755e964f83a530d9adb3e6798ed), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-* **maven:**  prefix all maven artifacts with zeebe ([b2bac603](https://github.com/zeebe-io/zeebe/commit/b2bac603d565d581827dbcee1470d382a4e6e3b5), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **broker:**  
+  * renamed payload to variables ([e2fed8bc](https://github.com/zeebe-io/zeebe/commit/e2fed8bc7d15092deb701cba5f0b158d250c2485))
+  * input/output mappings and correlation key expressions access variables by name ([665393f0](https://github.com/zeebe-io/zeebe/commit/665393f0206c54cf0373cc7ac54edeec31b3f460))
+* **clients:**  rename bufferSize to maxJobsActive ([2373c264](https://github.com/zeebe-io/zeebe/commit/2373c2649da13755e964f83a530d9adb3e6798ed))
+* **json-el:**  conditions access variables by name instead of JSON path ([645297e8](https://github.com/zeebe-io/zeebe/commit/645297e84eb678707ea56a896421c1c1b3587314))
+* **maven:**  prefix all maven artifacts with zeebe ([b2bac603](https://github.com/zeebe-io/zeebe/commit/b2bac603d565d581827dbcee1470d382a4e6e3b5))
 
 #### Features
 
 * **bpmn-model:**  reject end events with outgoing sequence flows ([50582295](https://github.com/zeebe-io/zeebe/commit/50582295a9b7588c27798173a7135398b7239357))
-* **broker:**  add workflow key to variable record ([624d32a2](https://github.com/zeebe-io/zeebe/commit/624d32a2fc3f3c9941fbe2603cb32e1db1a6ac9d))
-* **broker-core:**  mappings access variables by name ([665393f0](https://github.com/zeebe-io/zeebe/commit/665393f0206c54cf0373cc7ac54edeec31b3f460))
+* **broker:**  
+  * add workflow key to variable record ([624d32a2](https://github.com/zeebe-io/zeebe/commit/624d32a2fc3f3c9941fbe2603cb32e1db1a6ac9d))
+  * input/output mappings and correlation key expressions access variables by name ([665393f0](https://github.com/zeebe-io/zeebe/commit/665393f0206c54cf0373cc7ac54edeec31b3f460))
 * **exporter:**  export error record ([b35728bf](https://github.com/zeebe-io/zeebe/commit/b35728bfe3542a6c5beccea5dcfd290c02853d2e))
-* **json-el:**  access variables by name instead of JSON path ([645297e8](https://github.com/zeebe-io/zeebe/commit/645297e84eb678707ea56a896421c1c1b3587314))
+* **json-el:**  conditions access variables by name instead of JSON path ([645297e8](https://github.com/zeebe-io/zeebe/commit/645297e84eb678707ea56a896421c1c1b3587314))
 * **protocol:**  introduce new ErrorRecord ([21ca50a8](https://github.com/zeebe-io/zeebe/commit/21ca50a8ac065b7f33daa6908d83f7924668679b))
 
 #### Bug Fixes
@@ -22,17 +26,17 @@
 * **broker:**
   *  prevent unnecessary message subscription closing ([37a03bf0](https://github.com/zeebe-io/zeebe/commit/37a03bf06458f0e710b592ca74c256414283a4bd))
   *  prevent NPE in delayed message subscription closing ([d733cee5](https://github.com/zeebe-io/zeebe/commit/d733cee5c882ae1e9bc3e7d93e32d9c05bb948c4))
-  *  renamed payload to variables ([e2fed8bc](https://github.com/zeebe-io/zeebe/commit/e2fed8bc7d15092deb701cba5f0b158d250c2485), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+  *  renamed payload to variables ([e2fed8bc](https://github.com/zeebe-io/zeebe/commit/e2fed8bc7d15092deb701cba5f0b158d250c2485))
   *  reset reused event scope instance ([f9c3e7f3](https://github.com/zeebe-io/zeebe/commit/f9c3e7f363d8be16e9cbd7001f48d8ed23821f56))
   *  stop iterating jobs if job batch reached max capacity ([91f276d9](https://github.com/zeebe-io/zeebe/commit/91f276d954df4e68c665c584e0c737fa716b3e63))
   *  increase gateway transport buffer to default 64 megabyte ([fbf07e29](https://github.com/zeebe-io/zeebe/commit/fbf07e29562f47d77e18e32d34eda829b445bd56))
-* **clients:**  rename bufferSize to maxJobsActive ([2373c264](https://github.com/zeebe-io/zeebe/commit/2373c2649da13755e964f83a530d9adb3e6798ed), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **clients:**  rename bufferSize to maxJobsActive ([2373c264](https://github.com/zeebe-io/zeebe/commit/2373c2649da13755e964f83a530d9adb3e6798ed))
 * **clients/java:**  clarify outdated update job retries java doc ([5881187f](https://github.com/zeebe-io/zeebe/commit/5881187f619e0addd9aa81c7f7f30d3fc3bb94f0))
 * **exporters/elasticsearch-exporter:**  migrates ES to pkg io.zeebe.exporter ([7106f167](https://github.com/zeebe-io/zeebe/commit/7106f16755c52d32ffc8709d5a83e3c6ba4b067b))
 * **logstreams:**
   *  removed StreamProcessorControllerTest race condition ([3ad0e3ac](https://github.com/zeebe-io/zeebe/commit/3ad0e3ac05304f5aa6f114e1568e9c2a013bf647))
   *  removed race condition from LogBlockIndexWriterTest ([134c5b1b](https://github.com/zeebe-io/zeebe/commit/134c5b1b424ca123e6e079d385544f64c6387327))
-* **maven:**  prefix all maven artifacts with zeebe ([b2bac603](https://github.com/zeebe-io/zeebe/commit/b2bac603d565d581827dbcee1470d382a4e6e3b5), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **maven:**  prefix all maven artifacts with zeebe ([b2bac603](https://github.com/zeebe-io/zeebe/commit/b2bac603d565d581827dbcee1470d382a4e6e3b5))
 
 
 
