@@ -1,6 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Distribution</name>
@@ -10,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.17.0-SNAPSHOT</version>
+    <version>0.18.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -114,18 +112,11 @@
             </goals>
             <configuration>
               <target>
-                <exec executable="${maven.multiModuleProjectDirectory}/clients/zbctl/build.sh"
-                  osfamily="unix" failonerror="true"/>
-                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl"
-                  tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="true"/>
-                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl.exe"
-                  tofile="${project.build.directory}/zeebe-broker/bin/zbctl.exe"
-                  failonerror="true"/>
-                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl.darwin"
-                  tofile="${project.build.directory}/zeebe-broker/bin/zbctl.darwin"
-                  failonerror="true"/>
-                <chmod dir="${project.build.directory}/zeebe-broker/bin" perm="ugo+rx"
-                  includes="zbctl*" failonerror="true"/>
+                <exec executable="${maven.multiModuleProjectDirectory}/clients/zbctl/build.sh" osfamily="unix" failonerror="true" />
+                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="true" />
+                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.exe" failonerror="true" />
+                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.darwin" failonerror="true" />
+                <chmod dir="${project.build.directory}/zeebe-broker/bin" perm="ugo+rx" includes="zbctl*" failonerror="true" />
               </target>
               <skip>${skip-zbctl}</skip>
             </configuration>
