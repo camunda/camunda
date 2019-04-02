@@ -1,4 +1,4 @@
-camunda.bpm.operate:
+camunda.operate:
   startLoadingDataOnStartup: false
   batchOperationMaxSize: 500
   elasticsearch:

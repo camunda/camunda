@@ -1,6 +1,6 @@
 # Operate configuration file
 
-camunda.bpm.operate:
+camunda.operate:
   # ELS instance to store Operate data
   elasticsearch:
     # Cluster name

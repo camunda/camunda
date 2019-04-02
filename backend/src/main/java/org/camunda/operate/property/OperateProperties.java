@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(OperateProperties.PREFIX)
 public class OperateProperties {
 
-  public static final String PREFIX = "camunda.bpm.operate";
+  public static final String PREFIX = "camunda.operate";
 
   /**
    * Indicates, whether loading of Zeebe data should start on startup.

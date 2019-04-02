@@ -1,4 +1,4 @@
-camunda.bpm.operate:
+camunda.operate:
   startLoadingDataOnStartup: false
   elasticsearch:
     clusterName: docker-cluster
