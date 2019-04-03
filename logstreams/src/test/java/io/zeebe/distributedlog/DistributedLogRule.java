@@ -33,6 +33,7 @@ import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.util.SocketUtil;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
 import java.io.IOException;
@@ -89,6 +90,9 @@ public class DistributedLogRule extends ExternalResource {
       rootDirectory = Files.createTempDirectory("dl-test-" + nodeId + "-");
     } catch (Exception e) {
     }
+    final String memberId = String.valueOf(nodeId);
+    LogstreamConfig.putLogDirectory(memberId, rootDirectory.toAbsolutePath().toString());
+    LogstreamConfig.putServiceContainer(memberId, serviceContainer);
   }
 
   public Node getNode() {
@@ -118,6 +122,11 @@ public class DistributedLogRule extends ExternalResource {
   @Override
   protected void after() {
     stopNode();
+    try {
+      FileUtil.deleteFolder(rootDirectory.toAbsolutePath().toString());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
   public void stopNode() {
@@ -132,10 +141,6 @@ public class DistributedLogRule extends ExternalResource {
   }
 
   private void createPartitions() throws IOException {
-    final String memberId = String.valueOf(nodeId);
-    LogstreamConfig.putLogDirectory(memberId, rootDirectory.toAbsolutePath().toString());
-    LogstreamConfig.putServiceContainer(memberId, serviceContainer);
-
     // Create distributed log primitive so that logstreams are created
     final MultiRaftProtocol protocol =
         MultiRaftProtocol.builder()

@@ -34,9 +34,7 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.sched.future.ActorFuture;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
@@ -48,7 +46,6 @@ public class DistributedLogPartitionRule {
   private final ServiceContainer serviceContainer;
   private final int partition;
   private final int nodeId;
-  private final String dir;
   private LogStream logStream;
   private BufferedLogStreamReader reader;
   private LogStreamWriterImpl writer = new LogStreamWriterImpl();
@@ -65,11 +62,6 @@ public class DistributedLogPartitionRule {
     this.nodeId = nodeId;
     this.partition = partition;
     this.logName = String.format("raft-atomix-partition-%d", this.partition);
-    final File logDir = new File(rootDirectory.toString(), String.format("log-%d", partition));
-    if (!logDir.exists()) {
-      Files.createDirectory(logDir.toPath());
-    }
-    dir = logDir.toPath().toString();
   }
 
   public void start() {

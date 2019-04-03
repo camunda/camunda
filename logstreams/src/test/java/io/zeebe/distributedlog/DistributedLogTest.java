@@ -135,8 +135,9 @@ public class DistributedLogTest {
     node1.becomeLeader(partitionId);
 
     final Event event1 = writeEvent("record1");
-    assertEventReplicated(event1, node2);
     assertEventReplicated(event1, node1);
+    assertEventReplicated(event1, node2);
+    assertEventReplicated(event1, node3);
 
     // when
 

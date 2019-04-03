@@ -94,7 +94,7 @@ public class DistributedLogstreamPartition implements Service<DistributedLogstre
   @Override
   public void stop(ServiceStopContext stopContext) {
     // Close resources used by the local node. This doesn't delete the state of the primitive.
-    distributedLog.close();
+    distributedLog.async().close();
   }
 
   @Override
