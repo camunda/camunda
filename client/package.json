@@ -6,11 +6,11 @@
   "dependencies": {
     "array-includes": "^3.0.3",
     "array.prototype.find": "^2.0.4",
-    "bpmn-js": "2.4.1",
+    "bpmn-js": "3.3.0",
     "chart.js": "2.7.2",
     "classnames": "^2.2.6",
     "debounce": "^1.1.0",
-    "dmn-js": "^6.2.0",
+    "dmn-js": "^6.3.2",
     "element-closest": "^2.0.2",
     "heatmap.js": "^2.0.5",
     "immutability-helper": "^2.6.0",
