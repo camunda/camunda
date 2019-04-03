@@ -25,7 +25,7 @@ export default withErrorHandling(
     };
 
     static getDerivedStateFromProps({report: {result, combined}}) {
-      if (result && !combined && isRaw(result)) {
+      if (result && !combined && isRaw(result.data)) {
         return {needEndpoint: true};
       }
       return null;
@@ -42,7 +42,7 @@ export default withErrorHandling(
     render() {
       const {report, errorMessage, disableReportScrolling, updateReport} = this.props;
 
-      if (!report.result || typeof report.result !== 'object') {
+      if (!report.result || typeof report.result.data !== 'object') {
         return <ReportBlankSlate errorMessage={errorMessage} />;
       }
 
@@ -63,7 +63,7 @@ export default withErrorHandling(
 
     formatData = () => {
       const {
-        report: {reportType, combined, data, result, resultType},
+        report: {reportType, combined, data, result},
         updateReport
       } = this.props;
       const {parameters} = data;
@@ -73,7 +73,7 @@ export default withErrorHandling(
 
       let tableData;
       // raw data
-      if (isRaw(result)) {
+      if (isRaw(result.data)) {
         tableData = processRawData[reportType](this.props, this.state.camundaEndpoints);
       } else {
         // Normal single Report
@@ -82,7 +82,7 @@ export default withErrorHandling(
 
       return {
         ...tableData,
-        resultType,
+        resultType: result.type,
         updateSorting: updateReport && this.updateSorting,
         sorting: parameters && parameters.sorting
       };

@@ -154,7 +154,6 @@ describe('getHighlightedText', () => {
 const exampleDurationReport = {
   name: 'report A',
   combined: false,
-  processInstanceCount: 100,
   data: {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: '1',
@@ -172,8 +171,11 @@ const exampleDurationReport = {
     configuration: {}
   },
   result: {
-    '2015-03-25T12:00:00Z': 2,
-    '2015-03-26T12:00:00Z': 3
+    processInstanceCount: 100,
+    data: {
+      '2015-03-25T12:00:00Z': 2,
+      '2015-03-26T12:00:00Z': 3
+    }
   }
 };
 
@@ -192,7 +194,7 @@ jest.mock('services', () => {
 it('should adjust dates to units', () => {
   const formatedResult = formatReportResult(
     exampleDurationReport.data,
-    exampleDurationReport.result
+    exampleDurationReport.result.data
   );
   expect(formatedResult).toEqual({'2015-03-26': 3, '2015-03-25': 2});
 });
@@ -208,7 +210,10 @@ it('should adjust groupby Start Date option to unit', () => {
       }
     }
   };
-  const formatedResult = formatReportResult(specialExampleReport.data, specialExampleReport.result);
+  const formatedResult = formatReportResult(
+    specialExampleReport.data,
+    specialExampleReport.result.data
+  );
   expect(formatedResult).toEqual({'Mar 2015': 2});
 });
 
@@ -224,7 +229,7 @@ it('should adjust groupby Variable Date option to unit', () => {
     }
   };
   const formatedResult = JSON.stringify(
-    formatReportResult(specialExampleReport.data, specialExampleReport.result)
+    formatReportResult(specialExampleReport.data, specialExampleReport.result.data)
   );
 
   expect(formatedResult).not.toContain('2015-03-25T');
@@ -234,7 +239,7 @@ it('should adjust groupby Variable Date option to unit', () => {
 it('should sort time data descending for tables', () => {
   const formatedResult = formatReportResult(
     exampleDurationReport.data,
-    exampleDurationReport.result
+    exampleDurationReport.result.data
   );
 
   expect(Object.keys(formatedResult)[0]).toBe('2015-03-26');
@@ -246,7 +251,7 @@ it('should sort time data ascending for charts', () => {
     data: {...exampleDurationReport.data, visualization: 'line'}
   };
 
-  const formatedResult = formatReportResult(report.data, report.result);
+  const formatedResult = formatReportResult(report.data, report.result.data);
 
   expect(Object.keys(formatedResult)[0]).toBe('2015-03-25');
 });

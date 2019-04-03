@@ -185,7 +185,9 @@ export default class ReportControlPanel extends React.Component {
               processDefinitionKey={data.processDefinitionKey}
               processDefinitionVersion={data.processDefinitionVersion}
               xml={data.configuration.xml}
-              instanceCount={this.props.report && this.props.report.processInstanceCount}
+              instanceCount={
+                this.props.report.result && this.props.report.result.processInstanceCount
+              }
             />
           </li>
           {isDurationHeatmap(data) && (

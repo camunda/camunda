@@ -65,7 +65,7 @@ export default class CombinedReportPanel extends React.Component {
       return [];
     }
 
-    return this.props.report.data.reports.map(({id}) => this.props.report.result[id]);
+    return this.props.report.data.reports.map(({id}) => this.props.report.result.data[id]);
   };
 
   getUpdatedColors = newSelected => {

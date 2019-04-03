@@ -39,7 +39,10 @@ const report = {
     },
     visualization: 'table'
   },
-  processInstanceCount: 5
+  result: {
+    processInstanceCount: 5,
+    data: []
+  }
 };
 
 const Table = WrappedTable.WrappedComponent;
@@ -55,14 +58,14 @@ const props = {
 
 it('should get the camunda endpoints for raw data', () => {
   getCamundaEndpoints.mockClear();
-  shallow(<Table {...props} report={{...report, result: [1, 2, 3]}} />);
+  shallow(<Table {...props} report={{...report, result: {data: [1, 2, 3]}}} />);
 
   expect(getCamundaEndpoints).toHaveBeenCalled();
 });
 
 it('should not get the camunda endpoints for non-raw-data tables', () => {
   getCamundaEndpoints.mockClear();
-  shallow(<Table {...props} report={{...report, result: {}}} />);
+  shallow(<Table {...props} report={{...report, result: {data: {}}}} />);
 
   expect(getCamundaEndpoints).not.toHaveBeenCalled();
 });
@@ -73,10 +76,12 @@ it('should process raw data', async () => {
       {...props}
       report={{
         ...report,
-        result: [
-          {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
-          {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}}
-        ]
+        result: {
+          data: [
+            {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
+            {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}}
+          ]
+        }
       }}
       formatter={v => v}
     />
@@ -91,7 +96,7 @@ it('should display an error message for a non-object result (single number)', as
       {...props}
       report={{
         ...report,
-        result: 7
+        result: {data: 7}
       }}
       errorMessage="Error"
       formatter={v => v}
@@ -111,25 +116,18 @@ it('should display an error message if no data is provided', async () => {
   expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
 });
 
-it('should display an error message if data is null', async () => {
-  const node = await shallow(
-    <Table {...props} report={{...report, data: null}} errorMessage="Error" formatter={v => v} />
-  );
-
-  expect(node.find('ReportBlankSlate')).toBePresent();
-  expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
-});
-
 it('should not display an error message if data is valid', async () => {
   const node = await shallow(
     <Table
       {...props}
       report={{
         ...report,
-        result: [
-          {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
-          {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}}
-        ]
+        result: {
+          data: [
+            {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
+            {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}}
+          ]
+        }
       }}
       errorMessage="Error"
       formatter={v => v}
@@ -141,7 +139,9 @@ it('should not display an error message if data is valid', async () => {
 
 it('should set the correct parameters when updating sorting', () => {
   const spy = jest.fn();
-  const node = shallow(<Table {...props} report={{...report, result: {}}} updateReport={spy} />);
+  const node = shallow(
+    <Table {...props} report={{...report, result: {data: {}}}} updateReport={spy} />
+  );
 
   node.instance().updateSorting('columnId', 'desc');
 

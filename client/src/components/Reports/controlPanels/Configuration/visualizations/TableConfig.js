@@ -15,7 +15,7 @@ export default function TableConfig({report, onChange}) {
   let typeSpecificComponent = null;
 
   const {property, operation} = (report.combined
-    ? Object.values(report.result)[0]
+    ? Object.values(report.result.data)[0]
     : report
   ).data.view;
   const viewType = property || operation;
@@ -59,6 +59,6 @@ TableConfig.isDisabled = report => {
     report.combined &&
     report.data.reports &&
     report.data.reports.length &&
-    isDurationReport(Object.values(report.result)[0])
+    isDurationReport(Object.values(report.result.data)[0])
   );
 };

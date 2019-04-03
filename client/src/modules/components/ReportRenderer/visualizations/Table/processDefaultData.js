@@ -10,15 +10,15 @@ import {getRelativeValue} from '../service';
 const {formatReportResult} = formatters;
 
 export default function processDefaultData({formatter = v => v, report, flowNodeNames = {}}) {
-  const {data, result, reportType, processInstanceCount, decisionInstanceCount} = report;
+  const {data, result, reportType} = report;
   const {
     configuration: {hideAbsoluteValue, hideRelativeValue, xml},
     view,
     groupBy
   } = data;
 
-  const formattedResult = formatReportResult(data, result);
-  const instanceCount = processInstanceCount || decisionInstanceCount || 0;
+  const formattedResult = formatReportResult(data, result.data);
+  const instanceCount = result.processInstanceCount || result.decisionInstanceCount || 0;
   const config = reportConfig[reportType];
   const labels = [
     config.getLabelFor(config.options.groupBy, groupBy, xml),

@@ -57,8 +57,7 @@ const report = {
     },
     visualization: 'heat'
   },
-  result: {a: 1, b: 2},
-  processInstanceCount: 5
+  result: {data: {a: 1, b: 2}, processInstanceCount: 5}
 };
 
 it('should load the process definition xml', () => {
@@ -84,7 +83,7 @@ it('should display a loading indication while loading', () => {
 });
 
 it('should display an error message if visualization is incompatible with data', () => {
-  const node = shallow(<Heatmap report={{...report, result: 1234}} errorMessage="Error" />);
+  const node = shallow(<Heatmap report={{...report, result: {data: 1234}}} errorMessage="Error" />);
 
   expect(node).toIncludeText('Error');
 });
@@ -118,7 +117,10 @@ it('should convert the data to target value heat when target value mode is activ
     />
   );
 
-  expect(calculateTargetValueHeat).toHaveBeenCalledWith(report.result, heatmapTargetValue.values);
+  expect(calculateTargetValueHeat).toHaveBeenCalledWith(
+    report.result.data,
+    heatmapTargetValue.values
+  );
 });
 
 it('should show a tooltip with information about actual and target value', () => {
@@ -193,7 +195,7 @@ it('should show a tooltip with information if no actual value is available', () 
     <Heatmap
       report={{
         ...report,
-        result: {},
+        result: {data: {}},
         data: {...report.data, configuration: {xml: 'test', heatmapTargetValue}}
       }}
     />

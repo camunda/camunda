@@ -35,7 +35,7 @@ const report = {
     parameters: {},
     visualization: 'table'
   },
-  result: [1, 2, 3]
+  result: {data: [1, 2, 3]}
 };
 
 loadSingleReport.mockReturnValue(report);

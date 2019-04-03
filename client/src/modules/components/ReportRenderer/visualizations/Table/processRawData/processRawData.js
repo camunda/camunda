@@ -18,7 +18,7 @@ export default function processRawData({report: {data, result}}, endpoints = {})
     }
   } = data;
 
-  const formattedResult = formatReportResult(data, result);
+  const formattedResult = formatReportResult(data, result.data);
 
   const allColumnsLength =
     Object.keys(formattedResult[0]).length - 1 + Object.keys(formattedResult[0].variables).length;

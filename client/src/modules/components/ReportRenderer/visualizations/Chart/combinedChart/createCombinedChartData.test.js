@@ -15,17 +15,17 @@ jest.mock('../../service', () => {
 });
 
 it('should return correct chart data object for a combined report', () => {
-  const result = {
-    reportA: {name: 'Report A', result: {foo: 123, bar: 5}},
-    reportB: {name: 'Report B', result: {foo: 1, dar: 3}}
+  const resultData = {
+    reportA: {name: 'Report A', result: {data: {foo: 123, bar: 5}}},
+    reportB: {name: 'Report B', result: {data: {foo: 1, dar: 3}}}
   };
 
   uniteResults.mockClear();
-  uniteResults.mockReturnValue([result.reportA.result, result.reportB.result]);
+  uniteResults.mockReturnValue([resultData.reportA.result.data, resultData.reportB.result.data]);
 
   const chartData = createCombinedChartData({
     report: {
-      result,
+      result: {data: resultData},
       data: {
         groupBy: {
           type: 'flowNodes',

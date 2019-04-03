@@ -43,16 +43,18 @@ const report = {
     parameters: {},
     visualization: 'table'
   },
-  result: [1, 2, 3]
+  result: {data: [1, 2, 3]}
 };
 
 it('should not contain a Control Panel in edit mode for a combined report', () => {
   const combinedReport = {
     combined: true,
     result: {
-      test: {
-        data: {
-          visualization: 'test'
+      data: {
+        test: {
+          data: {
+            visualization: 'test'
+          }
         }
       }
     }
@@ -156,8 +158,7 @@ it('should show a warning message when process instance count exceeds the maximu
           operation: 'rawData'
         }
       },
-      processInstanceCount: 1500,
-      result: new Array(1000)
+      result: {data: new Array(1000), processInstanceCount: 1500}
     }
   });
 

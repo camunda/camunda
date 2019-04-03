@@ -46,7 +46,7 @@ const report = {
     parameters: {},
     visualization: 'table'
   },
-  result: [1, 2, 3]
+  result: {data: [1, 2, 3]}
 };
 
 it('should display the key properties of a report', () => {
@@ -118,7 +118,7 @@ it('should show a download csv button with the correct link', () => {
 });
 
 it('should show a download csv button even if the result is 0', () => {
-  const node = shallow(<ReportView report={{...report, result: 0}} />);
+  const node = shallow(<ReportView report={{...report, result: {data: 0}}} />);
   expect(node.find('.Report__csv-download-button')).toBePresent();
 });
 

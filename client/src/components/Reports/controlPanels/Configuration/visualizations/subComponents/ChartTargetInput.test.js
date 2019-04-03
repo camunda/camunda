@@ -124,11 +124,13 @@ it('should display select date format if combined report is duration report', as
       ...validProps.report,
       combined: true,
       result: {
-        test: {
-          data: {
-            visualization: 'bar',
-            view: {
-              property: 'duration'
+        data: {
+          test: {
+            data: {
+              visualization: 'bar',
+              view: {
+                property: 'duration'
+              }
             }
           }
         }

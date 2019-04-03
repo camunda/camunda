@@ -16,7 +16,7 @@ export default function Number({report, formatter, errorMessage}) {
   const {data, result} = report;
   const {targetValue, precision} = data.configuration;
 
-  if (isDurationValue(result)) {
+  if (isDurationValue(result.data)) {
     return <ReportBlankSlate errorMessage={errorMessage} />;
   }
 
@@ -31,9 +31,15 @@ export default function Number({report, formatter, errorMessage}) {
     }
 
     return (
-      <ProgressBar min={min} max={max} value={result} formatter={formatter} precision={precision} />
+      <ProgressBar
+        min={min}
+        max={max}
+        value={result.data}
+        formatter={formatter}
+        precision={precision}
+      />
     );
   }
 
-  return <span className="Number">{formatter(result, precision)}</span>;
+  return <span className="Number">{formatter(result.data, precision)}</span>;
 }

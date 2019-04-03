@@ -83,7 +83,7 @@ export default themed(
         }
       } = this.props.report;
 
-      const resultNumber = result[ruleId] || 0;
+      const resultNumber = result.data[ruleId] || 0;
       const percentage = Math.round((resultNumber / decisionInstanceCount) * 1000) / 10 || 0;
 
       const node = this.state.entryPoints.rules[ruleId];
@@ -118,7 +118,7 @@ export default themed(
       const {rules, summary} = this.state.entryPoints;
       const {decisionInstanceCount, result} = this.props.report;
 
-      const hitCount = Object.values(result).reduce((sum, current) => sum + current, 0);
+      const hitCount = Object.values(result.data).reduce((sum, current) => sum + current, 0);
 
       return (
         <div ref={this.container} className="DecisionTable">

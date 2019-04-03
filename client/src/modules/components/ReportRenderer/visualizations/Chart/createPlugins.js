@@ -24,7 +24,7 @@ export default function createPlugins({updateReport, report: {combined, data, re
     ['startDate', 'evaluationDateTime'].includes(data.groupBy.type) &&
     ['line', 'bar'].includes(data.visualization)
   ) {
-    const dataPoints = Object.keys(result).sort();
+    const dataPoints = Object.keys(result.data).sort();
 
     plugins.push(
       zoomIn({

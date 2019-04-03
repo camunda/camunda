@@ -52,9 +52,11 @@ const reportsList = [
       visualization: 'bar'
     },
     result: {
-      singleReport: {
-        id: 'singleReport',
-        data: singleReportData
+      data: {
+        singleReport: {
+          id: 'singleReport',
+          data: singleReportData
+        }
       }
     }
   },
@@ -231,17 +233,19 @@ it('should generate new colors or preserve existing ones when selected/deselecti
     }
   };
   const result = {
-    report1: {
-      id: 'report1',
-      ...reportData
-    },
-    report2: {
-      id: 'report2',
-      ...reportData
-    },
-    report3: {
-      id: 'report3',
-      ...reportData
+    data: {
+      report1: {
+        id: 'report1',
+        ...reportData
+      },
+      report2: {
+        id: 'report2',
+        ...reportData
+      },
+      report3: {
+        id: 'report3',
+        ...reportData
+      }
     }
   };
 

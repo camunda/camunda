@@ -33,7 +33,7 @@ export default function BarChartConfig({onChange, report}) {
       <fieldset>
         <legend>Always show tooltips</legend>
         <RelativeAbsoluteSelection
-          hideRelative={isDurationReport(combined ? Object.values(result)[0] : report)}
+          hideRelative={isDurationReport(combined ? Object.values(result.data)[0] : report)}
           absolute={configuration.alwaysShowAbsolute}
           relative={configuration.alwaysShowRelative}
           onChange={(type, value) => {

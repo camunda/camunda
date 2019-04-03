@@ -12,15 +12,13 @@ import {getColorFor, createColors, determineBarColor} from '../colorsUtils';
 export default function createDefaultChartOptions({report, targetValue, theme, formatter}) {
   const {
     data: {visualization, view, groupBy, configuration, decisionDefinitionKey},
-    result,
-    processInstanceCount,
-    decisionInstanceCount
+    result
   } = report;
 
   const isDark = theme === 'dark';
-  const instanceCountArr = [processInstanceCount || decisionInstanceCount || 0];
+  const instanceCountArr = [result.processInstanceCount || result.decisionInstanceCount || 0];
   const isDuration = isDurationReport(report);
-  const maxValue = isDuration ? Math.max(...Object.values(result)) : 0;
+  const maxValue = isDuration ? Math.max(...Object.values(result.data)) : 0;
   const isPersistedTooltips = isDuration
     ? configuration.alwaysShowAbsolute
     : configuration.alwaysShowAbsolute || configuration.alwaysShowRelative;

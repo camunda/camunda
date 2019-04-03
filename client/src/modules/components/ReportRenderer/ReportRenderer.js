@@ -53,7 +53,7 @@ export default function ReportRenderer(props) {
               Count:
               <b>
                 {formatters.frequency(
-                  report.processInstanceCount || report.decisionInstanceCount || 0
+                  report.result.processInstanceCount || report.result.decisionInstanceCount || 0
                 )}
               </b>
             </div>

@@ -34,9 +34,9 @@ export default function createCombinedChartData(props) {
 export function extractCombinedData({report, theme, targetValue, flowNodeNames}) {
   const {result, data: combinedReportData} = report;
 
-  const data = {...Object.values(result)[0].data, ...combinedReportData};
+  const data = {...Object.values(result.data)[0].data, ...combinedReportData};
 
-  const {reportsNames, resultArr, reportColors} = getCombinedChartProps(result, data);
+  const {reportsNames, resultArr, reportColors} = getCombinedChartProps(result.data, data);
 
   const isDark = theme === 'dark';
 

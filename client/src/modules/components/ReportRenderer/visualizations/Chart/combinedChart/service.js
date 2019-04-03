@@ -29,15 +29,15 @@ export function generateLegendLabels(chart) {
     : [];
 }
 
-export function getCombinedChartProps(result, data) {
+export function getCombinedChartProps(reports, data) {
   return data.reports.reduce(
     (prev, {id, color}) => {
-      const report = result[id];
+      const report = reports[id];
       let singleReportResult;
       if (data.visualization === 'number') {
-        singleReportResult = {[report.name]: report.result};
+        singleReportResult = {[report.name]: report.result.data};
       } else {
-        singleReportResult = formatReportResult(data, report.result);
+        singleReportResult = formatReportResult(data, report.result.data);
       }
 
       return {

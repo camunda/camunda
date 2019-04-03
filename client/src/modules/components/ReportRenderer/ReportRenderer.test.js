@@ -26,7 +26,7 @@ const reportTemplate = {
     visualization: 'number',
     configuration: {}
   },
-  result: 1234
+  result: {data: 1234}
 };
 
 it('should render ProcessReportRenderer if the report type is process', () => {
@@ -74,7 +74,7 @@ it('should include the instance count if indicated in the config', () => {
       ...reportTemplate.data,
       configuration: {showInstanceCount: true}
     },
-    processInstanceCount: 723
+    result: {...reportTemplate.result, processInstanceCount: 723}
   };
 
   const node = shallow(<ReportRenderer report={report} />);

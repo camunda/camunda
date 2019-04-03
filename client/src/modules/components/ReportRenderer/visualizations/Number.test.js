@@ -34,7 +34,7 @@ const report = {
     },
     visualization: 'Number'
   },
-  result: 1234
+  result: {data: 1234}
 };
 
 it('should display the number provided per data property', () => {
@@ -44,7 +44,11 @@ it('should display the number provided per data property', () => {
 
 it('should display an error message if the data does not have the correct format', () => {
   const node = shallow(
-    <Number report={{...report, result: {foo: 1234}}} errorMessage="Error" formatter={v => v} />
+    <Number
+      report={{...report, result: {data: {foo: 1234}}}}
+      errorMessage="Error"
+      formatter={v => v}
+    />
   );
 
   expect(node.find(ReportBlankSlate)).toBePresent();
@@ -52,7 +56,7 @@ it('should display an error message if the data does not have the correct format
 
 it('should display an error message if no data is provided', () => {
   const node = shallow(
-    <Number report={{...report, result: null}} errorMessage="Error" formatter={v => v} />
+    <Number report={{...report, result: {data: null}}} errorMessage="Error" formatter={v => v} />
   );
 
   expect(node.find(ReportBlankSlate)).toBePresent();

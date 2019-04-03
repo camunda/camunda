@@ -38,7 +38,7 @@ export function extractDefaultChartData({report, theme, targetValue, flowNodeNam
     visualization,
     configuration: {color}
   } = data;
-  const formattedResult = formatReportResult(data, result);
+  const formattedResult = formatReportResult(data, result.data);
 
   let labels = Object.keys(formattedResult);
 

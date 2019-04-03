@@ -32,7 +32,7 @@ const report = {
     visualization: 'table',
     configuration: {}
   },
-  result: 1234
+  result: {data: 1234}
 };
 
 it('should provide an errorMessage property to the component', () => {

@@ -81,7 +81,7 @@ const validProps = {
         }
       }
     },
-    result: {}
+    result: {data: {}}
   }
 };
 

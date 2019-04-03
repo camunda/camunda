@@ -65,7 +65,6 @@ it('should return correct combined table report data properties', () => {
   const report = {
     name: 'report A',
     combined: false,
-    processInstanceCount: 100,
     data: {
       view: {
         operation: 'foo'
@@ -81,8 +80,11 @@ it('should return correct combined table report data properties', () => {
       configuration: {}
     },
     result: {
-      '2015-03-25T12:00:00Z': 2,
-      '2015-03-26T12:00:00Z': 3
+      processInstanceCount: 100,
+      data: {
+        '2015-03-25T12:00:00Z': 2,
+        '2015-03-26T12:00:00Z': 3
+      }
     }
   };
 

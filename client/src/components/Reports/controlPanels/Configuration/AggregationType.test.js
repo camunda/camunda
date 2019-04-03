@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 import AggregationType from './AggregationType';
 
 it('should render nothing if the current result does is no duration', () => {
-  const node = shallow(<AggregationType report={{resultType: 'rawData'}} />);
+  const node = shallow(<AggregationType report={{result: {type: 'rawData'}}} />);
 
   expect(node).toMatchSnapshot();
 });
@@ -18,7 +18,7 @@ it('should render nothing if the current result does is no duration', () => {
 it('should render an aggregation selection for duration reports', () => {
   const node = shallow(
     <AggregationType
-      report={{resultType: 'durationMap', data: {configuration: {aggregationType: 'median'}}}}
+      report={{result: {type: 'durationMap'}, data: {configuration: {aggregationType: 'median'}}}}
     />
   );
 
@@ -26,5 +26,5 @@ it('should render an aggregation selection for duration reports', () => {
 });
 
 it('should not crash when no resultType is set (e.g. for combined reports)', () => {
-  shallow(<AggregationType report={{}} />);
+  shallow(<AggregationType report={{result: {}}} />);
 });

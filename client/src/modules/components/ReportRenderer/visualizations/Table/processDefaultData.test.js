@@ -28,8 +28,7 @@ const report = {
     },
     visualization: 'table'
   },
-  result: {a: 1, b: 2, c: 3},
-  processInstanceCount: 5
+  result: {data: {a: 1, b: 2, c: 3}, processInstanceCount: 5}
 };
 
 const props = {
@@ -100,8 +99,11 @@ it('should display the relative percentage for frequency views for DMN', () => {
     ...newProps,
     report: {
       ...newProps.report,
-      decisionInstanceCount: 18,
-      processInstanceCount: undefined
+      result: {
+        ...newProps.report.result,
+        decisionInstanceCount: 18,
+        processInstanceCount: undefined
+      }
     }
   };
 

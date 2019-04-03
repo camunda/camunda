@@ -9,14 +9,14 @@ import {uniteResults} from '../service';
 
 export default function processCombinedData({formatter, report, flowNodeNames = {}}) {
   const {labels, reportsNames, combinedResult, processInstanceCount} = getCombinedTableProps(
-    report.result,
+    report.result.data,
     report.data.reports
   );
 
   const {
     configuration: {hideAbsoluteValue, hideRelativeValue}
   } = report.data;
-  const {view} = Object.values(report.result)[0].data;
+  const {view} = Object.values(report.result.data)[0].data;
 
   const displayRelativeValue = view.property === 'frequency' && !hideRelativeValue;
   const displayAbsoluteValue = !hideAbsoluteValue;

@@ -28,18 +28,18 @@ export function processResult({
     view,
     configuration: {aggregationType}
   },
-  resultType,
   result
 }) {
   if (view.property.toLowerCase().includes('duration')) {
-    if (resultType === 'durationNumber') {
-      return result[aggregationType];
+    if (result.type === 'durationNumber') {
+      return {...result, data: result.data[aggregationType]};
     }
-    if (resultType === 'durationMap') {
-      return Object.entries(result).reduce((result, [key, value]) => {
-        result[key] = value[aggregationType];
-        return result;
+    if (result.type === 'durationMap') {
+      const newData = Object.entries(result.data).reduce((data, [key, value]) => {
+        data[key] = value[aggregationType];
+        return data;
       }, {});
+      return {...result, data: newData};
     }
   }
   return result;

@@ -42,13 +42,15 @@ const combinedReport = {
     configuration: {}
   },
   result: {
-    reportA: {
-      name: 'Report A',
-      ...singleReport
-    },
-    reportB: {
-      name: 'Report B',
-      ...singleReport
+    data: {
+      reportA: {
+        name: 'Report A',
+        ...singleReport
+      },
+      reportB: {
+        name: 'Report B',
+        ...singleReport
+      }
     }
   }
 };

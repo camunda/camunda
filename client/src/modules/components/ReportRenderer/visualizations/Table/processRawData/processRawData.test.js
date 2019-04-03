@@ -23,24 +23,26 @@ const data = {
   }
 };
 
-const result = [
-  {
-    processInstanceId: 'foo',
-    prop2: 'bar',
-    variables: {
-      var1: 12,
-      var2: null
+const result = {
+  data: [
+    {
+      processInstanceId: 'foo',
+      prop2: 'bar',
+      variables: {
+        var1: 12,
+        var2: null
+      }
+    },
+    {
+      processInstanceId: 'xyz',
+      prop2: 'abc',
+      variables: {
+        var1: null,
+        var2: true
+      }
     }
-  },
-  {
-    processInstanceId: 'xyz',
-    prop2: 'abc',
-    variables: {
-      var1: null,
-      var2: true
-    }
-  }
-];
+  ]
+};
 
 it('should transform data to table compatible format', () => {
   expect(processRawData({report: {data, result}})).toEqual({
@@ -77,7 +79,7 @@ it('should make the processInstanceId a link', () => {
   const cell = processRawData(
     {
       report: {
-        result: [{processInstanceId: '123', engineName: '1', variables: {}}],
+        result: {data: [{processInstanceId: '123', engineName: '1', variables: {}}]},
         data
       }
     },
@@ -91,7 +93,7 @@ it('should make the processInstanceId a link', () => {
 it('should not make the processInstanceId a link if no endpoint is specified', () => {
   const cell = processRawData({
     report: {
-      result: [{processInstanceId: '123', engineName: '1', variables: {}}],
+      result: {data: [{processInstanceId: '123', engineName: '1', variables: {}}]},
       data
     }
   }).body[0][0];

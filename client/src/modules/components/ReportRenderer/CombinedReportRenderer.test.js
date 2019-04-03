@@ -47,9 +47,12 @@ const reportA = {
     visualization: 'table',
     configuration: {}
   },
-  processInstanceCount: 100,
+
   result: {
-    '2015-03-25T12:00:00Z': 2
+    processInstanceCount: 100,
+    data: {
+      '2015-03-25T12:00:00Z': 2
+    }
   }
 };
 
@@ -62,7 +65,9 @@ const CombinedReport = {
     visualization: 'table'
   },
   result: {
-    'report A': reportA
+    data: {
+      'report A': reportA
+    }
   }
 };
 
@@ -83,11 +88,13 @@ it('should render a chart if visualization is number', () => {
       report={{
         ...CombinedReport,
         result: {
-          'report A': {
-            ...reportA,
-            data: {
-              ...reportA.data,
-              visualization: 'number'
+          data: {
+            'report A': {
+              ...reportA,
+              data: {
+                ...reportA.data,
+                visualization: 'number'
+              }
             }
           }
         }
@@ -126,9 +133,7 @@ it('should process the result of every report it combined', () => {
 
   const report = {...CombinedReport};
   report.result = {
-    a: reportA,
-    b: reportB,
-    c: reportC
+    data: {a: reportA, b: reportB, c: reportC}
   };
 
   shallow(<CombinedReportRenderer mightFail={jest.fn()} report={report} />);
@@ -147,8 +152,7 @@ it('should load the flow node names of all processes involved', () => {
 
   const report = {...CombinedReport};
   report.result = {
-    a: reportA,
-    b: reportB
+    data: {a: reportA, b: reportB}
   };
 
   shallow(<CombinedReportRenderer mightFail={mightFail} report={report} />);

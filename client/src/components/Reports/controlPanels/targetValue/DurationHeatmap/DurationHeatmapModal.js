@@ -135,12 +135,11 @@ export default class DurationHeatmapModal extends React.Component {
   constructTableBody = () => {
     return Object.keys(this.state.values).map(id => {
       const settings = this.state.values[id] || {value: '', unit: 'hours'};
+      const resultEntry = this.props.report.result.data[id];
       return [
         this.state.nodeNames[id],
         formatters.duration(
-          (this.props.report.result[id] &&
-            this.props.report.result[id][this.props.report.data.configuration.aggregationType]) ||
-            0
+          (resultEntry && resultEntry[this.props.report.data.configuration.aggregationType]) || 0
         ),
         <React.Fragment>
           <div className="DurationHeatmapModal__selection">

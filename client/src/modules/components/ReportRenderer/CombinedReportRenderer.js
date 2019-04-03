@@ -45,8 +45,9 @@ export default withErrorHandling(
     loadAllFlowNodeNames = () => {
       const {result} = this.props.report;
       if (result && typeof result === 'object') {
-        Object.values(result).forEach(({data: {processDefinitionKey, processDefinitionVersion}}) =>
-          this.loadFlowNodeNames(processDefinitionKey, processDefinitionVersion)
+        Object.values(result.data).forEach(
+          ({data: {processDefinitionKey, processDefinitionVersion}}) =>
+            this.loadFlowNodeNames(processDefinitionKey, processDefinitionVersion)
         );
       }
     };
@@ -63,13 +64,13 @@ export default withErrorHandling(
 
     render() {
       const {result} = this.props.report;
-      if (result && typeof result === 'object' && Object.keys(result).length) {
-        const {view, visualization} = Object.values(result)[0].data;
+      if (result && typeof result === 'object' && Object.keys(result.data).length) {
+        const {view, visualization} = Object.values(result.data)[0].data;
         const Component = getComponent(visualization);
 
         const processedReport = {
           ...this.props.report,
-          result: processResult(this.props.report.result)
+          result: {...this.props.report.result, data: processResult(this.props.report.result.data)}
         };
 
         return (

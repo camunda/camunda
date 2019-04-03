@@ -24,7 +24,7 @@ jest.mock('../colorsUtils', () => {
 
 it('should return correct chart data object for a single report', () => {
   uniteResults.mockClear();
-  const result = {foo: 123, bar: 5};
+  const result = {data: {foo: 123, bar: 5}};
   uniteResults.mockReturnValue([result]);
 
   const chartData = createDefaultChartData({

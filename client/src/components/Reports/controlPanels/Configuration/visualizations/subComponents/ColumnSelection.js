@@ -22,7 +22,7 @@ const labels = {
 
 export default function ColumnSelection({report, onChange}) {
   const {data} = report;
-  const columns = report.result[0];
+  const columns = report.result.data[0];
 
   if (!columns) {
     return null;

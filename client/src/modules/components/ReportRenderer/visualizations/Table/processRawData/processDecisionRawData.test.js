@@ -28,14 +28,16 @@ it('should make the decision instance id a link', () => {
     {
       report: {
         reportType: 'decision',
-        result: [
-          {
-            decisionInstanceId: '123',
-            engineName: '1',
-            inputVariables: {},
-            outputVariables: {}
-          }
-        ],
+        result: {
+          data: [
+            {
+              decisionInstanceId: '123',
+              engineName: '1',
+              inputVariables: {},
+              outputVariables: {}
+            }
+          ]
+        },
         data
       }
     },
@@ -47,30 +49,32 @@ it('should make the decision instance id a link', () => {
 });
 
 it('should return correct table props for decision tables', () => {
-  const result = [
-    {
-      decisionInstanceId: 'foo',
-      prop2: 'bar',
-      inputVariables: {
-        var1: {id: 'var1', value: 12, name: 'Var 1'},
-        var2: {id: 'var2', value: null, name: 'Var 2'}
+  const result = {
+    data: [
+      {
+        decisionInstanceId: 'foo',
+        prop2: 'bar',
+        inputVariables: {
+          var1: {id: 'var1', value: 12, name: 'Var 1'},
+          var2: {id: 'var2', value: null, name: 'Var 2'}
+        },
+        outputVariables: {
+          result: {id: 'result', values: [1], name: 'Result'}
+        }
       },
-      outputVariables: {
-        result: {id: 'result', values: [1], name: 'Result'}
+      {
+        decisionInstanceId: 'xyz',
+        prop2: 'abc',
+        inputVariables: {
+          var1: {id: 'var1', value: null, name: 'Var 1'},
+          var2: {id: 'var2', value: true, name: 'Var 2'}
+        },
+        outputVariables: {
+          result: {id: 'result', values: [8], name: 'Result'}
+        }
       }
-    },
-    {
-      decisionInstanceId: 'xyz',
-      prop2: 'abc',
-      inputVariables: {
-        var1: {id: 'var1', value: null, name: 'Var 1'},
-        var2: {id: 'var2', value: true, name: 'Var 2'}
-      },
-      outputVariables: {
-        result: {id: 'result', values: [8], name: 'Result'}
-      }
-    }
-  ];
+    ]
+  };
 
   expect(processDecisionRawData({report: {result, reportType: 'decision', data}})).toEqual({
     head: [
@@ -87,18 +91,20 @@ it('should return correct table props for decision tables', () => {
 });
 
 it('should show no data message when all column are excluded for decision tables', () => {
-  const result = [
-    {
-      decisionInstanceId: 'foo',
-      prop2: 'bar',
-      inputVariables: {
-        var1: {id: 'var1', value: 12, name: 'Var 1'}
-      },
-      outputVariables: {
-        result: {id: 'result', values: [1], name: 'Result'}
+  const result = {
+    data: [
+      {
+        decisionInstanceId: 'foo',
+        prop2: 'bar',
+        inputVariables: {
+          var1: {id: 'var1', value: 12, name: 'Var 1'}
+        },
+        outputVariables: {
+          result: {id: 'result', values: [1], name: 'Result'}
+        }
       }
-    }
-  ];
+    ]
+  };
   expect(
     processDecisionRawData({
       report: {

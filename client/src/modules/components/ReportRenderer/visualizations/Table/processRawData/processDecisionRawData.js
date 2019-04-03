@@ -19,7 +19,7 @@ export default function processDecisionRawData({report: {data, result}}, endpoin
     }
   } = data;
 
-  const formattedResult = formatReportResult(data, result);
+  const formattedResult = formatReportResult(data, result.data);
 
   const instanceProps = Object.keys(formattedResult[0]).filter(
     entry =>

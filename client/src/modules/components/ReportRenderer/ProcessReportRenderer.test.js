@@ -50,7 +50,7 @@ const report = {
     visualization: 'number',
     configuration: {}
   },
-  result: 1234
+  result: {data: 1234}
 };
 
 it('should call getFlowNodeNames on mount', () => {
@@ -95,8 +95,7 @@ const exampleDurationReport = {
     configuration: {}
   },
   result: {
-    '2015-03-25T12:00:00Z': 2,
-    '2015-03-26T12:00:00Z': 3
+    data: {'2015-03-25T12:00:00Z': 2, '2015-03-26T12:00:00Z': 3}
   }
 };
 

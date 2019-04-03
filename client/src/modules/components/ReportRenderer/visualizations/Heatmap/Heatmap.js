@@ -20,11 +20,10 @@ const Heatmap = ({report, formatter, errorMessage}) => {
     data: {
       view: {property},
       configuration: {alwaysShowAbsolute, alwaysShowRelative, heatmapTargetValue: targetValue, xml}
-    },
-    processInstanceCount
+    }
   } = report;
 
-  if (!result || typeof result !== 'object') {
+  if (!result || typeof result.data !== 'object') {
     return <p>{errorMessage}</p>;
   }
 
@@ -34,7 +33,7 @@ const Heatmap = ({report, formatter, errorMessage}) => {
 
   let heatmapComponent;
   if (targetValue && targetValue.active && !targetValue.values.target) {
-    const heat = calculateTargetValueHeat(result, targetValue.values);
+    const heat = calculateTargetValueHeat(result.data, targetValue.values);
     heatmapComponent = [
       <HeatmapOverlay
         key="heatmap"
@@ -48,7 +47,7 @@ const Heatmap = ({report, formatter, errorMessage}) => {
             targetValue.values[id].value,
             targetValue.values[id].unit
           );
-          const real = result[id];
+          const real = result.data[id];
 
           node.innerHTML = `target duration: ${formatters.duration(target)}<br/>`;
 
@@ -73,14 +72,14 @@ const Heatmap = ({report, formatter, errorMessage}) => {
   } else {
     heatmapComponent = (
       <HeatmapOverlay
-        data={result}
+        data={result.data}
         alwaysShowAbsolute={alwaysShowAbsolute}
         alwaysShowRelative={alwaysShowRelative}
         formatter={data =>
           getTooltipText(
             data,
             formatter,
-            processInstanceCount,
+            result.processInstanceCount,
             alwaysShowAbsolute,
             alwaysShowRelative,
             property

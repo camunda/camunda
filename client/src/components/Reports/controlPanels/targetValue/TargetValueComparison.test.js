@@ -35,7 +35,7 @@ const validProps = {
         }
       }
     },
-    result: {}
+    result: {data: {}}
   }
 };
 
@@ -78,7 +78,7 @@ const invalidProps = {
         }
       }
     },
-    result: {}
+    result: {data: {}}
   }
 };
 

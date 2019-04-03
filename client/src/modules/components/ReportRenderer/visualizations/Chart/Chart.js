@@ -21,11 +21,11 @@ export default function Chart(props) {
     errorMessage
   } = props;
 
-  if (!result || typeof result !== 'object') {
+  if (!result || typeof result.data !== 'object') {
     return <ReportBlankSlate errorMessage={errorMessage} />;
   }
 
-  const reportView = view || Object.values(result)[0].data.view;
+  const reportView = view || Object.values(result.data)[0].data.view;
   const targetValueType = reportView.property === 'frequency' ? 'countChart' : 'durationChart';
   const targetValue =
     configuration.targetValue.active && configuration.targetValue[targetValueType];

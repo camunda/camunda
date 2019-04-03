@@ -34,7 +34,7 @@ it('should not display show instance count and color picker for combined reports
       report={{
         ...barReport,
         combined: true,
-        result: {test: {data: {view: {property: 'frequency'}}}}
+        result: {data: {test: {data: {view: {property: 'frequency'}}}}}
       }}
     />
   );

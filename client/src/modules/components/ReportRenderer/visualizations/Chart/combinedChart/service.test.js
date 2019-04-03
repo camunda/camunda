@@ -29,7 +29,6 @@ it('should return correct cominbed chart repot data properties for single report
   const report = {
     name: 'report A',
     combined: false,
-    processInstanceCount: 100,
     data: {
       view: {
         operation: 'foo'
@@ -43,8 +42,11 @@ it('should return correct cominbed chart repot data properties for single report
       visualization: 'line'
     },
     result: {
-      '2015-03-25T12:00:00Z': 2,
-      '2015-03-26T12:00:00Z': 3
+      processInstanceCount: 100,
+      data: {
+        '2015-03-25T12:00:00Z': 2,
+        '2015-03-26T12:00:00Z': 3
+      }
     }
   };
 
@@ -76,7 +78,7 @@ it('should convert results of a combined number report to a correctly formatted 
     data: {
       visualization: 'number'
     },
-    result: 100
+    result: {data: 100}
   };
 
   const result = {

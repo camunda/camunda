@@ -74,7 +74,7 @@ export function getCombinedTableProps(reportResult, reports) {
 
   const combinedProps = reports.reduce((prevReport, {id}) => {
     const report = reportResult[id];
-    const {data, result, processInstanceCount, name} = report;
+    const {data, result, name} = report;
     const {
       configuration: {xml}
     } = data;
@@ -88,11 +88,14 @@ export function getCombinedTableProps(reportResult, reports) {
     const reportsNames = [...prevReport.reportsNames, name];
 
     // 2d array of all results
-    const formattedResult = formatReportResult(data, result);
+    const formattedResult = formatReportResult(data, result.data);
     const reportsResult = [...prevReport.combinedResult, formattedResult];
 
     // 2d array of all process instances count
-    const reportsProcessInstanceCount = [...prevReport.processInstanceCount, processInstanceCount];
+    const reportsProcessInstanceCount = [
+      ...prevReport.processInstanceCount,
+      result.processInstanceCount
+    ];
 
     return {
       labels,

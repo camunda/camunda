@@ -18,12 +18,14 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
   const {
     view: {property},
     groupBy
-  } = Object.values(result)[0].data;
+  } = Object.values(result.data)[0].data;
 
   const isDark = theme === 'dark';
   const stacked = visualization === 'number';
-  const instanceCountArr = Object.values(result).map(report => report.processInstanceCount);
-  const isDuration = isDurationReport(Object.values(result)[0]);
+  const instanceCountArr = Object.values(result.data).map(
+    report => report.result.processInstanceCount
+  );
+  const isDuration = isDurationReport(Object.values(result.data)[0]);
   const maxDuration = isDuration ? findMaxDurationAcrossReports(result) : 0;
   const isPersistedTooltips = isDuration
     ? configuration.alwaysShowAbsolute
@@ -79,9 +81,9 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
 }
 
 function findMaxDurationAcrossReports(result) {
-  const reportsMaxDurations = Object.values(result).map(report => {
-    if (typeof report.result === 'number') return report.result;
-    return Math.max(...Object.values(report.result));
+  const reportsMaxDurations = Object.values(result.data).map(report => {
+    if (typeof report.result.data === 'number') return report.result.data;
+    return Math.max(...Object.values(report.result.data));
   });
 
   return Math.max(...reportsMaxDurations);
