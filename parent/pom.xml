@@ -41,7 +41,7 @@
     <version.hamcrest>2.1</version.hamcrest>
     <version.hppc>0.8.1</version.hppc>
     <version.httpasyncclient>4.1.4</version.httpasyncclient>
-    <version.httpclient>4.5.7</version.httpclient>
+    <version.httpclient>4.5.8</version.httpclient>
     <version.httpcomponents>4.4.11</version.httpcomponents>
     <version.jackson>2.9.8</version.jackson>
     <version.jmh>1.21</version.jmh>
@@ -52,7 +52,7 @@
     <version.msgpack>0.8.16</version.msgpack>
     <version.netty>4.1.34.Final</version.netty>
     <version.objenesis>3.0.1</version.objenesis>
-    <version.protobuf>3.7.0</version.protobuf>
+    <version.protobuf>3.7.1</version.protobuf>
     <version.rocksdbjni>5.17.2</version.rocksdbjni>
     <version.sbe>1.12.4</version.sbe>
     <version.scala-parser>1.0.6</version.scala-parser>
