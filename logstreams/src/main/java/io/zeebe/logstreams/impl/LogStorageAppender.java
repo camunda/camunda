@@ -91,7 +91,7 @@ public class LogStorageAppender extends Actor {
     // Commit position is the position of the last event. DistributedLogstream uses this position
     // to identify duplicate append requests during recovery.
     commitPosition = getLastEventPosition(bytesToAppend);
-    tryWrite();
+    actor.runUntilDone(this::tryWrite);
   }
 
   private void tryWrite() {
@@ -100,12 +100,13 @@ public class LogStorageAppender extends Actor {
     if (res > 0) {
       blockPeek.markCompleted();
       this.peekedBlockHandler = this::appendBlock;
+      actor.done();
       return;
     }
 
     // retry
     LOG.debug("Append failed, retrying");
-    this.peekedBlockHandler = this::tryWrite;
+    actor.yield();
   }
 
   /* Iterate over the events in buffer and find the position of the last event */
