@@ -3,5 +3,5 @@
   "rules": {
     "prettier/prettier": "warn"
   },
-  "extends": "react-app"
+  "extends": ["react-app", "plugin:camunda-licensed/commercial"]
 }

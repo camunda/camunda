@@ -1,3 +1,9 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
 export function getRelativeValue(data, total) {
   if (data === null) return '';
   return Math.round((data / total) * 1000) / 10 + '%';

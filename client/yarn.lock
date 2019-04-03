@@ -3756,6 +3756,13 @@ eslint-module-utils@^2.2.0:
     debug "^2.6.8"
     pkg-dir "^1.0.0"
 
+eslint-plugin-camunda-licensed@^0.4.2:
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-camunda-licensed/-/eslint-plugin-camunda-licensed-0.4.2.tgz#8439606e3ac8936c411eaeb73d5d58b85779ad7d"
+  integrity sha512-o5GS7lfus4vHeFbITp55w+tkXugXWFX2cy3yVWTXJqtqKAfsAeDg9znqpGpjHijUhVJ7dwdaQAALM7EFnt4diw==
+  dependencies:
+    eslint-plugin-license-header "^0.1.2"
+
 eslint-plugin-flowtype@2.50.1:
   version "2.50.1"
   resolved "https://registry.yarnpkg.com/eslint-plugin-flowtype/-/eslint-plugin-flowtype-2.50.1.tgz#36d4c961ac8b9e9e1dc091d3fba0537dad34ae8a"
@@ -3789,6 +3796,13 @@ eslint-plugin-jsx-a11y@6.1.2:
     emoji-regex "^6.5.1"
     has "^1.0.3"
     jsx-ast-utils "^2.0.1"
+
+eslint-plugin-license-header@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-license-header/-/eslint-plugin-license-header-0.1.2.tgz#d9bdce08950b65aaf070929e57b0f98198dc82af"
+  integrity sha512-LFCxNMeBePhjjrX2i3uaMuPViHfcClVg97ed9JXG6fd3l5biA/0KNX02zRnqRUALe1/2VWX8tzdFuCS/KUrqxw==
+  dependencies:
+    requireindex "~1.1.0"
 
 eslint-plugin-prettier@^2.6.0:
   version "2.6.0"
@@ -9538,6 +9552,11 @@ require-uncached@^1.0.3:
   dependencies:
     caller-path "^0.1.0"
     resolve-from "^1.0.0"
+
+requireindex@~1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/requireindex/-/requireindex-1.1.0.tgz#e5404b81557ef75db6e49c5a72004893fe03e162"
+  integrity sha1-5UBLgVV+91225JxacgBIk/4D4WI=
 
 requires-port@1.0.x, requires-port@^1.0.0:
   version "1.0.0"

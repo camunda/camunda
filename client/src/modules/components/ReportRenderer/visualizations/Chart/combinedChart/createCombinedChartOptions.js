@@ -1,3 +1,9 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
 import {generateLegendLabels} from './service';
 import {formatTooltip, getTooltipLabelColor, canBeInterpolated} from '../service';
 import {createBarOptions} from '../defaultChart/createDefaultChartOptions';

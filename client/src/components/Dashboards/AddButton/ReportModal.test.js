@@ -1,3 +1,9 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
 import React from 'react';
 import {mount} from 'enzyme';
 
@@ -12,7 +18,9 @@ jest.mock('components', () => {
 
   const Typeahead = props => (
     <div>
-      {props.values.map((val, i) => <li key={i}>{props.formatter(val)}</li>)}
+      {props.values.map((val, i) => (
+        <li key={i}>{props.formatter(val)}</li>
+      ))}
       <div>{JSON.stringify(props)}</div>
     </div>
   );

@@ -41,7 +41,12 @@
     "dependencies": "node scripts/dependencies.js"
   },
   "lint-staged": {
-    "src/**/*.{js,scss}": [
+    "src/**/*.scss": [
+      "prettier --write",
+      "git add"
+    ],
+    "src/**/*.js": [
+      "eslint --fix",
       "prettier --write",
       "git add"
     ]
@@ -60,6 +65,7 @@
     "chalk": "^2.1.0",
     "enzyme": "3.7.0",
     "enzyme-adapter-react-16": "1.6.0",
+    "eslint-plugin-camunda-licensed": "^0.4.2",
     "eslint-plugin-prettier": "^2.6.0",
     "http-proxy-middleware": "^0.19.1",
     "husky": "^0.14.3",

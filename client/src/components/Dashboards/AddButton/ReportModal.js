@@ -1,3 +1,9 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
 import React from 'react';
 
 import {
@@ -80,16 +86,15 @@ export default class ReportModal extends React.Component {
         <Modal.Header>Add a Report</Modal.Header>
         <Modal.Content>
           <ControlGroup layout="centered">
-            {!loading &&
-              !noReports && (
-                <Typeahead
-                  disabled={noReports || loading || external}
-                  placeholder="Please select Report"
-                  values={availableReports}
-                  onSelect={this.selectReport}
-                  formatter={({name}) => this.truncate(name, 90)}
-                />
-              )}
+            {!loading && !noReports && (
+              <Typeahead
+                disabled={noReports || loading || external}
+                placeholder="Please select Report"
+                values={availableReports}
+                onSelect={this.selectReport}
+                formatter={({name}) => this.truncate(name, 90)}
+              />
+            )}
             {loading ? (
               <LoadingIndicator />
             ) : noReports ? (

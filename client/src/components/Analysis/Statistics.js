@@ -1,3 +1,9 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
 import React from 'react';
 import ChartRenderer from 'chart.js';
 
@@ -53,9 +59,9 @@ export default class Statistics extends React.Component {
 
               return (
                 <li key={key}>
-                  <b>{count}</b> ({Math.round(count / totalGateway * 100) || 0}%) took the{' '}
-                  <i>{key}</i> branch, <b>{reached}</b> ({Math.round(reached / count * 100) || 0}%)
-                  of those then continued to reach the end event <i>{endEventName}</i>
+                  <b>{count}</b> ({Math.round((count / totalGateway) * 100) || 0}%) took the{' '}
+                  <i>{key}</i> branch, <b>{reached}</b> ({Math.round((reached / count) * 100) || 0}
+                  %) of those then continued to reach the end event <i>{endEventName}</i>
                 </li>
               );
             })}
@@ -118,7 +124,7 @@ export default class Statistics extends React.Component {
       this.chart1 = this.createChart(
         this.relativeChart,
         ({activitiesReached, activityCount}) => {
-          return Math.round(activitiesReached / activityCount * 1000) / 10 || 0;
+          return Math.round((activitiesReached / activityCount) * 1000) / 10 || 0;
         },
         '%'
       );

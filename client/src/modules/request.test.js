@@ -1,3 +1,9 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
 import {request, formatQuery, put, post, get, addHandler, removeHandler} from './request';
 
 const successResponse = {
@@ -44,7 +50,9 @@ describe('request', () => {
       headers
     });
 
-    const {headers: {g}} = fetch.mock.calls[0][1];
+    const {
+      headers: {g}
+    } = fetch.mock.calls[0][1];
 
     expect(g).toBe(headers.g);
   });
@@ -55,7 +63,9 @@ describe('request', () => {
       method
     });
 
-    const {headers: {'Content-Type': contentType}} = fetch.mock.calls[0][1];
+    const {
+      headers: {'Content-Type': contentType}
+    } = fetch.mock.calls[0][1];
 
     expect(contentType).toBe('application/json');
   });
@@ -71,7 +81,9 @@ describe('request', () => {
       }
     });
 
-    const {headers: {'Content-Type': actualContentType}} = fetch.mock.calls[0][1];
+    const {
+      headers: {'Content-Type': actualContentType}
+    } = fetch.mock.calls[0][1];
 
     expect(actualContentType).toBe(contentType);
   });
