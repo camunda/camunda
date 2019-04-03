@@ -14,16 +14,8 @@ es:
   connection:
     nodes:
     - host: 'localhost'
-      tcpPort: 9302
       httpPort: 9200
   sampler:
     interval: 100
-  security:
-    username: ''
-    password: ''
-    ssl:
-      certificate: ''
-      certificate_authorities: ''
-      enabled: false
 email:
   enabled: true

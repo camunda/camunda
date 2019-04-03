@@ -49,6 +49,7 @@ public class ConfigurationServiceTest {
     String[] locations = {"service-config.yaml", "environment-config.yaml", "override-engine-config.yaml"};
     ConfigurationService underTest = new ConfigurationService(locations);
     assertThat(underTest.getConfiguredEngines().size(), is(1));
+    assertThat(underTest.getConfiguredEngines().get("myAwesomeEngine").getName(), is(notNullValue()));
   }
 
   @Test
