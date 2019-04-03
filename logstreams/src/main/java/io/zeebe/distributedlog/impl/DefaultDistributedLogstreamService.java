@@ -105,13 +105,13 @@ public class DefaultDistributedLogstreamService
         LogstreamConfig.getLogDirectory(localmemberId) + "/" + logServiceName;
 
     final File logDirectory = new File(partitionDirectory, "log");
-    logDirectory.mkdir();
+    logDirectory.mkdirs();
 
     final File snapshotDirectory = new File(partitionDirectory, "snapshot");
-    snapshotDirectory.mkdir();
+    snapshotDirectory.mkdirs();
 
     final File blockIndexDirectory = new File(partitionDirectory, "index");
-    blockIndexDirectory.mkdir();
+    blockIndexDirectory.mkdirs();
 
     final StateStorage stateStorage = new StateStorage(blockIndexDirectory, snapshotDirectory);
 
@@ -144,7 +144,8 @@ public class DefaultDistributedLogstreamService
     if (!currentLeader.equals(nodeId)) {
       LOG.warn(
           "Append request from follower node {}. Current leader is {}.", nodeId, currentLeader);
-      return -1;
+      return 0; // Don't return a error, so that the appender never retries. TODO: Return a proper
+      // error code;
     }
 
     if (commitPosition <= lastPosition) {
