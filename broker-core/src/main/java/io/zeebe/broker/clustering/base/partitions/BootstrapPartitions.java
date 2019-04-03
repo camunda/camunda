@@ -17,10 +17,14 @@
  */
 package io.zeebe.broker.clustering.base.partitions;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.partitionInstallServiceName;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
+import static io.zeebe.broker.clustering.base.partitions.Partition.getPartitionName;
+import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.partitionInstallServiceName;
 
+import io.atomix.cluster.MemberId;
+import io.atomix.core.Atomix;
+import io.atomix.primitive.partition.Partition;
+import io.atomix.primitive.partition.PartitionId;
+import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -31,36 +35,42 @@ import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import java.util.Collections;
 import java.util.List;
-import org.agrona.collections.IntArrayList;
+import java.util.stream.Collectors;
 
 /**
  * Always installed on broker startup: reads configuration of all locally available partitions and
- * starts the corresponding services (raft, logstream, partition ...)
+ * starts the corresponding services (logstream, partition ...)
  */
 public class BootstrapPartitions implements Service<Void> {
   private final Injector<RaftPersistentConfigurationManager> configurationManagerInjector =
       new Injector<>();
   private final BrokerCfg brokerCfg;
-  private final PartitionsLeaderMatrix partitionsLeaderMatrix;
-  private final IntArrayList followingPartitions;
-  private final IntArrayList leadingPartitions;
+
   private RaftPersistentConfigurationManager configurationManager;
   private ServiceStartContext startContext;
+
+  private final Injector<Atomix> atomixInjector = new Injector<>();
+  private Atomix atomix;
 
   public BootstrapPartitions(final BrokerCfg brokerCfg) {
     this.brokerCfg = brokerCfg;
     final ClusterCfg cluster = brokerCfg.getCluster();
-    partitionsLeaderMatrix =
-        new PartitionsLeaderMatrix(
-            cluster.getPartitionsCount(), cluster.getClusterSize(), cluster.getReplicationFactor());
-    final int nodeId = cluster.getNodeId();
-    followingPartitions = partitionsLeaderMatrix.getFollowingPartitions(nodeId);
-    leadingPartitions = partitionsLeaderMatrix.getLeadingPartitions(nodeId);
   }
 
   @Override
   public void start(final ServiceStartContext startContext) {
     configurationManager = configurationManagerInjector.getValue();
+    atomix = atomixInjector.getValue();
+
+    final RaftPartitionGroup partitionGroup =
+        (RaftPartitionGroup) atomix.getPartitionService().getPartitionGroup("raft-atomix");
+
+    final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
+    final List<Partition> owningPartitions =
+        partitionGroup.getPartitions().stream()
+            .filter(partition -> partition.members().contains(nodeId))
+            .collect(Collectors.toList());
+
     this.startContext = startContext;
     startContext.run(
         () -> {
@@ -69,28 +79,21 @@ public class BootstrapPartitions implements Service<Void> {
 
           for (final RaftPersistentConfiguration configuration : configurations) {
             installPartition(startContext, configuration);
-            followingPartitions.removeInt(configuration.getPartitionId());
-            leadingPartitions.removeInt(configuration.getPartitionId());
+            owningPartitions.removeIf(
+                partition -> partition.id().id() == configuration.getPartitionId());
           }
 
-          for (int i = 0; i < leadingPartitions.size(); i++) {
-            installPartition(leadingPartitions.getInt(i), Collections.emptyList());
-          }
-
-          for (int i = 0; i < followingPartitions.size(); i++) {
-            final IntArrayList membersForPartition =
-                partitionsLeaderMatrix.getMembersForPartition(
-                    brokerCfg.getCluster().getNodeId(), i);
-            installPartition(followingPartitions.getInt(i), membersForPartition);
+          for (int i = 0; i < owningPartitions.size(); i++) {
+            installPartition(owningPartitions.get(i).id(), Collections.emptyList());
           }
         });
   }
 
-  private void installPartition(final int partitionId, final List<Integer> members) {
+  private void installPartition(final PartitionId partitionId, final List<Integer> members) {
     final RaftPersistentConfiguration configuration =
         configurationManager
             .createConfiguration(
-                partitionId, brokerCfg.getCluster().getReplicationFactor(), members)
+                partitionId.id(), brokerCfg.getCluster().getReplicationFactor(), members)
             .join();
 
     installPartition(startContext, configuration);
@@ -98,19 +101,14 @@ public class BootstrapPartitions implements Service<Void> {
 
   private void installPartition(
       final ServiceStartContext startContext, final RaftPersistentConfiguration configuration) {
-    final String partitionName = Partition.getPartitionName(configuration.getPartitionId());
+    final String partitionName = getPartitionName(configuration.getPartitionId());
     final ServiceName<Void> partitionInstallServiceName =
         partitionInstallServiceName(partitionName);
 
     final PartitionInstallService partitionInstallService =
-        new PartitionInstallService(brokerCfg, configuration);
+        new PartitionInstallService(configuration);
 
-    startContext
-        .createService(partitionInstallServiceName, partitionInstallService)
-        .dependency(
-            clientTransport(REPLICATION_API_CLIENT_NAME),
-            partitionInstallService.getClientTransportInjector())
-        .install();
+    startContext.createService(partitionInstallServiceName, partitionInstallService).install();
   }
 
   @Override
@@ -120,5 +118,9 @@ public class BootstrapPartitions implements Service<Void> {
 
   public Injector<RaftPersistentConfigurationManager> getConfigurationManagerInjector() {
     return configurationManagerInjector;
+  }
+
+  public Injector<Atomix> getAtomixInjector() {
+    return this.atomixInjector;
   }
 }

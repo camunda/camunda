@@ -18,31 +18,20 @@ package io.zeebe.gateway;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.zeebe.gateway.cmd.UnknownPartitionRoleException;
 import io.zeebe.gateway.impl.data.MsgPackConverter;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
-import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
-import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.JobHeaders;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
-import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.msgpack.value.LongValue;
-import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
-import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.PartitionDto;
-import io.zeebe.protocol.impl.data.repository.WorkflowMetadataAndResource;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -50,60 +39,12 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import java.util.ArrayList;
 import java.util.Iterator;
 import org.agrona.DirectBuffer;
 
 public class ResponseMapper {
 
   private static final MsgPackConverter MSG_PACK_CONVERTER = new MsgPackConverter();
-
-  private static PartitionBrokerRole remapPartitionBrokerRoleEnum(final PartitionDto partition) {
-    switch (partition.getState()) {
-      case LEADER:
-        return PartitionBrokerRole.LEADER;
-      case FOLLOWER:
-        return PartitionBrokerRole.FOLLOWER;
-      default:
-        throw new UnknownPartitionRoleException(partition.getPartitionId(), partition.getState());
-    }
-  }
-
-  public static TopologyResponse toTopologyResponse(long key, TopologyResponseDto brokerResponse) {
-    final TopologyResponse.Builder topologyResponseBuilder = TopologyResponse.newBuilder();
-    topologyResponseBuilder
-        .setClusterSize(brokerResponse.getClusterSize())
-        .setPartitionsCount(brokerResponse.getPartitionsCount())
-        .setReplicationFactor(brokerResponse.getReplicationFactor());
-
-    final ArrayList<BrokerInfo> infos = new ArrayList<>();
-
-    brokerResponse
-        .brokers()
-        .forEach(
-            broker -> {
-              final Builder brokerInfo =
-                  BrokerInfo.newBuilder()
-                      .setNodeId(broker.getNodeId())
-                      .setHost(bufferAsString(broker.getHost()))
-                      .setPort(broker.getPort());
-
-              broker
-                  .partitionStates()
-                  .forEach(
-                      partition -> {
-                        final Partition.Builder partitionBuilder = Partition.newBuilder();
-                        partitionBuilder.setPartitionId(partition.getPartitionId());
-                        partitionBuilder.setRole(remapPartitionBrokerRoleEnum(partition));
-                        brokerInfo.addPartitions(partitionBuilder);
-                      });
-
-              infos.add(brokerInfo.build());
-            });
-
-    topologyResponseBuilder.addAllBrokers(infos);
-    return topologyResponseBuilder.build();
-  }
 
   public static DeployWorkflowResponse toDeployWorkflowResponse(
       long key, DeploymentRecord brokerResponse) {
@@ -159,35 +100,6 @@ public class ResponseMapper {
   public static SetVariablesResponse toSetVariablesResponse(
       long key, VariableDocumentRecord brokerResponse) {
     return SetVariablesResponse.getDefaultInstance();
-  }
-
-  public static ListWorkflowsResponse toListWorkflowsResponse(
-      long key, io.zeebe.protocol.impl.data.repository.ListWorkflowsResponse brokerResponse) {
-    final ListWorkflowsResponse.Builder builder = ListWorkflowsResponse.newBuilder();
-    brokerResponse
-        .getWorkflows()
-        .forEach(
-            workflowMetadata ->
-                builder
-                    .addWorkflowsBuilder()
-                    .setBpmnProcessId(bufferAsString(workflowMetadata.getBpmnProcessId()))
-                    .setVersion(workflowMetadata.getVersion())
-                    .setWorkflowKey(workflowMetadata.getWorkflowKey())
-                    .setResourceName(bufferAsString(workflowMetadata.getResourceName()))
-                    .build());
-
-    return builder.build();
-  }
-
-  public static GetWorkflowResponse toGetWorkflowResponse(
-      long key, WorkflowMetadataAndResource brokerResponse) {
-    return GetWorkflowResponse.newBuilder()
-        .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessId()))
-        .setVersion(brokerResponse.getVersion())
-        .setWorkflowKey(brokerResponse.getWorkflowKey())
-        .setResourceName(bufferAsString(brokerResponse.getResourceName()))
-        .setBpmnXml(bufferAsString(brokerResponse.getBpmnXml()))
-        .build();
   }
 
   public static ActivateJobsResponse toActivateJobsResponse(

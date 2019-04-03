@@ -17,7 +17,12 @@
  */
 package io.zeebe.broker.util;
 
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 import io.zeebe.broker.exporter.stream.ExporterRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
@@ -26,6 +31,10 @@ import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRe
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.db.ZeebeDbFactory;
+import io.zeebe.distributedlog.DistributedLogstreamService;
+import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
+import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
+import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -59,12 +68,9 @@ import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
-import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.LangUtil;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
 import java.io.IOException;
@@ -75,6 +81,8 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.internal.util.reflection.FieldSetter;
+import org.mockito.stubbing.Answer;
 
 public class TestStreams {
   protected static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
@@ -91,7 +99,6 @@ public class TestStreams {
     VALUE_TYPES.put(
         WorkflowInstanceSubscriptionRecord.class, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
     VALUE_TYPES.put(ExporterRecord.class, ValueType.EXPORTER);
-    VALUE_TYPES.put(RaftConfigurationEvent.class, ValueType.RAFT);
     VALUE_TYPES.put(JobBatchRecord.class, ValueType.JOB_BATCH);
     VALUE_TYPES.put(TimerRecord.class, ValueType.TIMER);
     VALUE_TYPES.put(VariableRecord.class, ValueType.VARIABLE);
@@ -150,17 +157,54 @@ public class TestStreams {
             .build()
             .join();
 
-    actorScheduler
-        .submitActor(
-            new Actor() {
-              @Override
-              protected void onActorStarting() {
-                final ActorCondition condition =
-                    actor.onCondition(
-                        "on-append", () -> logStream.setCommitPosition(Long.MAX_VALUE));
-                logStream.registerOnAppendCondition(condition);
-              }
-            })
+    // Create distributed log service
+    final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);
+
+    final DistributedLogstreamService distributedLogImpl =
+        new DefaultDistributedLogstreamService(new DistributedLogstreamServiceConfig());
+
+    // initialize private members
+    final String nodeId = "0";
+    try {
+      FieldSetter.setField(
+          distributedLogImpl,
+          DefaultDistributedLogstreamService.class.getDeclaredField("logStream"),
+          logStream);
+
+      FieldSetter.setField(
+          distributedLogImpl,
+          DefaultDistributedLogstreamService.class.getDeclaredField("logStorage"),
+          logStream.getLogStorage());
+
+      FieldSetter.setField(
+          distributedLogImpl,
+          DefaultDistributedLogstreamService.class.getDeclaredField("currentLeader"),
+          nodeId);
+    } catch (NoSuchFieldException e) {
+      e.printStackTrace();
+    }
+
+    // mock append
+    doAnswer(
+            (Answer<Long>)
+                invocation -> {
+                  final Object[] arguments = invocation.getArguments();
+                  if (arguments != null
+                      && arguments.length > 1
+                      && arguments[0] != null
+                      && arguments[1] != null) {
+                    final byte[] bytes = (byte[]) arguments[0];
+                    final long pos = (long) arguments[1];
+                    return distributedLogImpl.append(nodeId, pos, bytes);
+                  }
+                  return -1L;
+                })
+        .when(mockDistLog)
+        .append(any(byte[].class), anyLong());
+
+    serviceContainer
+        .createService(distributedLogPartitionServiceName(name), () -> mockDistLog)
+        .install()
         .join();
 
     logStream.openAppender().join();

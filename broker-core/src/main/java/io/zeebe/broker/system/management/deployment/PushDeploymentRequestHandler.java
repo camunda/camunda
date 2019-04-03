@@ -19,6 +19,8 @@ package io.zeebe.broker.system.management.deployment;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.clustering.management.MessageHeaderDecoder;
+import io.zeebe.clustering.management.PushDeploymentRequestDecoder;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
@@ -28,17 +30,19 @@ import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.Intent;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.sched.ActorControl;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class PushDeploymentRequestHandler {
+public class PushDeploymentRequestHandler implements Function<byte[], CompletableFuture<byte[]>> {
 
   private static final Logger LOG = Loggers.WORKFLOW_REPOSITORY_LOGGER;
+
+  private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
 
   private final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl();
   private final RecordMetadata recordMetadata = new RecordMetadata();
@@ -52,40 +56,62 @@ public class PushDeploymentRequestHandler {
     this.actor = actor;
   }
 
-  public boolean onPushDeploymentRequest(
-      final ServerOutput output,
-      final RemoteAddress remoteAddress,
-      final DirectBuffer buffer,
-      final int offset,
-      final int length,
-      final long requestId) {
+  @Override
+  public CompletableFuture<byte[]> apply(byte[] bytes) {
+    final CompletableFuture<byte[]> responseFuture = new CompletableFuture<>();
 
+    actor.call(
+        () -> {
+          final DirectBuffer buffer = new UnsafeBuffer(bytes);
+          final int offset = 0;
+          final int length = buffer.capacity();
+
+          messageHeaderDecoder.wrap(buffer, offset);
+          final int schemaId = messageHeaderDecoder.schemaId();
+
+          if (PushDeploymentRequestDecoder.SCHEMA_ID == schemaId) {
+            final int templateId = messageHeaderDecoder.templateId();
+            if (PushDeploymentRequestDecoder.TEMPLATE_ID == templateId) {
+              handleValidRequest(responseFuture, buffer, offset, length);
+            } else {
+              final String errorMsg =
+                  String.format(
+                      "Expected to have template id %d, but got %d.",
+                      PushDeploymentRequestDecoder.TEMPLATE_ID, templateId);
+              responseFuture.completeExceptionally(new RuntimeException(errorMsg));
+            }
+          } else {
+            final String errorMsg =
+                String.format(
+                    "Expected to have schema id %d, but got %d.",
+                    PushDeploymentRequestDecoder.SCHEMA_ID, schemaId);
+            responseFuture.completeExceptionally(new RuntimeException(errorMsg));
+          }
+        });
+    return responseFuture;
+  }
+
+  private void handleValidRequest(
+      CompletableFuture<byte[]> responseFuture, DirectBuffer buffer, int offset, int length) {
     final PushDeploymentRequest pushDeploymentRequest = new PushDeploymentRequest();
     pushDeploymentRequest.wrap(buffer, offset, length);
     final long deploymentKey = pushDeploymentRequest.deploymentKey();
     final int partitionId = pushDeploymentRequest.partitionId();
     final DirectBuffer deployment = pushDeploymentRequest.deployment();
 
-    LOG.debug("Got deployment push request for deployment {}.", deploymentKey);
-
     final Partition partition = leaderPartitions.get(partitionId);
     if (partition != null) {
-      LOG.trace("Leader for partition {}, handle deployment.", partitionId);
-      handlePushDeploymentRequest(
-          output, remoteAddress, requestId, deployment, deploymentKey, partitionId);
-
+      LOG.debug("Handling deployment {} for partition {} as leader", deploymentKey, partitionId);
+      handlePushDeploymentRequest(responseFuture, deployment, deploymentKey, partitionId);
     } else {
-      LOG.debug("Not leader for partition {}", partitionId);
-      return false;
+      LOG.debug(
+          "Rejecting deployment {} for partition {} as not leader", deploymentKey, partitionId);
+      sendNotLeaderRejection(responseFuture);
     }
-
-    return true;
   }
 
   private void handlePushDeploymentRequest(
-      final ServerOutput output,
-      final RemoteAddress remoteAddress,
-      final long requestId,
+      final CompletableFuture<byte[]> responseFuture,
       final DirectBuffer deployment,
       final long deploymentKey,
       final int partitionId) {
@@ -108,7 +134,7 @@ public class PushDeploymentRequestHandler {
             LOG.debug("Deployment CREATE command was written on partition {}", partitionId);
             actor.done();
 
-            sendResponse(output, remoteAddress, requestId, deploymentKey, partitionId);
+            sendResponse(responseFuture, deploymentKey, partitionId);
           } else {
             actor.yield();
           }
@@ -116,9 +142,7 @@ public class PushDeploymentRequestHandler {
   }
 
   private void sendResponse(
-      final ServerOutput output,
-      final RemoteAddress remoteAddress,
-      final long requestId,
+      final CompletableFuture<byte[]> responseFuture,
       final long deploymentKey,
       final int partitionId) {
 
@@ -126,18 +150,12 @@ public class PushDeploymentRequestHandler {
     pushResponse.deploymentKey(deploymentKey);
     pushResponse.partitionId(partitionId);
 
-    final ServerResponse serverResponse =
-        new ServerResponse().writer(pushResponse).requestId(requestId).remoteAddress(remoteAddress);
+    responseFuture.complete(pushResponse.toBytes());
+  }
 
-    actor.runUntilDone(
-        () -> {
-          if (output.sendResponse(serverResponse)) {
-            actor.done();
-            LOG.trace("Send response back to partition 1.");
-          } else {
-            actor.yield();
-          }
-        });
+  private void sendNotLeaderRejection(final CompletableFuture<byte[]> responseFuture) {
+    final NotLeaderResponse notLeaderResponse = new NotLeaderResponse();
+    responseFuture.complete(notLeaderResponse.toBytes());
   }
 
   private boolean writeCreatingDeployment(

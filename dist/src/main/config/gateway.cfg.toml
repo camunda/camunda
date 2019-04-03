@@ -43,7 +43,7 @@
 [cluster]
 # Sets the broker the gateway should initial contact
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CONTACT_POINT.
-# contactPoint = "127.0.0.1:26501"
+# contactPoint = "127.0.0.1:26505"
 
 # Sets size of the transport buffer to send and received messages between gateway and broker cluster
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_TRANSPORT_BUFFER.
@@ -52,6 +52,22 @@
 # Sets the timeout of requests send to the broker cluster
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_REQUEST_TIMEOUT.
 # requestTimeout = "15s"
+
+# Sets name of the Zeebe cluster to connect to
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_NAME.
+# clusterName = "zeebe-cluster"
+
+# Sets the member id of the gateway in the cluster
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_MEMBER_ID.
+# memberId = "gateway"
+
+# Sets the host the gateway node binds to for internal cluster communication
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_HOST.
+# host = "0.0.0.0"
+
+# Sets the port the gateway node binds to for internal cluster communication
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_PORT.
+# port = 26499
 
 [threads]
 # Sets the number of threads the gateway will use to communicate with the broker cluster

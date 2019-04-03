@@ -29,6 +29,7 @@
     <version.assertj>3.12.2</version.assertj>
     <version.atomix>3.1.5</version.atomix>
     <version.camunda>7.10.0</version.camunda>
+    <version.commons-lang>3.7</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.12</version.commons-codec>
@@ -245,7 +246,19 @@
 
       <dependency>
         <groupId>io.atomix</groupId>
+        <artifactId>atomix-primitive</artifactId>
+        <version>${version.atomix}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.atomix</groupId>
         <artifactId>atomix-utils</artifactId>
+        <version>${version.atomix}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.atomix</groupId>
+        <artifactId>atomix-raft</artifactId>
         <version>${version.atomix}</version>
       </dependency>
 
@@ -363,6 +376,12 @@
         <groupId>org.yaml</groupId>
         <artifactId>snakeyaml</artifactId>
         <version>${version.snakeyaml}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>${version.commons-lang}</version>
       </dependency>
 
       <dependency>

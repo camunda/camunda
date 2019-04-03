@@ -30,7 +30,6 @@ import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
-import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.VariableDocumentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.VariableRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceCreationRecordValueImpl;
@@ -39,7 +38,6 @@ import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordV
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
 import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
-import io.zeebe.broker.exporter.record.value.raft.RaftMemberImpl;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
 import io.zeebe.broker.exporter.util.ControlledTestExporter;
@@ -58,7 +56,6 @@ import io.zeebe.exporter.api.record.value.IncidentRecordValue;
 import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.exporter.api.record.value.MessageRecordValue;
 import io.zeebe.exporter.api.record.value.MessageSubscriptionRecordValue;
-import io.zeebe.exporter.api.record.value.RaftRecordValue;
 import io.zeebe.exporter.api.record.value.VariableDocumentRecordValue;
 import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
@@ -88,13 +85,11 @@ import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.intent.RaftIntent;
 import io.zeebe.protocol.intent.VariableDocumentIntent;
 import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
-import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.collection.Maps;
@@ -110,8 +105,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
@@ -549,22 +542,6 @@ public class ExporterStreamProcessorTest {
 
     // then
     assertRecordExported(MessageSubscriptionIntent.CORRELATE, record, recordValue);
-  }
-
-  @Test
-  public void shouldExportRaftRecord() {
-    // given
-    final List<Integer> nodeIds = IntStream.of(4).boxed().collect(Collectors.toList());
-
-    final RaftConfigurationEvent record = new RaftConfigurationEvent();
-    nodeIds.forEach(i -> record.members().add().setNodeId(i));
-
-    final RaftRecordValue recordValue =
-        new RaftRecordValueImpl(
-            OBJECT_MAPPER, nodeIds.stream().map(RaftMemberImpl::new).collect(Collectors.toList()));
-
-    // then
-    assertRecordExported(RaftIntent.MEMBER_ADDED, record, recordValue);
   }
 
   @Test

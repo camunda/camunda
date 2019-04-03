@@ -47,7 +47,7 @@ pipeline {
     options {
         buildDiscarder(logRotator(daysToKeepStr:'14', numToKeepStr:storeNumOfBuilds()))
         timestamps()
-        timeout(time: 45, unit: 'MINUTES')
+        timeout(time: 120, unit: 'MINUTES')
     }
 
     stages {
@@ -71,7 +71,7 @@ pipeline {
                     }
                     post {
                         failure {
-                            archiveArtifacts artifacts: '**/target/*-reports/**/*-output.txt,**/**/*.dumpstream,**/**/hs_err_*.log', allowEmptyArchive: true
+                            archiveArtifacts artifacts: '**/target/*-reports/**/*-output.txt,**/target/*-reports/**/TEST-*.xml,,**/**/*.dumpstream,**/**/hs_err_*.log', allowEmptyArchive: true
                         }
                     }
                 }

@@ -62,7 +62,6 @@ public class SystemContext implements AutoCloseable {
 
   protected final List<ActorFuture<?>> requiredStartActions = new ArrayList<>();
   private final List<Closeable> closeablesToReleaseResources = new ArrayList<>();
-  private Closeable gatewayResourceReleasingDelegate = null;
 
   protected Map<String, String> diagnosticContext;
   protected ActorScheduler scheduler;
@@ -216,14 +215,6 @@ public class SystemContext implements AutoCloseable {
     LOG.info("Closing...");
 
     try {
-      if (gatewayResourceReleasingDelegate != null) {
-        gatewayResourceReleasingDelegate.close();
-      }
-    } catch (IOException e) {
-      LOG.error("Failed to close gateway:", e);
-    }
-
-    try {
       serviceContainer.close(getCloseTimeout().toMillis(), TimeUnit.MILLISECONDS);
     } catch (final TimeoutException e) {
       LOG.error("Failed to close broker within {} seconds.", CLOSE_TIMEOUT, e);
@@ -259,10 +250,6 @@ public class SystemContext implements AutoCloseable {
 
   public void addResourceReleasingDelegate(final Closeable delegate) {
     closeablesToReleaseResources.add(delegate);
-  }
-
-  public void setGatewayResourceReleasingDelegate(final Closeable delegate) {
-    gatewayResourceReleasingDelegate = delegate;
   }
 
   public Map<String, String> getDiagnosticContext() {

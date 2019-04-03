@@ -16,6 +16,7 @@
 package io.zeebe.broker.it.workflow.message;
 
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -88,9 +89,9 @@ public class MessageCorrelationMultiplePartitionsTest {
                 .limit(30))
         .extracting(r -> tuple(r.getMetadata().getPartitionId(), r.getValue().getCorrelationKey()))
         .containsOnly(
-            tuple(0, CORRELATION_KEY_PARTITION_0),
-            tuple(1, CORRELATION_KEY_PARTITION_1),
-            tuple(2, CORRELATION_KEY_PARTITION_2));
+            tuple(START_PARTITION_ID, CORRELATION_KEY_PARTITION_0),
+            tuple(START_PARTITION_ID + 1, CORRELATION_KEY_PARTITION_1),
+            tuple(START_PARTITION_ID + 2, CORRELATION_KEY_PARTITION_2));
   }
 
   @Test
@@ -108,9 +109,9 @@ public class MessageCorrelationMultiplePartitionsTest {
     assertThat(RecordingExporter.messageRecords(MessageIntent.PUBLISHED).limit(30))
         .extracting(r -> tuple(r.getMetadata().getPartitionId(), r.getValue().getCorrelationKey()))
         .containsOnly(
-            tuple(0, CORRELATION_KEY_PARTITION_0),
-            tuple(1, CORRELATION_KEY_PARTITION_1),
-            tuple(2, CORRELATION_KEY_PARTITION_2));
+            tuple(START_PARTITION_ID, CORRELATION_KEY_PARTITION_0),
+            tuple(START_PARTITION_ID + 1, CORRELATION_KEY_PARTITION_1),
+            tuple(START_PARTITION_ID + 2, CORRELATION_KEY_PARTITION_2));
   }
 
   @Test
@@ -174,9 +175,9 @@ public class MessageCorrelationMultiplePartitionsTest {
                 .limit(30))
         .extracting(r -> tuple(r.getMetadata().getPartitionId(), r.getValue().getCorrelationKey()))
         .containsOnly(
-            tuple(0, CORRELATION_KEY_PARTITION_0),
-            tuple(1, CORRELATION_KEY_PARTITION_1),
-            tuple(2, CORRELATION_KEY_PARTITION_2));
+            tuple(START_PARTITION_ID, CORRELATION_KEY_PARTITION_0),
+            tuple(START_PARTITION_ID + 1, CORRELATION_KEY_PARTITION_1),
+            tuple(START_PARTITION_ID + 2, CORRELATION_KEY_PARTITION_2));
   }
 
   private long createWorkflowInstance(Object variables) {

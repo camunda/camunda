@@ -77,6 +77,11 @@
       <artifactId>assertj-core</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.atomix</groupId>
+      <artifactId>atomix-cluster</artifactId>
+    </dependency>
+
   </dependencies>
 
 </project>

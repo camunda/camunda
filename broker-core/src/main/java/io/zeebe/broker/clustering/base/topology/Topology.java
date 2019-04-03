@@ -18,10 +18,7 @@
 package io.zeebe.broker.clustering.base.topology;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.protocol.PartitionState;
-import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
-import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.BrokerDto;
-import io.zeebe.raft.state.RaftState;
+import io.zeebe.broker.clustering.base.partitions.RaftState;
 import io.zeebe.transport.SocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,7 +32,7 @@ import org.slf4j.Logger;
  * Represents this node's view of the cluster. Includes info about known nodes as well as partitions
  * and their current distribution to nodes.
  */
-public class Topology implements ReadableTopology {
+public class Topology {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private final NodeInfo local;
@@ -59,7 +56,6 @@ public class Topology implements ReadableTopology {
     this.addMember(localBroker);
   }
 
-  @Override
   public NodeInfo getLocal() {
     return local;
   }
@@ -90,21 +86,6 @@ public class Topology implements ReadableTopology {
     return member;
   }
 
-  @Override
-  public NodeInfo getMemberByClientApi(SocketAddress apiAddress) {
-    return getMemberByApi(NodeInfo::getClientApiAddress, apiAddress);
-  }
-
-  @Override
-  public NodeInfo getMemberByManagementApi(SocketAddress apiAddress) {
-    return getMemberByApi(NodeInfo::getManagementApiAddress, apiAddress);
-  }
-
-  @Override
-  public NodeInfo getMemberByReplicationApi(SocketAddress apiAddress) {
-    return getMemberByApi(NodeInfo::getReplicationApiAddress, apiAddress);
-  }
-
   protected NodeInfo getMemberByApi(
       Function<NodeInfo, SocketAddress> apiAddressMapper, SocketAddress apiAddress) {
     NodeInfo member = null;
@@ -120,27 +101,18 @@ public class Topology implements ReadableTopology {
     return member;
   }
 
-  @Override
   public List<NodeInfo> getMembers() {
     return members;
   }
 
-  @Override
-  public PartitionInfo getPartition(int partitionId) {
-    return partitions.get(partitionId);
-  }
-
-  @Override
   public NodeInfo getLeader(int partitionId) {
     return partitionLeaders.get(partitionId);
   }
 
-  @Override
   public List<NodeInfo> getFollowers(int partitionId) {
     return partitionFollowers.getOrDefault(partitionId, Collections.emptyList());
   }
 
-  @Override
   public Collection<PartitionInfo> getPartitions() {
     return new ArrayList<>(partitions.values());
   }
@@ -237,51 +209,9 @@ public class Topology implements ReadableTopology {
           member.removeLeader(partition);
           member.addFollower(partition);
           break;
-
-        case CANDIDATE:
-          // internal raft state: not tracked by topology
-          break;
       }
     }
 
     return partition;
-  }
-
-  @Override
-  public TopologyResponseDto asDto() {
-    final TopologyResponseDto dto = new TopologyResponseDto();
-    dto.setClusterSize(clusterSize);
-    dto.setPartitionsCount(partitionsCount);
-    dto.setReplicationFactor(replicationFactor);
-
-    for (NodeInfo member : members) {
-      final BrokerDto broker = dto.brokers().add();
-      final SocketAddress apiContactPoint = member.getClientApiAddress();
-      broker.setNodeId(member.getNodeId());
-      broker.setHost(
-          apiContactPoint.getHostBuffer(), 0, apiContactPoint.getHostBuffer().capacity());
-      broker.setPort(apiContactPoint.port());
-
-      for (PartitionInfo partition : member.getLeaders()) {
-
-        broker
-            .partitionStates()
-            .add()
-            .setPartitionId(partition.getPartitionId())
-            .setReplicationFactor(partition.getReplicationFactor())
-            .setState(PartitionState.LEADER);
-      }
-
-      for (PartitionInfo partition : member.getFollowers()) {
-        broker
-            .partitionStates()
-            .add()
-            .setPartitionId(partition.getPartitionId())
-            .setReplicationFactor(partition.getReplicationFactor())
-            .setState(PartitionState.FOLLOWER);
-      }
-    }
-
-    return dto;
   }
 }

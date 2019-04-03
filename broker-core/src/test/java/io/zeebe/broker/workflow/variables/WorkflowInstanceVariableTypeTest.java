@@ -48,7 +48,7 @@ public class WorkflowInstanceVariableTypeTest {
       Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
 
   public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

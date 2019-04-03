@@ -27,6 +27,7 @@ import io.zeebe.broker.workflow.model.element.AbstractFlowElement;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
@@ -41,6 +42,8 @@ public class WorkflowStateTest {
 
   private WorkflowState workflowState;
   private ZeebeState zeebeState;
+  private static final Long FIRST_WORKFLOW_KEY =
+      Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1);
 
   @Before
   public void setUp() {
@@ -221,8 +224,8 @@ public class WorkflowStateTest {
     assertThat(secondWorkflow).isNotNull();
 
     // getKey's should increase
-    assertThat(deployedWorkflow.getKey()).isEqualTo(1L);
-    assertThat(secondWorkflow.getKey()).isEqualTo(2L);
+    assertThat(deployedWorkflow.getKey()).isEqualTo(FIRST_WORKFLOW_KEY);
+    assertThat(secondWorkflow.getKey()).isEqualTo(FIRST_WORKFLOW_KEY + 1);
 
     // but versions should restart
     assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
@@ -310,11 +313,11 @@ public class WorkflowStateTest {
   public void shouldGetExecutableWorkflowByKey() {
     // given
     final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
-    final int deploymentKey = 1;
+    final long deploymentKey = FIRST_WORKFLOW_KEY;
     workflowState.putDeployment(deploymentKey, deploymentRecord);
 
     // when
-    final int workflowKey = 1;
+    final long workflowKey = FIRST_WORKFLOW_KEY;
     final DeployedWorkflow deployedWorkflow = workflowState.getWorkflowByKey(workflowKey);
 
     // then
@@ -358,7 +361,10 @@ public class WorkflowStateTest {
         .extracting(DeployedWorkflow::getBpmnProcessId)
         .contains(wrapString("processId"), wrapString("otherId"));
     assertThat(workflows).extracting(DeployedWorkflow::getVersion).contains(1, 2, 1);
-    assertThat(workflows).extracting(DeployedWorkflow::getKey).containsOnly(1L, 2L, 3L);
+
+    assertThat(workflows)
+        .extracting(DeployedWorkflow::getKey)
+        .containsOnly(FIRST_WORKFLOW_KEY, FIRST_WORKFLOW_KEY + 1, FIRST_WORKFLOW_KEY + 2);
   }
 
   @Test
@@ -376,7 +382,10 @@ public class WorkflowStateTest {
         .extracting(DeployedWorkflow::getBpmnProcessId)
         .containsOnly(wrapString("processId"));
     assertThat(workflows).extracting(DeployedWorkflow::getVersion).containsOnly(1, 2);
-    assertThat(workflows).extracting(DeployedWorkflow::getKey).containsOnly(1L, 2L);
+
+    assertThat(workflows)
+        .extracting(DeployedWorkflow::getKey)
+        .containsOnly(FIRST_WORKFLOW_KEY, FIRST_WORKFLOW_KEY + 1);
   }
 
   @Test
@@ -395,7 +404,9 @@ public class WorkflowStateTest {
         .extracting(DeployedWorkflow::getBpmnProcessId)
         .containsOnly(wrapString("otherId"));
     assertThat(workflows).extracting(DeployedWorkflow::getVersion).containsOnly(1);
-    assertThat(workflows).extracting(DeployedWorkflow::getKey).containsOnly(2L);
+
+    final long expectedWorkflowKey = Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 2);
+    assertThat(workflows).extracting(DeployedWorkflow::getKey).containsOnly(expectedWorkflowKey);
   }
 
   public static DeploymentRecord creatingDeploymentRecord(ZeebeState zeebeState) {

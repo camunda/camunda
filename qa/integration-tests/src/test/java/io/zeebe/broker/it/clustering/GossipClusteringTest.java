@@ -29,7 +29,7 @@ import org.junit.rules.Timeout;
 public class GossipClusteringTest {
   private static final int PARTITION_COUNT = 3;
 
-  public Timeout testTimeout = Timeout.seconds(90);
+  public Timeout testTimeout = Timeout.seconds(120);
   public ClusteringRule clusteringRule = new ClusteringRule();
   public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
@@ -72,7 +72,7 @@ public class GossipClusteringTest {
   @Test
   public void shouldRemoveLeaderFromCluster() {
     // given
-    final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(0);
+    final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
     final SocketAddress[] otherBrokers =
         clusteringRule.getOtherBrokers(leaderForPartition.getAddress());
 

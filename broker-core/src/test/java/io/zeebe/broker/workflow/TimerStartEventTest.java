@@ -76,7 +76,7 @@ public class TimerStartEventTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

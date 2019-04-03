@@ -65,6 +65,8 @@ public interface LogStream extends AutoCloseable {
   /** Sets the log streams commit position to the given position. */
   void setCommitPosition(long commitPosition);
 
+  void signalOnAppendCondition();
+
   /** @return the current term in which the log stream is active */
   int getTerm();
 

@@ -17,10 +17,9 @@
  */
 package io.zeebe.broker.subscription;
 
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.subscription.SubscriptionServiceNames.SUBSCRIPTION_API_MESSAGE_HANDLER_SERVICE_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.bufferingServerTransport;
 
 import io.zeebe.broker.subscription.command.SubscriptionApiCommandMessageHandlerService;
 import io.zeebe.broker.system.Component;
@@ -37,9 +36,7 @@ public class SubscriptionComponent implements Component {
         new SubscriptionApiCommandMessageHandlerService();
     serviceContainer
         .createService(SUBSCRIPTION_API_MESSAGE_HANDLER_SERVICE_NAME, messageHandlerService)
-        .dependency(
-            bufferingServerTransport(SUBSCRIPTION_API_SERVER_NAME),
-            messageHandlerService.getServerTransportInjector())
+        .dependency(ATOMIX_SERVICE, messageHandlerService.getAtomixInjector())
         .groupReference(
             LEADER_PARTITION_GROUP_NAME, messageHandlerService.getLeaderParitionsGroupReference())
         .install();

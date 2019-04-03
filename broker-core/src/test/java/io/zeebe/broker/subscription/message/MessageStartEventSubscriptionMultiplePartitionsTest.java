@@ -42,7 +42,7 @@ public class MessageStartEventSubscriptionMultiplePartitionsTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
 
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
@@ -70,9 +70,10 @@ public class MessageStartEventSubscriptionMultiplePartitionsTest {
         .extracting(v -> tuple(v.getStartEventId(), v.getMessageName()))
         .containsOnly(tuple(EVENT_ID1, MESSAGE_NAME1));
 
+    final List<Integer> partitionIds = apiRule.getPartitionIds();
     assertThat(subscriptions)
         .extracting(r -> r.getMetadata().getPartitionId())
-        .containsExactlyInAnyOrder(0, 1, 2);
+        .containsExactlyInAnyOrderElementsOf(partitionIds);
   }
 
   private static BpmnModelInstance createWorkflowWithOneMessageStartEvent() {

@@ -15,6 +15,7 @@
  */
 package io.zeebe.logstreams.impl.service;
 
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderRootService;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamRootServiceName;
@@ -142,6 +143,9 @@ public class LogStreamService implements LogStream, Service<LogStream> {
             .dependency(
                 logStorageInjector.getInjectedServiceName(),
                 appenderService.getLogStorageInjector())
+            .dependency(
+                distributedLogPartitionServiceName(logName),
+                appenderService.getDistributedLogstreamInjector())
             .install();
 
     return installOperation.installAndReturn(logStorageAppenderServiceName);
@@ -263,6 +267,11 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   @Override
   public void removeOnAppendCondition(final ActorCondition condition) {
     onLogStorageAppendedConditions.removeConsumer(condition);
+  }
+
+  @Override
+  public void signalOnAppendCondition() {
+    onLogStorageAppendedConditions.signalConsumers();
   }
 
   @Override

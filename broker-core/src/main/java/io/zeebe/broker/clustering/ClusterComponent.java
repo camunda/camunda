@@ -17,12 +17,24 @@
  */
 package io.zeebe.broker.clustering;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
-import static io.zeebe.broker.transport.TransportServiceNames.*;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_JOIN_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.CLUSTERING_BASE_LAYER;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.DISTRIBUTED_LOG_CREATE_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.GATEWAY_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADERSHIP_SERVICE_GROUP;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.PARTITIONS_BOOTSTRAP_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_CONFIGURATION_MANAGER;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.REMOTE_ADDRESS_MANAGER_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE;
+import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 
+import io.zeebe.broker.clustering.base.EmbeddedGatewayService;
 import io.zeebe.broker.clustering.base.connections.RemoteAddressManager;
-import io.zeebe.broker.clustering.base.gossip.GossipJoinService;
-import io.zeebe.broker.clustering.base.gossip.GossipService;
+import io.zeebe.broker.clustering.base.gossip.AtomixJoinService;
+import io.zeebe.broker.clustering.base.gossip.AtomixService;
+import io.zeebe.broker.clustering.base.gossip.DistributedLogService;
 import io.zeebe.broker.clustering.base.partitions.BootstrapPartitions;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManagerService;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
@@ -31,7 +43,7 @@ import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.broker.transport.TransportServiceNames;
+import io.zeebe.distributedlog.impl.LogstreamConfig;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
 
@@ -60,13 +72,18 @@ public class ClusterComponent implements Component {
             networkCfg.getReplication().toSocketAddress(),
             networkCfg.getSubscription().toSocketAddress());
 
+    /* A hack so that DistributedLogstream primitive can create logstream services using this serviceContainer */
+    LogstreamConfig.putServiceContainer(
+        String.valueOf(localMember.getNodeId()), context.getServiceContainer());
+
     final TopologyManagerService topologyManagerService =
         new TopologyManagerService(localMember, brokerConfig.getCluster());
 
     baseLayerInstall
         .createService(TOPOLOGY_MANAGER_SERVICE, topologyManagerService)
-        .dependency(GOSSIP_SERVICE, topologyManagerService.getGossipInjector())
-        .groupReference(RAFT_SERVICE_GROUP, topologyManagerService.getRaftReference())
+        .dependency(ATOMIX_SERVICE, topologyManagerService.getAtomixInjector())
+        .groupReference(
+            LEADERSHIP_SERVICE_GROUP, topologyManagerService.getLeaderElectionReference())
         .install();
 
     final RemoteAddressManager remoteAddressManager = new RemoteAddressManager();
@@ -76,42 +93,53 @@ public class ClusterComponent implements Component {
         .dependency(
             clientTransport(MANAGEMENT_API_CLIENT_NAME),
             remoteAddressManager.getManagementClientTransportInjector())
-        .dependency(
-            clientTransport(REPLICATION_API_CLIENT_NAME),
-            remoteAddressManager.getReplicationClientTransportInjector())
-        .dependency(
-            clientTransport(SUBSCRIPTION_API_CLIENT_NAME),
-            remoteAddressManager.getSubscriptionClientTransportInjector())
         .install();
 
-    initGossip(baseLayerInstall, context, localMember);
+    if (brokerConfig.getGateway().isEnable()) {
+      initGateway(baseLayerInstall, brokerConfig);
+    }
+
+    initAtomix(baseLayerInstall, context);
     initPartitions(baseLayerInstall, context);
 
     context.addRequiredStartAction(baseLayerInstall.install());
   }
 
-  private void initGossip(
-      final CompositeServiceBuilder baseLayerInstall,
-      final SystemContext context,
-      final NodeInfo localMember) {
-    final GossipService gossipService = new GossipService(context.getBrokerConfiguration());
+  private void initGateway(CompositeServiceBuilder baseLayerInstall, BrokerCfg brokerConfig) {
+    final EmbeddedGatewayService gatewayService = new EmbeddedGatewayService(brokerConfig);
     baseLayerInstall
-        .createService(GOSSIP_SERVICE, gossipService)
-        .dependency(
-            TransportServiceNames.clientTransport(TransportServiceNames.MANAGEMENT_API_CLIENT_NAME),
-            gossipService.getClientTransportInjector())
-        .dependency(
-            TransportServiceNames.bufferingServerTransport(
-                TransportServiceNames.MANAGEMENT_API_SERVER_NAME),
-            gossipService.getBufferingServerTransportInjector())
+        .createService(GATEWAY_SERVICE, gatewayService)
+        .dependency(ATOMIX_SERVICE, gatewayService.getAtomixClusterInjector())
+        .install();
+  }
+
+  private void initAtomix(
+      final CompositeServiceBuilder baseLayerInstall, final SystemContext context) {
+
+    final AtomixService atomixService = new AtomixService(context.getBrokerConfiguration());
+    baseLayerInstall
+        .createService(ATOMIX_SERVICE, atomixService)
+        .dependency(RAFT_CONFIGURATION_MANAGER) // data directories are created
         .install();
 
-    // TODO: decide whether failure to join gossip cluster should result in broker startup fail
-    final GossipJoinService gossipJoinService =
-        new GossipJoinService(context.getBrokerConfiguration().getCluster(), localMember);
-    baseLayerInstall
-        .createService(GOSSIP_JOIN_SERVICE, gossipJoinService)
-        .dependency(GOSSIP_SERVICE, gossipJoinService.getGossipInjector())
+    final AtomixJoinService atomixJoinService = new AtomixJoinService();
+    // With RaftPartitionGroup AtomixJoinService completes only when majority of brokers have
+    // started and join the group. Hence don't add the service to the baselayer.
+    context
+        .getServiceContainer()
+        .createService(ATOMIX_JOIN_SERVICE, atomixJoinService)
+        .dependency(TOPOLOGY_MANAGER_SERVICE)
+        .dependency(ATOMIX_SERVICE, atomixJoinService.getAtomixInjector())
+        .install();
+
+    // Create distributed log primitive. No need to wait until the partitions are created.
+    // TODO: Move it somewhere else. Only one node has to create it.
+    final DistributedLogService distributedLogService = new DistributedLogService();
+    context
+        .getServiceContainer()
+        .createService(DISTRIBUTED_LOG_CREATE_SERVICE, distributedLogService)
+        .dependency(ATOMIX_SERVICE, distributedLogService.getAtomixInjector())
+        .dependency(ATOMIX_JOIN_SERVICE)
         .install();
   }
 
@@ -123,12 +151,15 @@ public class ClusterComponent implements Component {
         .createService(RAFT_CONFIGURATION_MANAGER, raftConfigurationManagerService)
         .install();
 
-    final BootstrapPartitions raftBootstrapService =
+    final BootstrapPartitions partitionBootstrapService =
         new BootstrapPartitions(context.getBrokerConfiguration());
-    baseLayerInstall
-        .createService(RAFT_BOOTSTRAP_SERVICE, raftBootstrapService)
+    context
+        .getServiceContainer()
+        .createService(PARTITIONS_BOOTSTRAP_SERVICE, partitionBootstrapService)
+        .dependency(ATOMIX_SERVICE, partitionBootstrapService.getAtomixInjector())
+        .dependency(ATOMIX_JOIN_SERVICE)
         .dependency(
-            RAFT_CONFIGURATION_MANAGER, raftBootstrapService.getConfigurationManagerInjector())
+            RAFT_CONFIGURATION_MANAGER, partitionBootstrapService.getConfigurationManagerInjector())
         .install();
   }
 }

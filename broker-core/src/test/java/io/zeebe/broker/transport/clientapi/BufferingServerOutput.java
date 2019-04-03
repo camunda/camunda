@@ -17,10 +17,8 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import io.zeebe.protocol.clientapi.ControlMessageResponseDecoder;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
@@ -28,11 +26,9 @@ import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.io.DirectBufferInputStream;
 import org.agrona.sbe.MessageDecoderFlyweight;
 
 public class BufferingServerOutput implements ServerOutput {
@@ -40,8 +36,6 @@ public class BufferingServerOutput implements ServerOutput {
       TransportHeaderDescriptor.HEADER_LENGTH + RequestResponseHeaderDescriptor.HEADER_LENGTH;
   protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   protected final ErrorResponseDecoder errorDecoder = new ErrorResponseDecoder();
-
-  protected final MsgPackHelper msgPackDecoder = new MsgPackHelper();
 
   protected List<DirectBuffer> sentResponses = new CopyOnWriteArrayList<>();
 
@@ -89,12 +83,5 @@ public class BufferingServerOutput implements ServerOutput {
         headerDecoder.version());
 
     return decoder;
-  }
-
-  public Map<String, Object> getAsControlMessageData(int index) {
-    final ControlMessageResponseDecoder decoder = getAs(index, new ControlMessageResponseDecoder());
-    final UnsafeBuffer dataBuf = new UnsafeBuffer(new byte[decoder.dataLength()]);
-    decoder.getData(dataBuf, 0, dataBuf.capacity());
-    return msgPackDecoder.readMsgPack(new DirectBufferInputStream(dataBuf));
   }
 }
