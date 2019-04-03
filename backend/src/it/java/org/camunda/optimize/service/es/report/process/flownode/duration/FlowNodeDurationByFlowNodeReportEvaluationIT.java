@@ -146,10 +146,44 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
-    Map<String, AggregationResultDto> resultMap = evaluationResponse.getResult().getData();
+    final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getIsComplete(), is(true));
+    Map<String, AggregationResultDto> resultMap = resultDto.getData();
     assertThat(resultMap.size(), is(4));
     assertThat(resultMap.get(SERVICE_TASK_ID), is(calculateExpectedValueGivenDurations(100L, 200L, 900L)));
     assertThat(resultMap.get(SERVICE_TASK_ID_2), is(calculateExpectedValueGivenDurations(20L, 10L, 90L)));
+  }
+
+  @Test
+  public void evaluateReportForMultipleEvents_resultLimitedByConfig() throws Exception {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
+
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
+    processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 200L);
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 10L);
+    processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 900L);
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 90L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(1);
+
+    // when
+    ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+
+    // then
+    final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getProcessInstanceCount(), is(3L));
+    assertThat(resultDto.getData(), is(notNullValue()));
+    assertThat(resultDto.getData().size(), is(1));
+    assertThat(resultDto.getIsComplete(), is(false));
   }
 
   @Test

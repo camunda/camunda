@@ -12,7 +12,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
@@ -31,7 +30,6 @@ public class CountDecisionFrequencyGroupByMatchedRuleCommand
 
   @Override
   protected SingleDecisionMapReportResult evaluate() {
-
     final DecisionReportDataDto reportData = getReportData();
     logger.debug(
       "Evaluating count decision instance frequency grouped by matched rule report " +
@@ -56,9 +54,10 @@ public class CountDecisionFrequencyGroupByMatchedRuleCommand
         .types(DECISION_INSTANCE_TYPE)
         .source(searchSourceBuilder);
 
-    SearchResponse response;
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final DecisionReportMapResultDto mapResultDto = mapToReportResult(response);
+      return new SingleDecisionMapReportResult(mapResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
         String.format(
@@ -70,12 +69,6 @@ public class CountDecisionFrequencyGroupByMatchedRuleCommand
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-
-
-    DecisionReportMapResultDto mapResultDto = new DecisionReportMapResultDto();
-    mapResultDto.getData(mapAggregationsToMapResult(response.getAggregations()));
-    mapResultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
-    return new SingleDecisionMapReportResult(mapResultDto, reportDefinition);
   }
 
   @Override
@@ -88,17 +81,24 @@ public class CountDecisionFrequencyGroupByMatchedRuleCommand
   private AggregationBuilder createAggregation() {
     return AggregationBuilders
       .terms(MATCHED_RULES_AGGREGATION)
-      .size(Integer.MAX_VALUE)
+      .size(configurationService.getEsAggregationBucketLimit())
       .field(MATCHED_RULES);
   }
 
-  private Map<String, Long> mapAggregationsToMapResult(final Aggregations aggregations) {
-    final Terms matchedRuleTerms = aggregations.get(MATCHED_RULES_AGGREGATION);
-    final Map<String, Long> result = new LinkedHashMap<>();
+  private DecisionReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final DecisionReportMapResultDto resultDto = new DecisionReportMapResultDto();
+
+    final Terms matchedRuleTerms = response.getAggregations().get(MATCHED_RULES_AGGREGATION);
+    final Map<String, Long> resultData = new LinkedHashMap<>();
     for (Terms.Bucket b : matchedRuleTerms.getBuckets()) {
-      result.put(b.getKeyAsString(), b.getDocCount());
+      resultData.put(b.getKeyAsString(), b.getDocCount());
     }
-    return result;
+
+    resultDto.getData(resultData);
+    resultDto.setComplete(matchedRuleTerms.getSumOfOtherDocCounts() == 0L);
+    resultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
+
+    return resultDto;
   }
 
 }

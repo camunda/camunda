@@ -15,7 +15,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -45,7 +44,6 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
 
   @Override
   protected SingleProcessMapReportResult evaluate() {
-
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating count process instance frequency grouped by variable report " +
@@ -68,9 +66,10 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
         .types(PROC_INSTANCE_TYPE)
         .source(searchSourceBuilder);
 
-    SearchResponse response;
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final ProcessReportMapResultDto mapResultDto = mapToReportResult(response);
+      return new SingleProcessMapReportResult(mapResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
         String.format(
@@ -83,10 +82,6 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    ProcessReportMapResultDto mapResultDto = new ProcessReportMapResultDto();
-    mapResultDto.setData(processAggregations(response.getAggregations()));
-    mapResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessMapReportResult(mapResultDto, reportDefinition);
   }
 
   @Override
@@ -103,7 +98,7 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
     String nestedVariableValueFieldLabel = getNestedVariableValueFieldLabelForType(variableType);
     TermsAggregationBuilder collectVariableValueCount = AggregationBuilders
       .terms(VARIABLES_AGGREGATION)
-      .size(Integer.MAX_VALUE)
+      .size(configurationService.getEsAggregationBucketLimit())
       .field(nestedVariableValueFieldLabel);
 
     if (VariableType.DATE.equals(variableType)) {
@@ -124,15 +119,23 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
       );
   }
 
-  private Map<String, Long> processAggregations(Aggregations aggregations) {
-    Nested nested = aggregations.get(NESTED_AGGREGATION);
-    Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-    Terms variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
-    Map<String, Long> result = new HashMap<>();
+  private ProcessReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ProcessReportMapResultDto resultDto = new ProcessReportMapResultDto();
+
+    final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
+    final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
+    final Terms variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
+
+    final Map<String, Long> resultData = new HashMap<>();
     for (Terms.Bucket b : variableTerms.getBuckets()) {
-      result.put(b.getKeyAsString(), b.getDocCount());
+      resultData.put(b.getKeyAsString(), b.getDocCount());
     }
-    return result;
+
+    resultDto.setData(resultData);
+    resultDto.setComplete(variableTerms.getSumOfOtherDocCounts() == 0L);
+    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+
+    return resultDto;
   }
 
 }

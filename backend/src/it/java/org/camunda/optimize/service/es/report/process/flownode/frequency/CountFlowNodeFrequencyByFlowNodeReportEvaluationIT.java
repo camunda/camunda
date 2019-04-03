@@ -212,13 +212,38 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
       engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessReportMapResultDto resultDto = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    Map<String, Long> flowNodeIdToExecutionFrequency = result.getData();
-    assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
+    assertThat(resultDto.getProcessInstanceCount(), is(2L));
+    assertThat(resultDto.getIsComplete(), is(true));
+    assertThat(resultDto.getData(), is(notNullValue()));
+    Map<String, Long> flowNodeIdToExecutionFrequency = resultDto.getData();
     assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY), is(2L));
+  }
+
+  @Test
+  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
+    // given
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
+    engineRule.startProcessInstance(engineDto.getDefinitionId());
+    deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY_2);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(1);
+
+    // when
+    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+      engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
+    );
+    ProcessReportMapResultDto resultDto = evaluateReport(reportData).getResult();
+
+    // then
+    assertThat(resultDto.getProcessInstanceCount(), is(2L));
+    assertThat(resultDto.getData(), is(notNullValue()));
+    assertThat(resultDto.getData().size(), is(1));
+    assertThat(resultDto.getIsComplete(), is(false));
   }
 
   @Test

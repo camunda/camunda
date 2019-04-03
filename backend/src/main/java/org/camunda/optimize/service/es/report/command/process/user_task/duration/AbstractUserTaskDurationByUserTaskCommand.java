@@ -7,7 +7,6 @@ import org.camunda.optimize.service.es.report.command.process.UserTaskGroupingCo
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -48,7 +47,6 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
 
   @Override
   protected SingleProcessMapDurationReportResult evaluate() {
-
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating user task total duration report for process definition key [{}] and version [{}]",
@@ -68,10 +66,7 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final Map<String, AggregationResultDto> resultMap = processAggregations(response.getAggregations());
-      final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();
-      resultDto.setData(resultMap);
-      resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+      final ProcessDurationReportMapResultDto resultDto = mapToReportResult(response);
       return new SingleProcessMapDurationReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       final String reason = String.format(
@@ -91,6 +86,8 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
     );
   }
 
+  protected abstract String getDurationFieldName();
+
   private AggregationBuilder createAggregation() {
     return nested(USER_TASKS, USER_TASKS_AGGREGATION)
       .subAggregation(
@@ -102,7 +99,7 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
           .subAggregation(
             AggregationBuilders
               .terms(USER_TASK_ID_TERMS_AGGREGATION)
-              .size(Integer.MAX_VALUE)
+              .size(configurationService.getEsAggregationBucketLimit())
               .field(USER_TASKS + "." + USER_TASK_ACTIVITY_ID)
               .subAggregation(
                 stats(STATS_DURATION_AGGREGATION)
@@ -117,14 +114,15 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
       );
   }
 
-  protected abstract String getDurationFieldName();
+  private ProcessDurationReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();
 
-  private Map<String, AggregationResultDto> processAggregations(final Aggregations aggregations) {
-    ValidationHelper.ensureNotNull("aggregations", aggregations);
+    final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms byTaskIdAggregation = filteredUserTasks.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
-    final Map<String, AggregationResultDto> result = new HashMap<>();
+
+    final Map<String, AggregationResultDto> resultMap = new HashMap<>();
     for (Terms.Bucket b : byTaskIdAggregation.getBuckets()) {
       ParsedStats statsAggregation = b.getAggregations().get(STATS_DURATION_AGGREGATION);
       ParsedTDigestPercentiles medianAggregation = b.getAggregations().get(MEDIAN_DURATION_AGGREGATION);
@@ -135,9 +133,14 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
         mapToLong(statsAggregation.getAvg()),
         mapToLong(medianAggregation)
       );
-      result.put(b.getKeyAsString(), aggregationResultDto);
+      resultMap.put(b.getKeyAsString(), aggregationResultDto);
     }
-    return result;
+
+    resultDto.setData(resultMap);
+    resultDto.setComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
+    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+
+    return resultDto;
   }
 
 }

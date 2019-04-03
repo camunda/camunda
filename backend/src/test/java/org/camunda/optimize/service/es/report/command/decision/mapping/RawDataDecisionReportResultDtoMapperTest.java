@@ -40,6 +40,25 @@ public class RawDataDecisionReportResultDtoMapperTest {
 
     // then
     assertThat(result.getData().size(), is(rawDataLimit.intValue()));
+    assertThat(result.getIsComplete(), is(false));
+    assertThat(result.getDecisionInstanceCount(), is(actualInstanceCount));
+  }
+
+  @Test
+  public void testMapFromSearchResponse_hitCountEqualsTotalCount() {
+    // given
+    final Long rawDataLimit = 3L;
+    final Long actualInstanceCount = 3L;
+    final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper(rawDataLimit);
+
+    final SearchResponse searchResponse = createSearchResponseMock(rawDataLimit.intValue(), actualInstanceCount);
+
+    // when
+    final RawDataDecisionReportResultDto result = mapper.mapFrom(searchResponse, objectMapper);
+
+    // then
+    assertThat(result.getData().size(), is(rawDataLimit.intValue()));
+    assertThat(result.getIsComplete(), is(true));
     assertThat(result.getDecisionInstanceCount(), is(actualInstanceCount));
   }
 

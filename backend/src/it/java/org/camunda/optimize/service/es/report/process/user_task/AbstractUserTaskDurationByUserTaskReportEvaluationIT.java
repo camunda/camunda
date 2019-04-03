@@ -148,13 +148,45 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData).getResult();
 
     // then
-    final Map<String, AggregationResultDto> byUserTaskIdResult = result.getData();
+    assertThat(resultDto.getIsComplete(), is(true));
+    final Map<String, AggregationResultDto> byUserTaskIdResult = resultDto.getData();
     assertThat(byUserTaskIdResult.size(), is(2));
     assertThat(byUserTaskIdResult.get(USER_TASK_1), is(calculateExpectedValueGivenDurations(10L)));
     assertThat(byUserTaskIdResult.get(USER_TASK_2), is(calculateExpectedValueGivenDurations(20L)));
+  }
+
+  @Test
+  public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+
+    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
+    finishAllUserTasks(processInstanceDto1);
+    changeDuration(processInstanceDto1, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto1, USER_TASK_2, 20L);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
+    finishAllUserTasks(processInstanceDto2);
+    changeDuration(processInstanceDto2, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto2, USER_TASK_2, 20L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(1);
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData).getResult();
+
+    // then
+    assertThat(resultDto.getProcessInstanceCount(), is(2L));
+    assertThat(resultDto.getData(), is(notNullValue()));
+    assertThat(resultDto.getData().size(), is(1));
+    assertThat(resultDto.getIsComplete(), is(false));
   }
 
   @Test

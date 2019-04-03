@@ -42,7 +42,7 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
       processReportData.getProcessDefinitionVersion()
     );
 
-    BoolQueryBuilder query = setupBaseQuery(processReportData);
+    final BoolQueryBuilder query = setupBaseQuery(processReportData);
 
     final String sortByField = processReportData.getParameters().getSorting()
       .flatMap(SortingDto::getBy)
@@ -52,20 +52,24 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
       .map(order -> SortOrder.valueOf(order.name()))
       .orElse(SortOrder.DESC);
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(null, EVENTS)
       .size(RAW_DATA_LIMIT.intValue());
-    SearchRequest searchRequest =
+
+    addSorting(sortByField, sortOrder, searchSourceBuilder);
+
+    final SearchRequest searchRequest =
       new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
         .types(PROC_INSTANCE_TYPE)
         .source(searchSourceBuilder);
 
-    addSorting(sortByField, sortOrder, searchSourceBuilder);
-
-    SearchResponse response;
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final RawDataProcessReportResultDto rawDataProcessReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
+        response, objectMapper
+      );
+      return new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
         String.format(
@@ -77,9 +81,6 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    RawDataProcessReportResultDto rawDataProcessReportResultDto =
-      rawDataSingleReportResultDtoMapper.mapFrom(response, objectMapper);
-    return new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
   }
 
   @Override
@@ -105,7 +106,9 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
         SortBuilders.fieldSort(sortByField).order(sortOrder)
           // this ensures the query doesn't fail on unknown properties but just ignores them
           // this is done to ensure consistent behavior compared to unknown variable names as ES doesn't fail there
+          // @formatter:off
           // https://www.elastic.co/guide/en/elasticsearch/reference/6.0/search-request-sort.html#_ignoring_unmapped_fields
+          // @formatter:on
           .unmappedType("short")
       );
     }

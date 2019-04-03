@@ -7,7 +7,6 @@ import org.camunda.optimize.service.es.report.command.process.FlowNodeDurationGr
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -52,7 +51,6 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
 
   @Override
   protected SingleProcessMapDurationReportResult evaluate() {
-
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating flow node duration grouped by flow node report " +
@@ -73,9 +71,10 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
         .types(PROC_INSTANCE_TYPE)
         .source(searchSourceBuilder);
 
-    SearchResponse response;
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final ProcessDurationReportMapResultDto resultDto = mapToReportResult(response);
+      return new SingleProcessMapDurationReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
         String.format(
@@ -88,12 +87,6 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    Map<String, AggregationResultDto> resultMap = processAggregations(response.getAggregations());
-    ProcessDurationReportMapResultDto resultDto =
-      new ProcessDurationReportMapResultDto();
-    resultDto.setData(resultMap);
-    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessMapDurationReportResult(resultDto, reportDefinition);
   }
 
   @Override
@@ -117,7 +110,7 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
           )
             .subAggregation(
               terms(ACTIVITY_ID_TERMS_AGGREGATION)
-                .size(Integer.MAX_VALUE)
+                .size(configurationService.getEsAggregationBucketLimit())
                 .field(EVENTS + "." + ACTIVITY_ID)
                 .subAggregation(
                   stats(STATS_DURATION_AGGREGATION)
@@ -132,26 +125,33 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
         );
   }
 
-  private Map<String, AggregationResultDto> processAggregations(Aggregations aggregations) {
-    ValidationHelper.ensureNotNull("aggregations", aggregations);
-    Nested activities = aggregations.get(EVENTS_AGGREGATION);
-    Filter filteredActivities = activities.getAggregations().get(FILTERED_EVENTS_AGGREGATION);
-    Terms terms = filteredActivities.getAggregations().get(ACTIVITY_ID_TERMS_AGGREGATION);
-    Map<String, AggregationResultDto> result = new HashMap<>();
-    for (Terms.Bucket b : terms.getBuckets()) {
-      ParsedStats statsAggregation = b.getAggregations().get(STATS_DURATION_AGGREGATION);
-      ParsedTDigestPercentiles medianAggregation = b.getAggregations().get(MEDIAN_DURATION_AGGREGATION);
+  private ProcessDurationReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();
 
-      AggregationResultDto aggregationResultDto = new AggregationResultDto(
+    final Aggregations aggregations = response.getAggregations();
+    final Nested activities = aggregations.get(EVENTS_AGGREGATION);
+    final Filter filteredActivities = activities.getAggregations().get(FILTERED_EVENTS_AGGREGATION);
+    final Terms activityIdTerms = filteredActivities.getAggregations().get(ACTIVITY_ID_TERMS_AGGREGATION);
+
+    final Map<String, AggregationResultDto> resultMap = new HashMap<>();
+    for (Terms.Bucket b : activityIdTerms.getBuckets()) {
+      final ParsedStats statsAggregation = b.getAggregations().get(STATS_DURATION_AGGREGATION);
+      final ParsedTDigestPercentiles medianAggregation = b.getAggregations().get(MEDIAN_DURATION_AGGREGATION);
+
+      final AggregationResultDto aggregationResultDto = new AggregationResultDto(
         mapToLong(statsAggregation.getMin()),
         mapToLong(statsAggregation.getMax()),
         mapToLong(statsAggregation.getAvg()),
         mapToLong(medianAggregation)
       );
 
-      result.put(b.getKeyAsString(), aggregationResultDto);
+      resultMap.put(b.getKeyAsString(), aggregationResultDto);
     }
-    return result;
+
+    resultDto.setData(resultMap);
+    resultDto.setComplete(activityIdTerms.getSumOfOtherDocCounts() == 0L);
+    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+    return resultDto;
   }
 
 }

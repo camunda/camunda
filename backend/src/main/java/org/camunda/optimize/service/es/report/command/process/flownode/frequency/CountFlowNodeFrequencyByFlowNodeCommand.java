@@ -6,7 +6,6 @@ import org.camunda.optimize.service.es.report.command.process.FlowNodeGroupingCo
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -36,7 +35,6 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCom
 
   @Override
   protected SingleProcessMapReportResult evaluate() {
-
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating count flow node frequency grouped by flow node report " +
@@ -57,9 +55,10 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCom
         .types(PROC_INSTANCE_TYPE)
         .source(searchSourceBuilder);
 
-    SearchResponse response;
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final ProcessReportMapResultDto resultDto = mapToReportResult(response);
+      return new SingleProcessMapReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
         String.format(
@@ -71,13 +70,6 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCom
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-
-    Map<String, Long> resultMap = processAggregations(response.getAggregations());
-    ProcessReportMapResultDto resultDto =
-      new ProcessReportMapResultDto();
-    resultDto.setData(resultMap);
-    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessMapReportResult(resultDto, reportDefinition);
   }
 
   @Override
@@ -101,23 +93,30 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCom
           )
           .subAggregation(AggregationBuilders
             .terms("activities")
-            .size(Integer.MAX_VALUE)
+            .size(configurationService.getEsAggregationBucketLimit())
             .field("events.activityId")
           )
         );
     // @formatter:on
   }
 
-  private Map<String, Long> processAggregations(Aggregations aggregations) {
-    ValidationHelper.ensureNotNull("aggregations", aggregations);
-    Nested activities = aggregations.get("events");
-    Filter filteredActivities = activities.getAggregations().get("filteredEvents");
-    Terms terms = filteredActivities.getAggregations().get("activities");
-    Map<String, Long> result = new HashMap<>();
-    for (Terms.Bucket b : terms.getBuckets()) {
-      result.put(b.getKeyAsString(), b.getDocCount());
+  private ProcessReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ProcessReportMapResultDto resultDto = new ProcessReportMapResultDto();
+
+    final Aggregations aggregations = response.getAggregations();
+    final Nested activities = aggregations.get("events");
+    final Filter filteredActivities = activities.getAggregations().get("filteredEvents");
+    final Terms activityTerms = filteredActivities.getAggregations().get("activities");
+
+    final Map<String, Long> resultMap = new HashMap<>();
+    for (Terms.Bucket b : activityTerms.getBuckets()) {
+      resultMap.put(b.getKeyAsString(), b.getDocCount());
     }
-    return result;
+
+    resultDto.setData(resultMap);
+    resultDto.setComplete(activityTerms.getSumOfOtherDocCounts() == 0L);
+    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+    return resultDto;
   }
 
 }

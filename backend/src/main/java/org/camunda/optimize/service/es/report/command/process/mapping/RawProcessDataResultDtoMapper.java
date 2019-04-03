@@ -86,7 +86,7 @@ public class RawProcessDataResultDtoMapper {
         result.put(instance.getName(), instance.getValue());
       } else {
         try {
-          logger.debug("Found variable with null name []", objectMapper.writeValueAsString(instance));
+          logger.debug("Found variable with null name [{}]", objectMapper.writeValueAsString(instance));
         } catch (JsonProcessingException e) {
           //nothing to do
         }
@@ -98,8 +98,9 @@ public class RawProcessDataResultDtoMapper {
 
   private RawDataProcessReportResultDto createResult(final List<RawDataProcessInstanceDto> limitedRawDataResult,
                                                      final Long totalHits) {
-    RawDataProcessReportResultDto result = new RawDataProcessReportResultDto();
+    final RawDataProcessReportResultDto result = new RawDataProcessReportResultDto();
     result.setData(limitedRawDataResult);
+    result.setComplete(limitedRawDataResult.size() == totalHits);
     result.setProcessInstanceCount(totalHits);
     return result;
   }

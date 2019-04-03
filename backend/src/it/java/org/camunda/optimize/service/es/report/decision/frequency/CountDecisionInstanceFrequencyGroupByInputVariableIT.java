@@ -146,6 +146,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(6L));
+    assertThat(result.getIsComplete(), is(true));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(3));
     assertThat(
@@ -156,6 +157,51 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     assertThat(resultValuesIterator.next(), is(3L));
     assertThat(resultValuesIterator.next(), is(2L));
     assertThat(resultValuesIterator.next(), is(1L));
+  }
+
+  @Test
+  public void reportEvaluationMultiBuckets_resultLimitedByConfig() {
+    // given
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
+    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(200.0, "Misc")
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(200.0, "Misc")
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(300.0, "Misc")
+    );
+
+    // different version
+    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineRule.deployAndStartDecisionDefinition();
+    engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(1);
+
+    // when
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+      decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_AMOUNT_ID
+    ).getResult();
+
+    // then
+    assertThat(result.getDecisionInstanceCount(), is(6L));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getIsComplete(), is(false));
   }
 
   @Test

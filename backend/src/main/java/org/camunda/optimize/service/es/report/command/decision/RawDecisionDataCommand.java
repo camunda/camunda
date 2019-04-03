@@ -48,26 +48,28 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
       reportData.getDecisionDefinitionVersion()
     );
 
-    final DecisionReportDataDto decisionReportData = (DecisionReportDataDto) reportData;
     final BoolQueryBuilder query = setupBaseQuery(
       reportData.getDecisionDefinitionKey(),
       reportData.getDecisionDefinitionVersion()
     );
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .size(RAW_DATA_LIMIT.intValue());
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
-        .types(DECISION_INSTANCE_TYPE)
-        .source(searchSourceBuilder);
 
-    addSortingToQuery(decisionReportData, searchSourceBuilder);
+    addSortingToQuery(reportData, searchSourceBuilder);
 
-    SearchResponse response;
+    final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
+      .types(DECISION_INSTANCE_TYPE)
+      .source(searchSourceBuilder);
+
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final RawDataDecisionReportResultDto rawDataDecisionReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
+        response, objectMapper
+      );
+      return new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
         String.format(
@@ -78,11 +80,6 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-
-    RawDataDecisionReportResultDto rawDataDecisionReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
-      response, objectMapper
-    );
-    return new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto, reportDefinition);
   }
 
   @Override
@@ -109,8 +106,9 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
         SortBuilders.fieldSort(sortByField).order(sortOrder)
           // this ensures the query doesn't fail on unknown properties but just ignores them
           // this is done to ensure consistent behavior compared to unknown variable names as ES doesn't fail there
-          // https://www.elastic.co/guide/en/elasticsearch/reference/6.0/search-request-sort
-          // .html#_ignoring_unmapped_fields
+          // @formatter:off
+          // https://www.elastic.co/guide/en/elasticsearch/reference/6.0/search-request-sort.html#_ignoring_unmapped_fields
+          // @formatter:on
           .unmappedType("short")
       );
     }

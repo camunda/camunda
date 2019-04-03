@@ -50,7 +50,6 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
 
   @Override
   protected SingleProcessMapDurationReportResult evaluate() {
-
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating average process instance duration grouped by variable report " +
@@ -73,9 +72,10 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
         .types(PROC_INSTANCE_TYPE)
         .source(searchSourceBuilder);
 
-    SearchResponse response;
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final ProcessDurationReportMapResultDto resultDto = mapToReportResult(response);
+      return new SingleProcessMapDurationReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
         String.format(
@@ -88,10 +88,6 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    ProcessDurationReportMapResultDto mapResultDto = new ProcessDurationReportMapResultDto();
-    mapResultDto.setData(processAggregations(response.getAggregations()));
-    mapResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessMapDurationReportResult(mapResultDto, reportDefinition);
   }
 
   @Override
@@ -108,7 +104,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     String nestedVariableValueFieldLabel = getNestedVariableValueFieldLabelForType(variableType);
     TermsAggregationBuilder collectVariableValueCount = AggregationBuilders
       .terms(VARIABLES_AGGREGATION)
-      .size(Integer.MAX_VALUE)
+      .size(configurationService.getEsAggregationBucketLimit())
       .field(nestedVariableValueFieldLabel);
 
     if (VariableType.DATE.equals(variableType)) {
@@ -139,17 +135,25 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     return aggregationBuilder;
   }
 
-  private Map<String, AggregationResultDto> processAggregations(Aggregations aggregations) {
-    Nested nested = aggregations.get(NESTED_AGGREGATION);
-    Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-    Terms variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
-    Map<String, AggregationResultDto> result = new HashMap<>();
+  private ProcessDurationReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();
+
+    final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
+    final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
+    final Terms variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
+
+    final Map<String, AggregationResultDto> resultData = new HashMap<>();
     for (Terms.Bucket b : variableTerms.getBuckets()) {
       ReverseNested reverseNested = b.getAggregations().get(REVERSE_NESTED_AGGREGATION);
       AggregationResultDto operationsResult = processAggregationOperation(reverseNested.getAggregations());
-      result.put(b.getKeyAsString(), operationsResult);
+      resultData.put(b.getKeyAsString(), operationsResult);
     }
-    return result;
+
+    resultDto.setData(resultData);
+    resultDto.setComplete(variableTerms.getSumOfOtherDocCounts() == 0L);
+    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+
+    return resultDto;
   }
 
   protected abstract AggregationResultDto processAggregationOperation(Aggregations aggs);

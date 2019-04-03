@@ -61,9 +61,10 @@ public interface ConfigurationServiceConstants {
 
   String DECISION_DEFINITION_ENDPOINT = "$.engine-commons.decision-definition.resource";
   String DECISION_DEFINITION_XML_ENDPOINT = "$.engine-commons.decision-definition.xml";
-  
+
   String INITIAL_BACKOFF_INTERVAL = "$.import.handler.backoff.initial";
   String MAXIMUM_BACK_OFF = "$.import.handler.backoff.max";
+  String ES_AGGREGATION_BUCKET_LIMIT = "$.es.settings.aggregationBucketLimit";
   String ES_REFRESH_INTERVAL = "$.es.settings.index.refresh_interval";
   String ES_NUMBER_OF_REPLICAS = "$.es.settings.index.number_of_replicas";
   String ES_NUMBER_OF_SHARDS = "$.es.settings.index.number_of_shards";

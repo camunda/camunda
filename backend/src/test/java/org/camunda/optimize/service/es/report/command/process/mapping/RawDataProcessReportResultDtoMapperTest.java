@@ -31,6 +31,24 @@ public class RawDataProcessReportResultDtoMapperTest {
 
     // then
     assertThat(result.getData().size(), is(rawDataLimit.intValue()));
+    assertThat(result.getIsComplete(), is(false));
+    assertThat(result.getProcessInstanceCount(), is(actualInstanceCount));
+  }
+
+  @Test
+  public void testMapFromSearchResponse_hitCountEqualsTotalCount() {
+    // given
+    Long rawDataLimit = 3L;
+    Long actualInstanceCount = 3L;
+    final RawProcessDataResultDtoMapper mapper = new RawProcessDataResultDtoMapper(rawDataLimit);
+    final SearchResponse searchResponse = createSearchResponseMock(rawDataLimit.intValue(), actualInstanceCount);
+
+    // when
+    final RawDataProcessReportResultDto result = mapper.mapFrom(searchResponse, objectMapper);
+
+    // then
+    assertThat(result.getData().size(), is(rawDataLimit.intValue()));
+    assertThat(result.getIsComplete(), is(true));
     assertThat(result.getProcessInstanceCount(), is(actualInstanceCount));
   }
 

@@ -14,7 +14,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -46,7 +45,6 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
 
   @Override
   protected SingleDecisionMapReportResult evaluate() {
-
     final DecisionReportDataDto reportData = getReportData();
     logger.debug(
       "Evaluating count decision instance frequency grouped by {} report " +
@@ -90,9 +88,7 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    DecisionReportMapResultDto mapResultDto = new DecisionReportMapResultDto();
-    mapResultDto.getData(mapAggregationsToMapResult(response.getAggregations()));
-    mapResultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
+    final DecisionReportMapResultDto mapResultDto = mapToReportResult(response);
     return new SingleDecisionMapReportResult(mapResultDto, reportDefinition);
   }
 
@@ -115,21 +111,29 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
           .subAggregation(
             AggregationBuilders
               .terms(VARIABLE_VALUE_TERMS_AGGREGATION)
-              .size(Integer.MAX_VALUE)
+              .size(configurationService.getEsAggregationBucketLimit())
               .field(getVariableStringValueField(variablePath))
           )
       );
   }
 
-  private Map<String, Long> mapAggregationsToMapResult(final Aggregations aggregations) {
-    final Nested nested = aggregations.get(NESTED_AGGREGATION);
+  private DecisionReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final DecisionReportMapResultDto resultDto = new DecisionReportMapResultDto();
+
+    final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     final Terms variableTerms = filteredVariables.getAggregations().get(VARIABLE_VALUE_TERMS_AGGREGATION);
-    final Map<String, Long> result = new LinkedHashMap<>();
+
+    final Map<String, Long> resultData = new LinkedHashMap<>();
     for (Terms.Bucket b : variableTerms.getBuckets()) {
-      result.put(b.getKeyAsString(), b.getDocCount());
+      resultData.put(b.getKeyAsString(), b.getDocCount());
     }
-    return result;
+
+    resultDto.getData(resultData);
+    resultDto.setComplete(variableTerms.getSumOfOtherDocCounts() == 0L);
+    resultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
+
+    return resultDto;
   }
 
 }

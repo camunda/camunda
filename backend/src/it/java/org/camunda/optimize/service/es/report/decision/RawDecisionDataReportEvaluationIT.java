@@ -191,6 +191,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
     assertThat(result.getDecisionInstanceCount(), is(5L));
     assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getIsComplete(), is(true));
     assertThat(result.getData().size(), is(5));
 
     assertThat(

@@ -149,8 +149,9 @@ public class RawDecisionDataResultDtoMapper {
 
   private RawDataDecisionReportResultDto createResult(final List<RawDataDecisionInstanceDto> limitedRawDataResult,
                                                       final Long totalHits) {
-    RawDataDecisionReportResultDto result = new RawDataDecisionReportResultDto();
+    final RawDataDecisionReportResultDto result = new RawDataDecisionReportResultDto();
     result.setData(limitedRawDataResult);
+    result.setComplete(limitedRawDataResult.size() == totalHits);
     result.setDecisionInstanceCount(totalHits);
     return result;
   }

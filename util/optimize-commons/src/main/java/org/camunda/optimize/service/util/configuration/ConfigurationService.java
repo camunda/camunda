@@ -96,6 +96,9 @@ public class ConfigurationService {
   private Integer esNumberOfShards;
   private String esRefreshInterval;
 
+  // elastic query settings
+  private Integer esAggregationBucketLimit;
+
   // job executor settings
   private Integer elasticsearchJobExecutorQueueSize;
   private Integer elasticsearchJobExecutorThreadCount;
@@ -566,6 +569,19 @@ public class ConfigurationService {
     }
     ensureGreaterThanZero(engineImportVariableInstanceMaxPageSize);
     return engineImportVariableInstanceMaxPageSize;
+  }
+
+  public int getEsAggregationBucketLimit() {
+    if (esAggregationBucketLimit == null) {
+      esAggregationBucketLimit = configJsonContext.read(
+        ConfigurationServiceConstants.ES_AGGREGATION_BUCKET_LIMIT, Integer.class
+      );
+    }
+    return esAggregationBucketLimit;
+  }
+
+  public void setEsAggregationBucketLimit(final Integer esAggregationBucketLimit) {
+    this.esAggregationBucketLimit = esAggregationBucketLimit;
   }
 
   public String getEsRefreshInterval() {

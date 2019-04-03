@@ -298,10 +298,11 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
     reportData.getConfiguration().setAggregationType(aggregationType);
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, AggregationResultDto> resultMap = result.getData();
+    assertThat(resultDto.getIsComplete(), is(true));
+    Map<String, AggregationResultDto> resultMap = resultDto.getData();
     assertThat(resultMap.size(), is(3));
     final List<Long> bucketValues = resultMap.values().stream()
       .map(bucketResult -> bucketResult.getResultForGivenAggregationType(aggregationType))
@@ -310,6 +311,43 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       new ArrayList<>(bucketValues),
       contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
     );
+  }
+
+  @Test
+  public void multipleBuckets_resultLimitedByConfig() {
+    // given
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("foo", "bar1");
+    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    engineRule.startProcessInstance(processDefinitionDto.getId(), variables);
+    variables.put("foo", "bar2");
+    engineRule.startProcessInstance(processDefinitionDto.getId(), variables);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(1);
+
+    // when
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART)
+      .setProcessDefinitionKey(processDefinitionDto.getKey())
+      .setProcessDefinitionVersion(processDefinitionDto.getVersionAsString())
+      .setVariableName(DEFAULT_VARIABLE_NAME)
+      .setVariableType(DEFAULT_VARIABLE_TYPE)
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .build();
+
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+
+    // then
+    final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getProcessInstanceCount(), is(2L));
+    assertThat(resultDto.getData(), is(notNullValue()));
+    assertThat(resultDto.getData().size(), is(1));
+    assertThat(resultDto.getIsComplete(), is(false));
   }
 
   @Test

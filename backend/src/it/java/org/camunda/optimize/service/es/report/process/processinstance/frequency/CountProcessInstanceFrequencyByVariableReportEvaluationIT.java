@@ -227,14 +227,50 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
 
-    final ProcessReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData(), is(notNullValue()));
-    Map<String, Long> variableValueToCount = result.getData();
+    final ProcessReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getIsComplete(), is(true));
+    assertThat(resultDto.getData(), is(notNullValue()));
+    Map<String, Long> variableValueToCount = resultDto.getData();
     assertThat(variableValueToCount.size(), is(2));
     assertThat(variableValueToCount.get("bar1"), is(1L));
     assertThat(variableValueToCount.get("bar2"), is(2L));
   }
 
+  @Test
+  public void multipleBuckets_resultLimitedByConfig() {
+    // given
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("foo", "bar1");
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    variables.put("foo", "bar2");
+    engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(1);
+
+    // when
+    ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      "foo",
+      VariableType.STRING
+    );
+    ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+
+    // then
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
+    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+
+    final ProcessReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getProcessInstanceCount(), is(3L));
+    assertThat(resultDto.getData(), is(notNullValue()));
+    assertThat(resultDto.getData().size(), is(1));
+    assertThat(resultDto.getIsComplete(), is(false));
+  }
 
   @Test
   public void testCustomOrderOnResultKeyIsApplied() {

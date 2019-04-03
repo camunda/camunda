@@ -88,7 +88,6 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       decisionDefinitionDto1.getId(), createInputs(2000.0, "Misc")
     );
 
-
     // different version
     DecisionDefinitionEngineDto decisionDefinitionDto2 = engineRule.deployAndStartDecisionDefinition();
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
@@ -103,12 +102,54 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(4L));
+    assertThat(result.getIsComplete(), is(true));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(2));
     assertThat(new ArrayList<>(result.getData().keySet()), containsInAnyOrder("false", "true"));
     final Iterator<Long> resultValuesIterator = result.getData().values().iterator();
     assertThat(resultValuesIterator.next(), is(3L));
     assertThat(resultValuesIterator.next(), is(1L));
+  }
+
+  @Test
+  public void reportEvaluationMultiBuckets_resultLimitedByConfig() {
+    // given
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
+    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
+    // audit = false
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(200.0, "Misc")
+    );
+    // audit = true
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto1.getId(), createInputs(2000.0, "Misc")
+    );
+
+    // different version
+    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineRule.deployAndStartDecisionDefinition();
+    engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(1);
+
+    // when
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+      decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID
+    ).getResult();
+
+    // then
+    assertThat(result.getDecisionInstanceCount(), is(4L));
+    assertThat(result.getIsComplete(), is(false));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
   }
 
   @Test

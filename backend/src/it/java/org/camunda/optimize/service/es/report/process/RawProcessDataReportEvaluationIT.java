@@ -201,25 +201,6 @@ public class RawProcessDataReportEvaluationIT {
     assertThat(rawDataProcessInstanceDto.getVariables().size(), is(0));
   }
 
-  private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
-    String id = createNewReport();
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
-      processDefinitionKey,
-      processDefinitionVersion
-    );
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setId("something");
-    report.setLastModifier("something");
-    report.setName("something");
-    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    report.setCreated(someDate);
-    report.setLastModified(someDate);
-    report.setOwner("something");
-    updateReport(id, report);
-    return id;
-  }
-
   @Test
   public void reportEvaluationWithSeveralProcessInstances() {
     // given
@@ -243,6 +224,7 @@ public class RawProcessDataReportEvaluationIT {
     assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(2));
+    assertThat(result.getIsComplete(), is(true));
     Set<String> expectedProcessInstanceIds = new HashSet<>();
     expectedProcessInstanceIds.add(processInstance.getId());
     expectedProcessInstanceIds.add(processInstance2.getId());
@@ -517,8 +499,8 @@ public class RawProcessDataReportEvaluationIT {
     assertThat(rawDataProcessInstanceDto.getProcessDefinitionId(), is(processInstance.getDefinitionId()));
   }
 
-  //test that basic support for filter is there
 
+  //test that basic support for filter is there
   @Test
   public void durationFilterInReport() {
     // given
@@ -747,6 +729,25 @@ public class RawProcessDataReportEvaluationIT {
 
     // then
     assertThat(response.getStatus(), is(500));
+  }
+
+  private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
+    String id = createNewReport();
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
+      processDefinitionKey,
+      processDefinitionVersion
+    );
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    report.setData(reportData);
+    report.setId("something");
+    report.setLastModifier("something");
+    report.setName("something");
+    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
+    report.setCreated(someDate);
+    report.setLastModified(someDate);
+    report.setOwner("something");
+    updateReport(id, report);
+    return id;
   }
 
   @SafeVarargs

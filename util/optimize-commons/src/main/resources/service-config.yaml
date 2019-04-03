@@ -193,6 +193,8 @@ es:
   #triggers.
   scrollTimeout: 60000
   settings:
+    # the maximum number of buckets returned for an aggregation
+    aggregationBucketLimit: 1000
     index:
       # How often should the data replicated in case of node failure.
       number_of_replicas: 1
