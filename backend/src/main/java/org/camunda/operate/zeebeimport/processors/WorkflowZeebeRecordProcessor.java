@@ -154,6 +154,8 @@ public class WorkflowZeebeRecordProcessor {
     SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
     saxParserFactory.setNamespaceAware(true);
     try {
+      saxParserFactory.setFeature("http://xml.org/sax/features/external-general-entities",false);
+	  saxParserFactory.setFeature("http://xml.org/sax/features/external-parameter-entities",false);
       return saxParserFactory.newSAXParser();
     } catch (ParserConfigurationException | SAXException e) {
       logger.error("Error creating SAXParser", e);
