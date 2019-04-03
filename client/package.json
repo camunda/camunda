@@ -11,7 +11,7 @@
     "classnames": "^2.2.6",
     "debounce": "^1.1.0",
     "dmn-js": "^6.3.2",
-    "element-closest": "^2.0.2",
+    "element-closest": "^3.0.1",
     "heatmap.js": "^2.0.5",
     "immutability-helper": "^3.0.0",
     "inferno": "~5.0.5",
