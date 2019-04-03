@@ -39,3 +39,6 @@ subjects:
   - kind: ServiceAccount
     name: sebastian-bathke
     namespace: optimize
+  - kind: ServiceAccount
+    name: michael-wagner
+    namespace: optimize
