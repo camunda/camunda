@@ -134,7 +134,7 @@ public class DefaultDistributedLogstreamService
     reader.seekToLastEvent();
     lastPosition = reader.getPosition(); // position of last event which is committed
 
-    LOG.info("Logstreams created");
+    LOG.info("Logstreams created. last appended event at position {}", lastPosition);
   }
 
   @Override
@@ -203,7 +203,14 @@ public class DefaultDistributedLogstreamService
   @Override
   public void restore(BackupInput backupInput) {
     // restore in-memory states
-    lastPosition = backupInput.readLong();
+    final long backupPosition = backupInput.readLong();
+    LOG.info("Restoring log");
+    if (lastPosition < backupPosition) {
+      LOG.error(
+          "There are missing events in the logstream. last event in logstream is {}. backup position is {}.",
+          lastPosition,
+          backupPosition);
+    }
     currentLeader = backupInput.readString();
     currentLeaderTerm = backupInput.readLong();
   }
