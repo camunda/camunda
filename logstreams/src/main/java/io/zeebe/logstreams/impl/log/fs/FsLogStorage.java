@@ -141,6 +141,30 @@ public class FsLogStorage implements LogStorage {
   }
 
   @Override
+  public void delete(long address) {
+    ensureOpenedStorage();
+
+    final int segmentId = partitionId(address);
+
+    final int firstSegmentId = logSegments.initalSegmentId;
+    final int lastSegmentId = logSegments.getLastSegmentId();
+    if (segmentId > firstSegmentId && segmentId <= lastSegmentId) {
+      // segment id has to be larger then initial id,
+      // since we don't delete data within a segment
+      for (int i = logSegments.initalSegmentId; i < segmentId; i++) {
+        final FsLogSegment segmentToDelete = logSegments.getSegment(i);
+        if (segmentToDelete != null) {
+          segmentToDelete.closeSegment();
+          segmentToDelete.delete();
+        }
+      }
+      final int diff = segmentId - firstSegmentId;
+      LOG.info("Deleted {} segments from log storage ({} to {}).", diff, firstSegmentId, segmentId);
+      logSegments.removeSegmentsUntil(segmentId);
+    }
+  }
+
+  @Override
   public void truncate(final long address) {
     ensureOpenedStorage();
 
