@@ -44,6 +44,7 @@ public class StreamProcessorContext {
 
   private Runnable suspendRunnable;
   private Runnable resumeRunnable;
+  private int maxSnapshots;
 
   public LogStream getLogStream() {
     return logStream;
@@ -165,5 +166,13 @@ public class StreamProcessorContext {
 
   public StreamProcessorFactory getStreamProcessorFactory() {
     return streamProcessorFactory;
+  }
+
+  public void setMaxSnapshots(final int maxSnapshots) {
+    this.maxSnapshots = maxSnapshots;
+  }
+
+  public int getMaxSnapshots() {
+    return maxSnapshots;
   }
 }

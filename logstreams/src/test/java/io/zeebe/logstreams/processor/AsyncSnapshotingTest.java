@@ -45,8 +45,9 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 public class AsyncSnapshotingTest {
-
   private static final long TIMEOUT = 2_000L;
+  private static final int MAX_SNAPSHOTS = 3;
+
   private final TemporaryFolder tempFolderRule = new TemporaryFolder();
   private final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
   private final LogStreamRule logStreamRule = new LogStreamRule(tempFolderRule);
@@ -95,7 +96,8 @@ public class AsyncSnapshotingTest {
             actorCondition -> logStream.registerOnCommitPositionUpdatedCondition(actorCondition),
             actorCondition -> logStream.removeOnCommitPositionUpdatedCondition(actorCondition),
             () -> logStream.getCommitPosition(),
-            mock(StreamProcessorMetrics.class));
+            mock(StreamProcessorMetrics.class),
+            MAX_SNAPSHOTS);
     actorScheduler.submitActor(asyncSnapshotDirector).join();
   }
 

@@ -62,6 +62,7 @@ public class LogStreamBuilder {
   protected int indexBlockSize = 1024 * 1024 * 4;
   protected float deviation = LogBlockIndexWriter.DEFAULT_DEVIATION;
   protected int readBlockSize = 1024;
+  protected int maxSnapshots = 1;
 
   protected Duration snapshotPeriod = Duration.ofMinutes(1);
 
@@ -140,6 +141,11 @@ public class LogStreamBuilder {
     return this;
   }
 
+  public LogStreamBuilder maxSnapshots(final int maxSnapshots) {
+    this.maxSnapshots = maxSnapshots;
+    return this;
+  }
+
   public LogStreamBuilder readBlockSize(final int readBlockSize) {
     this.readBlockSize = readBlockSize;
     return this;
@@ -184,6 +190,10 @@ public class LogStreamBuilder {
 
   public StateStorage getStateStorage() {
     return stateStorage;
+  }
+
+  public int getMaxSnapshots() {
+    return maxSnapshots;
   }
 
   public float getDeviation() {

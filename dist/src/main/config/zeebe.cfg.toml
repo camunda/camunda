@@ -189,6 +189,10 @@
 # How often we take snapshots of streams (time unit)
 # snapshotPeriod = "15m"
 
+# The maximum number of snapshots kept (must be a positive integer). When this 
+# limit is passed the oldest snapshot is deleted.
+# maxSnapshots = "1"
+#
 # How often follower partitions will check for new snapshots to replicate from
 # the leader partitions. Snapshot replication enables faster failover by
 # reducing how many log entries must be reprocessed in case of leader change.
