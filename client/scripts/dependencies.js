@@ -53,5 +53,3 @@ menu:
 `;
 
 fs.writeFileSync(depMdFile, fileHeader + lines.join('\n'));
-
-shell.rm(depJsonFile); // remove json file
