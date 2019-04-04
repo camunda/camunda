@@ -37,7 +37,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class LogBlockIndex {
   private static final String ERROR_MSG_ENSURING_MAX_SNAPSHOT_COUNT =
       "Unexpected exception occurred on ensuring maximum snapshot count.";
-  private static final int VALUE_NOT_FOUND = -1;
+
+  public static final int VALUE_NOT_FOUND = -1;
   private long lastVirtualPosition = VALUE_NOT_FOUND;
 
   private final StateSnapshotController stateSnapshotController;

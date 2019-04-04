@@ -30,7 +30,9 @@ import io.zeebe.dispatcher.Subscription;
 import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
+import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
+import io.zeebe.logstreams.impl.log.index.LogBlockIndexContext;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
@@ -45,8 +47,12 @@ import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.concurrent.status.Position;
+import org.slf4j.Logger;
 
 public class LogStreamService implements LogStream, Service<LogStream> {
+
+  private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
+
   private static final String APPENDER_SUBSCRIPTION_NAME = "appender";
 
   private final Injector<LogStorage> logStorageInjector = new Injector<>();
@@ -65,6 +71,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   private final int maxAppendBlockSize;
 
   private final Position commitPosition;
+  private LogBlockIndexContext logBlockIndexContext;
   private volatile int term = 0;
 
   private ServiceStartContext serviceContext;
@@ -95,6 +102,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     serviceContext = startContext;
     logStorage = logStorageInjector.getValue();
     logBlockIndex = logBlockIndexInjector.getValue();
+    logBlockIndexContext = logBlockIndex.createLogBlockIndexContext();
     logBlockIndexWriter = logBockIndexWriterInjector.getValue();
   }
 
@@ -235,6 +243,23 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     } else {
       throw new IllegalArgumentException(
           String.format("Truncation failed! Position %d was not found.", position));
+    }
+  }
+
+  @Override
+  public void delete(long position) {
+    final long blockAddress = logBlockIndex.lookupBlockAddress(logBlockIndexContext, position);
+
+    if (blockAddress != LogBlockIndex.VALUE_NOT_FOUND) {
+      LOG.info(
+          "Delete data from logstream until position '{}' (address: '{}').",
+          position,
+          blockAddress);
+      logStorage.delete(blockAddress);
+    } else {
+      LOG.debug(
+          "Tried to delete from log stream, but found no corresponding address in the log block index for the given position {}.",
+          position);
     }
   }
 

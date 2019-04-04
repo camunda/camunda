@@ -133,6 +133,13 @@ public interface LogStream extends AutoCloseable {
    */
   void truncate(long position);
 
+  /**
+   * Triggers deletion of data from the log stream, where the given position is used as upper bound.
+   *
+   * @param position the position as upper bound
+   */
+  void delete(long position);
+
   void registerOnCommitPositionUpdatedCondition(ActorCondition condition);
 
   void removeOnCommitPositionUpdatedCondition(ActorCondition condition);
