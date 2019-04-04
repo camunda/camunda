@@ -21,6 +21,7 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -56,8 +57,6 @@ public interface StreamProcessorControl {
 
   void blockAfterTimerEvent(Predicate<TypedRecord<TimerRecord>> test);
 
-  void purgeSnapshot();
-
   /**
    * @return true if the event to block on has been processed and the stream processor won't handle
    *     any more events until {@link #unblock()} is called.
@@ -69,4 +68,6 @@ public interface StreamProcessorControl {
   void start();
 
   void restart();
+
+  SnapshotController getSnapshotController();
 }

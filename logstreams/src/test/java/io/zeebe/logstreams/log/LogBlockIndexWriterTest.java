@@ -50,9 +50,9 @@ public class LogBlockIndexWriterTest {
 
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofSeconds(1);
 
-  private TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  private LogStreamRule logStreamRule =
+  private final LogStreamRule logStreamRule =
       new LogStreamRule(
           temporaryFolder,
           b ->
@@ -60,7 +60,7 @@ public class LogBlockIndexWriterTest {
                   .readBlockSize(FRAGMENT_SIZE)
                   .snapshotPeriod(SNAPSHOT_INTERVAL));
 
-  private LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
+  private final LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
 
   @Rule
   public RuleChain ruleChain =
@@ -160,7 +160,7 @@ public class LogBlockIndexWriterTest {
     // then
     assertThat(stateStorage.list()).hasSize(1);
 
-    final long snapshotWrittenPosition = stateStorage.list().get(0).getLastWrittenEventPosition();
+    final long snapshotWrittenPosition = Long.parseLong(stateStorage.list().get(0).getName());
     assertThat(snapshotWrittenPosition).isEqualTo(eventPositionOfLastBlock);
   }
 

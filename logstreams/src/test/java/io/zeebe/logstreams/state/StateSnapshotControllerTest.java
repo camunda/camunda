@@ -24,7 +24,6 @@ import io.zeebe.logstreams.util.RocksDBWrapper;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
 import java.io.IOException;
-import java.util.function.Predicate;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,10 +33,8 @@ public class StateSnapshotControllerTest {
   @Rule public TemporaryFolder tempFolderRule = new TemporaryFolder();
   @Rule public AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
 
-  private static final Predicate<StateSnapshotMetadata> TRUISM = (s) -> true;
-
-  private StateStorage storage;
   private StateSnapshotController snapshotController;
+  private StateStorage storage;
 
   @Before
   public void setup() throws IOException {
@@ -55,26 +52,11 @@ public class StateSnapshotControllerTest {
   @Test
   public void shouldThrowExceptionOnTakeSnapshotIfClosed() throws Exception {
     // given
-    final StateSnapshotMetadata metadata = new StateSnapshotMetadata(1, 1, 1, false);
 
     // then
     assertThat(snapshotController.isDbOpened()).isFalse();
-    assertThatThrownBy(() -> snapshotController.takeSnapshot(metadata))
+    assertThatThrownBy(() -> snapshotController.takeSnapshot(1))
         .isInstanceOf(IllegalStateException.class);
-  }
-
-  @Test
-  public void shouldNotTakeSnapshotOnPreExistingLocation() throws Exception {
-    // given
-    final StateSnapshotMetadata metadata = new StateSnapshotMetadata(1, 1, 1, false);
-
-    // when
-    snapshotController.openDb();
-    snapshotController.takeSnapshot(metadata);
-    snapshotController.takeSnapshot(metadata);
-
-    // then
-    assertThat(storage.list()).hasSize(1);
   }
 
   @Test
@@ -83,12 +65,11 @@ public class StateSnapshotControllerTest {
     final String key = "test";
     final int value = 3;
     final RocksDBWrapper wrapper = new RocksDBWrapper();
-    final StateSnapshotMetadata metadata = new StateSnapshotMetadata(1, 1, 1, false);
 
     // when
     wrapper.wrap(snapshotController.openDb());
     wrapper.putInt(key, value);
-    snapshotController.takeSnapshot(metadata);
+    snapshotController.takeSnapshot(1);
     snapshotController.close();
     wrapper.wrap(snapshotController.openDb());
 
@@ -99,212 +80,66 @@ public class StateSnapshotControllerTest {
   @Test
   public void shouldOpenNewDatabaseIfNoSnapshotsToRecoverFrom() throws Exception {
     // given
-    final int term = 2;
-    final long commitPosition = 3L;
-    final StateSnapshotMetadata expected = StateSnapshotMetadata.createInitial(term);
 
     // when
-    final StateSnapshotMetadata recovered =
-        snapshotController.recover(commitPosition, term, TRUISM);
+    final long lowerBoundSnapshotPosition = snapshotController.recover();
 
     // then
-    assertThat(recovered).isEqualTo(expected);
-  }
-
-  @Test
-  public void shouldOpenNewDatabaseIfNoValidSnapshotsToRecoverFrom() throws Exception {
-    // given
-    final int term = 2;
-    final long commitPosition = 3L;
-    final StateSnapshotMetadata initial =
-        new StateSnapshotMetadata(1L, commitPosition + 1, term, false);
-    final StateSnapshotMetadata expected = StateSnapshotMetadata.createInitial(term);
-
-    // when
-    snapshotController.openDb();
-    snapshotController.takeSnapshot(initial);
-    snapshotController.close();
-
-    // when
-    final StateSnapshotMetadata recovered =
-        snapshotController.recover(commitPosition, term, TRUISM);
-
-    // then
-    assertThat(recovered).isEqualTo(expected);
-    assertThat(storage.getSnapshotDirectoryFor(initial)).exists();
+    assertThat(lowerBoundSnapshotPosition).isEqualTo(-1);
   }
 
   @Test
   public void shouldRemovePreExistingNewDatabaseOnRecoverIfNoSnapshotsToRecoverFrom()
       throws Exception {
     // given
-    final int term = 0;
     final String key = "test";
     final int value = 1;
-    final StateSnapshotMetadata expected = StateSnapshotMetadata.createInitial(term);
     final RocksDBWrapper wrapper = new RocksDBWrapper();
 
     // when
     wrapper.wrap(snapshotController.openDb());
     wrapper.putInt(key, value);
     snapshotController.close();
-    final StateSnapshotMetadata recovered = snapshotController.recover(3L, term, TRUISM);
+    final long lowerBound = snapshotController.recover();
     wrapper.wrap(snapshotController.openDb());
 
     // then
-    assertThat(recovered).isEqualTo(expected);
+    assertThat(lowerBound).isEqualTo(-1);
     assertThat(wrapper.mayExist(key)).isFalse();
   }
 
   @Test
-  public void shouldRecoverFromSnapshotsOnlyIfPredicateAcceptsIt() throws Exception {
+  public void shouldReturnLatestLowerBound() throws Exception {
     // given
-    final String key = "test";
-    final int value = 1;
-    final StateSnapshotMetadata good = new StateSnapshotMetadata(1, 1, 1, false);
-    final StateSnapshotMetadata bad =
-        new StateSnapshotMetadata(
-            good.getLastSuccessfulProcessedEventPosition() + 1,
-            good.getLastWrittenEventPosition() + 1,
-            good.getLastWrittenEventTerm(),
-            false);
-    final RocksDBWrapper wrapper = new RocksDBWrapper();
+    snapshotController.openDb();
+    snapshotController.takeSnapshot(1);
+    snapshotController.takeSnapshot(2);
+    snapshotController.takeSnapshot(3);
 
     // when
-    wrapper.wrap(snapshotController.openDb());
-    wrapper.putInt(key, value - 1);
-    snapshotController.takeSnapshot(bad);
-    wrapper.putInt(key, value);
-    snapshotController.takeSnapshot(good);
-    snapshotController.close();
+    final long latestLowerBound = snapshotController.recover();
 
     // then
-    assertThat(storage.listRecoverable(bad.getLastWrittenEventPosition())).contains(bad, good);
-
-    // when
-    final StateSnapshotMetadata recovered =
-        snapshotController.recover(
-            bad.getLastWrittenEventPosition(),
-            good.getLastWrittenEventTerm(),
-            (s) -> s.equals(good));
-    wrapper.wrap(snapshotController.openDb());
-
-    // then
-    assertThat(recovered).isEqualTo(good);
-    assertThat(wrapper.getInt(key)).isEqualTo(value);
+    assertThat(latestLowerBound).isEqualTo(3);
   }
 
   @Test
-  public void shouldPurgeAllOtherSnapshots() throws Exception {
+  public void shouldEnsureMaxSnapshotCount() throws Exception {
     // given
-    final String key = "test";
-    final StateSnapshotMetadata[] others =
-        new StateSnapshotMetadata[] {
-          new StateSnapshotMetadata(1, 2, 0, false),
-          new StateSnapshotMetadata(3, 4, 0, false),
-          new StateSnapshotMetadata(7, 8, 0, false)
-        };
-    final StateSnapshotMetadata expected = new StateSnapshotMetadata(5, 6, 0, false);
-    final RocksDBWrapper wrapper = new RocksDBWrapper();
+    snapshotController.openDb();
+    snapshotController.takeSnapshot(16);
+    snapshotController.takeSnapshot(2322);
+    snapshotController.takeSnapshot(131);
+    snapshotController.takeSnapshot(45);
+    snapshotController.takeSnapshot(34);
 
     // when
-    wrapper.wrap(snapshotController.openDb());
-    wrapper.putInt(key, 1);
-    snapshotController.takeSnapshot(others[0]);
-    wrapper.putInt(key, 2);
-    snapshotController.takeSnapshot(others[1]);
-    wrapper.putInt(key, 3);
-    snapshotController.takeSnapshot(others[2]);
-    wrapper.putInt(key, 4);
-    snapshotController.takeSnapshot(expected);
-    wrapper.putInt(key, 5);
-    snapshotController.close();
-    snapshotController.purgeAllExcept(expected);
+    snapshotController.ensureMaxSnapshotCount(2);
 
     // then
-    assertThat(storage.list()).hasSize(1);
-
-    // when
-    final StateSnapshotMetadata recovered =
-        snapshotController.recover(
-            expected.getLastWrittenEventPosition(), expected.getLastWrittenEventTerm(), TRUISM);
-    wrapper.wrap(snapshotController.openDb());
-
-    // then
-    assertThat(recovered).isEqualTo(expected);
-    assertThat(wrapper.getInt(key)).isEqualTo(4);
-  }
-
-  @Test
-  public void shouldPurgeAllMatching() throws Exception {
-    // given
-    final String key = "test";
-    final StateSnapshotMetadata[] snapshots =
-        new StateSnapshotMetadata[] {
-          new StateSnapshotMetadata(1, 2, 0, false), new StateSnapshotMetadata(3, 4, 0, false)
-        };
-    final RocksDBWrapper wrapper = new RocksDBWrapper();
-
-    // when
-    wrapper.wrap(snapshotController.openDb());
-    wrapper.putInt(key, 1);
-    snapshotController.takeSnapshot(snapshots[0]);
-    wrapper.putInt(key, 2);
-    snapshotController.takeSnapshot(snapshots[1]);
-    wrapper.putInt(key, 3);
-    snapshotController.close();
-    snapshotController.purgeAll(s -> s.getLastSuccessfulProcessedEventPosition() == 3);
-
-    // then
-    assertThat(storage.list()).hasSize(1);
-
-    // when
-    final StateSnapshotMetadata recovered =
-        snapshotController.recover(
-            snapshots[1].getLastWrittenEventPosition(),
-            snapshots[1].getLastWrittenEventTerm(),
-            TRUISM);
-    wrapper.wrap(snapshotController.openDb());
-
-    // then
-    assertThat(recovered).isEqualTo(snapshots[0]);
-    assertThat(wrapper.getInt(key)).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldPurgeAllSnapshots() throws Exception {
-    // given
-    final String key = "test";
-    final StateSnapshotMetadata[] snapshots =
-        new StateSnapshotMetadata[] {
-          new StateSnapshotMetadata(1, 2, 0, false), new StateSnapshotMetadata(3, 4, 0, false)
-        };
-    final RocksDBWrapper wrapper = new RocksDBWrapper();
-
-    // when
-    wrapper.wrap(snapshotController.openDb());
-    wrapper.putInt(key, 1);
-    snapshotController.takeSnapshot(snapshots[0]);
-    wrapper.putInt(key, 2);
-    snapshotController.takeSnapshot(snapshots[1]);
-    wrapper.putInt(key, 3);
-    snapshotController.close();
-    snapshotController.purgeAll();
-
-    // then
-    assertThat(storage.list()).isEmpty();
-
-    // when
-    final StateSnapshotMetadata recovered =
-        snapshotController.recover(
-            snapshots[1].getLastWrittenEventPosition(),
-            snapshots[1].getLastWrittenEventTerm(),
-            TRUISM);
-    wrapper.wrap(snapshotController.openDb());
-
-    // then
-    assertThat(recovered)
-        .isEqualTo(StateSnapshotMetadata.createInitial(snapshots[1].getLastWrittenEventTerm()));
-    assertThat(wrapper.mayExist(key)).isFalse();
+    assertThat(storage.list()).hasSize(2);
+    assertThat(storage.list()).extracting(f -> f.getName()).containsOnly("2322", "131");
+    final long latestLowerBound = snapshotController.recover();
+    assertThat(latestLowerBound).isEqualTo(2322);
   }
 }

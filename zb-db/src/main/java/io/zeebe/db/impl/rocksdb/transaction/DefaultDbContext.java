@@ -23,6 +23,7 @@ import io.zeebe.db.DbValue;
 import io.zeebe.db.TransactionOperation;
 import io.zeebe.db.ZeebeDbException;
 import io.zeebe.db.ZeebeDbTransaction;
+import io.zeebe.util.exception.RecoverableException;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.function.Consumer;
@@ -141,6 +142,8 @@ public class DefaultDbContext implements DbContext {
       } else {
         runInNewTransaction(operations);
       }
+    } catch (RecoverableException recoverableException) {
+      throw recoverableException;
     } catch (RocksDBException rdbex) {
       final String errorMessage = "Unexpected error occurred during RocksDB transaction.";
       if (isRocksDbExceptionRecoverable(rdbex)) {

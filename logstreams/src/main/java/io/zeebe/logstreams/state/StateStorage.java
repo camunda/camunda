@@ -18,30 +18,38 @@ package io.zeebe.logstreams.state;
 import io.zeebe.logstreams.impl.Loggers;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 /** Handles how snapshots/databases are stored on the file system. */
 public class StateStorage {
 
   private static final Logger LOG = Loggers.ROCKSDB_LOGGER;
-  private static final String SEPARATOR = "_";
 
-  public static final String DEFAULT_RUNTIME_DIRECTORY = "runtime";
-  public static final String DEFAULT_SNAPSHOTS_DIRECTORY = "snapshots";
+  private static final String DEFAULT_RUNTIME_DIRECTORY = "runtime";
+  private static final String DEFAULT_SNAPSHOTS_DIRECTORY = "snapshots";
+  static final String TEMP_SNAPSHOT_DIRECTORY = "tmp/";
 
   private final File runtimeDirectory;
   private final File snapshotsDirectory;
+  private File tmpSnapshotDirectory;
 
   public StateStorage(final String rootDirectory) {
     this.runtimeDirectory = new File(rootDirectory, DEFAULT_RUNTIME_DIRECTORY);
     this.snapshotsDirectory = new File(rootDirectory, DEFAULT_SNAPSHOTS_DIRECTORY);
+    initTempSnapshotDirectory();
   }
 
   public StateStorage(final File runtimeDirectory, final File snapshotsDirectory) {
     this.runtimeDirectory = runtimeDirectory;
     this.snapshotsDirectory = snapshotsDirectory;
+    initTempSnapshotDirectory();
+  }
+
+  private void initTempSnapshotDirectory() {
+    tmpSnapshotDirectory = new File(snapshotsDirectory, TEMP_SNAPSHOT_DIRECTORY);
   }
 
   public File getRuntimeDirectory() {
@@ -52,53 +60,19 @@ public class StateStorage {
     return snapshotsDirectory;
   }
 
-  public File getSnapshotDirectoryFor(final StateSnapshotMetadata metadata) {
-    if (metadata == null) {
-      throw new NullPointerException();
-    }
-
-    final String path =
-        String.format(
-            "%d%s%d%s%d",
-            metadata.getLastSuccessfulProcessedEventPosition(),
-            SEPARATOR,
-            metadata.getLastWrittenEventPosition(),
-            SEPARATOR,
-            metadata.getLastWrittenEventTerm());
+  public File getSnapshotDirectoryFor(long position) {
+    final String path = String.format("%d", position);
 
     return new File(snapshotsDirectory, path);
   }
 
-  public StateSnapshotMetadata getSnapshotMetadata(final File folder) {
-    if (folder == null) {
-      throw new NullPointerException();
-    }
-
-    if (folder.exists() && !folder.isDirectory()) {
-      throw new IllegalArgumentException("given file is not a directory");
-    }
-
-    final String name = folder.getName();
-    final String[] parts = name.split(SEPARATOR, 3);
-
-    return new StateSnapshotMetadata(
-        Long.parseLong(parts[0]),
-        Long.parseLong(parts[1]),
-        Integer.parseInt(parts[2]),
-        folder.exists());
+  public File getTempSnapshotDirectory() {
+    return tmpSnapshotDirectory;
   }
 
-  public List<StateSnapshotMetadata> list() {
-    return list(s -> true);
-  }
-
-  public List<StateSnapshotMetadata> listRecoverable(long lastSuccessfulProcessedEventPosition) {
-    return list(s -> s.getLastWrittenEventPosition() <= lastSuccessfulProcessedEventPosition);
-  }
-
-  public List<StateSnapshotMetadata> list(Predicate<StateSnapshotMetadata> filter) {
+  public List<File> list() {
     final File[] snapshotFolders = snapshotsDirectory.listFiles();
-    final List<StateSnapshotMetadata> snapshots = new ArrayList<>();
+    final List<File> snapshots = new ArrayList<>();
 
     if (snapshotFolders == null || snapshotFolders.length == 0) {
       return snapshots;
@@ -106,18 +80,32 @@ public class StateStorage {
 
     for (final File folder : snapshotFolders) {
       if (folder.isDirectory()) {
-        try {
-          final StateSnapshotMetadata metadata = getSnapshotMetadata(folder);
-
-          if (filter.test(metadata)) {
-            snapshots.add(metadata);
+        if (isNumber(folder.getName())) {
+          try {
+            snapshots.add(folder);
+          } catch (final Exception ex) {
+            LOG.warn("error listing snapshot {}", folder.getAbsolutePath(), ex);
           }
-        } catch (final Exception ex) {
-          LOG.warn("error listing snapshot {}", folder.getAbsolutePath(), ex);
         }
       }
     }
 
     return snapshots;
+  }
+
+  private boolean isNumber(String name) {
+    try {
+      Long.parseLong(name);
+      return true;
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  public List<String> listSorted() {
+    return list().stream()
+        .sorted(Comparator.comparingLong(f -> Long.parseLong(f.getName())))
+        .map(f -> f.getAbsolutePath())
+        .collect(Collectors.toList());
   }
 }

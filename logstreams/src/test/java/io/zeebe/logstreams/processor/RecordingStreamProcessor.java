@@ -17,7 +17,11 @@ package io.zeebe.logstreams.processor;
 
 import static org.mockito.Mockito.spy;
 
+import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DbLong;
+import io.zeebe.db.impl.DbString;
+import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.util.buffer.BufferUtil;
@@ -26,15 +30,19 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RecordingStreamProcessor implements StreamProcessor {
+
+  public static final String LAST_PROCESSED_EVENT = "lastProcessedEvent";
   private final List<LoggedEvent> events = new ArrayList<>();
   private final AtomicInteger processedEvents = new AtomicInteger(0);
   private final AtomicInteger failedEvents = new AtomicInteger(0);
-  private final ZeebeDb zeebeDb;
+
   private final EventProcessor eventProcessor =
       spy(
           new EventProcessor() {
             public void processEvent() {
               processedEvents.incrementAndGet();
+              valueInstance.wrapLong(events.get(events.size() - 1).getPosition());
+              lastProcessedPositionColumnFamily.put(keyInstance, valueInstance);
             }
 
             @Override
@@ -45,9 +53,17 @@ public class RecordingStreamProcessor implements StreamProcessor {
 
   private StreamProcessorContext context = null;
   private long failedEventPosition;
+  private final DbString keyInstance;
+  private final ColumnFamily<DbString, DbLong> lastProcessedPositionColumnFamily;
+  private final DbLong valueInstance;
 
   public RecordingStreamProcessor(ZeebeDb zeebeDb) {
-    this.zeebeDb = zeebeDb;
+    keyInstance = new DbString();
+    keyInstance.wrapString(LAST_PROCESSED_EVENT);
+    valueInstance = new DbLong();
+    lastProcessedPositionColumnFamily =
+        zeebeDb.createColumnFamily(
+            DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), keyInstance, valueInstance);
   }
 
   @Override
@@ -77,6 +93,12 @@ public class RecordingStreamProcessor implements StreamProcessor {
       return failedEventPosition;
     }
     return -1;
+  }
+
+  @Override
+  public long getPositionToRecoveryFrom() {
+    final DbLong value = lastProcessedPositionColumnFamily.get(keyInstance);
+    return value == null ? NO_EVENTS_PROCESSED : value.getValue();
   }
 
   public static RecordingStreamProcessor createSpy(ZeebeDb db) {
