@@ -16,6 +16,7 @@
 package io.zeebe.broker.it.job;
 
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -171,7 +172,8 @@ public class ActivateJobsTest {
             .collect(Collectors.toList());
 
     // then
-    assertThat(activatedPartitionIds).containsOnly(0, 1, 2);
+    assertThat(activatedPartitionIds)
+        .containsOnly(START_PARTITION_ID, START_PARTITION_ID + 1, START_PARTITION_ID + 2);
   }
 
   @Test

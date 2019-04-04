@@ -331,16 +331,22 @@ public class BrokerReprocessingTest {
   public void shouldNotReceiveLockedJobAfterRestart() {
     // given
     clientRule.createSingleJob("foo");
+    RecordingExporter.jobRecords(JobIntent.CREATED).withType("foo").await();
 
-    final RecordingJobHandler jobHandler = new RecordingJobHandler();
-    clientRule.getClient().newWorker().jobType("foo").handler(jobHandler).open();
-
-    waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
+    TestUtil.doRepeatedly(
+            () ->
+                clientRule
+                    .getClient()
+                    .newActivateJobsCommand()
+                    .jobType("foo")
+                    .maxJobsToActivate(1)
+                    .send()
+                    .join()
+                    .getJobs())
+        .until(jobs -> !jobs.isEmpty());
 
     // when
     reprocessingTrigger.accept(this);
-
-    jobHandler.clear();
 
     // then
     awaitGateway();
