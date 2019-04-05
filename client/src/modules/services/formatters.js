@@ -128,7 +128,7 @@ export function getHighlightedText(text, highlight) {
   return parts.map((part, i) => (
     <span
       key={i}
-      className={part.toLowerCase() === highlight.toLowerCase() ? 'textBlue' : undefined}
+      className={part.toLowerCase() === highlight.toLowerCase() ? 'textBold' : undefined}
     >
       {part}
     </span>

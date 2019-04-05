@@ -2,9 +2,24 @@
 
 .Typeahead {
   width: 100%;
-
+  position: relative;
   .Input {
     width: 100%;
+    padding-left: 20px;
+
+    &::placeholder {
+      font-style: italic;
+      color: #bbbbbb;
+    }
+  }
+
+  .optionsButton {
+    position: absolute;
+    right: 0px;
+    height: 100%;
+    .Icon {
+      margin-right: 0px;
+    }
   }
 
   .searchResultsList {
@@ -16,12 +31,30 @@
     position: absolute;
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
     background-color: white;
+
     .searchResult {
       &.isActive {
+        background-color: rgba(216, 220, 227, 0.5);
+        color: black;
         border: none;
-        box-shadow: inset 0 0 2px 2px $cam-blue;
-        outline: none;
+        transition: none;
+      }
+
+      &:hover {
+        background-color: darken($cam-blue, 10%);
+        color: #fff;
       }
     }
+  }
+
+  ::-webkit-scrollbar {
+    -webkit-appearance: none;
+    width: 7px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.5);
+    -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
   }
 }

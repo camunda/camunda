@@ -31,36 +31,54 @@ export default class Dropdown extends React.Component {
     evt.preventDefault();
     if (!this.props.disabled) {
       this.setState({open: !this.state.open, openSubmenu: null, fixedSubmenu: null});
+      this.calculateMenuStyle(this.state.open);
     }
   };
 
   close = ({target}) => {
     if (!this.container.contains(target)) {
       this.setState({open: false, openSubmenu: null});
+      this.calculateMenuStyle(true);
     }
   };
 
   componentDidMount() {
     document.body.addEventListener('click', this.close, true);
-    this.calculateMenuStyle();
+    this.calculateMenuStyle(true);
     window.addEventListener('resize', this.calculateMenuStyle);
   }
 
-  calculateMenuStyle = () => {
+  calculateMenuStyle = isOpen => {
     const container = this.container;
+    const activeButton = container.querySelector('.activateButton');
     const menuStyle = {minWidth: container.clientWidth + 'px'};
+    let scrollable = false;
 
-    const overlayWidth = this.menuContainer.current.clientWidth;
-    const buttonPosition = container.querySelector('.activateButton').getBoundingClientRect().left;
+    const overlay = this.menuContainer.current;
+    const buttonPosition = activeButton.getBoundingClientRect();
     const bodyWidth = document.body.clientWidth;
+    const bodyBottomPosition = document.body.getBoundingClientRect().bottom;
 
-    if (buttonPosition + overlayWidth > bodyWidth) {
+    if (buttonPosition.left + overlay.clientWidth > bodyWidth) {
       menuStyle.right = 0;
     } else {
       menuStyle.left = 0;
     }
 
-    this.setState({menuStyle});
+    if (isOpen) {
+      scrollable = false;
+      menuStyle.height = 'initial';
+    } else {
+      if (buttonPosition.bottom + overlay.clientHeight > bodyBottomPosition - 25) {
+        scrollable = true;
+        menuStyle.height = '120px';
+        if (buttonPosition.bottom + 120 > bodyBottomPosition - 25) {
+          menuStyle.bottom = '34px';
+        }
+      }
+    }
+
+    this.setState({menuStyle, scrollable});
   };
 
   handleKeyPress = evt => {
@@ -114,7 +132,7 @@ export default class Dropdown extends React.Component {
   };
 
   render() {
-    const {open} = this.state;
+    const {open, scrollable} = this.state;
 
     return (
       <div
@@ -138,7 +156,7 @@ export default class Dropdown extends React.Component {
           <Icon type="down" className="downIcon" />
         </Button>
         <div
-          className="menu"
+          className={classnames('menu', {scrollable})}
           aria-labelledby={this.props.id ? this.props.id + '-button' : ''}
           ref={this.menuContainer}
           style={this.state.menuStyle}

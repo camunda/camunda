@@ -14,6 +14,15 @@ exports[`should display available options if dropdown is open 1`] = `
     onKeyDown={[Function]}
     value=""
   />
+  <ForwardRef(Button)
+    className="optionsButton"
+    onClick={[Function]}
+  >
+    <Icon
+      className="downIcon"
+      type="down"
+    />
+  </ForwardRef(Button)>
   <div
     className="searchResultsList"
     onMouseUp={[Function]}
@@ -70,6 +79,15 @@ exports[`should format the data based on the provided formatter 1`] = `
     onKeyDown={[Function]}
     value=""
   />
+  <ForwardRef(Button)
+    className="optionsButton"
+    onClick={[Function]}
+  >
+    <Icon
+      className="downIcon"
+      type="down"
+    />
+  </ForwardRef(Button)>
   <div
     className="searchResultsList"
     onMouseUp={[Function]}
@@ -126,6 +144,15 @@ exports[`should only display entries that match the typeahead value 1`] = `
     onKeyDown={[Function]}
     value="foo"
   />
+  <ForwardRef(Button)
+    className="optionsButton"
+    onClick={[Function]}
+  >
+    <Icon
+      className="downIcon"
+      type="down"
+    />
+  </ForwardRef(Button)>
   <div
     className="searchResultsList"
     onMouseUp={[Function]}
@@ -154,7 +181,7 @@ exports[`should only display entries that match the typeahead value 1`] = `
         var
       </span>
       <span
-        className="textBlue"
+        className="textBold"
         key="1"
       >
         Foo
@@ -181,7 +208,7 @@ exports[`should only display entries that match the typeahead value 1`] = `
         var
       </span>
       <span
-        className="textBlue"
+        className="textBold"
         key="1"
       >
         Foo
@@ -210,6 +237,15 @@ exports[`should only display entries that match the typeahead value, even if the
     onKeyDown={[Function]}
     value="foobarvar"
   />
+  <ForwardRef(Button)
+    className="optionsButton"
+    onClick={[Function]}
+  >
+    <Icon
+      className="downIcon"
+      type="down"
+    />
+  </ForwardRef(Button)>
   <div
     className="searchResultsList"
     onMouseUp={[Function]}
@@ -238,7 +274,7 @@ exports[`should only display entries that match the typeahead value, even if the
         var
       </span>
       <span
-        className="textBlue"
+        className="textBold"
         key="1"
       >
         Foobarvar

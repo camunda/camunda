@@ -10,6 +10,10 @@
   display: inline-block;
   margin: 0 0.5em;
   line-height: normal;
+
+  .Popover__button {
+    padding-left: 20px;
+  }
 }
 
 .AnalysisControlPanel__list {

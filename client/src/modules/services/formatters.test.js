@@ -147,10 +147,10 @@ describe('camelCaseToLabel', () => {
 });
 
 describe('getHighlightedText', () => {
-  it('Should wrap the highlighted text in a span and give it textBlue class', () => {
+  it('Should wrap the highlighted text in a span and give it textBold class', () => {
     const results = getHighlightedText('test text', 'text');
     expect(results[1].props.children).toBe('text');
-    expect(results[1].props.className).toBe('textBlue');
+    expect(results[1].props.className).toBe('textBold');
   });
 
   it('Should return the same text as string if the highlight is empty', () => {

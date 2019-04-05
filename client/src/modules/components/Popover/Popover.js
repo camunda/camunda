@@ -61,20 +61,30 @@ export default class Popover extends React.Component {
 
   calculateDialogStyle = () => {
     const style = {};
+    let scrollable = false;
     if (this.buttonRef && this.popoverDialogRef) {
       const overlayWidth = this.popoverDialogRef.clientWidth;
-      const buttonPosition = this.buttonRef.getBoundingClientRect().left;
+      const overlayHeight = this.popoverDialogRef.clientHeight;
+      const buttonLeftPosition = this.buttonRef.getBoundingClientRect().left;
+      const buttonBottomPosition = this.buttonRef.getBoundingClientRect().bottom;
 
       const bodyWidth = document.body.clientWidth;
+      const bodyHeight = document.body.clientHeight;
 
-      if (buttonPosition + overlayWidth > bodyWidth) {
+      if (buttonLeftPosition + overlayWidth > bodyWidth) {
         style.right = 0;
       } else {
         style.left = 0;
       }
+
+      if (overlayHeight + buttonBottomPosition > bodyHeight - 45) {
+        style.height = bodyHeight - buttonBottomPosition - 45 + 'px';
+        scrollable = true;
+      }
     }
 
     this.setState({
+      scrollable,
       dialogStyles: style
     });
   };
@@ -113,7 +123,10 @@ export default class Popover extends React.Component {
 
   render() {
     return (
-      <div ref={this.storePopoverRootRef} className={classnames('Popover', this.props.className)}>
+      <div
+        ref={this.storePopoverRootRef}
+        className={classnames('Popover', {scrollable: this.state.scrollable}, this.props.className)}
+      >
         <Button
           active={this.state.open}
           onClick={this.toggleOpen}
@@ -124,6 +137,7 @@ export default class Popover extends React.Component {
         >
           {this.props.icon ? <Icon type={this.props.icon} /> : ''}
           {this.props.title}
+          <Icon type="down" className="downIcon" />
         </Button>
         {this.state.open && this.createOverlay()}
       </div>

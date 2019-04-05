@@ -14,7 +14,7 @@ import {Icon} from 'components';
 import './Submenu.scss';
 
 export default class Submenu extends React.Component {
-  state = {putLeft: false};
+  state = {styles: {}, scrollable: false};
   containerRef = React.createRef();
 
   onClick = evt => {
@@ -84,29 +84,47 @@ export default class Submenu extends React.Component {
   }
 
   calculatePlacement = () => {
+    const styles = {};
+    let scrollable = false;
     const container = this.containerRef.current;
     const submenu = container.querySelector('.childrenContainer');
     if (submenu) {
-      const submenuWidth = submenu.clientWidth;
-      const parentRightEdge = container.getBoundingClientRect().right;
-      const bodyWidth = document.body.clientWidth;
+      const parentPosition = container.getBoundingClientRect();
+      const body = document.body;
 
-      if (parentRightEdge + submenuWidth > bodyWidth) {
-        this.setState({putLeft: true});
+      if (parentPosition.right + submenu.clientWidth > body.clientWidth) {
+        styles.right = this.props.offset - 1 + 'px';
       } else {
-        this.setState({putLeft: false});
+        styles.left = this.props.offset - 1 + 'px';
+      }
+
+      if (parentPosition.top + submenu.clientHeight > body.clientHeight) {
+        const bottomHeight = body.clientHeight - 35 - parentPosition.top;
+        let shifDistance;
+        if (submenu.clientHeight - bottomHeight <= parentPosition.top - 61) {
+          shifDistance = submenu.clientHeight - bottomHeight;
+        } else {
+          shifDistance = parentPosition.top - 61;
+        }
+
+        styles.top = '-' + shifDistance + 'px';
+        styles.maxHeight = body.clientHeight - 96;
+        if (submenu.clientHeight > styles.maxHeight) {
+          scrollable = true;
+        }
       }
     }
+    this.setState({styles, scrollable});
   };
 
   render() {
-    const placementProp = this.state.putLeft ? 'right' : 'left';
     return (
       <DropdownOption
         checked={this.props.checked}
         disabled={this.props.disabled}
         className={classnames('Submenu', {
-          open: this.props.open
+          open: this.props.open,
+          scrollable: this.state.scrollable
         })}
         ref={this.containerRef}
         onClick={this.onClick}
@@ -120,7 +138,7 @@ export default class Submenu extends React.Component {
             onClick={this.props.closeParent}
             onKeyDown={this.onKeyDown}
             className="childrenContainer"
-            style={{[placementProp]: this.props.offset - 1 + 'px'}}
+            style={this.state.styles}
           >
             {this.props.children}
           </div>

@@ -6,7 +6,7 @@
 
 import React from 'react';
 import classnames from 'classnames';
-import {Input, Dropdown} from 'components';
+import {Input, Dropdown, Icon, Button} from 'components';
 import {formatters} from 'services';
 
 import './Typeahead.scss';
@@ -242,6 +242,9 @@ export default class Typeahead extends React.Component {
           ref={this.inputRef}
           disabled={this.props.disabled || hasNoValues}
         />
+        <Button className="optionsButton" onClick={this.showOptions}>
+          <Icon type="down" className="downIcon" />
+        </Button>
         {optionsVisible && values.length > 0 && (
           <div
             style={searchResultContainerStyle}

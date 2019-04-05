@@ -16,7 +16,7 @@
   white-space: nowrap;
   color: #333;
   text-decoration: none;
-  padding: 6px 12px 6px 17px;
+  padding: 6px 12px 6px 20px;
   font-size: 14px;
   background-color: white;
   border: none;
@@ -24,7 +24,7 @@
   width: 100%;
   text-align: left;
   border-radius: 0;
-  height: 28px;
+  height: 30px;
   line-height: 16px;
   cursor: pointer;
   position: relative;
@@ -48,8 +48,11 @@
   }
 
   &:focus {
-    box-shadow: inset 0 0 2px 2px rgba($cam-blue, 1);
+    background-color: rgba(216, 220, 227, 0.5);
+    color: black;
     border: none;
+    transition: none;
+    outline: none;
   }
 
   &[disabled],
@@ -65,9 +68,9 @@
   }
 
   .Icon.checkMark {
-    margin-left: -12px;
+    margin-left: -15px;
     margin-right: 2px;
-    min-width: 10px;
+    min-width: 15px;
     width: 10px;
   }
 }
