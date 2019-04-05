@@ -34,8 +34,10 @@ import java.util.List;
 
 public class DeploymentCreatedProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
-  private WorkflowState workflowState;
+  private final WorkflowState workflowState;
   private final boolean isDeploymentPartition;
+  private final MessageStartEventSubscriptionRecord subscriptionRecord =
+      new MessageStartEventSubscriptionRecord();
 
   public DeploymentCreatedProcessor(WorkflowState workflowState, boolean isDeploymentPartition) {
     this.workflowState = workflowState;
@@ -55,34 +57,48 @@ public class DeploymentCreatedProcessor implements TypedRecordProcessor<Deployme
     }
 
     for (final Workflow workflowRecord : deploymentEvent.workflows()) {
-      if (workflowRecord.getVersion() != 1) {
-        closeExistingMessageStartEventSubscriptions(workflowState, workflowRecord, streamWriter);
+      if (isLatestWorkflow(workflowRecord)) {
+        closeExistingMessageStartEventSubscriptions(workflowRecord, streamWriter);
+        openMessageStartEventSubscriptions(workflowRecord, streamWriter);
       }
-      openMessageStartEventSubscriptions(workflowState, workflowRecord, streamWriter);
     }
+  }
+
+  private boolean isLatestWorkflow(Workflow workflow) {
+    return workflowState
+            .getLatestWorkflowVersionByProcessId(workflow.getBpmnProcessId())
+            .getVersion()
+        == workflow.getVersion();
   }
 
   private void closeExistingMessageStartEventSubscriptions(
-      WorkflowState workflowState, Workflow workflowRecord, TypedStreamWriter streamWriter) {
-    final int previousVersion = workflowRecord.getVersion() - 1;
-    final DeployedWorkflow previousWorkflow =
-        workflowState.getWorkflowByProcessIdAndVersion(
-            workflowRecord.getBpmnProcessId(), previousVersion);
-    if (previousWorkflow == null
-        || previousWorkflow.getWorkflow().getStartEvents().stream().noneMatch(e -> e.isMessage())) {
+      Workflow workflowRecord, TypedStreamWriter streamWriter) {
+    final DeployedWorkflow lastMsgWorkflow = findLastMessageStartWorkflow(workflowRecord);
+    if (lastMsgWorkflow == null) {
       return;
     }
 
-    final long previousWorkflowKey = previousWorkflow.getKey();
-    final MessageStartEventSubscriptionRecord subscriptionRecord =
-        new MessageStartEventSubscriptionRecord();
-    subscriptionRecord.setWorkflowKey(previousWorkflowKey);
-
+    subscriptionRecord.reset();
+    subscriptionRecord.setWorkflowKey(lastMsgWorkflow.getKey());
     streamWriter.appendNewCommand(MessageStartEventSubscriptionIntent.CLOSE, subscriptionRecord);
   }
 
+  private DeployedWorkflow findLastMessageStartWorkflow(final Workflow workflowRecord) {
+    for (int version = workflowRecord.getVersion() - 1; version > 0; --version) {
+      final DeployedWorkflow lastMsgWorkflow =
+          workflowState.getWorkflowByProcessIdAndVersion(
+              workflowRecord.getBpmnProcessId(), version);
+      if (lastMsgWorkflow != null
+          && lastMsgWorkflow.getWorkflow().getStartEvents().stream().anyMatch(e -> e.isMessage())) {
+        return lastMsgWorkflow;
+      }
+    }
+
+    return null;
+  }
+
   private void openMessageStartEventSubscriptions(
-      WorkflowState workflowState, Workflow workflowRecord, TypedStreamWriter streamWriter) {
+      Workflow workflowRecord, TypedStreamWriter streamWriter) {
     final long workflowKey = workflowRecord.getKey();
     final DeployedWorkflow workflowDefinition = workflowState.getWorkflowByKey(workflowKey);
     final ExecutableWorkflow workflow = workflowDefinition.getWorkflow();
@@ -91,8 +107,7 @@ public class DeploymentCreatedProcessor implements TypedRecordProcessor<Deployme
     // if startEvents contain message events
     for (ExecutableCatchEventElement startEvent : startEvents) {
       if (startEvent.isMessage()) {
-        final MessageStartEventSubscriptionRecord subscriptionRecord =
-            new MessageStartEventSubscriptionRecord();
+        subscriptionRecord.reset();
         subscriptionRecord
             .setMessageName(startEvent.getMessage().getMessageName())
             .setWorkflowKey(workflowKey)

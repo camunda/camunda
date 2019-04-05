@@ -340,6 +340,16 @@ public class TestStreams {
     }
 
     @Override
+    public void blockAfterMessageStartEventSubscriptionRecord(
+        final Predicate<TypedRecord<MessageStartEventSubscriptionRecord>> test) {
+      blockAfterEvent(
+          e ->
+              Records.isMessageStartEventSubscriptionRecord(e)
+                  && test.test(
+                      CopiedTypedEvent.toTypedEvent(e, MessageStartEventSubscriptionRecord.class)));
+    }
+
+    @Override
     public void close() {
       if (currentController != null && currentController.isOpened()) {
         currentStreamProcessorService.close();
