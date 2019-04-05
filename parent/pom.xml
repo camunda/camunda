@@ -47,7 +47,7 @@
     <version.jmh>1.21</version.jmh>
     <version.junit>4.12</version.junit>
     <version.log4j>2.11.2</version.log4j>
-    <version.mockito>2.25.1</version.mockito>
+    <version.mockito>2.26.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.16</version.msgpack>
     <version.netty>4.1.34.Final</version.netty>
