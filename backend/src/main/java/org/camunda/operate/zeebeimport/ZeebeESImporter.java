@@ -13,6 +13,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
+
 import org.camunda.operate.entities.meta.ImportPositionEntity;
 import org.camunda.operate.es.schema.indices.ImportPositionIndex;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -93,6 +95,8 @@ public class ZeebeESImporter extends Thread {
 
   @Autowired
   private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
+  
+  private Map<String,Long> lastLoadedPositions = new WeakHashMap<>();  
 
   @PreDestroy
   public void shutdown() {
@@ -100,7 +104,12 @@ public class ZeebeESImporter extends Thread {
   }
 
   public long getLatestLoadedPosition(String aliasName, int partitionId) throws IOException {
-
+	String lastloadedPositionKey = aliasName+"-"+partitionId;
+	if(lastLoadedPositions.containsKey(lastloadedPositionKey)) {
+		long lastPosition = lastLoadedPositions.get(lastloadedPositionKey);
+		logger.debug("Latest loaded position (from cache) for alias [{}] and partitionId [{}]: {}", aliasName, partitionId, lastPosition);
+		return lastPosition;
+	}
     final QueryBuilder queryBuilder = joinWithAnd(termQuery(ImportPositionIndex.ALIAS_NAME, aliasName),
       termQuery(ImportPositionIndex.PARTITION_ID, partitionId));
 
@@ -119,13 +128,13 @@ public class ZeebeESImporter extends Thread {
     if (hitIterator.hasNext()) {
       position = (Long)hitIterator.next().getSourceAsMap().get(ImportPositionIndex.POSITION);
     }
-
     logger.debug("Latest loaded position for alias [{}] and partitionId [{}]: {}", aliasName, partitionId, position);
-
+    
     return position;
   }
 
   public void recordLatestLoadedPosition(String aliasName, int partitionId, long position) {
+	lastLoadedPositions.put(aliasName+"-"+partitionId, position);
     ImportPositionEntity entity = new ImportPositionEntity(aliasName, partitionId, position);
     Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(ImportPositionIndex.POSITION, entity.getPosition());
