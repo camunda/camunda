@@ -30,6 +30,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static io.zeebe.protocol.ErrorType.*;
 
 public abstract class TestUtil {
 
@@ -180,7 +181,7 @@ public abstract class TestUtil {
     incidentEntity.setId(UUID.randomUUID().toString());
     incidentEntity.setFlowNodeId(activityId);
     incidentEntity.setFlowNodeInstanceId(activityInstanceId);
-    incidentEntity.setErrorType(ErrorType.JOB_NO_RETRIES);
+    incidentEntity.setErrorType(JOB_NO_RETRIES);
     if (errorMsg == null) {
       incidentEntity.setErrorMessage(ERROR_MSG);
     } else {

@@ -6,9 +6,9 @@
 package org.camunda.operate.es.reader;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
@@ -34,6 +34,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import io.zeebe.protocol.ErrorType;
+
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -117,13 +120,13 @@ public class IncidentReader extends AbstractReader {
         .query(constantScoreQuery(workflowInstanceQ))
         .aggregation(errorTypesAgg)
         .aggregation(flowNodesAgg));
-
+    
     IncidentResponseDto incidentResponse = new IncidentResponseDto();
     try {
       final List<IncidentEntity> incidents = scroll(searchRequest, IncidentEntity.class, aggs -> {
         ((Terms)aggs.get(errorTypesAggName)).getBuckets().forEach(b -> {
-          ErrorType errorType = ErrorType.createFrom(b.getKeyAsString());
-          incidentResponse.getErrorTypes().add(new IncidentErrorTypeDto(errorType.getTitle(), (int)b.getDocCount()));
+          ErrorType errorType = ErrorType.valueOf(b.getKeyAsString());
+          incidentResponse.getErrorTypes().add(new IncidentErrorTypeDto(IncidentEntity.getErrorTypeTitle(errorType), (int)b.getDocCount()));
         });
         ((Terms)aggs.get(flowNodesAggName)).getBuckets().forEach(b ->
           incidentResponse.getFlowNodes().add(new IncidentFlowNodeDto(b.getKeyAsString(), (int)b.getDocCount())));

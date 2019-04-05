@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.cmd.ClientException;
-import static org.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
+import static io.zeebe.protocol.ErrorType.JOB_NO_RETRIES;
 
 /**
  * Resolve the incident.

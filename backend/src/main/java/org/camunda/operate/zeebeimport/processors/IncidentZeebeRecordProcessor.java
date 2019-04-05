@@ -6,7 +6,6 @@
 package org.camunda.operate.zeebeimport.processors;
 
 import java.io.IOException;
-import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperationType;
@@ -28,6 +27,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.ErrorType;
+
 import static org.camunda.operate.zeebeimport.record.Intent.CREATED;
 import static org.camunda.operate.zeebeimport.record.Intent.RESOLVED;
 
@@ -76,7 +77,7 @@ public class IncidentZeebeRecordProcessor {
         incident.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
       }
       incident.setErrorMessage(recordValue.getErrorMessage());
-      incident.setErrorType(ErrorType.createFrom(recordValue.getErrorType()));
+      incident.setErrorType(ErrorType.valueOf(recordValue.getErrorType()));
       incident.setFlowNodeId(recordValue.getElementId());
       if (recordValue.getElementInstanceKey() > 0) {
         incident.setFlowNodeInstanceId(IdUtil.getId(recordValue.getElementInstanceKey(), record));

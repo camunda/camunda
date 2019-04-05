@@ -5,13 +5,14 @@
  */
 package org.camunda.operate.zeebeimport.record.value;
 
-import java.util.Objects;
 import org.camunda.operate.zeebeimport.record.RecordValueWithPayloadImpl;
 import io.zeebe.exporter.api.record.value.IncidentRecordValue;
 
+import io.zeebe.protocol.ErrorType;
+
 public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
     implements IncidentRecordValue {
-  private String errorType;
+  private ErrorType errorType;
   private String errorMessage;
   private String bpmnProcessId;
   private String elementId;
@@ -25,7 +26,7 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
 
   @Override
   public String getErrorType() {
-    return errorType;
+    return errorType.name();
   }
 
   @Override
@@ -63,7 +64,7 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
     return variableScopeKey;
   }
 
-  public void setErrorType(String errorType) {
+  public void setErrorType(ErrorType errorType) {
     this.errorType = errorType;
   }
 

@@ -5,6 +5,12 @@
  */
 package org.camunda.operate.entities;
 
+/**
+ * 
+ * @deprecated 
+ * Use {@link io.zeebe.protocol.ErrorType} instead.
+ */
+@Deprecated
 public enum ErrorType {
 
   UNKNOWN("Unknown"),

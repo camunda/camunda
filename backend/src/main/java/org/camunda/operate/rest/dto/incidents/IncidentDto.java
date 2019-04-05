@@ -118,12 +118,13 @@ public class IncidentDto {
     if (incidentEntity == null) {
       return null;
     }
+      
     IncidentDto incident = new IncidentDto();
     incident.setId(incidentEntity.getId());
     incident.setFlowNodeId(incidentEntity.getFlowNodeId());
     incident.setFlowNodeInstanceId(incidentEntity.getFlowNodeInstanceId());
     incident.setErrorMessage(incidentEntity.getErrorMessage());
-    incident.setErrorType(incidentEntity.getErrorType().getTitle());
+    incident.setErrorType(IncidentEntity.getErrorTypeTitle(incidentEntity.getErrorType()));
     incident.setJobId(incidentEntity.getJobId());
     incident.setCreationTime(incidentEntity.getCreationTime());
 

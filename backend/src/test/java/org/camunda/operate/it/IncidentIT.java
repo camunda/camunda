@@ -7,7 +7,8 @@ package org.camunda.operate.it;
 
 import java.util.Optional;
 import java.util.function.Predicate;
-import org.camunda.operate.entities.ErrorType;
+
+import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.rest.dto.incidents.IncidentDto;
 import org.camunda.operate.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.util.MockMvcTestRule;
@@ -23,6 +24,8 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.protocol.ErrorType;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -95,7 +98,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
   }
 
   protected void assertErrorType(IncidentResponseDto incidentResponse, ErrorType errorType, int count) {
-    assertThat(incidentResponse.getErrorTypes()).filteredOn(et -> et.getErrorType().equals(errorType.getTitle())).hasSize(1)
+    assertThat(incidentResponse.getErrorTypes()).filteredOn(et -> et.getErrorType().equals(IncidentEntity.getErrorTypeTitle(errorType))).hasSize(1)
       .allMatch(et -> et.getCount() == count);
   }
 
@@ -104,7 +107,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
   }
 
   protected void assertIncident(IncidentResponseDto incidentResponse, String errorMsg, String activityId, ErrorType errorType) {
-    final Optional<IncidentDto> incidentOpt = incidentResponse.getIncidents().stream().filter(inc -> inc.getErrorType().equals(errorType.getTitle())).findFirst();
+    final Optional<IncidentDto> incidentOpt = incidentResponse.getIncidents().stream().filter(inc -> inc.getErrorType().equals(IncidentEntity.getErrorTypeTitle(errorType))).findFirst();
     assertThat(incidentOpt).isPresent();
     final IncidentDto inc = incidentOpt.get();
     assertThat(inc.getId()).as(activityId + ".id").isNotNull();
