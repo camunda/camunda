@@ -20,7 +20,7 @@ def seedJob = job('seed-job-zeebe') {
         github 'zeebe-io/zeebe', 'ssh'
         credentials 'camunda-jenkins-github-ssh'
       }
-      branch 'k8s'
+      branch 'develop'
       extensions {
         localBranch 'master'
         pathRestriction {
