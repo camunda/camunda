@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <servers>
+    <server>
+      <id>camunda-nexus</id>
+      <username>${env.NEXUS_USR}</username>
+      <password>${env.NEXUS_PSW}</password>
+    </server>
+    <server>
+      <id>central</id>
+      <username>${env.MAVEN_CENTRAL_USR}</username>
+      <password>${env.MAVEN_CENTRAL_PSW}</password>
+    </server>
+  </servers>
+  <mirrors>
+    <mirror>
+      <id>camunda-nexus</id>
+      <mirrorOf>*</mirrorOf>
+      <name>Camunda Nexus</name>
+      <!-- uncomment to use DC Nexus locally
+      <url>https://app.camunda.com/nexus/content/groups/internal</url>
+      -->
+      <!-- use CI proxy nexus -->
+      <url>http://repository-ci-camunda-cloud.nexus:8081/content/groups/internal/</url>
+    </mirror>
+  </mirrors>
+</settings>
