@@ -1,7 +1,7 @@
 // vim: set filetype=groovy:
 
 pipelineJob('zeebe-docker') {
-    displayName 'camunda/zeeebe Docker Image'
+    displayName 'camunda/zeebe Docker Image'
     definition {
         cps {
             script(readFileFromWorkspace('.ci/pipelines/docker_zeebe.groovy'))
