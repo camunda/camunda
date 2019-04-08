@@ -59,6 +59,10 @@ public class DistributedLogstreamPartition implements Service<DistributedLogstre
     return distributedLog.append(partitionName, memberId, commitPosition, blockBuffer);
   }
 
+  public CompletableFuture<Long> asyncAppend(byte[] blockBuffer, long commitPosition) {
+    return distributedLog.async().append(partitionName, memberId, commitPosition, blockBuffer);
+  }
+
   public CompletableFuture<Boolean> claimLeaderShip() {
     return distributedLog.async().claimLeaderShip(partitionName, memberId, currentLeaderTerm);
   }

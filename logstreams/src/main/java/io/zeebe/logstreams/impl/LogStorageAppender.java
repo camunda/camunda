@@ -95,8 +95,10 @@ public class LogStorageAppender extends Actor {
   }
 
   private void tryWrite() {
-    final long res = distributedLog.append(bytesToAppend, commitPosition);
-    // TODO: Handle error codes
+    distributedLog.asyncAppend(bytesToAppend, commitPosition);
+    blockPeek.markCompleted();
+    actor.done();
+    /*// TODO: Handle error codes
     if (res >= 0) {
       blockPeek.markCompleted();
       actor.done();
@@ -104,7 +106,7 @@ public class LogStorageAppender extends Actor {
       // retry
       LOG.debug("Append failed, retrying");
       actor.yield();
-    }
+    }*/
   }
 
   /* Iterate over the events in buffer and find the position of the last event */
