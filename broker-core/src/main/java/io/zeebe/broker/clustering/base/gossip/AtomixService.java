@@ -23,8 +23,6 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.core.Atomix;
 import io.atomix.core.AtomixBuilder;
-import io.atomix.primitive.partition.MemberGroupStrategy;
-import io.atomix.protocols.backup.partition.PrimaryBackupPartitionGroup;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Loggers;
@@ -79,16 +77,30 @@ public class AtomixService implements Service<Atomix> {
             .withAddress(Address.from(host, port))
             .withMembershipProvider(discoveryProvider);
 
-    final PrimaryBackupPartitionGroup systemGroup =
-        PrimaryBackupPartitionGroup.builder("system")
-            .withMemberGroupStrategy(MemberGroupStrategy.NODE_AWARE)
+    final DataCfg dataConfiguration = configuration.getData();
+    final String rootDirectory = dataConfiguration.getDirectories().get(0);
+
+    final String systemPartitionName = "system";
+    final File systemDirectory = new File(rootDirectory, systemPartitionName);
+    if (!systemDirectory.exists()) {
+      try {
+        Files.createDirectory(systemDirectory.toPath());
+      } catch (final IOException e) {
+        throw new RuntimeException("Unable to create directory " + systemDirectory, e);
+      }
+    }
+
+    final RaftPartitionGroup systemGroup =
+        RaftPartitionGroup.builder(systemPartitionName)
             .withNumPartitions(1)
+            .withPartitionSize(configuration.getCluster().getClusterSize())
+            .withMembers(getRaftGroupMembers(clusterCfg))
+            .withDataDirectory(systemDirectory)
+            .withFlushOnCommit()
             .build();
 
     final String raftPartitionGroupName = "raft-atomix";
 
-    final DataCfg dataConfiguration = configuration.getData();
-    final String rootDirectory = dataConfiguration.getDirectories().get(0);
     final File raftDirectory = new File(rootDirectory, raftPartitionGroupName);
     if (!raftDirectory.exists()) {
       try {
