@@ -215,7 +215,7 @@ pipeline {
       steps {
         retry(2) {
           container('maven') {
-            runMaven('install -Pproduction,docs -Dskip.docker -DskipTests -T\$LIMITS_CPU')
+            runMaven('install -Pproduction,docs,engine-latest -Dskip.docker -DskipTests -T\$LIMITS_CPU')
           }
           stash name: "optimize-stash-client", includes: "client/build/**"
           stash name: "optimize-stash-distro", includes: "m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*-production.tar.gz,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.xml,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.pom"
