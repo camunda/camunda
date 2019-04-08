@@ -13,7 +13,7 @@
 
   <properties>
     <plugin.version.license>3.0</plugin.version.license>
-    <license.header>${project.baseUri}/src/license/license-header</license.header>
+    <license.header>${project.baseUri}/../license/license-header</license.header>
   </properties>
 
   <dependencies>
@@ -140,7 +140,6 @@
   <build>
 
     <plugins>
-
 
       <!-- LICENSE PLUGIN -->
       <plugin>

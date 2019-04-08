@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.camunda.operate</groupId>
+    <artifactId>qa</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <name>Camunda Operate Import performace tests</name>
+  <artifactId>import-performance-tests</artifactId>
+
+  <properties>
+    <plugin.version.license>3.0</plugin.version.license>
+    <license.header>${project.baseUri}/../../license/license-header</license.header>
+  </properties>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>org.camunda.operate</groupId>
+      <artifactId>camunda-operate</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-log4j2</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.operate</groupId>
+      <artifactId>camunda-operate-qa-util</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- ELASTICSEARCH -->
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-high-level-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
+    <dependency>
+      <groupId>org.glassfish</groupId>
+      <artifactId>javax.json</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+
+    <plugins>
+
+      <!-- LICENSE PLUGIN -->
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <version>${plugin.version.license}</version>
+        <configuration>
+          <header>${license.header}</header>
+          <includes>
+            <include>**/*.java</include>
+          </includes>
+          <mapping>
+            <java>SLASHSTAR_STYLE</java>
+          </mapping>
+        </configuration>
+        <executions>
+          <execution>
+            <id>add-license</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>format</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <forkCount>${env.LIMITS_CPU}</forkCount>
+          <reuseForks>true</reuseForks>
+          <redirectTestOutputToFile>true</redirectTestOutputToFile>
+          <systemPropertyVariables>
+            <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>

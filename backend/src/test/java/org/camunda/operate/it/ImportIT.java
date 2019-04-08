@@ -31,7 +31,7 @@ import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.camunda.operate.zeebeimport.ZeebeESImporter;
+import org.camunda.operate.zeebeimport.ImportValueType;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.After;
 import org.junit.Before;
@@ -175,7 +175,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     //when TC 2
     //update variable
     ZeebeTestUtil.updateVariables(zeebeClient, IdTestUtil.getId(workflowInstanceKey), "{\"a\": \"c\"}");
-    elasticsearchTestRule.processAllEvents(2, ZeebeESImporter.ImportValueType.VARIABLE);
+    elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
     //then we can find the instance by 2 variable values: foo = b
     assertVariableDoesNotExist(workflowInstanceKey, "a", "\"b\"");
     assertVariableExists(workflowInstanceKey, "foo", "\"b\"");

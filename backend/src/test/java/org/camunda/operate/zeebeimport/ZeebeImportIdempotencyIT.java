@@ -22,7 +22,7 @@ public class ZeebeImportIdempotencyIT extends ZeebeImportIT {
   private ZeebeImportIdempotencyTestConfig.CustomElasticsearchBulkProcessor elasticsearchBulkProcessor;
 
   @Override
-  protected void processAllEvents(int expectedMinEventsCount, ZeebeESImporter.ImportValueType workflowInstance) {
+  protected void processAllEvents(int expectedMinEventsCount, ImportValueType workflowInstance) {
     elasticsearchTestRule.processAllEvents(expectedMinEventsCount, workflowInstance);
     elasticsearchTestRule.processAllEvents(expectedMinEventsCount, workflowInstance);
     elasticsearchBulkProcessor.cancelAttempts();
