@@ -19,7 +19,8 @@ import * as api from 'modules/api/header/header';
 import * as instancesApi from 'modules/api/instances/instances';
 
 import {flushPromises, mockResolvedAsyncFn} from 'modules/testUtils';
-import {DEFAULT_FILTER, INCIDENTS_FILTER} from 'modules/constants';
+import {DEFAULT_FILTER, FILTER_SELECTION} from 'modules/constants';
+import {getFilterQueryString} from 'modules/utils/filter';
 
 import {apiKeys, filtersMap} from './constants';
 import * as Styled from './styled.js';
@@ -316,6 +317,39 @@ describe('Header', () => {
   });
 
   describe('links', () => {
+    it('should add the correct url to links', () => {
+      const node = mountComponent(
+        <Header {...mockCollapsablePanelProps} {...mockValues} />
+      );
+
+      // running instances
+
+      expect(
+        node
+          .find('[data-test="header-link-instances"]')
+          .find(Styled.ListLink)
+          .props().to
+      ).toBe('/instances' + getFilterQueryString(FILTER_SELECTION.running));
+
+      // filter
+
+      expect(
+        node
+          .find('[data-test="header-link-filters"]')
+          .find(Styled.ListLink)
+          .props().to
+      ).toBe('/instances' + getFilterQueryString(mockValues.filter));
+
+      // incidents
+
+      expect(
+        node
+          .find('[data-test="header-link-incidents"]')
+          .find(Styled.ListLink)
+          .props().to
+      ).toBe('/instances' + getFilterQueryString({incidents: true}));
+    });
+
     it('should not link anywhere when onFilterReset method is passed', () => {
       const onFilterResetMock = jest.fn();
       const emptyRoute = ' ';
