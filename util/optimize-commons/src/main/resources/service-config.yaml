@@ -156,9 +156,9 @@ es:
     # several connection points in case one node fails.
     nodes:
         # the address/hostname under which the Elasticsearch node is available.
-      - host: 'localhost'
+      - host: '${elasticsearch.host}'
         # A port number used by Elasticsearch to accept HTTP connections.
-        httpPort: 9200
+        httpPort: ${elasticsearch.httpPort}
     # HTTP forward proxy configuration
     proxy:
       # whether an HTTP proxy should be used for requests to elasticsearch

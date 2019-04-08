@@ -1,8 +1,0 @@
-es:
-  connection:
-    nodes:
-    - host: 'vpc-optimize-es-test1-mniyd6oio2w5hhzrkncykqg36e.eu-central-1.es.amazonaws.com'
-      httpPort: 80
-  security:
-    ssl:
-      enabled: false

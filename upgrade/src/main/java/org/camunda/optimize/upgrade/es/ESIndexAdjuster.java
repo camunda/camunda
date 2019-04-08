@@ -93,7 +93,7 @@ public class ESIndexAdjuster {
       // recognized prior to 6.4 and throws an error. As soon as we don't support 6.3 or
       // older those lines can be replaced with the high rest client equivalent.
       Response response = restClient.getLowLevelClient().performRequest(
-        new Request(HttpGet.METHOD_NAME, indexName + MAPPING_OPERATION)
+        new Request(HttpGet.METHOD_NAME, "/" + indexName + MAPPING_OPERATION)
       );
       String mappingWithIndexName = EntityUtils.toString(response.getEntity());
       return extractMappings(indexName, mappingWithIndexName);
@@ -136,7 +136,7 @@ public class ESIndexAdjuster {
     ReindexTaskResponse reindexTaskResponse;
     try {
       HttpEntity entity = new NStringEntity(om.writeValueAsString(toSend), ContentType.APPLICATION_JSON);
-      final Request request = new Request(HttpPost.METHOD_NAME, getReindexEndpoint());
+      final Request request = new Request(HttpPost.METHOD_NAME, "/" + getReindexEndpoint());
       request.setEntity(entity);
       request.addParameter("refresh", "true");
       request.addParameter("wait_for_completion", "false");
@@ -178,7 +178,7 @@ public class ESIndexAdjuster {
     while (!finished) {
       try {
         final Response response = restClient.getLowLevelClient()
-          .performRequest(new Request(HttpGet.METHOD_NAME, TASKS_ENDPOINT + "/" + taskId));
+          .performRequest(new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId));
         if (response.getStatusLine().getStatusCode() == 200) {
           TaskResponse taskResponse = objectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
 

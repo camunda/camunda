@@ -36,8 +36,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -241,7 +239,7 @@ public class SchemaInitializerIT {
       .collect(Collectors.joining(","));
 
     Response response = embeddedOptimizeRule.getElasticsearchClient().getLowLevelClient().performRequest(
-      new Request(HttpGet.METHOD_NAME, URLEncoder.encode(indices, StandardCharsets.UTF_8.name()) + "/_settings")
+      new Request(HttpGet.METHOD_NAME, "/" + indices + "/_settings")
     );
     return GetSettingsResponse.fromXContent(JsonXContent.jsonXContent.createParser(
       NamedXContentRegistry.EMPTY,
@@ -254,7 +252,7 @@ public class SchemaInitializerIT {
     final String optimizeIndexAliasForType = getOptimizeIndexAliasForType(type);
 
     RestClient esClient = elasticSearchRule.getEsClient().getLowLevelClient();
-    Request request = new Request("GET", "/" + optimizeIndexAliasForType + "/_mapping");
+    Request request = new Request(HttpGet.METHOD_NAME, "/" + optimizeIndexAliasForType + "/_mapping");
     Response response = esClient.performRequest(request);
 
     String responseBody = EntityUtils.toString(response.getEntity());

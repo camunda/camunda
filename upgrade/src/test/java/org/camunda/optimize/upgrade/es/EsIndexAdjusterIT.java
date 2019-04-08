@@ -58,7 +58,7 @@ public class EsIndexAdjusterIT {
       argThat(argument ->
                 argument != null
                   && argument.getMethod().equals(HttpPost.METHOD_NAME)
-                  && argument.getEndpoint().equals("_reindex")
+                  && argument.getEndpoint().equals("/_reindex")
       )
     )).thenReturn(esResponse);
 
@@ -73,7 +73,7 @@ public class EsIndexAdjusterIT {
       argThat(argument ->
                 argument != null
                   && argument.getMethod().equals(HttpGet.METHOD_NAME)
-                  && argument.getEndpoint().equals("_tasks/" + taskId)
+                  && argument.getEndpoint().equals("/_tasks/" + taskId)
       )
     )).thenReturn(taskStatusResponse);
 

@@ -71,7 +71,7 @@ public class ReimportPreparation {
     TYPES_TO_CLEAR.stream()
       .map(OptimizeIndexNameHelper::getVersionedOptimizeIndexNameForTypeMapping)
       .forEach(indexName -> {
-        final Request request = new Request("DELETE", indexName);
+        final Request request = new Request("DELETE", "/" + indexName);
         try {
           restHighLevelClient.getLowLevelClient().performRequest(request);
         } catch (IOException e) {

@@ -82,7 +82,7 @@ public abstract class AbstractUpgradeIT {
   }
 
   protected void executeBulk(final String bulkPayload) throws IOException {
-    final Request request = new Request(HttpPost.METHOD_NAME, "_bulk");
+    final Request request = new Request(HttpPost.METHOD_NAME, "/_bulk");
     final HttpEntity entity = new NStringEntity(
       SchemaUpgradeUtil.readClasspathFileAsString(bulkPayload),
       ContentType.APPLICATION_JSON

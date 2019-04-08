@@ -334,7 +334,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
   private String getDynamicMappingValue() throws IOException {
     final String indexName = getVersionedOptimizeIndexNameForTypeMapping(COMBINED_REPORT_TYPE);
     final Response response = restClient.getLowLevelClient().performRequest(
-            new Request(HttpGet.METHOD_NAME, indexName + "/_mapping")
+      new Request(HttpGet.METHOD_NAME, "/" + indexName + "/_mapping")
     );
     final String mappingWithIndexName = EntityUtils.toString(response.getEntity());
     final JsonNode mapping = objectMapper.readTree(mappingWithIndexName);
