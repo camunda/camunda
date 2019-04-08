@@ -1,3 +1,8 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.WebappsEndpointDto;
@@ -6,7 +11,6 @@ import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;

@@ -1,6 +1,11 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
 package org.camunda.optimize.test;
 
-import java.io.IOException;
+import org.camunda.bpm.engine.rest.security.auth.ProcessEngineAuthenticationFilter;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -9,8 +14,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response.Status;
-
-import org.camunda.bpm.engine.rest.security.auth.ProcessEngineAuthenticationFilter;
+import java.io.IOException;
 
 public class CustomAuthFilter extends ProcessEngineAuthenticationFilter {
 

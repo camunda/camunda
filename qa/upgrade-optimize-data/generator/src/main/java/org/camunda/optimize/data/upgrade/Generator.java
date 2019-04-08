@@ -1,3 +1,8 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
 package org.camunda.optimize.data.upgrade;
 
 import org.apache.commons.io.IOUtils;
@@ -49,14 +54,11 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.service.security.AuthCookieService.createOptimizeAuthCookieValue;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper
-  .createFlowNodeDurationGroupByFlowNodeHeatmapReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeHeatmapReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper
-  .createProcessInstanceDurationGroupByStartDateReport;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper
-  .createProcessInstanceDurationGroupByVariableWithProcessPart;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByStartDateReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByVariableWithProcessPart;
 
 public class Generator {
   private static Client client;

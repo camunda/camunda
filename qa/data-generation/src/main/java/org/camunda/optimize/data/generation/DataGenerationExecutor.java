@@ -1,3 +1,8 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
 package org.camunda.optimize.data.generation;
 
 import org.camunda.optimize.data.generation.generators.DataGenerator;
@@ -8,6 +13,7 @@ import org.camunda.optimize.data.generation.generators.impl.BookRequestDataGener
 import org.camunda.optimize.data.generation.generators.impl.BranchAnalysisDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.ChangeContactDataDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.ContactInterviewDataGenerator;
+import org.camunda.optimize.data.generation.generators.impl.DmnTableDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.DocumentCheckHandlingDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.EmbeddedSubprocessRequestDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.ExportInsuranceDataGenerator;
@@ -21,7 +27,6 @@ import org.camunda.optimize.data.generation.generators.impl.OrderConfirmationDat
 import org.camunda.optimize.data.generation.generators.impl.PickUpHandlingDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.ProcessRequestDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.ReviewCaseDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.DmnTableDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.TransshipmentArrangementDataGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
