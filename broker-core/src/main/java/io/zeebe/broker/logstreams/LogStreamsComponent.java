@@ -45,8 +45,10 @@ public class LogStreamsComponent implements Component {
 
     final Duration snapshotPeriod =
         DurationUtil.parse(brokerConfiguration.getData().getSnapshotPeriod());
+    final int maxSnapshots = brokerConfiguration.getData().getMaxSnapshots();
+
     final StreamProcessorServiceFactory streamProcessorFactory =
-        new StreamProcessorServiceFactory(serviceContainer, snapshotPeriod);
+        new StreamProcessorServiceFactory(serviceContainer, snapshotPeriod, maxSnapshots);
     serviceContainer
         .createService(STREAM_PROCESSOR_SERVICE_FACTORY, streamProcessorFactory)
         .install();

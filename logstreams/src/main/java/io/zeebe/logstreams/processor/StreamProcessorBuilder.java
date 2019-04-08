@@ -54,6 +54,7 @@ public class StreamProcessorBuilder {
   protected ServiceContainer serviceContainer;
   private List<ServiceName<?>> additionalDependencies;
   private StreamProcessorFactory streamProcessorFactory;
+  private int maxSnapshots;
 
   public StreamProcessorBuilder(int id, String name) {
     this.id = id;
@@ -84,6 +85,11 @@ public class StreamProcessorBuilder {
 
   public StreamProcessorBuilder snapshotPeriod(Duration snapshotPeriod) {
     this.snapshotPeriod = snapshotPeriod;
+    return this;
+  }
+
+  public StreamProcessorBuilder maxSnapshots(int maxSnapshots) {
+    this.maxSnapshots = maxSnapshots;
     return this;
   }
 
@@ -161,6 +167,7 @@ public class StreamProcessorBuilder {
     }
 
     ctx.setSnapshotPeriod(snapshotPeriod);
+    ctx.setMaxSnapshots(maxSnapshots);
     ctx.setSnapshotController(snapshotController);
 
     logStreamReader = new BufferedLogStreamReader();

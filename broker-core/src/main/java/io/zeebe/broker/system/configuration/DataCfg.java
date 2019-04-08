@@ -33,6 +33,8 @@ public class DataCfg implements ConfigurationEntry {
 
   private String snapshotReplicationPeriod = "5m";
 
+  private int maxSnapshots = 1;
+
   @Override
   public void init(BrokerCfg globalConfig, String brokerBase, Environment environment) {
     applyEnvironment(environment);
@@ -75,6 +77,14 @@ public class DataCfg implements ConfigurationEntry {
     this.snapshotReplicationPeriod = snapshotReplicationPeriod;
   }
 
+  public void setMaxSnapshots(final int maxSnapshots) {
+    this.maxSnapshots = maxSnapshots;
+  }
+
+  public int getMaxSnapshots() {
+    return maxSnapshots;
+  }
+
   @Override
   public String toString() {
     return "DataCfg{"
@@ -88,6 +98,9 @@ public class DataCfg implements ConfigurationEntry {
         + '\''
         + ", snapshotReplicationPeriod='"
         + snapshotReplicationPeriod
+        + '\''
+        + ", maxSnapshots='"
+        + maxSnapshots
         + '\''
         + '}';
   }

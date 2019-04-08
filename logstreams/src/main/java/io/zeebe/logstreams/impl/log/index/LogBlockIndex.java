@@ -17,11 +17,9 @@ package io.zeebe.logstreams.impl.log.index;
 
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.state.StateSnapshotController;
-import io.zeebe.logstreams.state.StateStorage;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -37,7 +35,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * requested.
  */
 public class LogBlockIndex {
-
+  private static final String ERROR_MSG_ENSURING_MAX_SNAPSHOT_COUNT =
+      "Unexpected exception occurred on ensuring maximum snapshot count.";
   private static final int VALUE_NOT_FOUND = -1;
   private long lastVirtualPosition = VALUE_NOT_FOUND;
 
@@ -45,9 +44,8 @@ public class LogBlockIndex {
   private ZeebeDb<LogBlockColumnFamilies> zeebeDb;
   private ColumnFamily<DbLong, DbLong> indexColumnFamily;
 
-  public LogBlockIndex(
-      ZeebeDbFactory<LogBlockColumnFamilies> dbFactory, StateStorage stateStorage) {
-    this.stateSnapshotController = new StateSnapshotController(dbFactory, stateStorage);
+  public LogBlockIndex(StateSnapshotController snapshotController) {
+    this.stateSnapshotController = snapshotController;
     tryToRestoreAndOpen();
   }
 
@@ -168,8 +166,14 @@ public class LogBlockIndex {
    *
    * @param snapshotEventPosition last written position
    */
-  public void writeSnapshot(final long snapshotEventPosition) {
+  public void writeSnapshot(final long snapshotEventPosition, final int maxSnapshots) {
     stateSnapshotController.takeSnapshot(snapshotEventPosition);
+
+    try {
+      stateSnapshotController.ensureMaxSnapshotCount(maxSnapshots);
+    } catch (Exception e) {
+      Loggers.SNAPSHOT_LOGGER.error(ERROR_MSG_ENSURING_MAX_SNAPSHOT_COUNT, e);
+    }
   }
 
   /**

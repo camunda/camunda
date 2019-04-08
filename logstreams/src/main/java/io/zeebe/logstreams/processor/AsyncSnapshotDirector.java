@@ -49,7 +49,6 @@ public class AsyncSnapshotDirector extends Actor {
       "Unexpected exception occured on creating snapshot, was enforced to do so.";
 
   private static final int INITIAL_POSITION = -1;
-  private static final int MAX_SNAPSHOT_COUNT = 3;
 
   private final Runnable prepareTakingSnapshot = this::prepareTakingSnapshot;
 
@@ -65,6 +64,7 @@ public class AsyncSnapshotDirector extends Actor {
   private final Duration snapshotRate;
   private final StreamProcessorMetrics metrics;
   private final String processorName;
+  private final int maxSnapshots;
 
   private ActorCondition commitCondition;
   private long lastWrittenEventPosition = INITIAL_POSITION;
@@ -80,7 +80,8 @@ public class AsyncSnapshotDirector extends Actor {
       Consumer<ActorCondition> conditionRegistration,
       Consumer<ActorCondition> conditionCheckOut,
       LongSupplier commitPositionSupplier,
-      StreamProcessorMetrics metrics) {
+      StreamProcessorMetrics metrics,
+      int maxSnapshots) {
     this.asyncLastProcessedPositionSupplier = asyncLastProcessedPositionSupplier;
     this.asyncLastWrittenPositionSupplier = asyncLastWrittenPositionSupplier;
     this.snapshotController = snapshotController;
@@ -91,6 +92,7 @@ public class AsyncSnapshotDirector extends Actor {
     this.name = name + "-snapshot-director";
     this.snapshotRate = snapshotRate;
     this.metrics = metrics;
+    this.maxSnapshots = Math.max(maxSnapshots, 1);
   }
 
   @Override
@@ -194,7 +196,7 @@ public class AsyncSnapshotDirector extends Actor {
         snapshotController.moveValidSnapshot(lowerBoundSnapshotPosition);
 
         try {
-          snapshotController.ensureMaxSnapshotCount(MAX_SNAPSHOT_COUNT);
+          snapshotController.ensureMaxSnapshotCount(maxSnapshots);
         } catch (Exception ex) {
           LOG.error(ERROR_MSG_ENSURING_MAX_SNAPSHOT_COUNT, ex);
         }

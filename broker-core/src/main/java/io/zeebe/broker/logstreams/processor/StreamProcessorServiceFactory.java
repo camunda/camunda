@@ -42,11 +42,14 @@ import java.util.List;
 public class StreamProcessorServiceFactory implements Service<StreamProcessorServiceFactory> {
   private final ServiceContainer serviceContainer;
   private final Duration snapshotPeriod;
+  private final int maxSnapshots;
   private ActorScheduler actorScheduler;
 
-  public StreamProcessorServiceFactory(ServiceContainer serviceContainer, Duration snapshotPeriod) {
+  public StreamProcessorServiceFactory(
+      ServiceContainer serviceContainer, Duration snapshotPeriod, int maxSnapshots) {
     this.serviceContainer = serviceContainer;
     this.snapshotPeriod = snapshotPeriod;
+    this.maxSnapshots = maxSnapshots;
   }
 
   @Override
@@ -122,6 +125,7 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
           .serviceContainer(serviceContainer)
           .snapshotController(snapshotController)
           .snapshotPeriod(snapshotPeriod)
+          .maxSnapshots(maxSnapshots)
           .logStream(logStream)
           .eventFilter(eventFilter)
           .readOnly(readOnly)

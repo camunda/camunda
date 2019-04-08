@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyOptions;
+import org.rocksdb.CompactionPriority;
 import org.rocksdb.DBOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -103,10 +104,8 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
   }
 
   private static ColumnFamilyOptions createColumnFamilyOptions() {
-
     // Options which are used on all column families
-    final ColumnFamilyOptions columnFamilyOptions = new ColumnFamilyOptions();
-
-    return columnFamilyOptions;
+    return new ColumnFamilyOptions()
+        .setCompactionPriority(CompactionPriority.OldestSmallestSeqFirst);
   }
 }

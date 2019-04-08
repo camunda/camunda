@@ -36,7 +36,7 @@ public class StateSnapshotController implements SnapshotController {
   private ZeebeDb db;
 
   public StateSnapshotController(final ZeebeDbFactory rocksDbFactory, final StateStorage storage) {
-    zeebeDbFactory = rocksDbFactory;
+    this.zeebeDbFactory = rocksDbFactory;
     this.storage = storage;
   }
 

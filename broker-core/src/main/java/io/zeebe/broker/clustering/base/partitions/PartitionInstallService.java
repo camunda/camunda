@@ -112,6 +112,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
             .logDirectory(logDirectoryPath)
             .logName(logName)
             .indexStateStorage(stateStorage)
+            .maxSnapshots(brokerCfg.getData().getMaxSnapshots())
             .buildWith(partitionInstall);
 
     final StateStorageFactoryService stateStorageFactoryService =

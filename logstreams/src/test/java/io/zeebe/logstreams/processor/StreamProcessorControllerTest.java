@@ -72,6 +72,7 @@ public class StreamProcessorControllerTest {
   private static final String PROCESSOR_NAME = "testProcessor";
   private static final int PROCESSOR_ID = 1;
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
+  private static final int MAX_SNAPSHOTS = 3;
 
   private static final DirectBuffer EVENT_1 = wrapString("FOO");
   private static final DirectBuffer EVENT_2 = wrapString("BAR");
@@ -782,6 +783,7 @@ public class StreamProcessorControllerTest {
             .eventFilter(eventFilter)
             .serviceContainer(logStreamRule.getServiceContainer())
             .snapshotController(snapshotController)
+            .maxSnapshots(MAX_SNAPSHOTS)
             .streamProcessorFactory(this::createStreamProcessor)
             .snapshotPeriod(SNAPSHOT_INTERVAL)
             .build()

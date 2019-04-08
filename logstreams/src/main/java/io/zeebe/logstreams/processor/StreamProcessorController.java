@@ -62,6 +62,7 @@ public class StreamProcessorController extends Actor {
   private DbContext dbContext;
   private ProcessingStateMachine processingStateMachine;
   private AsyncSnapshotDirector asyncSnapshotDirector;
+  private final int maxSnapshots;
 
   public StreamProcessorController(final StreamProcessorContext context) {
     this.streamProcessorContext = context;
@@ -77,6 +78,7 @@ public class StreamProcessorController extends Actor {
 
     this.logStreamReader = context.getLogStreamReader();
     this.logStreamWriter = context.getLogStreamWriter();
+    this.maxSnapshots = context.getMaxSnapshots();
   }
 
   @Override
@@ -196,7 +198,8 @@ public class StreamProcessorController extends Actor {
             logStream::registerOnCommitPositionUpdatedCondition,
             logStream::removeOnCommitPositionUpdatedCondition,
             logStream::getCommitPosition,
-            metrics);
+            metrics,
+            maxSnapshots);
 
     actorScheduler.submitActor(asyncSnapshotDirector);
 

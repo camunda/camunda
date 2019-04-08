@@ -93,6 +93,7 @@ public class LogBlockIndexWriter extends Actor {
 
   private final Duration snapshotInterval;
   private long snapshotEventPosition = -1;
+  private final int maxSnapshots;
 
   private Metric snapshotsCreated;
 
@@ -112,6 +113,7 @@ public class LogBlockIndexWriter extends Actor {
     this.deviation = builder.getDeviation();
     this.indexBlockSize = (int) (builder.getIndexBlockSize() * (1f - deviation));
     this.snapshotInterval = builder.getSnapshotPeriod();
+    this.maxSnapshots = builder.getMaxSnapshots();
     this.bufferSize = builder.getReadBlockSize();
 
     this.allocatedBuffer = BufferAllocators.allocateDirect(bufferSize);
@@ -278,7 +280,7 @@ public class LogBlockIndexWriter extends Actor {
         logStorage.flush();
 
         snapshotEventPosition = lastBlockEventPosition;
-        blockIndex.writeSnapshot(snapshotEventPosition);
+        blockIndex.writeSnapshot(snapshotEventPosition, maxSnapshots);
 
         LOG.trace("Created snapshot of block index {}.", name);
         snapshotsCreated.incrementOrdered();

@@ -22,6 +22,7 @@ import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.impl.log.index.LogBlockColumnFamilies;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndexContext;
+import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import org.junit.After;
 import org.junit.Before;
@@ -53,11 +54,11 @@ public class LogBlockIndexTest {
   private void startBlockIndexDb() {
     final ZeebeDbFactory<LogBlockColumnFamilies> dbFactory =
         ZeebeRocksDbFactory.newFactory(LogBlockColumnFamilies.class);
-
     final StateStorage stateStorage =
         new StateStorage(runtimeDirectory.getRoot(), snapshotDirectory.getRoot());
+    final StateSnapshotController controller = new StateSnapshotController(dbFactory, stateStorage);
 
-    blockIndex = new LogBlockIndex(dbFactory, stateStorage);
+    blockIndex = new LogBlockIndex(controller);
     indexContext = blockIndex.createLogBlockIndexContext();
   }
 
@@ -219,7 +220,7 @@ public class LogBlockIndexTest {
     // given
     final int numBlocks = 10;
     final long snapshotPosition = addBlocks(numBlocks);
-    blockIndex.writeSnapshot(snapshotPosition);
+    blockIndex.writeSnapshot(snapshotPosition, 1);
 
     // when
     blockIndex.closeDb(); // close and reopen DB
