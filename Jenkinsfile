@@ -249,6 +249,7 @@ pipeline {
               container('node') {
                 sh('''
                   cd ./client
+                  yarn run eslint src/
                   yarn test:ci
                 ''')
               }
