@@ -81,7 +81,7 @@ export default function ReportRenderer(props) {
 
 function containsData(report) {
   if (report.combined) {
-    return report.data.reports.length === 0 || Object.values(report.result.data).some(containsData);
+    return report.data.reports.length > 0 && Object.values(report.result.data).some(containsData);
   } else {
     return (
       report.result.processInstanceCount ||
@@ -93,8 +93,18 @@ function containsData(report) {
 
 function checkReport({data, reportType, combined}) {
   if (combined) {
-    return;
+    const reports = data.reports;
+    if (!reports || !reports.length) {
+      return 'To display a report, please select one or more reports from the list.';
+    } else {
+      return;
+    }
+  } else {
+    return checkSingleReport(data, reportType);
   }
+}
+
+function checkSingleReport(data, reportType) {
   if (
     reportType === 'process' &&
     (isEmpty(data.processDefinitionKey) || isEmpty(data.processDefinitionVersion))

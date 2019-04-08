@@ -9,6 +9,7 @@ import {shallow} from 'enzyme';
 
 import ReportRenderer from './ReportRenderer';
 import CombinedReportRenderer from './CombinedReportRenderer';
+import NoDataNotice from './NoDataNotice';
 
 const reportTemplate = {
   combined: false,
@@ -50,12 +51,23 @@ it('should render DecisionReportRenderer if the report type is decision', () => 
   expect(node.find('DecisionReportRenderer')).toBePresent();
 });
 
-it('should render CombinedReportRenderer if the report is combined', () => {
+it('should render CombinedReportRenderer if the report is combined and all reports contain data', () => {
   const report = {
     ...reportTemplate,
     data: {
       ...reportTemplate.data,
-      reports: []
+      reports: ['reportId1']
+    },
+    result: {
+      data: {
+        reportId1: {
+          ...reportTemplate,
+          result: {
+            ...reportTemplate.result,
+            processInstanceCount: 1
+          }
+        }
+      }
     },
     combined: true
   };
@@ -192,7 +204,7 @@ describe('NoDataNotice', () => {
 
     const node = shallow(<ReportRenderer report={report} />);
 
-    expect(node.find('NoDataNotice')).toBePresent();
+    expect(node.find(NoDataNotice)).toBePresent();
   });
 
   it('should not show a no data notice for single number frequency reports', () => {
@@ -217,7 +229,7 @@ describe('NoDataNotice', () => {
 
     const node = shallow(<ReportRenderer report={report} />);
 
-    expect(node.find('NoDataNotice')).not.toBePresent();
+    expect(node.find(NoDataNotice)).not.toBePresent();
   });
 
   it('should show a no data notice if a combined report contains no data', () => {
@@ -250,7 +262,7 @@ describe('NoDataNotice', () => {
 
     const node = shallow(<ReportRenderer report={report} />);
 
-    expect(node.find('NoDataNotice')).toBePresent();
+    expect(node.find(NoDataNotice)).toBePresent();
   });
 
   it('should not show a no data notice if a combined report contains at least one report with data', () => {
@@ -283,6 +295,6 @@ describe('NoDataNotice', () => {
 
     const node = shallow(<ReportRenderer report={report} />);
 
-    expect(node.find('NoDataNotice')).not.toBePresent();
+    expect(node.find(NoDataNotice)).not.toBePresent();
   });
 });
