@@ -82,17 +82,25 @@ public class DistributedLogstreamPartition implements Service<DistributedLogstre
     final CompletableActorFuture<Void> startFuture = new CompletableActorFuture<>();
 
     distributedLogstreamCompletableFuture
-        .thenApply(
-            log -> {
-              distributedLog = log;
-              return this.claimLeaderShip();
+        .whenComplete(
+            (log, error) -> {
+              if (error == null) {
+                distributedLog = log;
+              } else {
+                startFuture.completeExceptionally(error);
+              }
             })
-        .thenAccept(
-            r -> {
-              LOG.info("Claimed leadership Successfully");
-              startFuture.complete(null);
+        .thenApply(log -> this.claimLeaderShip())
+        .whenComplete(
+            (r, error) -> {
+              if (error == null) {
+                LOG.info("Claimed leadership successfully");
+                startFuture.complete(null);
+              } else {
+                startFuture.completeExceptionally(error);
+              }
             });
-    startContext.async(startFuture);
+    startContext.async(startFuture, true);
   }
 
   @Override

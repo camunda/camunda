@@ -18,8 +18,8 @@
 package io.zeebe.broker.clustering.base;
 
 import io.atomix.core.Atomix;
-import io.atomix.core.election.LeaderElection;
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.clustering.base.partitions.PartitionLeaderElection;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.gateway.Gateway;
@@ -38,8 +38,8 @@ public class ClusterBaseLayerServiceNames {
       ServiceName.newServiceName("cluster.base.atomix", Atomix.class);
   public static final ServiceName<Void> ATOMIX_JOIN_SERVICE =
       ServiceName.newServiceName("cluster.base.atomix.join", Void.class);
-  public static final ServiceName<LeaderElection> LEADERSHIP_SERVICE_GROUP =
-      ServiceName.newServiceName("cluster.base.leadership.service", LeaderElection.class);
+  public static final ServiceName<PartitionLeaderElection> LEADERSHIP_SERVICE_GROUP =
+      ServiceName.newServiceName("cluster.base.leadership.service", PartitionLeaderElection.class);
 
   public static final ServiceName<Void> DISTRIBUTED_LOG_CREATE_SERVICE =
       ServiceName.newServiceName("cluster.base.atomix.distributed.log", Void.class);

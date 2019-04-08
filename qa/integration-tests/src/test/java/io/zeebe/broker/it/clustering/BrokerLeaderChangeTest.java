@@ -15,13 +15,8 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
-import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.leaderOpenLogStreamServiceName;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCompleted;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCompleted;
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.stateStorageFactoryServiceName;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamServiceName;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,16 +24,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.core.election.LeaderElection;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.clustering.base.partitions.PartitionLeaderElection;
 import io.zeebe.broker.clustering.base.partitions.PartitionServiceNames;
-import io.zeebe.broker.clustering.base.partitions.RaftState;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.util.RecordStream;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.subscription.JobWorker;
-import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
-import io.zeebe.logstreams.impl.service.LeaderOpenLogStreamAppenderService;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
@@ -51,7 +44,6 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -59,7 +51,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -113,7 +104,7 @@ public class BrokerLeaderChangeTest {
         oldLeader, PartitionServiceNames.leaderPartitionServiceName(partitionName));
 
     // get leader election primitive for a partition
-    final LeaderElection<String> election = getElection(oldLeader, partition);
+    final LeaderElection<String> election = getElection(oldLeader, partition).getElection();
     assertThat(election.getLeadership().leader().id()).isEqualTo(String.valueOf(oldLeaderId));
 
     // when
@@ -154,7 +145,7 @@ public class BrokerLeaderChangeTest {
 
     // when
     final LeaderElection<String> election =
-        getElection(getBroker(leaderForPartition.getNodeId()), partition);
+        getElection(getBroker(leaderForPartition.getNodeId()), partition).getElection();
     // Force another node to become leader
     election.evict(String.valueOf(leaderForPartition.getNodeId()));
     waitUntil(
@@ -184,23 +175,14 @@ public class BrokerLeaderChangeTest {
     assertBrokerHasService(
         oldLeader, PartitionServiceNames.leaderPartitionServiceName(partitionName));
 
-    // Remove partition role change listener. So when new leader starts, old leader is not listening
-    // to the leadership events.
-    oldLeader
-        .getBrokerContext()
-        .getServiceContainer()
-        .removeService(
-            PartitionServiceNames.partitionLeadershipEventListenerServiceName(partitionName))
-        .join();
-
     // get leaderelection primitive for a partition
-    final LeaderElection<String> election = getElection(oldLeader, partition);
+    final PartitionLeaderElection partitionLeaderElection = getElection(oldLeader, partition);
+    final LeaderElection<String> election = partitionLeaderElection.getElection();
     assertThat(election.getLeadership().leader().id()).isEqualTo(String.valueOf(oldLeaderId));
 
-    // Install leadership services manually
-    installLeaderServices(oldLeader, partition, election.getLeadership().leader().term());
-    assertBrokerHasService(
-        oldLeader, PartitionServiceNames.leaderPartitionServiceName(partitionName));
+    // Remove leader election listener. So when new leader starts, old leader is not
+    // listening to the leadership events.
+    election.removeListener(partitionLeaderElection);
 
     final long workflowInstanceKey1 = clientRule.createWorkflowInstance(workflowKey);
     final long workflowInstanceKey2 = clientRule.createWorkflowInstance(workflowKey);
@@ -259,8 +241,8 @@ public class BrokerLeaderChangeTest {
         .isEqualTo(2); // Two workflows completed.
   }
 
-  private LeaderElection<String> getElection(Broker node, int partitionId) {
-    final Injector<LeaderElection> leaderElectionInjector = new Injector<>();
+  private PartitionLeaderElection getElection(Broker node, int partitionId) {
+    final Injector<PartitionLeaderElection> leaderElectionInjector = new Injector<>();
     node.getBrokerContext()
         .getServiceContainer()
         .createService(ServiceName.newServiceName("test-leader-election", Void.class), () -> null)
@@ -279,49 +261,6 @@ public class BrokerLeaderChangeTest {
 
   private void assertBrokerNoService(Broker node, ServiceName service) {
     waitUntil(() -> !node.getBrokerContext().getServiceContainer().hasService(service));
-  }
-
-  private void installLeaderServices(Broker node, int partitionId, long leaderTerm) {
-    final String logName = Partition.getPartitionName(partitionId);
-
-    final ServiceContainer startContext = node.getBrokerContext().getServiceContainer();
-    final Partition partition =
-        new Partition(
-            new io.zeebe.broker.clustering.base.topology.PartitionInfo(partitionId, 3),
-            RaftState.LEADER);
-
-    final Injector<LogStream> logStreamInjector = new Injector<>();
-    startContext
-        .createService(ServiceName.newServiceName("test", Void.class), () -> null)
-        .dependency(logStreamServiceName(logName), logStreamInjector)
-        .install()
-        .join();
-
-    final LogStream logStream = logStreamInjector.getValue();
-    assertThat(logStream).isNotNull();
-
-    // Get an instance of DistributedLog
-    final DistributedLogstreamPartition distributedLogstreamPartition =
-        new DistributedLogstreamPartition(partitionId, leaderTerm);
-    startContext
-        .createService(distributedLogPartitionServiceName(logName), distributedLogstreamPartition)
-        .dependency(ATOMIX_SERVICE, distributedLogstreamPartition.getAtomixInjector())
-        .install();
-
-    // Open logStreamAppender
-    final ServiceName<Void> openLogStreamServiceName = leaderOpenLogStreamServiceName(logName);
-    startContext
-        .createService(openLogStreamServiceName, new LeaderOpenLogStreamAppenderService(logStream))
-        .install();
-
-    startContext
-        .createService(PartitionServiceNames.leaderPartitionServiceName(logName), partition)
-        .dependency(openLogStreamServiceName)
-        .dependency(logStreamServiceName(logName), partition.getLogStreamInjector())
-        .dependency(
-            stateStorageFactoryServiceName(logName), partition.getStateStorageFactoryInjector())
-        .group(LEADER_PARTITION_GROUP_NAME)
-        .install();
   }
 
   private Broker getBroker(int nodeId) {
@@ -351,7 +290,6 @@ public class BrokerLeaderChangeTest {
   }
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
   public void shouldChangeLeaderAfterLeaderDies() {
     // given
     final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);

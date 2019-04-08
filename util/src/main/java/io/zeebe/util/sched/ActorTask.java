@@ -347,7 +347,7 @@ public class ActorTask {
     }
   }
 
-  public void onFailure(Exception failure) {
+  public void onFailure(Throwable failure) {
     switch (lifecyclePhase) {
       case STARTING:
         Loggers.ACTOR_LOGGER.error(

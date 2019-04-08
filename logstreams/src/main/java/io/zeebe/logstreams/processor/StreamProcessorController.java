@@ -112,7 +112,7 @@ public class StreamProcessorController extends Actor {
       snapshotPosition = recoverFromSnapshot();
 
       streamProcessor.onOpen(streamProcessorContext);
-    } catch (final Exception e) {
+    } catch (final Throwable e) {
       onFailure();
       LangUtil.rethrowUnchecked(e);
     }
