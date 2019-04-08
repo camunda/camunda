@@ -140,10 +140,8 @@ class Header extends React.Component {
       };
     }
     const queryStrings = {
-      instances: this.state.filter
-        ? getFilterQueryString(this.state.filter)
-        : '',
-      filters: getFilterQueryString(FILTER_SELECTION.running),
+      filters: this.state.filter ? getFilterQueryString(this.state.filter) : '',
+      instances: getFilterQueryString(FILTER_SELECTION.running),
       incidents: getFilterQueryString({incidents: true})
     };
 
