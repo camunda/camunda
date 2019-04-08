@@ -8,12 +8,9 @@
     height: 400px;
   }
 
-  .selects {
+  .selectionPanel {
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    width: 100%;
-
+    flex-direction: column;
     padding-left: 20px;
     padding-top: 20px;
     padding-right: 20px;
@@ -25,24 +22,41 @@
       margin-bottom: 15px;
     }
 
-    .Labeled {
-      flex-grow: 1;
-      position: relative;
-      margin-bottom: 25px;
-      &:first-child {
-        margin-right: 25px;
-      }
+    .dropdowns {
+      display: flex;
+      flex-direction: row;
+      width: 100%;
 
-      .Select.name {
-        width: 100%;
+      .Labeled {
         flex-grow: 1;
+        position: relative;
+        margin-bottom: 25px;
         margin-right: 20px;
-      }
+        &:first-child {
+          margin-right: 25px;
+        }
 
-      .Select.version {
-        width: 100%;
-        flex-shrink: 0;
-        flex-grow: 0;
+        .name {
+          width: 100%;
+          flex-grow: 1;
+          margin-right: 20px;
+
+          .activateButton {
+            width: 100%;
+          }
+        }
+
+        .version {
+          width: 100%;
+          flex-shrink: 0;
+          flex-grow: 0;
+
+          .activateButton {
+            width: 100%;
+            flex-shrink: 0;
+            flex-grow: 0;
+          }
+        }
       }
     }
   }

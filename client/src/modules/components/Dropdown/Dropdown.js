@@ -66,7 +66,9 @@ export default class Dropdown extends React.Component {
   handleKeyPress = evt => {
     const dropdownButton = this.container.children[0];
 
-    const options = this.options.filter(option => option.getAttribute('disabled') === null);
+    const options = this.options.filter(
+      option => option && option.getAttribute('disabled') === null
+    );
 
     if (options[0] !== dropdownButton) {
       options.unshift(dropdownButton);
@@ -144,7 +146,7 @@ export default class Dropdown extends React.Component {
           <ul>
             {React.Children.map(this.props.children, (child, idx) => (
               <li ref={this.optionRef} key={idx}>
-                {child.type === Submenu
+                {child && child.type === Submenu
                   ? React.cloneElement(child, {
                       open:
                         this.state.fixedSubmenu === idx ||

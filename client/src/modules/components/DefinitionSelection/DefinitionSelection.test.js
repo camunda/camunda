@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {LoadingIndicator} from 'components';
+import {LoadingIndicator, Dropdown} from 'components';
 
 import DefinitionSelection from './DefinitionSelection';
 
@@ -22,13 +22,13 @@ jest.mock('services', () => {
       {
         key: 'foo',
         versions: [
-          {id: 'procdef2', key: 'foo', version: 2},
-          {id: 'procdef1', key: 'foo', version: 1}
+          {id: 'procdef2', key: 'foo', version: '2'},
+          {id: 'procdef1', key: 'foo', version: '1'}
         ]
       },
       {
         key: 'bar',
-        versions: [{id: 'anotherProcDef', key: 'bar', version: 1}]
+        versions: [{id: 'anotherProcDef', key: 'bar', version: '1'}]
       }
     ])
   };
@@ -61,41 +61,40 @@ it('should update to most recent version when key is selected', async () => {
   spy.mockClear();
   const node = await shallow(<DefinitionSelection {...props} />);
 
-  await node.instance().changeKey({target: {value: 'foo'}});
+  await node.instance().changeKey('foo');
 
-  expect(spy.mock.calls[0][1]).toBe(2);
+  expect(spy.mock.calls[0][1]).toBe('2');
 });
 
 it('should update definition if versions is changed', async () => {
   spy.mockClear();
   const node = await shallow(<DefinitionSelection definitionKey="foo" {...props} />);
 
-  await node.instance().changeVersion({target: {value: '1'}});
+  await node.instance().changeVersion('1');
 
   expect(spy.mock.calls[0][1]).toBe('1');
 });
 
 it('should set key and version, if process definition is already available', async () => {
-  spy.mockClear();
   const definitionConfig = {
     definitionKey: 'foo',
-    definitionVersion: 2
+    definitionVersion: '2'
   };
   const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
 
-  expect(node.find('Select.name')).toHaveProp('value', 'foo');
-  expect(node.find('Select.version')).toHaveProp('value', 2);
+  expect(node.find('.name')).toHaveProp('label', 'foo');
+  expect(node.find('.version')).toHaveProp('label', '2');
 });
 
 it('should call onChange function on change of the definition', async () => {
   spy.mockClear();
   const definitionConfig = {
     definitionKey: 'foo',
-    definitionVersion: 2
+    definitionVersion: '2'
   };
   const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
 
-  await node.instance().changeVersion({target: {value: '1'}});
+  await node.instance().changeVersion('1');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -103,7 +102,7 @@ it('should call onChange function on change of the definition', async () => {
 it('should render diagram if enabled and definition is selected', async () => {
   const definitionConfig = {
     definitionKey: 'foo',
-    definitionVersion: 2
+    definitionVersion: '2'
   };
   const node = await shallow(
     <DefinitionSelection renderDiagram {...definitionConfig} {...props} />
@@ -115,20 +114,31 @@ it('should render diagram if enabled and definition is selected', async () => {
 it('should disable version selection, if no key is selected', async () => {
   const node = await shallow(<DefinitionSelection {...props} />);
 
-  const versionSelect = node.find('Select.version');
+  const versionSelect = node.find('.version');
   expect(versionSelect.prop('disabled')).toBeTruthy();
 });
 
 it('should display all option in version selection if enabled', async () => {
   const node = await shallow(<DefinitionSelection enableAllVersionSelection {...props} />);
 
-  expect(node.find('[value="ALL"]')).toBePresent();
+  expect(
+    node
+      .find(Dropdown)
+      .last()
+      .childAt(0)
+      .text()
+  ).toBe('all');
 });
 
 it('should not display all option in version selection if disabled', async () => {
   const node = await shallow(<DefinitionSelection {...props} />);
 
-  expect(node.find('option[value="ALL"]').exists()).toBe(false);
+  expect(
+    node
+      .find(Dropdown)
+      .last()
+      .children()
+  ).toHaveLength(0);
 });
 
 it('should show a note if the selected ProcDef version is ALL', async () => {

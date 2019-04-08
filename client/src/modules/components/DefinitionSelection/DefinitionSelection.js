@@ -7,7 +7,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Select, BPMNDiagram, LoadingIndicator, Labeled} from 'components';
+import {BPMNDiagram, LoadingIndicator, Labeled, Dropdown} from 'components';
 
 import {loadDefinitions} from 'services';
 
@@ -32,8 +32,7 @@ export default class DefinitionSelection extends React.Component {
     });
   };
 
-  changeKey = evt => {
-    let key = evt.target.value;
+  changeKey = key => {
     let version;
     if (!key) {
       version = '';
@@ -44,8 +43,7 @@ export default class DefinitionSelection extends React.Component {
     this.props.onChange(key, version);
   };
 
-  changeVersion = evt => {
-    let version = evt.target.value;
+  changeVersion = version => {
     if (!version) {
       // reset to please select
       version = '';
@@ -60,7 +58,6 @@ export default class DefinitionSelection extends React.Component {
 
   findSelectedKeyGroup = key => this.state.availableDefinitions.find(def => def.key === key);
 
-  getKey = () => (this.props.definitionKey ? this.props.definitionKey : '');
   getVersion = () => (this.props.definitionVersion ? this.props.definitionVersion : '');
 
   getNameForKey = key => {
@@ -70,6 +67,22 @@ export default class DefinitionSelection extends React.Component {
 
   canRenderDiagram = () =>
     this.props.renderDiagram && this.props.definitionKey && this.props.definitionVersion;
+
+  createProcDefKeyTitle = () => {
+    if (this.props.definitionKey) {
+      return this.getNameForKey(this.props.definitionKey);
+    } else {
+      return 'Please Select...';
+    }
+  };
+
+  createProcDefVersionTitle = () => {
+    if (this.props.definitionVersion) {
+      return this.getVersion().toLowerCase();
+    } else {
+      return '\u00A0';
+    }
+  };
 
   render() {
     const {loaded} = this.state;
@@ -90,45 +103,34 @@ export default class DefinitionSelection extends React.Component {
           large: this.canRenderDiagram()
         })}
       >
-        <div className="selects">
-          <Labeled label="Name">
-            <Select
-              className="name"
-              name="DefinitionSelection__key"
-              value={this.getKey()}
-              onChange={this.changeKey}
-            >
-              {
-                <Select.Option defaultValue value="">
-                  Please select...
-                </Select.Option>
-              }
-              {this.state.availableDefinitions.map(({key}) => {
-                return (
-                  <Select.Option value={key} key={key}>
-                    {this.getNameForKey(key)}
-                  </Select.Option>
-                );
-              })}
-            </Select>
-          </Labeled>
-          <Labeled label="Version">
-            <Select
-              className="version"
-              name="DefinitionSelection__version"
-              value={this.getVersion()}
-              onChange={this.changeVersion}
-              disabled={!key}
-            >
-              {!key && <Select.Option defaultValue value="" />}
-              {this.props.enableAllVersionSelection && (
-                <Select.Option value="ALL" key="all">
-                  all
-                </Select.Option>
-              )}
-              {this.renderAllVersions(key)}
-            </Select>
-          </Labeled>
+        <div className="selectionPanel">
+          <div className="dropdowns">
+            <Labeled label="Name">
+              <Dropdown label={this.createProcDefKeyTitle()} className="name">
+                {this.state.availableDefinitions.map(({key}) => {
+                  return (
+                    <Dropdown.Option key={key} onClick={() => this.changeKey(key)}>
+                      {this.getNameForKey(key)}
+                    </Dropdown.Option>
+                  );
+                })}
+              </Dropdown>
+            </Labeled>
+            <Labeled label="Version">
+              <Dropdown
+                label={this.createProcDefVersionTitle()}
+                className="version"
+                disabled={!key}
+              >
+                {this.props.enableAllVersionSelection && (
+                  <Dropdown.Option key="0" onClick={() => this.changeVersion('ALL')}>
+                    all
+                  </Dropdown.Option>
+                )}
+                {this.renderAllVersions(key)}
+              </Dropdown>
+            </Labeled>
+          </div>
           {version === 'ALL' ? (
             <div className="warning">
               Note: data from the older versions can deviate, therefore the report data can be
@@ -150,8 +152,8 @@ export default class DefinitionSelection extends React.Component {
   renderAllVersions = key =>
     key &&
     this.findSelectedKeyGroup(key).versions.map(({version}) => (
-      <Select.Option value={version} key={version}>
+      <Dropdown.Option key={version} onClick={() => this.changeVersion(version)}>
         {version}
-      </Select.Option>
+      </Dropdown.Option>
     ));
 }
