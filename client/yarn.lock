@@ -8992,9 +8992,10 @@ react-error-overlay@^5.0.5:
   version "5.0.5"
   resolved "https://registry.yarnpkg.com/react-error-overlay/-/react-error-overlay-5.0.5.tgz#716ff1a92fda76bb89a39adf9ce046a5d740e71a"
 
-react-full-screen@^0.2.2:
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/react-full-screen/-/react-full-screen-0.2.2.tgz#3939b362cccaa983fb2845ca0c363f29999f485a"
+react-full-screen@^0.2.3:
+  version "0.2.3"
+  resolved "https://registry.yarnpkg.com/react-full-screen/-/react-full-screen-0.2.3.tgz#f0734ed3dfffea8c548f1b8ad28eeadb1ec9787c"
+  integrity sha512-V/XJX5yZTWqnaKGosyfXNAjN9tGBawmhFxl+N0rDGLEhI1nRsYq3UMI1uinPr2e/FV7dCldZ+xDk8/OqOsIYzw==
   dependencies:
     "@types/react" "*"
     fscreen "^1.0.1"
