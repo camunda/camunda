@@ -35,11 +35,12 @@ export default class Typeahead extends React.Component {
         lastCommittedValue: value
       });
     }
-    if (this.props.disabled !== prevProps.disabled)
+    if (this.props.disabled !== prevProps.disabled) {
       this.setState({
         query: this.props.disabled ? this.props.placeholder : '',
         lastCommittedValue: ''
       });
+    }
   }
 
   componentWillUnmount() {

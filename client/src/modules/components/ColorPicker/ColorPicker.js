@@ -59,8 +59,9 @@ ColorPicker.getColors = amount => {
     ...Object.values(ColorPicker.dark).reverse(),
     ...Object.values(ColorPicker.light)
   ];
-  if (amount > colorsAmount)
+  if (amount > colorsAmount) {
     return [...allColors, ...new Array(amount - colorsAmount).fill(ColorPicker.dark.steelBlue)];
+  }
 
   return allColors.slice(0, amount);
 };

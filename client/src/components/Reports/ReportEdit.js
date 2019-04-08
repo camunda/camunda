@@ -148,7 +148,9 @@ export default withErrorHandling(
     };
 
     maxRawDataEntriesExceeded = () => {
-      if (!this.state.report) return false;
+      if (!this.state.report) {
+        return false;
+      }
 
       const {data, result} = this.state.report;
       return !!(

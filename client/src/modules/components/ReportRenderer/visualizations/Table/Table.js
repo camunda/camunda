@@ -69,7 +69,9 @@ export default withErrorHandling(
       const {parameters} = data;
 
       // Combined Report
-      if (combined) return processCombinedData(this.props);
+      if (combined) {
+        return processCombinedData(this.props);
+      }
 
       let tableData;
       // raw data

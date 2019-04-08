@@ -120,7 +120,9 @@ export function convertToMilliseconds(value, unit) {
 }
 
 export function getHighlightedText(text, highlight) {
-  if (!highlight) return text;
+  if (!highlight) {
+    return text;
+  }
   // Split on highlight term and include term into parts, ignore case
   const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
   return parts.map((part, i) => (

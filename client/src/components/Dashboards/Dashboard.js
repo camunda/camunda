@@ -262,10 +262,11 @@ export default themed(
 
       setAutorefresh = timeout => () => {
         clearInterval(this.timer);
-        if (timeout)
+        if (timeout) {
           this.timer = setInterval(async () => {
             await this.renderDashboard();
           }, timeout);
+        }
         this.setState({
           autoRefreshInterval: timeout
         });
@@ -498,7 +499,9 @@ export default themed(
       };
 
       componentDidUpdate() {
-        if (this.state.redirect) this.setState({redirect: ''});
+        if (this.state.redirect) {
+          this.setState({redirect: ''});
+        }
         if (this.isNew) {
           this.isNew = false;
         }

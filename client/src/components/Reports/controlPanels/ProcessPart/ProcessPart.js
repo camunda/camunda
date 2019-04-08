@@ -30,8 +30,9 @@ export default class ProcessPart extends React.Component {
   }
 
   renderButton() {
-    if (!this.props.processPart)
+    if (!this.props.processPart) {
       return <Button onClick={this.openModal}>Process Instance Part</Button>;
+    }
   }
 
   renderFlowNodeName = id => {

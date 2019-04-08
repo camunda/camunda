@@ -21,5 +21,7 @@ export default function Labeled({label, className, children, ...props}) {
 }
 
 function catchClick(evt) {
-  if (evt.target.className !== 'label') evt.preventDefault();
+  if (evt.target.className !== 'label') {
+    evt.preventDefault();
+  }
 }

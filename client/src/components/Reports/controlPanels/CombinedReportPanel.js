@@ -72,10 +72,11 @@ export default class CombinedReportPanel extends React.Component {
     const prevOrderReports = this.getReportResult();
     const {reports} = this.props.report.data;
     let colorsHash = {};
-    if (reports.length)
+    if (reports.length) {
       colorsHash = prevOrderReports.reduce((colors, report, i) => {
         return {...colors, [report.id]: reports[i].color};
       }, {});
+    }
 
     const colors = ColorPicker.getColors(newSelected.length).filter(
       color => !Object.values(colorsHash).includes(color)
@@ -101,7 +102,9 @@ export default class CombinedReportPanel extends React.Component {
 
   isCompatible = report => {
     const referenceReport = this.getReportResult()[0];
-    if (!referenceReport) return true;
+    if (!referenceReport) {
+      return true;
+    }
     const referenceReportData = referenceReport.data;
     return (
       !referenceReportData ||
@@ -171,7 +174,9 @@ export default class CombinedReportPanel extends React.Component {
       selectedReports = this.getReportResult();
       configurationType = combinedReport.data.visualization;
       // combined number reports have bar chart visualization
-      if (configurationType === 'number') configurationType = 'bar';
+      if (configurationType === 'number') {
+        configurationType = 'bar';
+      }
     }
 
     return (
@@ -187,9 +192,13 @@ export default class CombinedReportPanel extends React.Component {
           onOrderChange={this.updateReportsOrder}
           format={v => v.name}
           customItemSettings={(val, idx) => {
-            if (!configurationType || configurationType === 'table') return;
+            if (!configurationType || configurationType === 'table') {
+              return;
+            }
             const selectedColor = reportsData[idx].color;
-            if (!selectedColor) return;
+            if (!selectedColor) {
+              return;
+            }
             return (
               <Popover
                 title={

@@ -42,10 +42,11 @@ export function extractCombinedData({report, theme, targetValue, flowNodeNames})
 
   let labels = Object.keys(Object.assign({}, ...resultArr));
 
-  if (isDate(data.groupBy))
+  if (isDate(data.groupBy)) {
     labels.sort((a, b) => {
       return new Date(a) - new Date(b);
     });
+  }
 
   const unitedResults = uniteResults(resultArr, labels);
 

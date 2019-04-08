@@ -14,8 +14,9 @@ import './ColumnRearrangement.scss';
 export default class ColumnRearrangement extends React.Component {
   render() {
     // not raw data report
-    if (!this.props.report.result.data.length || !this.props.updateReport)
+    if (!this.props.report.result.data.length || !this.props.updateReport) {
       return this.props.children;
+    }
     return (
       <div className="ColumnRearrangement" onMouseDown={this.handleMouseDown}>
         {this.props.children}

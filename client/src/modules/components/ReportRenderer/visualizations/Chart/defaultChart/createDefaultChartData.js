@@ -42,10 +42,11 @@ export function extractDefaultChartData({report, theme, targetValue, flowNodeNam
 
   let labels = Object.keys(formattedResult);
 
-  if (isDate(groupBy))
+  if (isDate(groupBy)) {
     labels.sort((a, b) => {
       return new Date(a) - new Date(b);
     });
+  }
 
   if (data.groupBy.type === 'flowNodes') {
     labels = labels.map(key => flowNodeNames[key] || key);

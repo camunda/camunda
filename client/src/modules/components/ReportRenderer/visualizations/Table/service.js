@@ -55,9 +55,12 @@ export function getBodyRows(
     const row = [flowNodeNames[key] || key];
     unitedResults.forEach((result, i) => {
       const value = result[key];
-      if (displayAbsoluteValue)
+      if (displayAbsoluteValue) {
         row.push(formatter(typeof value !== 'undefined' && value !== null ? value : ''));
-      if (displayRelativeValue) row.push(getRelativeValue(value, processInstanceCount[i]));
+      }
+      if (displayRelativeValue) {
+        row.push(getRelativeValue(value, processInstanceCount[i]));
+      }
     });
     return row;
   });

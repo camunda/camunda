@@ -36,7 +36,9 @@ export function createDurationFormattingOptions(targetLine, dataMinStep) {
   ];
 
   const niceStepSize = steps.find(({value}) => value > minimumStepSize);
-  if (!niceStepSize) return;
+  if (!niceStepSize) {
+    return;
+  }
 
   return {
     callback: v => v / niceStepSize.base + niceStepSize.unit,
@@ -45,6 +47,8 @@ export function createDurationFormattingOptions(targetLine, dataMinStep) {
 }
 
 export function getFormattedTargetValue({unit, value}) {
-  if (!unit) return value;
+  if (!unit) {
+    return value;
+  }
   return convertToMilliseconds(value, unit);
 }

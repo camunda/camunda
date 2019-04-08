@@ -54,7 +54,9 @@ export default function AlertModal(reports) {
 
     componentDidMount = async () => {
       const alert = this.props.entity;
-      if (alert && Object.keys(alert).length) this.updateAlert();
+      if (alert && Object.keys(alert).length) {
+        this.updateAlert();
+      }
 
       const version = (await getOptimizeVersion()).split('.');
       version.length = 2;

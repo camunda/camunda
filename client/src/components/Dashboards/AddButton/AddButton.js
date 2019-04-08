@@ -26,7 +26,9 @@ export default class AddButton extends React.Component {
   };
 
   closeModal = evt => {
-    if (evt) evt.stopPropagation();
+    if (evt) {
+      evt.stopPropagation();
+    }
     this.setState({
       open: false
     });

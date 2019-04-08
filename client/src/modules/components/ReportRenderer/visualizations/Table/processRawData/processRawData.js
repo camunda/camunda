@@ -23,8 +23,9 @@ export default function processRawData({report: {data, result}}, endpoints = {})
   const allColumnsLength =
     Object.keys(formattedResult[0]).length - 1 + Object.keys(formattedResult[0].variables).length;
   // If all columns is excluded return a message to enable one
-  if (allColumnsLength === excludedColumns.length)
+  if (allColumnsLength === excludedColumns.length) {
     return {head: ['No Data'], body: [['You need to enable at least one table column']]};
+  }
 
   const instanceProps = Object.keys(formattedResult[0]).filter(
     entry => entry !== 'variables' && !excludedColumns.includes(entry)

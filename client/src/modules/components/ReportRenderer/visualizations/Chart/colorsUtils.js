@@ -52,8 +52,11 @@ export function determineBarColor({unit, value, isBelow}, data, datasetColor, is
   const targetColor = isStriped ? getStripedColor(datasetColor) : getColorFor('targetBar', isDark);
 
   return Object.values(data).map(height => {
-    if (isBelow) return height < barValue ? datasetColor : targetColor;
-    else return height >= barValue ? datasetColor : targetColor;
+    if (isBelow) {
+      return height < barValue ? datasetColor : targetColor;
+    } else {
+      return height >= barValue ? datasetColor : targetColor;
+    }
   });
 }
 

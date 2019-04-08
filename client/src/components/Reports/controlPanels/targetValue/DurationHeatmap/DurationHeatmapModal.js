@@ -244,7 +244,9 @@ export default class DurationHeatmapModal extends React.Component {
   render() {
     const {open, onClose, report} = this.props;
     let errorMessage = !this.hasSomethingChanged() ? 'Please change at least one value' : '';
-    if (!this.areAllFieldsNumbers()) errorMessage += 'All fields should have a numeric value';
+    if (!this.areAllFieldsNumbers()) {
+      errorMessage += 'All fields should have a numeric value';
+    }
     return (
       <Modal size="max" open={open} onClose={onClose} className="DurationHeatmapModal__Modal">
         <Modal.Header>Target Value Comparison </Modal.Header>

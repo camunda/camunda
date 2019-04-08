@@ -30,9 +30,13 @@ export default function ReportRenderer(props) {
   if (report) {
     const isDecision = report.reportType === 'decision';
 
-    if (report.combined) View = CombinedReportRenderer;
-    else if (isDecision) View = DecisionReportRenderer;
-    else View = ProcessReportRenderer;
+    if (report.combined) {
+      View = CombinedReportRenderer;
+    } else if (isDecision) {
+      View = DecisionReportRenderer;
+    } else {
+      View = ProcessReportRenderer;
+    }
 
     const somethingMissing = checkReport(report);
     if (somethingMissing) {

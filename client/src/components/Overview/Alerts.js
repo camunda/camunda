@@ -67,7 +67,9 @@ class Alerts extends React.Component {
   };
 
   renderMetadata = alert => {
-    if (!this.state.reports) return;
+    if (!this.state.reports) {
+      return;
+    }
     const report = this.state.reports.find(({id}) => alert.reportId === id);
     return (
       <span className="metadata">

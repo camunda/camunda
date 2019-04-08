@@ -74,7 +74,9 @@ export function getReportIcon(report) {
 }
 
 function getIconKey({data}) {
-  if (data && data.visualization) return data.visualization;
+  if (data && data.visualization) {
+    return data.visualization;
+  }
   return 'generic';
 }
 

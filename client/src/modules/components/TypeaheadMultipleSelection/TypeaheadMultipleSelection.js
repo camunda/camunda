@@ -69,17 +69,23 @@ export default class TypeaheadMultipleSelection extends React.Component {
   };
 
   dragEnd = evt => {
-    if (!this.over) this.over = evt.target;
+    if (!this.over) {
+      this.over = evt.target;
+    }
     this.dragged.style.display = 'flex';
 
     const container = this.dragged.parentNode;
-    if (container.contains(this.dragPlaceHolder)) container.removeChild(this.dragPlaceHolder);
+    if (container.contains(this.dragPlaceHolder)) {
+      container.removeChild(this.dragPlaceHolder);
+    }
 
     // update props
     let data = [...this.props.selectedValues];
     const from = +this.dragged.dataset.id;
     let to = +this.over.dataset.id;
-    if (from < to) to--;
+    if (from < to) {
+      to--;
+    }
     data.splice(to, 0, data.splice(from, 1)[0]);
     this.props.onOrderChange(data);
     this.dragged = null;
@@ -87,7 +93,9 @@ export default class TypeaheadMultipleSelection extends React.Component {
 
   dragOver = evt => {
     evt.preventDefault();
-    if (!this.dragged || evt.target.className === 'placeholder') return;
+    if (!this.dragged || evt.target.className === 'placeholder') {
+      return;
+    }
     this.dragged.style.display = 'none';
     const listElement = evt.target.closest('li');
     this.over = listElement;

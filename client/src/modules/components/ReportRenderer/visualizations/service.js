@@ -5,7 +5,9 @@
  */
 
 export function getRelativeValue(data, total) {
-  if (data === null) return '';
+  if (data === null) {
+    return '';
+  }
   return Math.round((data / total) * 1000) / 10 + '%';
 }
 
