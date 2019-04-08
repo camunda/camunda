@@ -147,8 +147,12 @@ it('should pass the xml to the Filter component', async () => {
   expect(filter.find('[xml="aFooXml"]')).toBePresent();
 });
 
-it('should load the flownode names and hand them to the filter', async () => {
+it('should load the flownode names and hand them to the filter if process definition changes', async () => {
   const node = mount(<AnalysisControlPanel {...data} />);
+  node.setProps({
+    processDefinitionKey: 'fooKey',
+    processDefinitionVersion: 'fooVersion'
+  });
 
   await flushPromises();
   node.update();

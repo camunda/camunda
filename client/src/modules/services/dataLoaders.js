@@ -14,15 +14,19 @@ export async function getOptimizeVersion() {
 }
 
 export async function getFlowNodeNames(processDefinitionKey, processDefinitionVersion) {
-  const response = await post(`api/flow-node/flowNodeNames`, {
-    processDefinitionKey,
-    processDefinitionVersion,
-    nodeIds: []
-  });
+  if (processDefinitionKey && processDefinitionVersion) {
+    const response = await post(`api/flow-node/flowNodeNames`, {
+      processDefinitionKey,
+      processDefinitionVersion,
+      nodeIds: []
+    });
 
-  const json = await response.json();
+    const json = await response.json();
 
-  return await json.flowNodeNames;
+    return await json.flowNodeNames;
+  } else {
+    return {};
+  }
 }
 
 export async function loadDefinitions(type) {

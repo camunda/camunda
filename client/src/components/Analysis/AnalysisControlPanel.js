@@ -61,6 +61,7 @@ export default class AnalysisControlPanel extends React.Component {
       this.loadFlowNodeNames();
     }
   }
+
   getDefinitionConfig = () => {
     return {
       processDefinitionKey: this.props.processDefinitionKey,
