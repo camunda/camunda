@@ -72,6 +72,13 @@ public interface LogStorage {
   void truncate(long address);
 
   /**
+   * Deletes from the log storage, uses the given address as upper limit.
+   *
+   * @param address the address until we try to delete
+   */
+  void delete(long address);
+
+  /**
    * Naive implementation of the {@link #read(ByteBuffer, long, ReadResultProcessor)} method. Does
    * not process the bytes which are read.
    *

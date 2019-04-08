@@ -39,6 +39,17 @@ public class FsLogSegments {
     this.segmentCount = newSegments.length; // volatile store
   }
 
+  public void removeSegmentsUntil(int segmentId) {
+    final int segmentIdx = segmentId - initalSegmentId;
+    final int newLength = segments.length - segmentIdx;
+    final FsLogSegment[] newSegments = new FsLogSegment[newLength];
+
+    System.arraycopy(segments, segmentIdx, newSegments, 0, newLength);
+    this.segments = newSegments;
+    initalSegmentId += segmentIdx;
+    this.segmentCount = newSegments.length; // volatile store
+  }
+
   public FsLogSegment getSegment(int segmentId) {
     final int segmentCount = this.segmentCount; // volatile load
 
@@ -69,6 +80,10 @@ public class FsLogSegments {
 
     this.segments = new FsLogSegment[0];
     this.segmentCount = 0;
+  }
+
+  public int getLastSegmentId() {
+    return initalSegmentId + (segmentCount - 1);
   }
 
   public int getSegmentCount() {

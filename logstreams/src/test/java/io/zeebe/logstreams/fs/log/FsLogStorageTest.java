@@ -731,6 +731,201 @@ public class FsLogStorageTest {
     fsLogStorage.close();
   }
 
+  @Test
+  public void shouldNotDeleteIfNotOpen() {
+    thrown.expect(IllegalStateException.class);
+    thrown.expectMessage("log storage is not open");
+
+    fsLogStorage.delete(0);
+  }
+
+  @Test
+  public void shouldNotDeleteIfClosed() {
+    fsLogStorage.open();
+
+    fsLogStorage.append(ByteBuffer.wrap(MSG));
+
+    fsLogStorage.close();
+
+    thrown.expect(IllegalStateException.class);
+    thrown.expectMessage("log storage is already closed");
+
+    fsLogStorage.delete(0);
+  }
+
+  @Test
+  public void shouldDoNothingIfAddressIsNegative() {
+    // given
+    fsLogStorage.open();
+    final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
+    final byte[] largeBlock = new byte[remainingCapacity];
+
+    // segments 1, 2, 3 + msg
+    fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+    fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+
+    final long firstMessageAddress = fsLogStorage.append(ByteBuffer.wrap(MSG));
+    final long secondMessageAddress = appendLargeBlockWithMsgAfterwards(MSG.length * 2);
+
+    // when
+    final long address = PositionUtil.position(-1, 0);
+    fsLogStorage.delete(address);
+
+    // then
+    assertThat(logDirectory.listFiles().length).isEqualTo(3);
+    assertMessage(firstMessageAddress, MSG);
+    assertMessage(secondMessageAddress, MSG);
+
+    fsLogStorage.close();
+  }
+
+  @Test
+  public void shouldDeleteUpToAddress() {
+    // given
+    fsLogStorage.open();
+    final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
+    final byte[] largeBlock = new byte[remainingCapacity];
+
+    // segments 1, 2, 3 + msg
+    fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+    fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+
+    final long firstMessageAddress = fsLogStorage.append(ByteBuffer.wrap(MSG));
+    final long secondMessageAddress = appendLargeBlockWithMsgAfterwards(MSG.length * 2);
+
+    // when
+    fsLogStorage.delete(secondMessageAddress);
+
+    // then
+    assertThat(logDirectory.listFiles().length).isEqualTo(1);
+    assertMessage(firstMessageAddress, MSG);
+    assertMessage(secondMessageAddress, MSG);
+
+    fsLogStorage.close();
+  }
+
+  @Test
+  public void shouldDoNothingOnDeleteSameAddress() {
+    // given
+    fsLogStorage.open();
+    final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
+    final byte[] largeBlock = new byte[remainingCapacity];
+
+    // segments 1, 2, 3 + msg
+    fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+    fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+
+    final long firstMessageAddress = fsLogStorage.append(ByteBuffer.wrap(MSG));
+    final long secondMessageAddress = appendLargeBlockWithMsgAfterwards(MSG.length * 2);
+
+    // when
+    fsLogStorage.delete(secondMessageAddress);
+    fsLogStorage.delete(secondMessageAddress);
+
+    // then
+    assertThat(logDirectory.listFiles().length).isEqualTo(1);
+    assertMessage(firstMessageAddress, MSG);
+    assertMessage(secondMessageAddress, MSG);
+
+    fsLogStorage.close();
+  }
+
+  @Test
+  public void shouldDeleteMultipleTimes() {
+    // given
+    fsLogStorage.open();
+    final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
+    final byte[] largeBlock = new byte[remainingCapacity];
+
+    // segments 1, 2, 3 + msg
+    fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+    final long address = fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+
+    final long firstMessageAddress = fsLogStorage.append(ByteBuffer.wrap(MSG));
+    final long secondMessageAddress = appendLargeBlockWithMsgAfterwards(MSG.length * 2);
+
+    // when
+    fsLogStorage.delete(address);
+    fsLogStorage.delete(secondMessageAddress);
+
+    // then
+    assertThat(logDirectory.listFiles().length).isEqualTo(1);
+    assertMessage(firstMessageAddress, MSG);
+    assertMessage(secondMessageAddress, MSG);
+
+    fsLogStorage.close();
+  }
+
+  @Test
+  public void shouldAppendAfterDeleteSegments() {
+    // given
+    fsLogStorage.open();
+    final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
+    final byte[] largeBlock = new byte[remainingCapacity];
+
+    // segments 1, 2, 3 + msg
+    fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+    final long address = fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+
+    fsLogStorage.delete(address);
+    final long firstMessageAddress = fsLogStorage.append(ByteBuffer.wrap(MSG));
+    final long secondMessageAddress = appendLargeBlockWithMsgAfterwards(MSG.length * 2);
+
+    // when
+    fsLogStorage.delete(secondMessageAddress);
+
+    // then
+    assertThat(logDirectory.listFiles().length).isEqualTo(1);
+    assertMessage(firstMessageAddress, MSG);
+    assertMessage(secondMessageAddress, MSG);
+
+    fsLogStorage.close();
+  }
+
+  @Test
+  public void shouldNotDeleteHigherThenExistingSegmentIds() {
+    // given
+    fsLogStorage.open();
+
+    // segments 1, 2, 3 + msg
+    final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
+    final byte[] largeBlock = new byte[remainingCapacity];
+    fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+    fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+
+    final long firstMessageAddress = fsLogStorage.append(ByteBuffer.wrap(MSG));
+    final long secondMessageAddress = appendLargeBlockWithMsgAfterwards(MSG.length * 2);
+
+    // when
+    final long address = PositionUtil.position(Integer.MAX_VALUE, 0);
+    fsLogStorage.delete(address);
+
+    // then
+    assertThat(logDirectory.listFiles().length).isEqualTo(3);
+    assertMessage(firstMessageAddress, MSG);
+    assertMessage(secondMessageAddress, MSG);
+
+    fsLogStorage.close();
+  }
+
+  @Test
+  public void shouldNotDeleteInitialSegment() {
+    // given
+    fsLogStorage.open();
+
+    // segments 1 + msg
+    final long addressMessage = appendLargeBlockWithMsgAfterwards(MSG.length);
+
+    // when
+    fsLogStorage.delete(addressMessage);
+
+    // then
+    assertThat(logDirectory.listFiles().length).isEqualTo(1);
+    assertMessage(addressMessage, MSG);
+
+    fsLogStorage.close();
+  }
+
   protected byte[] readLogFile(final String logFilePath, final long address, final int capacity) {
     final ByteBuffer buffer = ByteBuffer.allocate(capacity);
 
@@ -770,5 +965,13 @@ public class FsLogStorageTest {
 
   protected void deleteFile(final String file) throws IOException {
     Files.delete(Paths.get(file));
+  }
+
+  private long appendLargeBlockWithMsgAfterwards(int msgLength) {
+    final byte[] largeBlockBeforeMessage =
+        new byte[SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH - (msgLength)];
+    new Random().nextBytes(largeBlockBeforeMessage);
+    fsLogStorage.append(ByteBuffer.wrap(largeBlockBeforeMessage));
+    return fsLogStorage.append(ByteBuffer.wrap(MSG));
   }
 }

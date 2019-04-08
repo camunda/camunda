@@ -26,11 +26,11 @@ import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.io.File;
 import java.time.Duration;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.agrona.DirectBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -179,35 +179,6 @@ public class LogStreamTest {
   }
 
   @Test
-  public void shouldDeleteOnClose() {
-    final File logDir = tempFolder.getRoot();
-    final LogStream logStream =
-        buildLogStream(b -> b.logRootPath(logDir.getAbsolutePath()).deleteOnClose(true));
-
-    // when
-    logStream.close();
-
-    // then
-    final File[] files = logDir.listFiles();
-    assertThat(files).isNotNull();
-    assertThat(files.length).isEqualTo(0);
-  }
-
-  @Test
-  public void shouldNotDeleteOnCloseByDefault() {
-    final File logDir = tempFolder.getRoot();
-    final LogStream logStream = buildLogStream(b -> b.logRootPath(logDir.getAbsolutePath()));
-
-    // when
-    logStream.close();
-
-    // then
-    final File[] files = logDir.listFiles();
-    assertThat(files).isNotNull();
-    assertThat(files.length).isGreaterThan(0);
-  }
-
-  @Test
   public void shouldTruncateLogStorage() {
     // given
     final LogStream logStream = buildLogStream();
@@ -328,13 +299,17 @@ public class LogStreamTest {
     return StreamSupport.stream(iterable.spliterator(), false);
   }
 
-  private long writeEvent(final LogStream logStream) {
+  static long writeEvent(final LogStream logStream) {
+    return writeEvent(logStream, wrapString("event"));
+  }
+
+  static long writeEvent(final LogStream logStream, DirectBuffer value) {
     final LogStreamWriterImpl writer = new LogStreamWriterImpl(logStream);
 
     long position = -1L;
 
     while (position < 0) {
-      position = writer.value(wrapString("event")).tryWrite();
+      position = writer.value(value).tryWrite();
     }
 
     final long writtenEventPosition = position;
