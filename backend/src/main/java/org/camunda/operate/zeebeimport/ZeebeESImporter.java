@@ -96,7 +96,7 @@ public class ZeebeESImporter extends Thread {
   @Autowired
   private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
   
-  private Map<String,Long> lastLoadedPositions = new WeakHashMap<>();  
+//  private Map<String,Long> lastLoadedPositions = new WeakHashMap<>();  
 
   @PreDestroy
   public void shutdown() {
@@ -104,12 +104,12 @@ public class ZeebeESImporter extends Thread {
   }
 
   public long getLatestLoadedPosition(String aliasName, int partitionId) throws IOException {
-	String lastloadedPositionKey = aliasName+"-"+partitionId;
-	if(lastLoadedPositions.containsKey(lastloadedPositionKey)) {
-		long lastPosition = lastLoadedPositions.get(lastloadedPositionKey);
-		logger.debug("Latest loaded position (from cache) for alias [{}] and partitionId [{}]: {}", aliasName, partitionId, lastPosition);
-		return lastPosition;
-	}
+//	String lastloadedPositionKey = aliasName+"-"+partitionId;
+//	if(lastLoadedPositions.containsKey(lastloadedPositionKey)) {
+//		long lastPosition = lastLoadedPositions.get(lastloadedPositionKey);
+//		logger.debug("Latest loaded position (from cache) for alias [{}] and partitionId [{}]: {}", aliasName, partitionId, lastPosition);
+//		return lastPosition;
+//	}
     final QueryBuilder queryBuilder = joinWithAnd(termQuery(ImportPositionIndex.ALIAS_NAME, aliasName),
       termQuery(ImportPositionIndex.PARTITION_ID, partitionId));
 
@@ -134,7 +134,6 @@ public class ZeebeESImporter extends Thread {
   }
 
   public void recordLatestLoadedPosition(String aliasName, int partitionId, long position) {
-	lastLoadedPositions.put(aliasName+"-"+partitionId, position);
     ImportPositionEntity entity = new ImportPositionEntity(aliasName, partitionId, position);
     Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(ImportPositionIndex.POSITION, entity.getPosition());
@@ -143,7 +142,8 @@ public class ZeebeESImporter extends Thread {
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .doc(updateFields)
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-      esClient.update(request, RequestOptions.DEFAULT);;
+      esClient.update(request, RequestOptions.DEFAULT);
+//      lastLoadedPositions.put(aliasName+"-"+partitionId, position);
     } catch (Exception e) {
       logger.error(String.format("Error occurred while persisting latest loaded position for %s",aliasName), e);
       throw new OperateRuntimeException(e);
