@@ -170,7 +170,7 @@ describe('Instances', () => {
       expect(FiltersNode.prop('filterCount')).toBe(mockInstances.totalCount);
     });
 
-    it('should use the flowNode id if no name is available', async () => {
+    it('should use the flowNode type if no name is available', async () => {
       // given
       const customMockProps = {
         ...mockProps,
@@ -202,11 +202,58 @@ describe('Instances', () => {
 
       // then
       expect(FiltersNode.prop('activityIds')[0].label).toEqual(
-        'EndEvent_042s0oc'
+        'Unnamed End Event'
       );
       expect(FiltersNode.prop('activityIds')[0].value).toEqual(
         'EndEvent_042s0oc'
       );
+    });
+
+    it('should show flowNodes sorted by label - named/unnamed and ordered alphabetically', () => {
+      const customMockProps = {
+        ...mockProps,
+        diagramModel: {
+          definitions: {},
+          bpmnElements: {
+            EndEvent_042s0oc: {
+              id: 'EndEvent_042s0oc',
+              name: undefined,
+              $type: 'bpmn:EndEvent'
+            },
+            StartEvent_042s13a: {
+              id: 'StartEvent_042s13a',
+              name: undefined,
+              $type: 'bpmn:StartEvent'
+            },
+            ExclusiveGateway_042s13a: {
+              id: 'ExclusiveGateway_042s13a',
+              name: 'A gateway',
+              $type: 'bpmn:ExclusiveGateway'
+            },
+            ParallelGateway_042s13a: {
+              id: 'ParallelGateway_042s13a',
+              name: 'B gateway',
+              $type: 'bpmn:ParallelGateway'
+            }
+          }
+        }
+      };
+
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Instances {...customMockProps} />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
+      );
+
+      // when
+      node.update();
+
+      // then
+      const FiltersNode = node.find(Filters);
+
+      expect(FiltersNode.prop('activityIds')).toMatchSnapshot();
     });
 
     it('should handle the filter reset', () => {
@@ -341,13 +388,13 @@ describe('Instances', () => {
         mockProps.filter.activityId
       );
       expect(DiagramNode.prop('selectableFlowNodes')).toEqual([
-        'taskD',
-        'StartEvent_1',
         'EndEvent_042s0oc',
-        'timerCatchEvent',
+        'exclusiveGateway',
         'messageCatchEvent',
         'parallelGateway',
-        'exclusiveGateway'
+        'StartEvent_1',
+        'taskD',
+        'timerCatchEvent'
       ]);
       expect(DiagramNode.prop('definitions')).toBe(
         mockProps.diagramModel.definitions

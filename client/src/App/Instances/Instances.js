@@ -7,8 +7,8 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 
-import {DEFAULT_FILTER, SELECTABLE_FLOWNODE_TYPES} from 'modules/constants';
-import {isEmpty, sortBy} from 'lodash';
+import {DEFAULT_FILTER} from 'modules/constants';
+import {isEmpty} from 'lodash';
 
 import Diagram from 'modules/components/Diagram';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
@@ -26,7 +26,7 @@ import Filters from './Filters';
 import Selections from './Selections';
 
 import {
-  getSelectableActivityIds,
+  getSelectableFlowNodes,
   getWorkflowByVersionFromFilter,
   getWorkflowNameFromFilter
 } from './service';
@@ -78,8 +78,7 @@ export default class Instances extends Component {
 
     const workflowName = getWorkflowNameFromFilter({filter, groupedWorkflows});
 
-    const activityIds = getSelectableActivityIds(
-      SELECTABLE_FLOWNODE_TYPES,
+    const selectableFlowNodes = getSelectableFlowNodes(
       this.props.diagramModel.bpmnElements
     );
 
@@ -109,9 +108,7 @@ export default class Instances extends Component {
                 <Styled.Content>
                   <Styled.FilterSection>
                     <Filters
-                      activityIds={sortBy(activityIds, item =>
-                        item.label.toLowerCase()
-                      )}
+                      activityIds={selectableFlowNodes}
                       groupedWorkflows={this.props.groupedWorkflows}
                       filter={this.props.filter}
                       filterCount={this.props.filterCount}
@@ -139,7 +136,7 @@ export default class Instances extends Component {
                         flowNodesStatistics={this.props.statistics}
                         onFlowNodeSelection={this.handleFlowNodeSelection}
                         selectedFlowNodeId={this.props.filter.activityId}
-                        selectableFlowNodes={activityIds.map(
+                        selectableFlowNodes={selectableFlowNodes.map(
                           item => item.value
                         )}
                       />

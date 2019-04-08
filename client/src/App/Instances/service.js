@@ -10,6 +10,8 @@ import {isValidJSON} from 'modules/utils';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {getWorkflowByVersion} from 'modules/utils/filter';
+import {NOT_SELECTABLE_FLOWNODE_TYPES} from 'modules/constants';
+import {sortBy} from 'lodash';
 
 export function parseQueryString(queryString = '') {
   var params = {};
@@ -64,35 +66,43 @@ export function decodeFields(object) {
   return result;
 }
 
-export function getSelectableActivityIds(selectableTypes, bpmnElements) {
-  const formatedNodes = formatDiagramNodes(bpmnElements);
-  let selectableIds = [];
-  formatedNodes.forEach(node => {
-    const isSelectableFlowNode = selectableTypes.some(selectableType =>
-      node.type.includes(selectableType)
+export function getSelectableFlowNodes(bpmnElements) {
+  let namedFlowNodes = [];
+  let unnameFlowNodes = [];
+
+  for (let element in bpmnElements) {
+    const {$type: type, id, name} = bpmnElements[element];
+    const flowNodeType = type.split(':')[1];
+
+    const isSelectable = !Object.values(NOT_SELECTABLE_FLOWNODE_TYPES).some(
+      selectableType => flowNodeType === selectableType
     );
 
-    if (isSelectableFlowNode) {
-      selectableIds.push({
-        value: node.id,
-        label: node.name || node.id
+    if (isSelectable && name) {
+      namedFlowNodes.push({
+        value: id,
+        label: name
+      });
+    } else if (isSelectable) {
+      unnameFlowNodes.push({
+        value: id,
+        label: 'Unnamed' + flowNodeType.replace(/([A-Z])/g, ' $1')
       });
     }
-  });
-  return selectableIds;
+  }
+
+  return [
+    ...sortByFlowNodeLabel(namedFlowNodes),
+    ...sortByFlowNodeLabel(unnameFlowNodes)
+  ];
+}
+
+function sortByFlowNodeLabel(flowNodes) {
+  return sortBy(flowNodes, flowNode => flowNode.label.toLowerCase());
 }
 
 export function getWorkflowName(workflow) {
   return workflow ? workflow.name || workflow.bpmnProcessId : 'Workflow';
-}
-
-export function formatDiagramNodes(nodes = {}) {
-  const result = [];
-  for (let node in nodes) {
-    const item = nodes[node];
-    result.push({type: item['$type'], id: item.id, name: item.name});
-  }
-  return result;
 }
 
 export async function fetchDiagramModel(workflowId) {

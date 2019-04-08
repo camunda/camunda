@@ -1,0 +1,22 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Instances Filters should show flowNodes sorted by label - named/unnamed and ordered alphabetically 1`] = `
+Array [
+  Object {
+    "label": "A gateway",
+    "value": "ExclusiveGateway_042s13a",
+  },
+  Object {
+    "label": "B gateway",
+    "value": "ParallelGateway_042s13a",
+  },
+  Object {
+    "label": "Unnamed End Event",
+    "value": "EndEvent_042s0oc",
+  },
+  Object {
+    "label": "Unnamed Start Event",
+    "value": "StartEvent_042s13a",
+  },
+]
+`;

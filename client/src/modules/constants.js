@@ -17,11 +17,15 @@ export const FLOWNODE_TYPE = {
   EVENT: 'Event'
 };
 
-export const SELECTABLE_FLOWNODE_TYPES = [
-  FLOWNODE_TYPE.TASK,
-  FLOWNODE_TYPE.GATEWAY,
-  FLOWNODE_TYPE.EVENT
-];
+export const NOT_SELECTABLE_FLOWNODE_TYPES = {
+  DEFINITION: 'Definitions',
+  PROCESS: 'Process',
+  SEQUENCEFLOW: 'SequenceFlow',
+  SHAPE: 'BPMNShape',
+  EDGE: 'BPMNEdge',
+  DIAGRAM: 'BPMNDiagram',
+  PLANE: 'BPMNPlane'
+};
 
 export const FILTER_TYPES = {
   RUNNING: 'running',
