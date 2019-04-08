@@ -21,20 +21,14 @@ import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotController;
-import io.zeebe.logstreams.state.StateSnapshotMetadata;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ActorPriority;
 import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
-import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 
@@ -43,7 +37,7 @@ public class StreamProcessorController extends Actor {
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
-      "Expected to find event with the snapshot position in log stream, but nothing was found. Failed to recover with processor '%s'.";
+      "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover with processor '%s'.";
 
   private final StreamProcessorFactory streamProcessorFactory;
   private StreamProcessor streamProcessor;
@@ -53,8 +47,6 @@ public class StreamProcessorController extends Actor {
 
   private final LogStreamReader logStreamReader;
   private final LogStreamRecordWriter logStreamWriter;
-
-  private final Duration snapshotPeriod;
 
   private final ActorScheduler actorScheduler;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
@@ -69,6 +61,7 @@ public class StreamProcessorController extends Actor {
   private StreamProcessorMetrics metrics;
   private DbContext dbContext;
   private ProcessingStateMachine processingStateMachine;
+  private AsyncSnapshotDirector asyncSnapshotDirector;
 
   public StreamProcessorController(final StreamProcessorContext context) {
     this.streamProcessorContext = context;
@@ -84,7 +77,6 @@ public class StreamProcessorController extends Actor {
 
     this.logStreamReader = context.getLogStreamReader();
     this.logStreamWriter = context.getLogStreamWriter();
-    this.snapshotPeriod = context.getSnapshotPeriod();
   }
 
   @Override
@@ -115,15 +107,8 @@ public class StreamProcessorController extends Actor {
 
     try {
       LOG.info("Recovering state of partition {} from snapshot", partitionId);
-      snapshotPosition = recoverFromSnapshot(logStream.getCommitPosition(), logStream.getTerm());
-      final ZeebeDb zeebeDb = snapshotController.openDb();
-      LOG.info(
-          "Recovered state of partition {} from snapshot at position {}",
-          partitionId,
-          snapshotPosition);
+      snapshotPosition = recoverFromSnapshot();
 
-      dbContext = zeebeDb.createContext();
-      streamProcessor = streamProcessorFactory.createProcessor(zeebeDb, dbContext);
       streamProcessor.onOpen(streamProcessorContext);
     } catch (final Exception e) {
       onFailure();
@@ -171,107 +156,58 @@ public class StreamProcessorController extends Actor {
     }
   }
 
-  private long recoverFromSnapshot(final long commitPosition, final int term) throws Exception {
-    final StateSnapshotMetadata recovered =
-        snapshotController.recover(commitPosition, term, this::validateSnapshot);
-    final long snapshotPosition = recovered.getLastSuccessfulProcessedEventPosition();
+  private long recoverFromSnapshot() throws Exception {
+    final long lowerBoundSnapshotPosition = snapshotController.recover();
+    final ZeebeDb zeebeDb = snapshotController.openDb();
 
+    dbContext = zeebeDb.createContext();
+    streamProcessor = streamProcessorFactory.createProcessor(zeebeDb, dbContext);
+
+    final long snapshotPosition = streamProcessor.getPositionToRecoveryFrom();
     logStreamReader.seekToFirstEvent(); // reset seek position
-    if (!recovered.isInitial()) {
+    if (lowerBoundSnapshotPosition > -1 && snapshotPosition > -1) {
       final boolean found = logStreamReader.seek(snapshotPosition);
       if (found && logStreamReader.hasNext()) {
         logStreamReader.seek(snapshotPosition + 1);
       } else {
         throw new IllegalStateException(
-            String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, getName()));
+            String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, snapshotPosition, getName()));
       }
-
-      snapshotController.purgeAllExcept(recovered);
     }
 
+    LOG.info(
+        "Recovered state of partition {} from snapshot at position {}",
+        partitionId,
+        snapshotPosition);
     return snapshotPosition;
-  }
-
-  private boolean validateSnapshot(final StateSnapshotMetadata metadata) {
-    final boolean wasFound = logStreamReader.seek(metadata.getLastWrittenEventPosition());
-    boolean isValid = false;
-
-    if (wasFound && logStreamReader.hasNext()) {
-      final LoggedEvent event = logStreamReader.next();
-      isValid = event.getRaftTerm() == metadata.getLastWrittenEventTerm();
-    }
-
-    return isValid;
   }
 
   private void onRecovered() {
     phase = Phase.PROCESSING;
 
+    final LogStream logStream = streamProcessorContext.getLogStream();
+    asyncSnapshotDirector =
+        new AsyncSnapshotDirector(
+            streamProcessorContext.name,
+            streamProcessorContext.snapshotPeriod,
+            processingStateMachine::getLastProcessedPositionAsync,
+            processingStateMachine::getLastWrittenPositionAsync,
+            snapshotController,
+            logStream::registerOnCommitPositionUpdatedCondition,
+            logStream::removeOnCommitPositionUpdatedCondition,
+            logStream::getCommitPosition,
+            metrics);
+
+    actorScheduler.submitActor(asyncSnapshotDirector);
+
     onCommitPositionUpdatedCondition =
         actor.onCondition(
             getName() + "-on-commit-position-updated", processingStateMachine::readNextEvent);
-    streamProcessorContext.logStream.registerOnCommitPositionUpdatedCondition(
-        onCommitPositionUpdatedCondition);
-
-    actor.runAtFixedRate(snapshotPeriod, this::createSnapshot);
+    logStream.registerOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
 
     // start reading
     streamProcessor.onRecovered();
     actor.submit(processingStateMachine::readNextEvent);
-  }
-
-  private void createSnapshot() {
-    if (actor.getLifecyclePhase() == ActorLifecyclePhase.STARTED) {
-      // run as io-bound actor while writing snapshot
-      actor.setSchedulingHints(SchedulingHints.ioBound());
-      actor.submit(this::doCreateSnapshot);
-    } else {
-      doCreateSnapshot();
-    }
-  }
-
-  private void doCreateSnapshot() {
-
-    final long lastWrittenEventPosition = processingStateMachine.getLastWrittenEventPosition();
-    final long lastSuccessfulProcessedEventPosition =
-        processingStateMachine.getLastSuccessfulProcessedEventPosition();
-    final long lastWrittenPosition =
-        lastWrittenEventPosition > lastSuccessfulProcessedEventPosition
-            ? lastWrittenEventPosition
-            : lastSuccessfulProcessedEventPosition;
-
-    final StateSnapshotMetadata metadata =
-        new StateSnapshotMetadata(
-            lastSuccessfulProcessedEventPosition,
-            lastWrittenPosition,
-            streamProcessorContext.getLogStream().getTerm(),
-            false);
-
-    writeSnapshot(metadata);
-
-    // reset to cpu bound
-    actor.setSchedulingHints(SchedulingHints.cpuBound(ActorPriority.REGULAR));
-  }
-
-  private void writeSnapshot(final StateSnapshotMetadata metadata) {
-    final long start = System.currentTimeMillis();
-    final String name = streamProcessorContext.getName();
-    LOG.info(
-        "Write snapshot for stream processor {} at event position {}.",
-        name,
-        metadata.getLastSuccessfulProcessedEventPosition());
-
-    try {
-      snapshotController.takeSnapshot(metadata);
-
-      final long snapshotCreationTime = System.currentTimeMillis() - start;
-      LOG.info("Creation of snapshot {} took {} ms.", name, snapshotCreationTime);
-      metrics.recordSnapshotCreationTime(snapshotCreationTime);
-
-      snapshotPosition = processingStateMachine.getLastSuccessfulProcessedEventPosition();
-    } catch (final Exception e) {
-      LOG.error("Stream processor '{}' failed. Can not write snapshot.", getName(), e);
-    }
   }
 
   public ActorFuture<Void> closeAsync() {
@@ -296,11 +232,27 @@ public class StreamProcessorController extends Actor {
     if (!isFailed()) {
       actor.run(
           () -> {
-            createSnapshot();
-            try {
-              snapshotController.close();
-            } catch (Exception e) {
-              LOG.error("Error on closing snapshotController.", e);
+            final LogStream logStream = streamProcessorContext.logStream;
+            if (asyncSnapshotDirector != null) {
+              LOG.info("On closing, will try to enforce snapshot creation.");
+              actor.runOnCompletionBlockingCurrentPhase(
+                  asyncSnapshotDirector.enforceSnapshotCreation(
+                      processingStateMachine.getLastWrittenEventPosition(),
+                      logStream.getCommitPosition()),
+                  (v, ex) -> {
+                    try {
+                      asyncSnapshotDirector.close();
+                      snapshotController.close();
+                    } catch (Exception e) {
+                      LOG.error("Error on closing snapshotController.", e);
+                    }
+                  });
+            } else {
+              try {
+                snapshotController.close();
+              } catch (Exception e) {
+                LOG.error("Error on closing snapshotController.", e);
+              }
             }
           });
     }

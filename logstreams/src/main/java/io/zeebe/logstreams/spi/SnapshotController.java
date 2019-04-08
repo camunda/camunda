@@ -16,58 +16,42 @@
 package io.zeebe.logstreams.spi;
 
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.logstreams.state.StateSnapshotMetadata;
-import java.util.function.Predicate;
+import java.io.IOException;
 
 public interface SnapshotController extends AutoCloseable {
   /**
-   * Takes a snapshot based on the given metadata: - last successful processed event - last written
-   * event (regardless of whether or not it is committed) - term of the last written event
+   * Takes a snapshot based on the given position. The position is a last processed lower bound
+   * event position.
    *
-   * @param metadata current state metadata
+   * @param lowerBoundSnapshotPosition the lower bound snapshot position
    */
-  void takeSnapshot(StateSnapshotMetadata metadata) throws Exception;
+  void takeSnapshot(long lowerBoundSnapshotPosition);
+
+  /** Takes a snapshot into a temporary folder, will overwrite an existing snapshot. */
+  void takeTempSnapshot();
 
   /**
-   * Recovers the state from the latest snapshot and returns the corresponding metadata. The
-   * metadata is used by the StreamProcessController to know where to seek to in the log stream.
-   * Defaults to: (-1, -1, term)
+   * A temporary snapshot is moved into a new snapshot directory and in that way marked as valid.
+   * The given position is a last processed lower bound event position.
    *
-   * @param commitPosition current log stream commit position
-   * @return recovered state metadata
+   * @param lowerBoundSnapshotPosition the lower bound snapshot position
+   * @throws IOException thrown if moving the snapshot fails
    */
-  StateSnapshotMetadata recover(
-      long commitPosition, int term, Predicate<StateSnapshotMetadata> filter) throws Exception;
+  void moveValidSnapshot(long lowerBoundSnapshotPosition) throws IOException;
 
   /**
-   * Recovers the state from the latest snapshot.
+   * Recovers the state from the latest snapshot and returns the lower bound snapshot position.
    *
-   * @return recovered state metadata
-   * @throws Exception
+   * @return the lower bound position related to the snapshot
    */
-  StateSnapshotMetadata recoverFromLatestSnapshot() throws Exception;
+  long recover() throws Exception;
 
   ZeebeDb openDb();
 
   /**
-   * Purges all snapshots which return true for the given matcher.
+   * Ensures that only the given maximum of snapshots are kept, the rest will be purged.
    *
-   * @param matcher predicate used to match
+   * @param maxSnapshotCount the maximum count of snapshots which should be kept
    */
-  void purgeAll(Predicate<StateSnapshotMetadata> matcher) throws Exception;
-
-  /** Purges all snapshots. */
-  default void purgeAll() throws Exception {
-    purgeAll(s -> true);
-  }
-
-  /**
-   * Purges old and invalid snapshots. Should be done once we are sure we can discard other
-   * snapshots, e.g. during recovery.
-   *
-   * @param metadata last taken/recovered snapshot metadata
-   */
-  default void purgeAllExcept(StateSnapshotMetadata metadata) throws Exception {
-    purgeAll(s -> !s.equals(metadata));
-  }
+  void ensureMaxSnapshotCount(int maxSnapshotCount) throws Exception;
 }

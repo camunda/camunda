@@ -206,7 +206,7 @@ public class WorkflowStateTest {
   }
 
   @Test
-  public void shouldRestartVersionCountOnDifferenProcessId() {
+  public void shouldRestartVersionCountOnDifferentProcessId() {
     // given
     workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState));
 
@@ -409,11 +409,33 @@ public class WorkflowStateTest {
     assertThat(workflows).extracting(DeployedWorkflow::getKey).containsOnly(expectedWorkflowKey);
   }
 
+  @Test
+  public void shouldReturnHighestVersionInsteadOfMostRecent() {
+    // given
+    final String processId = "process";
+    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState, processId, 2));
+    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState, processId, 1));
+
+    // when
+    final DeployedWorkflow latestWorkflow =
+        workflowState.getLatestWorkflowVersionByProcessId(wrapString(processId));
+
+    // then
+    assertThat(latestWorkflow.getVersion()).isEqualTo(2);
+  }
+
   public static DeploymentRecord creatingDeploymentRecord(ZeebeState zeebeState) {
     return creatingDeploymentRecord(zeebeState, "processId");
   }
 
   public static DeploymentRecord creatingDeploymentRecord(ZeebeState zeebeState, String processId) {
+    final WorkflowState workflowState = zeebeState.getWorkflowState();
+    final int version = workflowState.getNextWorkflowVersion(processId);
+    return creatingDeploymentRecord(zeebeState, processId, version);
+  }
+
+  public static DeploymentRecord creatingDeploymentRecord(
+      ZeebeState zeebeState, String processId, int version) {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
@@ -436,9 +458,6 @@ public class WorkflowStateTest {
 
     final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
     final long key = keyGenerator.nextKey();
-
-    final WorkflowState workflowState = zeebeState.getWorkflowState();
-    final int version = workflowState.getNextWorkflowVersion(processId);
 
     deploymentRecord
         .workflows()

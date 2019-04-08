@@ -1,146 +1,104 @@
 // vim: set filetype=groovy:
 
-def jdkVersion = 'jdk-8-latest'
-def mavenVersion = 'maven-3.5-latest'
-def mavenSettingsConfig = 'camunda-maven-settings'
 
-def storeNumOfBuilds() {
-  return env.BRANCH_NAME ==~ /(master|develop|stage)/ ? '10' : '3'
-}
-
-def joinJmhResults = '''\
-#!/bin/bash -x
-cat **/*/jmh-result.json | jq -s add > target/jmh-result.json
-'''
-
-def setupGoPath() {
-    return '''\
-#!/bin/bash -eux
-echo "== Go build environment =="
-go version
-echo "GOPATH=${GOPATH}"
-
-PROJECT_ROOT="${GOPATH}/src/github.com/zeebe-io"
-mkdir -p ${PROJECT_ROOT}
-
-PROJECT_DIR="${PROJECT_ROOT}/zeebe"
-ln -fvs ${WORKSPACE} ${PROJECT_DIR}
-'''
-}
-
-def goTests() {
-    return '''\
-#!/bin/bash -eux
-export CGO_ENABLED=0
-
-cd ${GOPATH}/src/github.com/zeebe-io/zeebe/clients/go
-make install-deps test
-
-cd ${GOPATH}/src/github.com/zeebe-io/zeebe/clients/zbctl
-make test
-'''
-}
+def buildName = "${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
 
 pipeline {
-    agent { node { label 'ubuntu-large' } }
+    agent {
+      kubernetes {
+        cloud 'zeebe-ci'
+        label "zeebe-ci-build_${buildName}"
+        defaultContainer 'jnlp'
+        yamlFile '.ci/podSpecs/distribution.yml'
+      }
+    }
+
+    environment {
+      NEXUS = credentials("camunda-nexus")
+    }
 
     options {
-        buildDiscarder(logRotator(daysToKeepStr:'14', numToKeepStr:storeNumOfBuilds()))
+        buildDiscarder(logRotator(daysToKeepStr: '-1', numToKeepStr: '10'))
+        skipDefaultCheckout()
         timestamps()
         timeout(time: 120, unit: 'MINUTES')
     }
 
     stages {
-        stage('Install') {
+        stage('Prepare') {
             steps {
-                withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
-                    sh setupGoPath()
-                    sh 'mvn -B clean com.mycila:license-maven-plugin:check com.coveo:fmt-maven-plugin:check install -DskipTests -Dskip-zbctl=false -Pspotbugs'
+                checkout scm
+                container('maven') {
+                    sh '.ci/scripts/distribution/prepare.sh'
                 }
             }
         }
 
-        stage('Verify') {
-            failFast true
+        stage('Build (Go)') {
+            steps {
+                container('golang') {
+                    sh '.ci/scripts/distribution/build-go.sh'
+                }
+            }
+
+            post {
+                always {
+                    junit testResults: "**/*/TEST-*.xml", keepLongStdio: true
+                }
+            }
+        }
+
+        stage('Build (Java)') {
+            steps {
+                container('maven') {
+                    sh '.ci/scripts/distribution/build-java.sh'
+                }
+            }
+
+            post {
+                always {
+                    junit testResults: "**/*/TEST-*.xml", keepLongStdio: true
+                }
+            }
+        }
+
+        stage('Upload') {
+            when { branch 'develop' }
+            steps {
+                container('maven') {
+                    sh '.ci/scripts/distribution/upload.sh'
+                }
+            }
+        }
+
+        stage('Post') {
             parallel {
-                stage('1 - Java Tests') {
-                    steps {
-                        withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
-                            sh 'mvn -B -T 1C verify -P skip-unstable-ci,retry-tests,parallel-tests'
-                        }
-                    }
-                    post {
-                        failure {
-                            archiveArtifacts artifacts: '**/target/*-reports/**/*-output.txt,**/target/*-reports/**/TEST-*.xml,,**/**/*.dumpstream,**/**/hs_err_*.log', allowEmptyArchive: true
-                        }
-                    }
-                }
+                stage('Docker') {
+                    when { branch 'develop' }
 
-                stage('2 - JMH') {
-                    // delete this line to also run JMH on feature branch
-                    when { anyOf { branch 'master'; branch 'develop' } }
-                    agent { node { label 'ubuntu' } }
+                    environment {
+                        VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
+                    }
 
                     steps {
-                        withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
-                            sh 'mvn -B integration-test -DskipTests -P jmh'
-                        }
-                    }
-
-                    post {
-                        success {
-                            sh joinJmhResults
-                            jmhReport 'target/jmh-result.json'
-                        }
+                        build job: 'zeebe-docker', parameters: [
+                            string(name: 'BRANCH', value: env.BRANCH_NAME),
+                            string(name: 'VERSION', value: env.VERSION),
+                            booleanParam(name: 'IS_LATEST', value: env.BRANCH_NAME == 'master')
+                        ]
                     }
                 }
 
-                stage('3 - Go Tests') {
-                    agent { node { label 'ubuntu' } }
-
+                stage('Docs') {
+                    when { branch 'develop' }
                     steps {
-                        sh setupGoPath()
-                        sh goTests()
+                        build job: 'zeebe-docs', parameters: [
+                            string(name: 'BRANCH', value: env.BRANCH_NAME),
+                            booleanParam(name: 'LIVE', value: env.BRANCH_NAME == 'master')
+                        ]
                     }
                 }
-            }
-        }
-
-        stage('Deploy') {
-            when { branch 'develop' }
-            steps {
-                withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
-                    sh 'mvn -B -T 1C generate-sources source:jar javadoc:jar deploy -DskipTests'
-                }
-            }
-        }
-
-        stage('Build Docker Image') {
-            when { branch 'develop' }
-            steps {
-                build job: 'zeebe-DISTRO-docker', parameters: [
-                    string(name: 'RELEASE_VERSION', value: "SNAPSHOT"),
-                    booleanParam(name: 'IS_LATEST', value: false)
-                ]
             }
         }
     }
-
-    post {
-        changed {
-            sendBuildStatusNotificationToDevelopers(currentBuild.result)
-        }
-    }
-}
-
-void sendBuildStatusNotificationToDevelopers(String buildStatus = 'SUCCESS') {
-    def buildResult = buildStatus ?: 'SUCCESS'
-    def subject = "${buildResult}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
-    def details = "${buildResult}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' see console output at ${env.BUILD_URL}'"
-
-    emailext (
-        subject: subject,
-        body: details,
-        recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']]
-    )
 }

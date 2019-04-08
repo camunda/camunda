@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.logstreams.state;
 
+import static io.zeebe.logstreams.processor.StreamProcessor.NO_EVENTS_PROCESSED;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.job.JobState;
@@ -28,8 +30,11 @@ import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
 import io.zeebe.broker.workflow.deployment.distribute.processor.state.DeploymentsState;
 import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DbLong;
+import io.zeebe.db.impl.DbString;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.WorkflowInstanceRelated;
@@ -37,7 +42,8 @@ import org.slf4j.Logger;
 
 public class ZeebeState {
 
-  public static final String BLACKLIST_INSTANCE_MESSAGE =
+  private static final String LAST_PROCESSED_EVENT_KEY = "LAST_PROCESSED_EVENT_KEY";
+  private static final String BLACKLIST_INSTANCE_MESSAGE =
       "Blacklist workflow instance {}, due to previous errors.";
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
@@ -52,6 +58,10 @@ public class ZeebeState {
   private final WorkflowInstanceSubscriptionState workflowInstanceSubscriptionState;
   private final IncidentState incidentState;
   private final BlackList blackList;
+
+  private final DbString lastProcessedEventKey;
+  private final DbLong lastProcessedEventPosition;
+  private final ColumnFamily<DbString, DbLong> lastProcessedRecordPositionColumnFamily;
 
   public ZeebeState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
     this(Protocol.DEPLOYMENT_PARTITION, zeebeDb, dbContext);
@@ -68,6 +78,13 @@ public class ZeebeState {
     workflowInstanceSubscriptionState = new WorkflowInstanceSubscriptionState(zeebeDb, dbContext);
     incidentState = new IncidentState(zeebeDb, dbContext);
     blackList = new BlackList(zeebeDb, dbContext);
+
+    lastProcessedEventKey = new DbString();
+    lastProcessedEventKey.wrapString(LAST_PROCESSED_EVENT_KEY);
+    lastProcessedEventPosition = new DbLong();
+    lastProcessedRecordPositionColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.DEFAULT, dbContext, lastProcessedEventKey, lastProcessedEventPosition);
   }
 
   public DeploymentsState getDeploymentState() {
@@ -122,5 +139,15 @@ public class ZeebeState {
       }
     }
     return false;
+  }
+
+  public void markAsProcessed(long position) {
+    lastProcessedEventPosition.wrapLong(position);
+    lastProcessedRecordPositionColumnFamily.put(lastProcessedEventKey, lastProcessedEventPosition);
+  }
+
+  public long getLastSuccessfuProcessedRecordPosition() {
+    final DbLong position = lastProcessedRecordPositionColumnFamily.get(lastProcessedEventKey);
+    return position != null ? position.getValue() : NO_EVENTS_PROCESSED;
   }
 }

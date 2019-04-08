@@ -12,10 +12,6 @@
     <relativePath>../parent</relativePath>
   </parent>
 
-  <properties>
-    <skip-zbctl>true</skip-zbctl>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
@@ -122,13 +118,11 @@
             </goals>
             <configuration>
               <target>
-                <exec executable="${maven.multiModuleProjectDirectory}/clients/zbctl/build.sh" osfamily="unix" failonerror="true" />
-                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="true" />
-                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.exe" failonerror="true" />
-                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.darwin" failonerror="true" />
-                <chmod dir="${project.build.directory}/zeebe-broker/bin" perm="ugo+rx" includes="zbctl*" failonerror="true" />
+                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="false" />
+                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.exe" failonerror="false" />
+                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.darwin" failonerror="false" />
+                <chmod dir="${project.build.directory}/zeebe-broker/bin" perm="ugo+rx" includes="zbctl*" failonerror="false" />
               </target>
-              <skip>${skip-zbctl}</skip>
             </configuration>
           </execution>
         </executions>
