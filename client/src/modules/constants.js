@@ -20,6 +20,7 @@ export const FLOWNODE_TYPE = {
 export const NOT_SELECTABLE_FLOWNODE_TYPES = {
   DEFINITION: 'Definitions',
   PROCESS: 'Process',
+  MESSAGE: 'Message',
   SEQUENCEFLOW: 'SequenceFlow',
   SHAPE: 'BPMNShape',
   EDGE: 'BPMNEdge',
