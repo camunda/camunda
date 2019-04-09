@@ -16,6 +16,7 @@
 package io.zeebe.broker.it.clustering;
 
 import static io.zeebe.broker.Broker.LOG;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_JOIN_SERVICE;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.DEBUG_EXPORTER;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.DISABLE_EMBEDDED_GATEWAY;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
@@ -41,6 +42,7 @@ import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
+import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.transport.SocketAddress;
@@ -158,6 +160,7 @@ public class ClusteringRule extends ExternalResource {
     client = createClient();
 
     try {
+      waitUntilBrokersStarted();
       waitForPartitionReplicationFactor();
       LOG.info("Full replication factor");
       waitUntilBrokersInTopology();
@@ -171,6 +174,22 @@ public class ClusteringRule extends ExternalResource {
 
   private Broker getBroker(final int nodeId) {
     return brokers.computeIfAbsent(nodeId, this::createBroker);
+  }
+
+  private void waitUntilBrokersStarted() {
+    // A hack to see if Atomix cluster has started
+    brokers.forEach(
+        (i, b) -> {
+          b.getBrokerContext()
+              .getServiceContainer()
+              .createService(ServiceName.newServiceName("test", Void.class), () -> null)
+              .dependency(ATOMIX_JOIN_SERVICE)
+              .install()
+              .join();
+          b.getBrokerContext()
+              .getServiceContainer()
+              .removeService(ServiceName.newServiceName("test", Void.class));
+        });
   }
 
   private Broker createBroker(int nodeId) {

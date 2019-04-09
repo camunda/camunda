@@ -48,7 +48,7 @@ import org.slf4j.Logger;
 public class SystemContext implements AutoCloseable {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
   public static final String BROKER_ID_LOG_PROPERTY = "broker-id";
-  public static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(10);
+  public static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(20);
   public static final String NODE_ID_ERROR_MSG =
       "Node id %s needs to be non negative and smaller then cluster size %s.";
   public static final String REPLICATION_FACTOR_ERROR_MSG =
