@@ -10,7 +10,7 @@
 
 /* Hide default HTML checkbox */
 .Switch input {
-  display: none;
+  opacity: 0;
 }
 
 /* The slider */
@@ -48,7 +48,7 @@ input:checked + .Switch__Slider--round {
 }
 
 input:focus + .Switch__Slider--round {
-  box-shadow: 0 0 1px $cam-red;
+  box-shadow: 0 0 5px $cam-blue;
 }
 
 input:checked + .Switch__Slider--round:before {
