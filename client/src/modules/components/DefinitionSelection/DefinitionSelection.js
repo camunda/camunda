@@ -7,7 +7,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {BPMNDiagram, LoadingIndicator, Labeled, Dropdown} from 'components';
+import {BPMNDiagram, LoadingIndicator, Labeled, Dropdown, Typeahead} from 'components';
 
 import {loadDefinitions} from 'services';
 
@@ -32,7 +32,7 @@ export default class DefinitionSelection extends React.Component {
     });
   };
 
-  changeKey = key => {
+  changeKey = ({key}) => {
     let version;
     if (!key) {
       version = '';
@@ -85,7 +85,8 @@ export default class DefinitionSelection extends React.Component {
   };
 
   render() {
-    const {loaded} = this.state;
+    const {loaded, availableDefinitions} = this.state;
+    const noDefinitions = !availableDefinitions || availableDefinitions.length === 0;
     const key = this.props.definitionKey;
     const version = this.props.definitionVersion;
 
@@ -106,15 +107,14 @@ export default class DefinitionSelection extends React.Component {
         <div className="selectionPanel">
           <div className="dropdowns">
             <Labeled label="Name">
-              <Dropdown label={this.createProcDefKeyTitle()} className="name">
-                {this.state.availableDefinitions.map(({key}) => {
-                  return (
-                    <Dropdown.Option key={key} onClick={() => this.changeKey(key)}>
-                      {this.getNameForKey(key)}
-                    </Dropdown.Option>
-                  );
-                })}
-              </Dropdown>
+              <Typeahead
+                className="name"
+                disabled={noDefinitions}
+                placeholder={this.createProcDefKeyTitle()}
+                values={availableDefinitions}
+                onSelect={this.changeKey}
+                formatter={({key}) => this.getNameForKey(key)}
+              />
             </Labeled>
             <Labeled label="Version">
               <Dropdown

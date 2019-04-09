@@ -61,7 +61,7 @@ it('should update to most recent version when key is selected', async () => {
   spy.mockClear();
   const node = await shallow(<DefinitionSelection {...props} />);
 
-  await node.instance().changeKey('foo');
+  await node.instance().changeKey({key: 'foo'});
 
   expect(spy.mock.calls[0][1]).toBe('2');
 });
@@ -75,6 +75,14 @@ it('should update definition if versions is changed', async () => {
   expect(spy.mock.calls[0][1]).toBe('1');
 });
 
+it('should disable typeahead if no reports are avaialbe', async () => {
+  loadDefinitions.mockReturnValueOnce([]);
+  const node = await shallow(<DefinitionSelection {...props} />);
+
+  expect(node.find('Typeahead')).toBePresent();
+  expect(node.find('Typeahead')).toBeDisabled();
+});
+
 it('should set key and version, if process definition is already available', async () => {
   const definitionConfig = {
     definitionKey: 'foo',
@@ -82,7 +90,7 @@ it('should set key and version, if process definition is already available', asy
   };
   const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
 
-  expect(node.find('.name')).toHaveProp('label', 'foo');
+  expect(node.find('.name')).toHaveProp('placeholder', 'foo');
   expect(node.find('.version')).toHaveProp('label', '2');
 });
 
