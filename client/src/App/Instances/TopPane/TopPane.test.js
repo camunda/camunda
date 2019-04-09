@@ -6,7 +6,6 @@
 
 import React from 'react';
 import {mount} from 'enzyme';
-import {BrowserRouter as Router} from 'react-router-dom';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 
@@ -16,8 +15,6 @@ import Panel from 'modules/components/Panel';
 import SplitPane from 'modules/components/SplitPane';
 import EmptyMessage from '../EmptyMessage';
 import TopPane from './';
-
-import * as Styled from './styled.js';
 
 jest.mock(
   'modules/components/Diagram',

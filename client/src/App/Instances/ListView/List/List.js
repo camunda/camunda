@@ -31,8 +31,8 @@ class List extends React.Component {
     onEntriesPerPageChange: PropTypes.func.isRequired,
     selectedInstances: PropTypes.shape({
       all: PropTypes.bool,
-      excludeIds: PropTypes.Array,
-      ids: PropTypes.Array
+      excludeIds: PropTypes.array,
+      ids: PropTypes.array
     }).isRequired,
     filterCount: PropTypes.number,
     filter: PropTypes.object,
