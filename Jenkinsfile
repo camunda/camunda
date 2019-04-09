@@ -90,7 +90,7 @@ pipeline {
                 }
 
                 stage('Docs') {
-                    when { branch 'develop' }
+                    when { anyOf { branch 'master'; branch 'live' } }
                     steps {
                         build job: 'zeebe-docs', parameters: [
                             string(name: 'BRANCH', value: env.BRANCH_NAME),
