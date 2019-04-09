@@ -398,7 +398,6 @@ public class StreamProcessorControllerTest {
     // when
     final long lastEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
-    writeEventAndWaitUntilProcessed(EVENT_1);
 
     // then
     verify(snapshotController, timeout(5000).times(1)).moveValidSnapshot(metadata.capture());
