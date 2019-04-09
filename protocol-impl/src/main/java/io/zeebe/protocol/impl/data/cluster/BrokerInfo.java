@@ -116,4 +116,22 @@ public class BrokerInfo {
   public void clearPartitions() {
     partitionRoles.clear();
   }
+
+  @Override
+  public String toString() {
+    return "BrokerInfo{"
+        + "nodeId="
+        + nodeId
+        + ", partitionsCount="
+        + partitionsCount
+        + ", clusterSize="
+        + clusterSize
+        + ", replicationFactor="
+        + replicationFactor
+        + ", addresses="
+        + addresses
+        + ", partitionRoles="
+        + partitionRoles
+        + '}';
+  }
 }

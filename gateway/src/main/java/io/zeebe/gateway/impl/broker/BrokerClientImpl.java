@@ -15,7 +15,9 @@
  */
 package io.zeebe.gateway.impl.broker;
 
-import io.atomix.cluster.ClusterMembershipEventListener;
+import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.ClusterMembershipEvent;
+import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.gateway.Loggers;
@@ -52,19 +54,17 @@ public class BrokerClientImpl implements BrokerClient {
   private final BrokerRequestManager requestManager;
   protected boolean isClosed;
 
-  public BrokerClientImpl(
-      final GatewayCfg configuration,
-      final Consumer<ClusterMembershipEventListener> eventListenerConsumer) {
-    this(configuration, eventListenerConsumer, null);
+  public BrokerClientImpl(final GatewayCfg configuration, final AtomixCluster atomixCluster) {
+    this(configuration, atomixCluster, null);
   }
 
   public BrokerClientImpl(
       final GatewayCfg configuration,
-      final Consumer<ClusterMembershipEventListener> eventListenerConsumer,
+      final AtomixCluster atomixCluster,
       final ActorClock actorClock) {
     this(
         configuration,
-        eventListenerConsumer,
+        atomixCluster,
         ActorScheduler.newActorScheduler()
             .setCpuBoundActorThreadCount(configuration.getThreads().getManagementThreads())
             .setIoBoundActorThreadCount(0)
@@ -76,7 +76,7 @@ public class BrokerClientImpl implements BrokerClient {
 
   public BrokerClientImpl(
       final GatewayCfg configuration,
-      final Consumer<ClusterMembershipEventListener> eventListenerConsumer,
+      final AtomixCluster atomixCluster,
       final ActorScheduler actorScheduler,
       final boolean ownsActorScheduler) {
     this.actorScheduler = actorScheduler;
@@ -110,8 +110,13 @@ public class BrokerClientImpl implements BrokerClient {
     transport = transportBuilder.build();
 
     topologyManager = new BrokerTopologyManagerImpl(this::registerEndpoint);
-    eventListenerConsumer.accept(topologyManager);
     actorScheduler.submitActor(topologyManager);
+    atomixCluster.getMembershipService().addListener(topologyManager);
+    atomixCluster
+        .getMembershipService()
+        .getMembers()
+        .forEach(
+            member -> topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, member)));
 
     requestManager =
         new BrokerRequestManager(

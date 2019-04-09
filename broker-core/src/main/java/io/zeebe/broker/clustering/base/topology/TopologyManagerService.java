@@ -50,7 +50,6 @@ public class TopologyManagerService implements Service<TopologyManager> {
     final Atomix atomix = atomixInjector.getValue();
 
     topologyManager = new TopologyManagerImpl(atomix, localMember, clusterCfg);
-    atomix.getMembershipService().addListener(topologyManager);
 
     startContext.async(startContext.getScheduler().submitActor(topologyManager));
   }

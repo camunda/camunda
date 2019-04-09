@@ -272,8 +272,7 @@ public class ClusteringRule extends ExternalResource {
 
     atomixCluster.start();
 
-    final Gateway gateway =
-        new Gateway(gatewayCfg, atomixCluster.getMembershipService()::addListener);
+    final Gateway gateway = new Gateway(gatewayCfg, atomixCluster);
     closables.manage(gateway::stop);
     closables.manage(atomixCluster::stop);
     return gateway;

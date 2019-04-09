@@ -15,7 +15,7 @@
  */
 package io.zeebe.gateway;
 
-import io.atomix.cluster.ClusterMembershipEventListener;
+import io.atomix.cluster.AtomixCluster;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.netty.NettyServerBuilder;
@@ -24,7 +24,6 @@ import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
@@ -50,11 +49,10 @@ public class Gateway {
   private BrokerClient brokerClient;
   private EndpointManager endpointManager;
 
-  public Gateway(
-      GatewayCfg gatewayCfg, Consumer<ClusterMembershipEventListener> eventListenerConsumer) {
+  public Gateway(GatewayCfg gatewayCfg, AtomixCluster atomixCluster) {
     this(
         gatewayCfg,
-        cfg -> new BrokerClientImpl(cfg, eventListenerConsumer),
+        cfg -> new BrokerClientImpl(cfg, atomixCluster),
         DEFAULT_SERVER_BUILDER_FACTORY);
   }
 

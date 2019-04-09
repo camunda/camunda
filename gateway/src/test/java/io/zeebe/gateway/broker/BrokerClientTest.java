@@ -20,7 +20,11 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.ClusterMembershipService;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
@@ -86,7 +90,11 @@ public class BrokerClientTest {
         .setRequestTimeout("3s");
     clock = new ControlledActorClock();
 
-    client = new BrokerClientImpl(configuration, l -> {}, clock);
+    final AtomixCluster atomixCluster = mock(AtomixCluster.class);
+    final ClusterMembershipService memberShipService = mock(ClusterMembershipService.class);
+    when(atomixCluster.getMembershipService()).thenReturn(memberShipService);
+
+    client = new BrokerClientImpl(configuration, atomixCluster, clock);
 
     ((BrokerClientImpl) client).getTransport().registerEndpoint(0, broker.getSocketAddress());
 

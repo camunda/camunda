@@ -56,6 +56,7 @@ public class BrokerTopologyManagerImpl extends Actor
     final Member subject = event.subject();
     final Type eventType = event.type();
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(subject.properties());
+    Loggers.GATEWAY_LOGGER.warn("Got membership event {}", brokerInfo);
 
     if (brokerInfo != null) {
       actor.call(

@@ -20,6 +20,7 @@ package io.zeebe.broker.clustering.base.topology;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.ClusterMembershipEvent;
+import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
 import io.atomix.core.Atomix;
@@ -80,6 +81,15 @@ public class TopologyManagerImpl extends Actor
 
     // ensures that the first published event will contain the broker's info
     publishTopologyChanges();
+  }
+
+  @Override
+  protected void onActorStarted() {
+    atomix.getMembershipService().addListener(this);
+    atomix
+        .getMembershipService()
+        .getMembers()
+        .forEach(m -> event(new ClusterMembershipEvent(Type.MEMBER_ADDED, m)));
   }
 
   @Override
@@ -211,8 +221,9 @@ public class TopologyManagerImpl extends Actor
             SocketAddress.from(brokerInfo.getApiAddress(BrokerInfo.REPLICATION_API_PROPERTY)),
             SocketAddress.from(brokerInfo.getApiAddress(BrokerInfo.SUBSCRIPTION_API_PROPERTY)));
 
-    topology.addMember(nodeInfo);
-    notifyMemberAdded(nodeInfo);
+    if (topology.addMember(nodeInfo)) {
+      notifyMemberAdded(nodeInfo);
+    }
   }
 
   // Update local knowledge about the partitions of remote node

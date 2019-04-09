@@ -31,7 +31,7 @@ public class StandaloneGateway {
 
   public StandaloneGateway(GatewayCfg gatewayCfg) {
     atomixCluster = createAtomixCluster(gatewayCfg.getCluster());
-    gateway = new Gateway(gatewayCfg, atomixCluster.getMembershipService()::addListener);
+    gateway = new Gateway(gatewayCfg, atomixCluster);
   }
 
   private AtomixCluster createAtomixCluster(ClusterCfg clusterCfg) {
