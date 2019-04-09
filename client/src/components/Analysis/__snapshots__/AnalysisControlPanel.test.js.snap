@@ -53,7 +53,7 @@ exports[`should display a sentence to describe what the user can do on this page
               id="actionItem"
               onClick={[Function]}
             >
-              Please Select Gateway
+              Select Gateway
             </button>
           </ActionItem>
         </div>
@@ -73,7 +73,7 @@ exports[`should display a sentence to describe what the user can do on this page
               id="actionItem"
               onClick={[Function]}
             >
-              Please Select End Event
+              Select End Event
             </button>
           </ActionItem>
         </div>

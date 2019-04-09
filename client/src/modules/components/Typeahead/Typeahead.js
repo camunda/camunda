@@ -18,7 +18,7 @@ export default class Typeahead extends React.Component {
   state = {
     query: '',
     optionsVisible: false,
-    selectedValueIdx: 0,
+    selectedValueIdx: -1,
     firstShownOptionIdx: 0,
     lastCommittedValue: ''
   };
@@ -242,7 +242,11 @@ export default class Typeahead extends React.Component {
           ref={this.inputRef}
           disabled={this.props.disabled || hasNoValues}
         />
-        <Button className="optionsButton" onClick={this.showOptions}>
+        <Button
+          className="optionsButton"
+          onClick={this.showOptions}
+          disabled={this.props.disabled || hasNoValues}
+        >
           <Icon type="down" className="downIcon" />
         </Button>
         {optionsVisible && values.length > 0 && (

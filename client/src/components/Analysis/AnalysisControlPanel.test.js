@@ -78,8 +78,8 @@ it('should contain a gateway and end Event field', () => {
 it('should show a please select message if an entity is not selected', () => {
   const node = mount(<AnalysisControlPanel {...data} onChange={spy} />);
 
-  expect(node).toIncludeText('Please Select End Event');
-  expect(node).toIncludeText('Please Select Gateway');
+  expect(node).toIncludeText('Select End Event');
+  expect(node).toIncludeText('Select Gateway');
 });
 
 it('should show the element name if an element is selected', () => {

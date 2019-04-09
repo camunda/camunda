@@ -86,10 +86,7 @@ it('should show the current collection on the top of the dropdown list', () => {
 it('should invoke setCollectionToUpdate when clicking Add to new collection', () => {
   const node = shallow(<CollectionsDropdown {...props} />);
 
-  node
-    .find(Dropdown.Option)
-    .at(1)
-    .simulate('click');
+  node.props().fixedOptions[0].props.onClick();
 
   expect(props.setCollectionToUpdate).toHaveBeenCalledWith({data: {entities: ['reportID']}});
 });

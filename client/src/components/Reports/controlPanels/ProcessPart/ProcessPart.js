@@ -90,11 +90,11 @@ export default class ProcessPart extends React.Component {
               disabled={!start}
               onClick={() => this.setState({start: null, hasPath: true})}
             >
-              {start ? start.name || start.id : 'Please select start'}
+              {start ? start.name || start.id : 'Select start'}
             </ActionItem>{' '}
             and{' '}
             <ActionItem disabled={!end} onClick={() => this.setState({end: null, hasPath: true})}>
-              {end ? end.name || end.id : 'Please select end'}
+              {end ? end.name || end.id : 'Select end'}
             </ActionItem>
           </span>
           {start && end && !hasPath && (

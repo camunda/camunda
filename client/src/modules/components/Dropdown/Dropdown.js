@@ -19,11 +19,14 @@ export default class Dropdown extends React.Component {
   constructor(props) {
     super(props);
     this.options = [];
+    this.footerRef = document.body.querySelector('.Footer');
+
     this.state = {
       open: false,
       openSubmenu: null,
       fixedSubmenu: null,
-      menuStyle: {}
+      menuStyle: {},
+      listStyles: {}
     };
   }
 
@@ -36,7 +39,7 @@ export default class Dropdown extends React.Component {
   };
 
   close = ({target}) => {
-    if (!this.container.contains(target)) {
+    if (this.state.open && !this.container.contains(target)) {
       this.setState({open: false, openSubmenu: null});
       this.calculateMenuStyle(true);
     }
@@ -44,20 +47,20 @@ export default class Dropdown extends React.Component {
 
   componentDidMount() {
     document.body.addEventListener('click', this.close, true);
-    this.calculateMenuStyle(true);
     window.addEventListener('resize', this.calculateMenuStyle);
   }
 
   calculateMenuStyle = isOpen => {
     const container = this.container;
     const activeButton = container.querySelector('.activateButton');
+    const footerTop = this.footerRef.getBoundingClientRect().top;
     const menuStyle = {minWidth: container.clientWidth + 'px'};
+    const listStyles = {};
     let scrollable = false;
 
+    const bodyWidth = document.body.clientWidth;
     const overlay = this.menuContainer.current;
     const buttonPosition = activeButton.getBoundingClientRect();
-    const bodyWidth = document.body.clientWidth;
-    const bodyBottomPosition = document.body.getBoundingClientRect().bottom;
 
     if (buttonPosition.left + overlay.clientWidth > bodyWidth) {
       menuStyle.right = 0;
@@ -65,20 +68,25 @@ export default class Dropdown extends React.Component {
       menuStyle.left = 0;
     }
 
-    if (isOpen) {
-      scrollable = false;
-      menuStyle.height = 'initial';
-    } else {
-      if (buttonPosition.bottom + overlay.clientHeight > bodyBottomPosition - 25) {
-        scrollable = true;
-        menuStyle.height = '120px';
-        if (buttonPosition.bottom + 120 > bodyBottomPosition - 25) {
-          menuStyle.bottom = '34px';
-        }
+    if (!isOpen && buttonPosition.bottom + overlay.clientHeight > footerTop) {
+      const listItemsCount = React.Children.count(this.props.children);
+      const oneItemHeight = this.options[0].clientHeight;
+      const fixedListHeight = this.props.fixedOptions
+        ? this.props.fixedOptions.length * oneItemHeight
+        : 0;
+
+      scrollable = true;
+      listStyles.height = oneItemHeight * listItemsCount;
+      if (listItemsCount > 4) {
+        listStyles.height = oneItemHeight * 4;
+      }
+
+      if (buttonPosition.bottom + listStyles.height + fixedListHeight > footerTop) {
+        menuStyle.bottom = activeButton.offsetHeight;
       }
     }
 
-    this.setState({menuStyle, scrollable});
+    this.setState({menuStyle, listStyles, scrollable});
   };
 
   handleKeyPress = evt => {
@@ -132,7 +140,7 @@ export default class Dropdown extends React.Component {
   };
 
   render() {
-    const {open, scrollable} = this.state;
+    const {open, scrollable, listStyles} = this.state;
 
     return (
       <div
@@ -156,12 +164,12 @@ export default class Dropdown extends React.Component {
           <Icon type="down" className="downIcon" />
         </Button>
         <div
-          className={classnames('menu', {scrollable})}
+          className={classnames('menu')}
           aria-labelledby={this.props.id ? this.props.id + '-button' : ''}
           ref={this.menuContainer}
           style={this.state.menuStyle}
         >
-          <ul>
+          <ul className={classnames({scrollable})} style={listStyles}>
             {React.Children.map(this.props.children, (child, idx) => (
               <li ref={this.optionRef} key={idx}>
                 {child && child.type === Submenu
@@ -188,6 +196,14 @@ export default class Dropdown extends React.Component {
                   : child}
               </li>
             ))}
+          </ul>
+          <ul className="fixedList">
+            {this.props.fixedOptions &&
+              this.props.fixedOptions.map((item, idx) => (
+                <li ref={this.optionRef} key={idx}>
+                  {item}
+                </li>
+              ))}
           </ul>
         </div>
       </div>

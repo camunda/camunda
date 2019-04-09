@@ -72,7 +72,7 @@ export default class DefinitionSelection extends React.Component {
     if (this.props.definitionKey) {
       return this.getNameForKey(this.props.definitionKey);
     } else {
-      return 'Please Select...';
+      return 'Select...';
     }
   };
 

@@ -71,7 +71,7 @@ it('should render a Typeahead element with the available reports as options', ()
   });
 
   expect(node.find('Typeahead')).toBePresent();
-  expect(node.find('Typeahead')).toIncludeText('Please select Report');
+  expect(node.find('Typeahead')).toIncludeText('Select a Report');
   expect(node.find('Typeahead')).toIncludeText('Report A');
   expect(node.find('Typeahead')).toIncludeText('Report B');
 });
@@ -105,14 +105,14 @@ it('should show only "No reports created yet" option if no reports are available
   const node = await mount(<ReportModal />);
 
   expect(node).toIncludeText('No reports created yet');
-  expect(node).not.toIncludeText('Please select Report');
+  expect(node).not.toIncludeText('Select a Report');
 });
 
 it('should show a loading message while loading available reports', () => {
   const node = mount(<ReportModal />);
 
   expect(node.find('.sk-circle')).toBePresent();
-  expect(node).not.toIncludeText('Please select Report');
+  expect(node).not.toIncludeText('Select a Report');
   expect(node).not.toIncludeText('No reports created yet');
 });
 

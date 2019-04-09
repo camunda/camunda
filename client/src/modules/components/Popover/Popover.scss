@@ -12,6 +12,10 @@
       background-color: rgba(0, 0, 0, 0.5);
       -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
     }
+
+    .Popover__dialog {
+      overflow-y: scroll;
+    }
   }
 }
 
@@ -39,7 +43,6 @@
   border-radius: 8px;
   margin-top: 10px;
   z-index: 9998;
-  overflow-y: scroll;
 }
 .Popover__dialog-arrow,
 .Popover__dialog-arrow-border {

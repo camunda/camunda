@@ -269,7 +269,7 @@ export default function AlertModal(reports) {
                   <Typeahead
                     initialValue={reports.find(report => report.id === reportId)}
                     isInvalid={errorInput === 'report'}
-                    placeholder="Please select Report"
+                    placeholder="Select a Report"
                     values={reports}
                     onSelect={this.updateReport}
                     formatter={({name}) => name}

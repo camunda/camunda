@@ -25,7 +25,7 @@ export default function ReportDropdown({
   const config = reportConfig[type];
   const options = config.options[field];
 
-  const label = config.getLabelFor(options, value, xml) || 'Please Select...';
+  const label = config.getLabelFor(options, value, xml) || 'Select...';
 
   return (
     <Dropdown label={label} className="ReportDropdown" disabled={disabled}>

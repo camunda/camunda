@@ -66,3 +66,30 @@ it('should display tooltip on button', () => {
 
   expect(node.find('button')).toMatchSelector('button[title="myTooltip"]');
 });
+
+it('should limit the height and show scrollbar when there is not space', () => {
+  const node = mount(
+    <Popover title="a">
+      <p>Child content</p>
+    </Popover>
+  );
+
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({top: 100})
+  };
+
+  node.instance().popoverDialogRef = {
+    clientWidth: 50,
+    clientHeight: 200
+  };
+
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({top: 100})
+  };
+
+  node.instance().calculateDialogStyle();
+
+  node.update();
+  expect(node.state().dialogStyles.height).toBe('80px');
+  expect(node.find('.Popover')).toHaveClassName('scrollable');
+});

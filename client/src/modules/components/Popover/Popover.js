@@ -15,6 +15,8 @@ export default class Popover extends React.Component {
   constructor(props) {
     super(props);
 
+    this.footerRef = document.querySelector('.Footer');
+
     this.state = {
       open: false,
       dialogStyles: {}
@@ -24,10 +26,6 @@ export default class Popover extends React.Component {
   componentDidMount() {
     this.mounted = true;
     document.body.addEventListener('click', this.close);
-    new MutationObserver(this.calculateDialogStyle).observe(this.popoverRootRef, {
-      childList: true,
-      subtree: true
-    });
   }
 
   componentWillUnmount() {
@@ -43,6 +41,7 @@ export default class Popover extends React.Component {
       this.setState({
         open: !open
       });
+      this.calculateDialogStyle();
     });
   };
 
@@ -55,6 +54,7 @@ export default class Popover extends React.Component {
         this.setState({
           open: false
         });
+        this.calculateDialogStyle();
       }
     });
   };
@@ -67,9 +67,10 @@ export default class Popover extends React.Component {
       const overlayHeight = this.popoverDialogRef.clientHeight;
       const buttonLeftPosition = this.buttonRef.getBoundingClientRect().left;
       const buttonBottomPosition = this.buttonRef.getBoundingClientRect().bottom;
+      const footerTop = this.footerRef.getBoundingClientRect().top;
 
       const bodyWidth = document.body.clientWidth;
-      const bodyHeight = document.body.clientHeight;
+      const margin = 10;
 
       if (buttonLeftPosition + overlayWidth > bodyWidth) {
         style.right = 0;
@@ -77,8 +78,8 @@ export default class Popover extends React.Component {
         style.left = 0;
       }
 
-      if (overlayHeight + buttonBottomPosition > bodyHeight - 45) {
-        style.height = bodyHeight - buttonBottomPosition - 45 + 'px';
+      if (overlayHeight + buttonBottomPosition > footerTop - margin) {
+        style.height = footerTop - buttonBottomPosition - 2 * margin + 'px';
         scrollable = true;
       }
     }

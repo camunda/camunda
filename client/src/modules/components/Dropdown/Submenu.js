@@ -14,8 +14,15 @@ import {Icon} from 'components';
 import './Submenu.scss';
 
 export default class Submenu extends React.Component {
-  state = {styles: {}, scrollable: false};
-  containerRef = React.createRef();
+  constructor(props) {
+    super(props);
+
+    this.footerRef = document.body.querySelector('.Footer');
+    this.headerRef = document.body.querySelector('.Header');
+    this.containerRef = React.createRef();
+
+    this.state = {styles: {}, scrollable: false};
+  }
 
   onClick = evt => {
     if (this.props.disabled) {
@@ -89,26 +96,30 @@ export default class Submenu extends React.Component {
     const container = this.containerRef.current;
     const submenu = container.querySelector('.childrenContainer');
     if (submenu) {
-      const parentPosition = container.getBoundingClientRect();
+      const parentMenu = container.getBoundingClientRect();
       const body = document.body;
 
-      if (parentPosition.right + submenu.clientWidth > body.clientWidth) {
+      if (parentMenu.right + submenu.clientWidth > body.clientWidth) {
         styles.right = this.props.offset - 1 + 'px';
       } else {
         styles.left = this.props.offset - 1 + 'px';
       }
 
-      if (parentPosition.top + submenu.clientHeight > body.clientHeight) {
-        const bottomHeight = body.clientHeight - 35 - parentPosition.top;
-        let shifDistance;
-        if (submenu.clientHeight - bottomHeight <= parentPosition.top - 61) {
-          shifDistance = submenu.clientHeight - bottomHeight;
-        } else {
-          shifDistance = parentPosition.top - 61;
+      const margin = 10;
+      const footerTop = this.footerRef.getBoundingClientRect().top;
+      const headerBottom = this.headerRef.getBoundingClientRect().bottom;
+
+      const bottomAvailableHeight = footerTop - parentMenu.top - margin;
+      if (submenu.clientHeight > bottomAvailableHeight) {
+        let shiftDistance = submenu.clientHeight - bottomAvailableHeight;
+
+        const topAvailableHeight = parentMenu.top - headerBottom - margin;
+        if (shiftDistance > topAvailableHeight) {
+          shiftDistance = topAvailableHeight;
         }
 
-        styles.top = '-' + shifDistance + 'px';
-        styles.maxHeight = body.clientHeight - 96;
+        styles.top = '-' + shiftDistance + 'px';
+        styles.maxHeight = footerTop - headerBottom - 2 * margin;
         if (submenu.clientHeight > styles.maxHeight) {
           scrollable = true;
         }

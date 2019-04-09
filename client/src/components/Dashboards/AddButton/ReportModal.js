@@ -89,7 +89,7 @@ export default class ReportModal extends React.Component {
             {!loading && !noReports && (
               <Typeahead
                 disabled={noReports || loading || external}
-                placeholder="Please select Report"
+                placeholder="Select a Report"
                 values={availableReports}
                 onSelect={this.selectReport}
                 formatter={({name}) => this.truncate(name, 90)}
@@ -148,7 +148,7 @@ export default class ReportModal extends React.Component {
     if (hasReports) {
       return (
         <Select.Option defaultValue value="">
-          Please select...
+          Select...
         </Select.Option>
       );
     } else {

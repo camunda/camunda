@@ -28,7 +28,15 @@ export default function CollectionsDropdown({
     reorderedCollections.unshift(currentCollection);
   }
   return (
-    <Dropdown className="CollectionsDropdown" label={label}>
+    <Dropdown
+      className="CollectionsDropdown"
+      label={label}
+      fixedOptions={[
+        <Dropdown.Option onClick={() => setCollectionToUpdate({data: {entities: [entity.id]}})}>
+          Add to new Collection...
+        </Dropdown.Option>
+      ]}
+    >
       {reorderedCollections.map(collection => {
         const isEntityInCollection = entityCollections.some(
           entityCollections => entityCollections.id === collection.id
@@ -43,9 +51,6 @@ export default function CollectionsDropdown({
           </Dropdown.Option>
         );
       })}
-      <Dropdown.Option onClick={() => setCollectionToUpdate({data: {entities: [entity.id]}})}>
-        Add to new Collection...
-      </Dropdown.Option>
     </Dropdown>
   );
 }

@@ -45,6 +45,10 @@ it('should display the child elements when clicking the trigger', () => {
     </Dropdown>
   );
 
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({})
+  };
+
   node.find('button.activateButton').simulate('click');
 
   expect(node.find('.Dropdown')).toMatchSelector('.is-open');
@@ -56,6 +60,10 @@ it('should close when clicking somewhere', () => {
       <Dropdown.Option>foo</Dropdown.Option>
     </Dropdown>
   );
+
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({})
+  };
 
   node.setState({open: true});
 
@@ -73,6 +81,10 @@ it('should close when selecting an option', () => {
       </Dropdown.Option>
     </Dropdown>
   );
+
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({})
+  };
 
   node.setState({open: true});
 
@@ -113,6 +125,10 @@ it('should set aria-expanded to true when open', () => {
     </Dropdown>
   );
 
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({})
+  };
+
   node.simulate('click');
 
   expect(node.state('open')).toBe(true);
@@ -127,6 +143,10 @@ it('should set aria-expanded to false when closed', () => {
       <Dropdown.Option>foo</Dropdown.Option>
     </Dropdown>
   );
+
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({})
+  };
 
   node.setState({open: true});
 
@@ -155,6 +175,10 @@ it('should close after pressing Esc', () => {
       <Dropdown.Option>bar</Dropdown.Option>
     </Dropdown>
   );
+
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({})
+  };
 
   node.setState({open: true});
 
@@ -263,4 +287,59 @@ it('should open a submenu when pressing the right arrow on a submenu entry', () 
   node.simulate('keyDown', {key: 'ArrowRight'});
 
   expect(node.state('fixedSubmenu')).toBe(0);
+});
+
+it.only('should add scrollable class when there is no enough space to show all items', () => {
+  const node = mount(
+    <Dropdown>
+      <Dropdown.Option>foo</Dropdown.Option>
+    </Dropdown>
+  );
+
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({top: -1})
+  };
+
+  node.instance().options = [{clientHeight: 30}];
+
+  node.instance().calculateMenuStyle(false);
+  node.update();
+
+  expect(node.find('.menu > ul').first()).toHaveClassName('scrollable');
+});
+
+it('flip dropdown vertically when there is no enough space for four items', () => {
+  const node = mount(
+    <Dropdown>
+      <Dropdown.Option>1</Dropdown.Option>
+      <Dropdown.Option>2</Dropdown.Option>
+      <Dropdown.Option>3</Dropdown.Option>
+      <Dropdown.Option>4</Dropdown.Option>
+      <Dropdown.Option>5</Dropdown.Option>
+    </Dropdown>
+  );
+
+  node.instance().options = [{clientHeight: 30}];
+
+  node.instance().container = {
+    querySelector: () => ({
+      offsetHeight: 'buttonHeight',
+      getBoundingClientRect: () => ({bottom: 50})
+    })
+  };
+
+  node.instance().menuContainer = {
+    current: {
+      clientHeight: 70
+    }
+  };
+
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({top: 110})
+  };
+
+  node.instance().calculateMenuStyle(false);
+  node.update();
+
+  expect(node.state().menuStyle.bottom).toBe('buttonHeight');
 });

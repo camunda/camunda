@@ -108,9 +108,7 @@ export default class AnalysisControlPanel extends React.Component {
           disabled={disableFlowNodeSelection}
           onClick={() => this.props.updateSelection(type, null)}
         >
-          {this.props[type]
-            ? this.props[type].name || this.props[type].id
-            : 'Please Select ' + label}
+          {this.props[type] ? this.props[type].name || this.props[type].id : 'Select ' + label}
         </ActionItem>
       </div>
     );

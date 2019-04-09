@@ -49,7 +49,7 @@
 
   .menu {
     position: absolute;
-    margin-top: 3px;
+    margin: 3px 0;
     background-color: white;
     border: 1px solid #bbb;
     padding: 0;
@@ -58,26 +58,35 @@
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
     visibility: hidden;
     opacity: 0;
+    display: flex;
+    flex-direction: column;
+    height: auto;
 
     > ul {
       list-style: none;
       padding: 0;
       margin: 0;
+      flex: 1 1 auto;
+      min-height: 0px;
+
+      &.scrollable {
+        overflow-y: scroll;
+
+        &::-webkit-scrollbar {
+          -webkit-appearance: none;
+          width: 7px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+          border-radius: 4px;
+          background-color: rgba(0, 0, 0, 0.5);
+          -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
+        }
+      }
+
+      &.fixedList {
+        border-top: 1px solid #bbb;
+      }
     }
-
-    &.scrollable {
-      overflow-y: scroll;
-    }
-  }
-
-  ::-webkit-scrollbar {
-    -webkit-appearance: none;
-    width: 7px;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    border-radius: 4px;
-    background-color: rgba(0, 0, 0, 0.5);
-    -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
   }
 }
