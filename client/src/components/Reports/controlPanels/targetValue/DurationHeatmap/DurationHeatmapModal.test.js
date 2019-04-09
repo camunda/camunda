@@ -85,6 +85,8 @@ const validProps = {
   }
 };
 
+const flushPromises = () => new Promise(resolve => setImmediate(resolve));
+
 it('should display the bpmn diagram in the modal', () => {
   const node = shallow(<DurationHeatmapModal {...validProps} />);
 
@@ -94,7 +96,8 @@ it('should display the bpmn diagram in the modal', () => {
 it('should display a list of flow nodes in a table', async () => {
   const node = shallow(<DurationHeatmapModal {...validProps} />);
 
-  await node.setProps({open: true});
+  node.setProps({open: true});
+  await flushPromises();
 
   const body = node.find(Table).prop('body');
 
@@ -128,7 +131,8 @@ it('should save the changes target values', async () => {
 it('should apply previously defined target values to input fields', async () => {
   const node = shallow(<DurationHeatmapModal {...validProps} />);
 
-  await node.setProps({open: true});
+  node.setProps({open: true});
+  await flushPromises();
 
   expect(node.state('values').a.value).toBe('12');
   expect(node.state('values').a.unit).toBe('days');
@@ -136,7 +140,8 @@ it('should apply previously defined target values to input fields', async () => 
 
 it('should set isInvalid property for input if value is invalid', async () => {
   const node = mount(<DurationHeatmapModal {...validProps} />);
-  await node.setProps({open: true});
+  node.setProps({open: true});
+  await flushPromises();
 
   node.instance().setTarget('value', 'a')({target: {value: 'invalid'}});
 

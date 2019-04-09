@@ -2,8 +2,8 @@
 
 ## Requirements
 
-Node 8.9.0+  
-Docker 17.12.0+  
+Node 10.15.3+
+Docker 17.12.0+
 Docker Compose 1.21.0+
 
 ## Installation
@@ -104,4 +104,3 @@ Waiting...Fatal error: watch ENOSPC
     ....
 ```
 then you can find [here](https://stackoverflow.com/a/17437601) a solution for this.
-

@@ -33,7 +33,7 @@
     "precommit": "lint-staged",
     "start": "react-scripts start",
     "build": "react-scripts build && node scripts/license-build.js",
-    "test": "react-scripts test",
+    "test": "react-scripts test --verbose=false",
     "test:ci": "CI=true react-scripts test --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",

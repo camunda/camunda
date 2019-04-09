@@ -44,7 +44,7 @@
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.26</slf4j.version>
 
-    <version.node>v8.11.3</version.node>
+    <version.node>v10.15.3</version.node>
     <version.yarn>v1.7.0</version.yarn>
     <skip.fe.build>false</skip.fe.build>
 

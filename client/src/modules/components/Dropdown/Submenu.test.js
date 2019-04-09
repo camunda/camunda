@@ -20,6 +20,8 @@ jest.mock('./DropdownOption', () => {
   };
 });
 
+console.error = jest.fn();
+
 it('should render a dropdown option with the provided label', () => {
   const node = mount(<Submenu label="my label" />);
 
