@@ -145,11 +145,11 @@ public class LogBlockIndex {
       throw new IllegalArgumentException(errorMessage);
     }
 
-    lastVirtualPosition = blockPosition;
     final DbLong dbBlockPosition = indexContext.writeKeyInstance(blockPosition);
     final DbLong dbBlockAddress = indexContext.writeValueInstance(blockAddress);
 
     indexColumnFamily.put(indexContext.getDbContext(), dbBlockPosition, dbBlockAddress);
+    lastVirtualPosition = blockPosition;
   }
 
   /**
