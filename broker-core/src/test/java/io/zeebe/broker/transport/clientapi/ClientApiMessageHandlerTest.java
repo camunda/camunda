@@ -57,6 +57,7 @@ import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
@@ -158,7 +159,7 @@ public class ClientApiMessageHandlerTest {
       e.printStackTrace();
     }
     doAnswer(
-            (Answer<Long>)
+            (Answer<CompletableFuture<Long>>)
                 invocation -> {
                   final Object[] arguments = invocation.getArguments();
                   if (arguments != null
@@ -167,12 +168,13 @@ public class ClientApiMessageHandlerTest {
                       && arguments[1] != null) {
                     final byte[] bytes = (byte[]) arguments[0];
                     final long pos = (long) arguments[1];
-                    return distributedLogImpl.append(nodeId, pos, bytes);
+                    return CompletableFuture.completedFuture(
+                        distributedLogImpl.append(nodeId, pos, bytes));
                   }
-                  return -1L;
+                  return null;
                 })
         .when(mockDistLog)
-        .append(any(byte[].class), anyLong());
+        .asyncAppend(any(byte[].class), anyLong());
 
     serviceContainerRule
         .get()
