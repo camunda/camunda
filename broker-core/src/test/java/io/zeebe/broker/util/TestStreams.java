@@ -76,6 +76,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -186,7 +187,7 @@ public class TestStreams {
 
     // mock append
     doAnswer(
-            (Answer<Long>)
+            (Answer<CompletableFuture<Long>>)
                 invocation -> {
                   final Object[] arguments = invocation.getArguments();
                   if (arguments != null
@@ -195,12 +196,13 @@ public class TestStreams {
                       && arguments[1] != null) {
                     final byte[] bytes = (byte[]) arguments[0];
                     final long pos = (long) arguments[1];
-                    return distributedLogImpl.append(nodeId, pos, bytes);
+                    return CompletableFuture.completedFuture(
+                        distributedLogImpl.append(nodeId, pos, bytes));
                   }
-                  return -1L;
+                  return null;
                 })
         .when(mockDistLog)
-        .append(any(byte[].class), anyLong());
+        .asyncAppend(any(byte[].class), anyLong());
 
     serviceContainer
         .createService(distributedLogPartitionServiceName(name), () -> mockDistLog)

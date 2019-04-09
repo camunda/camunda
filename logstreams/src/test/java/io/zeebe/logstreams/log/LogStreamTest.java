@@ -37,6 +37,7 @@ import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -114,7 +115,7 @@ public class LogStreamTest {
     }
 
     doAnswer(
-            (Answer<Long>)
+            (Answer<CompletableFuture<Long>>)
                 invocation -> {
                   final Object[] arguments = invocation.getArguments();
                   if (arguments != null
@@ -123,12 +124,13 @@ public class LogStreamTest {
                       && arguments[1] != null) {
                     final byte[] bytes = (byte[]) arguments[0];
                     final long pos = (long) arguments[1];
-                    return distributedLogImpl.append(nodeId, pos, bytes);
+                    return CompletableFuture.completedFuture(
+                        distributedLogImpl.append(nodeId, pos, bytes));
                   }
-                  return -1L;
+                  return null;
                 })
         .when(mockDistLog)
-        .append(any(), anyLong());
+        .asyncAppend(any(), anyLong());
 
     serviceContainer
         .get()
