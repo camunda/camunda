@@ -11,15 +11,10 @@ import {Button} from 'components';
 
 import ReportItemWithStore from './ReportItem';
 import {getReportIcon} from '../service';
-import {formatters} from 'services';
 
 const ReportItem = ReportItemWithStore.WrappedComponent;
 
 jest.mock('../service');
-jest.mock('services', () => {
-  const rest = jest.requireActual('services');
-  return {...rest, formatters: {getHighlightedText: jest.fn()}};
-});
 
 beforeAll(() => {
   getReportIcon.mockReturnValue({Icon: () => {}, label: 'Icon'});
@@ -74,7 +69,6 @@ const props = {
 };
 
 it('should show information about reports', () => {
-  formatters.getHighlightedText.mockReturnValue('Some Report');
   const node = shallow(<ReportItem {...props} />);
 
   expect(node.find('.dataTitle')).toIncludeText('Some Report');
@@ -138,10 +132,4 @@ it('should display decision tag for decision reports', () => {
   const node = shallow(<ReportItem {...props} report={decisionReport} />);
 
   expect(node.find('.dataTitle')).toIncludeText('Decision');
-});
-
-it('should invoke getHighlightedText with the name and the searchQuery', () => {
-  shallow(<ReportItem {...props} store={{searchQuery: 'some'}} />);
-
-  expect(formatters.getHighlightedText).toHaveBeenCalledWith('Some Report', 'some');
 });

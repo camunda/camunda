@@ -64,7 +64,6 @@ class Reports extends React.Component {
                 .map(report => (
                   <ReportItem
                     key={report.id}
-                    searchQuery={searchQuery}
                     report={report}
                     duplicateEntity={this.props.duplicateEntity}
                     showDeleteModalFor={this.props.showDeleteModalFor}

@@ -66,7 +66,6 @@ class Dashboards extends React.Component {
                 .map(dashboard => (
                   <DashboardItem
                     key={dashboard.id}
-                    searchQuery={searchQuery}
                     dashboard={dashboard}
                     duplicateEntity={this.props.duplicateEntity}
                     showDeleteModalFor={this.props.showDeleteModalFor}

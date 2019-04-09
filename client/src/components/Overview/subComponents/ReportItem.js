@@ -9,11 +9,10 @@ import {Button, Icon, CollectionsDropdown} from 'components';
 import {getReportInfo, getReportIcon} from '../service';
 import LastModified from './LastModified';
 import {Link} from 'react-router-dom';
-import {formatters} from 'services';
 import {withStore} from '../OverviewStore';
 
 export default withStore(function ReportItem({
-  store: {searchQuery, collections},
+  store: {collections},
   report,
   duplicateEntity,
   showDeleteModalFor,
@@ -32,7 +31,7 @@ export default withStore(function ReportItem({
         </span>
         <div className="textInfo">
           <div className="data dataTitle">
-            <h3>{formatters.getHighlightedText(report.name, searchQuery)}</h3>
+            <h3>{report.name}</h3>
             {report.combined && <span>Combined</span>}
             {report.reportType && report.reportType === 'decision' && <span>Decision</span>}
           </div>

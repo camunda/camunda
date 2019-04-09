@@ -9,13 +9,12 @@ import {Button, Icon, CollectionsDropdown} from 'components';
 import LastModified from './LastModified';
 import {Link} from 'react-router-dom';
 import entityIcons from '../entityIcons';
-import {formatters} from 'services';
 import {withStore} from '../OverviewStore';
 
 const EntityIcon = entityIcons.dashboard.generic.Component;
 
 export default withStore(function DashboardItem({
-  store: {searchQuery, collections},
+  store: {collections},
   dashboard,
   collection,
   entitiesCollections,
@@ -33,7 +32,7 @@ export default withStore(function DashboardItem({
         </span>
         <div className="textInfo">
           <div className="data dataTitle">
-            <h3>{formatters.getHighlightedText(dashboard.name, searchQuery)}</h3>
+            <h3>{dashboard.name}</h3>
           </div>
           <div className="extraInfo">
             <span className="data custom">

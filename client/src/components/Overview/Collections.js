@@ -54,7 +54,6 @@ class Collections extends React.Component {
           {filteredCollections.map(collection => (
             <CollectionItem
               key={collection.id}
-              searchQuery={searchQuery}
               collection={collection}
               setCollectionToUpdate={this.props.setCollectionToUpdate}
               showDeleteModalFor={this.props.showDeleteModalFor}
