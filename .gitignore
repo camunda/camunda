@@ -1,5 +1,5 @@
 *.iml
-.idea/
+.idea/*
 .vscode/
 target/
 **/dependency-reduced-pom.xml
@@ -24,3 +24,7 @@ qa/engine-rest-custom/overlays
 
 # visual studio code workspace files
 *.code-workspace
+
+# Exclude IntelliJ copyright config
+!.idea/copyright
+!.idea/copyright/*
