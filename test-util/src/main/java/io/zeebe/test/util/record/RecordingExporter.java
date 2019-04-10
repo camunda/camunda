@@ -69,9 +69,12 @@ public class RecordingExporter implements Exporter {
   @Override
   public void export(final Record record) {
     LOCK.lock();
-    RECORDS.add(record);
-    IS_EMPTY.signal();
-    LOCK.unlock();
+    try {
+      RECORDS.add(record);
+      IS_EMPTY.signal();
+    } finally {
+      LOCK.unlock();
+    }
   }
 
   public static List<Record<?>> getRecords() {
@@ -80,8 +83,11 @@ public class RecordingExporter implements Exporter {
 
   public static void reset() {
     LOCK.lock();
-    RECORDS.clear();
-    LOCK.unlock();
+    try {
+      RECORDS.clear();
+    } finally {
+      LOCK.unlock();
+    }
   }
 
   @SuppressWarnings("unchecked")
