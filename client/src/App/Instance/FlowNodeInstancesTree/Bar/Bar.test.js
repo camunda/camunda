@@ -7,7 +7,7 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import {ReactComponent as FlowNodeStartEventIcon} from 'modules/components/Icon/flow-node-start-event.svg';
+import {ReactComponent as FlowNodeStartEventIcon} from 'modules/components/Icon/flow-node-event-start.svg';
 
 import {createFlowNodeInstance} from 'modules/testUtils';
 
