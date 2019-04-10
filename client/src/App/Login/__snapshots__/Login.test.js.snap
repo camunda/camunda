@@ -28,7 +28,7 @@ exports[`Login should display an error if any field is empty 1`] = `
     <styled.div>
       Username and Password are both required
     </styled.div>
-    <Themed(Styled(Styled(TextInput)))
+    <Themed(Styled(Styled(Input)))
       aria-label="User Name"
       name="username"
       onChange={[Function]}
@@ -36,7 +36,7 @@ exports[`Login should display an error if any field is empty 1`] = `
       type="text"
       value=""
     />
-    <Themed(Styled(Styled(TextInput)))
+    <Themed(Styled(Styled(Input)))
       aria-label="Password"
       name="password"
       onChange={[Function]}
@@ -88,7 +88,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
     <styled.div>
       Username and Password do not match
     </styled.div>
-    <Themed(Styled(Styled(TextInput)))
+    <Themed(Styled(Styled(Input)))
       aria-label="User Name"
       name="username"
       onChange={[Function]}
@@ -96,7 +96,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
       type="text"
       value="foo"
     />
-    <Themed(Styled(Styled(TextInput)))
+    <Themed(Styled(Styled(Input)))
       aria-label="Password"
       name="password"
       onChange={[Function]}
@@ -146,7 +146,7 @@ exports[`Login should render login form by default 1`] = `
   </Themed(styled.div)>
   <styled.form>
     <styled.div />
-    <Themed(Styled(Styled(TextInput)))
+    <Themed(Styled(Styled(Input)))
       aria-label="User Name"
       name="username"
       onChange={[Function]}
@@ -154,7 +154,7 @@ exports[`Login should render login form by default 1`] = `
       type="text"
       value=""
     />
-    <Themed(Styled(Styled(TextInput)))
+    <Themed(Styled(Styled(Input)))
       aria-label="Password"
       name="password"
       onChange={[Function]}

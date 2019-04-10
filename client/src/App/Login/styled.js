@@ -8,7 +8,7 @@ import styled from 'styled-components';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
 import {ReactComponent as BaseLogo} from 'modules/components/Icon/logo.svg';
-import TextInput from 'modules/components/TextInput';
+import Input from 'modules/components/Input';
 
 export const Login = styled.div`
   display: flex;
@@ -62,7 +62,7 @@ export const FormError = styled.div`
   height: 15px;
 `;
 
-const LoginInput = styled(TextInput)`
+const LoginInput = styled(Input)`
   height: 48px;
   padding-left: 8px;
   padding-right: 10px;

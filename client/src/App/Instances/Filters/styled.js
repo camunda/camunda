@@ -10,7 +10,7 @@ import {themed, themeStyle} from 'modules/theme';
 import Panel from 'modules/components/Panel';
 import BasicExpandButton from 'modules/components/ExpandButton';
 import VerticalExpandButton from 'modules/components/VerticalExpandButton';
-import BasicTextInput from 'modules/components/TextInput';
+import BasicTextInput from 'modules/components/Input';
 import BasicTextarea from 'modules/components/Textarea';
 import BasicSelect from 'modules/components/Select';
 import BasicCheckboxGroup from './CheckboxGroup';

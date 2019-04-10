@@ -9,10 +9,10 @@ import PropTypes from 'prop-types';
 
 import * as Styled from './styled';
 
-export default function TextInput(props) {
-  return <Styled.Input {...props} aria-label={props.placeholder} type="text" />;
+export default function Input(props) {
+  return <Styled.Input {...props} aria-label={props.placeholder} />;
 }
 
-TextInput.propTypes = {
+Input.propTypes = {
   placeholder: PropTypes.string
 };

@@ -9,7 +9,7 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 
 import Panel from 'modules/components/Panel';
 import DefaultButton from 'modules/components/Button';
-import BasicTextInput from 'modules/components/TextInput';
+import BasicInput from 'modules/components/Input';
 import BasicTextarea from 'modules/components/Textarea';
 import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
 import {ReactComponent as DefaultClose} from 'modules/components/Icon/close.svg';
@@ -134,7 +134,7 @@ export const Plus = styled(DefaultPlus)`
   margin-right: 4px;
 `;
 
-export const TextInput = styled(BasicTextInput)`
+export const TextInput = styled(BasicInput)`
   height: 26px;
   min-width: 181px;
 `;
