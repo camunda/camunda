@@ -27,7 +27,7 @@
     <version.agrona>0.9.35</version.agrona>
     <version.animal-sniffer>1.17</version.animal-sniffer>
     <version.assertj>3.12.2</version.assertj>
-    <version.atomix>3.1.5</version.atomix>
+    <version.atomix>3.2.0-SNAPSHOT</version.atomix>
     <version.camunda>7.10.0</version.camunda>
     <version.commons-lang>3.7</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
@@ -227,37 +227,37 @@
       </dependency>
 
       <dependency>
-        <groupId>io.atomix</groupId>
+        <groupId>io.zeebe</groupId>
         <artifactId>atomix</artifactId>
         <version>${version.atomix}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.atomix</groupId>
+        <groupId>io.zeebe</groupId>
         <artifactId>atomix-cluster</artifactId>
         <version>${version.atomix}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.atomix</groupId>
+        <groupId>io.zeebe</groupId>
         <artifactId>atomix-primary-backup</artifactId>
         <version>${version.atomix}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.atomix</groupId>
+        <groupId>io.zeebe</groupId>
         <artifactId>atomix-primitive</artifactId>
         <version>${version.atomix}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.atomix</groupId>
+        <groupId>io.zeebe</groupId>
         <artifactId>atomix-utils</artifactId>
         <version>${version.atomix}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.atomix</groupId>
+        <groupId>io.zeebe</groupId>
         <artifactId>atomix-raft</artifactId>
         <version>${version.atomix}</version>
       </dependency>
