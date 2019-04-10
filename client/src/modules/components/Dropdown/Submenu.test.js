@@ -132,7 +132,8 @@ it('should show a scrollbar when submenu is bigger than the viewport height', ()
   };
 
   node.instance().calculatePlacement();
+  node.setProps({open: true});
   node.update();
   expect(node.state().styles.top).toBe('-30px');
-  expect(node.find('.Submenu')).toHaveClassName('scrollable');
+  expect(node.find('.childrenContainer')).toHaveClassName('scrollable');
 });

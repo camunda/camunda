@@ -14,9 +14,7 @@ import './Popover.scss';
 export default class Popover extends React.Component {
   constructor(props) {
     super(props);
-
-    this.footerRef = document.querySelector('.Footer');
-
+    this.initilizeFooterRef();
     this.state = {
       open: false,
       dialogStyles: {}
@@ -59,6 +57,12 @@ export default class Popover extends React.Component {
     });
   };
 
+  initilizeFooterRef() {
+    if (!this.footerRef) {
+      this.footerRef = document.body.querySelector('.Footer');
+    }
+  }
+
   calculateDialogStyle = () => {
     const style = {};
     let scrollable = false;
@@ -67,6 +71,7 @@ export default class Popover extends React.Component {
       const overlayHeight = this.popoverDialogRef.clientHeight;
       const buttonLeftPosition = this.buttonRef.getBoundingClientRect().left;
       const buttonBottomPosition = this.buttonRef.getBoundingClientRect().bottom;
+      this.initilizeFooterRef();
       const footerTop = this.footerRef.getBoundingClientRect().top;
 
       const bodyWidth = document.body.clientWidth;
@@ -98,7 +103,7 @@ export default class Popover extends React.Component {
         <div
           ref={this.storePopoverDialogRef}
           style={this.state.dialogStyles}
-          className="Popover__dialog"
+          className={classnames('Popover__dialog', {scrollable: this.state.scrollable})}
         >
           {this.props.children}{' '}
         </div>
@@ -124,10 +129,7 @@ export default class Popover extends React.Component {
 
   render() {
     return (
-      <div
-        ref={this.storePopoverRootRef}
-        className={classnames('Popover', {scrollable: this.state.scrollable}, this.props.className)}
-      >
+      <div ref={this.storePopoverRootRef} className={classnames('Popover', this.props.className)}>
         <Button
           active={this.state.open}
           onClick={this.toggleOpen}

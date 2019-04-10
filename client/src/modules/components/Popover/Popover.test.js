@@ -88,8 +88,8 @@ it('should limit the height and show scrollbar when there is not space', () => {
   };
 
   node.instance().calculateDialogStyle();
-
+  node.setState({open: true});
   node.update();
   expect(node.state().dialogStyles.height).toBe('80px');
-  expect(node.find('.Popover')).toHaveClassName('scrollable');
+  expect(node.find('.Popover__dialog')).toHaveClassName('scrollable');
 });

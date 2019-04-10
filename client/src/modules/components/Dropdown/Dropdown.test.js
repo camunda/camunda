@@ -28,6 +28,15 @@ jest.mock('./Submenu', () => props => (
   </div>
 ));
 
+function setupRefs(node) {
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({})
+  };
+  node.instance().headerRef = {
+    getBoundingClientRect: () => ({})
+  };
+}
+
 it('should render without crashing', () => {
   mount(<Dropdown />);
 });
@@ -45,9 +54,7 @@ it('should display the child elements when clicking the trigger', () => {
     </Dropdown>
   );
 
-  node.instance().footerRef = {
-    getBoundingClientRect: () => ({})
-  };
+  setupRefs(node);
 
   node.find('button.activateButton').simulate('click');
 
@@ -61,9 +68,7 @@ it('should close when clicking somewhere', () => {
     </Dropdown>
   );
 
-  node.instance().footerRef = {
-    getBoundingClientRect: () => ({})
-  };
+  setupRefs(node);
 
   node.setState({open: true});
 
@@ -82,9 +87,7 @@ it('should close when selecting an option', () => {
     </Dropdown>
   );
 
-  node.instance().footerRef = {
-    getBoundingClientRect: () => ({})
-  };
+  setupRefs(node);
 
   node.setState({open: true});
 
@@ -125,9 +128,7 @@ it('should set aria-expanded to true when open', () => {
     </Dropdown>
   );
 
-  node.instance().footerRef = {
-    getBoundingClientRect: () => ({})
-  };
+  setupRefs(node);
 
   node.simulate('click');
 
@@ -145,6 +146,10 @@ it('should set aria-expanded to false when closed', () => {
   );
 
   node.instance().footerRef = {
+    getBoundingClientRect: () => ({})
+  };
+
+  node.instance().headerRef = {
     getBoundingClientRect: () => ({})
   };
 
@@ -176,9 +181,7 @@ it('should close after pressing Esc', () => {
     </Dropdown>
   );
 
-  node.instance().footerRef = {
-    getBoundingClientRect: () => ({})
-  };
+  setupRefs(node);
 
   node.setState({open: true});
 
@@ -289,7 +292,7 @@ it('should open a submenu when pressing the right arrow on a submenu entry', () 
   expect(node.state('fixedSubmenu')).toBe(0);
 });
 
-it.only('should add scrollable class when there is no enough space to show all items', () => {
+it('should add scrollable class when there is no enough space to show all items', () => {
   const node = mount(
     <Dropdown>
       <Dropdown.Option>foo</Dropdown.Option>
@@ -299,10 +302,13 @@ it.only('should add scrollable class when there is no enough space to show all i
   node.instance().footerRef = {
     getBoundingClientRect: () => ({top: -1})
   };
+  node.instance().headerRef = {
+    getBoundingClientRect: () => ({})
+  };
 
   node.instance().options = [{clientHeight: 30}];
 
-  node.instance().calculateMenuStyle(false);
+  node.instance().calculateMenuStyle(true);
   node.update();
 
   expect(node.find('.menu > ul').first()).toHaveClassName('scrollable');
@@ -338,8 +344,52 @@ it('flip dropdown vertically when there is no enough space for four items', () =
     getBoundingClientRect: () => ({top: 110})
   };
 
-  node.instance().calculateMenuStyle(false);
+  node.instance().headerRef = {
+    getBoundingClientRect: () => ({})
+  };
+
+  node.instance().calculateMenuStyle(true);
   node.update();
 
   expect(node.state().menuStyle.bottom).toBe('buttonHeight');
+});
+
+it('should not add scrollable class when the item is flipped and there is no enough space below the item', () => {
+  const node = mount(
+    <Dropdown>
+      <Dropdown.Option>1</Dropdown.Option>
+      <Dropdown.Option>2</Dropdown.Option>
+      <Dropdown.Option>3</Dropdown.Option>
+      <Dropdown.Option>4</Dropdown.Option>
+      <Dropdown.Option>5</Dropdown.Option>
+    </Dropdown>
+  );
+
+  node.instance().options = [{clientHeight: 30}];
+
+  node.instance().container = {
+    querySelector: () => ({
+      offsetHeight: 'buttonHeight',
+      getBoundingClientRect: () => ({bottom: 535, top: 500})
+    })
+  };
+
+  node.instance().menuContainer = {
+    current: {
+      clientHeight: 400
+    }
+  };
+
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({top: 550})
+  };
+
+  node.instance().headerRef = {
+    getBoundingClientRect: () => ({bottom: 10})
+  };
+
+  node.instance().calculateMenuStyle(true);
+  node.update();
+
+  expect(node.find('.menu > ul').first()).not.toHaveClassName('scrollable');
 });

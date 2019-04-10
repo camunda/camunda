@@ -19,7 +19,7 @@ export default class Dropdown extends React.Component {
   constructor(props) {
     super(props);
     this.options = [];
-    this.footerRef = document.body.querySelector('.Footer');
+    this.initilizeHeaderAndFooterRefs();
 
     this.state = {
       open: false,
@@ -33,42 +33,53 @@ export default class Dropdown extends React.Component {
   toggleOpen = evt => {
     evt.preventDefault();
     if (!this.props.disabled) {
-      this.setState({open: !this.state.open, openSubmenu: null, fixedSubmenu: null});
-      this.calculateMenuStyle(this.state.open);
+      const newOpenState = !this.state.open;
+      this.setState({open: newOpenState, openSubmenu: null, fixedSubmenu: null});
+      this.calculateMenuStyle(newOpenState);
     }
   };
 
   close = ({target}) => {
     if (this.state.open && !this.container.contains(target)) {
       this.setState({open: false, openSubmenu: null});
-      this.calculateMenuStyle(true);
+      this.calculateMenuStyle(false);
     }
   };
 
   componentDidMount() {
     document.body.addEventListener('click', this.close, true);
-    window.addEventListener('resize', this.calculateMenuStyle);
   }
 
-  calculateMenuStyle = isOpen => {
-    const container = this.container;
-    const activeButton = container.querySelector('.activateButton');
-    const footerTop = this.footerRef.getBoundingClientRect().top;
-    const menuStyle = {minWidth: container.clientWidth + 'px'};
+  initilizeHeaderAndFooterRefs() {
+    if (!this.footerRef) {
+      this.footerRef = document.body.querySelector('.Footer');
+    }
+    if (!this.headerRef) {
+      this.headerRef = document.body.querySelector('.Header');
+    }
+  }
+
+  calculateMenuStyle = open => {
+    const activeButton = this.container.querySelector('.activateButton');
+    const menuStyle = {minWidth: this.container.clientWidth + 'px'};
     const listStyles = {};
     let scrollable = false;
 
     const bodyWidth = document.body.clientWidth;
     const overlay = this.menuContainer.current;
     const buttonPosition = activeButton.getBoundingClientRect();
+    this.initilizeHeaderAndFooterRefs();
+    const footerTop = this.footerRef.getBoundingClientRect().top;
+    const headerBottom = this.headerRef.getBoundingClientRect().bottom;
 
+    // check to flip menu horizentally
     if (buttonPosition.left + overlay.clientWidth > bodyWidth) {
       menuStyle.right = 0;
     } else {
       menuStyle.left = 0;
     }
 
-    if (!isOpen && buttonPosition.bottom + overlay.clientHeight > footerTop) {
+    if (open && buttonPosition.bottom + overlay.clientHeight > footerTop) {
       const listItemsCount = React.Children.count(this.props.children);
       const oneItemHeight = this.options[0].clientHeight;
       const fixedListHeight = this.props.fixedOptions
@@ -81,8 +92,14 @@ export default class Dropdown extends React.Component {
         listStyles.height = oneItemHeight * 4;
       }
 
+      // check to flip menu vertically
       if (buttonPosition.bottom + listStyles.height + fixedListHeight > footerTop) {
         menuStyle.bottom = activeButton.offsetHeight;
+
+        if (buttonPosition.top - headerBottom >= overlay.clientHeight) {
+          scrollable = false;
+          listStyles.height = 'auto';
+        }
       }
     }
 
@@ -164,7 +181,7 @@ export default class Dropdown extends React.Component {
           <Icon type="down" className="downIcon" />
         </Button>
         <div
-          className={classnames('menu')}
+          className="menu"
           aria-labelledby={this.props.id ? this.props.id + '-button' : ''}
           ref={this.menuContainer}
           style={this.state.menuStyle}
@@ -222,7 +239,6 @@ export default class Dropdown extends React.Component {
 
   componentWillUnmount() {
     document.body.removeEventListener('click', this.close, true);
-    window.removeEventListener('resize', this.calculateMenuStyle);
   }
 }
 

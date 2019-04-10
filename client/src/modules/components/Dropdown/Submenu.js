@@ -134,8 +134,7 @@ export default class Submenu extends React.Component {
         checked={this.props.checked}
         disabled={this.props.disabled}
         className={classnames('Submenu', {
-          open: this.props.open,
-          scrollable: this.state.scrollable
+          open: this.props.open
         })}
         ref={this.containerRef}
         onClick={this.onClick}
@@ -148,7 +147,7 @@ export default class Submenu extends React.Component {
           <div
             onClick={this.props.closeParent}
             onKeyDown={this.onKeyDown}
-            className="childrenContainer"
+            className={classnames('childrenContainer', {scrollable: this.state.scrollable})}
             style={this.state.styles}
           >
             {this.props.children}
