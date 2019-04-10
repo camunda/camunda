@@ -8,10 +8,10 @@ import styled, {css} from 'styled-components';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-import {ReactComponent as FlowNodeEndEvent} from 'modules/components/Icon/flow-node-end-event.svg';
-import {ReactComponent as FlowNodeExclusiveGateway} from 'modules/components/Icon/flow-node-exclusive-gateway.svg';
-import {ReactComponent as FlowNodeParallelGateway} from 'modules/components/Icon/flow-node-parallel-gateway.svg';
-import {ReactComponent as FlowNodeStartEvent} from 'modules/components/Icon/flow-node-start-event.svg';
+import {ReactComponent as FlowNodeEndEvent} from 'modules/components/Icon/flow-node-event-end.svg';
+import {ReactComponent as FlowNodeExclusiveGateway} from 'modules/components/Icon/flow-node-gateway-exclusive.svg';
+import {ReactComponent as FlowNodeParallelGateway} from 'modules/components/Icon/flow-node-gateway-parallel.svg';
+import {ReactComponent as FlowNodeStartEvent} from 'modules/components/Icon/flow-node-event-start.svg';
 import {ReactComponent as FlowNodeTaskDefault} from 'modules/components/Icon/flow-node-task-default.svg';
 import {ReactComponent as FlowNodeTaskService} from 'modules/components/Icon/flow-node-task-service.svg';
 import {ReactComponent as FlowNodeTaskUser} from 'modules/components/Icon/flow-node-task-user.svg';
