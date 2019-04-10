@@ -16,6 +16,7 @@
 package io.zeebe.broker.it.job;
 
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -23,13 +24,13 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.util.StreamUtil;
 import io.zeebe.util.collection.Tuple;
@@ -70,7 +71,15 @@ public class ActivateJobsTest {
 
   @Before
   public void setUp() {
+
     client = clientRule.getClient();
+    waitUntil(
+        () ->
+            client.newTopologyRequest().send().join().getBrokers().stream()
+                    .flatMap(b -> b.getPartitions().stream())
+                    .filter(PartitionInfo::isLeader)
+                    .count()
+                == PARTITION_COUNT);
   }
 
   @After
@@ -100,7 +109,7 @@ public class ActivateJobsTest {
             .send()
             .join();
 
-    TestUtil.waitUntil(() -> jobRecords(JobIntent.ACTIVATED).limit(amount).count() == amount);
+    waitUntil(() -> jobRecords(JobIntent.ACTIVATED).limit(amount).count() == amount);
 
     // then
     assertThat(response.getJobs()).extracting(ActivatedJob::getKey).containsOnlyElementsOf(jobKeys);
