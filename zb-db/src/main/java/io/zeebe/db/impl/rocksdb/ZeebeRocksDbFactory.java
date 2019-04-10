@@ -73,7 +73,8 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
           new DBOptions()
               .setCreateMissingColumnFamilies(true)
               .setErrorIfExists(false)
-              .setCreateIfMissing(true);
+              .setCreateIfMissing(true)
+              .setParanoidChecks(true);
       closeables.add(dbOptions);
 
       db =
@@ -83,6 +84,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
               columnFamilyDescriptors,
               closeables,
               columnFamilyTypeClass);
+
     } catch (final RocksDBException e) {
       throw new RuntimeException("Unexpected error occurred trying to open the database", e);
     }

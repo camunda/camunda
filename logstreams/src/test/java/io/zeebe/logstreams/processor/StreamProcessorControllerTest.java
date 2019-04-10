@@ -423,7 +423,7 @@ public class StreamProcessorControllerTest {
     verify(snapshotController, timeout(5000).times(5)).moveValidSnapshot(anyLong());
     verify(snapshotController, timeout(5000).times(5)).ensureMaxSnapshotCount(3);
 
-    assertThat(stateStorage.listSorted()).hasSize(3);
+    assertThat(stateStorage.listByPositionAsc()).hasSize(3);
     assertThat(stateStorage.list()).hasSize(3);
   }
 

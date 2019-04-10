@@ -54,6 +54,10 @@ public class FileUtil {
   public static void deleteFolder(String path) throws IOException {
     final Path directory = Paths.get(path);
 
+    deleteFolder(directory);
+  }
+
+  public static void deleteFolder(final Path directory) throws IOException {
     Files.walkFileTree(
         directory,
         new SimpleFileVisitor<Path>() {

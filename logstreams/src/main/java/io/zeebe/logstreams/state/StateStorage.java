@@ -18,6 +18,7 @@ package io.zeebe.logstreams.state;
 import io.zeebe.logstreams.impl.Loggers;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -102,10 +103,15 @@ public class StateStorage {
     }
   }
 
-  public List<String> listSorted() {
+  public List<File> listByPositionAsc() {
     return list().stream()
         .sorted(Comparator.comparingLong(f -> Long.parseLong(f.getName())))
-        .map(f -> f.getAbsolutePath())
         .collect(Collectors.toList());
+  }
+
+  public List<File> listByPositionDesc() {
+    final List<File> list = listByPositionAsc();
+    Collections.reverse(list);
+    return list;
   }
 }
