@@ -23,6 +23,9 @@ const Heatmap = ({report, formatter, errorMessage}) => {
     }
   } = report;
 
+  const isDuration = property.toLowerCase().includes('duration');
+  const alwaysShow = isDuration ? alwaysShowAbsolute : alwaysShowAbsolute || alwaysShowRelative;
+
   if (!result || typeof result.data !== 'object') {
     return <p>{errorMessage}</p>;
   }
@@ -38,8 +41,7 @@ const Heatmap = ({report, formatter, errorMessage}) => {
       <HeatmapOverlay
         key="heatmap"
         data={heat}
-        alwaysShowAbsolute={alwaysShowAbsolute}
-        alwaysShowRelative={alwaysShowRelative}
+        alwaysShow={alwaysShow}
         formatter={(_, id) => {
           const node = document.createElement('div');
 
@@ -73,8 +75,7 @@ const Heatmap = ({report, formatter, errorMessage}) => {
     heatmapComponent = (
       <HeatmapOverlay
         data={result.data}
-        alwaysShowAbsolute={alwaysShowAbsolute}
-        alwaysShowRelative={alwaysShowRelative}
+        alwaysShow={alwaysShow}
         formatter={data =>
           getTooltipText(
             data,
@@ -82,7 +83,7 @@ const Heatmap = ({report, formatter, errorMessage}) => {
             result.processInstanceCount,
             alwaysShowAbsolute,
             alwaysShowRelative,
-            property
+            isDuration
           )
         }
       />

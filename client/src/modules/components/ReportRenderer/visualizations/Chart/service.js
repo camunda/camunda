@@ -30,7 +30,7 @@ export function formatTooltip(
     processInstanceCount,
     alwaysShowAbsolute,
     alwaysShowRelative,
-    property
+    property.toLowerCase().includes('duration')
   );
 }
 

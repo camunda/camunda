@@ -38,15 +38,7 @@ it('should create a tooltip', () => {
 
 it('should remove old tooltips on rerendering', () => {
   removeSpy.mockClear();
-  shallow(
-    <Tooltip
-      viewer={viewer}
-      data={data}
-      formatter={v => v}
-      hideAbsoluteValue="true"
-      hideRelativeValue="true"
-    />
-  );
+  shallow(<Tooltip viewer={viewer} data={data} formatter={v => v} />);
 
   expect(removeSpy).toHaveBeenCalledTimes(1);
 });
@@ -62,7 +54,7 @@ it('should not add tooltip for every element if hideAbsoluteValue and hideReltiv
 it('should add a tooltip for every element if alwaysShowAbsolute or alwaysShowRelative are true', () => {
   addDiagramTooltip.mockClear();
   const data = {a: '1', b: '2', c: '3', d: '4', e: '5'};
-  shallow(<Tooltip viewer={viewer} data={data} formatter={v => v} alwaysShowAbsolute={true} />);
+  shallow(<Tooltip viewer={viewer} data={data} formatter={v => v} alwaysShow />);
 
   expect(addDiagramTooltip).toHaveBeenCalledWith(viewer, 'a', '1');
   expect(addDiagramTooltip).toHaveBeenCalledWith(viewer, 'b', '2');

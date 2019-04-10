@@ -5,10 +5,9 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import HeatmapOverlay from './HeatmapOverlay';
-import Tooltip from './Tooltip';
 import {getHeatmap} from './service';
 
 jest.mock('./service', () => {
@@ -32,7 +31,7 @@ const viewer = {
 const data = 'some heatmap data';
 
 it('create get a heatmap', () => {
-  mount(<HeatmapOverlay viewer={viewer} data={data} />);
+  shallow(<HeatmapOverlay viewer={viewer} data={data} />);
 
   expect(getHeatmap).toHaveBeenCalledWith(viewer, data);
 });
@@ -41,7 +40,7 @@ it('append the heatmap to the viewer viewport', () => {
   const heatmap = {};
   getHeatmap.mockReturnValueOnce(heatmap);
 
-  mount(<HeatmapOverlay viewer={viewer} data={data} />);
+  shallow(<HeatmapOverlay viewer={viewer} data={data} />);
 
   expect(appendSpy).toHaveBeenCalledWith(heatmap);
 });
@@ -53,7 +52,7 @@ it('should update heatmap if data changes', () => {
   const anotherHeatmap = {something: 'something'};
   getHeatmap.mockReturnValueOnce(heatmap).mockReturnValueOnce(anotherHeatmap);
 
-  const node = mount(<HeatmapOverlay viewer={viewer} data={data} />);
+  const node = shallow(<HeatmapOverlay viewer={viewer} data={data} />);
   node.setState({data: 'some other heatmap data'});
 
   expect(removeSpy).toHaveBeenCalledWith(heatmap);

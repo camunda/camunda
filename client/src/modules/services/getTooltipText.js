@@ -10,12 +10,12 @@ export default function getTooltipText(
   processInstanceCount,
   alwaysShowAbsolute,
   alwaysShowRelative,
-  property
+  isDuration
 ) {
   const absolute = formatter(data);
   const relative = getRelativeValue(data, processInstanceCount);
 
-  if (property.toLowerCase().includes('duration')) {
+  if (isDuration) {
     return absolute;
   }
 
