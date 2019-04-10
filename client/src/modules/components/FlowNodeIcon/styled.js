@@ -32,6 +32,8 @@ const iconStyle = css`
 
 export const EndEvent = themed(styled(FlowNodeEndEvent)`
   ${iconStyle};
+  top: 0px;
+  left: 3px;
 `);
 
 export const ExclusiveGateway = themed(styled(FlowNodeExclusiveGateway)`
@@ -44,6 +46,8 @@ export const ParallelGateway = themed(styled(FlowNodeParallelGateway)`
 
 export const StartEvent = themed(styled(FlowNodeStartEvent)`
   ${iconStyle};
+  top: 0px;
+  left: 3px;
 `);
 
 export const TaskDefault = themed(styled(FlowNodeTaskDefault)`
