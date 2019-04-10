@@ -20,6 +20,11 @@ import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.actor.ActorContext;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ClientTransport implements AutoCloseable {
 
@@ -89,18 +94,23 @@ public class ClientTransport implements AutoCloseable {
     final RemoteAddress remoteAddress = getRemoteAddress(addr);
 
     if (remoteAddress == null) {
-      final Object monitor = new Object();
+      final Lock lock = new ReentrantLock();
+      final Condition connectionEstablished = lock.newCondition();
 
-      synchronized (monitor) {
+      lock.lock();
+      try {
         final TransportListener listener =
             new TransportListener() {
               @Override
               public void onConnectionEstablished(RemoteAddress remoteAddress) {
-                synchronized (monitor) {
+                lock.lock();
+                try {
                   if (remoteAddress.getAddress().equals(addr)) {
-                    monitor.notifyAll();
+                    connectionEstablished.signal();
                     removeChannelListener(this);
                   }
+                } finally {
+                  lock.unlock();
                 }
               }
 
@@ -112,10 +122,14 @@ public class ClientTransport implements AutoCloseable {
 
         registerEndpoint(nodeId, addr);
         try {
-          monitor.wait(Duration.ofSeconds(10).toMillis());
+          if (!connectionEstablished.await(10, TimeUnit.SECONDS)) {
+            throw new RuntimeException(new TimeoutException());
+          }
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
         }
+      } finally {
+        lock.unlock();
       }
     }
   }
