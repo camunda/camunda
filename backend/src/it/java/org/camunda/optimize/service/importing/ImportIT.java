@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.filter.CanceledInstancesOnlyQueryFilter;
@@ -49,6 +50,7 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -154,6 +156,33 @@ public class ImportIT {
   @After
   public void unblockIndex() throws IOException {
     elasticSearchRule.blockProcInstIndex(false);
+  }
+
+  @Test
+  public void xmlFetchingIsNotRetriedOn4xx() throws IOException {
+    ProcessDefinitionOptimizeDto procDef = new ProcessDefinitionOptimizeDto();
+    procDef.setId("123");
+    procDef.setVersion("1");
+    procDef.setEngine("1");
+    procDef.setName("lol");
+
+    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, procDef.getId(), procDef);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    ProcessInstanceEngineDto serviceTask = deployAndStartSimpleServiceTask();
+    String definitionId = serviceTask.getDefinitionId();
+    embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    SearchResponse response = getSearchResponseForAllDocumentsOfType(PROC_DEF_TYPE);
+    assertThat(response.getHits().getTotalHits(), is(2L));
+    response.getHits().forEach((SearchHit hit) -> {
+      Map<String, Object> source = hit.getSourceAsMap();
+      if (source.get("id").equals(definitionId)) {
+        assertThat(source.get("bpmn20Xml"), is(not(nullValue())));
+      }
+    });
   }
 
   @Test
@@ -615,7 +644,8 @@ public class ImportIT {
     return createImportAndDeleteTwoProcessInstancesWithVariables(new HashMap<>());
   }
 
-  private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object> variables) {
+  private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object>
+                                                                                           variables) {
     ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTaskWithVariables(variables);
     ProcessInstanceEngineDto secondProcInst = engineRule.startProcessInstance(
       firstProcInst.getDefinitionId(),

@@ -37,7 +37,7 @@ public class DecisionDefinitionXmlFetcher extends RetryBackoffEngineEntityFetche
     final List<DecisionDefinitionXmlEngineDto> xmls = new ArrayList<>(decisionDefinitionIds.size());
     final long requestStart = System.currentTimeMillis();
     for (String processDefinitionId : decisionDefinitionIds) {
-      final List<DecisionDefinitionXmlEngineDto> singleXml = fetchWithRetry(
+      final List<DecisionDefinitionXmlEngineDto> singleXml = fetchWithRetryIgnoreClientError(
         () -> performGetDecisionDefinitionXmlRequest(processDefinitionId)
       );
       xmls.addAll(singleXml);

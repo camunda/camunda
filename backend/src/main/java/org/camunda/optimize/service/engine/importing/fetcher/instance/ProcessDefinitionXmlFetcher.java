@@ -39,7 +39,7 @@ public class ProcessDefinitionXmlFetcher
     long requestStart = System.currentTimeMillis();
     for (String processDefinitionId : processDefinitionIds) {
       List<ProcessDefinitionXmlEngineDto> singleXml =
-        fetchWithRetry(() -> performProcessDefinitionXmlRequest(processDefinitionId));
+        fetchWithRetryIgnoreClientError(() -> performProcessDefinitionXmlRequest(processDefinitionId));
       xmls.addAll(singleXml);
     }
     long requestEnd = System.currentTimeMillis();

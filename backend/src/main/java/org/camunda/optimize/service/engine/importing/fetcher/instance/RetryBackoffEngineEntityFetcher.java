@@ -11,6 +11,8 @@ import org.camunda.optimize.service.engine.importing.fetcher.EngineEntityFetcher
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.ws.rs.ClientErrorException;
+import java.util.ArrayList;
 import java.util.List;
 
 public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto>
@@ -33,6 +35,27 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto>
         long timeToSleep = backoffCalculator.calculateSleepTime();
         logDebugSleepInformation(timeToSleep);
         sleep(timeToSleep);
+      }
+    }
+    backoffCalculator.resetBackoff();
+    return result;
+  }
+
+  protected List<ENG> fetchWithRetryIgnoreClientError(FetcherFunction<ENG> fetchFunction) {
+    List<ENG> result = null;
+    while (result == null) {
+      try {
+        result = fetchFunction.fetch();
+      } catch (Exception exception) {
+        if (exception instanceof ClientErrorException) {
+          logger.warn("ClientError on fetching entity: {}", exception.getMessage(), exception);
+          result = new ArrayList<>();
+        } else {
+          logError(exception);
+          long timeToSleep = backoffCalculator.calculateSleepTime();
+          logDebugSleepInformation(timeToSleep);
+          sleep(timeToSleep);
+        }
       }
     }
     backoffCalculator.resetBackoff();
