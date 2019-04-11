@@ -26,9 +26,13 @@ import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import org.slf4j.Logger;
 
 public class BrokerTopologyManagerImpl extends Actor
     implements BrokerTopologyManager, ClusterMembershipEventListener {
+
+  private static final Logger LOG = Loggers.GATEWAY_LOGGER;
+
   protected final BiConsumer<Integer, SocketAddress> registerEndpoint;
   protected final AtomicReference<BrokerClusterStateImpl> topology;
 
@@ -56,7 +60,7 @@ public class BrokerTopologyManagerImpl extends Actor
     final Member subject = event.subject();
     final Type eventType = event.type();
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(subject.properties());
-    Loggers.GATEWAY_LOGGER.warn("Got membership event {}", brokerInfo);
+    LOG.info("Got membership event {}", brokerInfo);
 
     if (brokerInfo != null) {
       actor.call(
