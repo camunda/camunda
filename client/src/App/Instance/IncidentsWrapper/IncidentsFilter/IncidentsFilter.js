@@ -37,7 +37,7 @@ export default class IncidentsFilter extends React.Component {
                   return (
                     <li key={item.errorType}>
                       <Pill
-                        data-test="incident-filter-pill"
+                        data-test={item.errorType}
                         type="FILTER"
                         count={item.count}
                         isActive={selectedErrorTypes.includes(item.errorType)}
@@ -60,7 +60,7 @@ export default class IncidentsFilter extends React.Component {
                         return (
                           <Dropdown.Option key={item.errorType}>
                             <Pill
-                              data-test="incident-filter-pill"
+                              data-test={item.errorType}
                               type="FILTER"
                               count={item.count}
                               isActive={selectedErrorTypes.includes(
@@ -89,6 +89,7 @@ export default class IncidentsFilter extends React.Component {
                   return (
                     <li key={item.flowNodeId}>
                       <Pill
+                        data-test={item.flowNodeId}
                         type="FILTER"
                         count={item.count}
                         isActive={selectedFlowNodes.includes(item.flowNodeId)}
@@ -135,6 +136,7 @@ export default class IncidentsFilter extends React.Component {
           </Styled.PillsWrapper>
           <Styled.ButtonWrapper>
             <Styled.ClearButton
+              data-test="clear-button"
               size="small"
               title="Clear All"
               onClick={this.props.onClearAll}

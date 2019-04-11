@@ -44,7 +44,7 @@ const mockProps = {
   instanceId: '1',
   onIncidentOperation: jest.fn(),
   onIncidentSelection: jest.fn(),
-  selectedIncidents: [id],
+  selectedFlowNodeInstanceIds: [id],
   sorting: {
     sortBy: 'errorType',
     sortOrder: SORT_ORDER.DESC
@@ -349,7 +349,7 @@ describe('IncidentsTable', () => {
     });
 
     it('should handle multiple selections', () => {
-      mockProps.selectedIncidents = [id, 'flowNodeInstanceIdA'];
+      mockProps.selectedFlowNodeInstanceIds = [id, 'flowNodeInstanceIdA'];
       const node = mount(
         <ThemeProvider>
           <IncidentsTable {...mockProps} />
@@ -372,7 +372,7 @@ describe('IncidentsTable', () => {
           .props().isSelected
       ).toBe(true);
 
-      mockProps.selectedIncidents = [id];
+      mockProps.selectedFlowNodeInstanceIds = [id];
     });
   });
 

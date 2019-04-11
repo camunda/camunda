@@ -106,14 +106,16 @@ export const createSelection = (options = {}) => {
  */
 export const createIncident = (options = {}) => {
   return {
-    activityId: createRandomId(),
-    activityInstanceId: createRandomId(),
-    errorMessage: '',
-    errorType: '',
+    // activityId: createRandomId(),
+    // activityInstanceId: createRandomId(),
+    errorMessage: 'Some Condition error has occured',
+    errorType: 'Condition error',
     id: randomIdIterator.next().value,
     jobId: randomJobIdIterator.next().value,
     state: 'ACTIVE',
-    flowNodeInstanceId: '',
+    flowNodeId: 'flowNodeId_alwaysFailingTask',
+    flowNodeInstanceId: createRandomId(),
+    flowNodeName: 'flowNodeName_alwaysFailingTask',
     creationTime: '2019-03-01T14:26:19',
     hasActiveOperation: false,
     ...options
@@ -561,7 +563,16 @@ export const createDeepNestedTree = depth => {
 export const createIncidents = () => {
   return {
     count: 2,
-    incidents: [createIncident(), createIncident()],
+    incidents: [
+      createIncident({
+        errorType: 'Condition error',
+        flowNodeId: 'flowNodeId_exclusiveGateway'
+      }),
+      createIncident({
+        errorType: 'Extract value error',
+        flowNodeName: 'flowNodeName_alwaysFailingTask'
+      })
+    ],
     errorTypes: [
       {
         errorType: 'Condition error',
@@ -570,31 +581,17 @@ export const createIncidents = () => {
       {
         errorType: 'Extract value error',
         count: 1
-      },
-      {
-        errorType: 'I/O mapping error',
-        count: 1
-      },
-      {
-        errorType: 'No more retries left',
-        count: 1
       }
     ],
     flowNodes: [
       {
-        flowNodeId: 'alwaysFailingTask',
+        flowNodeId: 'flowNodeId_exclusiveGateway',
+        flowNodeName: 'flowNodeName_exclusiveGateway',
         count: 1
       },
       {
-        flowNodeId: 'exclusiveGateway',
-        count: 1
-      },
-      {
-        flowNodeId: 'messageCatchEvent',
-        count: 1
-      },
-      {
-        flowNodeId: 'upperTask',
+        flowNodeId: 'flowNodeId_alwaysFailingTask',
+        flowNodeName: 'flowNodeName_alwaysFailingTask',
         count: 1
       }
     ]
