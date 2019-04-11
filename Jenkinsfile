@@ -101,4 +101,19 @@ pipeline {
             }
         }
     }
+
+    post {
+        always {
+            // Retrigger the build if the node disconnected
+            script {
+                if (nodeDisconnected()) {
+                    build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
+                }
+            }
+        }
+    }
+}
+
+boolean nodeDisconnected() {
+  return currentBuild.rawBuild.getLog(500).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException).*/
 }
