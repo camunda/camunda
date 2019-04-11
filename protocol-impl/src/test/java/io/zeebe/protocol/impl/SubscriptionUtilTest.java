@@ -15,6 +15,7 @@
  */
 package io.zeebe.protocol.impl;
 
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.zeebe.protocol.impl.SubscriptionUtil.getSubscriptionHashCode;
 import static io.zeebe.protocol.impl.SubscriptionUtil.getSubscriptionPartitionId;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
@@ -40,9 +41,10 @@ public class SubscriptionUtilTest {
 
   @Test
   public void shouldGetPartitionIdForCorrelationKey() {
-    assertThat(getSubscriptionPartitionId(wrapString("a"), 10)).isEqualTo(7);
-    assertThat(getSubscriptionPartitionId(wrapString("b"), 3)).isEqualTo(2);
-    assertThat(getSubscriptionPartitionId(wrapString("c"), 11)).isEqualTo(0);
-    assertThat(getSubscriptionPartitionId(wrapString("foobar"), 100)).isEqualTo(63);
+    assertThat(getSubscriptionPartitionId(wrapString("a"), 10)).isEqualTo(7 + START_PARTITION_ID);
+    assertThat(getSubscriptionPartitionId(wrapString("b"), 3)).isEqualTo(2 + START_PARTITION_ID);
+    assertThat(getSubscriptionPartitionId(wrapString("c"), 11)).isEqualTo(0 + START_PARTITION_ID);
+    assertThat(getSubscriptionPartitionId(wrapString("foobar"), 100))
+        .isEqualTo(63 + START_PARTITION_ID);
   }
 }

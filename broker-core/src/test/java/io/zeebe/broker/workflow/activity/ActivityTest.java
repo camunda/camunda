@@ -71,7 +71,7 @@ public class ActivityTest {
           .done();
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
   private PartitionTestClient testClient;
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);

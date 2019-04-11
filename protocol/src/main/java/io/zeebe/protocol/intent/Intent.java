@@ -64,8 +64,6 @@ public interface Intent {
         return IncidentIntent.from(intent);
       case NOOP:
         return Intent.UNKNOWN;
-      case RAFT:
-        return RaftIntent.from(intent);
       case JOB:
         return JobIntent.from(intent);
       case WORKFLOW_INSTANCE:
@@ -111,8 +109,6 @@ public interface Intent {
         return IncidentIntent.valueOf(intent);
       case NOOP:
         return Intent.UNKNOWN;
-      case RAFT:
-        return RaftIntent.valueOf(intent);
       case JOB:
         return JobIntent.valueOf(intent);
       case WORKFLOW_INSTANCE:

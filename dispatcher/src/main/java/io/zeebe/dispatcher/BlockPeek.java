@@ -113,6 +113,16 @@ public class BlockPeek implements Iterable<DirectBuffer> {
     updatePosition();
   }
 
+  /** Returns the position of the next block if this block was marked completed. */
+  public long getNextPosition() {
+    final long newPosition = position(newPartitionId, newPartitionOffset);
+    if (subscriberPosition.get() < newPosition) {
+      return newPosition;
+    } else {
+      return subscriberPosition.get();
+    }
+  }
+
   protected void updatePosition() {
     fragmentsConsumedMetric.getAndAddOrdered(fragmentCount);
     subscriberPosition.proposeMaxOrdered(position(newPartitionId, newPartitionOffset));
