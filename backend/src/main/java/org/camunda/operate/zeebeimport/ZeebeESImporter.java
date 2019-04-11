@@ -13,7 +13,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.WeakHashMap;
 
 import org.camunda.operate.entities.meta.ImportPositionEntity;
 import org.camunda.operate.es.schema.indices.ImportPositionIndex;
@@ -36,7 +35,6 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
@@ -96,7 +94,7 @@ public class ZeebeESImporter extends Thread {
   @Autowired
   private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
   
-//  private Map<String,Long> lastLoadedPositions = new WeakHashMap<>();  
+  private Map<String,Long> lastLoadedPositions = new HashMap<>();  
 
   @PreDestroy
   public void shutdown() {
@@ -104,12 +102,12 @@ public class ZeebeESImporter extends Thread {
   }
 
   public long getLatestLoadedPosition(String aliasName, int partitionId) throws IOException {
-//	String lastloadedPositionKey = aliasName+"-"+partitionId;
-//	if(lastLoadedPositions.containsKey(lastloadedPositionKey)) {
-//		long lastPosition = lastLoadedPositions.get(lastloadedPositionKey);
-//		logger.debug("Latest loaded position (from cache) for alias [{}] and partitionId [{}]: {}", aliasName, partitionId, lastPosition);
-//		return lastPosition;
-//	}
+	String lastloadedPositionKey = aliasName+"-"+partitionId;
+	if(lastLoadedPositions.containsKey(lastloadedPositionKey)) {
+		long lastPosition = lastLoadedPositions.get(lastloadedPositionKey);
+		logger.debug("Latest loaded position (from cache) for alias [{}] and partitionId [{}]: {}", aliasName, partitionId, lastPosition);
+		return lastPosition;
+	}
     final QueryBuilder queryBuilder = joinWithAnd(termQuery(ImportPositionIndex.ALIAS_NAME, aliasName),
       termQuery(ImportPositionIndex.PARTITION_ID, partitionId));
 
@@ -143,7 +141,7 @@ public class ZeebeESImporter extends Thread {
         .doc(updateFields)
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
       esClient.update(request, RequestOptions.DEFAULT);
-//      lastLoadedPositions.put(aliasName+"-"+partitionId, position);
+      lastLoadedPositions.put(aliasName+"-"+partitionId, position);
     } catch (Exception e) {
       logger.error(String.format("Error occurred while persisting latest loaded position for %s",aliasName), e);
       throw new OperateRuntimeException(e);
