@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.process.flownode.frequenc
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.process.FlowNodeGroupingCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
@@ -24,8 +25,8 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
@@ -113,12 +114,12 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCom
     final Filter filteredActivities = activities.getAggregations().get("filteredEvents");
     final Terms activityTerms = filteredActivities.getAggregations().get("activities");
 
-    final Map<String, Long> resultMap = new HashMap<>();
+    final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
     for (Terms.Bucket b : activityTerms.getBuckets()) {
-      resultMap.put(b.getKeyAsString(), b.getDocCount());
+      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), b.getDocCount()));
     }
 
-    resultDto.setData(resultMap);
+    resultDto.setData(resultData);
     resultDto.setComplete(activityTerms.getSumOfOtherDocCounts() == 0L);
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
     return resultDto;

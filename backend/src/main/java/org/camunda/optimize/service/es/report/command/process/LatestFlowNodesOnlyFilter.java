@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
@@ -25,8 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
@@ -44,13 +46,13 @@ class LatestFlowNodesOnlyFilter {
     final ProcessReportDataDto reportData = commandContext.getReportDefinition().getData();
     if (ReportConstants.ALL_VERSIONS.equalsIgnoreCase(reportData.getProcessDefinitionVersion())) {
       final ProcessDefinitionOptimizeDto latestXml = fetchLatestDefinitionXml(commandContext);
-      final Map<String, Long> filteredNodes = new HashMap<>();
 
-      for (Map.Entry<String, Long> node : evaluationResult.getResultAsDto().getData().entrySet()) {
-        if (latestXml.getFlowNodeNames().containsKey(node.getKey())) {
-          filteredNodes.put(node.getKey(), node.getValue());
-        }
-      }
+      final Map<String, String> flowNodeNames = latestXml.getFlowNodeNames();
+      final List<MapResultEntryDto<Long>> filteredNodes = evaluationResult.getResultAsDto()
+        .getData()
+        .stream()
+        .filter(resultEntry -> flowNodeNames.containsKey(resultEntry.getKey()))
+        .collect(Collectors.toList());
 
       evaluationResult.getResultAsDto().setData(filteredNodes);
     }
@@ -62,13 +64,13 @@ class LatestFlowNodesOnlyFilter {
     final ProcessReportDataDto reportData = commandContext.getReportDefinition().getData();
     if (ReportConstants.ALL_VERSIONS.equalsIgnoreCase(reportData.getProcessDefinitionVersion())) {
       final ProcessDefinitionOptimizeDto latestXml = fetchLatestDefinitionXml(commandContext);
-      final Map<String, AggregationResultDto> filteredNodes = new HashMap<>();
 
-      for (Map.Entry<String, AggregationResultDto> node : evaluationResult.getResultAsDto().getData().entrySet()) {
-        if (latestXml.getFlowNodeNames().containsKey(node.getKey())) {
-          filteredNodes.put(node.getKey(), node.getValue());
-        }
-      }
+      final Map<String, String> flowNodeNames = latestXml.getFlowNodeNames();
+      final List<MapResultEntryDto<AggregationResultDto>> filteredNodes = evaluationResult.getResultAsDto()
+        .getData()
+        .stream()
+        .filter(resultEntry -> flowNodeNames.containsKey(resultEntry.getKey()))
+        .collect(Collectors.toList());
 
       evaluationResult.getResultAsDto().setData(filteredNodes);
     }

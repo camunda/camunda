@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
@@ -26,7 +27,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -36,9 +36,9 @@ public class CombinedProcessReportResultTest {
   public void testGetResultAsCsvForMapResult() {
     // given
     final ProcessReportMapResultDto mapResultDto = new ProcessReportMapResultDto();
-    final HashMap<String, Long> resultDtoMap = new HashMap<>();
-    resultDtoMap.put("900.0", 1L);
-    resultDtoMap.put("10.99", 1L);
+    final List<MapResultEntryDto<Long>> resultDtoMap = new ArrayList<>();
+    resultDtoMap.add(new MapResultEntryDto<>("900.0", 1L));
+    resultDtoMap.add(new MapResultEntryDto<>("10.99", 1L));
     mapResultDto.setData(resultDtoMap);
     final List<ProcessReportResultDto> mapResultDtos = Lists.newArrayList(
       mapResultDto,
@@ -189,9 +189,9 @@ public class CombinedProcessReportResultTest {
     aggroResult.setMin(1l);
     aggroResult.setMax(6l);
 
-    Map<String, AggregationResultDto> data = new HashMap<>();
-    data.put("test1", aggroResult);
-    data.put("test2", aggroResult);
+    List<MapResultEntryDto<AggregationResultDto>> data = new ArrayList<>();
+    data.add(new MapResultEntryDto<>("test1", aggroResult));
+    data.add(new MapResultEntryDto<>("test2", aggroResult));
     durMapReportDto.setData(data);
 
     final ArrayList<ProcessReportResultDto> resultDtos = Lists.newArrayList(
@@ -223,8 +223,8 @@ public class CombinedProcessReportResultTest {
       new String[]{"", "minimum", "maximum", "average", "median", "", "", "minimum", "maximum", "average", "median"},
       resultAsCsv.get(2)
     );
-    assertArrayEquals(new String[]{"test2", "1", "6", "3", "3", "", "test2", "1", "6", "3", "3"}, resultAsCsv.get(3));
-    assertArrayEquals(new String[]{"test1", "1", "6", "3", "3", "", "test1", "1", "6", "3", "3"}, resultAsCsv.get(4));
+    assertArrayEquals(new String[]{"test1", "1", "6", "3", "3", "", "test1", "1", "6", "3", "3"}, resultAsCsv.get(3));
+    assertArrayEquals(new String[]{"test2", "1", "6", "3", "3", "", "test2", "1", "6", "3", "3"}, resultAsCsv.get(4));
 
     // when (limit = 0)
     resultAsCsv = underTest.getResultAsCsv(0, 0, null);
@@ -244,7 +244,7 @@ public class CombinedProcessReportResultTest {
       new String[]{"", "minimum", "maximum", "average", "median", "", "", "minimum", "maximum", "average", "median"},
       resultAsCsv.get(2)
     );
-    assertArrayEquals(new String[]{"test2", "1", "6", "3", "3", "", "test2", "1", "6", "3", "3"}, resultAsCsv.get(3));
+    assertArrayEquals(new String[]{"test1", "1", "6", "3", "3", "", "test1", "1", "6", "3", "3"}, resultAsCsv.get(3));
 
 
     // when (offset = 1)
@@ -265,7 +265,7 @@ public class CombinedProcessReportResultTest {
       new String[]{"", "minimum", "maximum", "average", "median", "", "", "minimum", "maximum", "average", "median"},
       resultAsCsv.get(2)
     );
-    assertArrayEquals(new String[]{"test1", "1", "6", "3", "3", "", "test1", "1", "6", "3", "3"}, resultAsCsv.get(3));
+    assertArrayEquals(new String[]{"test2", "1", "6", "3", "3", "", "test2", "1", "6", "3", "3"}, resultAsCsv.get(3));
   }
 
   @Test

@@ -10,6 +10,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -361,9 +362,9 @@ public class VariableImportIT {
     );
     ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
     assertThat(result.getData(), is(notNullValue()));
-    Map<String, Long> flowNodeIdToExecutionFrequency = result.getData();
-    for (Long frequency : flowNodeIdToExecutionFrequency.values()) {
-      assertThat(frequency, is(4L));
+    List<MapResultEntryDto<Long>> flowNodeIdToExecutionFrequency = result.getData();
+    for (MapResultEntryDto<Long> frequency : flowNodeIdToExecutionFrequency) {
+      assertThat(frequency.getValue(), is(4L));
     }
   }
 

@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
@@ -34,9 +35,7 @@ import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +43,6 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -89,11 +87,10 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
     ProcessReportMapResultDto result = evaluateReportAndReturnResult(reportData);
 
     // then
-    Map<String, Long> resultMap = result.getData();
-    List<Long> resultValues = new ArrayList<>(resultMap.values());
-    assertThat(resultMap.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-    assertThat(resultValues.get(0), is(2L));
-    assertThat(resultValues.get(resultMap.size() - 1), is(1L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
+    assertThat(resultData.get(0).getValue(), is(2L));
+    assertThat(resultData.get(resultData.size() - 1).getValue(), is(1L));
   }
 
   @Test
@@ -122,12 +119,11 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
     ProcessReportMapResultDto result = evaluateReportAndReturnResult(reportData);
 
     // then
-    Map<String, Long> resultMap = result.getData();
-    List<Long> resultValues = new ArrayList<>(resultMap.values());
-    assertThat(resultMap.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-    assertThat(resultValues.stream().mapToInt(Long::intValue).sum(), is(3));
-    assertThat(resultValues.get(0), is(1L));
-    assertThat(resultValues.get(resultMap.size() - 1), is(1L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
+    assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Long::intValue).sum(), is(3));
+    assertThat(resultData.get(0).getValue(), is(1L));
+    assertThat(resultData.get(resultData.size() - 1).getValue(), is(1L));
   }
 
   @Test
@@ -146,8 +142,8 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
     ProcessReportMapResultDto result = evaluateReportAndReturnResult(reportData);
 
     // then
-    Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.size(), is(0));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(0));
   }
 
   @Test
@@ -167,12 +163,12 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
     ProcessReportMapResultDto result = evaluateReportAndReturnResult(reportData);
 
     // then the single data point should be grouped by month
-    Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.size(), is(1));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(1));
     ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
     String nowStrippedToMonthAsString = localDateTimeToString(nowStrippedToMonth);
-    assertThat(resultMap.keySet(), hasItem(nowStrippedToMonthAsString));
-    assertThat(resultMap.get(nowStrippedToMonthAsString), is(1L));
+    assertThat(resultData.get(0).getKey(), is(nowStrippedToMonthAsString));
+    assertThat(resultData.get(0).getValue(), is(1L));
   }
 
   @Test
@@ -241,11 +237,10 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
                                              int resultSize) {
     assertThat(resultMap.size(), is(resultSize));
     for (ProcessReportEvaluationResultDto<ProcessReportMapResultDto> result : resultMap.values()) {
-      Map<String, Long> singleProcessResult = result.getResult().getData();
-      assertThat(singleProcessResult.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-      LinkedList<String> strings = new LinkedList<>(singleProcessResult.keySet());
-      assertThat(strings.getLast(), is(localDateTimeToString(startRange)));
-      assertIsInRangeOfLastInterval(strings.getFirst(), startRange, endRange);
+      final List<MapResultEntryDto<Long>> resultData = result.getResult().getData();
+      assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
+      assertThat(resultData.get(resultData.size() - 1).getKey(), is(localDateTimeToString(startRange)));
+      assertIsInRangeOfLastInterval(resultData.get(0).getKey(), startRange, endRange);
     }
   }
 

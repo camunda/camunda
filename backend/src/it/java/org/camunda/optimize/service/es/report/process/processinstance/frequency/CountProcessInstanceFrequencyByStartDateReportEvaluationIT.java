@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Start
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
@@ -39,11 +40,11 @@ import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -97,12 +98,12 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
 
     final ProcessReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getProcessInstanceCount(), is(1L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-    Map<String, Long> resultMap = result.getData();
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(resultMap.containsKey(localDateTimeToString(startOfToday)), is(true));
-    assertThat(resultMap.containsValue(1L), is(true));
+    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
+    assertThat(resultData.get(0).getValue(), is(1L));
   }
 
   @Test
@@ -130,12 +131,12 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     assertThat(startDateGroupByDto.getValue().getUnit(), is(GroupByDateUnit.DAY));
 
     final ProcessReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-    Map<String, Long> resultMap = result.getData();
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(resultMap.containsKey(localDateTimeToString(startOfToday)), is(true));
-    assertThat(resultMap.containsValue(1L), is(true));
+    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
+    assertThat(resultData.get(0).getValue(), is(1L));
   }
 
   @Test
@@ -160,12 +161,13 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.size(), is(3));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(3));
+    final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
-      new ArrayList<>(resultMap.keySet()),
+      resultKeys,
       // expect ascending order
-      contains(new ArrayList<>(resultMap.keySet()).stream().sorted(Comparator.reverseOrder()).toArray())
+      contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
     );
   }
 
@@ -192,12 +194,13 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.size(), is(3));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(3));
+    final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
-      new ArrayList<>(resultMap.keySet()),
+      resultKeys,
       // expect ascending order
-      contains(new ArrayList<>(resultMap.keySet()).stream().sorted(Comparator.naturalOrder()).toArray())
+      contains(resultKeys.stream().sorted(Comparator.naturalOrder()).toArray())
     );
   }
 
@@ -230,13 +233,13 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getData();
     assertThat(result.getIsComplete(), is(true));
-    assertThat(resultMap.size(), is(3));
-    final List<Long> bucketValues = new ArrayList<>(resultMap.values());
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(3));
+    final List<Long> resultValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(
-      new ArrayList<>(bucketValues),
-      contains(bucketValues.stream().sorted(Comparator.reverseOrder()).toArray())
+      resultValues,
+      contains(resultValues.stream().sorted(Comparator.reverseOrder()).toArray())
     );
   }
 
@@ -270,8 +273,8 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.size(), is(2));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(2));
     assertThat(result.getIsComplete(), is(false));
   }
 
@@ -295,15 +298,23 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.size(), is(2));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(2));
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    String expectedStringToday = localDateTimeToString(startOfToday);
-    assertThat(resultMap.containsKey(expectedStringToday), is(true));
-    assertThat(resultMap.get(expectedStringToday), is(2L));
-    String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
-    assertThat(resultMap.containsKey(expectedStringYesterday), is(true));
-    assertThat(resultMap.get(expectedStringYesterday), is(1L));
+
+    final String expectedStringToday = localDateTimeToString(startOfToday);
+    final Optional<MapResultEntryDto<Long>> todayEntry = resultData.stream()
+      .filter(e -> expectedStringToday.equals(e.getKey()))
+      .findFirst();
+    assertThat(todayEntry.isPresent(), is(true));
+    assertThat(todayEntry.get().getValue(), is(2L));
+
+    final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
+    final Optional<MapResultEntryDto<Long>> yesterdayEntry = resultData.stream()
+      .filter(e -> expectedStringYesterday.equals(e.getKey()))
+      .findFirst();
+    assertThat(yesterdayEntry.isPresent(), is(true));
+    assertThat(yesterdayEntry.get().getValue(), is(1L));
   }
 
   @Test
@@ -326,18 +337,31 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.size(), is(3));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(3));
+
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    String expectedStringToday = localDateTimeToString(startOfToday);
-    assertThat(resultMap.containsKey(expectedStringToday), is(true));
-    assertThat(resultMap.get(expectedStringToday), is(2L));
-    String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
-    assertThat(resultMap.containsKey(expectedStringYesterday), is(true));
-    assertThat(resultMap.get(expectedStringYesterday), is(0L));
-    String expectedStringDayBeforeYesterday = localDateTimeToString(startOfToday.minusDays(2));
-    assertThat(resultMap.containsKey(expectedStringDayBeforeYesterday), is(true));
-    assertThat(resultMap.get(expectedStringDayBeforeYesterday), is(1L));
+
+    final String expectedStringToday = localDateTimeToString(startOfToday);
+    final Optional<MapResultEntryDto<Long>> todayEntry = resultData.stream()
+      .filter(e -> expectedStringToday.equals(e.getKey()))
+      .findFirst();
+    assertThat(todayEntry.isPresent(), is(true));
+    assertThat(todayEntry.get().getValue(), is(2L));
+
+    final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
+    final Optional<MapResultEntryDto<Long>> yesterdayEntry = resultData.stream()
+      .filter(e -> expectedStringYesterday.equals(e.getKey()))
+      .findFirst();
+    assertThat(yesterdayEntry.isPresent(), is(true));
+    assertThat(yesterdayEntry.get().getValue(), is(0L));
+
+    final String expectedStringDayBeforeYesterday = localDateTimeToString(startOfToday.minusDays(2));
+    final Optional<MapResultEntryDto<Long>> dayBeforYesterdayEntry = resultData.stream()
+      .filter(e -> expectedStringDayBeforeYesterday.equals(e.getKey()))
+      .findFirst();
+    assertThat(dayBeforYesterdayEntry.isPresent(), is(true));
+    assertThat(dayBeforYesterdayEntry.get().getValue(), is(1L));
   }
 
   @Test
@@ -359,19 +383,30 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    Map<String, Long> resultMap = result.getData();
-    assertStartDateResultMap(resultMap, 5, now, ChronoUnit.HOURS);
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertStartDateResultMap(resultData, 5, now, ChronoUnit.HOURS);
   }
 
-  private void assertStartDateResultMap(Map<String, Long> resultMap, int size, OffsetDateTime now, ChronoUnit unit) {
-    assertThat(resultMap.size(), is(size));
+  private void assertStartDateResultMap(List<MapResultEntryDto<Long>> resultData,
+                                        int size,
+                                        OffsetDateTime now,
+                                        ChronoUnit unit) {
+    assertStartDateResultMap(resultData, size, now, unit, 1L);
+  }
+
+  private void assertStartDateResultMap(List<MapResultEntryDto<Long>> resultData,
+                                        int size,
+                                        OffsetDateTime now,
+                                        ChronoUnit unit,
+                                        long expectedValue) {
+    assertThat(resultData.size(), is(size));
     final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
     IntStream.range(0, size)
       .forEach(i -> {
-        String expectedDateString = localDateTimeToString(finalStartOfUnit.minus((i), unit));
-        assertThat("contains [" + expectedDateString + "]", resultMap.containsKey(expectedDateString), is(true));
-        assertThat(resultMap.get(expectedDateString), is(1L));
+        final String expectedDateString = localDateTimeToString(finalStartOfUnit.minus((i), unit));
+        assertThat(resultData.get(i).getKey(), is(expectedDateString));
+        assertThat(resultData.get(i).getValue(), is(expectedValue));
       });
   }
 
@@ -407,9 +442,9 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    Map<String, Long> resultMap = result.getData();
-    assertStartDateResultMap(resultMap, 8, now, ChronoUnit.DAYS);
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertStartDateResultMap(resultData, 8, now, ChronoUnit.DAYS);
   }
 
   @Test
@@ -431,9 +466,9 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    Map<String, Long> resultMap = result.getData();
-    assertStartDateResultMap(resultMap, 8, now, ChronoUnit.WEEKS);
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertStartDateResultMap(resultData, 8, now, ChronoUnit.WEEKS);
   }
 
   @Test
@@ -455,9 +490,9 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    Map<String, Long> resultMap = result.getData();
-    assertStartDateResultMap(resultMap, 3, now, ChronoUnit.MONTHS);
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertStartDateResultMap(resultData, 3, now, ChronoUnit.MONTHS);
   }
 
   @Test
@@ -479,9 +514,9 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    Map<String, Long> resultMap = result.getData();
-    assertStartDateResultMap(resultMap, 8, now, ChronoUnit.YEARS);
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertStartDateResultMap(resultData, 8, now, ChronoUnit.YEARS);
   }
 
   @Test
@@ -499,11 +534,9 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, Long> resultMap = result.getData();
-    ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    String expectedStartDateString = localDateTimeToString(startOfToday);
-    assertThat("contains [" + expectedStartDateString + "]", resultMap.containsKey(expectedStartDateString), is(true));
-    assertThat(resultMap.get(expectedStartDateString), is(2L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertStartDateResultMap(resultData, 1, OffsetDateTime.now(), ChronoUnit.DAYS, 2L);
   }
 
   @Test
@@ -523,11 +556,9 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, Long> resultMap = result.getData();
-    ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    String expectedStartDateString = localDateTimeToString(startOfToday);
-    assertThat("contains [" + expectedStartDateString + "]", resultMap.containsKey(expectedStartDateString), is(true));
-    assertThat(resultMap.get(expectedStartDateString), is(1L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertStartDateResultMap(resultData, 1, OffsetDateTime.now(), ChronoUnit.DAYS);
   }
 
   @Test

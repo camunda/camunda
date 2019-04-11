@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
@@ -22,11 +23,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
@@ -34,7 +33,6 @@ import static org.camunda.optimize.test.util.DecisionFilterUtilHelper.createBool
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 @RunWith(JUnitParamsRunner.class)
@@ -67,10 +65,11 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(2L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-    assertThat(result.getData().keySet().stream().findFirst().get(), is(expectedClassificationOutputValue));
-    assertThat(result.getData().values().stream().findFirst().get(), is(2L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+    assertThat(resultData.get(0).getKey(), is(expectedClassificationOutputValue));
+    assertThat(resultData.get(0).getValue(), is(2L));
   }
 
   @Test
@@ -108,12 +107,13 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     // then
     assertThat(result.getDecisionInstanceCount(), is(4L));
     assertThat(result.getIsComplete(), is(true));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(2));
-    assertThat(new ArrayList<>(result.getData().keySet()), containsInAnyOrder("false", "true"));
-    final Iterator<Long> resultValuesIterator = result.getData().values().iterator();
-    assertThat(resultValuesIterator.next(), is(3L));
-    assertThat(resultValuesIterator.next(), is(1L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(2));
+    assertThat(resultData.get(0).getKey(), is("false"));
+    assertThat(resultData.get(0).getValue(), is(3L));
+    assertThat(resultData.get(1).getKey(), is("true"));
+    assertThat(resultData.get(1).getValue(), is(1L));
   }
 
   @Test
@@ -199,11 +199,11 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(1L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-    assertThat(new ArrayList<>(result.getData().keySet()), containsInAnyOrder("true"));
-    final Iterator<Long> resultValuesIterator = result.getData().values().iterator();
-    assertThat(resultValuesIterator.next(), is(1L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+    assertThat(resultData.get(0).getKey(), is("true"));
+    assertThat(resultData.get(0).getValue(), is(1L));
   }
 
   @Test
@@ -237,10 +237,11 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(4L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-    assertThat(result.getData().keySet().stream().findFirst().get(), is(expectedClassificationOutputValue));
-    assertThat(result.getData().values().stream().findFirst().get(), is(4L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+    assertThat(resultData.get(0).getKey(), is(expectedClassificationOutputValue));
+    assertThat(resultData.get(0).getValue(), is(4L));
   }
 
   @Test
@@ -274,10 +275,11 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(4L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-    assertThat(result.getData().keySet().stream().findFirst().get(), is(auditValue));
-    assertThat(result.getData().values().stream().findFirst().get(), is(4L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+    assertThat(resultData.get(0).getKey(), is(auditValue));
+    assertThat(resultData.get(0).getValue(), is(4L));
   }
 
   @Test
@@ -311,10 +313,11 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(2L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-    assertThat(result.getData().keySet().stream().findFirst().get(), is(auditValue));
-    assertThat(result.getData().values().stream().findFirst().get(), is(2L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+    assertThat(resultData.get(0).getKey(), is(auditValue));
+    assertThat(resultData.get(0).getValue(), is(2L));
   }
 
   @Test
@@ -358,12 +361,13 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.size(), is(3));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(3));
+    final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
-      new ArrayList<>(resultMap.keySet()),
+      resultKeys,
       // expect ascending order
-      contains(new ArrayList<>(resultMap.keySet()).stream().sorted(Comparator.reverseOrder()).toArray())
+      contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
     );
   }
 
@@ -408,11 +412,11 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.size(), is(3));
-    final List<Long> bucketValues = new ArrayList<>(resultMap.values());
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(3));
+    final List<Long> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(
-      new ArrayList<>(bucketValues),
+      bucketValues,
       contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
     );
   }

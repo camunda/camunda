@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.command.process.flownode.duration
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.process.FlowNodeDurationGroupingCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
@@ -26,8 +27,8 @@ import org.elasticsearch.search.aggregations.metrics.stats.ParsedStats;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLong;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
@@ -138,7 +139,7 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
     final Filter filteredActivities = activities.getAggregations().get(FILTERED_EVENTS_AGGREGATION);
     final Terms activityIdTerms = filteredActivities.getAggregations().get(ACTIVITY_ID_TERMS_AGGREGATION);
 
-    final Map<String, AggregationResultDto> resultMap = new HashMap<>();
+    final List<MapResultEntryDto<AggregationResultDto>> resultData = new ArrayList<>();
     for (Terms.Bucket b : activityIdTerms.getBuckets()) {
       final ParsedStats statsAggregation = b.getAggregations().get(STATS_DURATION_AGGREGATION);
       final ParsedTDigestPercentiles medianAggregation = b.getAggregations().get(MEDIAN_DURATION_AGGREGATION);
@@ -150,10 +151,10 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
         mapToLong(medianAggregation)
       );
 
-      resultMap.put(b.getKeyAsString(), aggregationResultDto);
+      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), aggregationResultDto));
     }
 
-    resultDto.setData(resultMap);
+    resultDto.setData(resultData);
     resultDto.setComplete(activityIdTerms.getSumOfOtherDocCounts() == 0L);
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
     return resultDto;

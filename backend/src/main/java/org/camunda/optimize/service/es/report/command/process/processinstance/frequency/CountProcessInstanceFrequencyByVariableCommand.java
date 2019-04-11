@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
@@ -27,8 +28,8 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabelForType;
@@ -131,9 +132,9 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     final Terms variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
 
-    final Map<String, Long> resultData = new HashMap<>();
+    final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
     for (Terms.Bucket b : variableTerms.getBuckets()) {
-      resultData.put(b.getKeyAsString(), b.getDocCount());
+      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), b.getDocCount()));
     }
 
     resultDto.setData(resultData);

@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.command.process.user_task.duratio
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.process.UserTaskGroupingCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
@@ -27,8 +28,8 @@ import org.elasticsearch.search.aggregations.metrics.stats.ParsedStats;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLong;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
@@ -127,7 +128,7 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms byTaskIdAggregation = filteredUserTasks.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
 
-    final Map<String, AggregationResultDto> resultMap = new HashMap<>();
+    final List<MapResultEntryDto<AggregationResultDto>> resultData = new ArrayList<>();
     for (Terms.Bucket b : byTaskIdAggregation.getBuckets()) {
       ParsedStats statsAggregation = b.getAggregations().get(STATS_DURATION_AGGREGATION);
       ParsedTDigestPercentiles medianAggregation = b.getAggregations().get(MEDIAN_DURATION_AGGREGATION);
@@ -138,10 +139,10 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
         mapToLong(statsAggregation.getAvg()),
         mapToLong(medianAggregation)
       );
-      resultMap.put(b.getKeyAsString(), aggregationResultDto);
+      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), aggregationResultDto));
     }
 
-    resultDto.setData(resultMap);
+    resultDto.setData(resultData);
     resultDto.setComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
 

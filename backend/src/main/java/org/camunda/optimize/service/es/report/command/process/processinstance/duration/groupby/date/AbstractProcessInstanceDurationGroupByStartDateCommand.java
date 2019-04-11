@@ -11,6 +11,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Start
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.StartDateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
@@ -35,6 +37,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -171,39 +174,33 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
     return resultDto;
   }
 
-  private Map<String, AggregationResultDto> processAggregations(Aggregations aggregations) {
+  private List<MapResultEntryDto<AggregationResultDto>> processAggregations(Aggregations aggregations) {
     final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
-    final Map<String, AggregationResultDto> result;
+    List<MapResultEntryDto<AggregationResultDto>> resultData = new ArrayList<>();
     if (unwrappedLimitedAggregations.isPresent()) {
       final Histogram agg = unwrappedLimitedAggregations.get().get(DATE_HISTOGRAM_AGGREGATION);
-      result = new LinkedHashMap<>();
       for (Histogram.Bucket entry : agg.getBuckets()) {
         DateTime key = (DateTime) entry.getKey();
         String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
 
         AggregationResultDto operationResult = processAggregationOperation(entry.getAggregations());
-        result.put(formattedDate, operationResult);
+        resultData.add(new MapResultEntryDto<>(formattedDate, operationResult));
       }
     } else {
-      result = processAutomaticIntervalAggregations(aggregations);
+      resultData = processAutomaticIntervalAggregations(aggregations);
     }
-    return result;
+    return resultData;
   }
 
-  private Map<String, AggregationResultDto> processAutomaticIntervalAggregations(Aggregations aggregations) {
+  private List<MapResultEntryDto<AggregationResultDto>> processAutomaticIntervalAggregations(Aggregations aggregations) {
     return intervalAggregationService.mapIntervalAggregationsToKeyBucketMap(aggregations)
       .entrySet()
       .stream()
-      .collect(
-        Collectors.toMap(
-          Map.Entry::getKey,
-          e -> processAggregationOperation(e.getValue().getAggregations()),
-          (u, v) -> {
-            throw new IllegalStateException(String.format("Duplicate key %s", u));
-          },
-          LinkedHashMap::new
-        )
-      );
+      .map(stringBucketEntry -> new MapResultEntryDto<>(
+        stringBucketEntry.getKey(),
+        processAggregationOperation(stringBucketEntry.getValue().getAggregations())
+      ))
+      .collect(Collectors.toList());
   }
 
 }

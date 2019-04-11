@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.Dec
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -22,7 +23,7 @@ import org.junit.Test;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
-import java.util.Map;
+import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.DecisionFilterUtilHelper.createFixedEvaluationDateFilter;
@@ -217,9 +218,9 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
     // then
     final DecisionReportMapResultDto result = evaluationResult.getResult();
-    final Map<String, Long> resultMap = result.getData();
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(result.getIsComplete(), is(false));
-    assertThat(resultMap.size(), is(1));
+    assertThat(resultData.size(), is(1));
   }
 
   @Test
@@ -266,9 +267,9 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
     // then
     final DecisionReportMapResultDto result = evaluationResult.getResult();
-    final Map<String, Long> resultMap = result.getData();
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(result.getIsComplete(), is(false));
-    assertThat(resultMap.size(), is(1));
+    assertThat(resultData.size(), is(1));
   }
 
   private DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateReportWithNewAuthToken(final DecisionReportDataDto reportData) {

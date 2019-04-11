@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.StartDateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
@@ -34,8 +35,8 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -158,17 +159,16 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
     return resultDto;
   }
 
-  private Map<String, Long> processAggregations(Aggregations aggregations) {
+  private List<MapResultEntryDto<Long>> processAggregations(Aggregations aggregations) {
     final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
-    final Map<String, Long> result;
+    List<MapResultEntryDto<Long>> result = new ArrayList<>();
     if (unwrappedLimitedAggregations.isPresent()) {
       final Histogram agg = unwrappedLimitedAggregations.get().get(DATE_HISTOGRAM_AGGREGATION);
-      result = new LinkedHashMap<>();
       for (Histogram.Bucket entry : agg.getBuckets()) {
         DateTime key = (DateTime) entry.getKey();
         long docCount = entry.getDocCount();
         String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
-        result.put(formattedDate, docCount);
+        result.add(new MapResultEntryDto<>(formattedDate, docCount));
       }
     } else {
       result = processAutomaticIntervalAggregations(aggregations);
@@ -176,21 +176,15 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
     return result;
   }
 
-  private Map<String, Long> processAutomaticIntervalAggregations(Aggregations aggregations) {
+  private List<MapResultEntryDto<Long>> processAutomaticIntervalAggregations(Aggregations aggregations) {
     return intervalAggregationService.mapIntervalAggregationsToKeyBucketMap(
       aggregations)
       .entrySet()
       .stream()
-      .collect(
-        Collectors.toMap(
-          Map.Entry::getKey,
-          e -> e.getValue().getDocCount(),
-          (u, v) -> {
-            throw new IllegalStateException(String.format("Duplicate key %s", u));
-          },
-          LinkedHashMap::new
-        )
-      );
+      .map(stringBucketEntry -> new MapResultEntryDto<>(
+        stringBucketEntry.getKey(), stringBucketEntry.getValue().getDocCount()
+      ))
+      .collect(Collectors.toList());
   }
 
 }

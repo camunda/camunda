@@ -11,6 +11,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.Deci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByEvaluationDateTimeValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
@@ -33,8 +35,8 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -150,24 +152,23 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
 
   private DecisionReportMapResultDto mapToReportResult(final SearchResponse response) {
     final DecisionReportMapResultDto resultDto = new DecisionReportMapResultDto();
-    resultDto.getData(processAggregations(response.getAggregations()));
+    resultDto.setData(processAggregations(response.getAggregations()));
     resultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
     resultDto.setComplete(isResultComplete(response));
     return resultDto;
   }
 
-  private Map<String, Long> processAggregations(Aggregations aggregations) {
+  private List<MapResultEntryDto<Long>> processAggregations(Aggregations aggregations) {
     final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
-    final Map<String, Long> result;
+    List<MapResultEntryDto<Long>> result = new ArrayList<>();
     if (unwrappedLimitedAggregations.isPresent()) {
       final Histogram agg = unwrappedLimitedAggregations.get().get(DATE_HISTOGRAM_AGGREGATION);
 
-      result = new LinkedHashMap<>();
       for (Histogram.Bucket entry : agg.getBuckets()) {
         DateTime key = (DateTime) entry.getKey();
         long docCount = entry.getDocCount();
         String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
-        result.put(formattedDate, docCount);
+        result.add(new MapResultEntryDto<>(formattedDate, docCount));
       }
     } else {
       result = processAutomaticIntervalAggregations(aggregations);
@@ -175,21 +176,15 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     return result;
   }
 
-  private Map<String, Long> processAutomaticIntervalAggregations(Aggregations aggregations) {
+  private List<MapResultEntryDto<Long>> processAutomaticIntervalAggregations(Aggregations aggregations) {
     return intervalAggregationService.mapIntervalAggregationsToKeyBucketMap(
       aggregations)
       .entrySet()
       .stream()
-      .collect(
-        Collectors.toMap(
-          Map.Entry::getKey,
-          e -> e.getValue().getDocCount(),
-          (u, v) -> {
-            throw new IllegalStateException(String.format("Duplicate key %s", u));
-          },
-          LinkedHashMap::new
-        )
-      );
+      .map(stringBucketEntry -> new MapResultEntryDto<>(
+        stringBucketEntry.getKey(), stringBucketEntry.getValue().getDocCount()
+      ))
+      .collect(Collectors.toList());
   }
 
 

@@ -7,15 +7,21 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.result.dur
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.LimitedResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 public class ProcessDurationReportMapResultDto extends ProcessReportResultDto implements LimitedResultDto {
 
-  private Map<String, AggregationResultDto> data = new LinkedHashMap<>();
+  private List<MapResultEntryDto<AggregationResultDto>> data = new ArrayList<>();
   private Boolean isComplete = true;
+
+  public Optional<MapResultEntryDto<AggregationResultDto>> getDataEntryForKey(final String key) {
+    return data.stream().filter(entry -> key.equals(entry.getKey())).findFirst();
+  }
 
   @Override
   public Boolean getIsComplete() {
@@ -26,11 +32,11 @@ public class ProcessDurationReportMapResultDto extends ProcessReportResultDto im
     isComplete = complete;
   }
 
-  public Map<String, AggregationResultDto> getData() {
+  public List<MapResultEntryDto<AggregationResultDto>> getData() {
     return data;
   }
 
-  public void setData(Map<String, AggregationResultDto> data) {
+  public void setData(List<MapResultEntryDto<AggregationResultDto>> data) {
     this.data = data;
   }
 

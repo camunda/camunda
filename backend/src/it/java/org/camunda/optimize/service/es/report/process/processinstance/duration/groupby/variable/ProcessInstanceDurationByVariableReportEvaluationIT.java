@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.dura
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -57,7 +58,6 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE;
-import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -117,10 +117,12 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     assertThat(resultDto.getProcessInstanceCount(), is(1L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
-    Map<String, AggregationResultDto> resultMap = resultDto.getData();
-    AggregationResultDto calculatedResult = resultMap.get("bar");
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult, is(calculateExpectedValueGivenDurations(1000L)));
+
+    final List<MapResultEntryDto<AggregationResultDto>> resultData = resultDto.getData();
+    final MapResultEntryDto<AggregationResultDto> resultEntry = resultData.get(0);
+    assertThat(resultEntry, is(notNullValue()));
+    assertThat(resultEntry.getKey(), is("bar"));
+    assertThat(resultEntry.getValue(), is(calculateExpectedValueGivenDurations(1000L)));
   }
 
   @Test
@@ -165,10 +167,12 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     assertThat(resultDto.getProcessInstanceCount(), is(1L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
-    Map<String, AggregationResultDto> resultMap = resultDto.getData();
-    AggregationResultDto calculatedResult = resultMap.get("bar");
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult, is(calculateExpectedValueGivenDurations(1000L)));
+
+    final List<MapResultEntryDto<AggregationResultDto>> resultData = resultDto.getData();
+    final MapResultEntryDto<AggregationResultDto> resultEntry = resultData.get(0);
+    assertThat(resultEntry, is(notNullValue()));
+    assertThat(resultEntry.getKey(), is("bar"));
+    assertThat(resultEntry.getValue(), is(calculateExpectedValueGivenDurations(1000L)));
   }
 
   @Test
@@ -200,12 +204,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, AggregationResultDto> resultMap = result.getData();
-    assertThat(resultMap.size(), is(3));
+    final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
+    assertThat(resultData.size(), is(3));
+    final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
-      new ArrayList<>(resultMap.keySet()),
+      resultKeys,
       // expect ascending order
-      contains(new ArrayList<>(resultMap.keySet()).stream().sorted(Comparator.reverseOrder()).toArray())
+      contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
     );
   }
 
@@ -244,10 +249,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    Map<String, AggregationResultDto> resultMap = result.getData();
-    assertThat(resultMap.size(), is(3));
-    final List<Long> bucketValues = resultMap.values().stream()
-      .map(bucketResult -> bucketResult.getResultForGivenAggregationType(aggregationType))
+    final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
+    assertThat(resultData.size(), is(3));
+    final List<Long> bucketValues = resultData.stream()
+      .map(entry -> entry.getValue().getResultForGivenAggregationType(aggregationType))
       .collect(Collectors.toList());
     assertThat(
       new ArrayList<>(bucketValues),
@@ -288,10 +293,16 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(ALL_VERSIONS));
 
-    assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = evaluationResponse.getResult().getData();
-    assertThat(resultMap.get("bar"), is(calculateExpectedValueGivenDurations(1000L)));
-    assertThat(resultMap.get("bar2"), is(calculateExpectedValueGivenDurations(1000L)));
+    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(
+      result.getDataEntryForKey("bar").get().getValue(),
+      is(calculateExpectedValueGivenDurations(1000L))
+    );
+    assertThat(
+      result.getDataEntryForKey("bar2").get().getValue(),
+      is(calculateExpectedValueGivenDurations(1000L))
+    );
   }
 
   @Test
@@ -327,10 +338,11 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
 
-    assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = evaluationResponse.getResult().getData();
-    assertThat(resultMap.size(), is(1));
-    assertThat(resultMap.get("bar2"), is(calculateExpectedValueGivenDurations(1000L)));
+    final List<MapResultEntryDto<AggregationResultDto>> resultData = evaluationResponse.getResult().getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+    assertThat(resultData.get(0).getKey(), is("bar2"));
+    assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurations(1000L)));
   }
 
   @Test
@@ -366,12 +378,17 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       resultReportDataDto.getProcessDefinitionVersion(),
       is(String.valueOf(processDefinitionDto.getVersion()))
     );
-    final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete(), is(true));
-    assertThat(resultDto.getData(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = resultDto.getData();
-    assertThat(resultMap.get("bar1"), is(calculateExpectedValueGivenDurations(1000L)));
-    assertThat(resultMap.get("bar2"), is(calculateExpectedValueGivenDurations(1000L, 9000L, 2000L)));
+    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getIsComplete(), is(true));
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(
+      result.getDataEntryForKey("bar1").get().getValue(),
+      is(calculateExpectedValueGivenDurations(1000L))
+    );
+    assertThat(
+      result.getDataEntryForKey("bar2").get().getValue(),
+      is(calculateExpectedValueGivenDurations(1000L, 9000L, 2000L))
+    );
   }
 
   @Test
@@ -436,9 +453,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getData(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = resultDto.getData();
-    assertThat(resultMap.get("bar"), is(calculateExpectedValueGivenDurations(0L)));
+    final List<MapResultEntryDto<AggregationResultDto>> resultData = resultDto.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+    assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurations(0L)));
   }
 
   @Test
@@ -475,10 +493,11 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
 
-    assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = evaluationResponse.getResult().getData();
-    assertThat(resultMap.size(), is(1));
-    assertThat(resultMap.get("1"), is(calculateExpectedValueGivenDurations(1000L)));
+    final List<MapResultEntryDto<AggregationResultDto>> resultData = evaluationResponse.getResult().getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+    assertThat(resultData.get(0).getKey(), is("1"));
+    assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurations(1000L)));
   }
 
   @Test
@@ -515,10 +534,11 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
 
-    assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = evaluationResponse.getResult().getData();
-    assertThat(resultMap.size(), is(1));
-    assertThat(resultMap.get("bar1"), is(calculateExpectedValueGivenDurations(1000L)));
+    final List<MapResultEntryDto<AggregationResultDto>> resultData = evaluationResponse.getResult().getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+    assertThat(resultData.get(0).getKey(), is("bar1"));
+    assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurations(1000L)));
   }
 
   @Test
@@ -558,8 +578,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       // then
       assertThat(resultDto.getData(), is(notNullValue()));
 
-      Map<String, AggregationResultDto> variableValueToCount = resultDto.getData();
-      assertThat(variableValueToCount.size(), is(1));
+      final List<MapResultEntryDto<AggregationResultDto>> resultData = resultDto.getData();
+      assertThat(resultData.size(), is(1));
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
         String dateAsString = embeddedOptimizeRule.getDateTimeFormatter().format(
@@ -567,13 +587,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
           // will get resolved with OPT-1713
           temporal.withOffsetSameLocal(ZoneOffset.UTC)
         );
-        assertThat(variableValueToCount.keySet(), hasItem(dateAsString));
-        assertThat(variableValueToCount.get(dateAsString), is(calculateExpectedValueGivenDurations(1000L)));
+        assertThat(resultData.get(0).getKey(), is(dateAsString));
+        assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurations(1000L)));
       } else {
-        assertThat(
-          variableValueToCount.get(entry.getValue().toString()),
-          is(calculateExpectedValueGivenDurations(1000L))
-        );
+        assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurations(1000L)));
       }
     }
   }
@@ -622,18 +639,19 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getData(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap = resultDto.getData();
-    assertThat(resultMap.size(), is(0));
+    List<MapResultEntryDto<AggregationResultDto>> resultData = resultDto.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(0));
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(null).add().buildList());
     resultDto = evaluateReport(reportData).getResult();
 
     // then
-    resultMap = resultDto.getData();
-    assertThat(resultMap.size(), is(1));
-    assertThat(resultMap.get("bar"), is(calculateExpectedValueGivenDurations(1000L)));
+    resultData = resultDto.getData();
+    assertThat(resultData.size(), is(1));
+    assertThat(resultData.get(0).getKey(), is("bar"));
+    assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurations(1000L)));
   }
 
   @Test

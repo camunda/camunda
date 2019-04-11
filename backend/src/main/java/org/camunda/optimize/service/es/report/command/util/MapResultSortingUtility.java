@@ -5,17 +5,18 @@
  */
 package org.camunda.optimize.service.es.report.command.util;
 
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public class MapResultSortingUtility {
@@ -25,7 +26,7 @@ public class MapResultSortingUtility {
 
   public static void sortResultData(final SortingDto sorting,
                                     final SingleDecisionMapReportResult resultData) {
-    resultData.getResultAsDto().getData(MapResultSortingUtility.sortResultData(
+    resultData.getResultAsDto().setData(sortResultData(
       sorting,
       resultData.getResultAsDto().getData()
     ));
@@ -33,57 +34,63 @@ public class MapResultSortingUtility {
 
   public static void sortResultData(final SortingDto sorting,
                                     final SingleProcessMapReportResult resultData) {
-    resultData.getResultAsDto().setData(MapResultSortingUtility.sortResultData(
+    resultData.getResultAsDto().setData(sortResultData(
       sorting, resultData.getResultAsDto().getData()
     ));
   }
 
   public static void sortResultData(final SortingDto sorting,
                                     final SingleProcessMapDurationReportResult resultData) {
-    resultData.getResultAsDto().setData(MapResultSortingUtility.sortResultData(
+    final List<MapResultEntryDto<AggregationResultDto>> mapResultEntryDtos = sortResultData(
       sorting,
       resultData.getResultAsDto().getData(),
       entry -> entry.getValue().getResultForGivenAggregationType(
         resultData.getReportDefinition().getData().getConfiguration().getAggregationType()
       )
-    ));
+    );
+    resultData.getResultAsDto().setData(mapResultEntryDtos);
   }
 
-
-  private static <K extends Comparable<K>, V extends Comparable<V>> Map<K, V> sortResultData(
-    final SortingDto sorting, final Map<K, V> resultData) {
-    return sortResultData(sorting, resultData, Map.Entry::getValue);
+  private static <V> List<MapResultEntryDto<V>> sortResultData(
+    final SortingDto sorting, final List<MapResultEntryDto<V>> resultData) {
+    return sortResultData(sorting, resultData, MapResultEntryDto::getValue);
   }
 
-  private static <K extends Comparable<K>, V> Map<K, V> sortResultData(
+  private static <V> List<MapResultEntryDto<V>> sortResultData(
     final SortingDto sorting,
-    final Map<K, V> resultData,
-    final Function<Map.Entry<K, V>, ? extends Comparable> valueSupplier) {
+    final List<MapResultEntryDto<V>> resultData,
+    final Function<MapResultEntryDto<V>, ?> valueSupplier) {
 
     final String sortBy = sorting.getBy().orElse(SortingDto.SORT_BY_KEY);
     final SortOrder sortOrder = sorting.getOrder().orElse(SortOrder.DESC);
 
-    Comparator<Map.Entry<K, V>> comparator;
+    Comparator<MapResultEntryDto<V>> comparator;
     switch (sortBy) {
       default:
       case SortingDto.SORT_BY_KEY:
-        comparator = Comparator.comparing(Map.Entry::getKey);
+        comparator = Comparator.comparing(MapResultEntryDto::getKey);
         break;
       case SortingDto.SORT_BY_VALUE:
-        comparator = Comparator.comparing(valueSupplier);
+        comparator = Comparator.comparing(t -> {
+          final Object value = valueSupplier.apply(t);
+          if (value instanceof Comparable) {
+            return ((Comparable) value);
+          } else {
+            throw new OptimizeRuntimeException(
+              "Map Result value does not implement comparable: " + value.getClass().getSimpleName()
+            );
+          }
+        });
         break;
     }
 
     comparator = sortOrder.equals(SortOrder.DESC) ? comparator.reversed() : comparator;
 
     return resultData
-      .entrySet().stream()
+      .stream()
       .sorted(comparator)
-      .collect(toLinkedHashMapCollector());
+      .collect(Collectors.toList());
 
   }
 
-  private static <K, V> Collector<Map.Entry<K, V>, ?, LinkedHashMap<K, V>> toLinkedHashMapCollector() {
-    return Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (x, y) -> y, LinkedHashMap::new);
-  }
 }

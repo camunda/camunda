@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Varia
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
@@ -30,9 +31,8 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabelForType;
@@ -147,11 +147,11 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     final Terms variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
 
-    final Map<String, AggregationResultDto> resultData = new HashMap<>();
+    final List<MapResultEntryDto<AggregationResultDto>> resultData = new ArrayList<>();
     for (Terms.Bucket b : variableTerms.getBuckets()) {
       ReverseNested reverseNested = b.getAggregations().get(REVERSE_NESTED_AGGREGATION);
       AggregationResultDto operationsResult = processAggregationOperation(reverseNested.getAggregations());
-      resultData.put(b.getKeyAsString(), operationsResult);
+      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), operationsResult));
     }
 
     resultDto.setData(resultData);

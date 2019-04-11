@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
@@ -26,12 +27,10 @@ import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
@@ -71,7 +70,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(result.getDecisionInstanceCount(), is(3L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
-    assertThat(result.getData().values().stream().findFirst().get(), is(3L));
+    assertThat(result.getData().get(0).getValue(), is(3L));
   }
 
   @Test
@@ -99,11 +98,11 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
     assertThat(result.getIsComplete(), is(true));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(2));
-    final Iterator<Long> resultValueIterator = result.getData().values().iterator();
-    assertThat(resultValueIterator.next(), is(2L));
-    assertThat(resultValueIterator.next(), is(3L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(2));
+    assertThat(resultData.get(0).getValue(), is(2L));
+    assertThat(resultData.get(1).getValue(), is(3L));
   }
 
   @Test
@@ -144,18 +143,15 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     ).getResult();
 
     // then
-    Map<String, Long> resultMap = result.getData();
     assertThat(result.getIsComplete(), is(true));
-    assertThat(resultMap.size(), is(3));
-    assertThat(
-      new ArrayList<>(resultMap.keySet()),
-      contains(
-        formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS),
-        formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS),
-        formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS)
-      )
-    );
-    assertThat(new ArrayList<>(resultMap.values()), contains(2L, 2L, 3L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(3));
+    assertThat(resultData.get(0).getKey(), is(formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS)));
+    assertThat(resultData.get(0).getValue(), is(2L));
+    assertThat(resultData.get(1).getKey(), is(formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS)));
+    assertThat(resultData.get(1).getValue(), is(2L));
+    assertThat(resultData.get(2).getKey(), is(formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS)));
+    assertThat(resultData.get(2).getValue(), is(3L));
   }
 
   @Test
@@ -202,16 +198,12 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // then
     final DecisionReportMapResultDto result = evaluationResult.getResult();
     assertThat(result.getIsComplete(), is(true));
-    final Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.size(), is(3));
-    assertThat(
-      new ArrayList<>(resultMap.keySet()),
-      contains(
-        formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS),
-        formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS),
-        formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS)
-      )
-    );
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(3));
+    assertThat(resultData.get(0).getKey(), is(formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS)));
+    assertThat(resultData.get(1).getKey(), is(formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS)));
+    assertThat(resultData.get(2).getKey(), is(formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS)));
+
   }
 
   @Test
@@ -258,11 +250,11 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // then
     final DecisionReportMapResultDto result = evaluationResult.getResult();
     assertThat(result.getIsComplete(), is(true));
-    final Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.size(), is(3));
-    final List<Long> bucketValues = new ArrayList<>(resultMap.values());
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(3));
+    final List<Long> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(
-      new ArrayList<>(bucketValues),
+      bucketValues,
       contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
     );
   }
@@ -310,9 +302,9 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     final DecisionReportMapResultDto result = evaluationResult.getResult();
-    final Map<String, Long> resultMap = result.getData();
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(result.getIsComplete(), is(false));
-    assertThat(resultMap.size(), is(2));
+    assertThat(resultData.size(), is(2));
   }
 
   @Test
@@ -351,17 +343,14 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     ).getResult();
 
     // then
-    Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.size(), is(3));
-    assertThat(
-      new ArrayList<>(resultMap.keySet()),
-      contains(
-        formatToHistogramBucketKey(lastEvaluationDateFilter, chronoUnit),
-        formatToHistogramBucketKey(secondBucketEvaluationDate, chronoUnit),
-        formatToHistogramBucketKey(thirdBucketEvaluationDate, chronoUnit)
-      )
-    );
-    assertThat(new ArrayList<>(resultMap.values()), contains(2L, 0L, 3L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(3));
+    assertThat(resultData.get(0).getKey(), is(formatToHistogramBucketKey(lastEvaluationDateFilter, chronoUnit)));
+    assertThat(resultData.get(0).getValue(), is(2L));
+    assertThat(resultData.get(1).getKey(), is(formatToHistogramBucketKey(secondBucketEvaluationDate, chronoUnit)));
+    assertThat(resultData.get(1).getValue(), is(0L));
+    assertThat(resultData.get(2).getKey(), is(formatToHistogramBucketKey(thirdBucketEvaluationDate, chronoUnit)));
+    assertThat(resultData.get(2).getValue(), is(3L));
   }
 
   @Test
@@ -395,12 +384,11 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     ).getResult();
 
     // then
-    Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-    ArrayList<Long> resultValues = new ArrayList<>(resultMap.values());
-    assertThat(resultValues.get(0), is(2L));
-    assertThat(resultValues.stream().mapToInt(Long::intValue).sum(), is(5));
-    assertThat(resultValues.get(resultMap.size() - 1), is(3L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
+    assertThat(resultData.get(0).getValue(), is(2L));
+    assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Long::intValue).sum(), is(5));
+    assertThat(resultData.get(resultData.size() - 1).getValue(), is(3L));
   }
 
   @Test
@@ -424,9 +412,10 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-    assertThat(result.getData().values().stream().findFirst().get(), is(5L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+    assertThat(resultData.get(0).getValue(), is(5L));
   }
 
   @Test
@@ -453,9 +442,10 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-    assertThat(result.getData().values().stream().findFirst().get(), is(5L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+    assertThat(resultData.get(0).getValue(), is(5L));
   }
 
   @Test
@@ -494,9 +484,10 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // then
     final DecisionReportMapResultDto result = evaluationResult.getResult();
     assertThat(result.getDecisionInstanceCount(), is(2L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-    assertThat(result.getData().values().stream().findFirst().get(), is(2L));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+    assertThat(resultData.get(0).getValue(), is(2L));
   }
 
   @Test

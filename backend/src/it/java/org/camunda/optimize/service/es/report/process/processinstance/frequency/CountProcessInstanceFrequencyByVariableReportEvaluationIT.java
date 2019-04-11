@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Varia
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -35,7 +36,6 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -99,8 +99,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
-    Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.get("bar"), is(1L));
+    assertThat(result.getDataEntryForKey("bar").get().getValue(), is(1L));
   }
 
   @Test
@@ -137,8 +136,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
-    Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.get("bar"), is(1L));
+    assertThat(result.getDataEntryForKey("bar").get().getValue(), is(1L));
   }
 
   @Test
@@ -168,10 +166,9 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
     final ProcessReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
-    Map<String, Long> variableValueToCount = result.getData();
-    assertThat(variableValueToCount.size(), is(2));
-    assertThat(variableValueToCount.get("bar"), is(1L));
-    assertThat(variableValueToCount.get("bar2"), is(1L));
+    assertThat(result.getData().size(), is(2));
+    assertThat(result.getDataEntryForKey("bar").get().getValue(), is(1L));
+    assertThat(result.getDataEntryForKey("bar2").get().getValue(), is(1L));
   }
 
   @Test
@@ -201,9 +198,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
     final ProcessReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
-    Map<String, Long> variableValueToCount = result.getData();
-    assertThat(variableValueToCount.size(), is(1));
-    assertThat(variableValueToCount.get("bar"), is(1L));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getDataEntryForKey("bar").get().getValue(), is(1L));
   }
 
   @Test
@@ -235,10 +231,9 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     final ProcessReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getIsComplete(), is(true));
     assertThat(resultDto.getData(), is(notNullValue()));
-    Map<String, Long> variableValueToCount = resultDto.getData();
-    assertThat(variableValueToCount.size(), is(2));
-    assertThat(variableValueToCount.get("bar1"), is(1L));
-    assertThat(variableValueToCount.get("bar2"), is(2L));
+    assertThat(resultDto.getData().size(), is(2));
+    assertThat(resultDto.getDataEntryForKey("bar1").get().getValue(), is(1L));
+    assertThat(resultDto.getDataEntryForKey("bar2").get().getValue(), is(2L));
   }
 
   @Test
@@ -305,12 +300,13 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.size(), is(3));
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(3));
+    final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
-      new ArrayList<>(resultMap.keySet()),
+      resultKeys,
       // expect ascending order
-      contains(new ArrayList<>(resultMap.keySet()).stream().sorted(Comparator.reverseOrder()).toArray())
+      contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
     );
   }
 
@@ -342,11 +338,11 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    final Map<String, Long> resultMap = result.getData();
-    assertThat(resultMap.size(), is(3));
-    final List<Long> bucketValues = new ArrayList<>(resultMap.values());
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData.size(), is(3));
+    final List<Long> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(
-      new ArrayList<>(bucketValues),
+      bucketValues,
       contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
     );
   }
@@ -378,9 +374,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
     final ProcessReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
-    Map<String, Long> variableValueToCount = result.getData();
-    assertThat(variableValueToCount.size(), is(1));
-    assertThat(variableValueToCount.get("1"), is(1L));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getDataEntryForKey("1").get().getValue(), is(1L));
   }
 
   @Test
@@ -410,9 +405,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
     final ProcessReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
-    Map<String, Long> variableValueToCount = result.getData();
-    assertThat(variableValueToCount.size(), is(1));
-    assertThat(variableValueToCount.get("bar1"), is(2L));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getDataEntryForKey("bar1").get().getValue(), is(2L));
   }
 
   @Test
@@ -444,8 +438,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
       // then
       assertThat(result.getData(), is(notNullValue()));
-      Map<String, Long> variableValueToCount = result.getData();
-      assertThat(variableValueToCount.size(), is(1));
+      List<MapResultEntryDto<Long>> resultData = result.getData();
+      assertThat(resultData.size(), is(1));
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
         String dateAsString = embeddedOptimizeRule.getDateTimeFormatter().format(
@@ -453,9 +447,11 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
           // will get resolved with OPT-1713
           temporal.withOffsetSameLocal(ZoneOffset.UTC)
         );
-        assertThat(variableValueToCount.get(dateAsString), is(1L));
+        assertThat(resultData.get(0).getKey(), is(dateAsString));
+        assertThat(resultData.get(0).getValue(), is(1L));
       } else {
-        assertThat(variableValueToCount.get(entry.getValue().toString()), is(1L));
+        assertThat(resultData.get(0).getKey(), is(entry.getValue().toString()));
+        assertThat(resultData.get(0).getValue(), is(1L));
       }
     }
   }
@@ -499,8 +495,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
     // then
     assertThat(result.getData(), is(notNullValue()));
-    Map<String, Long> variableValueToCount = result.getData();
-    assertThat(variableValueToCount.size(), is(0));
+    assertThat(result.getData().size(), is(0));
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
@@ -508,9 +503,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
     // then
     assertThat(result.getData(), is(notNullValue()));
-    variableValueToCount = result.getData();
-    assertThat(variableValueToCount.size(), is(1));
-    assertThat(variableValueToCount.get("bar"), is(1L));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getDataEntryForKey("bar").get().getValue(), is(1L));
   }
 
   @Test

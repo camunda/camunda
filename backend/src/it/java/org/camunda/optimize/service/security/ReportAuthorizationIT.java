@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedReportEvaluationResultDto;
@@ -251,7 +252,7 @@ public class ReportAuthorizationIT {
     Map<String, ProcessReportEvaluationResultDto<ProcessReportMapResultDto>> resultMap = result.getData();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.containsKey(notAuthorizedReportId), is(false));
-    Map<String, Long> flowNodeToCount = resultMap.get(authorizedReportId).getResult().getData();
+    List<MapResultEntryDto<Long>> flowNodeToCount = resultMap.get(authorizedReportId).getResult().getData();
     assertThat(flowNodeToCount.size(), is(2));
   }
 

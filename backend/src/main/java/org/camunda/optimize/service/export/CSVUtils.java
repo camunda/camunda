@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -132,11 +133,11 @@ public class CSVUtils {
     return result;
   }
 
-  public static List<String[]> map(Map<String, Long> valuesMap, Integer limit, Integer offset) {
+  public static List<String[]> map(List<MapResultEntryDto<Long>> values, Integer limit, Integer offset) {
     List<String[]> result = new ArrayList<>();
 
     int currentPosition = 0;
-    for (Map.Entry<String, Long> value : valuesMap.entrySet()) {
+    for (MapResultEntryDto<Long> value : values) {
       boolean limitNotExceeded = isLimitNotExceeded(limit, result);
       boolean offsetPassed = isOffsetPassed(offset, currentPosition);
       if ((offset == null && limitNotExceeded) || (offsetPassed && limitNotExceeded)) {
@@ -150,12 +151,13 @@ public class CSVUtils {
     return result;
   }
 
-  public static List<String[]> mapOperationValues(Map<String, AggregationResultDto> valuesMap, Integer limit,
+  public static List<String[]> mapOperationValues(List<MapResultEntryDto<AggregationResultDto>> values,
+                                                  Integer limit,
                                                   Integer offset) {
     List<String[]> result = new ArrayList<>();
 
     int currentPosition = 0;
-    for (Map.Entry<String, AggregationResultDto> value : valuesMap.entrySet()) {
+    for (MapResultEntryDto<AggregationResultDto> value : values) {
       boolean limitNotExceeded = isLimitNotExceeded(limit, result);
       boolean offsetPassed = isOffsetPassed(offset, currentPosition);
       if ((offset == null && limitNotExceeded) || (offsetPassed && limitNotExceeded)) {

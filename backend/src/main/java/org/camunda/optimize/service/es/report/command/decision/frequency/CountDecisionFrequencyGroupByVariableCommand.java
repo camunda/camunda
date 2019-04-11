@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
@@ -25,8 +26,8 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableIdField;
@@ -129,12 +130,12 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     final Terms variableTerms = filteredVariables.getAggregations().get(VARIABLE_VALUE_TERMS_AGGREGATION);
 
-    final Map<String, Long> resultData = new LinkedHashMap<>();
+    final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
     for (Terms.Bucket b : variableTerms.getBuckets()) {
-      resultData.put(b.getKeyAsString(), b.getDocCount());
+      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), b.getDocCount()));
     }
 
-    resultDto.getData(resultData);
+    resultDto.setData(resultData);
     resultDto.setComplete(variableTerms.getSumOfOtherDocCounts() == 0L);
     resultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
 

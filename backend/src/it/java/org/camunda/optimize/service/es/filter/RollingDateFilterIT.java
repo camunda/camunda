@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -25,7 +26,7 @@ import org.junit.Test;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
-import java.util.Map;
+import java.util.List;
 
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
 import static org.hamcrest.CoreMatchers.is;
@@ -153,8 +154,8 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     final ProcessDurationReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
 
     // then
-    Map<String, AggregationResultDto> resultMap = result.getData();
-    MatcherAssert.assertThat(resultMap.size(), is(1));
+    List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
+    MatcherAssert.assertThat(resultData.size(), is(1));
     MatcherAssert.assertThat(result.getIsComplete(), is(false));
   }
 
@@ -204,8 +205,8 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     final ProcessDurationReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
 
     // then
-    Map<String, AggregationResultDto> resultMap = result.getData();
-    MatcherAssert.assertThat(resultMap.size(), is(1));
+    List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
+    MatcherAssert.assertThat(resultData.size(), is(1));
     MatcherAssert.assertThat(result.getIsComplete(), is(false));
   }
 

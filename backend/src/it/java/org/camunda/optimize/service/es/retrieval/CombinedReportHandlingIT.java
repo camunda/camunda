@@ -23,6 +23,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.EvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
@@ -253,9 +254,9 @@ public class CombinedReportHandlingIT {
     assertThat(result.getReportDefinition().getId(), is(reportId));
     Map<String, ProcessReportEvaluationResultDto<ProcessReportMapResultDto>> resultMap = result.getResult().getData();
     assertThat(resultMap.size(), is(2));
-    Map<String, Long> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
+    List<MapResultEntryDto<Long>> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
     assertThat(flowNodeToCount.size(), is(3));
-    Map<String, Long> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getData();
+    List<MapResultEntryDto<Long>> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getData();
     assertThat(flowNodeToCount2.size(), is(3));
   }
 
@@ -278,9 +279,9 @@ public class CombinedReportHandlingIT {
     Map<String, ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(2));
-    Map<String, AggregationResultDto> userTaskCount1 = resultMap.get(totalDurationReportId).getResult().getData();
+    List<MapResultEntryDto<AggregationResultDto>> userTaskCount1 = resultMap.get(totalDurationReportId).getResult().getData();
     assertThat(userTaskCount1.size(), is(1));
-    Map<String, AggregationResultDto> userTaskCount2 = resultMap.get(idleDurationReportId).getResult().getData();
+    List<MapResultEntryDto<AggregationResultDto>> userTaskCount2 = resultMap.get(idleDurationReportId).getResult().getData();
     assertThat(userTaskCount2.size(), is(1));
   }
 
@@ -303,9 +304,9 @@ public class CombinedReportHandlingIT {
     Map<String, ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(2));
-    Map<String, AggregationResultDto> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId).getResult().getData();
+    List<MapResultEntryDto<AggregationResultDto>> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId).getResult().getData();
     assertThat(userTaskCount1.size(), is(1));
-    Map<String, AggregationResultDto> userTaskCount2 = resultMap.get(flowNodeDurationReportId).getResult().getData();
+    List<MapResultEntryDto<AggregationResultDto>> userTaskCount2 = resultMap.get(flowNodeDurationReportId).getResult().getData();
     assertThat(userTaskCount2.size(), is(3));
   }
 
@@ -487,9 +488,9 @@ public class CombinedReportHandlingIT {
     Map<String, ProcessReportEvaluationResultDto<ProcessReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(2));
-    Map<String, Long> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
+    List<MapResultEntryDto<Long>> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
     assertThat(flowNodeToCount.size(), is(3));
-    Map<String, Long> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getData();
+    List<MapResultEntryDto<Long>> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getData();
     assertThat(flowNodeToCount2.size(), is(3));
   }
 
