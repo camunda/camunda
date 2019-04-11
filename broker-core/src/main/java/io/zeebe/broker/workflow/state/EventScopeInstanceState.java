@@ -139,11 +139,11 @@ public class EventScopeInstanceState {
    * @param eventScopeKey the key of the event scope the event is triggered in
    * @param eventKey the key of the event record (used for ordering)
    * @param elementId the id of the element which should be triggered, e.g. boundary event
-   * @param payload the payload of the occurred event, i.e. message payload
+   * @param variables the variables of the occurred event, i.e. message variables
    * @return true if the event was accepted by the event scope, false otherwise
    */
   public boolean triggerEvent(
-      long eventScopeKey, long eventKey, DirectBuffer elementId, DirectBuffer payload) {
+      long eventScopeKey, long eventKey, DirectBuffer elementId, DirectBuffer variables) {
     this.eventScopeKey.wrapLong(eventScopeKey);
     final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(this.eventScopeKey);
 
@@ -153,7 +153,7 @@ public class EventScopeInstanceState {
         eventScopeInstanceColumnFamily.put(this.eventScopeKey, instance);
       }
 
-      createTrigger(eventScopeKey, eventKey, elementId, payload);
+      createTrigger(eventScopeKey, eventKey, elementId, variables);
 
       return true;
     } else {
@@ -162,11 +162,11 @@ public class EventScopeInstanceState {
   }
 
   private void createTrigger(
-      long eventScopeKey, long eventKey, DirectBuffer elementId, DirectBuffer payload) {
+      long eventScopeKey, long eventKey, DirectBuffer elementId, DirectBuffer variables) {
     eventTriggerScopeKey.wrapLong(eventScopeKey);
     eventTriggerEventKey.wrapLong(eventKey);
 
-    eventTrigger.setElementId(elementId).setPayload(payload).setEventKey(eventKey);
+    eventTrigger.setElementId(elementId).setVariables(variables).setEventKey(eventKey);
 
     eventTriggerColumnFamily.put(eventTriggerKey, eventTrigger);
   }

@@ -34,7 +34,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 public class BrokerLeaderChangeTest {
-  public static final String NULL_PAYLOAD = null;
+  public static final String NULL_VARIABLES = null;
   public static final String JOB_TYPE = "testTask";
 
   public Timeout testTimeout = Timeout.seconds(60);
@@ -101,7 +101,7 @@ public class BrokerLeaderChangeTest {
               .handler(
                   (client, job) -> {
                     if (job.getKey() == jobKey) {
-                      client.newCompleteCommand(job.getKey()).variables(NULL_PAYLOAD).send();
+                      client.newCompleteCommand(job.getKey()).variables(NULL_VARIABLES).send();
                       latch.countDown();
                     }
                   })

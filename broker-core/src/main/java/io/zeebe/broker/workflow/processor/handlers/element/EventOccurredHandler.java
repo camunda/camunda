@@ -111,12 +111,13 @@ public class EventOccurredHandler<T extends ExecutableFlowElement> extends Abstr
   }
 
   /**
-   * Applies the event payload to the given variable scope, and removes the event from the state
+   * Applies the event variables to the given variable scope, and removes the event from the state
    * ensuring it cannot be reprocessed.
    *
    * @param context the current BPMN context
    * @param eventScopeKey the event scope key from which the event trigger was initially read
-   * @param variableScopeKey the variable scope key on which the event trigger payload will be set
+   * @param variableScopeKey the variable scope key on which the variables of the event trigger will
+   *     be set
    * @param event the event trigger to handle
    */
   protected void processEventTrigger(
@@ -124,7 +125,7 @@ public class EventOccurredHandler<T extends ExecutableFlowElement> extends Abstr
     context
         .getElementInstanceState()
         .getVariablesState()
-        .setPayload(variableScopeKey, event.getPayload());
+        .setTemporaryVariables(variableScopeKey, event.getVariables());
 
     context
         .getStateDb()

@@ -31,11 +31,13 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class EventTrigger extends UnpackedObject implements DbValue {
 
   private final StringProperty elementIdProp = new StringProperty("elementId");
-  private final BinaryProperty payloadProp = new BinaryProperty("payload");
+  private final BinaryProperty variablesProp = new BinaryProperty("variables");
   private final LongProperty eventKeyProp = new LongProperty("eventKey");
 
   public EventTrigger() {
-    this.declareProperty(elementIdProp).declareProperty(payloadProp).declareProperty(eventKeyProp);
+    this.declareProperty(elementIdProp)
+        .declareProperty(variablesProp)
+        .declareProperty(eventKeyProp);
   }
 
   // Copies over the previous event
@@ -57,12 +59,12 @@ public class EventTrigger extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public DirectBuffer getPayload() {
-    return payloadProp.getValue();
+  public DirectBuffer getVariables() {
+    return variablesProp.getValue();
   }
 
-  public EventTrigger setPayload(DirectBuffer payload) {
-    this.payloadProp.setValue(payload);
+  public EventTrigger setVariables(DirectBuffer variables) {
+    this.variablesProp.setValue(variables);
     return this;
   }
 
@@ -85,11 +87,11 @@ public class EventTrigger extends UnpackedObject implements DbValue {
     }
     final EventTrigger that = (EventTrigger) o;
     return BufferUtil.equals(getElementId(), that.getElementId())
-        && BufferUtil.equals(getPayload(), that.getPayload());
+        && BufferUtil.equals(getVariables(), that.getVariables());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(getElementId(), getPayload());
+    return Objects.hash(getElementId(), getVariables());
   }
 }

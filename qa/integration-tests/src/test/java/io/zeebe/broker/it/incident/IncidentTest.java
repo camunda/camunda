@@ -52,7 +52,7 @@ public class IncidentTest {
           .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("foo", "foo"))
           .done();
 
-  private static final String PAYLOAD = "{\"foo\": \"bar\"}";
+  private static final String VARIABLES = "{\"foo\": \"bar\"}";
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
@@ -95,7 +95,7 @@ public class IncidentTest {
     clientRule
         .getClient()
         .newSetVariablesCommand(workflowInstanceEvent.getWorkflowInstanceKey())
-        .variables(PAYLOAD)
+        .variables(VARIABLES)
         .send()
         .join();
     clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send();
@@ -126,7 +126,7 @@ public class IncidentTest {
     clientRule
         .getClient()
         .newSetVariablesCommand(workflowInstanceEvent.getWorkflowInstanceKey())
-        .variables(PAYLOAD)
+        .variables(VARIABLES)
         .send()
         .join();
     clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send();
@@ -180,7 +180,7 @@ public class IncidentTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
-        .variables(PAYLOAD)
+        .variables(VARIABLES)
         .send()
         .join();
 
@@ -226,7 +226,7 @@ public class IncidentTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
-        .variables(PAYLOAD)
+        .variables(VARIABLES)
         .send()
         .join();
 
@@ -260,7 +260,7 @@ public class IncidentTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
-        .variables(PAYLOAD)
+        .variables(VARIABLES)
         .send()
         .join();
 

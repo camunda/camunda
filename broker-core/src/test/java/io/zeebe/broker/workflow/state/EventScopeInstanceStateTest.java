@@ -285,15 +285,17 @@ public class EventScopeInstanceStateTest {
 
   private boolean triggerEvent(long eventScopeKey, long eventKey, EventTrigger eventTrigger) {
     return state.triggerEvent(
-        eventScopeKey, eventKey, eventTrigger.getElementId(), eventTrigger.getPayload());
+        eventScopeKey, eventKey, eventTrigger.getElementId(), eventTrigger.getVariables());
   }
 
   private EventTrigger createEventTrigger() {
     return createEventTrigger(randomString(), randomString());
   }
 
-  private EventTrigger createEventTrigger(String elementId, String payload) {
-    return new EventTrigger().setElementId(wrapString(elementId)).setPayload(wrapString(payload));
+  private EventTrigger createEventTrigger(String elementId, String variables) {
+    return new EventTrigger()
+        .setElementId(wrapString(elementId))
+        .setVariables(wrapString(variables));
   }
 
   private String randomString() {
