@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useMemo} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 
 import PropTypes from 'prop-types';
 import IncidentsBar from './IncidentsBar';
@@ -19,7 +19,9 @@ function IncidentsWrapper(props) {
     incidents,
     incidentsCount,
     instance,
-    selectedIncidents,
+    errorTypes,
+    flowNodes,
+    selectedFlowNodeInstanceIds,
     onIncidentOperation,
     onIncidentSelection
   } = props;
@@ -32,32 +34,49 @@ function IncidentsWrapper(props) {
   const [selectedFlowNodes, setSelectedFlowNodes] = useState([]);
   const [selectedErrorTypes, setSelectedErrorTypes] = useState([]);
 
+  useEffect(
+    () => {
+      setSelectedFlowNodes(
+        updateSelectedFilters(selectedFlowNodes, flowNodes, 'flowNodeId')
+      );
+    },
+    [flowNodes.length]
+  );
+
+  useEffect(
+    () => {
+      setSelectedErrorTypes(
+        updateSelectedFilters(selectedErrorTypes, errorTypes, 'errorType')
+      );
+    },
+    [errorTypes.length]
+  );
+
+  function updateSelectedFilters(currentState, props, type) {
+    return currentState.reduce(
+      (updatedState, element) =>
+        props.find(newElement => newElement[type] === element)
+          ? [...updatedState, element]
+          : updatedState,
+      []
+    );
+  }
+
   function handleToggle() {
     setIsOpen(!isOpen);
   }
 
-  function handleFlowNodeSelect(id) {
-    let index = selectedFlowNodes.findIndex(item => item === id);
-    let list = [...selectedFlowNodes];
-    if (index === -1) {
-      list.push(id);
-    } else {
-      list.splice(index, 1);
-    }
-
-    setSelectedFlowNodes(list);
-  }
-
-  function handleErrorTypeSelect(id) {
-    let index = selectedErrorTypes.findIndex(item => item === id);
-    let list = [...selectedErrorTypes];
-    if (index === -1) {
-      list.push(id);
-    } else {
-      list.splice(index, 1);
-    }
-
-    setSelectedErrorTypes(list);
+  function handleSelection(selectedFilters, updateFilterState) {
+    return id => {
+      let index = selectedFilters.findIndex(item => item === id);
+      let list = [...selectedFilters];
+      if (index === -1) {
+        list.push(id);
+      } else {
+        list.splice(index, 1);
+      }
+      updateFilterState(list);
+    };
   }
 
   function handleSort(key) {
@@ -69,7 +88,7 @@ function IncidentsWrapper(props) {
     setSorting({sortOrder: newSortOrder, sortBy: key});
   }
 
-  function handleClearAll() {
+  function clearAll() {
     setSelectedErrorTypes([]);
     setSelectedFlowNodes([]);
   }
@@ -81,17 +100,14 @@ function IncidentsWrapper(props) {
   ]);
 
   function filterIncidents() {
-    if (
-      !Boolean(selectedFlowNodes.length) &&
-      !Boolean(selectedErrorTypes.length)
-    ) {
+    const hasSelectedFlowNodes = Boolean(selectedFlowNodes.length);
+    const hasSelectedErrorTypes = Boolean(selectedErrorTypes.length);
+
+    if (!hasSelectedFlowNodes && !hasSelectedErrorTypes) {
       return incidents;
     }
 
     return incidents.filter(item => {
-      const hasSelectedFlowNodes = Boolean(selectedFlowNodes.length);
-      const hasSelectedErrorTypes = Boolean(selectedErrorTypes.length);
-
       if (!hasSelectedFlowNodes) {
         return selectedErrorTypes.includes(item.errorType);
       }
@@ -128,15 +144,21 @@ function IncidentsWrapper(props) {
             selectedFlowNodes={selectedFlowNodes}
             errorTypes={props.errorTypes}
             selectedErrorTypes={selectedErrorTypes}
-            onFlowNodeSelect={handleFlowNodeSelect}
-            onErrorTypeSelect={handleErrorTypeSelect}
-            onClearAll={handleClearAll}
+            onFlowNodeSelect={handleSelection(
+              selectedFlowNodes,
+              setSelectedFlowNodes
+            )}
+            onErrorTypeSelect={handleSelection(
+              selectedErrorTypes,
+              setSelectedErrorTypes
+            )}
+            onClearAll={clearAll}
           />
           <IncidentsTable
             incidents={sortedIncidents}
             instanceId={instance.id}
             forceSpinner={props.forceSpinner}
-            selectedIncidents={selectedIncidents}
+            selectedFlowNodeInstanceIds={selectedFlowNodeInstanceIds}
             sorting={sorting}
             onIncidentOperation={onIncidentOperation}
             onIncidentSelection={onIncidentSelection}
@@ -154,7 +176,7 @@ IncidentsWrapper.propTypes = {
   instance: PropTypes.object.isRequired,
   onIncidentOperation: PropTypes.func.isRequired,
   forceSpinner: PropTypes.bool,
-  selectedIncidents: PropTypes.array,
+  selectedFlowNodeInstanceIds: PropTypes.array,
   onIncidentSelection: PropTypes.func.isRequired,
   flowNodes: PropTypes.array,
   errorTypes: PropTypes.array
