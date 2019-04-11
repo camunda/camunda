@@ -20,8 +20,8 @@ package io.zeebe.broker.clustering.base;
 import io.atomix.core.Atomix;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.partitions.PartitionLeaderElection;
-import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
+import io.zeebe.distributedlog.StorageConfigurationManager;
 import io.zeebe.gateway.Gateway;
 import io.zeebe.servicecontainer.ServiceName;
 
@@ -49,9 +49,9 @@ public class ClusterBaseLayerServiceNames {
 
   public static final ServiceName<Void> PARTITIONS_BOOTSTRAP_SERVICE =
       ServiceName.newServiceName("cluster.base.partitions.bootstrap", Void.class);
-  public static final ServiceName<RaftPersistentConfigurationManager> RAFT_CONFIGURATION_MANAGER =
+  public static final ServiceName<StorageConfigurationManager> RAFT_CONFIGURATION_MANAGER =
       ServiceName.newServiceName(
-          "cluster.base.raft.configurationManager", RaftPersistentConfigurationManager.class);
+          "cluster.base.raft.configurationManager", StorageConfigurationManager.class);
 
   public static final ServiceName<Void> RAFT_SERVICE_GROUP =
       ServiceName.newServiceName("cluster.base.raft.service", Void.class);

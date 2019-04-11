@@ -25,10 +25,10 @@ import io.atomix.core.Atomix;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup;
-import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
-import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.distributedlog.StorageConfiguration;
+import io.zeebe.distributedlog.StorageConfigurationManager;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceName;
@@ -42,11 +42,11 @@ import java.util.stream.Collectors;
  * starts the corresponding services (logstream, partition ...)
  */
 public class BootstrapPartitions implements Service<Void> {
-  private final Injector<RaftPersistentConfigurationManager> configurationManagerInjector =
+  private final Injector<StorageConfigurationManager> configurationManagerInjector =
       new Injector<>();
   private final BrokerCfg brokerCfg;
 
-  private RaftPersistentConfigurationManager configurationManager;
+  private StorageConfigurationManager configurationManager;
   private ServiceStartContext startContext;
 
   private final Injector<Atomix> atomixInjector = new Injector<>();
@@ -74,10 +74,10 @@ public class BootstrapPartitions implements Service<Void> {
     this.startContext = startContext;
     startContext.run(
         () -> {
-          final List<RaftPersistentConfiguration> configurations =
+          final List<StorageConfiguration> configurations =
               configurationManager.getConfigurations().join();
 
-          for (final RaftPersistentConfiguration configuration : configurations) {
+          for (final StorageConfiguration configuration : configurations) {
             installPartition(startContext, configuration);
             owningPartitions.removeIf(
                 partition -> partition.id().id() == configuration.getPartitionId());
@@ -90,17 +90,14 @@ public class BootstrapPartitions implements Service<Void> {
   }
 
   private void installPartition(final PartitionId partitionId, final List<Integer> members) {
-    final RaftPersistentConfiguration configuration =
-        configurationManager
-            .createConfiguration(
-                partitionId.id(), brokerCfg.getCluster().getReplicationFactor(), members)
-            .join();
+    final StorageConfiguration configuration =
+        configurationManager.createConfiguration(partitionId.id()).join();
 
     installPartition(startContext, configuration);
   }
 
   private void installPartition(
-      final ServiceStartContext startContext, final RaftPersistentConfiguration configuration) {
+      final ServiceStartContext startContext, final StorageConfiguration configuration) {
     final String partitionName = getPartitionName(configuration.getPartitionId());
     final ServiceName<Void> partitionInstallServiceName =
         partitionInstallServiceName(partitionName);
@@ -116,7 +113,7 @@ public class BootstrapPartitions implements Service<Void> {
     return null;
   }
 
-  public Injector<RaftPersistentConfigurationManager> getConfigurationManagerInjector() {
+  public Injector<StorageConfigurationManager> getConfigurationManagerInjector() {
     return configurationManagerInjector;
   }
 

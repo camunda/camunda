@@ -35,10 +35,12 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +72,7 @@ public class DistributedLogRule extends ExternalResource {
 
   public static final ServiceName<Atomix> ATOMIX_SERVICE_NAME =
       ServiceName.newServiceName("cluster.base.atomix", Atomix.class);
+  private final ActorFuture<Void> configFuture;
 
   public DistributedLogRule(
       ServiceContainerRule serviceContainerRule,
@@ -91,8 +94,15 @@ public class DistributedLogRule extends ExternalResource {
     } catch (Exception e) {
     }
     final String memberId = String.valueOf(nodeId);
-    LogstreamConfig.putLogDirectory(memberId, rootDirectory.toAbsolutePath().toString());
+
+    final StorageConfigurationManager config =
+        new StorageConfigurationManager(
+            Collections.singletonList(rootDirectory.toAbsolutePath().toString()), "512M");
+
+    LogstreamConfig.putConfig(memberId, config);
     LogstreamConfig.putServiceContainer(memberId, serviceContainer);
+
+    configFuture = actorScheduler.submitActor(config);
   }
 
   public Node getNode() {
@@ -165,6 +175,7 @@ public class DistributedLogRule extends ExternalResource {
 
   private CompletableFuture<Void> createAtomixNode() throws IOException {
 
+    configFuture.join();
     final AtomixBuilder atomixBuilder =
         Atomix.builder()
             .withClusterId("dl-test")

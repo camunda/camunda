@@ -166,13 +166,12 @@ public class Topology {
     }
   }
 
-  public PartitionInfo updatePartition(
-      int partitionId, int replicationFactor, NodeInfo member, RaftState state) {
+  public PartitionInfo updatePartition(int partitionId, NodeInfo member, RaftState state) {
     List<NodeInfo> followers = partitionFollowers.get(partitionId);
 
     PartitionInfo partition = partitions.get(partitionId);
     if (partition == null) {
-      partition = new PartitionInfo(partitionId, replicationFactor);
+      partition = new PartitionInfo(partitionId);
       partitions.put(partitionId, partition);
     }
 
