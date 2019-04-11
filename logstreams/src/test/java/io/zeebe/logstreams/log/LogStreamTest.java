@@ -244,6 +244,7 @@ public class LogStreamTest {
   }
 
   @Test
+  @Ignore // events are appended only after committed. So cannot truncate.
   public void shouldTruncateLogStorage() {
     // given
     final LogStream logStream = buildLogStream();
