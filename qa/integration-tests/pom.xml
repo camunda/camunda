@@ -149,5 +149,20 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>skip-it</id>
+      <activation>
+        <property>
+          <name>zeebe.it.skip</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <properties>
+        <maven.test.skip>true</maven.test.skip>
+      </properties>
+    </profile>
+  </profiles>
 </project>
 
