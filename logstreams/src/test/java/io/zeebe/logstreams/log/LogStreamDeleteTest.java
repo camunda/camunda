@@ -17,10 +17,19 @@ package io.zeebe.logstreams.log;
 
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.logstreams.log.LogStreamTest.writeEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
+import io.zeebe.distributedlog.DistributedLogstreamService;
+import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
+import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
+import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor;
 import io.zeebe.logstreams.state.StateStorage;
@@ -30,6 +39,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -38,6 +48,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.internal.util.reflection.FieldSetter;
+import org.mockito.stubbing.Answer;
 
 public class LogStreamDeleteTest {
   public static final int PARTITION_ID = 0;
@@ -80,7 +92,59 @@ public class LogStreamDeleteTest {
 
     streamConfig.accept(builder);
 
-    return builder.build().join();
+    final LogStream logStream = builder.build().join();
+
+    final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);
+
+    final DistributedLogstreamService distributedLogImpl =
+        new DefaultDistributedLogstreamService(new DistributedLogstreamServiceConfig());
+
+    final String nodeId = "0";
+    try {
+      FieldSetter.setField(
+          distributedLogImpl,
+          DefaultDistributedLogstreamService.class.getDeclaredField("logStream"),
+          logStream);
+
+      FieldSetter.setField(
+          distributedLogImpl,
+          DefaultDistributedLogstreamService.class.getDeclaredField("logStorage"),
+          logStream.getLogStorage());
+
+      FieldSetter.setField(
+          distributedLogImpl,
+          DefaultDistributedLogstreamService.class.getDeclaredField("currentLeader"),
+          nodeId);
+
+    } catch (NoSuchFieldException e) {
+      e.printStackTrace();
+    }
+
+    doAnswer(
+            (Answer<CompletableFuture<Long>>)
+                invocation -> {
+                  final Object[] arguments = invocation.getArguments();
+                  if (arguments != null
+                      && arguments.length > 1
+                      && arguments[0] != null
+                      && arguments[1] != null) {
+                    final byte[] bytes = (byte[]) arguments[0];
+                    final long pos = (long) arguments[1];
+                    return CompletableFuture.completedFuture(
+                        distributedLogImpl.append(nodeId, pos, bytes));
+                  }
+                  return null;
+                })
+        .when(mockDistLog)
+        .asyncAppend(any(), anyLong());
+
+    serviceContainer
+        .get()
+        .createService(distributedLogPartitionServiceName("test-log-name"), () -> mockDistLog)
+        .install()
+        .join();
+
+    return logStream;
   }
 
   @Test
