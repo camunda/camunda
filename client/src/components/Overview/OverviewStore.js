@@ -7,10 +7,16 @@
 import React, {Component} from 'react';
 
 import {Redirect} from 'react-router-dom';
-import {checkDeleteConflict, getEntitiesCollections, toggleEntityCollection} from 'services';
+import {
+  loadEntities,
+  deleteEntity,
+  createEntity,
+  updateEntity,
+  checkDeleteConflict,
+  getEntitiesCollections,
+  toggleEntityCollection
+} from 'services';
 import {withErrorHandling} from 'HOC';
-
-import {load, remove, create, update} from './service';
 const OverviewContext = React.createContext();
 
 class OverviewStore extends Component {
@@ -33,7 +39,11 @@ class OverviewStore extends Component {
 
   loadData = async () => {
     this.props.mightFail(
-      await Promise.all([load('collection'), load('report'), load('dashboard')]),
+      await Promise.all([
+        loadEntities('collection', 'created'),
+        loadEntities('report', 'lastModified'),
+        loadEntities('dashboard', 'lastModified')
+      ]),
       ([collections, reports, dashboards]) => {
         this.setState({collections, reports, dashboards, loading: false});
       }
@@ -46,28 +56,29 @@ class OverviewStore extends Component {
 
   createCombinedReport = async () =>
     this.setState({
-      redirect: '/report/' + (await create('report', null, {combined: true, reportType: 'process'}))
+      redirect:
+        '/report/' + (await createEntity('report', null, {combined: true, reportType: 'process'}))
     });
   createProcessReport = async () =>
     this.setState({
       redirect:
-        '/report/' + (await create('report', null, {combined: false, reportType: 'process'}))
+        '/report/' + (await createEntity('report', null, {combined: false, reportType: 'process'}))
     });
   createDecisionReport = async () =>
     this.setState({
       redirect:
-        '/report/' + (await create('report', null, {combined: false, reportType: 'decision'}))
+        '/report/' + (await createEntity('report', null, {combined: false, reportType: 'decision'}))
     });
 
   createDashboard = async () =>
-    this.setState({redirect: '/dashboard/' + (await create('dashboard'))});
+    this.setState({redirect: '/dashboard/' + (await createEntity('dashboard'))});
 
   updateOrCreateCollection = async collection => {
     const editCollection = this.state.updating;
     if (editCollection.id) {
-      await update('collection', editCollection.id, collection);
+      await updateEntity('collection', editCollection.id, collection);
     } else {
-      await create('collection', collection);
+      await createEntity('collection', collection);
     }
     this.setState({updating: null});
 
@@ -79,7 +90,7 @@ class OverviewStore extends Component {
 
     this.setState({deleteLoading: true});
 
-    await remove(type, entity.id);
+    await deleteEntity(type, entity.id);
 
     this.setState({
       deleting: false,
@@ -99,9 +110,9 @@ class OverviewStore extends Component {
 
     let id;
     if (type === 'report') {
-      id = await create(type, copy, {combined: copy.combined, reportType: copy.reportType});
+      id = await createEntity(type, copy, {combined: copy.combined, reportType: copy.reportType});
     } else {
-      id = await create(type, copy);
+      id = await createEntity(type, copy);
     }
 
     if (collection) {

@@ -23,8 +23,6 @@ class Dashboards extends React.Component {
     limit: true
   };
 
-  componentDidMount = this.loadDashboards;
-
   render() {
     const {dashboards, searchQuery} = this.props.store;
     const empty = dashboards.length === 0 && (

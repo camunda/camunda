@@ -7,21 +7,21 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import {StoreProvider} from './OverviewStore';
-import {load, create} from './service';
-import {checkDeleteConflict, toggleEntityCollection} from 'services';
+import {checkDeleteConflict, toggleEntityCollection, loadEntities, createEntity} from 'services';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
 
   return {
     ...rest,
+    createEntity: jest.fn(),
+    loadEntities: jest.fn(),
+    deleteEntity: jest.fn(),
     getEntitiesCollections: jest.fn().mockReturnValue({}),
     checkDeleteConflict: jest.fn().mockReturnValue([]),
     toggleEntityCollection: jest.fn().mockReturnValue(jest.fn())
   };
 });
-
-jest.mock('./service');
 
 const OverviewStore = StoreProvider.WrappedComponent;
 
@@ -58,21 +58,21 @@ const collection = {
 };
 
 beforeAll(() => {
-  load.mockReturnValueOnce([collection]);
-  load.mockReturnValueOnce([processReport]);
-  load.mockReturnValueOnce([dashboard]);
+  loadEntities.mockReturnValueOnce([collection]);
+  loadEntities.mockReturnValueOnce([processReport]);
+  loadEntities.mockReturnValueOnce([dashboard]);
 });
 
 it('should load data', () => {
   shallow(<OverviewStore {...props} />);
 
-  expect(load).toHaveBeenCalledWith('report');
-  expect(load).toHaveBeenCalledWith('dashboard');
-  expect(load).toHaveBeenCalledWith('collection');
+  expect(loadEntities).toHaveBeenCalledWith('report', 'lastModified');
+  expect(loadEntities).toHaveBeenCalledWith('dashboard', 'lastModified');
+  expect(loadEntities).toHaveBeenCalledWith('collection', 'created');
 });
 
 it('should redirect to new report edit page when creating new report', async () => {
-  create.mockReturnValueOnce('newReport');
+  createEntity.mockReturnValueOnce('newReport');
   const node = shallow(<OverviewStore {...props} />);
   await node.instance().componentDidMount();
 
@@ -83,16 +83,16 @@ it('should redirect to new report edit page when creating new report', async () 
 });
 
 it('should reload the list after duplication', async () => {
-  create.mockReturnValueOnce('newReport');
+  createEntity.mockReturnValueOnce('newReport');
   const node = shallow(<OverviewStore {...props} />);
 
   await node.instance().duplicateEntity('Report', processReport)({target: {blur: jest.fn()}});
 
-  expect(load).toHaveBeenCalledWith('report');
+  expect(loadEntities).toHaveBeenCalledWith('report', 'lastModified');
 });
 
 it('should add the entity to the collection that was duplicated from', async () => {
-  create.mockReturnValueOnce('newReport');
+  createEntity.mockReturnValueOnce('newReport');
   const node = shallow(<OverviewStore {...props} />);
 
   await node.instance().duplicateEntity('report', processReport, collection)({
@@ -113,9 +113,8 @@ it('should check for deletion conflicts for reports and dashboards', async () =>
 });
 
 it('should reload the reports after deleting a report', async () => {
+  loadEntities.mockClear();
   const node = shallow(<OverviewStore {...props} />);
-
-  load.mockClear();
 
   node.setState({
     deleting: {type: 'report', entity: processReport}
@@ -123,11 +122,11 @@ it('should reload the reports after deleting a report', async () => {
 
   await node.instance().deleteEntity();
 
-  expect(load).toHaveBeenCalledWith('report');
+  expect(loadEntities).toHaveBeenCalledWith('report', 'lastModified');
 });
 
 it('should redirect to new dashboard edit page', async () => {
-  create.mockReturnValueOnce('newDashboard');
+  createEntity.mockReturnValueOnce('newDashboard');
   const node = shallow(<OverviewStore {...props} />);
   await node.instance().componentDidMount();
   await node.instance().createDashboard();
@@ -137,13 +136,13 @@ it('should redirect to new dashboard edit page', async () => {
 });
 
 it('should duplicate dashboards', () => {
-  create.mockClear();
+  createEntity.mockClear();
 
   const node = shallow(<OverviewStore {...props} />);
 
   node.instance().duplicateEntity('dashboard', dashboard)({target: {blur: jest.fn()}});
 
-  expect(create).toHaveBeenCalledWith('dashboard', {
+  expect(createEntity).toHaveBeenCalledWith('dashboard', {
     ...dashboard,
     name: dashboard.name + ' - Copy'
   });

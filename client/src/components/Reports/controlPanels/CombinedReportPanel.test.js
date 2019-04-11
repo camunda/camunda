@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-import {loadEntity} from 'services';
+import {loadEntities} from 'services';
 import CombinedReportPanel from './CombinedReportPanel';
 
 jest.mock('services', () => {
@@ -17,7 +17,7 @@ jest.mock('services', () => {
     formatters: {
       getHighlightedText: text => text
     },
-    loadEntity: jest.fn()
+    loadEntities: jest.fn()
   };
 });
 
@@ -80,15 +80,15 @@ const reportsList = [
   }
 ];
 
-loadEntity.mockReturnValue(reportsList);
+loadEntities.mockReturnValue(reportsList);
 
-it('should invoke loadEntity to load all reports when it is mounted', async () => {
+it('should invoke loadEntities to load all reports when it is mounted', async () => {
   const node = await shallow(
     <CombinedReportPanel updateReport={() => {}} configuration={{}} report={reportsList[1]} />
   );
   await node.update();
 
-  expect(loadEntity).toHaveBeenCalled();
+  expect(loadEntities).toHaveBeenCalled();
 });
 
 it('should not include heatmap report', async () => {

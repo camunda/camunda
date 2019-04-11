@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 import {Button} from 'components';
 
 import AlertsWithErrorHandling from './Alerts';
-import {load, loadAlerts} from './service';
+import {loadEntities} from 'services';
 
 const Alerts = AlertsWithErrorHandling.WrappedComponent;
 
@@ -18,12 +18,6 @@ const reports = [
   {id: '1', data: {visualization: 'table', view: {property: 'frequency'}}, name: 'Report 1'},
   {id: '2', data: {visualization: 'number', view: {property: 'duration'}}, name: 'Report 2'}
 ];
-
-jest.mock('./service');
-
-const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
-};
 
 const alert = {
   id: 'alertID',
@@ -33,15 +27,28 @@ const alert = {
   reportId: '2'
 };
 
-beforeAll(() => {
-  load.mockReturnValue(reports);
-  loadAlerts.mockReturnValue([alert]);
+jest.mock('./service');
+
+jest.mock('services', () => {
+  const rest = jest.requireActual('services');
+  return {
+    ...rest,
+    loadEntities: jest.fn()
+  };
 });
+
+loadEntities.mockImplementation(type => {
+  return type === 'report' ? reports : [alert];
+});
+
+const props = {
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+};
 
 it('should load existing reports', () => {
   shallow(<Alerts {...props} />);
 
-  expect(load).toHaveBeenCalled();
+  expect(loadEntities).toHaveBeenCalled();
 });
 
 it('should only save single number reports', async () => {
@@ -89,7 +96,7 @@ it('should show a loading indicator', () => {
 it('should load data', () => {
   shallow(<Alerts {...props} />);
 
-  expect(loadAlerts).toHaveBeenCalled();
+  expect(loadEntities).toHaveBeenCalled();
 });
 
 it('should show information about alerts', () => {
@@ -99,7 +106,7 @@ it('should show information about alerts', () => {
 });
 
 it('should show no data indicator', () => {
-  loadAlerts.mockReturnValueOnce([]);
+  loadEntities.mockReturnValueOnce([]);
   const node = shallow(<Alerts {...props} />);
 
   expect(node.find('NoEntities')).toBePresent();

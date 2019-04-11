@@ -18,7 +18,7 @@ import {
   Labeled
 } from 'components';
 
-import {loadEntity} from 'services';
+import {loadEntities} from 'services';
 
 import './ReportModal.scss';
 
@@ -32,7 +32,7 @@ export default class ReportModal extends React.Component {
   };
 
   componentDidMount = async () => {
-    const reports = await loadEntity('report');
+    const reports = await loadEntities('report', 'lastModified');
 
     this.setState({
       availableReports: reports

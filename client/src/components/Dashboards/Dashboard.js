@@ -14,9 +14,13 @@ import {withErrorHandling} from 'HOC';
 import {
   checkDeleteConflict,
   toggleEntityCollection,
-  loadEntity,
   createEntity,
-  getEntitiesCollections
+  evaluateReport,
+  getEntitiesCollections,
+  loadEntity,
+  loadEntities,
+  deleteEntity,
+  updateEntity
 } from 'services';
 
 import {
@@ -39,10 +43,6 @@ import {addNotification} from 'notifications';
 import {themed} from 'theme';
 
 import {
-  loadDashboard,
-  remove,
-  update,
-  loadReport,
   getSharedDashboard,
   shareDashboard,
   revokeDashboardSharing,
@@ -105,7 +105,7 @@ export default themed(
 
       renderDashboard = async sharingEnabled => {
         await this.props.mightFail(
-          loadDashboard(this.id),
+          loadEntity('dashboard', this.id),
           async response => {
             const {name, lastModifier, lastModified, reports} = response;
 
@@ -132,7 +132,7 @@ export default themed(
       };
 
       loadCollections = async () => {
-        const collections = await loadEntity('collection', null, 'created');
+        const collections = await loadEntities('collection', 'created');
         this.setState({collections});
       };
 
@@ -148,7 +148,7 @@ export default themed(
 
       deleteDashboard = async evt => {
         this.setState({deleteLoading: true});
-        await remove(this.id);
+        await deleteEntity('dashboard', this.id);
 
         this.setState({
           redirect: '/'
@@ -163,7 +163,7 @@ export default themed(
 
       saveChanges = async (evt, name) => {
         await this.props.mightFail(
-          update(this.id, {
+          updateEntity('dashboard', this.id, {
             name,
             reports: this.state.reports
           }),
@@ -316,7 +316,7 @@ export default themed(
             </div>
             <DashboardView
               disableReportScrolling
-              loadReport={loadReport}
+              loadReport={evaluateReport}
               reports={this.state.reports}
               reportAddons={[
                 <DragBehavior
@@ -460,7 +460,7 @@ export default themed(
                 loading={deleteLoading}
               />
               <DashboardView
-                loadReport={loadReport}
+                loadReport={evaluateReport}
                 reports={this.state.reports}
                 reportAddons={
                   this.state.autoRefreshInterval && [

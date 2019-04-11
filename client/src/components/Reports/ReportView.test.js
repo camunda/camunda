@@ -8,14 +8,14 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ReportView from './ReportView';
-import {remove} from './service';
 
-import {checkDeleteConflict} from 'services';
+import {checkDeleteConflict, deleteEntity} from 'services';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
     ...rest,
+    deleteEntity: jest.fn(),
     checkDeleteConflict: jest.fn()
   };
 });
@@ -83,7 +83,7 @@ it('should remove a report when delete is invoked', () => {
   });
 
   node.instance().deleteReport();
-  expect(remove).toHaveBeenCalledWith('1');
+  expect(deleteEntity).toHaveBeenCalledWith('report', '1');
 });
 
 it('should redirect to the report list on report deletion', async () => {

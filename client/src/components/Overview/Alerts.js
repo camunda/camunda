@@ -10,13 +10,19 @@ import {Button, Icon, ConfirmationModal, Message, LoadingIndicator} from 'compon
 import AlertModal from './subComponents/AlertModal';
 
 import {withErrorHandling} from 'HOC';
-import {formatters, isDurationReport} from 'services';
+import {
+  formatters,
+  isDurationReport,
+  loadEntities,
+  updateEntity,
+  createEntity,
+  deleteEntity
+} from 'services';
 import {addNotification} from 'notifications';
 
 import './Alerts.scss';
 import entityIcons from './entityIcons';
 
-import {loadAlerts, load, updateAlert, createAlert, deleteAlert} from './service';
 import LastModified from './subComponents/LastModified';
 import NoEntities from './subComponents/NoEntities';
 
@@ -35,7 +41,7 @@ class Alerts extends React.Component {
   };
 
   loadAlerts = async () => {
-    this.props.mightFail(loadAlerts(), response => {
+    this.props.mightFail(loadEntities('alert', 'lastModified'), response => {
       this.setState({
         entities: response,
         loading: false
@@ -45,7 +51,7 @@ class Alerts extends React.Component {
 
   componentDidMount = async () => {
     this.loadAlerts();
-    const reports = (await load('report')).filter(
+    const reports = (await loadEntities('report', 'lastModified')).filter(
       ({data: {visualization}}) => visualization === 'number'
     );
     this.setState({
@@ -57,7 +63,7 @@ class Alerts extends React.Component {
   hideDeleteModal = () => this.setState({deleting: false});
 
   deleteAlert = () => {
-    deleteAlert(this.state.deleting.id);
+    deleteEntity('alert', this.state.deleting.id);
     this.setState(({entities, deleting}) => {
       return {
         entities: entities.filter(entity => entity !== deleting),
@@ -93,9 +99,9 @@ class Alerts extends React.Component {
     const editEntity = this.state.editEntity;
     let updatePromise;
     if (editEntity.id) {
-      updatePromise = updateAlert(editEntity.id, entity);
+      updatePromise = updateEntity('alert', editEntity.id, entity);
     } else {
-      updatePromise = createAlert(entity);
+      updatePromise = createEntity('alert', null, entity);
     }
 
     await this.props.mightFail(

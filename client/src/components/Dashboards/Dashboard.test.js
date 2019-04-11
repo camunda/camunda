@@ -8,8 +8,8 @@ import React from 'react';
 import {mount, shallow} from 'enzyme';
 
 import ThemedDashboard from './Dashboard';
-import {loadDashboard, remove, isAuthorizedToShareDashboard} from './service';
-import {checkDeleteConflict} from 'services';
+import {isAuthorizedToShareDashboard} from './service';
+import {checkDeleteConflict, loadEntity, deleteEntity} from 'services';
 
 const {WrappedComponent: Dashboard} = ThemedDashboard;
 
@@ -72,9 +72,6 @@ jest.mock('components', () => {
 
 jest.mock('./service', () => {
   return {
-    loadDashboard: jest.fn(),
-    remove: jest.fn(),
-    update: jest.fn(),
     isAuthorizedToShareDashboard: jest.fn(),
     isSharingEnabled: jest.fn().mockReturnValue(true)
   };
@@ -102,10 +99,13 @@ jest.mock('moment', () => () => {
 });
 
 jest.mock('services', () => ({
+  loadEntity: jest.fn(),
+  deleteEntity: jest.fn(),
+  updateEntity: jest.fn(),
   getEntitiesCollections: jest.fn().mockReturnValue({}),
   toggleEntityCollection: fn => fn(),
   checkDeleteConflict: jest.fn(),
-  loadEntity: jest.fn().mockReturnValue([])
+  loadEntities: jest.fn().mockReturnValue([])
 }));
 
 jest.mock('react-full-screen', () => ({children}) => <div>{children}</div>);
@@ -160,7 +160,7 @@ const sampleDashboard = {
   ]
 };
 
-loadDashboard.mockReturnValue(sampleDashboard);
+loadEntity.mockReturnValue(sampleDashboard);
 isAuthorizedToShareDashboard.mockReturnValue(true);
 
 beforeEach(() => {
@@ -186,7 +186,7 @@ it('should display a loading indicator', () => {
 it('should initially load data', () => {
   mount(<Dashboard {...props} />);
 
-  expect(loadDashboard).toHaveBeenCalled();
+  expect(loadEntity).toHaveBeenCalled();
 });
 
 it('should display the key properties of a dashboard', () => {
@@ -218,7 +218,7 @@ it('should remove a dashboard on dashboard deletion', () => {
 
   node.instance().deleteDashboard();
 
-  expect(remove).toHaveBeenCalledWith('1');
+  expect(deleteEntity).toHaveBeenCalledWith('dashboard', '1');
 });
 
 it('should redirect to the dashboard list on dashboard deletion', async () => {

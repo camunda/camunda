@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {get, post} from 'request';
+
 export function isDurationReport(report) {
   // waiting for optional chaining... https://github.com/tc39/proposal-optional-chaining
   return (
@@ -13,4 +15,22 @@ export function isDurationReport(report) {
     report.data.view.property &&
     report.data.view.property.toLowerCase().includes('duration')
   );
+}
+
+export async function evaluateReport(query) {
+  let response;
+
+  try {
+    if (typeof query !== 'object') {
+      // evaluate saved report
+      response = await get(`api/report/${query}/evaluate`);
+    } else {
+      // evaluate unsaved report
+      response = await post(`api/report/evaluate/`, query);
+    }
+  } catch (e) {
+    return null;
+  }
+
+  return await response.json();
 }

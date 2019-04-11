@@ -8,7 +8,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import ReportModal from './ReportModal';
-import {loadEntity} from 'services';
+import {loadEntities} from 'services';
 
 jest.mock('components', () => {
   const Modal = props => <div id="Modal">{props.open && props.children}</div>;
@@ -44,14 +44,14 @@ jest.mock('components', () => {
 
 jest.mock('services', () => {
   return {
-    loadEntity: jest.fn().mockReturnValue([])
+    loadEntities: jest.fn().mockReturnValue([])
   };
 });
 
 it('should load the available reports', () => {
   mount(<ReportModal />);
 
-  expect(loadEntity).toHaveBeenCalled();
+  expect(loadEntities).toHaveBeenCalled();
 });
 
 it('should render a Typeahead element with the available reports as options', () => {

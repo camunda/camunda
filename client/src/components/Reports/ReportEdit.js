@@ -18,13 +18,13 @@ import {
   CollectionsDropdown
 } from 'components';
 
-import {evaluateReport, saveReport} from './service';
-
 import {
   loadDefinitions,
   incompatibleFilters,
   loadProcessDefinitionXml,
-  toggleEntityCollection
+  toggleEntityCollection,
+  updateEntity,
+  evaluateReport
 } from 'services';
 import {addNotification} from 'notifications';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
@@ -82,7 +82,12 @@ export default withErrorHandling(
       const name = updatedName || this.state.report.name;
       this.setState({saveLoading: true});
       await this.props.mightFail(
-        saveReport(id, {name, data, reportType, combined}, this.state.conflict !== null),
+        updateEntity(
+          'report',
+          id,
+          {name, data, reportType, combined},
+          {query: {force: this.state.conflict !== null}}
+        ),
         () => {
           this.setState({
             confirmModalVisible: false,

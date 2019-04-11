@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {loadEntity} from 'services';
+import {loadEntities} from 'services';
 import {TypeaheadMultipleSelection, Popover, ColorPicker} from 'components';
 import {Configuration} from './Configuration';
 
@@ -24,7 +24,7 @@ export default class CombinedReportPanel extends React.Component {
   async componentDidMount() {
     const acceptedVisualizations = ['table', 'bar', 'line', 'number'];
 
-    const reports = (await loadEntity('report')).filter(
+    const reports = (await loadEntities('report', 'lastModified')).filter(
       report =>
         !report.combined &&
         report.reportType === 'process' &&

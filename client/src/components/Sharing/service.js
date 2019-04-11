@@ -19,10 +19,10 @@ export async function evaluateEntity(id, type) {
 }
 
 export function createLoadReportCallback(dashboardShareId) {
-  return async report => {
+  return async reportId => {
     try {
       const response = await get(
-        `api/share/dashboard/${dashboardShareId}/report/${report.id}/evaluate`
+        `api/share/dashboard/${dashboardShareId}/report/${reportId}/evaluate`
       );
       return await response.json();
     } catch (error) {

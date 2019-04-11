@@ -4,18 +4,24 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {post, put, get} from 'request';
+import {post, put, get, del} from 'request';
 
-export async function loadEntity(api, numResults, sortBy) {
+export async function loadEntity(type, id) {
+  const response = await get(`api/${type}/` + id);
+
+  return await response.json();
+}
+
+export async function loadEntities(api, sortBy, numResults) {
   const url = `api/${api}`;
 
   const params = {};
-  if (numResults) {
-    params['numResults'] = numResults;
-  }
-
   if (sortBy) {
     params['orderBy'] = sortBy;
+  }
+
+  if (numResults) {
+    params['numResults'] = numResults;
   }
 
   const response = await get(url, params);
@@ -33,6 +39,10 @@ export async function createEntity(type, initialValues, options = {}) {
   return json.id;
 }
 
-export async function updateEntity(type, id, data) {
-  return await put(`api/${type}/${id}`, data);
+export async function updateEntity(type, id, data, options = {}) {
+  return await put(`api/${type}/${id}`, data, options);
+}
+
+export async function deleteEntity(type, id) {
+  return await del(`api/${type}/${id}`, {force: true});
 }

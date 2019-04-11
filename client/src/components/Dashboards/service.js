@@ -4,30 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {get, del, put, post} from 'request';
-
-export async function loadDashboard(id) {
-  const response = await get('api/dashboard/' + id);
-
-  return await response.json();
-}
-
-export async function remove(id) {
-  return await del(`api/dashboard/${id}`, {force: true});
-}
-
-export async function update(id, state) {
-  return await put(`api/dashboard/${id}`, state);
-}
-
-export async function loadReport(report) {
-  try {
-    const response = await get(`api/report/${report.id}/evaluate`);
-    return await response.json();
-  } catch (error) {
-    return await error.json();
-  }
-}
+import {get, del, post} from 'request';
 
 export async function isSharingEnabled() {
   const response = await get(`api/share/isEnabled`);

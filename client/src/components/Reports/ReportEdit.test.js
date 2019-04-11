@@ -8,22 +8,15 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ReportEdit from './ReportEdit';
-
-import {evaluateReport, saveReport} from './service';
-import {incompatibleFilters} from 'services';
+import {incompatibleFilters, updateEntity, evaluateReport} from 'services';
 import {addNotification} from 'notifications';
-
-jest.mock('./service', () => {
-  return {
-    evaluateReport: jest.fn(),
-    saveReport: jest.fn()
-  };
-});
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
     ...rest,
+    evaluateReport: jest.fn(),
+    updateEntity: jest.fn(),
     incompatibleFilters: jest.fn()
   };
 });
@@ -110,7 +103,7 @@ it('should save a changed report', async () => {
 
   await node.instance().save({}, 'new Name');
 
-  expect(saveReport).toHaveBeenCalled();
+  expect(updateEntity).toHaveBeenCalled();
 });
 
 it('should reset name on cancel', async () => {
@@ -179,7 +172,7 @@ it('should show a warning message when there are incompatible filter ', async ()
 
 it('should set conflict state when conflict happens on save button click', async () => {
   const conflictedItems = [{id: '1', name: 'alert', type: 'Alert'}];
-  saveReport.mockImplementation(async () => {
+  updateEntity.mockImplementation(async () => {
     const error = {statusText: 'Conflict', json: async () => ({conflictedItems})};
     throw error;
   });
@@ -194,8 +187,8 @@ it('should set conflict state when conflict happens on save button click', async
 });
 
 it('should invok updateOverview when saving the report', async () => {
-  saveReport.mockClear();
-  saveReport.mockReturnValue({});
+  updateEntity.mockClear();
+  updateEntity.mockReturnValue({});
   const spy = jest.fn();
   const node = shallow(<ReportEdit report={report} updateOverview={spy} />).dive();
 

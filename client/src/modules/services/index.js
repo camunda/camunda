@@ -24,9 +24,9 @@ export {flatten} from './tableServices';
 export {default as getTooltipText} from './getTooltipText';
 export {extractDefinitionName} from './definitionService';
 export {toggleEntityCollection, getEntitiesCollections} from './collectionService';
-export {loadEntity, createEntity, updateEntity} from './entityService';
+export {loadEntity, loadEntities, createEntity, updateEntity, deleteEntity} from './entityService';
 
-export {isDurationReport} from './reportService';
+export {evaluateReport, isDurationReport} from './reportService';
 
 // unfortunately, there is no syntax like "export * as formatters from './formatters'"
 export const formatters = formattersImport;

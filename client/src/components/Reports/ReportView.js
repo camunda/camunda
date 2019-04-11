@@ -18,15 +18,8 @@ import {
   CollectionsDropdown
 } from 'components';
 
-import {
-  shareReport,
-  revokeReportSharing,
-  getSharedReport,
-  remove,
-  isSharingEnabled
-} from './service';
-
-import {checkDeleteConflict, toggleEntityCollection} from 'services';
+import {checkDeleteConflict, toggleEntityCollection, deleteEntity} from 'services';
+import {shareReport, revokeReportSharing, getSharedReport, isSharingEnabled} from './service';
 
 import './ReportView.scss';
 
@@ -80,7 +73,7 @@ export default class ReportView extends Component {
 
   deleteReport = async evt => {
     this.setState({deleteLoading: true});
-    await remove(this.props.report.id);
+    await deleteEntity('report', this.props.report.id);
 
     this.setState({
       redirect: '/'

@@ -8,12 +8,14 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import Report from './Report';
-import {evaluateReport, loadSingleReport} from './service';
+import {loadEntity, evaluateReport} from 'services';
 
-jest.mock('./service', () => {
+jest.mock('services', () => {
+  const rest = jest.requireActual('services');
   return {
-    loadSingleReport: jest.fn(),
-    evaluateReport: jest.fn()
+    ...rest,
+    evaluateReport: jest.fn(),
+    loadEntity: jest.fn()
   };
 });
 
@@ -38,7 +40,7 @@ const report = {
   result: {data: [1, 2, 3]}
 };
 
-loadSingleReport.mockReturnValue(report);
+loadEntity.mockReturnValue(report);
 evaluateReport.mockReturnValue(report);
 
 it('should display a loading indicator', () => {
@@ -59,7 +61,7 @@ it("should show an error page if report doesn't exist", () => {
 it('should initially load data', () => {
   shallow(<Report {...props} />);
 
-  expect(loadSingleReport).toHaveBeenCalled();
+  expect(loadEntity).toHaveBeenCalled();
 });
 
 it('should initially evaluate the report', () => {

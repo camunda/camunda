@@ -46,7 +46,7 @@ const props = {
 it('should load the report provided by id', () => {
   mount(<OptimizeReport {...props} />);
 
-  expect(loadReport).toHaveBeenCalledWith({...props.report});
+  expect(loadReport).toHaveBeenCalledWith(props.report.id);
 });
 
 it('should render the ReportRenderer if data is loaded', async () => {

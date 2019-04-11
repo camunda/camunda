@@ -31,7 +31,7 @@ export default themed(
 
     loadReportData = async () => {
       this.setState({
-        data: await this.props.loadReport(this.props.report)
+        data: await this.props.loadReport(this.props.report.id)
       });
     };
 
