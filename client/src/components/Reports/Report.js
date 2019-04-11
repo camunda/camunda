@@ -8,7 +8,6 @@ import React from 'react';
 
 import {withErrorHandling} from 'HOC';
 import {ErrorPage, LoadingIndicator, EditCollectionModal} from 'components';
-import {addNotification} from 'notifications';
 import {loadSingleReport, evaluateReport} from './service';
 import {loadEntity, createEntity, getEntitiesCollections} from 'services';
 
@@ -43,11 +42,9 @@ export default withErrorHandling(
           });
           await this.loadCollections();
         },
-        error => {
-          addNotification({text: 'Report could not be opened.', type: 'error'});
-          const serverError = error.status;
+        ({status}) => {
           this.setState({
-            serverError
+            serverError: status
           });
           return;
         }
@@ -79,7 +76,7 @@ export default withErrorHandling(
       const {report, collections, creatingCollection, loaded, serverError} = this.state;
 
       if (serverError) {
-        return <ErrorPage entity="report" statusCode={serverError} />;
+        return <ErrorPage />;
       }
 
       if (!loaded) {

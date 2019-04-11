@@ -101,13 +101,7 @@ class Alerts extends React.Component {
     await this.props.mightFail(
       updatePromise,
       () => {
-        addNotification({
-          text: `Alert "${entity.name}" saved.`,
-          type: 'success',
-          duration: 2000
-        });
         this.closeEditModal();
-
         this.loadAlerts();
       },
       () => {

@@ -111,11 +111,6 @@ it('should save a changed report', async () => {
   await node.instance().save({}, 'new Name');
 
   expect(saveReport).toHaveBeenCalled();
-  expect(addNotification).toHaveBeenCalledWith({
-    duration: 2000,
-    text: 'Report "new Name" saved.',
-    type: 'success'
-  });
 });
 
 it('should reset name on cancel', async () => {

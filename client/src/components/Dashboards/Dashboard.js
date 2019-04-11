@@ -122,11 +122,9 @@ export default themed(
             });
             await this.loadCollections();
           },
-          error => {
-            addNotification({text: 'Dashboard could not be opened.', type: 'error'});
-            const serverError = error.status;
+          ({status}) => {
             this.setState({
-              serverError
+              serverError: status
             });
             return;
           }
@@ -170,11 +168,6 @@ export default themed(
             reports: this.state.reports
           }),
           async () => {
-            addNotification({
-              text: `Dashboard "${name}" saved.`,
-              type: 'success',
-              duration: 2000
-            });
             this.setState({
               originalName: this.state.name,
               originalReports: this.state.reports,
@@ -513,7 +506,7 @@ export default themed(
         const {loaded, redirect, serverError} = this.state;
 
         if (serverError) {
-          return <ErrorPage entity="dashboard" statusCode={serverError} />;
+          return <ErrorPage />;
         }
 
         if (!loaded) {

@@ -7,7 +7,7 @@
 import React from 'react';
 
 import './Sharing.scss';
-import {ReportRenderer, DashboardView, Icon, Button, LoadingIndicator} from 'components';
+import {ReportRenderer, DashboardView, Icon, Button, LoadingIndicator, ErrorPage} from 'components';
 import {Link} from 'react-router-dom';
 import {evaluateEntity, createLoadReportCallback} from './service';
 
@@ -65,11 +65,7 @@ export default class Sharing extends React.Component {
     }
 
     if (!evaluationResult || !this.hasValidType(this.getType())) {
-      return (
-        <div className="Sharing__error-message">
-          The resource you want to access is not available!
-        </div>
-      );
+      return <ErrorPage noLink />;
     }
 
     const SharingView = this.getSharingView();

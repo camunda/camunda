@@ -1,14 +1,19 @@
 .ErrorPage {
-  padding: 36px 20px 15px 20px;
-}
-.ErrorPage__content {
   text-align: center;
-}
-.ErrorPage__maledicta {
-  font-size: 96px;
-  color: #dcdcdc;
-  margin-bottom: 24px;
-}
-.ErrorPage__error-message {
-  font-size: 32px;
+  padding-top: 150px;
+  font-size: 14px;
+
+  h1 {
+    font-size: 16px;
+    font-weight: bold;
+    color: #bfc3c8;
+    white-space: pre;
+    line-height: 1.25;
+  }
+
+  pre {
+    margin: 60px;
+    color: #000;
+    font-family: 'Courier New', Courier, monospace;
+  }
 }

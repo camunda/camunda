@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import {ErrorPage} from 'components';
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -24,10 +25,13 @@ export default class ErrorBoundary extends React.Component {
 
     if (error) {
       return (
-        <div>
-          <h1>Oh no :(</h1>
+        <ErrorPage
+          noLink
+          text={`An application error occured.
+Refresh your browser or close it and sign in again.`}
+        >
           <pre>{error.message || error}</pre>
-        </div>
+        </ErrorPage>
       );
     }
     return this.props.children;

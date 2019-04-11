@@ -5,15 +5,12 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import ErrorPage from './ErrorPage';
 
 it('displays the error message passed in props', () => {
-  const error = {
-    errorMessage: 'error message hello'
-  };
-  const node = mount(<ErrorPage error={error} />);
+  const node = shallow(<ErrorPage>This is the error message.</ErrorPage>);
 
-  expect(node).toIncludeText('error message hello');
+  expect(node).toMatchSnapshot();
 });
