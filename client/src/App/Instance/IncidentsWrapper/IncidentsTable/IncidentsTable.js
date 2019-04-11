@@ -22,7 +22,7 @@ export default class IncidentsTable extends React.Component {
     incidents: PropTypes.array.isRequired,
     instanceId: PropTypes.string.isRequired,
     forceSpinner: PropTypes.bool,
-    selectedIncidents: PropTypes.array,
+    selectedFlowNodeInstanceIds: PropTypes.array,
     sorting: PropTypes.object.isRequired,
     onIncidentOperation: PropTypes.func.isRequired,
     onIncidentSelection: PropTypes.func.isRequired,
@@ -31,7 +31,7 @@ export default class IncidentsTable extends React.Component {
 
   static defaultProps = {
     forceSpinner: false,
-    selectedIncidents: []
+    selectedFlowNodeInstanceIds: []
   };
 
   state = {
@@ -71,12 +71,16 @@ export default class IncidentsTable extends React.Component {
   };
 
   handleIncidentSelection = ({flowNodeInstanceId, flowNodeId}) => {
-    const {selectedIncidents, onIncidentSelection, instanceId} = this.props;
+    const {
+      selectedFlowNodeInstanceIds,
+      onIncidentSelection,
+      instanceId
+    } = this.props;
     let newSelection;
 
     const isTheOnlySelectedIncident =
-      selectedIncidents.length === 1 &&
-      selectedIncidents[0] === flowNodeInstanceId;
+      selectedFlowNodeInstanceIds.length === 1 &&
+      selectedFlowNodeInstanceIds[0] === flowNodeInstanceId;
 
     if (isTheOnlySelectedIncident) {
       newSelection = {id: instanceId, activityId: null};
@@ -88,7 +92,7 @@ export default class IncidentsTable extends React.Component {
   };
 
   render() {
-    const {incidents, sorting, selectedIncidents} = this.props;
+    const {incidents, sorting, selectedFlowNodeInstanceIds} = this.props;
     const isJobIdPresent = incidents =>
       !Boolean(incidents.find(item => Boolean(item.jobId)));
 
@@ -144,7 +148,7 @@ export default class IncidentsTable extends React.Component {
               return (
                 <Styled.IncidentTR
                   key={incident.id}
-                  isSelected={selectedIncidents.includes(
+                  isSelected={selectedFlowNodeInstanceIds.includes(
                     incident.flowNodeInstanceId
                   )}
                   onClick={this.handleIncidentSelection.bind(this, incident)}

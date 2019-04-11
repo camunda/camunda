@@ -455,7 +455,7 @@ export default class Instance extends Component {
                   incidentsCount={this.state.incidents.count}
                   instance={this.state.instance}
                   forceSpinner={this.state.forceIncidentsSpinner}
-                  selectedIncidents={this.state.selection.treeRowIds}
+                  selectedFlowNodeInstanceIds={this.state.selection.treeRowIds}
                   onIncidentOperation={this.handleIncidentOperation}
                   onIncidentSelection={this.handleTreeRowSelection}
                   flowNodes={this.formatFlowNodes()}

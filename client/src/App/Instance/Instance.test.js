@@ -935,9 +935,9 @@ describe('Instance', () => {
       node.update();
 
       // then
-      expect(node.find('IncidentsWrapper').prop('selectedIncidents')).toEqual(
-        treeRowIds
-      );
+      expect(
+        node.find('IncidentsWrapper').prop('selectedFlowNodeInstanceIds')
+      ).toEqual(treeRowIds);
     });
 
     it('should select incidents when selecting a flow node in the diagra', async () => {
@@ -979,9 +979,9 @@ describe('Instance', () => {
       node.update();
 
       // then
-      expect(node.find('IncidentsWrapper').prop('selectedIncidents')).toEqual(
-        treeRowIds
-      );
+      expect(
+        node.find('IncidentsWrapper').prop('selectedFlowNodeInstanceIds')
+      ).toEqual(treeRowIds);
     });
   });
 
