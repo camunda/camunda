@@ -147,18 +147,12 @@ it('should use original data as result data if report cant be evaluated on cance
   expect(node.state().report.data.processDefinitionKey).toEqual('123');
 });
 
-it('should show a warning message when process instance count exceeds the maximum shown', async () => {
+it('should show a warning message when the data is not complete', async () => {
   const node = shallow(<ReportEdit report={report} />).dive();
 
   node.setState({
     report: {
-      data: {
-        visualization: 'table',
-        view: {
-          operation: 'rawData'
-        }
-      },
-      result: {data: new Array(1000), processInstanceCount: 1500}
+      result: {data: new Array(1000), isComplete: false, processInstanceCount: 1500}
     }
   });
 

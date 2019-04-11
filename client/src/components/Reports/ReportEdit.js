@@ -147,22 +147,13 @@ export default withErrorHandling(
       }
     };
 
-    maxRawDataEntriesExceeded = () => {
-      if (!this.state.report) {
+    showIncompleteResultWarning = () => {
+      const {report} = this.state;
+      if (!report || !report.result || typeof report.result.isComplete === 'undefined') {
         return false;
       }
 
-      const {data, result} = this.state.report;
-      return !!(
-        result &&
-        result.data.length &&
-        data &&
-        data.visualization === 'table' &&
-        data.view &&
-        (data.view.operation === 'rawData' || data.view.property === 'rawData') &&
-        (result.processInstanceCount > result.data.length ||
-          result.decisionInstanceCount > result.data.length)
-      );
+      return !report.result.isComplete;
     };
 
     closeConfirmModal = () => {
@@ -231,10 +222,10 @@ export default withErrorHandling(
               <DecisionControlPanel report={report} updateReport={this.updateReport} />
             )}
 
-            {this.maxRawDataEntriesExceeded() && (
+            {this.showIncompleteResultWarning() && (
               <Message type="warning">
-                The raw data table below only shows {report.result.data.length} instances out of a
-                total of {report.result.processInstanceCount || report.result.decisionInstanceCount}
+                The visualization below is limited to{' '}
+                {report.result.data.length || Object.keys(report.result.data).length} data points
               </Message>
             )}
 
