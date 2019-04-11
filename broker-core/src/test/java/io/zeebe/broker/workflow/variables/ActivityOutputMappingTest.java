@@ -52,7 +52,7 @@ public class ActivityOutputMappingTest {
   private static final String PROCESS_ID = "process";
 
   public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

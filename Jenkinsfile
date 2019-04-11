@@ -54,6 +54,26 @@ pipeline {
                     sh '.ci/scripts/distribution/build-java.sh'
                 }
             }
+        }
+
+        stage('Test (Java)') {
+            parallel {
+                stage('Unit (Java)') {
+                    steps {
+                        container('maven') {
+                            sh '.ci/scripts/distribution/test-java.sh'
+                        }
+                    }
+                }
+
+                stage('IT (Java)') {
+                    steps {
+                        container('maven') {
+                            sh '.ci/scripts/distribution/it-java.sh'
+                        }
+                    }
+                }
+            }
 
             post {
                 always {

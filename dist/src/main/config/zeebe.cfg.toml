@@ -70,12 +70,12 @@
 [network]
 
 # This section contains the network configuration. Particularly, it allows to
-# configure the hosts and ports the broker should bind to. the broker exposes 3
+# configure the hosts and ports the broker should bind to. the broker exposes 4
 # ports: 1. client: the port on which client (Java, CLI, Go, ...) connections
-# are handled 2. management: used internally by the cluster for the gossip
-# membership protocol and other management interactions 3. replication: used
-# internally by the cluster for replicating data across nodes using the raft
-# protocol
+# are handled 2. management: used internally by the cluster for management
+# interactions 3. replication: used internally by the cluster for replicating
+# data across nodes using the raft protocol 4. atomix: used internally by the
+# cluster for membership management
 
 # Controls the default host the broker should bind to. Can be overwritten on a
 # per binding basis for client, management and replication
@@ -147,6 +147,21 @@
 #
 # Sets the port the subscription api binds to
 # port = 26504
+#
+# Overrides the size of the buffer to be used for buffering outgoing messages to
+# other brokers through the subscription protocols
+# sendBufferSize = "16M"
+#
+# Sets the buffer size used for receiving subscription messages and others
+# receiveBufferSize = "8M"
+
+[network.atomix]
+
+# Overrides the host the subscription api binds to
+# host = "localhost"
+#
+# Sets the port the subscription api binds to
+# port = 26505
 #
 # Overrides the size of the buffer to be used for buffering outgoing messages to
 # other brokers through the subscription protocols
@@ -274,22 +289,6 @@
 
 # Port to export metrics on
 # port = 9600
-
-[gossip]
-
-# retransmissionMultiplier = 3
-# probeInterval = "1s"
-# probeTimeout = "500ms"
-# probeIndirectNodes = 3
-# probeIndirectTimeout = "1s"
-# suspicionMultiplier = 5
-# syncTimeout = "3s"
-# syncInterval = "15s"
-# joinTimeout = "1s"
-# joinInterval = "5s"
-# leaveTimeout = "1s"
-# maxMembershipEventsPerMessage = 32
-# maxCustomEventsPerMessage = 8
 
 [raft]
 

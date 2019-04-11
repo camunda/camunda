@@ -25,6 +25,7 @@ import io.zeebe.gateway.cmd.ClientOutOfMemoryException;
 import io.zeebe.gateway.cmd.GrpcStatusException;
 import io.zeebe.gateway.cmd.GrpcStatusExceptionImpl;
 import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
@@ -33,6 +34,8 @@ import io.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
+import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
@@ -43,10 +46,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
+import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
@@ -58,6 +59,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.msgpack.MsgpackPropertyException;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
@@ -76,11 +78,65 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
   @Override
   public void topology(
       final TopologyRequest request, final StreamObserver<TopologyResponse> responseObserver) {
-    sendRequest(
-        request,
-        RequestMapper::toTopologyRequest,
-        ResponseMapper::toTopologyResponse,
-        responseObserver);
+    final TopologyResponse.Builder topologyResponseBuilder = TopologyResponse.newBuilder();
+    final BrokerClusterState topology = topologyManager.getTopology();
+
+    if (topology != null) {
+
+      topologyResponseBuilder
+          .setClusterSize(topology.getClusterSize())
+          .setPartitionsCount(topology.getPartitionsCount())
+          .setReplicationFactor(topology.getReplicationFactor());
+
+      final ArrayList<BrokerInfo> brokers = new ArrayList<>();
+
+      topology
+          .getBrokers()
+          .forEach(
+              brokerId -> {
+                final Builder brokerInfo = BrokerInfo.newBuilder();
+                addBrokerInfo(brokerInfo, brokerId, topology);
+                addPartitionInfoToBrokerInfo(brokerInfo, brokerId, topology);
+
+                brokers.add(brokerInfo.build());
+              });
+
+      topologyResponseBuilder.addAllBrokers(brokers);
+      final TopologyResponse response = topologyResponseBuilder.build();
+      responseObserver.onNext(response);
+      responseObserver.onCompleted();
+    } else {
+      final StatusRuntimeException error =
+          Status.UNAVAILABLE.augmentDescription("No brokers available").asRuntimeException();
+      responseObserver.onError(error);
+    }
+  }
+
+  private void addBrokerInfo(Builder brokerInfo, Integer brokerId, BrokerClusterState topology) {
+    final String[] addressParts = topology.getBrokerAddress(brokerId).split(":");
+
+    brokerInfo
+        .setNodeId(brokerId)
+        .setHost(addressParts[0])
+        .setPort(Integer.parseInt(addressParts[1]));
+  }
+
+  private void addPartitionInfoToBrokerInfo(
+      Builder brokerInfo, Integer brokerId, BrokerClusterState topology) {
+    topology
+        .getPartitions()
+        .forEach(
+            partitionId -> {
+              final Partition.Builder partitionBuilder = Partition.newBuilder();
+              partitionBuilder.setPartitionId(partitionId);
+
+              if (topology.getLeaderForPartition(partitionId) == brokerId) {
+                partitionBuilder.setRole(PartitionBrokerRole.LEADER);
+              } else {
+                partitionBuilder.setRole(PartitionBrokerRole.FOLLOWER);
+              }
+              brokerInfo.addPartitions(partitionBuilder);
+            });
   }
 
   @Override
@@ -158,16 +214,6 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
   }
 
   @Override
-  public void listWorkflows(
-      ListWorkflowsRequest request, StreamObserver<ListWorkflowsResponse> responseObserver) {
-    sendRequest(
-        request,
-        RequestMapper::toListWorkflowsRequest,
-        ResponseMapper::toListWorkflowsResponse,
-        responseObserver);
-  }
-
-  @Override
   public void completeJob(
       CompleteJobRequest request, StreamObserver<CompleteJobResponse> responseObserver) {
     sendRequest(
@@ -178,22 +224,10 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
   }
 
   @Override
-  public void getWorkflow(
-      GetWorkflowRequest request, StreamObserver<GetWorkflowResponse> responseObserver) {
-    sendRequest(
-        request,
-        RequestMapper::toGetWorkflowRequest,
-        ResponseMapper::toGetWorkflowResponse,
-        responseObserver);
-  }
-
-  @Override
   public void activateJobs(
       ActivateJobsRequest request, StreamObserver<ActivateJobsResponse> responseObserver) {
-    topologyManager.withTopology(
-        topology ->
-            activateJobsHandler.activateJobs(
-                topology.getPartitionsCount(), request, responseObserver));
+    final BrokerClusterState topology = topologyManager.getTopology();
+    activateJobsHandler.activateJobs(topology.getPartitionsCount(), request, responseObserver);
   }
 
   @Override

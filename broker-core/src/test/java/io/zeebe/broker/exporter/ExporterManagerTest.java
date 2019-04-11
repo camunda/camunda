@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.exporter;
 
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
@@ -52,13 +53,13 @@ public class ExporterManagerTest {
             brokerCfg.getExporters().add(exporterCfg);
           });
 
-  public ClientApiRule clientRule = new ClientApiRule(brokerRule::getClientAddress);
+  public ClientApiRule clientRule = new ClientApiRule(brokerRule::getAtomix);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Test
   public void shouldRunExporterForEveryPartition() throws InterruptedException {
     // given
-    IntStream.range(0, PARTITIONS).forEach(this::createJob);
+    IntStream.range(START_PARTITION_ID, START_PARTITION_ID + PARTITIONS).forEach(this::createJob);
 
     // then
     assertThat(TestExporter.configureLatch.await(5, TimeUnit.SECONDS)).isTrue();

@@ -15,10 +15,18 @@
  */
 package io.zeebe.gateway.impl.configuration;
 
+import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_HOST;
+import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_MEMBER_ID;
+import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_NAME;
+import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_PORT;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_REQUEST_TIMEOUT;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_TRANSPORT_BUFFER_SIZE;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_HOST;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_MEMBER_ID;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_NAME;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_PORT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CONTACT_POINT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_REQUEST_TIMEOUT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_TRANSPORT_BUFFER;
@@ -30,10 +38,13 @@ import java.time.Duration;
 import java.util.Objects;
 
 public class ClusterCfg {
-
   private String contactPoint = DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT;
   private String transportBuffer = DEFAULT_TRANSPORT_BUFFER_SIZE;
   private String requestTimeout = DEFAULT_REQUEST_TIMEOUT;
+  private String clusterName = DEFAULT_CLUSTER_NAME;
+  private String memberId = DEFAULT_CLUSTER_MEMBER_ID;
+  private String host = DEFAULT_CLUSTER_HOST;
+  private int port = DEFAULT_CLUSTER_PORT;
 
   public void init(Environment environment) {
     environment
@@ -42,6 +53,37 @@ public class ClusterCfg {
         .ifPresent(this::setContactPoint);
     environment.get(ENV_GATEWAY_TRANSPORT_BUFFER).ifPresent(this::setTransportBuffer);
     environment.get(ENV_GATEWAY_REQUEST_TIMEOUT).ifPresent(this::setRequestTimeout);
+    environment.get(ENV_GATEWAY_CLUSTER_NAME).ifPresent(this::setClusterName);
+    environment.get(ENV_GATEWAY_CLUSTER_MEMBER_ID).ifPresent(this::setMemberId);
+    environment.get(ENV_GATEWAY_CLUSTER_HOST).ifPresent(this::setHost);
+    environment.getInt(ENV_GATEWAY_CLUSTER_PORT).ifPresent(this::setPort);
+  }
+
+  public String getMemberId() {
+    return memberId;
+  }
+
+  public ClusterCfg setMemberId(String memberId) {
+    this.memberId = memberId;
+    return this;
+  }
+
+  public String getHost() {
+    return host;
+  }
+
+  public ClusterCfg setHost(String host) {
+    this.host = host;
+    return this;
+  }
+
+  public int getPort() {
+    return port;
+  }
+
+  public ClusterCfg setPort(int port) {
+    this.port = port;
+    return this;
   }
 
   public String getContactPoint() {
@@ -71,6 +113,15 @@ public class ClusterCfg {
     return this;
   }
 
+  public String getClusterName() {
+    return clusterName;
+  }
+
+  public ClusterCfg setClusterName(String name) {
+    this.clusterName = name;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -82,12 +133,13 @@ public class ClusterCfg {
     final ClusterCfg that = (ClusterCfg) o;
     return Objects.equals(contactPoint, that.contactPoint)
         && Objects.equals(transportBuffer, that.transportBuffer)
-        && Objects.equals(requestTimeout, that.requestTimeout);
+        && Objects.equals(requestTimeout, that.requestTimeout)
+        && Objects.equals(clusterName, that.clusterName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(contactPoint, transportBuffer, requestTimeout);
+    return Objects.hash(contactPoint, transportBuffer, requestTimeout, clusterName);
   }
 
   @Override
@@ -101,6 +153,9 @@ public class ClusterCfg {
         + '\''
         + ", requestTimeout='"
         + requestTimeout
+        + '\''
+        + ", clusterName='"
+        + clusterName
         + '\''
         + '}';
   }

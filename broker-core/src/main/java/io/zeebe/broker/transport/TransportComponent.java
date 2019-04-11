@@ -22,14 +22,7 @@ import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_MESSAGE
 import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_MESSAGE_HANDLER;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_SERVER_NAME;
 
-import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
-import io.zeebe.broker.clustering.base.raft.RaftApiMessageHandlerService;
 import io.zeebe.broker.services.DispatcherService;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
@@ -37,7 +30,6 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.transport.clientapi.ClientApiMessageHandlerService;
-import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManagerService;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.DispatcherBuilder;
 import io.zeebe.dispatcher.Dispatchers;
@@ -69,7 +61,6 @@ public class TransportComponent implements Component {
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     final int nodeId = brokerCfg.getCluster().getNodeId();
     final SocketAddress managementEndpoint = networkCfg.getManagement().toSocketAddress();
-    final SocketAddress subscriptionEndpoint = networkCfg.getSubscription().toSocketAddress();
 
     final ActorFuture<ClientTransport> managementClientFuture =
         createClientTransport(
@@ -79,40 +70,11 @@ public class TransportComponent implements Component {
             Collections.singletonList(new IntTuple<>(nodeId, managementEndpoint)));
 
     context.addRequiredStartAction(managementClientFuture);
-
-    final ActorFuture<ClientTransport> replicationClientFuture =
-        createClientTransport(
-            serviceContainer,
-            REPLICATION_API_CLIENT_NAME,
-            new ByteValue(networkCfg.getDefaultSendBufferSize()),
-            null);
-
-    context.addRequiredStartAction(replicationClientFuture);
-
-    final ActorFuture<ClientTransport> subscriptionClientFuture =
-        createClientTransport(
-            serviceContainer,
-            SUBSCRIPTION_API_CLIENT_NAME,
-            new ByteValue(networkCfg.getDefaultSendBufferSize()),
-            Collections.singletonList(new IntTuple<>(nodeId, subscriptionEndpoint)));
-
-    context.addRequiredStartAction(subscriptionClientFuture);
   }
 
   private void createSocketBindings(final SystemContext context) {
     final NetworkCfg networkCfg = context.getBrokerConfiguration().getNetwork();
     final ServiceContainer serviceContainer = context.getServiceContainer();
-
-    final ActorFuture<ServerTransport> replicationApiFuture =
-        bindNonBufferingProtocolEndpoint(
-            context,
-            serviceContainer,
-            REPLICATION_API_SERVER_NAME,
-            networkCfg.getReplication(),
-            REPLICATION_API_MESSAGE_HANDLER,
-            REPLICATION_API_MESSAGE_HANDLER);
-
-    context.addRequiredStartAction(replicationApiFuture);
 
     final ActorFuture<BufferingServerTransport> managementApiFuture =
         bindBufferingProtocolEndpoint(
@@ -123,16 +85,6 @@ public class TransportComponent implements Component {
             new ByteValue(networkCfg.getManagement().getReceiveBufferSize()));
 
     context.addRequiredStartAction(managementApiFuture);
-
-    final ActorFuture<BufferingServerTransport> subscriptionApiFuture =
-        bindBufferingProtocolEndpoint(
-            context,
-            serviceContainer,
-            SUBSCRIPTION_API_SERVER_NAME,
-            networkCfg.getSubscription(),
-            new ByteValue(networkCfg.getSubscription().getReceiveBufferSize()));
-
-    context.addRequiredStartAction(subscriptionApiFuture);
 
     final ActorFuture<ServerTransport> clientApiFuture =
         bindNonBufferingProtocolEndpoint(
@@ -145,49 +97,12 @@ public class TransportComponent implements Component {
 
     context.addRequiredStartAction(clientApiFuture);
 
-    final ServiceName<Dispatcher> controlMessageBufferService =
-        createReceiveBuffer(
-            serviceContainer,
-            CLIENT_API_SERVER_NAME,
-            new ByteValue(networkCfg.getClient().getControlMessageBufferSize()));
-
     final ClientApiMessageHandlerService messageHandlerService =
         new ClientApiMessageHandlerService();
     serviceContainer
         .createService(CLIENT_API_MESSAGE_HANDLER, messageHandlerService)
-        .dependency(
-            controlMessageBufferService, messageHandlerService.getControlMessageBufferInjector())
         .groupReference(
             LEADER_PARTITION_GROUP_NAME, messageHandlerService.getLeaderParitionsGroupReference())
-        .install();
-
-    final RaftApiMessageHandlerService raftApiMessageHandlerService =
-        new RaftApiMessageHandlerService();
-    serviceContainer
-        .createService(REPLICATION_API_MESSAGE_HANDLER, raftApiMessageHandlerService)
-        .groupReference(
-            ClusterBaseLayerServiceNames.RAFT_SERVICE_GROUP,
-            raftApiMessageHandlerService.getRaftGroupReference())
-        .install();
-
-    final ControlMessageHandlerManagerService controlMessageHandlerManagerService =
-        new ControlMessageHandlerManagerService();
-    serviceContainer
-        .createService(
-            TransportServiceNames.CONTROL_MESSAGE_HANDLER_MANAGER,
-            controlMessageHandlerManagerService)
-        .dependency(
-            controlMessageBufferService,
-            controlMessageHandlerManagerService.getControlMessageBufferInjector())
-        .dependency(
-            TransportServiceNames.serverTransport(CLIENT_API_SERVER_NAME),
-            controlMessageHandlerManagerService.getTransportInjector())
-        .dependency(
-            ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE,
-            controlMessageHandlerManagerService.getTopologyManagerInjector())
-        .dependency(
-            TransportServiceNames.clientTransport(MANAGEMENT_API_CLIENT_NAME),
-            controlMessageHandlerManagerService.getManagementClientTransportInjector())
         .install();
   }
 

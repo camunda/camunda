@@ -15,11 +15,9 @@
  */
 package io.zeebe.test;
 
-import static io.zeebe.broker.workflow.WorkflowServiceNames.WORKFLOW_REPOSITORY_SERVICE;
-
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.clustering.base.partitions.PartitionServiceNames;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
@@ -57,14 +55,12 @@ import org.slf4j.Logger;
 
 public class EmbeddedBrokerRule extends ExternalResource {
 
-  private static final String SNAPSHOTS_DIRECTORY = "snapshots";
-  private static final String STATE_DIRECTORY = "state";
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.toml";
-
-  protected static final Logger LOG = new ZbLogger("io.zeebe.test");
   public static final int DEFAULT_TIMEOUT = 25;
   public static final String TEST_RECORD_EXPORTER_ID = "test-recorder";
-
+  protected static final Logger LOG = new ZbLogger("io.zeebe.test");
+  private static final String SNAPSHOTS_DIRECTORY = "snapshots";
+  private static final String STATE_DIRECTORY = "state";
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
   protected final BrokerCfg brokerCfg;
@@ -115,6 +111,30 @@ public class EmbeddedBrokerRule extends ExternalResource {
     } catch (final IOException e) {
       throw new RuntimeException("Unable to open configuration", e);
     }
+  }
+
+  private static void deleteSnapshots(final File parentDir) {
+    final File snapshotDirectory = new File(parentDir, SNAPSHOTS_DIRECTORY);
+
+    if (snapshotDirectory.exists()) {
+      try {
+        FileUtil.deleteFolder(snapshotDirectory.getAbsolutePath());
+      } catch (final IOException e) {
+        throw new RuntimeException(
+            "Could not delete snapshot directory " + snapshotDirectory.getAbsolutePath(), e);
+      }
+    }
+  }
+
+  public static void assignSocketAddresses(final BrokerCfg brokerCfg) {
+    final NetworkCfg network = brokerCfg.getNetwork();
+    brokerCfg.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().port());
+    network.getClient().setPort(SocketUtil.getNextAddress().port());
+    network.getManagement().setPort(SocketUtil.getNextAddress().port());
+    network.getReplication().setPort(SocketUtil.getNextAddress().port());
+    network.getSubscription().setPort(SocketUtil.getNextAddress().port());
+    network.getAtomix().setPort(SocketUtil.getNextAddress().port());
+    brokerCfg.getMetrics().setPort(SocketUtil.getNextAddress().port());
   }
 
   @Override
@@ -206,10 +226,9 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
       serviceContainer
           .createService(TestService.NAME, new TestService())
-          .dependency(ClusterBaseLayerServiceNames.leaderPartitionServiceName(partitionName))
+          .dependency(PartitionServiceNames.leaderPartitionServiceName(partitionName))
           .dependency(
               TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
-          .dependency(WORKFLOW_REPOSITORY_SERVICE)
           .install()
           .get(timeout, TimeUnit.SECONDS);
 
@@ -263,19 +282,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
     }
   }
 
-  private static void deleteSnapshots(final File parentDir) {
-    final File snapshotDirectory = new File(parentDir, SNAPSHOTS_DIRECTORY);
-
-    if (snapshotDirectory.exists()) {
-      try {
-        FileUtil.deleteFolder(snapshotDirectory.getAbsolutePath());
-      } catch (final IOException e) {
-        throw new RuntimeException(
-            "Could not delete snapshot directory " + snapshotDirectory.getAbsolutePath(), e);
-      }
-    }
-  }
-
   public <S> S getService(final ServiceName<S> serviceName) {
     final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
 
@@ -304,16 +310,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
     } catch (final InterruptedException | ExecutionException | TimeoutException e) {
       throw new RuntimeException("Could not remove service " + name.getName() + " in 10 seconds.");
     }
-  }
-
-  public static void assignSocketAddresses(final BrokerCfg brokerCfg) {
-    final NetworkCfg network = brokerCfg.getNetwork();
-    brokerCfg.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().port());
-    network.getClient().setPort(SocketUtil.getNextAddress().port());
-    network.getManagement().setPort(SocketUtil.getNextAddress().port());
-    network.getReplication().setPort(SocketUtil.getNextAddress().port());
-    network.getSubscription().setPort(SocketUtil.getNextAddress().port());
-    brokerCfg.getMetrics().setPort(SocketUtil.getNextAddress().port());
   }
 
   static class TestService implements Service<TestService> {

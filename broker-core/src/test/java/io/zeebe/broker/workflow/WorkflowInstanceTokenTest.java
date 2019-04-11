@@ -45,7 +45,7 @@ import org.junit.rules.RuleChain;
 public class WorkflowInstanceTokenTest {
 
   private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final ClientApiRule API_RULE = new ClientApiRule(BROKER_RULE::getClientAddress);
+  private static final ClientApiRule API_RULE = new ClientApiRule(BROKER_RULE::getAtomix);
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(API_RULE);
 

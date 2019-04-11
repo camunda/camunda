@@ -90,21 +90,21 @@ public class MetricsTest {
                 2,
                 clusterLabel(),
                 nodeLabel(),
-                entry("partition", "0"),
+                entry("partition", "1"),
                 entry("type", "created")),
             metric(
                 "zb_workflow_instance_events_count",
                 1,
                 clusterLabel(),
                 nodeLabel(),
-                entry("partition", "0"),
+                entry("partition", "1"),
                 entry("type", "completed")),
             metric(
                 "zb_workflow_instance_events_count",
                 1,
                 clusterLabel(),
                 nodeLabel(),
-                entry("partition", "0"),
+                entry("partition", "1"),
                 entry("type", "canceled")));
   }
 

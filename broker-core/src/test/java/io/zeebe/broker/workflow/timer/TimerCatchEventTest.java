@@ -43,7 +43,7 @@ import org.junit.rules.RuleChain;
 
 public class TimerCatchEventTest {
   private static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  private static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  private static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
   @Rule
