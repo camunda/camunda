@@ -613,28 +613,28 @@ public class VariableStateTest {
   }
 
   @Test
-  public void shouldSetPayload() {
+  public void shouldSetTemporaryVariables() {
     // when
-    variablesState.setPayload(parent, wrapString("a"));
-    variablesState.setPayload(child, wrapString("b"));
+    variablesState.setTemporaryVariables(parent, wrapString("a"));
+    variablesState.setTemporaryVariables(child, wrapString("b"));
 
     // then
-    assertThat(variablesState.getPayload(parent)).isEqualTo(wrapString("a"));
-    assertThat(variablesState.getPayload(child)).isEqualTo(wrapString("b"));
+    assertThat(variablesState.getTemporaryVariables(parent)).isEqualTo(wrapString("a"));
+    assertThat(variablesState.getTemporaryVariables(child)).isEqualTo(wrapString("b"));
   }
 
   @Test
-  public void shouldRemovePayload() {
+  public void shouldRemoveTemporaryVariables() {
     // given
-    variablesState.setPayload(parent, wrapString("a"));
-    variablesState.setPayload(child, wrapString("b"));
+    variablesState.setTemporaryVariables(parent, wrapString("a"));
+    variablesState.setTemporaryVariables(child, wrapString("b"));
 
     // when
-    variablesState.removePayload(parent);
+    variablesState.removeTemporaryVariables(parent);
 
     // then
-    assertThat(variablesState.getPayload(parent)).isNull();
-    assertThat(variablesState.getPayload(child)).isEqualTo(wrapString("b"));
+    assertThat(variablesState.getTemporaryVariables(parent)).isNull();
+    assertThat(variablesState.getTemporaryVariables(child)).isEqualTo(wrapString("b"));
   }
 
   @Test

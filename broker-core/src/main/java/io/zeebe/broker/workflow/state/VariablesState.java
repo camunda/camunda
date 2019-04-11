@@ -64,10 +64,9 @@ public class VariablesState {
   private final DbLong scopeKey;
   private final DbString variableName;
 
-  // (scope key) => (payload)
-  private final ColumnFamily<DbLong, DbBuffer> payloadColumnFamily;
-  private final DbLong payloadScopeKey = new DbLong();
-  private final DbBuffer payload = new DbBuffer();
+  // (scope key) => (temporaryVariables)
+  private final ColumnFamily<DbLong, DbBuffer> temporaryVariableStoreColumnFamily;
+  private final DbBuffer temporaryVariables = new DbBuffer();
 
   private final VariableInstance newVariable = new VariableInstance();
   private final DirectBuffer variableNameView = new UnsafeBuffer(0, 0);
@@ -99,8 +98,9 @@ public class VariablesState {
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.VARIABLES, dbContext, scopeKeyVariableNameKey, new VariableInstance());
 
-    payloadColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.PAYLOAD, dbContext, payloadScopeKey, payload);
+    temporaryVariableStoreColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.TEMPORARY_VARIABLE_STORE, dbContext, scopeKey, temporaryVariables);
   }
 
   public void setVariablesLocalFromDocument(
@@ -429,28 +429,28 @@ public class VariablesState {
         () -> false);
   }
 
-  public void setPayload(long scopeKey, DirectBuffer payloadBuffer) {
-    payloadScopeKey.wrapLong(scopeKey);
-    payload.wrapBuffer(payloadBuffer);
-    payloadColumnFamily.put(payloadScopeKey, payload);
+  public void setTemporaryVariables(long scopeKey, DirectBuffer variables) {
+    this.scopeKey.wrapLong(scopeKey);
+    temporaryVariables.wrapBuffer(variables);
+    temporaryVariableStoreColumnFamily.put(this.scopeKey, temporaryVariables);
   }
 
-  public DirectBuffer getPayload(long scopeKey) {
-    payloadScopeKey.wrapLong(scopeKey);
-    final DbBuffer payload = payloadColumnFamily.get(payloadScopeKey);
+  public DirectBuffer getTemporaryVariables(long scopeKey) {
+    this.scopeKey.wrapLong(scopeKey);
+    final DbBuffer variables = temporaryVariableStoreColumnFamily.get(this.scopeKey);
 
-    return payload == null ? null : payload.getValue();
+    return variables == null ? null : variables.getValue();
   }
 
-  public void removePayload(long scopeKey) {
-    payloadScopeKey.wrapLong(scopeKey);
-    payloadColumnFamily.delete(payloadScopeKey);
+  public void removeTemporaryVariables(long scopeKey) {
+    this.scopeKey.wrapLong(scopeKey);
+    temporaryVariableStoreColumnFamily.delete(this.scopeKey);
   }
 
   public boolean isEmpty() {
     return variablesColumnFamily.isEmpty()
         && childParentColumnFamily.isEmpty()
-        && payloadColumnFamily.isEmpty();
+        && temporaryVariableStoreColumnFamily.isEmpty();
   }
 
   public void setListener(VariableListener listener) {

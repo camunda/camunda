@@ -63,7 +63,7 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
       workflowState
           .getElementInstanceState()
           .getVariablesState()
-          .setPayload(elementInstanceKey, jobEvent.getVariables());
+          .setTemporaryVariables(elementInstanceKey, jobEvent.getVariables());
     }
   }
 }

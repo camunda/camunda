@@ -41,15 +41,18 @@ public class IOMappingHelper {
     final Mapping[] outputMappings = element.getOutputMappings();
     final boolean hasOutputMappings = outputMappings.length > 0;
 
-    final DirectBuffer payload = variablesState.getPayload(elementInstanceKey);
-    if (payload != null) {
+    final DirectBuffer temporaryVariables =
+        variablesState.getTemporaryVariables(elementInstanceKey);
+    if (temporaryVariables != null) {
       if (hasOutputMappings) {
-        variablesState.setVariablesLocalFromDocument(elementInstanceKey, workflowKey, payload);
+        variablesState.setVariablesLocalFromDocument(
+            elementInstanceKey, workflowKey, temporaryVariables);
       } else {
-        variablesState.setVariablesFromDocument(elementInstanceKey, workflowKey, payload);
+        variablesState.setVariablesFromDocument(
+            elementInstanceKey, workflowKey, temporaryVariables);
       }
 
-      variablesState.removePayload(elementInstanceKey);
+      variablesState.removeTemporaryVariables(elementInstanceKey);
     }
 
     if (hasOutputMappings) {
@@ -59,9 +62,9 @@ public class IOMappingHelper {
           determineVariables(variablesState, elementInstanceKey, outputMappings);
 
       mergeTool.mergeDocumentStrictly(variables, outputMappings);
-      final DirectBuffer mergedPayload = mergeTool.writeResultToBuffer();
+      final DirectBuffer mergedVariables = mergeTool.writeResultToBuffer();
 
-      variablesState.setVariablesFromDocument(flowScopeKey, workflowKey, mergedPayload);
+      variablesState.setVariablesFromDocument(flowScopeKey, workflowKey, mergedVariables);
     }
   }
 
@@ -79,14 +82,14 @@ public class IOMappingHelper {
           determineVariables(variablesState, context.getFlowScopeInstance().getKey(), mappings);
 
       mergeTool.mergeDocumentStrictly(scopeVariables, mappings);
-      final DirectBuffer mappedPayload = mergeTool.writeResultToBuffer();
+      final DirectBuffer mappedVariables = mergeTool.writeResultToBuffer();
 
       final long scopeKey = context.getRecord().getKey();
       final long workflowKey = context.getRecord().getValue().getWorkflowKey();
       context
           .getElementInstanceState()
           .getVariablesState()
-          .setVariablesLocalFromDocument(scopeKey, workflowKey, mappedPayload);
+          .setVariablesLocalFromDocument(scopeKey, workflowKey, mappedVariables);
     }
   }
 
