@@ -21,6 +21,7 @@ import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.rest.dto.SequenceFlowDto;
 import org.camunda.operate.rest.dto.VariableDto;
+import org.camunda.operate.rest.dto.WorkflowInstanceCoreStatisticsDto;
 import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
@@ -155,6 +156,12 @@ public class WorkflowInstanceRestService {
       throw new InvalidRequestException("Exactly one workflow must be specified in the request (via workflowIds or bpmnProcessId/version).");
     }
     return listViewReader.getActivityStatistics(queries.get(0));
+  }
+  
+  @ApiOperation("Get workflow instance core statistics (aggregations)")
+  @GetMapping(path = "/core-statistics")
+  public WorkflowInstanceCoreStatisticsDto getCoreStatistics() {
+      return workflowInstanceReader.getCoreStatistics();
   }
 
 }
