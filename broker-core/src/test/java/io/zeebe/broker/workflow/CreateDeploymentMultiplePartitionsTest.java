@@ -22,7 +22,7 @@ import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.UnstableTest;
+import io.zeebe.UnstableCI;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
@@ -253,7 +253,7 @@ public class CreateDeploymentMultiplePartitionsTest {
   }
 
   @Test
-  @Category(UnstableTest.class) // => https://github.com/zeebe-io/zeebe/issues/2110
+  @Category(UnstableCI.class) // => https://github.com/zeebe-io/zeebe/issues/2110
   public void shouldCreateDeploymentOnAllPartitionsWithRestartBroker() {
     // given
     apiRule
