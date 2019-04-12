@@ -156,8 +156,6 @@ public class ElasticsearchExporterConfiguration {
         return index.message;
       case MESSAGE_SUBSCRIPTION:
         return index.messageSubscription;
-      case RAFT:
-        return index.raft;
       case VARIABLE:
         return index.variable;
       case VARIABLE_DOCUMENT:

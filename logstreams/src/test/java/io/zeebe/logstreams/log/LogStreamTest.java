@@ -15,27 +15,40 @@
  */
 package io.zeebe.logstreams.log;
 
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.distributedlog.DistributedLogstreamService;
+import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
+import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
+import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.internal.util.reflection.FieldSetter;
+import org.mockito.stubbing.Answer;
 
 public class LogStreamTest {
   public static final int PARTITION_ID = 0;
@@ -73,7 +86,59 @@ public class LogStreamTest {
 
     streamConfig.accept(builder);
 
-    return builder.build().join();
+    final LogStream logStream = builder.build().join();
+
+    final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);
+
+    final DistributedLogstreamService distributedLogImpl =
+        new DefaultDistributedLogstreamService(new DistributedLogstreamServiceConfig());
+
+    final String nodeId = "0";
+    try {
+      FieldSetter.setField(
+          distributedLogImpl,
+          DefaultDistributedLogstreamService.class.getDeclaredField("logStream"),
+          logStream);
+
+      FieldSetter.setField(
+          distributedLogImpl,
+          DefaultDistributedLogstreamService.class.getDeclaredField("logStorage"),
+          logStream.getLogStorage());
+
+      FieldSetter.setField(
+          distributedLogImpl,
+          DefaultDistributedLogstreamService.class.getDeclaredField("currentLeader"),
+          nodeId);
+
+    } catch (NoSuchFieldException e) {
+      e.printStackTrace();
+    }
+
+    doAnswer(
+            (Answer<CompletableFuture<Long>>)
+                invocation -> {
+                  final Object[] arguments = invocation.getArguments();
+                  if (arguments != null
+                      && arguments.length > 1
+                      && arguments[0] != null
+                      && arguments[1] != null) {
+                    final byte[] bytes = (byte[]) arguments[0];
+                    final long pos = (long) arguments[1];
+                    return CompletableFuture.completedFuture(
+                        distributedLogImpl.append(nodeId, pos, bytes));
+                  }
+                  return null;
+                })
+        .when(mockDistLog)
+        .asyncAppend(any(), anyLong());
+
+    serviceContainer
+        .get()
+        .createService(distributedLogPartitionServiceName("test-log-name"), () -> mockDistLog)
+        .install()
+        .join();
+
+    return logStream;
   }
 
   protected LogStream buildLogStream() {
@@ -179,6 +244,7 @@ public class LogStreamTest {
   }
 
   @Test
+  @Ignore // events are appended only after committed. So cannot truncate.
   public void shouldTruncateLogStorage() {
     // given
     final LogStream logStream = buildLogStream();
@@ -200,6 +266,8 @@ public class LogStreamTest {
   }
 
   @Test
+  @Ignore // events are appended only after committed. So cannot truncate.
+  // https://github.com/zeebe-io/zeebe/issues/2058
   public void shouldTruncateLogStorageAfterCommittedPosition() {
     // given
     final LogStream logStream = buildLogStream();
@@ -221,6 +289,8 @@ public class LogStreamTest {
   }
 
   @Test
+  @Ignore // events are appended only after committed. So cannot truncate.
+  // https://github.com/zeebe-io/zeebe/issues/2058
   public void shouldTruncateWhenPositionIsNotAnEventPosition() {
     // given
     final LogStream logStream = buildLogStream();
@@ -240,6 +310,8 @@ public class LogStreamTest {
   }
 
   @Test
+  @Ignore // events are appended only after committed. So cannot truncate.
+  // https://github.com/zeebe-io/zeebe/issues/2058
   public void shouldWriteNewEventAfterTruncation() {
     // given
     final LogStream logStream = buildLogStream();
@@ -291,7 +363,7 @@ public class LogStreamTest {
   }
 
   private Stream<LoggedEvent> events(final LogStream stream) {
-    final BufferedLogStreamReader reader = new BufferedLogStreamReader(stream, true);
+    final BufferedLogStreamReader reader = new BufferedLogStreamReader(stream);
     closeables.manage(reader);
 
     reader.seekToFirstEvent();
@@ -313,9 +385,7 @@ public class LogStreamTest {
     }
 
     final long writtenEventPosition = position;
-    waitUntil(
-        () ->
-            logStream.getLogStorageAppender().getCurrentAppenderPosition() > writtenEventPosition);
+    waitUntil(() -> logStream.getCommitPosition() >= writtenEventPosition);
 
     return position;
   }

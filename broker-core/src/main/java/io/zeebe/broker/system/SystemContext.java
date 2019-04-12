@@ -48,7 +48,7 @@ import org.slf4j.Logger;
 public class SystemContext implements AutoCloseable {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
   public static final String BROKER_ID_LOG_PROPERTY = "broker-id";
-  public static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(10);
+  public static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(20);
   public static final String NODE_ID_ERROR_MSG =
       "Node id %s needs to be non negative and smaller then cluster size %s.";
   public static final String REPLICATION_FACTOR_ERROR_MSG =
@@ -62,7 +62,6 @@ public class SystemContext implements AutoCloseable {
 
   protected final List<ActorFuture<?>> requiredStartActions = new ArrayList<>();
   private final List<Closeable> closeablesToReleaseResources = new ArrayList<>();
-  private Closeable gatewayResourceReleasingDelegate = null;
 
   protected Map<String, String> diagnosticContext;
   protected ActorScheduler scheduler;
@@ -202,7 +201,7 @@ public class SystemContext implements AutoCloseable {
 
     try {
       for (final ActorFuture<?> requiredStartAction : requiredStartActions) {
-        requiredStartAction.get(20, TimeUnit.SECONDS);
+        requiredStartAction.get(40, TimeUnit.SECONDS);
       }
     } catch (final Exception e) {
       LOG.error("Could not start broker", e);
@@ -214,14 +213,6 @@ public class SystemContext implements AutoCloseable {
   @Override
   public void close() {
     LOG.info("Closing...");
-
-    try {
-      if (gatewayResourceReleasingDelegate != null) {
-        gatewayResourceReleasingDelegate.close();
-      }
-    } catch (IOException e) {
-      LOG.error("Failed to close gateway:", e);
-    }
 
     try {
       serviceContainer.close(getCloseTimeout().toMillis(), TimeUnit.MILLISECONDS);
@@ -259,10 +250,6 @@ public class SystemContext implements AutoCloseable {
 
   public void addResourceReleasingDelegate(final Closeable delegate) {
     closeablesToReleaseResources.add(delegate);
-  }
-
-  public void setGatewayResourceReleasingDelegate(final Closeable delegate) {
-    gatewayResourceReleasingDelegate = delegate;
   }
 
   public Map<String, String> getDiagnosticContext() {

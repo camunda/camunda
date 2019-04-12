@@ -20,14 +20,13 @@ package io.zeebe.broker.clustering.base.partitions;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 
 /** Service representing a partition. */
 public class Partition implements Service<Partition> {
-  public static final String PARTITION_NAME_FORMAT = "partition-%d";
+  public static final String PARTITION_NAME_FORMAT = "raft-atomix-partition-%d";
 
   public static String getPartitionName(final int partitionId) {
     return String.format(PARTITION_NAME_FORMAT, partitionId);

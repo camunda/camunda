@@ -23,6 +23,7 @@ import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.sbe.MessageDecoderFlyweight;
 import org.agrona.sbe.MessageEncoderFlyweight;
 
@@ -81,5 +82,12 @@ public abstract class SbeBufferWriterReader<
 
     return headerDecoder.schemaId() == getBodyDecoder().sbeSchemaId()
         && headerDecoder.templateId() == getBodyDecoder().sbeTemplateId();
+  }
+
+  public byte[] toBytes() {
+    final byte bytes[] = new byte[getLength()];
+    final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+    write(buffer, 0);
+    return bytes;
   }
 }

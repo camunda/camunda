@@ -26,7 +26,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
@@ -306,13 +305,13 @@ public class StreamProcessorControllerTest {
                       writtenEventPosition.set(position);
 
                       return position;
-                    }));
+                    })
+                .thenReturn(1L));
 
     final long firstEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
     waitUntil(() -> writtenEventPosition.get() > 0);
     final long position = writtenEventPosition.get();
     writer.waitForPositionToBeAppended(position);
-    logStreamRule.setCommitPosition(position);
 
     // then
     final LoggedEvent writtenEvent = reader.readEventAtPosition(position);
@@ -400,7 +399,6 @@ public class StreamProcessorControllerTest {
     // when
     final long lastEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
-    writeEventAndWaitUntilProcessed(EVENT_1);
 
     // then
     verify(snapshotController, timeout(5000).times(1)).moveValidSnapshot(metadata.capture());
@@ -727,35 +725,6 @@ public class StreamProcessorControllerTest {
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
   }
 
-  @Test
-  public void shouldNotTakeStateSnapshot() throws Exception {
-    // given
-    final CountDownLatch latch = new CountDownLatch(1);
-
-    // when
-    changeMockInActorContext(
-        () -> {
-          doAnswer(i -> writer.writeEvent(EVENT_2, false)).when(eventProcessor).writeEvent(any());
-
-          doAnswer(
-                  i -> {
-                    latch.countDown();
-                    return true;
-                  })
-              .when(eventProcessor)
-              .executeSideEffects();
-        });
-    writeEventAndWaitUntilProcessed(EVENT_1);
-
-    // when
-    latch.await();
-    logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
-    streamProcessorController.closeAsync().join();
-
-    // then
-    verify(snapshotController, never()).takeSnapshot(anyLong());
-  }
-
   private void installStreamProcessorService() throws IOException {
     stateStorage = createStateStorage();
     snapshotController =
@@ -832,7 +801,7 @@ public class StreamProcessorControllerTest {
 
     final long eventPosition = writer.writeEvent(event, true);
 
-    waitUntil(() -> streamProcessor.getProcessedEventCount() == before + 1);
+    waitUntil(() -> streamProcessor.getProcessedEventCount() >= before + 1);
     return eventPosition;
   }
 }

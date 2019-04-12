@@ -64,7 +64,7 @@ import org.junit.rules.RuleChain;
 public class WorkflowInstanceFunctionalTest {
 
   private static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  private static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  private static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
   private static PartitionTestClient testClient;
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);

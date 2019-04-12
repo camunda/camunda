@@ -15,6 +15,10 @@
  */
 package io.zeebe.gateway.configuration;
 
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_HOST;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_MEMBER_ID;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_NAME;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_PORT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CONTACT_POINT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_HOST;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MANAGEMENT_THREADS;
@@ -47,7 +51,11 @@ public class GatewayCfgTest {
         .getCluster()
         .setContactPoint("foobar:1234")
         .setTransportBuffer("4K")
-        .setRequestTimeout("123h");
+        .setRequestTimeout("123h")
+        .setClusterName("testCluster")
+        .setMemberId("testMember")
+        .setHost("1.2.3.4")
+        .setPort(12321);
     CUSTOM_CFG.getThreads().setManagementThreads(100);
   }
 
@@ -80,6 +88,10 @@ public class GatewayCfgTest {
     setEnv(ENV_GATEWAY_TRANSPORT_BUFFER, "12G");
     setEnv(ENV_GATEWAY_MANAGEMENT_THREADS, "32");
     setEnv(ENV_GATEWAY_REQUEST_TIMEOUT, "43m");
+    setEnv(ENV_GATEWAY_CLUSTER_NAME, "envCluster");
+    setEnv(ENV_GATEWAY_CLUSTER_MEMBER_ID, "envMember");
+    setEnv(ENV_GATEWAY_CLUSTER_HOST, "envHost");
+    setEnv(ENV_GATEWAY_CLUSTER_PORT, "12345");
 
     final GatewayCfg expected = new GatewayCfg();
     expected.getNetwork().setHost("zeebe").setPort(5432);
@@ -87,7 +99,11 @@ public class GatewayCfgTest {
         .getCluster()
         .setContactPoint("broker:432")
         .setTransportBuffer("12G")
-        .setRequestTimeout("43m");
+        .setRequestTimeout("43m")
+        .setClusterName("envCluster")
+        .setMemberId("envMember")
+        .setHost("envHost")
+        .setPort(12345);
     expected.getThreads().setManagementThreads(32);
 
     // when

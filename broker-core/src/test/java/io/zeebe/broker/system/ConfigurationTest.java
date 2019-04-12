@@ -34,6 +34,7 @@ import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PART
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_REPLICATION_FACTOR;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -43,6 +44,7 @@ import io.zeebe.broker.system.configuration.EmbeddedGatewayCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.MetricsCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
+import io.zeebe.broker.system.configuration.SocketBindingAtomixCfg;
 import io.zeebe.broker.system.configuration.SocketBindingClientApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingManagementCfg;
 import io.zeebe.broker.system.configuration.SocketBindingReplicationCfg;
@@ -74,6 +76,7 @@ public class ConfigurationTest {
   public static final int REPLICATION_PORT = SocketBindingReplicationCfg.DEFAULT_PORT;
   public static final int SUBSCRIPTION_PORT = SocketBindingSubscriptionCfg.DEFAULT_PORT;
   public static final int METRICS_PORT = MetricsCfg.DEFAULT_PORT;
+  public static final int ATOMIX_PORT = SocketBindingAtomixCfg.DEFAULT_PORT;
 
   @Test
   public void shouldUseSpecifiedNodeId() {
@@ -101,12 +104,18 @@ public class ConfigurationTest {
   @Test
   public void shouldUseDefaultPorts() {
     assertPorts(
-        "default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT, SUBSCRIPTION_PORT, METRICS_PORT);
+        "default",
+        CLIENT_PORT,
+        MANAGEMENT_PORT,
+        REPLICATION_PORT,
+        SUBSCRIPTION_PORT,
+        ATOMIX_PORT,
+        METRICS_PORT);
   }
 
   @Test
   public void shouldUseSpecifiedPorts() {
-    assertPorts("specific-ports", 1, 2, 3, 4, 5);
+    assertPorts("specific-ports", 1, 2, 3, 4, 5, 6);
   }
 
   @Test
@@ -118,6 +127,7 @@ public class ConfigurationTest {
         MANAGEMENT_PORT + offset,
         REPLICATION_PORT + offset,
         SUBSCRIPTION_PORT + offset,
+        ATOMIX_PORT + offset,
         METRICS_PORT + offset);
   }
 
@@ -125,7 +135,13 @@ public class ConfigurationTest {
   public void shouldUsePortOffsetWithSpecifiedPorts() {
     final int offset = 30;
     assertPorts(
-        "specific-ports-offset", 1 + offset, 2 + offset, 3 + offset, 4 + offset, 5 + offset);
+        "specific-ports-offset",
+        1 + offset,
+        2 + offset,
+        3 + offset,
+        4 + offset,
+        5 + offset,
+        6 + offset);
   }
 
   @Test
@@ -138,6 +154,7 @@ public class ConfigurationTest {
         MANAGEMENT_PORT + offset,
         REPLICATION_PORT + offset,
         SUBSCRIPTION_PORT + offset,
+        ATOMIX_PORT + offset,
         METRICS_PORT + offset);
   }
 
@@ -145,14 +162,21 @@ public class ConfigurationTest {
   public void shouldUsePortOffsetFromEnvironmentWithSpecifiedPorts() {
     environment.put(ENV_PORT_OFFSET, "3");
     final int offset = 30;
-    assertPorts("specific-ports", 1 + offset, 2 + offset, 3 + offset, 4 + offset, 5 + offset);
+    assertPorts(
+        "specific-ports", 1 + offset, 2 + offset, 3 + offset, 4 + offset, 5 + offset, 6 + offset);
   }
 
   @Test
   public void shouldIgnoreInvalidPortOffsetFromEnvironment() {
     environment.put(ENV_PORT_OFFSET, "a");
     assertPorts(
-        "default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT, SUBSCRIPTION_PORT, METRICS_PORT);
+        "default",
+        CLIENT_PORT,
+        MANAGEMENT_PORT,
+        REPLICATION_PORT,
+        SUBSCRIPTION_PORT,
+        ATOMIX_PORT,
+        METRICS_PORT);
   }
 
   @Test
@@ -165,6 +189,7 @@ public class ConfigurationTest {
         MANAGEMENT_PORT + offset,
         REPLICATION_PORT + offset,
         SUBSCRIPTION_PORT + offset,
+        ATOMIX_PORT + offset,
         METRICS_PORT + offset);
   }
 
@@ -358,7 +383,8 @@ public class ConfigurationTest {
     // when - then
     assertThat(cfgCluster.getPartitionsCount()).isEqualTo(3);
     final List<Integer> partitionIds = cfgCluster.getPartitionIds();
-    assertThat(partitionIds).contains(0, 1, 2);
+    final int startId = START_PARTITION_ID;
+    assertThat(partitionIds).contains(startId, startId + 1, startId + 2);
   }
 
   @Test
@@ -502,6 +528,7 @@ public class ConfigurationTest {
       final int management,
       final int replication,
       final int subscription,
+      final int atomix,
       final int metrics) {
     final BrokerCfg brokerCfg = readConfig(configFileName);
     final NetworkCfg network = brokerCfg.getNetwork();
@@ -509,6 +536,7 @@ public class ConfigurationTest {
     assertThat(network.getManagement().getPort()).isEqualTo(management);
     assertThat(network.getReplication().getPort()).isEqualTo(replication);
     assertThat(network.getSubscription().getPort()).isEqualTo(subscription);
+    assertThat(network.getAtomix().getPort()).isEqualTo(atomix);
     assertThat(brokerCfg.getMetrics().getPort()).isEqualTo(metrics);
   }
 

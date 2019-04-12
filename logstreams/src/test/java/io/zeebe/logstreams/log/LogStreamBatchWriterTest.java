@@ -68,8 +68,6 @@ public class LogStreamBatchWriterTest {
   @Before
   public void setUp() {
     writer = new LogStreamBatchWriterImpl(logStreamRule.getLogStream());
-
-    logStreamRule.setCommitPosition(Long.MAX_VALUE);
   }
 
   private List<LoggedEvent> getWrittenEvents(final long position) {

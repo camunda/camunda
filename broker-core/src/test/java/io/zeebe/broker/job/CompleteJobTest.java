@@ -43,7 +43,7 @@ public class CompleteJobTest {
   private static final String JOB_TYPE = "foo";
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
 
   private PartitionTestClient testClient;
 

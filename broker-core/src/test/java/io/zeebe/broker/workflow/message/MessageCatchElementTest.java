@@ -108,7 +108,7 @@ public class MessageCatchElementTest {
   public static EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(setPartitionCount(PARTITION_COUNT));
   public static ClientApiRule apiRule =
-      new ClientApiRule(0, PARTITION_COUNT, brokerRule::getClientAddress);
+      new ClientApiRule(0, PARTITION_COUNT, brokerRule::getAtomix);
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
