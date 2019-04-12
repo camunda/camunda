@@ -29,6 +29,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+
 public class CombinedProcessReportResult
   extends ReportEvaluationResult<CombinedProcessReportResultDto, CombinedReportDefinitionDto> {
 
@@ -50,22 +51,7 @@ public class CombinedProcessReportResult
     final List<String[]> csvStrings;
     if (firstResultOptional.isPresent()) {
       final ProcessReportResultDto firstResult = firstResultOptional.get().getResultAsDto();
-      if (firstResult instanceof ProcessReportMapResultDto) {
-        csvStrings = mapCombinedMapResultToCsv(limit, offset, reportResult);
-      } else if (firstResult instanceof ProcessDurationReportMapResultDto) {
-        csvStrings = mapCombinedDurationMapResultToCsv(limit, offset, reportResult);
-      } else if (firstResult instanceof ProcessReportNumberResultDto) {
-        csvStrings = mapCombinedNumberResultToCsv(reportResult);
-      } else if (firstResult instanceof ProcessDurationReportNumberResultDto) {
-        csvStrings = mapCombinedDurationNumberResultToCsv(reportResult);
-      } else {
-        String message = String.format(
-          "Unsupported report type [%s] in combined report",
-          firstResult.getClass().getSimpleName()
-        );
-        logger.error(message);
-        throw new RuntimeException(message);
-      }
+      csvStrings = mapCombinedReportResultsToCsvList(limit, offset, firstResult);
     } else {
       logger.debug("No reports to evaluate are available in the combined report. Returning empty csv instead.");
       csvStrings = Collections.singletonList(new String[]{});
@@ -73,89 +59,96 @@ public class CombinedProcessReportResult
     return csvStrings;
   }
 
-  private List<String[]> mapCombinedNumberResultToCsv(CombinedProcessReportResultDto<ProcessReportNumberResultDto> combinedResult) {
-    final List<List<String[]>> allSingleReportsAsCsvList = mapCombinedReportResultsToCsvList(
-      1,
-      0,
-      combinedResult,
-      evaluationResult -> new SingleProcessNumberReportResult(
-        evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
-      )
-    );
-    final List<String[]> mergedCsvReports = mergeSingleReportsToOneCsv(allSingleReportsAsCsvList);
+  private List<String[]> mapCombinedReportResultsToCsvList(final Integer limit, final Integer offset,
+                                                           final ProcessReportResultDto firstResult) {
+    final List<String[]> csvStrings;
+    if (firstResult instanceof ProcessReportMapResultDto) {
+      csvStrings = mapCombinedReportResultsToCsvList(
+        limit,
+        offset,
+        (CombinedProcessReportResultDto<ProcessReportMapResultDto>) reportResult,
+        r -> new String[]{r.getReportDefinition().getName(), "", ""},
+        evaluationResult -> new SingleProcessMapReportResult(
+          evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
+        )
+      );
+    } else if (firstResult instanceof ProcessDurationReportMapResultDto) {
+      csvStrings = mapCombinedReportResultsToCsvList(
+        limit,
+        offset,
+        (CombinedProcessReportResultDto<ProcessDurationReportMapResultDto>) reportResult,
+        r -> new String[]{r.getReportDefinition().getName(), "", "", "", "", ""},
+        evaluationResult -> new SingleProcessMapDurationReportResult(
+          evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
+        )
+      );
+    } else if (firstResult instanceof ProcessReportNumberResultDto) {
+      csvStrings = mapCombinedReportResultsToCsvList(
+        1,
+        0,
+        (CombinedProcessReportResultDto<ProcessReportNumberResultDto>) reportResult,
+        r -> new String[]{r.getReportDefinition().getName(), ""},
+        evaluationResult -> new SingleProcessNumberReportResult(
+          evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
+        )
+      );
+    } else if (firstResult instanceof ProcessDurationReportNumberResultDto) {
+      csvStrings = mapCombinedReportResultsToCsvList(
+        1,
+        0,
+        (CombinedProcessReportResultDto<ProcessDurationReportNumberResultDto>) reportResult,
+        r -> new String[]{r.getReportDefinition().getName(), "", "", "", ""},
+        evaluationResult -> new SingleProcessNumberDurationReportResult(
+          evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
+        )
+      );
+    } else {
+      String message = String.format(
+        "Unsupported report type [%s] in combined report",
+        firstResult.getClass().getSimpleName()
+      );
+      logger.error(message);
+      throw new RuntimeException(message);
+    }
+    return csvStrings;
+  }
 
-    final String[] reportNameHeader = createCombinedReportHeader(
-      combinedResult, r -> new String[]{r.getReportDefinition().getName(), ""}
+  interface ReportResultMapper<T extends ProcessReportResultDto>
+    extends Function<ReportEvaluationResult<T, SingleProcessReportDefinitionDto>, ReportEvaluationResult<?, ?>> {
+  }
+
+  interface ReportResultHeaderMapper<T extends ProcessReportResultDto>
+    extends Function<ReportEvaluationResult<T, SingleProcessReportDefinitionDto>, String[]> {
+  }
+
+  private <T extends ProcessReportResultDto> List<String[]> mapCombinedReportResultsToCsvList(
+    final Integer limit,
+    final Integer offset,
+    final CombinedProcessReportResultDto<T> combinedResult,
+    final ReportResultHeaderMapper<T> singleResultHeaderMapper,
+    final ReportResultMapper<T> reportResultMapper) {
+
+    final List<List<String[]>> allSingleReportsAsCsvList = mapCombinedReportResultsToCsvLists(
+      limit,
+      offset,
+      combinedResult,
+      reportResultMapper
     );
+
+    final String[] reportNameHeader = createCombinedReportHeader(combinedResult, singleResultHeaderMapper);
+
+    final List<String[]> mergedCsvReports = mergeSingleReportsToOneCsv(allSingleReportsAsCsvList);
     mergedCsvReports.add(0, reportNameHeader);
 
     return mergedCsvReports;
   }
 
-  private List<String[]> mapCombinedDurationNumberResultToCsv(CombinedProcessReportResultDto<ProcessDurationReportNumberResultDto> combinedResult) {
-    final List<List<String[]>> allSingleReportsAsCsvList = mapCombinedReportResultsToCsvList(
-      1,
-      0,
-      combinedResult,
-      evaluationResult -> new SingleProcessNumberDurationReportResult(
-        evaluationResult.getResultAsDto(),
-        evaluationResult.getReportDefinition()
-      )
-    );
-    final List<String[]> csvStrings = mergeSingleReportsToOneCsv(allSingleReportsAsCsvList);
-    final String[] reportNameHeader = createCombinedReportHeader(
-      combinedResult, r -> new String[]{r.getReportDefinition().getName(), "", "", "", ""}
-    );
-    csvStrings.add(0, reportNameHeader);
-    return csvStrings;
-  }
 
-  private List<String[]> mapCombinedMapResultToCsv(Integer limit,
-                                                   Integer offset,
-                                                   CombinedProcessReportResultDto<ProcessReportMapResultDto> combinedResult) {
-    final List<List<String[]>> allSingleReportsAsCsvList = mapCombinedReportResultsToCsvList(
-      limit,
-      offset,
-      combinedResult,
-      evaluationResult -> new SingleProcessMapReportResult(
-        evaluationResult.getResultAsDto(),
-        evaluationResult.getReportDefinition()
-      )
-    );
-    final List<String[]> csvStrings = mergeSingleReportsToOneCsv(allSingleReportsAsCsvList);
-    final String[] reportNameHeader = createCombinedReportHeader(
-      combinedResult, r -> new String[]{r.getReportDefinition().getName(), "", ""}
-    );
-    csvStrings.add(0, reportNameHeader);
-    return csvStrings;
-  }
-
-  private List<String[]> mapCombinedDurationMapResultToCsv(Integer limit,
-                                                           Integer offset,
-                                                           CombinedProcessReportResultDto<ProcessDurationReportMapResultDto> combinedResult) {
-    final List<List<String[]>> allSingleReportsAsCsvList = mapCombinedReportResultsToCsvList(
-      limit,
-      offset,
-      combinedResult,
-      evaluationResult -> new SingleProcessMapDurationReportResult(
-        evaluationResult.getResultAsDto(),
-        evaluationResult.getReportDefinition()
-      )
-    );
-    final List<String[]> csvStrings = mergeSingleReportsToOneCsv(allSingleReportsAsCsvList);
-
-    final String[] combinedReportHeader = createCombinedReportHeader(
-      combinedResult, r -> new String[]{r.getReportDefinition().getName(), "", "", "", "", ""}
-    );
-    csvStrings.add(0, combinedReportHeader);
-    return csvStrings;
-  }
-
-  private <T extends ProcessReportResultDto> List<List<String[]>> mapCombinedReportResultsToCsvList(
+  private <T extends ProcessReportResultDto> List<List<String[]>> mapCombinedReportResultsToCsvLists(
     final Integer limit,
     final Integer offset,
     final CombinedProcessReportResultDto<T> combinedResult,
-    final Function<ReportEvaluationResult<T, SingleProcessReportDefinitionDto>, ReportEvaluationResult<?, ?>> reportResultMapper) {
+    final ReportResultMapper<T> reportResultMapper) {
 
     return combinedResult.getData().values()
       .stream()
@@ -185,7 +178,7 @@ public class CombinedProcessReportResult
 
   private <T extends ProcessReportResultDto> String[] createCombinedReportHeader(
     final CombinedProcessReportResultDto<T> combinedResult,
-    final Function<ReportEvaluationResult<T, SingleProcessReportDefinitionDto>, String[]> singleResultHeaderMapper) {
+    final ReportResultHeaderMapper<T> singleResultHeaderMapper) {
     return combinedResult.getData()
       .values()
       .stream()
