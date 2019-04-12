@@ -44,9 +44,9 @@ const props = {
   viewer,
   data: {
     result: {
-      endEvent: 3
-    },
-    processInstanceCount: 5
+      data: {endEvent: 3},
+      processInstanceCount: 5
+    }
   },
   setViewer: jest.fn()
 };
