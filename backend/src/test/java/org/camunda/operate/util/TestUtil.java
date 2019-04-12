@@ -14,7 +14,6 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
-import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.SequenceFlowEntity;

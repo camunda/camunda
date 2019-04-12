@@ -59,9 +59,7 @@ public class IncidentReader extends AbstractReader {
     final ConstantScoreQueryBuilder query = constantScoreQuery(workflowInstanceIdQ);
 
     final SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias())
-      .source(new SearchSourceBuilder()
-        .query(query)
-        .sort(IncidentTemplate.CREATION_TIME, SortOrder.ASC));
+        .source(new SearchSourceBuilder().query(query).sort(IncidentTemplate.CREATION_TIME, SortOrder.ASC));
 
     try {
       return scroll(searchRequest, IncidentEntity.class);
@@ -77,14 +75,11 @@ public class IncidentReader extends AbstractReader {
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(idsQ);
 
-    final SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias())
-      .source(new SearchSourceBuilder()
-        .query(query));
+    final SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias()).source(new SearchSourceBuilder().query(query));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       if (response.getHits().totalHits == 1) {
-        return ElasticsearchUtil
-          .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, IncidentEntity.class);
+        return ElasticsearchUtil.fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, IncidentEntity.class);
       } else if (response.getHits().totalHits > 1) {
         throw new NotFoundException(String.format("Could not find unique incident with id '%s'.", incidentId));
       } else {
@@ -104,32 +99,23 @@ public class IncidentReader extends AbstractReader {
     final String errorTypesAggName = "errorTypesAgg";
     final String flowNodesAggName = "flowNodesAgg";
 
-    final TermsAggregationBuilder errorTypesAgg =
-      terms(errorTypesAggName)
-        .field(IncidentTemplate.ERROR_TYPE)
-        .size(ErrorType.values().length)
+    final TermsAggregationBuilder errorTypesAgg = terms(errorTypesAggName).field(IncidentTemplate.ERROR_TYPE).size(ErrorType.values().length)
         .order(BucketOrder.key(true));
-    final TermsAggregationBuilder flowNodesAgg =
-      terms(flowNodesAggName)
-        .field(IncidentTemplate.FLOW_NODE_ID)
-        .size(ElasticsearchUtil.TERMS_AGG_SIZE)
+    final TermsAggregationBuilder flowNodesAgg = terms(flowNodesAggName).field(IncidentTemplate.FLOW_NODE_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
         .order(BucketOrder.key(true));
 
     final SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias())
-      .source(new SearchSourceBuilder()
-        .query(constantScoreQuery(workflowInstanceQ))
-        .aggregation(errorTypesAgg)
-        .aggregation(flowNodesAgg));
-    
+        .source(new SearchSourceBuilder().query(constantScoreQuery(workflowInstanceQ)).aggregation(errorTypesAgg).aggregation(flowNodesAgg));
+
     IncidentResponseDto incidentResponse = new IncidentResponseDto();
     try {
       final List<IncidentEntity> incidents = scroll(searchRequest, IncidentEntity.class, aggs -> {
-        ((Terms)aggs.get(errorTypesAggName)).getBuckets().forEach(b -> {
+        ((Terms) aggs.get(errorTypesAggName)).getBuckets().forEach(b -> {
           ErrorType errorType = ErrorType.valueOf(b.getKeyAsString());
-          incidentResponse.getErrorTypes().add(new IncidentErrorTypeDto(IncidentEntity.getErrorTypeTitle(errorType), (int)b.getDocCount()));
+          incidentResponse.getErrorTypes().add(new IncidentErrorTypeDto(IncidentEntity.getErrorTypeTitle(errorType), (int) b.getDocCount()));
         });
-        ((Terms)aggs.get(flowNodesAggName)).getBuckets().forEach(b ->
-          incidentResponse.getFlowNodes().add(new IncidentFlowNodeDto(b.getKeyAsString(), (int)b.getDocCount())));
+        ((Terms) aggs.get(flowNodesAggName)).getBuckets()
+            .forEach(b -> incidentResponse.getFlowNodes().add(new IncidentFlowNodeDto(b.getKeyAsString(), (int) b.getDocCount())));
       });
 
       final Map<String, List<OperationEntity>> operations = operationReader.getOperationsPerIncidentId(workflowInstanceId);

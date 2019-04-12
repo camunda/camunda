@@ -8,11 +8,9 @@ package org.camunda.operate.zeebeimport.record.value;
 import org.camunda.operate.zeebeimport.record.RecordValueWithPayloadImpl;
 import io.zeebe.exporter.api.record.value.IncidentRecordValue;
 
-import io.zeebe.protocol.ErrorType;
+public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl implements IncidentRecordValue {
 
-public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
-    implements IncidentRecordValue {
-  private ErrorType errorType;
+  private String errorType;
   private String errorMessage;
   private String bpmnProcessId;
   private String elementId;
@@ -26,7 +24,7 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
 
   @Override
   public String getErrorType() {
-    return errorType.name();
+    return errorType;
   }
 
   @Override
@@ -64,7 +62,7 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
     return variableScopeKey;
   }
 
-  public void setErrorType(ErrorType errorType) {
+  public void setErrorType(String errorType) {
     this.errorType = errorType;
   }
 
@@ -141,7 +139,7 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
   @Override
   public String toString() {
     return "IncidentRecordValueImpl{" + "errorType='" + errorType + '\'' + ", errorMessage='" + errorMessage + '\'' + ", bpmnProcessId='" + bpmnProcessId + '\''
-      + ", elementId='" + elementId + '\'' + ", workflowInstanceKey=" + workflowInstanceKey + ", elementInstanceKey=" + elementInstanceKey + ", jobKey="
-      + jobKey + ", variableScopeKey=" + variableScopeKey + "} " + super.toString();
+        + ", elementId='" + elementId + '\'' + ", workflowInstanceKey=" + workflowInstanceKey + ", elementInstanceKey=" + elementInstanceKey + ", jobKey="
+        + jobKey + ", variableScopeKey=" + variableScopeKey + "} " + super.toString();
   }
 }

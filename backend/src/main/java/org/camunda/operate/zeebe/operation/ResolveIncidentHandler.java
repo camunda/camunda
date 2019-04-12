@@ -55,11 +55,11 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
         zeebeClient.newUpdateRetriesCommand(IdUtil.getKey(incident.getJobId())).retries(1).send().join();
       }
       zeebeClient.newResolveIncidentCommand(incident.getKey()).send().join();
-      //mark operation as sent
+      // mark operation as sent
       markAsSent(operation);
     } catch (ClientException ex) {
       logger.error("Zeebe command rejected: " + ex.getMessage(), ex);
-      //fail operation
+      // fail operation
       failOperation(operation, ex.getMessage());
     }
 

@@ -118,7 +118,7 @@ public class IncidentDto {
     if (incidentEntity == null) {
       return null;
     }
-      
+
     IncidentDto incident = new IncidentDto();
     incident.setId(incidentEntity.getId());
     incident.setFlowNodeId(incidentEntity.getFlowNodeId());
@@ -129,14 +129,13 @@ public class IncidentDto {
     incident.setCreationTime(incidentEntity.getCreationTime());
 
     if (operations != null && operations.size() > 0) {
-      OperationEntity lastOperation = operations.get(0);    //operations are sorted by start date descendant
+      OperationEntity lastOperation = operations.get(0); // operations are
+                                                         // sorted by start date
+                                                         // descendant
       incident.setLastOperation(OperationDto.createFrom(lastOperation));
 
       incident.setHasActiveOperation(operations.stream().anyMatch(
-        o ->
-          o.getState().equals(OperationState.SCHEDULED)
-            || o.getState().equals(OperationState.LOCKED)
-            || o.getState().equals(OperationState.SENT)));
+          o -> o.getState().equals(OperationState.SCHEDULED) || o.getState().equals(OperationState.LOCKED) || o.getState().equals(OperationState.SENT)));
     }
 
     return incident;
@@ -145,7 +144,7 @@ public class IncidentDto {
   public static List<IncidentDto> createFrom(List<IncidentEntity> incidentEntities, Map<String, List<OperationEntity>> operations) {
     List<IncidentDto> result = new ArrayList<>();
     if (incidentEntities != null) {
-      for (IncidentEntity incidentEntity: incidentEntities) {
+      for (IncidentEntity incidentEntity : incidentEntities) {
         if (incidentEntity != null) {
           result.add(createFrom(incidentEntity, operations.get(incidentEntity.getId())));
         }
