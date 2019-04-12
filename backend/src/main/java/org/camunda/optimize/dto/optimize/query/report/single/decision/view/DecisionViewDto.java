@@ -12,23 +12,10 @@ import java.util.Objects;
 
 public class DecisionViewDto implements Combinable {
 
-  protected DecisionViewOperation operation;
   protected DecisionViewProperty property;
 
   public DecisionViewDto() {
     super();
-  }
-
-  public DecisionViewDto(DecisionViewOperation operation) {
-    this.operation = operation;
-  }
-
-  public DecisionViewOperation getOperation() {
-    return operation;
-  }
-
-  public void setOperation(DecisionViewOperation operation) {
-    this.operation = operation;
   }
 
   public DecisionViewProperty getProperty() {
@@ -55,15 +42,13 @@ public class DecisionViewDto implements Combinable {
 
   @JsonIgnore
   public String createCommandKey() {
-    String separator = "-";
-    return operation + separator +  property;
+    return property.toString();
   }
 
   @Override
   public String toString() {
     return "DecisionViewDto{" +
-      "operation='" + operation + '\'' +
-      ", property='" + property + '\'' +
+      "property='" + property + '\'' +
       '}';
   }
 }

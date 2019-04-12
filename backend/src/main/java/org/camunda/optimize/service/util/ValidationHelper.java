@@ -98,7 +98,6 @@ public class ValidationHelper {
       ensureNotNull("report data", decisionReportDataDto);
       DecisionViewDto viewDto = decisionReportDataDto.getView();
       ensureNotNull("view", viewDto);
-      ensureNotEmpty("view operation", viewDto.getOperation());
       ensureNotNull("group by", decisionReportDataDto.getGroupBy());
       validateDecisionFilters(decisionReportDataDto.getFilter());
     }

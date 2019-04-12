@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewOperation;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -83,7 +83,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     assertThat(resultDataDto.getDecisionDefinitionKey(), is(decisionDefinitionDto.getKey()));
     assertThat(resultDataDto.getDecisionDefinitionVersion(), is(decisionDefinitionVersion));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    assertThat(resultDataDto.getView().getOperation(), is(DecisionViewOperation.RAW));
+    assertThat(resultDataDto.getView().getProperty(), is(DecisionViewProperty.RAW_DATA));
   }
 
   @Test

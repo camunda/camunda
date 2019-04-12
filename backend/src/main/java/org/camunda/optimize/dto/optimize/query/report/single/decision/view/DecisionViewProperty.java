@@ -8,9 +8,11 @@ package org.camunda.optimize.dto.optimize.query.report.single.decision.view;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_FREQUENCY_PROPERTY;
+import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_RAW_DATA_OPERATION;
 
 public enum DecisionViewProperty {
   FREQUENCY(VIEW_FREQUENCY_PROPERTY),
+  RAW_DATA(VIEW_RAW_DATA_OPERATION)
   ;
 
   private final String id;
