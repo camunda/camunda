@@ -11,7 +11,8 @@ export default class EditCollectionModal extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      name: props.collection.name || 'New Collection'
+      name: props.collection.name || 'New Collection',
+      loading: false
     };
   }
 
@@ -27,6 +28,7 @@ export default class EditCollectionModal extends Component {
   }
 
   onConfirm = () => {
+    this.setState({loading: true});
     this.props.onConfirm({...this.props.collection, name: this.state.name});
   };
 
@@ -34,6 +36,14 @@ export default class EditCollectionModal extends Component {
     if (evt.key === 'Enter') {
       this.onConfirm();
     }
+  };
+
+  getConfirmButtonText = () => {
+    const {name} = this.props.collection;
+    if (this.state.loading) {
+      return name ? 'Saving...' : 'Creating...';
+    }
+    return name ? 'Save' : 'Create Collection';
   };
 
   render() {
@@ -52,20 +62,21 @@ export default class EditCollectionModal extends Component {
             onChange={({target: {value}}) => this.setState({name: value})}
             onKeyDown={this.handleKeyPress}
             isInvalid={!this.state.name}
+            disabled={this.state.loading}
           />
         </Modal.Content>
         <Modal.Actions>
-          <Button className="cancel" type="primary" onClick={onClose}>
+          <Button className="cancel" type="primary" onClick={onClose} disabled={this.state.loading}>
             Cancel
           </Button>
           <Button
             type="primary"
             color="blue"
             className="confirm"
-            disabled={!this.state.name}
+            disabled={!this.state.name || this.state.loading}
             onClick={this.onConfirm}
           >
-            {collection.name ? 'Save' : 'Create Collection'}
+            {this.getConfirmButtonText()}
           </Button>
         </Modal.Actions>
       </Modal>

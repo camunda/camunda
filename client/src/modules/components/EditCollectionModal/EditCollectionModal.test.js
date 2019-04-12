@@ -10,15 +10,6 @@ import {shallow} from 'enzyme';
 import EditCollectionModal from './EditCollectionModal';
 import {Input} from 'components';
 
-const processReport = {
-  id: 'reportID',
-  name: 'Some Report',
-  lastModifier: 'Admin',
-  lastModified: '2017-11-11T11:11:11.1111+0200',
-  reportType: 'process',
-  combined: false
-};
-
 const collection = {
   id: 'aCollectionId',
   name: 'aCollectionName'
@@ -96,4 +87,10 @@ it('should select the name input field when the component is mounted', async () 
 
   expect(input.focus).toHaveBeenCalled();
   expect(input.select).toHaveBeenCalled();
+});
+
+it('should show a loading indicator after creating or saving a collection', async () => {
+  const node = await shallow(<EditCollectionModal {...props} />);
+  node.find('.confirm').simulate('click');
+  expect(node.find('.confirm')).toIncludeText('Saving...');
 });
