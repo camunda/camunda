@@ -152,7 +152,6 @@ public class ExporterRecordMapper {
         event.getKey(),
         event.getPosition(),
         Instant.ofEpochMilli(event.getTimestamp()),
-        event.getRaftTerm(),
         event.getProducerId(),
         event.getSourceEventPosition(),
         metadata,

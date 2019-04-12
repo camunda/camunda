@@ -23,9 +23,6 @@ public interface LoggedEvent {
   /** @return the event's position in the log. */
   long getPosition();
 
-  /** @return the raft term this event was committed in */
-  int getRaftTerm();
-
   /**
    * @return the position of the event which causes this event. Returns a negative value if no such
    *     an event exists.

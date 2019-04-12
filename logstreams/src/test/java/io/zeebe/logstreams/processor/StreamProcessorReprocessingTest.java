@@ -19,12 +19,12 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -292,9 +292,9 @@ public class StreamProcessorReprocessingTest {
         .extracting(LoggedEvent::getPosition)
         .containsOnly(eventPosition1, eventPosition2);
 
-    verify(streamProcessor, times(2)).onEvent(any());
-    verify(dbContext, atLeast(3)).getCurrentTransaction();
-    verify(eventProcessor, times(3)).processEvent();
+    verify(streamProcessor, timeout(500).times(2)).onEvent(any());
+    verify(dbContext, timeout(500).atLeast(3)).getCurrentTransaction();
+    verify(eventProcessor, timeout(500).times(3)).processEvent();
   }
 
   @Test
@@ -562,8 +562,7 @@ public class StreamProcessorReprocessingTest {
         w -> {
           w.key(-1).value(EVENT);
           wr.accept(w);
-        },
-        true);
+        });
   }
 
   private void waitUntilProcessedAndFailedCountReached(int processCount, int failedCount) {

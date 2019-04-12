@@ -254,18 +254,6 @@ public class LogStreamWriterTest {
   }
 
   @Test
-  public void shouldWriteEventWithRaftTerm() {
-    // given
-    logStreamRule.getLogStream().setTerm(123);
-
-    // when
-    final long position = writer.value(EVENT_VALUE).tryWrite();
-
-    // then
-    assertThat(getWrittenEvent(position).getRaftTerm()).isEqualTo(123);
-  }
-
-  @Test
   public void shouldWriteEventWithNullKey() {
     // when
     final long position = writer.keyNull().value(EVENT_VALUE).tryWrite();

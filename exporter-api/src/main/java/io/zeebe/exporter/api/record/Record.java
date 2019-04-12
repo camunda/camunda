@@ -28,9 +28,6 @@ public interface Record<T extends RecordValue> {
    */
   long getPosition();
 
-  /** @return the raft term this event was committed in */
-  int getRaftTerm();
-
   /**
    * Returns the position of the source record. The source record denotes the record which caused
    * the current record. It can be unset (meaning there is no source record), at which point the

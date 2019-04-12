@@ -24,7 +24,7 @@ import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
 
 public class LogStreamWriterRule extends ExternalResource {
-  private LogStreamRule logStreamRule;
+  private final LogStreamRule logStreamRule;
 
   private LogStream logStream;
   private LogStreamRecordWriter logStreamWriter;
@@ -51,11 +51,6 @@ public class LogStreamWriterRule extends ExternalResource {
   }
 
   public long writeEvents(final int count, final DirectBuffer event) {
-    return writeEvents(count, event, false);
-  }
-
-  // TODO: Remove parameter commit. https://github.com/zeebe-io/zeebe/issues/2058
-  public long writeEvents(final int count, final DirectBuffer event, final boolean commit) {
     long lastPosition = -1;
     for (int i = 1; i <= count; i++) {
       final long key = i;
@@ -68,15 +63,10 @@ public class LogStreamWriterRule extends ExternalResource {
   }
 
   public long writeEvent(final DirectBuffer event) {
-    return writeEvent(event, false);
+    return writeEvent(w -> w.value(event));
   }
 
-  public long writeEvent(final DirectBuffer event, final boolean commit) {
-    return writeEvent(w -> w.value(event), commit);
-  }
-
-  // TODO: Remove parameter commit. https://github.com/zeebe-io/zeebe/issues/2058
-  public long writeEvent(final Consumer<LogStreamRecordWriter> writer, final boolean commit) {
+  public long writeEvent(final Consumer<LogStreamRecordWriter> writer) {
     final long position = writeEventInternal(writer);
 
     waitForPositionToBeAppended(position);
@@ -95,10 +85,6 @@ public class LogStreamWriterRule extends ExternalResource {
 
   public long tryWrite(final DirectBuffer value) {
     return tryWrite(w -> w.keyNull().value(value));
-  }
-
-  public long tryWrite(final long key, final DirectBuffer value) {
-    return tryWrite(w -> w.key(key).value(value));
   }
 
   public long tryWrite(final Consumer<LogStreamRecordWriter> writer) {

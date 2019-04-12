@@ -76,7 +76,6 @@ public class ClientApiMessageHandlerTest {
   protected static final int LOG_STREAM_PARTITION_ID = 1;
   protected static final byte[] JOB_EVENT;
   private static final int REQUEST_ID = 5;
-  private static final int RAFT_TERM = 10;
 
   static {
     final JobRecord jobEvent = new JobRecord().setType(wrapString("test"));
@@ -195,7 +194,6 @@ public class ClientApiMessageHandlerTest {
         };
 
     messageHandler.addPartition(partition);
-    logStream.setTerm(RAFT_TERM);
   }
 
   @After

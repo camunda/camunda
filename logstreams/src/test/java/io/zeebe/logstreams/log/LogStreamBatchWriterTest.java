@@ -422,30 +422,6 @@ public class LogStreamBatchWriterTest {
   }
 
   @Test
-  public void shouldWriteEventWithRaftTerm() {
-    // given
-    logStreamRule.getLogStream().setTerm(123);
-
-    // when
-    final long position =
-        writer
-            .event()
-            .key(1)
-            .value(EVENT_VALUE_1)
-            .done()
-            .event()
-            .key(2)
-            .value(EVENT_VALUE_2)
-            .done()
-            .tryWrite();
-
-    // then
-    assertThat(getWrittenEvents(position))
-        .extracting(LoggedEvent::getRaftTerm)
-        .containsExactly(123, 123);
-  }
-
-  @Test
   public void shouldNotFailToWriteEventWithoutKey() {
     // when
     final long position =

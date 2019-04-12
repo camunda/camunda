@@ -26,12 +26,10 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
-import io.zeebe.test.util.TestUtil;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -99,7 +97,7 @@ public class LogStreamReaderTest {
   @Test
   public void shouldHaveNext() {
     // given
-    final long position = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE), false);
+    final long position = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE));
 
     // then
     assertThat(reader.hasNext()).isEqualTo(true);
@@ -158,7 +156,7 @@ public class LogStreamReaderTest {
   public void shouldReopenAndReturnLoggedEvent() {
     // given
     reader.close();
-    final long position = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE), false);
+    final long position = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE));
     reader.wrap(logStreamRule.getLogStream());
 
     // then
@@ -168,72 +166,10 @@ public class LogStreamReaderTest {
   }
 
   @Test
-  public void shouldReturnUncommittedLoggedEvent() {
-    // given
-    final BufferedLogStreamReader reader = new BufferedLogStreamReader();
-
-    logStreamRule.setCommitPosition(Long.MIN_VALUE);
-    final long position = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE), false);
-    reader.wrap(logStreamRule.getLogStream());
-
-    // when
-    TestUtil.waitUntil(reader::hasNext);
-
-    // then
-    final LoggedEvent loggedEvent = reader.next();
-    assertThat(loggedEvent.getKey()).isEqualTo(eventKey);
-    assertThat(loggedEvent.getPosition()).isEqualTo(position);
-
-    reader.close();
-  }
-
-  @Test
-  @Ignore
-  public void shouldNotReturnLoggedEventUntilCommitted() {
-    // given
-    final long position = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE), false);
-    logStreamRule.setCommitPosition(Long.MIN_VALUE);
-
-    // then
-    assertThat(reader.hasNext()).isFalse();
-
-    // when
-    logStreamRule.setCommitPosition(position);
-
-    // then
-    assertThat(reader.hasNext()).isTrue();
-    final LoggedEvent loggedEvent = reader.next();
-    assertThat(loggedEvent.getKey()).isEqualTo(eventKey);
-    assertThat(loggedEvent.getPosition()).isEqualTo(position);
-  }
-
-  @Test
-  @Ignore
-  public void shouldSeekToUncommittedLoggedEventIfFlagIsSet() {
-    // given
-    final BufferedLogStreamReader reader = new BufferedLogStreamReader();
-    final long firstPos = writer.writeEvent(EVENT_VALUE);
-    logStreamRule.setCommitPosition(firstPos);
-    final long secondPos = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE), false);
-    reader.wrap(logStreamRule.getLogStream());
-
-    // when
-    reader.seek(secondPos);
-
-    // then
-    assertThat(reader.hasNext()).isTrue();
-    final LoggedEvent loggedEvent = reader.next();
-    assertThat(loggedEvent.getKey()).isEqualTo(eventKey);
-    assertThat(loggedEvent.getPosition()).isEqualTo(secondPos);
-
-    reader.close();
-  }
-
-  @Test
   public void shouldWrapAndSeekToEvent() {
     // given
     writer.writeEvent(EVENT_VALUE);
-    final long secondPos = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE), false);
+    final long secondPos = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE));
 
     // when
     reader.wrap(logStreamRule.getLogStream(), secondPos);
@@ -293,8 +229,7 @@ public class LogStreamReaderTest {
     assertThat(reader.hasNext()).isTrue();
 
     // when
-    final long bigEventPosition =
-        writer.writeEvent(w -> w.key(eventKey).value(BIG_EVENT_VALUE), false);
+    final long bigEventPosition = writer.writeEvent(w -> w.key(eventKey).value(BIG_EVENT_VALUE));
 
     // then
     LoggedEvent loggedEvent = readerRule.nextEvent();
@@ -310,7 +245,7 @@ public class LogStreamReaderTest {
   @Test
   public void shouldReturnBigLoggedEvent() {
     // given
-    final long position = writer.writeEvent(w -> w.key(eventKey).value(BIG_EVENT_VALUE), false);
+    final long position = writer.writeEvent(w -> w.key(eventKey).value(BIG_EVENT_VALUE));
 
     // then
     final LoggedEvent loggedEvent = readerRule.nextEvent();
