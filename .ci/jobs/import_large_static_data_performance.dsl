@@ -9,4 +9,8 @@ pipelineJob('import-performance-large-static-dataset') {
       sandbox()
     }
   }
+  
+  triggers {
+    cron('H 1 * * *')
+  }
 }
