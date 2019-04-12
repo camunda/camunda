@@ -413,37 +413,6 @@ public class StreamProcessorReprocessingTest {
   }
 
   @Test
-  public void shouldNotReprocessEventsIfReadOnly() {
-    final StreamProcessorBuilder builder =
-        LogStreams.createStreamProcessor("read-only", PROCESSOR_ID)
-            .logStream(logStreamRule.getLogStream())
-            .snapshotController(stateSnapshotController)
-            .streamProcessorFactory((zeebeDb1, dbContext) -> createStreamProcessor(zeebeDb1))
-            .actorScheduler(logStreamRule.getActorScheduler())
-            .serviceContainer(logStreamRule.getServiceContainer())
-            .readOnly(true);
-
-    // given [1|S:-] --> [2|S:1]
-    final long eventPosition1 = writeEvent();
-    final long eventPosition2 =
-        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
-
-    // when
-    builder.build().join();
-
-    waitUntil(() -> streamProcessor.getProcessedEventCount() == 2);
-
-    // then
-    assertThat(streamProcessor.getEvents())
-        .extracting(LoggedEvent::getPosition)
-        .containsExactly(eventPosition1, eventPosition2);
-
-    verify(eventProcessor, times(2)).processEvent();
-    verify(eventProcessor, times(2)).executeSideEffects();
-    verify(eventProcessor, times(2)).writeEvent(any());
-  }
-
-  @Test
   public void shouldReprocessRecursively() {
     // given
     final int numberOfRecords = 250;

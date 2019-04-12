@@ -27,11 +27,9 @@ public class StreamProcessorContext {
   protected int id;
   protected String name;
 
-  protected boolean isReadOnlyProcessor;
-
   protected LogStream logStream;
 
-  protected LogStreamReader logStreamReader;
+  private LogStreamReader logStreamReader;
   protected LogStreamRecordWriter logStreamWriter;
 
   protected Duration snapshotPeriod;
@@ -40,7 +38,7 @@ public class StreamProcessorContext {
   protected ActorScheduler actorScheduler;
   private ActorControl actorControl;
 
-  protected EventFilter eventFilter;
+  private EventFilter eventFilter;
 
   private Runnable suspendRunnable;
   private Runnable resumeRunnable;
@@ -116,14 +114,6 @@ public class StreamProcessorContext {
 
   public EventFilter getEventFilter() {
     return eventFilter;
-  }
-
-  public void setReadOnly(boolean readOnly) {
-    this.isReadOnlyProcessor = readOnly;
-  }
-
-  public boolean isReadOnlyProcessor() {
-    return isReadOnlyProcessor;
   }
 
   public ActorControl getActorControl() {

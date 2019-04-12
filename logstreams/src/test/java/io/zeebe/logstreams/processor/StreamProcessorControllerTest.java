@@ -672,59 +672,6 @@ public class StreamProcessorControllerTest {
     inOrder.verifyNoMoreInteractions();
   }
 
-  @Test
-  public void shouldFailToWriteEventIfReadOnly() throws Exception {
-    // when
-    final CountDownLatch latch = new CountDownLatch(1);
-    streamProcessorController.closeAsync().join();
-
-    streamProcessorController =
-        LogStreams.createStreamProcessor("read-only", PROCESSOR_ID)
-            .logStream(logStreamRule.getLogStream())
-            .actorScheduler(logStreamRule.getActorScheduler())
-            .serviceContainer(logStreamRule.getServiceContainer())
-            .snapshotController(snapshotController)
-            .streamProcessorFactory(this::createStreamProcessor)
-            .readOnly(true)
-            .build()
-            .join()
-            .getController();
-
-    // given
-    changeMockInActorContext(
-        () ->
-            when(eventProcessor.writeEvent(any()))
-                .thenAnswer(
-                    inv -> {
-                      final LogStreamRecordWriter writer = inv.getArgument(0);
-
-                      return writer.key(2L).metadata(wrapString("META")).value(EVENT_2).tryWrite();
-                    }));
-
-    changeMockInActorContext(
-        () ->
-            doAnswer(
-                    invocationOnMock -> {
-                      latch.countDown();
-                      return invocationOnMock.callRealMethod();
-                    })
-                .when(eventProcessor)
-                .onError(any()));
-
-    // when
-    writer.writeEvent(EVENT_1);
-
-    // then
-    latch.await();
-
-    final InOrder inOrder = inOrder(eventProcessor);
-    inOrder.verify(eventProcessor, times(1)).processEvent();
-    inOrder.verify(eventProcessor, times(1)).writeEvent(any());
-    // loop
-    inOrder.verify(eventProcessor, times(1)).onError(any(RuntimeException.class));
-    inOrder.verify(eventProcessor, times(1)).writeEvent(any());
-  }
-
   private void installStreamProcessorService() throws IOException {
     stateStorage = createStateStorage();
     snapshotController =

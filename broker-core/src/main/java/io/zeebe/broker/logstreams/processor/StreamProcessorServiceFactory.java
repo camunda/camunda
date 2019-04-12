@@ -23,7 +23,6 @@ import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventFilter;
-import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorFactory;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.protocol.Protocol;
@@ -72,11 +71,9 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
     private SnapshotController snapshotController;
     private String processorName;
     private int processorId = -1;
-    private StreamProcessor streamProcessor;
     private final List<ServiceName<?>> additionalDependencies = new ArrayList<>();
 
     protected MetadataFilter customEventFilter;
-    protected boolean readOnly = false;
     private StreamProcessorFactory streamProcessorFactory;
 
     public Builder(Partition partition, ServiceName<Partition> serviceName) {
@@ -104,11 +101,6 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
       return this;
     }
 
-    public Builder readOnly(boolean readOnly) {
-      this.readOnly = readOnly;
-      return this;
-    }
-
     public ActorFuture<StreamProcessorService> build() {
       EnsureUtil.ensureNotNull("stream processor factory", streamProcessorFactory);
       EnsureUtil.ensureNotNullOrEmpty("processor name", processorName);
@@ -128,7 +120,6 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
           .maxSnapshots(maxSnapshots)
           .logStream(logStream)
           .eventFilter(eventFilter)
-          .readOnly(readOnly)
           .additionalDependencies(additionalDependencies)
           .streamProcessorFactory(streamProcessorFactory)
           .build();

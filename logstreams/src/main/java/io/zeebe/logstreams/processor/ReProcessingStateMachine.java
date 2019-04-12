@@ -84,7 +84,6 @@ public final class ReProcessingStateMachine {
   private static final String LOG_STMT_FAILED_ON_PROCESSING =
       "Event {} failed on processing last time, will call #onError to update workflow instance blacklist.";
 
-  private final boolean isReadOnlyProcessor;
   private final int producerId;
 
   public static ReprocessingStateMachineBuilder builder() {
@@ -113,7 +112,6 @@ public final class ReProcessingStateMachine {
     this.streamProcessorName = context.getName();
     this.eventFilter = context.getEventFilter();
     this.logStreamReader = context.getLogStreamReader();
-    this.isReadOnlyProcessor = context.isReadOnlyProcessor();
     this.producerId = context.getId();
 
     this.streamProcessor = streamProcessor;
@@ -155,7 +153,7 @@ public final class ReProcessingStateMachine {
   private long scanLog(final long snapshotPosition) {
     long lastSourceEventPosition = -1L;
 
-    if (!isReadOnlyProcessor && logStreamReader.hasNext()) {
+    if (logStreamReader.hasNext()) {
       lastSourceEventPosition = snapshotPosition;
       while (logStreamReader.hasNext()) {
         final LoggedEvent newEvent = logStreamReader.next();
