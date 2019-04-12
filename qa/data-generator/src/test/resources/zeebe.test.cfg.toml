@@ -1,0 +1,32 @@
+[cluster]
+partitionsCount = 2
+
+#[[exporters]]
+#id = "debug"
+#className = "io.zeebe.broker.exporter.DebugExporter"
+#  [exporters.args]
+#  logLevel = "debug"
+#  prettyPrint = true
+
+[[exporters]]
+id = "elasticsearch"
+className = "io.zeebe.exporter.ElasticsearchExporter"
+
+  [exporters.args.bulk]
+  delay = 1
+  size = 1
+
+  [exporters.args.index]
+  prefix = "test-record"
+  createTemplate = true
+  command = false
+  event = true
+  rejection = false
+  deployment = true
+  incident = true
+  job = true
+  message = false
+  messageSubscription = false
+  raft = false
+  workflowInstance = true
+  workflowInstanceSubscription = false

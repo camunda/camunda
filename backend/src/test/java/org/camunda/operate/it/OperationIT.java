@@ -42,10 +42,9 @@ import org.camunda.operate.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.zeebe.operation.UpdateVariableHandler;
-import org.camunda.operate.zeebeimport.ZeebeESImporter;
+import org.camunda.operate.zeebeimport.ImportValueType;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
@@ -394,7 +393,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertVariable(variables, newVar2Name, newVar2Value, true);
 
     //TC3 after we process messages from Zeebe, variables must have hasActiveOperation = false
-    elasticsearchTestRule.processAllEvents(2, ZeebeESImporter.ImportValueType.VARIABLE);
+    elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
     variables = variableReader.getVariables(workflowInstanceId, workflowInstanceId);
     assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, false);
@@ -433,7 +432,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertVariable(variables, newVar2Name, newVar2Value, true);
 
     //TC3 after we process messages from Zeebe, variables must have hasActiveOperation = false
-    elasticsearchTestRule.processAllEvents(2, ZeebeESImporter.ImportValueType.VARIABLE);
+    elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
     variables = variableReader.getVariables(workflowInstanceId, taskAId);
     assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, false);

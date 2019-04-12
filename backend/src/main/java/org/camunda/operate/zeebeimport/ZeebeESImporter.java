@@ -13,7 +13,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.camunda.operate.entities.meta.ImportPositionEntity;
 import org.camunda.operate.es.schema.indices.ImportPositionIndex;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -21,11 +20,6 @@ import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.record.RecordImpl;
-import org.camunda.operate.zeebeimport.record.value.DeploymentRecordValueImpl;
-import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
-import org.camunda.operate.zeebeimport.record.value.JobRecordValueImpl;
-import org.camunda.operate.zeebeimport.record.value.VariableRecordValueImpl;
-import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchPhaseExecutionException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -38,6 +32,7 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -51,16 +46,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.Topology;
 import io.zeebe.exporter.api.record.RecordValue;
-import io.zeebe.protocol.clientapi.ValueType;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @Component
 @DependsOn({"esClient", "zeebeEsClient"})
 public class ZeebeESImporter extends Thread {
 
   private static final Logger logger = LoggerFactory.getLogger(ZeebeESImporter.class);
+
   private static final ImportValueType[] IMPORT_VALUE_TYPES = new ImportValueType[]{
     ImportValueType.DEPLOYMENT,
     ImportValueType.WORKFLOW_INSTANCE,
@@ -68,9 +64,16 @@ public class ZeebeESImporter extends Thread {
     ImportValueType.INCIDENT,
     ImportValueType.VARIABLE};
 
+  public static final String PARTITION_ID_FIELD_NAME = "metadata." + ImportPositionIndex.PARTITION_ID;
+
   private Set<Integer> partitionIds = new HashSet<>();
 
   private boolean shutdown = false;
+
+  /**
+   * Lock object, that can be used to be informed about finished import.
+   */
+  private final Object importFinished = new Object();
 
   @Autowired
   private OperateProperties operateProperties;
@@ -94,11 +97,14 @@ public class ZeebeESImporter extends Thread {
   @Autowired
   private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
   
-  private Map<String,Long> lastLoadedPositions = new HashMap<>();  
+  private Map<String,Long> lastLoadedPositions = new HashMap<>();
 
   @PreDestroy
   public void shutdown() {
     shutdown = true;
+    synchronized (importFinished) {
+      importFinished.notifyAll();
+    }
   }
 
   public long getLatestLoadedPosition(String aliasName, int partitionId) throws IOException {
@@ -162,7 +168,7 @@ public class ZeebeESImporter extends Thread {
     final QueryBuilder queryBuilder = joinWithAnd(
       rangeQuery(ImportPositionIndex.POSITION).gt(positionAfter),
       positionBeforeQ,
-      termQuery("metadata." + ImportPositionIndex.PARTITION_ID, partitionId));
+      termQuery(PARTITION_ID_FIELD_NAME, partitionId));
 
     final SearchRequest searchRequest = new SearchRequest(aliasName)
       .source(new SearchSourceBuilder()
@@ -191,54 +197,84 @@ public class ZeebeESImporter extends Thread {
     }
   }
 
-  private void initPartitionList() {
-    final Topology topology = zeebeClient.newTopologyRequest().send().join();
-    final int partitionsCount = topology.getPartitionsCount();
-    //generate list of partition ids
-    for (int i = 0; i< partitionsCount; i++) {
-      partitionIds.add(i);
-    }
-    if (partitionIds.size() == 0) {
-      logger.warn("Partitions are not found. Import from Zeebe won't load any data.");
-    } else {
-      logger.debug("Following partition ids were found: {}", partitionIds);
+  private void initPartitionListFromZeebe() {
+    try {
+      final Topology topology = zeebeClient.newTopologyRequest().send().join();
+      final int partitionsCount = topology.getPartitionsCount();
+      //generate list of partition ids
+      for (int i = 0; i< partitionsCount; i++) {
+        partitionIds.add(i);
+      }
+      if (partitionIds.size() == 0) {
+        logger.warn("Partitions are not found. Import from Zeebe won't load any data.");
+      } else {
+        logger.debug("Following partition ids were found: {}", partitionIds);
+      }
+    } catch (Exception ex) { //TODO check exception class
+      logger.warn("Error occurred when requesting partition ids from Zeebe: " + ex.getMessage(), ex);
+      //ignore, if Zeebe is not available
     }
   }
 
   public Set<Integer> getPartitionIds() {
     if (partitionIds.size() == 0) {
-      initPartitionList();
+      initPartitionListFromZeebe();
+    }
+    //if still not initialized, try to read from Elasticsearch, but not cache, as it can change with the time
+    if (partitionIds.size() == 0) {
+      return getPartitionsFromElasticsearch();
     }
     return partitionIds;
+  }
+
+  private Set<Integer> getPartitionsFromElasticsearch() {
+    logger.debug("Requesting partition ids from elasticsearch");
+    final String aggName = "partitions";
+    SearchRequest searchRequest = new SearchRequest(ImportValueType.DEPLOYMENT.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix()))
+      .source(new SearchSourceBuilder()
+        .aggregation(terms(aggName)
+          .field(PARTITION_ID_FIELD_NAME)
+          .size(ElasticsearchUtil.TERMS_AGG_SIZE)));
+    try {
+      final SearchResponse searchResponse = zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT);
+      final HashSet<Integer> partitionIds = ((Terms) searchResponse.getAggregations().get(aggName)).getBuckets().stream()
+        .collect(HashSet::new, (set, bucket) -> set.add(Integer.valueOf(bucket.getKeyAsString())), (set1, set2) -> set1.addAll(set2));
+      logger.debug("Following partition ids were found: {}", partitionIds);
+      return partitionIds;
+    } catch (Exception ex) {
+      logger.warn("Error occurred when requesting partition ids from Elasticsearch: " + ex.getMessage(), ex);
+      return new HashSet<>();
+    }
   }
 
   @Override
   public void run() {
     logger.debug("Start importing data");
-
     while (!shutdown) {
-      try {
-
-        int entitiesCount = processNextEntitiesBatch();
-
-        //TODO we can implement backoff strategy, if there is not enough data
-        if (entitiesCount == 0) {
-          try {
-            Thread.sleep(2000);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-          }
-        }
-      } catch (Exception ex) {
-        //retry
-        logger.error("Error occurred while exporting Zeebe data. Will be retried.", ex);
+      synchronized (importFinished) {
         try {
-          Thread.sleep(2000);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          if (processNextEntitiesBatch() == 0) {
+            importFinished.notifyAll();
+            doBackoff();
+          }
+        } catch (Exception ex) {
+          //retry
+          logger.error("Error occurred while importing Zeebe data. Will be retried.", ex);
+          doBackoff();
         }
       }
+    }
+  }
 
+  public Object getImportFinished() {
+    return importFinished;
+  }
+
+  private void doBackoff() {
+    try {
+      Thread.sleep(2000);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
     }
   }
 
@@ -279,41 +315,6 @@ public class ZeebeESImporter extends Thread {
       logger.error(ex.getMessage(), ex);
     }
     return processedEntities;
-  }
-
-  public static class ImportValueType {
-
-    public final static ImportValueType WORKFLOW_INSTANCE = new ImportValueType(ValueType.WORKFLOW_INSTANCE, "workflow-instance", WorkflowInstanceRecordValueImpl.class);
-    public final static ImportValueType JOB = new ImportValueType(ValueType.JOB, "job", JobRecordValueImpl.class);
-    public final static ImportValueType INCIDENT = new ImportValueType(ValueType.INCIDENT, "incident", IncidentRecordValueImpl.class);
-    public final static ImportValueType DEPLOYMENT = new ImportValueType(ValueType.DEPLOYMENT, "deployment", DeploymentRecordValueImpl.class);
-    public final static ImportValueType VARIABLE = new ImportValueType(ValueType.VARIABLE, "variable", VariableRecordValueImpl.class);
-
-    private final ValueType valueType;
-    private final String aliasTemplate;
-    private final Class<? extends RecordValue> recordValueClass;
-
-    public ImportValueType(ValueType valueType, String aliasTemplate, Class<? extends RecordValue> recordValueClass) {
-      this.valueType = valueType;
-      this.aliasTemplate = aliasTemplate;
-      this.recordValueClass = recordValueClass;
-    }
-
-    public ValueType getValueType() {
-      return valueType;
-    }
-
-    public String getAliasTemplate() {
-      return aliasTemplate;
-    }
-
-    public Class<? extends RecordValue> getRecordValueClass() {
-      return recordValueClass;
-    }
-
-    public String getAliasName(String prefix) {
-      return String.format("%s-%s", prefix, aliasTemplate);
-    }
   }
 
 }

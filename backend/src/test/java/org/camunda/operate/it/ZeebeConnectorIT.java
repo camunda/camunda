@@ -13,6 +13,7 @@ import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.OperateZeebeRule;
 import org.camunda.operate.util.ZeebeClientRule;
+import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.ZeebeESImporter;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;
@@ -24,7 +25,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.test.EmbeddedBrokerRule;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -79,12 +82,10 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
     mockMvc.perform(request)
       .andExpect(status().isOk())
       .andReturn();
-    try {
-      zeebeESImporter.processNextEntitiesBatch();
-      fail("Exception is expected");
-    } catch (Exception ex) {
-      //expected exception
-    }
+    //import is working fine
+    zeebeESImporter.processNextEntitiesBatch();
+    //partition list is empty
+    Assertions.assertThat(zeebeESImporter.getPartitionIds()).isEmpty();
 
     //when 2
     //Zeebe is started
@@ -93,6 +94,8 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
     //then 2
     //data import is working
     zeebeESImporter.processNextEntitiesBatch();
+    //partition list is not empty
+    Assertions.assertThat(zeebeESImporter.getPartitionIds()).isNotEmpty();
 
   }
 

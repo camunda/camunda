@@ -14,7 +14,7 @@ import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.camunda.operate.zeebeimport.ZeebeESImporter;
+import org.camunda.operate.zeebeimport.ImportValueType;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -86,7 +86,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     //TC 1 - when workflow instance is started
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
-    elasticsearchTestRule.processOneBatchOfRecords(ZeebeESImporter.ImportValueType.VARIABLE);
+    elasticsearchTestRule.processOneBatchOfRecords(ImportValueType.VARIABLE);
 
     //then
     final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
@@ -99,7 +99,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     //TC2 - when subprocess and task with input mapping are activated
     completeTask(workflowInstanceKey, "task1", null);
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
-    elasticsearchTestRule.processOneBatchOfRecords(ZeebeESImporter.ImportValueType.VARIABLE);
+    elasticsearchTestRule.processOneBatchOfRecords(ImportValueType.VARIABLE);
 
     //then
     variables = getVariables(workflowInstanceId,"subProcess");
@@ -113,7 +113,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     //TC3 - when activity with output mapping is completed
     completeTask(workflowInstanceKey, "task2", "{\"taskVarOut\": \"someResult\", \"otherTaskVar\": 456}");
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task3");
-    elasticsearchTestRule.processOneBatchOfRecords(ZeebeESImporter.ImportValueType.VARIABLE);
+    elasticsearchTestRule.processOneBatchOfRecords(ImportValueType.VARIABLE);
 
     //then
     variables = getVariables(workflowInstanceId,"task2");
@@ -132,7 +132,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
     //TC4 - when variables are updated
     ZeebeTestUtil.updateVariables(zeebeClient, workflowInstanceId, "{\"var1\": \"updatedValue\" , \"newVar\": 555 }");
-    elasticsearchTestRule.processAllEvents(2, ZeebeESImporter.ImportValueType.VARIABLE);
+    elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
     variables = getVariables(workflowInstanceId);
     assertThat(variables).hasSize(4);
     assertVariable(variables, "var1","\"updatedValue\"");

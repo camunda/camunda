@@ -85,16 +85,6 @@ spec:
           value: "true"
         - name: bootstrap.memory_lock
           value: "true"
-      livenessProbe:
-        httpGet:
-          path: /_cluster/health?local=true
-          port: es-http
-        initialDelaySeconds: 10
-      readinessProbe:
-        httpGet:
-          path: /_cluster/health?local=true
-          port: es-http
-        initialDelaySeconds: 10
       securityContext:
         privileged: true
         capabilities:
@@ -119,6 +109,24 @@ spec:
         requests:
           cpu: 2
           memory: 2Gi
+    - name: zeebe
+      image: camunda/zeebe:0.17.0
+      env:
+        - name: JAVA_TOOL_OPTIONS
+          value: |
+            -XX:+UnlockExperimentalVMOptions
+            -XX:+UseCGroupMemoryLimitForHeap
+      volumeMounts:
+        - name: zeebe-configuration
+          mountPath: /usr/local/zeebe/conf/zeebe.cfg.toml
+          subPath: zeebe.cfg.toml
+      resources:
+        limits:
+          cpu: 4
+          memory: 8Gi
+        requests:
+          cpu: 2
+          memory: 4Gi
   volumes:
   - name: configdir
     emptyDir: {}
@@ -127,6 +135,12 @@ spec:
   - name: operate-ci-service-account
     secret:
       secretName: operate-ci-service-account
+  - name: zeebe-configuration
+    configMap:
+      name: zeebe-configuration
+      items:
+      - key: zeebe.cfg.toml
+        path: zeebe.cfg.toml
 """
 }
 
@@ -171,42 +185,42 @@ pipeline {
 
   stages {
     stage('Prepare') {
-      parallel {
-        stage('Build Operate') {
-          steps {
-            git url: 'git@github.com:camunda/camunda-operate',
-                branch: "master",
-                credentialsId: 'camunda-jenkins-github-ssh',
-                poll: false
-            container('maven') {
-              // Compile Operate and skip tests
-              sh ("mvn -B -s settings.xml -DskipTests -P skipFrontendBuild clean install")
-              // Compile QA
-              sh ("cd qa && mvn -B -s ../settings.xml -DskipTests clean install")
-            }
-          }
-        }
-        stage('Import ES Snapshot') {
-          steps {
-            container('maven') {
-                // Create repository
-                sh ("""
-                    curl -q -H "Content-Type: application/json" -d '{ "type": "gcs", "settings": { "bucket": "operate-data", "client": "operate_ci_service_account" }}' -XPUT "http://localhost:9200/_snapshot/my_gcs_repository"
-                """)
-                // Restore Snapshot
-                sh ("""
-                    curl -q -XPOST 'http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1/_restore?wait_for_completion=true'
-                """)
-            }
-          }
+      steps {
+        git url: 'git@github.com:camunda/camunda-operate',
+            branch: "master",
+            credentialsId: 'camunda-jenkins-github-ssh',
+            poll: false
+        container('maven') {
+            // Compile Operate and skip tests
+            sh ("mvn -B -s settings.xml -DskipTests -P skipFrontendBuild clean install")
         }
       }
     }
-    stage('Run performance tests') {
+    stage('Data Generation') {
       steps {
         container('maven') {
-          // Generate Data
-          sh ("cd qa/import-performance-tests && mvn -B -s ../../settings.xml -P -docker verify")
+            // Compile QA
+            sh ("mvn -B -s settings.xml -f qa -DskipTests clean install")
+            // Generate Data
+            sh ("mvn -B -s settings.xml -f qa/data-generator spring-boot:run")
+        }
+      }
+    }
+    stage('Upload snapshot') {
+      steps {
+        container('maven') {
+            // Create repository
+            sh ("""
+                curl -s -H "Content-Type: application/json" -d '{ "type": "gcs", "settings": { "bucket": "operate-data", "client": "operate_ci_service_account" }}' -XPUT "http://localhost:9200/_snapshot/my_gcs_repository" 2>&1
+            """)
+            // Delete previous Snapshot
+            sh ("""
+                curl -s -XDELETE "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1" 2>&1
+            """)
+            // Trigger Snapshot
+            sh ("""
+                curl -s -XPUT "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1?wait_for_completion=true" 2>&1
+            """)
         }
       }
     }

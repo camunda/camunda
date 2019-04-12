@@ -29,6 +29,7 @@ import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
+import org.camunda.operate.zeebeimport.ImportValueType;
 import org.camunda.operate.zeebeimport.ZeebeESImporter;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -143,7 +144,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     }
   }
 
-  public void processAllEvents(int expectedMinEventsCount, ZeebeESImporter.ImportValueType importValueType) {
+  public void processAllEvents(int expectedMinEventsCount, ImportValueType importValueType) {
     try {
       int entitiesCount;
       int totalCount = 0;
@@ -164,7 +165,7 @@ public class ElasticsearchTestRule extends TestWatcher {
   }
 
 
-  public void processOneBatchOfRecords(ZeebeESImporter.ImportValueType importValueType) {
+  public void processOneBatchOfRecords(ImportValueType importValueType) {
     try {
       zeebeESImporter.processNextEntitiesBatch(0, importValueType);
     } catch (Exception e) {

@@ -112,8 +112,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //when
     //1st load workflow instance index, then deployment
-    processAllEvents(10, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
-    processAllEvents(2, ZeebeESImporter.ImportValueType.DEPLOYMENT);
+    processAllEvents(10, ImportValueType.WORKFLOW_INSTANCE);
+    processAllEvents(2, ImportValueType.DEPLOYMENT);
 
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
@@ -122,7 +122,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
   }
 
-  protected void processAllEvents(int expectedMinEventsCount, ZeebeESImporter.ImportValueType workflowInstance) {
+  protected void processAllEvents(int expectedMinEventsCount, ImportValueType workflowInstance) {
     elasticsearchTestRule.processAllEvents(expectedMinEventsCount, workflowInstance);
   }
 
@@ -139,8 +139,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //when
     //1st load incident and then workflow instance events
-    processAllEvents(1, ZeebeESImporter.ImportValueType.INCIDENT);
-    processAllEvents(8, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
+    processAllEvents(1, ImportValueType.INCIDENT);
+    processAllEvents(8, ImportValueType.WORKFLOW_INSTANCE);
 
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
@@ -207,7 +207,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //when
     //load only incidents
-    processAllEvents(1, ZeebeESImporter.ImportValueType.INCIDENT);
+    processAllEvents(1, ImportValueType.INCIDENT);
 
     assertListViewResponse();
     //if nothing is returned in list view - there is no way to access the workflow instance, no need to check other queries
@@ -258,8 +258,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     setJobWorker(ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), "{}"));
 
-    processAllEvents(20, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
-    processAllEvents(2, ZeebeESImporter.ImportValueType.INCIDENT);
+    processAllEvents(20, ImportValueType.WORKFLOW_INSTANCE);
+    processAllEvents(2, ImportValueType.INCIDENT);
 
     //then
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
@@ -312,8 +312,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceKey);
 
-    processAllEvents(20, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
-    processAllEvents(2, ZeebeESImporter.ImportValueType.INCIDENT);
+    processAllEvents(20, ImportValueType.WORKFLOW_INSTANCE);
+    processAllEvents(2, ImportValueType.INCIDENT);
 
     //then
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
