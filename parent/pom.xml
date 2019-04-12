@@ -72,7 +72,7 @@
     <plugin.version.checkstyle>3.0.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.8.0</plugin.version.compiler>
     <plugin.version.exec>1.6.0</plugin.version.exec>
-    <plugin.version.failsafe>3.0.0-M3</plugin.version.failsafe>
+    <plugin.version.failsafe>3.0.0-M2</plugin.version.failsafe>
     <plugin.version.fmt>2.8</plugin.version.fmt>
     <plugin.version.license>3.0</plugin.version.license>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
@@ -80,7 +80,7 @@
     <plugin.version.resources>3.1.0</plugin.version.resources>
     <plugin.version.scala>3.2.1</plugin.version.scala>
     <plugin.version.shade>3.2.1</plugin.version.shade>
-    <plugin.version.surefire>3.0.0-M3</plugin.version.surefire>
+    <plugin.version.surefire>3.0.0-M2</plugin.version.surefire>
     <plugin.version.versions>2.7</plugin.version.versions>
     <plugin.version.enforcer>3.0.0-M2</plugin.version.enforcer>
     <plugin.version.dependency>3.1.1</plugin.version.dependency>
