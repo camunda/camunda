@@ -175,7 +175,7 @@ describe('SetupNotice', () => {
     expect(node).toMatchSnapshot();
   });
 
-  it('should not add instruction for group by if operation is raw data', () => {
+  it('should not add instruction for group by if property is raw data', () => {
     const newReport = {
       ...reportTemplate,
       data: {

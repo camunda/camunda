@@ -62,7 +62,6 @@ const validProps = {
       processDefinitionVersion: 1,
       view: {
         entity: 'flowNode',
-        operation: 'avg',
         property: 'duration'
       },
       groupBy: {

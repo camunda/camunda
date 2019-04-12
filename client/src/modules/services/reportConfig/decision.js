@@ -73,12 +73,14 @@ const combinations = {
 
 export const view = {
   rawData: {
-    data: {operation: 'rawData'},
+    data: {property: 'rawData'},
     label: 'Raw Data',
     next: combinations.rawData
   },
   frequency: {
-    data: {operation: 'count', property: 'frequency'},
+    data: {
+      property: 'frequency'
+    },
     label: 'Evaluation Count',
     next: combinations.frequency
   }

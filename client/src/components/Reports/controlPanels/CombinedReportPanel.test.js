@@ -147,8 +147,8 @@ describe('isCompatible', () => {
     expect(node.instance().isCompatible(groupByNone)).toBeFalsy();
   });
 
-  it('should only allow to combine if both reports has the different view operation', async () => {
-    const reportSameOperation = {
+  it('should only allow to combine if both reports has the different view property', async () => {
+    const reportSameProperty = {
       ...reportsList[0],
       data: {
         ...reportsList[0].data,
@@ -159,11 +159,11 @@ describe('isCompatible', () => {
       }
     };
 
-    expect(node.instance().isCompatible(reportSameOperation)).toBeTruthy();
+    expect(node.instance().isCompatible(reportSameProperty)).toBeTruthy();
   });
 
   it('should only allow to combine if both reports has the same view entity and property', async () => {
-    const reportSameOperation = {
+    const reportSameProperty = {
       ...reportsList[0],
       data: {
         ...reportsList[0].data,
@@ -174,7 +174,7 @@ describe('isCompatible', () => {
       }
     };
 
-    expect(node.instance().isCompatible(reportSameOperation)).toBeFalsy();
+    expect(node.instance().isCompatible(reportSameProperty)).toBeFalsy();
   });
 
   it('should allow to combined a userTask duration report with a flowNode duration report', async () => {

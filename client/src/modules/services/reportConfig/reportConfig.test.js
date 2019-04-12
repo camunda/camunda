@@ -43,21 +43,19 @@ it('should get a label for group by variables for dmn', () => {
 });
 
 it('should return the groupBy based on the view if the groupBy is unambiguous', () => {
-  expect(getNext({operation: 'count', entity: 'flowNode', property: 'frequency'})).toEqual({
+  expect(getNext({entity: 'flowNode', property: 'frequency'})).toEqual({
     type: 'flowNodes'
   });
 });
 
 it('should return the visualization based on the view and groupBy if the visualization is unambiguous', () => {
-  expect(
-    getNext({operation: 'avg', entity: 'processInstance', property: 'duration'}, {type: 'none'})
-  ).toEqual('number');
+  expect(getNext({entity: 'processInstance', property: 'duration'}, {type: 'none'})).toEqual(
+    'number'
+  );
 });
 
 it('should return undefined if an unambiguous next config param could not be found', () => {
-  expect(getNext({operation: 'avg', entity: 'processInstance', property: 'duration'})).toBe(
-    undefined
-  );
+  expect(getNext({entity: 'processInstance', property: 'duration'})).toBe(undefined);
 });
 
 it('should always allow view selection', () => {
@@ -105,7 +103,6 @@ it('should allow only visualization options that make sense for the selected vie
 describe('update', () => {
   const countProcessInstances = {
     entity: 'processInstance',
-    operation: 'count',
     property: 'frequency'
   };
 

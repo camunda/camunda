@@ -18,7 +18,6 @@ const validProps = {
       processDefinitionVersion: 1,
       view: {
         entity: 'flowNode',
-        operation: 'minimum',
         property: 'duration'
       },
       visualization: 'bar',
@@ -88,7 +87,6 @@ it('should hide select dateFormat dropdown when viewProperty is not equal durati
         processDefinitionVersion: 1,
         view: {
           entity: 'flowNode',
-          operation: 'count',
           property: 'frequency'
         },
         visualization: 'bar',

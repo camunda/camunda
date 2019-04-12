@@ -14,7 +14,7 @@ it('should render ColumnSelection for raw data views', () => {
     <TableConfig
       report={{
         combined: false,
-        data: {view: {operation: 'rawData'}, groupBy: {type: 'none'}, configuration: {}}
+        data: {view: {property: 'rawData'}, groupBy: {type: 'none'}, configuration: {}}
       }}
     />
   );

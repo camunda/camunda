@@ -53,7 +53,7 @@ const report = {
   data: {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: 'aVersion',
-    view: {operation: 'count', entity: 'processInstance'},
+    view: {entity: 'processInstance', property: 'frequency'},
     groupBy: {type: 'none', unit: null},
     visualization: 'number',
     filter: [],

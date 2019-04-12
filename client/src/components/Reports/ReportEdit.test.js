@@ -166,7 +166,7 @@ it('should show a warning message when there are incompatible filter ', async ()
       data: {
         visualization: 'table',
         view: {
-          operation: 'rawData'
+          property: 'rawData'
         },
         filter: ['some data']
       }

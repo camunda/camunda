@@ -44,7 +44,7 @@ const report = {
   data: {
     decisionDefinitionKey: 'aKey',
     decisionDefinitionVersion: 'aVersion',
-    view: {operation: 'rawData'},
+    view: {property: 'rawData'},
     groupBy: {type: 'none', unit: null},
     visualization: 'table',
     filter: [],

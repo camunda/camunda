@@ -14,15 +14,11 @@ import {isDurationReport} from 'services';
 export default function TableConfig({report, onChange}) {
   let typeSpecificComponent = null;
 
-  const {property, operation} = (report.combined
-    ? Object.values(report.result.data)[0]
-    : report
-  ).data.view;
-  const viewType = property || operation;
+  const {property} = (report.combined ? Object.values(report.result.data)[0] : report).data.view;
 
   const groupBy = !report.combined && report.data.groupBy.type;
 
-  switch (viewType) {
+  switch (property) {
     case 'rawData':
       typeSpecificComponent = <ColumnSelection report={report} onChange={onChange} />;
       break;

@@ -60,13 +60,13 @@ it('should change the precision', () => {
   expect(spy).toHaveBeenCalledWith({precision: {$set: 3}});
 });
 
-it('should contain a target input for count operations', () => {
+it('should contain a target input for count property', () => {
   const node = shallow(<NumberConfig {...props} />);
 
   expect(node.find('CountTargetInput')).toBePresent();
 });
 
-it('should contain a target input for duration operations', () => {
+it('should contain a target input for duration property', () => {
   props.report.data.view.property = 'duration';
   const node = shallow(<NumberConfig {...props} />);
 

@@ -166,7 +166,7 @@ const exampleDurationReport = {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: '1',
     view: {
-      operation: 'foo'
+      property: 'foo'
     },
     groupBy: {
       type: 'startDate',
@@ -269,7 +269,7 @@ describe('automatic interval selection', () => {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: '1',
     view: {
-      operation: 'foo'
+      property: 'foo'
     },
     groupBy: {
       type: 'startDate',
