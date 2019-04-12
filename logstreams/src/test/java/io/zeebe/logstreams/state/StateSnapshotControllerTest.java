@@ -24,6 +24,10 @@ import io.zeebe.logstreams.util.RocksDBWrapper;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.Comparator;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -89,8 +93,7 @@ public class StateSnapshotControllerTest {
   }
 
   @Test
-  public void shouldRemovePreExistingNewDatabaseOnRecoverIfNoSnapshotsToRecoverFrom()
-      throws Exception {
+  public void shouldRemovePreExistingDatabaseOnRecover() throws Exception {
     // given
     final String key = "test";
     final int value = 1;
@@ -109,18 +112,29 @@ public class StateSnapshotControllerTest {
   }
 
   @Test
-  public void shouldReturnLatestLowerBound() throws Exception {
-    // given
-    snapshotController.openDb();
+  public void shouldRecoverFromLatestSnapshot() throws Exception {
+    // given two snapshots
+    final RocksDBWrapper wrapper = new RocksDBWrapper();
+    wrapper.wrap(snapshotController.openDb());
+
+    wrapper.putInt("x", 1);
     snapshotController.takeSnapshot(1);
+
+    wrapper.putInt("x", 2);
     snapshotController.takeSnapshot(2);
+
+    wrapper.putInt("x", 3);
     snapshotController.takeSnapshot(3);
 
+    snapshotController.close();
+
     // when
-    final long latestLowerBound = snapshotController.recover();
+    final long lowerBound = snapshotController.recover();
+    wrapper.wrap(snapshotController.openDb());
 
     // then
-    assertThat(latestLowerBound).isEqualTo(3);
+    assertThat(lowerBound).isEqualTo(3);
+    assertThat(wrapper.getInt("x")).isEqualTo(3);
   }
 
   @Test
@@ -141,5 +155,60 @@ public class StateSnapshotControllerTest {
     assertThat(storage.list()).extracting(f -> f.getName()).containsOnly("2322", "131");
     final long latestLowerBound = snapshotController.recover();
     assertThat(latestLowerBound).isEqualTo(2322);
+  }
+
+  @Test
+  public void shouldRecoverFromLatestNotCorruptedSnapshot() throws Exception {
+    // given two snapshots
+    final RocksDBWrapper wrapper = new RocksDBWrapper();
+    wrapper.wrap(snapshotController.openDb());
+
+    wrapper.putInt("x", 1);
+    snapshotController.takeSnapshot(1);
+
+    wrapper.putInt("x", 2);
+    snapshotController.takeSnapshot(2);
+
+    snapshotController.close();
+    corruptSnapshot(2);
+
+    // when
+    final long lowerBound = snapshotController.recover();
+    wrapper.wrap(snapshotController.openDb());
+
+    // then
+    assertThat(lowerBound).isEqualTo(1);
+    assertThat(wrapper.getInt("x")).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldFailToRecoverIfAllSnapshotsAreCorrupted() throws Exception {
+    // given two snapshots
+    final RocksDBWrapper wrapper = new RocksDBWrapper();
+
+    wrapper.wrap(snapshotController.openDb());
+    wrapper.putInt("x", 1);
+
+    snapshotController.takeSnapshot(1);
+    snapshotController.close();
+    corruptSnapshot(1);
+
+    // when/then
+    assertThatThrownBy(() -> snapshotController.recover())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessage("Failed to recover from snapshots");
+  }
+
+  private void corruptSnapshot(long position) throws IOException {
+    final File snapshot = storage.getSnapshotDirectoryFor(position);
+    assertThat(snapshot).isNotNull();
+
+    final File[] files = snapshot.listFiles((dir, name) -> name.endsWith(".sst"));
+    assertThat(files).hasSizeGreaterThan(0);
+
+    Arrays.sort(files, Comparator.reverseOrder());
+    final File file = files[0];
+
+    Files.write(file.toPath(), "<--corrupted-->".getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
   }
 }

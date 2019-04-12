@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
@@ -96,20 +98,21 @@ public class StateStorageTest {
     createSnapshotDirectory("1");
     createSnapshotDirectory("0");
 
-    final String[] expected =
-        new String[] {
-          storage.getSnapshotsDirectory().getAbsolutePath() + "/0",
-          storage.getSnapshotsDirectory().getAbsolutePath() + "/1",
-          storage.getSnapshotsDirectory().getAbsolutePath() + "/45",
-          storage.getSnapshotsDirectory().getAbsolutePath() + "/131",
-          storage.getSnapshotsDirectory().getAbsolutePath() + "/256"
+    final File[] expected =
+        new File[] {
+          new File(storage.getSnapshotsDirectory(), "0"),
+          new File(storage.getSnapshotsDirectory(), "1"),
+          new File(storage.getSnapshotsDirectory(), "45"),
+          new File(storage.getSnapshotsDirectory(), "131"),
+          new File(storage.getSnapshotsDirectory(), "256")
         };
 
-    // when
-    final List<String> valid = storage.listSorted();
+    // when/then
+    assertThat(storage.listByPositionAsc()).containsExactly(expected);
 
-    // then
-    assertThat(valid).containsExactly(expected);
+    final List<File> reverseOrder = Arrays.asList(expected);
+    Collections.reverse(reverseOrder);
+    assertThat(storage.listByPositionDesc()).containsExactlyElementsOf(reverseOrder);
   }
 
   private File createSnapshotDirectory(final String name) {

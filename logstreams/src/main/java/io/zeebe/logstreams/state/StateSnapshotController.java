@@ -23,7 +23,7 @@ import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import org.slf4j.Logger;
 
@@ -90,26 +90,49 @@ public class StateSnapshotController implements SnapshotController {
 
   @Override
   public long recover() throws Exception {
-    final List<File> snapshots = storage.list();
-    return extractMostRecentSnapshot(snapshots);
-  }
-
-  private long extractMostRecentSnapshot(List<File> snapshots) throws Exception {
     final File runtimeDirectory = storage.getRuntimeDirectory();
-    File snapshotDirectory = null;
-
-    if (!snapshots.isEmpty()) {
-      snapshotDirectory = snapshots.stream().max(Comparator.naturalOrder()).orElse(null);
-    }
 
     if (runtimeDirectory.exists()) {
       FileUtil.deleteFolder(runtimeDirectory.getAbsolutePath());
     }
 
+    final List<File> snapshots = storage.listByPositionDesc();
+    LOG.debug("Available snapshots: {}", snapshots);
+
     long lowerBoundSnapshotPosition = -1;
-    if (snapshotDirectory != null) {
-      lowerBoundSnapshotPosition = Long.parseLong(snapshotDirectory.getName());
+
+    final Iterator<File> snapshotIterator = snapshots.iterator();
+    while (snapshotIterator.hasNext() && lowerBoundSnapshotPosition < 0) {
+      final File snapshotDirectory = snapshotIterator.next();
+
       FileUtil.copySnapshot(runtimeDirectory, snapshotDirectory);
+
+      try {
+        // open database to verify that the snapshot is recoverable
+        openDb();
+
+        LOG.debug("Recovered state from snapshot '{}'", snapshotDirectory);
+
+        lowerBoundSnapshotPosition = Long.parseLong(snapshotDirectory.getName());
+
+      } catch (Exception e) {
+        FileUtil.deleteFolder(runtimeDirectory.getAbsolutePath());
+
+        if (snapshotIterator.hasNext()) {
+          LOG.warn(
+              "Failed to open snapshot '{}'. Delete this snapshot and try the previous one.",
+              snapshotDirectory,
+              e);
+          FileUtil.deleteFolder(snapshotDirectory.getAbsolutePath());
+
+        } else {
+          LOG.error(
+              "Failed to open snapshot '{}'. No snapshots available to recover from. Manual action is required.",
+              snapshotDirectory,
+              e);
+          throw new RuntimeException("Failed to recover from snapshots", e);
+        }
+      }
     }
 
     return lowerBoundSnapshotPosition;
@@ -117,24 +140,27 @@ public class StateSnapshotController implements SnapshotController {
 
   @Override
   public ZeebeDb openDb() {
-    db = zeebeDbFactory.createDb(storage.getRuntimeDirectory());
+    if (db == null) {
+      db = zeebeDbFactory.createDb(storage.getRuntimeDirectory());
+    }
+
     return db;
   }
 
   @Override
   public void ensureMaxSnapshotCount(int maxSnapshotCount) throws Exception {
-    final List<String> snapshots = storage.listSorted();
+    final List<File> snapshots = storage.listByPositionAsc();
     if (snapshots.size() > maxSnapshotCount) {
       LOG.debug(
           "Ensure max snapshot count {}, will delete {} snapshot(s).",
           maxSnapshotCount,
           snapshots.size() - maxSnapshotCount);
 
-      final List<String> snapshotsToRemove =
+      final List<File> snapshotsToRemove =
           snapshots.subList(0, snapshots.size() - maxSnapshotCount);
 
-      for (final String snapshot : snapshotsToRemove) {
-        FileUtil.deleteFolder(snapshot);
+      for (final File snapshot : snapshotsToRemove) {
+        FileUtil.deleteFolder(snapshot.toPath());
         LOG.debug("Purged snapshot {}", snapshot);
       }
     } else {
