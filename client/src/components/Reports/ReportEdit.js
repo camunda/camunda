@@ -137,7 +137,7 @@ export default withErrorHandling(
           loadingReportData: true
         });
         this.setState({
-          report: (await evaluateReport(query)) || query,
+          report: await evaluateReport(query),
           loadingReportData: false
         });
       } else {

@@ -58,12 +58,6 @@ it("should show an error page if report doesn't exist", () => {
   expect(node.find('ErrorPage')).toBePresent();
 });
 
-it('should initially load data', () => {
-  shallow(<Report {...props} />);
-
-  expect(loadEntity).toHaveBeenCalled();
-});
-
 it('should initially evaluate the report', () => {
   shallow(<Report {...props} />);
 

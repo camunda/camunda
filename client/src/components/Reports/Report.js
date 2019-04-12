@@ -8,13 +8,7 @@ import React from 'react';
 
 import {withErrorHandling} from 'HOC';
 import {ErrorPage, LoadingIndicator, EditCollectionModal} from 'components';
-import {
-  loadEntity,
-  loadEntities,
-  createEntity,
-  getEntitiesCollections,
-  evaluateReport
-} from 'services';
+import {loadEntities, createEntity, getEntitiesCollections, evaluateReport} from 'services';
 
 import ReportEdit from './ReportEdit';
 import ReportView from './ReportView';
@@ -30,20 +24,19 @@ export default withErrorHandling(
       this.isNew = props.location.search === '?new';
 
       this.state = {
+        report: undefined,
         collections: [],
         creatingCollection: false,
-        loaded: false,
         serverError: null
       };
     }
 
     componentDidMount = async () => {
       await this.props.mightFail(
-        loadEntity('report', this.id),
+        await evaluateReport(this.id),
         async response => {
           this.setState({
-            loaded: true,
-            report: (await evaluateReport(this.id)) || response
+            report: response
           });
           await this.loadCollections();
         },
@@ -78,13 +71,13 @@ export default withErrorHandling(
     }
 
     render() {
-      const {report, collections, creatingCollection, loaded, serverError} = this.state;
+      const {report, collections, creatingCollection, serverError} = this.state;
 
       if (serverError) {
         return <ErrorPage />;
       }
 
-      if (!loaded) {
+      if (!report) {
         return <LoadingIndicator />;
       }
 

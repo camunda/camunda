@@ -76,7 +76,7 @@ export default themed(
           >
             <ReportRenderer
               disableReportScrolling={disableReportScrolling}
-              report={this.state.data.reportDefinition || this.state.data}
+              report={this.state.data}
             />
           </div>
           {children({loadReportData: this.loadReportData})}

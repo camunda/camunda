@@ -9,7 +9,6 @@ import {shallow} from 'enzyme';
 
 import ReportEdit from './ReportEdit';
 import {incompatibleFilters, updateEntity, evaluateReport} from 'services';
-import {addNotification} from 'notifications';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -81,7 +80,7 @@ it('should update the report', async () => {
 it('should evaluate the report after updating', async () => {
   const node = shallow(<ReportEdit report={report} />).dive();
 
-  evaluateReport.mockClear();
+  evaluateReport.mockReturnValue(report);
   await node.instance().updateReport({visualization: {$set: 'customTestVis'}}, true);
 
   expect(evaluateReport).toHaveBeenCalled();
