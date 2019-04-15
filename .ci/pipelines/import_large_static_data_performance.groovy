@@ -107,7 +107,7 @@ pipeline {
                 gcloud components install kubectl --quiet
 
                 kubectl apply -f .ci/podSpecs/performanceTests/ns.yml
-                kubectl create secret docker-registry registry-camunda-cloud-secret --namespace performance-optimize --docker-server=https://registry.camunda.cloud --docker-username=${REGISTRY_USR} --docker-password=${REGISTRY_PSW} --docker-email=ci@camunda.com
+                kubectl create secret docker-registry registry-camunda-cloud-secret --namespace performance-optimize --docker-server=https://registry.camunda.cloud --docker-username="${REGISTRY_USR}" --docker-password="${REGISTRY_PSW}" --docker-email=ci@camunda.com
 
                 kubectl apply -f .ci/podSpecs/performanceTests/rbac.yml
                 
