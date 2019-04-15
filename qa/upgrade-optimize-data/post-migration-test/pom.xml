@@ -5,7 +5,7 @@
 
   <properties>
     <skipTests>true</skipTests>
-    <upgrade.versions>2.1.0,2.2.0,2.3.0,2.4.0</upgrade.versions>
+    <upgrade.versions>2.1.0,2.2.0,2.3.0,2.4.0,${project.version}</upgrade.versions>
   </properties>
 
   <parent>
@@ -247,8 +247,7 @@
                     <exec dir="${project.build.directory}/../../../../qa/data-generation" executable="/bin/bash"
                           failonerror="true">
                       <arg value="-c"/>
-                      <arg
-                          value="set -o pipefail; mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 10' -B ${maven-settings} | sed 's/^/[ENGINE DATA GENERATION]: /'"/>
+                      <arg value="set -o pipefail; mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 10' -B ${maven-settings} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn | sed 's/^/[ENGINE DATA GENERATION]: /'"/>
                     </exec>
                   </target>
                 </configuration>
@@ -264,7 +263,7 @@
                   <target name="unpack optimize distributions">
                     <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
                     <property environment="env"/>
-                    <condition property="maven-settings" value="--settings=../settings.xml" else="">
+                    <condition property="maven-settings" value="--settings=settings.xml" else="">
                       <isset property="env.JENKINS_URL"/>
                     </condition>
                     <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
@@ -279,10 +278,10 @@
                             <ac:var name="optimize.classifier" value="production"/>
                           </ac:else>
                         </ac:if>
-                        <exec dir="${project.build.directory}/../../../" executable="/bin/bash" failonerror="true">
+                        <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
                           <arg value="-c"/>
                           <arg
-                              value="mvn dependency:unpack ${maven-settings} -f upgrade-optimize-data -Dartifact=org.camunda.optimize:camunda-optimize:@{currentVersion}:tar.gz:${optimize.classifier} -DoutputDirectory=${project.build.directory}/@{currentVersion} -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"/>
+                              value="mvn dependency:unpack -B ${maven-settings} -f qa/upgrade-optimize-data -Dartifact=org.camunda.optimize:camunda-optimize:@{currentVersion}:tar.gz:${optimize.classifier} -DoutputDirectory=${project.build.directory}/@{currentVersion} -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"/>
                         </exec>
                       </sequential>
                     </ac:for>
@@ -299,12 +298,7 @@
                   <target>
                     <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
                     <property environment="env"/>
-                    <condition property="maven-settings" value="--settings=${project.basedir}/../../settings.xml"
-                               else="">
-                      <isset property="env.JENKINS_URL"/>
-                    </condition>
-                    <property environment="env"/>
-                    <condition property="maven-settings-tests"
+                    <condition property="maven-settings"
                                value="--settings=${project.basedir}/../../../settings.xml" else="">
                       <isset property="env.JENKINS_URL"/>
                     </condition>
@@ -348,7 +342,7 @@
                             <exec executable="/bin/bash" failonerror="true">
                               <arg value="-c"/>
                               <arg
-                                  value="set -o pipefail; mvn verify -DskipTests=false -B ${maven-settings-tests} | sed 's/^/[POST MIGRATION TESTS]: /'"/>
+                                  value="set -o pipefail; mvn verify -DskipTests=false -B ${maven-settings} | sed 's/^/[POST MIGRATION TESTS]: /'"/>
                             </exec>
                             <ac:if>
                               <not>
@@ -360,7 +354,7 @@
                                 <exec executable="/bin/bash" failonerror="true">
                                   <arg value="-c"/>
                                   <arg
-                                      value="set -o pipefail; java -jar ${project.build.directory}/generators/generator@{currentVersion}.jar ${maven-settings} | sed 's/^/[OPTIMIZE DATA GENERATION]: /'"/>
+                                      value="set -o pipefail; java -jar ${project.build.directory}/generators/generator@{currentVersion}.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'"/>
                                 </exec>
                               </ac:then>
                             </ac:if>
