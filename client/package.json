@@ -7,7 +7,7 @@
     "array-includes": "^3.0.3",
     "array.prototype.find": "^2.0.4",
     "bpmn-js": "3.3.0",
-    "chart.js": "2.7.2",
+    "chart.js": "2.8.0",
     "classnames": "^2.2.6",
     "debounce": "^1.1.0",
     "dmn-js": "^6.3.2",
