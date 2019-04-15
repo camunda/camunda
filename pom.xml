@@ -35,7 +35,7 @@
     <elasticsearch.log4j.version>2.11.1</elasticsearch.log4j.version>
     <guava.version>27.1-jre</guava.version>
     <spring.version>5.1.6.RELEASE</spring.version>
-    <mockito.version>2.26.0</mockito.version>
+    <mockito.version>2.27.0</mockito.version>
     <httpclient.version>4.5.8</httpclient.version>
     <hamcrest.version>1.3</hamcrest.version>
     <junit.version>4.12</junit.version>
