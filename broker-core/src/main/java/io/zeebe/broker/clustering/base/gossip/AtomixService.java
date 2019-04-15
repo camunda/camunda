@@ -158,7 +158,7 @@ public class AtomixService implements Service<Atomix> {
 
           final Node node =
               Node.builder().withAddress(Address.from(address[0], memberPort)).build();
-          LOG.info("Member {} will contact node: {}", localMemberId, node.address());
+          LOG.debug("Member {} will contact node: {}", localMemberId, node.address());
           nodes.add(node);
         });
     return builder.withNodes(nodes).build();

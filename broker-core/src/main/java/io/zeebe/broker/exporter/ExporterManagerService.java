@@ -26,12 +26,9 @@ import io.zeebe.broker.exporter.stream.ExporterColumnFamilies;
 import io.zeebe.broker.exporter.stream.ExporterStreamProcessor;
 import io.zeebe.broker.exporter.stream.ExporterStreamProcessorState;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
-import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.spi.SnapshotController;
-import io.zeebe.logstreams.state.StateSnapshotController;
-import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
@@ -82,12 +79,7 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
   }
 
   private void startExporter(ServiceName<Partition> partitionName, Partition partition) {
-    final StateStorage stateStorage =
-        partition.getStateStorageFactory().create(EXPORTER_PROCESSOR_ID, PROCESSOR_NAME);
-
-    final SnapshotController snapshotController =
-        new StateSnapshotController(
-            DefaultZeebeDbFactory.defaultFactory(ExporterColumnFamilies.class), stateStorage);
+    final SnapshotController snapshotController = partition.getExporterSnapshotController();
 
     if (exporterRepository.getExporters().isEmpty()) {
       clearExporterState(snapshotController);

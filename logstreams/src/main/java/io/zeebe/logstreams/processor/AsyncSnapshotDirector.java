@@ -70,6 +70,7 @@ public class AsyncSnapshotDirector extends Actor {
   private long lastWrittenEventPosition = INITIAL_POSITION;
   private boolean pendingSnapshot;
   private long lowerBoundSnapshotPosition;
+  private long lastValidSnapshot;
 
   AsyncSnapshotDirector(
       String name,
@@ -146,8 +147,16 @@ public class AsyncSnapshotDirector extends Actor {
         lastProcessedPosition,
         (lowerBoundSnapshotPosition, error) -> {
           if (error == null) {
-            this.lowerBoundSnapshotPosition = lowerBoundSnapshotPosition;
-            takeSnapshot();
+            if (lowerBoundSnapshotPosition > lastValidSnapshot) {
+              this.lowerBoundSnapshotPosition = lowerBoundSnapshotPosition;
+              takeSnapshot();
+            } else {
+              LOG.debug(
+                  "No changes since last snapshot we will skip snapshot creation. Last valid snapshot position {}, new lower bound position {}",
+                  lastValidSnapshot,
+                  lowerBoundSnapshotPosition);
+            }
+
           } else {
             LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, error);
           }
@@ -193,6 +202,7 @@ public class AsyncSnapshotDirector extends Actor {
     if (pendingSnapshot && currentCommitPosition >= lastWrittenEventPosition) {
       try {
 
+        lastValidSnapshot = lowerBoundSnapshotPosition;
         snapshotController.moveValidSnapshot(lowerBoundSnapshotPosition);
 
         try {
@@ -200,6 +210,8 @@ public class AsyncSnapshotDirector extends Actor {
         } catch (Exception ex) {
           LOG.error(ERROR_MSG_ENSURING_MAX_SNAPSHOT_COUNT, ex);
         }
+
+        snapshotController.replicateLatestSnapshot(actor::submit);
 
       } catch (Exception ex) {
         LOG.error(ERROR_MSG_MOVE_SNAPSHOT, ex);

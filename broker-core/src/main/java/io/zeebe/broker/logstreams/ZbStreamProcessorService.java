@@ -27,7 +27,6 @@ import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory.Builde
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
-import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.processor.MessageEventProcessors;
@@ -42,8 +41,6 @@ import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.logstreams.state.StateSnapshotController;
-import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
@@ -52,7 +49,6 @@ import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerTransport;
 
 public class ZbStreamProcessorService implements Service<ZbStreamProcessorService> {
@@ -60,7 +56,6 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
   public static final String PROCESSOR_NAME = "zb-stream-processor";
 
   private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
-  private final Injector<ClientTransport> managementApiClientInjector = new Injector<>();
   private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
   private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector =
       new Injector<>();
@@ -70,7 +65,6 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
   private StreamProcessorServiceFactory streamProcessorServiceFactory;
   private ServerTransport clientApiTransport;
   private TopologyManager topologyManager;
-  private ClientTransport managementApi;
   private Atomix atomix;
   private final ServiceGroupReference<Partition> partitionsGroupReference =
       ServiceGroupReference.<Partition>create()
@@ -83,7 +77,6 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
 
   @Override
   public void start(final ServiceStartContext serviceContext) {
-    this.managementApi = managementApiClientInjector.getValue();
     this.clientApiTransport = clientApiTransportInjector.getValue();
     this.streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
     this.topologyManager = topologyManagerInjector.getValue();
@@ -100,13 +93,8 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
             .processorId(partitionId)
             .processorName(PROCESSOR_NAME);
 
-    final StateStorage stateStorage =
-        partition.getStateStorageFactory().create(partitionId, PROCESSOR_NAME);
-    final StateSnapshotController stateSnapshotController =
-        new StateSnapshotController(DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, stateStorage);
-
     streamProcessorServiceBuilder
-        .snapshotController(stateSnapshotController)
+        .snapshotController(partition.getProcessorSnapshotController())
         .streamProcessorFactory(
             (zeebeDb, dbContext) -> {
               final ZeebeState zeebeState = new ZeebeState(partitionId, zeebeDb, dbContext);
@@ -169,8 +157,8 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
       ZeebeState zeebeState,
       TypedEventStreamProcessorBuilder typedProcessorBuilder) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
-    final boolean isDepoymentPartition = partitionId == Protocol.DEPLOYMENT_PARTITION;
-    if (isDepoymentPartition) {
+    final boolean isDeploymentPartition = partitionId == Protocol.DEPLOYMENT_PARTITION;
+    if (isDeploymentPartition) {
       DeploymentEventProcessors.addTransformingDeploymentProcessor(
           typedProcessorBuilder,
           zeebeState,
@@ -183,7 +171,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
     typedProcessorBuilder.onEvent(
         ValueType.DEPLOYMENT,
         DeploymentIntent.CREATED,
-        new DeploymentCreatedProcessor(workflowState, isDepoymentPartition));
+        new DeploymentCreatedProcessor(workflowState, isDeploymentPartition));
   }
 
   private void addIncidentProcessors(
@@ -225,10 +213,6 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
 
   public Injector<TopologyManager> getTopologyManagerInjector() {
     return topologyManagerInjector;
-  }
-
-  public Injector<ClientTransport> getManagementApiClientInjector() {
-    return managementApiClientInjector;
   }
 
   public Injector<Atomix> getAtomixInjector() {

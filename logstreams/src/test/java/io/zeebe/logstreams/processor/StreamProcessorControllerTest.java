@@ -96,9 +96,9 @@ public class StreamProcessorControllerTest {
 
   private ZeebeDb zeebeDb;
   private DbContext dbContext;
-  private StateStorage stateStorage;
   private ActorFuture<Void> openedFuture;
   private CountDownLatch processorCreated;
+  private StateStorage stateStorage;
 
   @Before
   public void setup() throws Exception {

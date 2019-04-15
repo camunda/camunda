@@ -94,7 +94,10 @@ public class DistributedLogstreamPartition implements Service<DistributedLogstre
         .whenComplete(
             (r, error) -> {
               if (error == null) {
-                LOG.info("Claimed leadership successfully");
+                LOG.info(
+                    "Node {} claimed leadership for partition {} successfully",
+                    memberId,
+                    partitionId);
                 startFuture.complete(null);
               } else {
                 startFuture.completeExceptionally(error);
