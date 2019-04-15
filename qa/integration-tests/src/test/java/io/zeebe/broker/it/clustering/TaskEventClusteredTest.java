@@ -15,10 +15,11 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
+
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.ZeebeAssertHelper;
 import io.zeebe.client.api.commands.BrokerInfo;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -30,10 +31,9 @@ public class TaskEventClusteredTest {
   @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
   public void shouldCreateJobWhenFollowerUnavailable() {
     // given
-    final BrokerInfo leader = clusteringRule.getLeaderForPartition(0);
+    final BrokerInfo leader = clusteringRule.getLeaderForPartition(START_PARTITION_ID);
 
     // choosing a new leader in a raft group where the previously leading broker is no longer
     // available

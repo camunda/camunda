@@ -96,7 +96,6 @@ public class DeploymentClusteredTest {
   }
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
   public void shouldDeployOnRemainingBrokers() {
     // given
 
@@ -136,7 +135,6 @@ public class DeploymentClusteredTest {
   }
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
   public void shouldDeployAfterRestartBroker() {
     // given
 
