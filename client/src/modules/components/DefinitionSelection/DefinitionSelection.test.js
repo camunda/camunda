@@ -90,7 +90,13 @@ it('should set key and version, if process definition is already available', asy
   };
   const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
 
-  expect(node.find('.name')).toHaveProp('placeholder', 'foo');
+  expect(node.find('.name')).toHaveProp('initialValue', {
+    key: 'foo',
+    versions: [
+      {id: 'procdef2', key: 'foo', version: '2'},
+      {id: 'procdef1', key: 'foo', version: '1'}
+    ]
+  });
   expect(node.find('.version')).toHaveProp('label', '2');
 });
 

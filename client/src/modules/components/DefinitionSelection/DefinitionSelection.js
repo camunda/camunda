@@ -68,14 +68,6 @@ export default class DefinitionSelection extends React.Component {
   canRenderDiagram = () =>
     this.props.renderDiagram && this.props.definitionKey && this.props.definitionVersion;
 
-  createProcDefKeyTitle = () => {
-    if (this.props.definitionKey) {
-      return this.getNameForKey(this.props.definitionKey);
-    } else {
-      return 'Select...';
-    }
-  };
-
   createProcDefVersionTitle = () => {
     if (this.props.definitionVersion) {
       return this.getVersion().toLowerCase();
@@ -87,7 +79,7 @@ export default class DefinitionSelection extends React.Component {
   render() {
     const {loaded, availableDefinitions} = this.state;
     const noDefinitions = !availableDefinitions || availableDefinitions.length === 0;
-    const key = this.props.definitionKey;
+    const selectedKey = this.props.definitionKey;
     const version = this.props.definitionVersion;
 
     if (!loaded) {
@@ -109,25 +101,28 @@ export default class DefinitionSelection extends React.Component {
             <Labeled label="Name">
               <Typeahead
                 className="name"
+                initialValue={this.findSelectedKeyGroup(selectedKey)}
                 disabled={noDefinitions}
-                placeholder={this.createProcDefKeyTitle()}
+                placeholder="Select..."
                 values={availableDefinitions}
                 onSelect={this.changeKey}
-                formatter={({key}) => this.getNameForKey(key)}
+                formatter={selectedDefinition =>
+                  selectedDefinition ? this.getNameForKey(selectedDefinition.key) : null
+                }
               />
             </Labeled>
             <Labeled label="Version">
               <Dropdown
                 label={this.createProcDefVersionTitle()}
                 className="version"
-                disabled={!key}
+                disabled={!selectedKey}
               >
                 {this.props.enableAllVersionSelection && (
                   <Dropdown.Option key="0" onClick={() => this.changeVersion('ALL')}>
                     all
                   </Dropdown.Option>
                 )}
-                {this.renderAllVersions(key)}
+                {this.renderAllVersions(selectedKey)}
               </Dropdown>
             </Labeled>
           </div>
