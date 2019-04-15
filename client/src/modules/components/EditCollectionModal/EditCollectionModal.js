@@ -63,6 +63,7 @@ export default class EditCollectionModal extends Component {
             onKeyDown={this.handleKeyPress}
             isInvalid={!this.state.name}
             disabled={this.state.loading}
+            autoComplete="off"
           />
         </Modal.Content>
         <Modal.Actions>

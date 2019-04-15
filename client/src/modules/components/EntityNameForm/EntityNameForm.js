@@ -48,6 +48,7 @@ export default class EntityNameForm extends Component {
             className="name-input"
             placeholder={`${entity} name`}
             isInvalid={!name}
+            autoComplete="off"
           />
           {!name && (
             <ErrorMessage className="warning">{`${entity}'s name can not be empty`}</ErrorMessage>

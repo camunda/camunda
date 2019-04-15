@@ -242,6 +242,7 @@ export default function AlertModal(reports) {
                   isInvalid={errorInput === 'name'}
                   value={name}
                   onChange={({target: {value}}) => this.setState({name: value})}
+                  autoComplete="off"
                 >
                   {errorInput === 'name' && (
                     <ErrorMessage className="AlertModal__warning">Please enter a name</ErrorMessage>
