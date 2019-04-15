@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {fromCache, toCache} from './backendCache';
+
 const handlers = [];
 
 export function put(url, body, options = {}) {
@@ -50,7 +52,13 @@ export function removeHandler(fct) {
   handlers.splice(handlers.indexOf(fct), 1);
 }
 
-export async function request({url, method, body, query, headers}) {
+export async function request(props) {
+  const cachedResponse = fromCache(props);
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+
+  const {url, method, body, query, headers} = props;
   const resourceUrl = query ? `${url}?${formatQuery(query)}` : url;
 
   let response = await fetch(resourceUrl, {
@@ -67,6 +75,8 @@ export async function request({url, method, body, query, headers}) {
   handlers.forEach(async fct => {
     response = await fct(response);
   });
+
+  toCache(props, response);
 
   if (response.status >= 200 && response.status < 300) {
     return response;
