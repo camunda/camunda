@@ -70,6 +70,8 @@ public class IntervalAggregationService {
         return DateHistogramInterval.DAY;
       case HOUR:
         return DateHistogramInterval.HOUR;
+      case MINUTE:
+        return DateHistogramInterval.MINUTE;
       default:
         logger.error("Unknown interval [{}]. Please state a valid interval", interval);
         throw new OptimizeException("Unknown interval used. Please state a valid interval.");

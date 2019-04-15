@@ -22,7 +22,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 public abstract class ProcessReportCommand<T extends ReportEvaluationResult>
   extends ReportCommand<T, SingleProcessReportDefinitionDto> {
 
-  private ProcessQueryFilterEnhancer queryFilterEnhancer;
+  protected ProcessQueryFilterEnhancer queryFilterEnhancer;
   protected IntervalAggregationService intervalAggregationService;
 
   @Override

@@ -40,6 +40,7 @@ public class ReportConstants {
   public static final String DATE_UNIT_WEEK = "week";
   public static final String DATE_UNIT_DAY = "day";
   public static final String DATE_UNIT_HOUR = "hour";
+  public static final String DATE_UNIT_MINUTE = "minute";
   public static final String DATE_UNIT_AUTOMATIC = "automatic";
 
   // report configuration constants

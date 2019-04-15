@@ -8,12 +8,12 @@ package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
 public class RelativeDateFilterStartDto {
 
   protected Long value;
-  protected String unit;
+  protected RelativeDateFilterUnit unit;
 
   public RelativeDateFilterStartDto() {
   }
 
-  public RelativeDateFilterStartDto(Long value, String unit) {
+  public RelativeDateFilterStartDto(Long value, RelativeDateFilterUnit unit) {
     this.unit = unit;
     this.value = value;
   }
@@ -26,11 +26,11 @@ public class RelativeDateFilterStartDto {
     this.value = value;
   }
 
-  public String getUnit() {
+  public RelativeDateFilterUnit getUnit() {
     return unit;
   }
 
-  public void setUnit(String unit) {
+  public void setUnit(RelativeDateFilterUnit unit) {
     this.unit = unit;
   }
 

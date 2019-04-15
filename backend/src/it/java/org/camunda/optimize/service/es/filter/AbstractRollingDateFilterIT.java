@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.filter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -17,6 +18,7 @@ import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResu
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.Rule;
@@ -35,12 +37,16 @@ import static org.hamcrest.core.IsNull.notNullValue;
 public abstract class AbstractRollingDateFilterIT {
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
+  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule)
+    .around(engineRule)
+    .around(engineDatabaseRule)
+    .around(embeddedOptimizeRule);
 
   protected ProcessInstanceEngineDto deployAndStartSimpleProcess() {
     return deployAndStartSimpleProcessWithVariables(new HashMap<>());
@@ -82,7 +88,7 @@ public abstract class AbstractRollingDateFilterIT {
   protected ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> createAndEvaluateReportWithRollingStartDateFilter(
     String processDefinitionKey,
     String processDefinitionVersion,
-    String unit,
+    RelativeDateFilterUnit unit,
     boolean newToken
   ) {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
@@ -103,7 +109,7 @@ public abstract class AbstractRollingDateFilterIT {
   protected ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> createAndEvaluateReportWithRollingEndDateFilter(
     String processDefinitionKey,
     String processDefinitionVersion,
-    String unit,
+    RelativeDateFilterUnit unit,
     boolean newToken
   ) {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(

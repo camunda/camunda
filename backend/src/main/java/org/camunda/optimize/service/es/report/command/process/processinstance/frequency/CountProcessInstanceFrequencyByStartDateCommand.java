@@ -26,6 +26,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -38,6 +39,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createProcessStartDateHistogramBucketLimitingFilterFor;
+import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.isResultComplete;
+import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
+import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
@@ -78,9 +83,10 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
         .types(PROC_INSTANCE_TYPE)
         .source(searchSourceBuilder);
 
-    SearchResponse response;
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final ProcessReportMapResultDto mapResultDto = mapToReportResult(response);
+      return new SingleProcessMapReportResult(mapResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
         String.format(
@@ -92,11 +98,6 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-
-    ProcessReportMapResultDto mapResultDto = new ProcessReportMapResultDto();
-    mapResultDto.setData(processAggregations(response.getAggregations()));
-    mapResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessMapReportResult(mapResultDto, reportDefinition);
   }
 
   @Override
@@ -115,13 +116,21 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
     if (GroupByDateUnit.AUTOMATIC.equals(unit)) {
       return createAutomaticIntervalAggregation(query);
     }
-    DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
-    return AggregationBuilders
+
+    final DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
+    final DateHistogramAggregationBuilder dateHistogramAggregation = AggregationBuilders
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
       .order(BucketOrder.key(false))
       .field(START_DATE)
       .dateHistogramInterval(interval)
       .timeZone(DateTimeZone.getDefault());
+
+    final ProcessReportDataDto reportData = getReportData();
+    final BoolQueryBuilder limitFilterQuery = createProcessStartDateHistogramBucketLimitingFilterFor(
+      reportData.getFilter(), unit, configurationService.getEsAggregationBucketLimit(), queryFilterEnhancer
+    );
+
+    return wrapWithFilterLimitedParentAggregation(limitFilterQuery, dateHistogramAggregation);
   }
 
   private AggregationBuilder createAutomaticIntervalAggregation(QueryBuilder query) throws OptimizeException {
@@ -141,19 +150,28 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
     }
   }
 
-  private Map<String, Long> processAggregations(Aggregations aggregations) {
-    if (!aggregations.getAsMap().containsKey(DATE_HISTOGRAM_AGGREGATION)) {
-      return processAutomaticIntervalAggregations(aggregations);
-    }
-    Histogram agg = aggregations.get(DATE_HISTOGRAM_AGGREGATION);
+  private ProcessReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ProcessReportMapResultDto resultDto = new ProcessReportMapResultDto();
+    resultDto.setData(processAggregations(response.getAggregations()));
+    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+    resultDto.setComplete(isResultComplete(response));
+    return resultDto;
+  }
 
-    Map<String, Long> result = new LinkedHashMap<>();
-    // For each entry
-    for (Histogram.Bucket entry : agg.getBuckets()) {
-      DateTime key = (DateTime) entry.getKey();
-      long docCount = entry.getDocCount();
-      String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
-      result.put(formattedDate, docCount);
+  private Map<String, Long> processAggregations(Aggregations aggregations) {
+    final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
+    final Map<String, Long> result;
+    if (unwrappedLimitedAggregations.isPresent()) {
+      final Histogram agg = unwrappedLimitedAggregations.get().get(DATE_HISTOGRAM_AGGREGATION);
+      result = new LinkedHashMap<>();
+      for (Histogram.Bucket entry : agg.getBuckets()) {
+        DateTime key = (DateTime) entry.getKey();
+        long docCount = entry.getDocCount();
+        String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
+        result.put(formattedDate, docCount);
+      }
+    } else {
+      result = processAutomaticIntervalAggregations(aggregations);
     }
     return result;
   }
@@ -174,4 +192,5 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
         )
       );
   }
+
 }

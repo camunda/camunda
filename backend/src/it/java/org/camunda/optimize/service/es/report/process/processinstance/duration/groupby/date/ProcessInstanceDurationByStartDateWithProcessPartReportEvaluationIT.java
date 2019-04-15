@@ -253,6 +253,41 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
   }
 
   @Test
+  public void multipleBuckets_noFilter_resultLimitedByConfig() throws SQLException {
+    // given
+    OffsetDateTime procInstStartDate = OffsetDateTime.now();
+    ProcessDefinitionEngineDto procDefDto = deploySimpleServiceTaskProcess();
+    startThreeProcessInstances(procInstStartDate, 0, procDefDto, Arrays.asList(1, 2, 9));
+    startThreeProcessInstances(procInstStartDate, -1, procDefDto, Arrays.asList(2, 4, 12));
+    startThreeProcessInstances(procInstStartDate, -2, procDefDto, Arrays.asList(2, 4, 12));
+    startThreeProcessInstances(procInstStartDate, -3, procDefDto, Arrays.asList(2, 4, 12));
+
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(2);
+
+    // when
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(procDefDto.getKey())
+      .setProcessDefinitionVersion(procDefDto.getVersionAsString())
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART)
+      .setDateInterval(GroupByDateUnit.DAY)
+      .build();
+
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+
+    // then
+    Map<String, AggregationResultDto> resultMap = result.getData();
+    assertThat(resultMap.size(), is(2));
+    assertThat(result.getIsComplete(), is(false));
+  }
+
+  @Test
   public void takeCorrectActivityOccurrences() throws Exception {
     // given
     OffsetDateTime procInstStartDate = OffsetDateTime.now();

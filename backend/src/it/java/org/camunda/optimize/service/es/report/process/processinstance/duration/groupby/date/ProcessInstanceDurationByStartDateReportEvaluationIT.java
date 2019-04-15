@@ -87,7 +87,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     .around(engineDatabaseRule);
 
   @Test
-  public void simpleReportEvaluation() throws Exception {
+  public void simpleReportEvaluation() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -127,8 +127,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   }
 
   @Test
-  public void simpleReportEvaluationById() throws
-                                           Exception {
+  public void simpleReportEvaluationById() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -280,6 +279,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // then
     Map<String, AggregationResultDto> resultMap = result.getData();
+    assertThat(result.getIsComplete(), is(true));
     assertThat(resultMap.size(), is(3));
     assertThat(
       new ArrayList<>(resultMap.keySet()),
@@ -333,6 +333,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // then
     Map<String, AggregationResultDto> resultMap = result.getData();
+    assertThat(result.getIsComplete(), is(true));
     assertThat(resultMap.size(), is(3));
     final List<Long> bucketValues = resultMap.values().stream()
       .map(bucketResult -> bucketResult.getResultForGivenAggregationType(aggregationType))
@@ -354,6 +355,50 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException("Failed adjusting process instance dates", e);
     }
+  }
+
+  @Test
+  public void multipleBuckets_noFilter_resultLimitedByConfig() {
+    // given
+    final OffsetDateTime startDate = OffsetDateTime.now();
+    final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
+    final String processDefinitionId = processInstanceDto1.getDefinitionId();
+    final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
+    final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
+    adjustProcessInstanceDates(processInstanceDto1.getId(), startDate, 0L, 1L);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto2.getId(), startDate, -1L, 2L);
+    final ProcessInstanceEngineDto processInstanceDto3 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto3.getId(), startDate, -1L, 100L);
+
+    final ProcessInstanceEngineDto processInstanceDto4 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto4.getId(), startDate, -2L, 1L);
+    final ProcessInstanceEngineDto processInstanceDto5 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto5.getId(), startDate, -2L, 2L);
+    final ProcessInstanceEngineDto processInstanceDto6 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto6.getId(), startDate, -2L, 3L);
+    final ProcessInstanceEngineDto processInstanceDto7 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto7.getId(), startDate, -2L, 4L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(2);
+
+    // when
+    final ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
+      .build();
+    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+
+    // then
+    Map<String, AggregationResultDto> resultMap = result.getData();
+    assertThat(resultMap.size(), is(2));
+    assertThat(result.getIsComplete(), is(false));
   }
 
   @Test

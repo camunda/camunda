@@ -66,7 +66,7 @@ public class ProcessFilterBuilder {
     filters.add(result);
   }
 
-  public List<ProcessFilterDto> buildList() {
-    return filters;
+  public <T extends ProcessFilterDto> List<T> buildList() {
+    return (List<T>) filters;
   }
 }

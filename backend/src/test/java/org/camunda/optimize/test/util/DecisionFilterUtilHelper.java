@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.Out
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DoubleVariableFilterDataDto;
@@ -21,7 +22,7 @@ import java.util.Arrays;
 
 public class DecisionFilterUtilHelper {
 
-  public static EvaluationDateFilterDto createRollingEvaluationDateFilter(Long value, String unit) {
+  public static EvaluationDateFilterDto createRollingEvaluationDateFilter(Long value, RelativeDateFilterUnit unit) {
     EvaluationDateFilterDto filter = new EvaluationDateFilterDto();
     RelativeDateFilterDataDto filterData = new RelativeDateFilterDataDto();
     RelativeDateFilterStartDto evaluationDate = new RelativeDateFilterStartDto(value, unit);

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.filter;
 
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -23,26 +24,30 @@ public class RollingDateFilterUnitsIT extends AbstractRollingDateFilterIT {
 
   @Parameterized.Parameters
   public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][] {
-        { "days", 1 }, { "minutes", 1 }, { "hours", 1 }, { "weeks", 1 }, { "months", 1 }
+    return Arrays.asList(new Object[][]{
+      {RelativeDateFilterUnit.DAYS, 1},
+      {RelativeDateFilterUnit.MINUTES, 1},
+      {RelativeDateFilterUnit.HOURS, 1},
+      {RelativeDateFilterUnit.WEEKS, 1},
+      {RelativeDateFilterUnit.MONTHS, 1}
     });
   }
 
-  private String unit;
+  private RelativeDateFilterUnit unit;
   private int expectedPiCount;
 
-  public RollingDateFilterUnitsIT(String unit, int expectedPiCount) {
+  public RollingDateFilterUnitsIT(RelativeDateFilterUnit unit, int expectedPiCount) {
     this.unit = unit;
     this.expectedPiCount = expectedPiCount;
   }
 
   @Test
-  public void rollingDateFilterInReport() throws Exception {
+  public void rollingDateFilterInReport() {
     // given
 
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime processInstanceStartTime =
-        engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+      engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
@@ -52,12 +57,13 @@ public class RollingDateFilterUnitsIT extends AbstractRollingDateFilterIT {
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     // when
-    ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = createAndEvaluateReportWithRollingStartDateFilter(
+    ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
+      createAndEvaluateReportWithRollingStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
         unit,
         true
-    );
+      );
 
 
     //then

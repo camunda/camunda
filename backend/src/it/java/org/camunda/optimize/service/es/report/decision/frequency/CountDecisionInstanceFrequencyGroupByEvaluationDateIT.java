@@ -67,6 +67,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     ).getResult();
 
     // then
+    assertThat(result.getIsComplete(), is(true));
     assertThat(result.getDecisionInstanceCount(), is(3L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
@@ -97,6 +98,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
+    assertThat(result.getIsComplete(), is(true));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(2));
     final Iterator<Long> resultValueIterator = result.getData().values().iterator();
@@ -143,6 +145,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     Map<String, Long> resultMap = result.getData();
+    assertThat(result.getIsComplete(), is(true));
     assertThat(resultMap.size(), is(3));
     assertThat(
       new ArrayList<>(resultMap.keySet()),
@@ -198,6 +201,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     final DecisionReportMapResultDto result = evaluationResult.getResult();
+    assertThat(result.getIsComplete(), is(true));
     final Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     assertThat(
@@ -253,6 +257,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     final DecisionReportMapResultDto result = evaluationResult.getResult();
+    assertThat(result.getIsComplete(), is(true));
     final Map<String, Long> resultMap = result.getData();
     assertThat(resultMap.size(), is(3));
     final List<Long> bucketValues = new ArrayList<>(resultMap.values());
@@ -260,6 +265,54 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       new ArrayList<>(bucketValues),
       contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
     );
+  }
+
+  @Test
+  public void multipleBuckets_noFilter_resultLimitedByConfig() throws SQLException {
+    // given
+    final OffsetDateTime beforeStart = OffsetDateTime.now();
+    OffsetDateTime lastEvaluationDateFilter = beforeStart;
+
+    // third bucket
+    final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
+    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+
+    final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minusDays(2);
+    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
+
+    // second bucket
+    lastEvaluationDateFilter = OffsetDateTime.now();
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+
+    final OffsetDateTime secondBucketEvaluationDate = beforeStart.minusDays(1);
+    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
+
+    // first bucket
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(2);
+
+    // when
+    final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
+      .setDecisionDefinitionVersion(decisionDefinitionVersion1)
+      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
+      .setDateInterval(GroupByDateUnit.DAY)
+      .build();
+    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
+
+    // then
+    final DecisionReportMapResultDto result = evaluationResult.getResult();
+    final Map<String, Long> resultMap = result.getData();
+    assertThat(result.getIsComplete(), is(false));
+    assertThat(resultMap.size(), is(2));
   }
 
   @Test

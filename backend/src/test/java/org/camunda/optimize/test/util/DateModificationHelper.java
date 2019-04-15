@@ -18,7 +18,9 @@ public class DateModificationHelper {
 
   public static ZonedDateTime truncateToStartOfUnit(final OffsetDateTime date, final ChronoUnit unit) {
     ZonedDateTime truncatedDate;
-    if (unit.equals(ChronoUnit.HOURS)) {
+    if (unit.equals(ChronoUnit.MINUTES)) {
+      truncatedDate = date.atZoneSimilarLocal(ZoneId.systemDefault()).truncatedTo(unit);
+    } else if (unit.equals(ChronoUnit.HOURS)) {
       truncatedDate = date.atZoneSimilarLocal(ZoneId.systemDefault()).truncatedTo(unit);
     } else if (unit.equals(ChronoUnit.DAYS)) {
       truncatedDate = date.atZoneSimilarLocal(ZoneId.systemDefault()).truncatedTo(unit);

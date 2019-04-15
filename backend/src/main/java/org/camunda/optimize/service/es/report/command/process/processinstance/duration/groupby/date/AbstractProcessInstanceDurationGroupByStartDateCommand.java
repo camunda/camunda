@@ -41,6 +41,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createProcessStartDateHistogramBucketLimitingFilterFor;
+import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.isResultComplete;
+import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
+import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
@@ -55,6 +59,10 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
   public IntervalAggregationService getIntervalAggregationService() {
     return intervalAggregationService;
   }
+
+  protected abstract AggregationResultDto processAggregationOperation(Aggregations aggs);
+
+  protected abstract List<AggregationBuilder> createOperationsAggregations();
 
   @Override
   protected SingleProcessMapDurationReportResult evaluate() throws OptimizeException {
@@ -81,9 +89,10 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
         .types(PROC_INSTANCE_TYPE)
         .source(searchSourceBuilder);
 
-    SearchResponse response;
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final ProcessDurationReportMapResultDto mapResultDto = mapToReportResult(response);
+      return new SingleProcessMapDurationReportResult(mapResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
         String.format(
@@ -96,10 +105,6 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    ProcessDurationReportMapResultDto mapResultDto = new ProcessDurationReportMapResultDto();
-    mapResultDto.setData(processAggregations(response.getAggregations()));
-    mapResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessMapDurationReportResult(mapResultDto, reportDefinition);
   }
 
   @Override
@@ -114,18 +119,26 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
     );
   }
 
-  private AggregationBuilder createAggregation(GroupByDateUnit unit, QueryBuilder query) throws OptimizeException {
+  private AggregationBuilder createAggregation(final GroupByDateUnit unit, final QueryBuilder query)
+    throws OptimizeException {
     if (GroupByDateUnit.AUTOMATIC.equals(unit)) {
       return addOperationsAggregation(createAutomaticIntervalAggregation(query));
     }
-    DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
-    DateHistogramAggregationBuilder dateHistogrammAggregation = AggregationBuilders
+
+    final DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
+    final DateHistogramAggregationBuilder dateHistogramAggregation = AggregationBuilders
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
       .field(START_DATE)
       .order(BucketOrder.key(false))
       .dateHistogramInterval(interval)
       .timeZone(DateTimeZone.getDefault());
-    return addOperationsAggregation(dateHistogrammAggregation);
+
+    final ProcessReportDataDto reportData = getReportData();
+    final BoolQueryBuilder limitFilterQuery = createProcessStartDateHistogramBucketLimitingFilterFor(
+      reportData.getFilter(), unit, configurationService.getEsAggregationBucketLimit(), queryFilterEnhancer
+    );
+
+    return wrapWithFilterLimitedParentAggregation(limitFilterQuery, addOperationsAggregation(dateHistogramAggregation));
   }
 
   private AggregationBuilder createAutomaticIntervalAggregation(QueryBuilder query) throws OptimizeException {
@@ -145,19 +158,34 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
     }
   }
 
-  private Map<String, AggregationResultDto> processAggregations(Aggregations aggregations) {
-    if (!aggregations.getAsMap().containsKey(DATE_HISTOGRAM_AGGREGATION)) {
-      return processAutomaticIntervalAggregations(aggregations);
-    }
-    Histogram agg = aggregations.get(DATE_HISTOGRAM_AGGREGATION);
-    Map<String, AggregationResultDto> result = new LinkedHashMap<>();
-    // For each entry
-    for (Histogram.Bucket entry : agg.getBuckets()) {
-      DateTime key = (DateTime) entry.getKey();    // Key
-      String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
+  private AggregationBuilder addOperationsAggregation(AggregationBuilder aggregationBuilder) {
+    createOperationsAggregations().forEach(aggregationBuilder::subAggregation);
+    return aggregationBuilder;
+  }
 
-      AggregationResultDto operationResult = processAggregationOperation(entry.getAggregations());
-      result.put(formattedDate, operationResult);
+  private ProcessDurationReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();
+    resultDto.setData(processAggregations(response.getAggregations()));
+    resultDto.setComplete(isResultComplete(response));
+    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+    return resultDto;
+  }
+
+  private Map<String, AggregationResultDto> processAggregations(Aggregations aggregations) {
+    final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
+    final Map<String, AggregationResultDto> result;
+    if (unwrappedLimitedAggregations.isPresent()) {
+      final Histogram agg = unwrappedLimitedAggregations.get().get(DATE_HISTOGRAM_AGGREGATION);
+      result = new LinkedHashMap<>();
+      for (Histogram.Bucket entry : agg.getBuckets()) {
+        DateTime key = (DateTime) entry.getKey();
+        String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
+
+        AggregationResultDto operationResult = processAggregationOperation(entry.getAggregations());
+        result.put(formattedDate, operationResult);
+      }
+    } else {
+      result = processAutomaticIntervalAggregations(aggregations);
     }
     return result;
   }
@@ -177,16 +205,5 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
         )
       );
   }
-
-  private AggregationBuilder addOperationsAggregation(AggregationBuilder aggregationBuilder) {
-    createOperationsAggregations()
-      .forEach(aggregationBuilder::subAggregation);
-    return aggregationBuilder;
-  }
-
-  protected abstract AggregationResultDto processAggregationOperation(Aggregations aggs);
-
-  protected abstract List<AggregationBuilder> createOperationsAggregations();
-
 
 }

@@ -37,19 +37,23 @@ public class DecisionQueryFilterEnhancer implements QueryFilterEnhancer<Decision
   public void addFilterToQuery(final BoolQueryBuilder query, final List<DecisionFilterDto> filter) {
     if (filter != null) {
       evaluationDateQueryFilter.addFilters(
-        query, extractFilterDataDtoFromFiltersOfType(filter, EvaluationDateFilterDto.class)
+        query, extractFilters(filter, EvaluationDateFilterDto.class)
       );
       decisionInputVariableQueryFilter.addFilters(
-        query, extractFilterDataDtoFromFiltersOfType(filter, InputVariableFilterDto.class)
+        query, extractFilters(filter, InputVariableFilterDto.class)
       );
       decisionOutputVariableQueryFilter.addFilters(
-        query, extractFilterDataDtoFromFiltersOfType(filter, OutputVariableFilterDto.class)
+        query, extractFilters(filter, OutputVariableFilterDto.class)
       );
     }
   }
 
-  private <T extends FilterDataDto> List<T> extractFilterDataDtoFromFiltersOfType(final List<DecisionFilterDto> filter,
-                                                                                  final Class<?> filterClass) {
+  public EvaluationDateQueryFilter getEvaluationDateQueryFilter() {
+    return evaluationDateQueryFilter;
+  }
+
+  public <T extends FilterDataDto> List<T> extractFilters(final List<DecisionFilterDto> filter,
+                                                          final Class<? extends DecisionFilterDto> filterClass) {
     return filter
       .stream()
       .filter(filterClass::isInstance)

@@ -15,8 +15,8 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -28,10 +28,13 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 
 
 public abstract class DateQueryFilter implements QueryFilter<DateFilterDataDto> {
-  private  org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
+  protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired
-  private DateTimeFormatter formatter;
+  private final DateTimeFormatter formatter;
+
+  protected DateQueryFilter(final DateTimeFormatter formatter) {
+    this.formatter = formatter;
+  }
 
   public void addFilters(BoolQueryBuilder query, List<DateFilterDataDto> dates, String dateFieldType) {
     if (dates != null) {
@@ -42,7 +45,7 @@ public abstract class DateQueryFilter implements QueryFilter<DateFilterDataDto> 
           FixedDateFilterDataDto fixedStartDateFilterDataDto = (FixedDateFilterDataDto) dateDto;
           queryDate = createFixedStartDateFilter(fixedStartDateFilterDataDto, dateFieldType);
         } else if (DateFilterType.RELATIVE.equals(dateDto.getType())) {
-          RelativeDateFilterDataDto relativeStartDateFilterDataDto= (RelativeDateFilterDataDto) dateDto;
+          RelativeDateFilterDataDto relativeStartDateFilterDataDto = (RelativeDateFilterDataDto) dateDto;
           queryDate = createRelativeStartDateFilter(relativeStartDateFilterDataDto, dateFieldType);
         } else {
           logger.warn("Cannot execute start date filter. Unknown type [{}]", dateDto.getType());
@@ -73,7 +76,7 @@ public abstract class DateQueryFilter implements QueryFilter<DateFilterDataDto> 
     OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     queryDate.lte(formatter.format(now));
 
-    OffsetDateTime dateBeforeGivenFilter = now.minus(startDate.getValue(), unitOf(startDate.getUnit()));
+    OffsetDateTime dateBeforeGivenFilter = now.minus(startDate.getValue(), unitOf(startDate.getUnit().getId()));
     queryDate.gte(formatter.format(dateBeforeGivenFilter));
     return queryDate;
   }

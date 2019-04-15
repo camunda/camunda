@@ -231,12 +231,48 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
 
     // then
     final Map<String, Long> resultMap = result.getData();
+    assertThat(result.getIsComplete(), is(true));
     assertThat(resultMap.size(), is(3));
     final List<Long> bucketValues = new ArrayList<>(resultMap.values());
     assertThat(
       new ArrayList<>(bucketValues),
       contains(bucketValues.stream().sorted(Comparator.reverseOrder()).toArray())
     );
+  }
+
+  @Test
+  public void multipleBuckets_noFilter_resultLimitedByConfig() throws SQLException {
+    // given
+    final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    final String definitionId = processInstanceDto.getDefinitionId();
+    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(definitionId);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), OffsetDateTime.now().minusDays(1));
+    final ProcessInstanceEngineDto processInstanceDto3 = engineRule.startProcessInstance(definitionId);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), OffsetDateTime.now().minusDays(1));
+    final ProcessInstanceEngineDto processInstanceDto4 = engineRule.startProcessInstance(definitionId);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto4.getId(), OffsetDateTime.now().minusDays(1));
+    final ProcessInstanceEngineDto processInstanceDto5 = engineRule.startProcessInstance(definitionId);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto5.getId(), OffsetDateTime.now().minusDays(2));
+    final ProcessInstanceEngineDto processInstanceDto6 = engineRule.startProcessInstance(definitionId);
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto6.getId(), OffsetDateTime.now().minusDays(2));
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(2);
+
+    // when
+    final ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByStartDate(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      GroupByDateUnit.DAY
+    );
+    final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+
+    // then
+    final Map<String, Long> resultMap = result.getData();
+    assertThat(resultMap.size(), is(2));
+    assertThat(result.getIsComplete(), is(false));
   }
 
   @Test
@@ -512,9 +548,9 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     );
 
     List<ProcessFilterDto> flowNodeFilter = ProcessFilterBuilder.filter().executedFlowNodes()
-          .id("task1")
-          .add()
-          .buildList();
+      .id("task1")
+      .add()
+      .buildList();
 
     reportData.getFilter().addAll(flowNodeFilter);
     ProcessReportMapResultDto result = evaluateReport(reportData).getResult();

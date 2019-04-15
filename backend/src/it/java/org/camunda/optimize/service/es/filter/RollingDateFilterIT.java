@@ -5,14 +5,30 @@
  */
 package org.camunda.optimize.service.es.filter;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
+import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.util.Map;
 
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
+import static org.hamcrest.CoreMatchers.is;
 
 
 public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
@@ -34,10 +50,10 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = createAndEvaluateReportWithRollingStartDateFilter(
-        processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion(),
-        "days",
-        false
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion(),
+      RelativeDateFilterUnit.DAYS,
+      false
     );
 
     assertResults(processInstance, result, 1);
@@ -49,7 +65,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     result = createAndEvaluateReportWithRollingStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
-        "days",
+        RelativeDateFilterUnit.DAYS,
         true
     );
 
@@ -75,7 +91,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = createAndEvaluateReportWithRollingEndDateFilter(
             processInstance.getProcessDefinitionKey(),
             processInstance.getProcessDefinitionVersion(),
-            "days",
+            RelativeDateFilterUnit.DAYS,
             true
     );
 
@@ -87,10 +103,143 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     result = createAndEvaluateReportWithRollingEndDateFilter(
             processInstance.getProcessDefinitionKey(),
             processInstance.getProcessDefinitionVersion(),
-            "days",
+            RelativeDateFilterUnit.DAYS,
             true
     );
 
     assertResults(processInstance, result, 0);
+  }
+
+  @Test
+  public void resultLimited_onTooBroadRelativeStartDateFilter() {
+    // given
+    final OffsetDateTime startDate = OffsetDateTime.now();
+    final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
+    final String processDefinitionId = processInstanceDto1.getDefinitionId();
+    final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
+    final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
+    adjustProcessInstanceDates(processInstanceDto1.getId(), startDate, 0L, 1L);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto2.getId(), startDate, -1L, 2L);
+    final ProcessInstanceEngineDto processInstanceDto3 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto3.getId(), startDate, -1L, 100L);
+
+    final ProcessInstanceEngineDto processInstanceDto4 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto4.getId(), startDate, -2L, 1L);
+    final ProcessInstanceEngineDto processInstanceDto5 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto5.getId(), startDate, -2L, 2L);
+    final ProcessInstanceEngineDto processInstanceDto6 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto6.getId(), startDate, -2L, 3L);
+    final ProcessInstanceEngineDto processInstanceDto7 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto7.getId(), startDate, -2L, 4L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+
+    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(1);
+
+    // when
+    final ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
+      .build();
+    reportData.setFilter(
+      ProcessFilterBuilder.filter().relativeStartDate().start(10L, RelativeDateFilterUnit.DAYS).add().buildList()
+    );
+    final ProcessDurationReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
+
+    // then
+    Map<String, AggregationResultDto> resultMap = result.getData();
+    MatcherAssert.assertThat(resultMap.size(), is(1));
+    MatcherAssert.assertThat(result.getIsComplete(), is(false));
+  }
+
+  @Test
+  public void resultLimited_onTooBroadRelativeEndDateFilter() {
+    // given
+    final OffsetDateTime startDate = OffsetDateTime.now();
+    final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
+    final String processDefinitionId = processInstanceDto1.getDefinitionId();
+    final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
+    final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
+    adjustProcessInstanceDates(processInstanceDto1.getId(), startDate, 0L, 0L);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto2.getId(), startDate, -1L, 0L);
+    final ProcessInstanceEngineDto processInstanceDto3 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto3.getId(), startDate, -1L, 0L);
+
+    final ProcessInstanceEngineDto processInstanceDto4 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto4.getId(), startDate, -2L, 0L);
+    final ProcessInstanceEngineDto processInstanceDto5 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto5.getId(), startDate, -2L, 0L);
+    final ProcessInstanceEngineDto processInstanceDto6 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto6.getId(), startDate, -2L, 0L);
+    final ProcessInstanceEngineDto processInstanceDto7 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto7.getId(), startDate, -2L, 0L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(1);
+
+    // when
+    final ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
+      .build();
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .relativeEndDate()
+        .start(10L, RelativeDateFilterUnit.DAYS)
+        .add()
+        .buildList()
+    );
+    final ProcessDurationReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
+
+    // then
+    Map<String, AggregationResultDto> resultMap = result.getData();
+    MatcherAssert.assertThat(resultMap.size(), is(1));
+    MatcherAssert.assertThat(result.getIsComplete(), is(false));
+  }
+
+  private void adjustProcessInstanceDates(String processInstanceId,
+                                          OffsetDateTime startDate,
+                                          long daysToShift,
+                                          long durationInSec) {
+    OffsetDateTime shiftedStartDate = startDate.plusDays(daysToShift);
+    try {
+      engineDatabaseRule.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
+      engineDatabaseRule.changeProcessInstanceEndDate(processInstanceId, shiftedStartDate.plusSeconds(durationInSec));
+    } catch (SQLException e) {
+      throw new OptimizeIntegrationTestException("Failed adjusting process instance dates", e);
+    }
+  }
+
+  private ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateProcessDurationMapReport(
+    final ProcessReportDataDto reportData) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
+      // @formatter:on
+  }
+
+  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .name("aProcessName")
+      .startEvent()
+      .serviceTask("activity")
+      .camundaExpression("${true}")
+      .endEvent()
+      .done();
+    return engineRule.deployAndStartProcess(processModel);
   }
 }

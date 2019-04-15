@@ -51,7 +51,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private CanceledInstancesOnlyQueryFilter canceledInstancesOnlyQueryFilter;
 
   @Autowired
-  private  NonCanceledInstancesOnlyQueryFilter nonCanceledInstancesOnlyQueryFilter;
+  private NonCanceledInstancesOnlyQueryFilter nonCanceledInstancesOnlyQueryFilter;
 
 
   @Override
@@ -63,13 +63,28 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
       executedFlowNodeQueryFilter.addFilters(query, extractFilters(filter, ExecutedFlowNodeFilterDto.class));
       durationQueryFilter.addFilters(query, extractFilters(filter, DurationFilterDto.class));
       runningInstancesOnlyQueryFilter.addFilters(query, extractFilters(filter, RunningInstancesOnlyFilterDto.class));
-      completedInstancesOnlyQueryFilter.addFilters(query, extractFilters(filter, CompletedInstancesOnlyFilterDto.class));
+      completedInstancesOnlyQueryFilter.addFilters(
+        query,
+        extractFilters(filter, CompletedInstancesOnlyFilterDto.class)
+      );
       canceledInstancesOnlyQueryFilter.addFilters(query, extractFilters(filter, CanceledInstancesOnlyFilterDto.class));
-      nonCanceledInstancesOnlyQueryFilter.addFilters(query, extractFilters(filter, NonCanceledInstancesOnlyFilterDto.class));
+      nonCanceledInstancesOnlyQueryFilter.addFilters(
+        query,
+        extractFilters(filter, NonCanceledInstancesOnlyFilterDto.class)
+      );
     }
   }
 
-  private<T extends FilterDataDto> List<T> extractFilters(List<ProcessFilterDto> filter, Class<?> clazz) {
+  public StartDateQueryFilter getStartDateQueryFilterService() {
+    return startDateQueryFilter;
+  }
+
+  public EndDateQueryFilter getEndDateQueryFilter() {
+    return endDateQueryFilter;
+  }
+
+  public <T extends FilterDataDto> List<T> extractFilters(List<ProcessFilterDto> filter,
+                                                          Class<? extends ProcessFilterDto> clazz) {
     return filter
       .stream()
       .filter(clazz::isInstance)
