@@ -5,17 +5,28 @@
  */
 package org.camunda.operate.es;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.util.TestUtil.createActivityInstance;
+import static org.camunda.operate.util.TestUtil.createActivityInstanceWithIncident;
+import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
+import static org.junit.Assert.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperateEntity;
-import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
+import org.camunda.operate.rest.dto.WorkflowInstanceCoreStatisticsDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.util.ElasticsearchTestRule;
@@ -27,13 +38,7 @@ import org.junit.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.util.TestUtil.createActivityInstance;
-import static org.camunda.operate.util.TestUtil.createActivityInstanceWithIncident;
-import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 /**
  * Tests Elasticsearch query for workflow statistics.
@@ -41,6 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
   private static final String QUERY_WORKFLOW_STATISTICS_URL = "/api/workflow-instances/statistics";
+  private static final String QUERY_WORKFLOW_CORE_STATISTICS_URL = "/api/workflow-instances/core-statistics";
 
   private Random random = new Random();
 
@@ -367,4 +373,31 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
   }
 
+  @Test
+  public void testGetCoreStatistics() throws Exception {
+    // given no data
+    MockHttpServletRequestBuilder request = MockMvcRequestBuilders.get(QUERY_WORKFLOW_CORE_STATISTICS_URL);
+    // when request core-statistics
+    MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andExpect(content().contentType(mockMvcTestRule.getContentType())).andReturn();
+
+    WorkflowInstanceCoreStatisticsDto coreStatistics = mockMvcTestRule.fromResponse(mvcResult, WorkflowInstanceCoreStatisticsDto.class);
+    // then return zero statistics
+    assertEquals(coreStatistics.getActive().longValue(), 0L);
+    assertEquals(coreStatistics.getRunning().longValue(), 0L);
+    assertEquals(coreStatistics.getWithIncidents().longValue(), 0L);
+    
+    // given test data
+    createData("demoProcess");
+    createData("sampleProcess");
+    
+    // when request core-statistics
+    request = MockMvcRequestBuilders.get(QUERY_WORKFLOW_CORE_STATISTICS_URL);
+    mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andExpect(content().contentType(mockMvcTestRule.getContentType())).andReturn();
+
+    coreStatistics = mockMvcTestRule.fromResponse(mvcResult, WorkflowInstanceCoreStatisticsDto.class);
+    // then return non-zero statistics
+    assertEquals(coreStatistics.getActive().longValue(), 6L);
+    assertEquals(coreStatistics.getRunning().longValue(), 12L);
+    assertEquals(coreStatistics.getWithIncidents().longValue(), 6L);
+  }
 }

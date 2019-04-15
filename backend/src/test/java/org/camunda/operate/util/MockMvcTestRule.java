@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
+
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +87,10 @@ public class MockMvcTestRule extends ExternalResource {
     JavaType type = objectMapper.getTypeFactory().
       constructCollectionType(List.class, clazz);
     return fromResponse(result, type);
+  }
+  
+  public <T> T fromResponse(MvcResult result, Class<T> clazz) {
+    return fromResponse(result, objectMapper.getTypeFactory().constructSimpleType(clazz, null));
   }
 
   public <T> T fromResponse(MvcResult result, JavaType type) {
