@@ -13,8 +13,9 @@ import './ColumnRearrangement.scss';
 
 export default class ColumnRearrangement extends React.Component {
   render() {
+    const {updateReport, report} = this.props;
     // not raw data report
-    if (!this.props.report.result.data.length || !this.props.updateReport) {
+    if (report.combined || report.data.view.property !== 'rawData' || !updateReport) {
       return this.props.children;
     }
     return (

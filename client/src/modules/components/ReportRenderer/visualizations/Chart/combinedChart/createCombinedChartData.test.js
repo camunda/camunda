@@ -10,14 +10,14 @@ import {uniteResults} from '../../service';
 
 jest.mock('../../service', () => {
   return {
-    uniteResults: jest.fn().mockReturnValue([{foo: 123, bar: 5}])
+    uniteResults: jest.fn().mockReturnValue([{key: 'foo', value: 123}, {key: 'bar', value: 5}])
   };
 });
 
 it('should return correct chart data object for a combined report', () => {
   const resultData = {
-    reportA: {name: 'Report A', result: {data: {foo: 123, bar: 5}}},
-    reportB: {name: 'Report B', result: {data: {foo: 1, dar: 3}}}
+    reportA: {name: 'Report A', result: {data: [{key: 'foo', value: 123}, {key: 'bar', value: 5}]}},
+    reportB: {name: 'Report B', result: {data: [{key: 'foo', value: 1}, {key: 'dar', value: 3}]}}
   };
 
   uniteResults.mockClear();
@@ -62,6 +62,6 @@ it('should return correct chart data object for a combined report', () => {
         legendColor: 'yellow'
       }
     ],
-    labels: ['Flownode Foo', 'Barrrr', 'Flownode DAR']
+    labels: ['Barrrr', 'Flownode Foo', 'Flownode DAR']
   });
 });

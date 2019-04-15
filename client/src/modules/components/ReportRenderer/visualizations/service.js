@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {formatters} from 'services';
+
 export function getRelativeValue(data, total) {
   if (data === null) {
     return '';
@@ -14,15 +16,17 @@ export function getRelativeValue(data, total) {
 export function uniteResults(results, allKeys) {
   const unitedResults = [];
   results.forEach(result => {
-    const newResult = {};
+    const resultObj = formatters.objectifyResult(result);
+    const newResult = [];
     allKeys.forEach(key => {
-      if (typeof result[key] === 'undefined') {
-        newResult[key] = null;
+      if (typeof resultObj[key] === 'undefined') {
+        newResult.push({key, value: null});
       } else {
-        newResult[key] = result[key];
+        newResult.push({key, value: resultObj[key]});
       }
     });
     unitedResults.push(newResult);
   });
+
   return unitedResults;
 }

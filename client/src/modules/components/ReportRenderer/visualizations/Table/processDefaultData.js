@@ -39,10 +39,10 @@ export default function processDefaultData({formatter = v => v, report, flowNode
   // normal two-dimensional data
   return {
     head: [...labels, ...(displayRelativeValue ? ['Relative Frequency'] : [])],
-    body: Object.keys(formattedResult).map(key => [
+    body: formattedResult.map(({key, value}) => [
       flowNodeNames[key] || key,
-      ...(displayAbsoluteValue ? [formatter(formattedResult[key])] : []),
-      ...(displayRelativeValue ? [getRelativeValue(formattedResult[key], instanceCount)] : [])
+      ...(displayAbsoluteValue ? [formatter(value)] : []),
+      ...(displayRelativeValue ? [getRelativeValue(value, instanceCount)] : [])
     ])
   };
 }

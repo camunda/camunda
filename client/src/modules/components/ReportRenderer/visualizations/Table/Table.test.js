@@ -58,14 +58,23 @@ const props = {
 
 it('should get the camunda endpoints for raw data', () => {
   getCamundaEndpoints.mockClear();
-  shallow(<Table {...props} report={{...report, result: {data: [1, 2, 3]}}} />);
+  shallow(
+    <Table
+      {...props}
+      report={{
+        ...report,
+        data: {...report.data, view: {property: 'rawData'}},
+        result: {data: [1, 2, 3]}
+      }}
+    />
+  );
 
   expect(getCamundaEndpoints).toHaveBeenCalled();
 });
 
 it('should not get the camunda endpoints for non-raw-data tables', () => {
   getCamundaEndpoints.mockClear();
-  shallow(<Table {...props} report={{...report, result: {data: {}}}} />);
+  shallow(<Table {...props} report={{...report, result: {data: []}}} />);
 
   expect(getCamundaEndpoints).not.toHaveBeenCalled();
 });
@@ -140,7 +149,7 @@ it('should not display an error message if data is valid', async () => {
 it('should set the correct parameters when updating sorting', () => {
   const spy = jest.fn();
   const node = shallow(
-    <Table {...props} report={{...report, result: {data: {}}}} updateReport={spy} />
+    <Table {...props} report={{...report, result: {data: []}}} updateReport={spy} />
   );
 
   node.instance().updateSorting('columnId', 'desc');

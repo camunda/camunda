@@ -35,9 +35,10 @@ export function getCombinedChartProps(reports, data) {
       const report = reports[id];
       let singleReportResult;
       if (data.visualization === 'number') {
-        singleReportResult = {[report.name]: report.result.data};
+        singleReportResult = [{key: report.name, value: report.result.data}];
       } else {
         singleReportResult = formatReportResult(data, report.result.data);
+        singleReportResult.reverse();
       }
 
       return {

@@ -133,9 +133,11 @@ export default class DurationHeatmapModal extends React.Component {
   };
 
   constructTableBody = () => {
+    const resultObj = formatters.objectifyResult(this.props.report.result.data);
+
     return Object.keys(this.state.values).map(id => {
       const settings = this.state.values[id] || {value: '', unit: 'hours'};
-      const resultEntry = this.props.report.result.data[id];
+      const resultEntry = resultObj[id];
       return [
         this.state.nodeNames[id],
         formatters.duration(

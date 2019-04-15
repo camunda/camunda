@@ -35,9 +35,9 @@ const props = {
       },
       decisionDefinitionKey: 'key'
     },
-    decisionInstanceCount: 3,
     result: {
-      data: {a: 1, b: 2}
+      decisionInstanceCount: 3,
+      data: [{key: 'a', value: 1}, {key: 'b', value: 2}]
     }
   }
 };
@@ -84,7 +84,7 @@ it('should render content in DmnJsPortals', () => {
 it('should display meaningful data if there are no evaluations', () => {
   const node = shallow(
     <DecisionTable
-      report={{data: props.report.data, decisionInstanceCount: 0, result: {data: {}}}}
+      report={{data: props.report.data, result: {decisionInstanceCount: 0, data: []}}}
     />
   );
 

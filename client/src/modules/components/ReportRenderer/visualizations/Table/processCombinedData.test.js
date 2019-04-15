@@ -11,7 +11,7 @@ import {getFormattedLabels, getBodyRows} from './service';
 jest.mock('./service', () => ({
   getCombinedTableProps: jest.fn().mockReturnValue({
     labels: [['key label', 'operation label']],
-    combinedResult: [{}]
+    combinedResult: [[]]
   }),
   getFormattedLabels: jest
     .fn()

@@ -30,22 +30,44 @@ jest.mock('services', () => {
 
 it('should apply flow node names to the body rows', () => {
   expect(
-    getBodyRows([{a: 1, b: 2}, {a: '', b: 0}], ['a', 'b'], v => v, false, [100, 100], true, {
-      a: 'Flownode A',
-      b: 'Flownode B'
-    })
+    getBodyRows(
+      [[{key: 'a', value: 1}, {key: 'b', value: 2}], [{key: 'a', value: ''}, {key: 'b', value: 0}]],
+      ['a', 'b'],
+      v => v,
+      false,
+      [100, 100],
+      true,
+      {
+        a: 'Flownode A',
+        b: 'Flownode B'
+      }
+    )
   ).toEqual([['Flownode A', 1, ''], ['Flownode B', 2, 0]]);
 });
 
 it('should return correctly formatted body rows', () => {
   expect(
-    getBodyRows([{a: 1, b: 2}, {a: '', b: 0}], ['a', 'b'], v => v, false, [100, 100], true)
+    getBodyRows(
+      [[{key: 'a', value: 1}, {key: 'b', value: 2}], [{key: 'a', value: ''}, {key: 'b', value: 0}]],
+      ['a', 'b'],
+      v => v,
+      false,
+      [100, 100],
+      true
+    )
   ).toEqual([['a', 1, ''], ['b', 2, 0]]);
 });
 
 it('should hide absolute values when sepcified from body rows', () => {
   expect(
-    getBodyRows([{a: 1, b: 2}, {a: '', b: 1}], ['a', 'b'], v => v, false, [100, 100], false)
+    getBodyRows(
+      [[{key: 'a', value: 1}, {key: 'b', value: 2}], [{key: 'a', value: ''}, {key: 'b', value: 1}]],
+      ['a', 'b'],
+      v => v,
+      false,
+      [100, 100],
+      false
+    )
   ).toEqual([['a'], ['b']]);
 });
 
@@ -81,10 +103,7 @@ it('should return correct combined table report data properties', () => {
     },
     result: {
       processInstanceCount: 100,
-      data: {
-        '2015-03-25T12:00:00Z': 2,
-        '2015-03-26T12:00:00Z': 3
-      }
+      data: [{key: '2015-03-25T12:00:00Z', value: 2}, {key: '2015-03-26T12:00:00Z', value: 3}]
     }
   };
 
@@ -103,7 +122,10 @@ it('should return correct combined table report data properties', () => {
   const tableProps = getCombinedTableProps(combinedReport.result, combinedReport.data.reports);
 
   expect(tableProps).toEqual({
-    combinedResult: [{'2015-03-25': 2, '2015-03-26': 3}, {'2015-03-25': 2, '2015-03-26': 3}],
+    combinedResult: [
+      [{key: '2015-03-25', value: 2}, {key: '2015-03-26', value: 3}],
+      [{key: '2015-03-25', value: 2}, {key: '2015-03-26', value: 3}]
+    ],
     labels: [['foo', 'foo'], ['foo', 'foo']],
     processInstanceCount: [100, 100],
     reportsNames: ['report A', 'report A']

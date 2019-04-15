@@ -102,7 +102,7 @@ export default class DecisionControlPanel extends React.Component {
   };
 
   render() {
-    const {data, decisionInstanceCount} = this.props.report;
+    const {data, result} = this.props.report;
     const {
       decisionDefinitionKey,
       decisionDefinitionVersion,
@@ -157,7 +157,7 @@ export default class DecisionControlPanel extends React.Component {
             <DecisionFilter
               data={filter}
               onChange={this.props.updateReport}
-              instanceCount={decisionInstanceCount}
+              instanceCount={result && result.decisionInstanceCount}
               decisionDefinitionKey={decisionDefinitionKey}
               decisionDefinitionVersion={decisionDefinitionVersion}
               variables={this.state.variables}

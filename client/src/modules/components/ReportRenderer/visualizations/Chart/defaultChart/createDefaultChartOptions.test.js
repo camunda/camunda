@@ -7,7 +7,7 @@
 import {createDatasetOptions} from './createDefaultChartOptions';
 
 it('should create dataset option for barchart report', () => {
-  const data = {foo: 123, bar: 5};
+  const data = [{key: 'foo', value: 123}, {key: 'bar', value: 5}];
   const options = createDatasetOptions('bar', data, false, 'testColor', false, false);
   expect(options).toEqual({
     backgroundColor: 'testColor',
@@ -18,7 +18,7 @@ it('should create dataset option for barchart report', () => {
 });
 
 it('should create dataset option for pie reports', () => {
-  const data = {foo: 123, bar: 5};
+  const data = [{key: 'foo', value: 123}, {key: 'bar', value: 5}];
   const options = createDatasetOptions('pie', data, false, 'testColor', false, false);
   expect(options).toEqual({
     backgroundColor: ['hsl(50, 65%, 50%)', 'hsl(180, 65%, 50%)'],

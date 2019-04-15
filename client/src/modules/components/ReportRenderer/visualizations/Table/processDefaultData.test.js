@@ -28,7 +28,10 @@ const report = {
     },
     visualization: 'table'
   },
-  result: {data: {a: 1, b: 2, c: 3}, processInstanceCount: 5}
+  result: {
+    data: [{key: 'a', value: 1}, {key: 'b', value: 2}, {key: 'c', value: 3}],
+    processInstanceCount: 5
+  }
 };
 
 const props = {

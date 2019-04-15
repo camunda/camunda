@@ -31,7 +31,7 @@ export default function processCombinedData({formatter, report, flowNodeNames = 
   );
 
   // get all unique keys of results of multiple reports
-  let allKeys = Object.keys(Object.assign({}, ...combinedResult));
+  const allKeys = [...new Set(combinedResult.flat(2).map(({key}) => key))];
 
   // make all hash tables look exactly the same by filling empty keys with empty string
   const unitedResults = uniteResults(combinedResult, allKeys);

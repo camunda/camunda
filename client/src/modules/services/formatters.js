@@ -139,6 +139,13 @@ export function camelCaseToLabel(type) {
   return type.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
 }
 
+export function objectifyResult(result) {
+  return result.reduce((acc, {key, value}) => {
+    acc[key] = value;
+    return acc;
+  }, {});
+}
+
 export function formatReportResult(data, result) {
   const groupBy = data.groupBy;
   let unit;
@@ -150,19 +157,7 @@ export function formatReportResult(data, result) {
 
   if (!unit || !result) {
     // the result data is no time series
-    return result;
-  }
-
-  const keys = Object.keys(result);
-  if (!data.parameters.sorting) {
-    keys.sort((a, b) => {
-      // sort descending for tables and ascending for all other visualizations
-      if (data.visualization === 'table') {
-        return a < b ? 1 : -1;
-      } else {
-        return a < b ? -1 : 1;
-      }
-    });
+    return [...result];
   }
 
   let dateFormat = getDateFormat(unit);
@@ -172,12 +167,11 @@ export function formatReportResult(data, result) {
     dateFormat += ' ';
   }
 
-  const formattedResult = {};
+  const formattedResult = result.map(entry => ({
+    ...entry,
+    key: moment(entry.key).format(dateFormat)
+  }));
 
-  keys.forEach(key => {
-    const formattedDate = moment(key).format(dateFormat);
-    formattedResult[formattedDate] = result[key];
-  });
   return formattedResult;
 }
 
@@ -192,13 +186,11 @@ function determineUnit(unit, resultData) {
 }
 
 function determineUnitForAutomaticIntervalSelection(resultData) {
-  const dates = Object.keys(resultData).sort((a, b) => {
-    return a < b ? 1 : -1;
-  });
-  if (dates.length > 1) {
-    const firstEntry = moment(dates[0]);
-    const secondEntry = moment(dates[1]);
-    const intervalInMs = firstEntry.diff(secondEntry);
+  if (resultData.length > 1) {
+    const firstEntry = moment(resultData[0].key);
+    const secondEntry = moment(resultData[1].key);
+    const intervalInMs = Math.abs(firstEntry.diff(secondEntry));
+
     const intervals = [
       {value: 1000 * 60 * 60 * 24 * 30 * 12, unit: 'year'},
       {value: 1000 * 60 * 60 * 24 * 30, unit: 'month'},

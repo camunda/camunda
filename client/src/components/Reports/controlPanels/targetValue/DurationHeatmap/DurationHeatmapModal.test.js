@@ -38,23 +38,6 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   };
 });
 
-jest.mock('services', () => {
-  const rest = jest.requireActual('services');
-
-  return {
-    ...rest,
-    formatters: {
-      duration: a => a
-    },
-    numberParser: {
-      isValidNumber: value => /^[+-]?\d+(\.\d+)?$/.test(value),
-      isPositiveNumber: value => /^[+-]?\d+(\.\d+)?$/.test(value) && +value > 0,
-      isIntegerNumber: value => /^[+-]?\d+?$/.test(value),
-      isFloatNumber: value => /^[+-]?\d+(\.\d+)?$/.test(value)
-    }
-  };
-});
-
 const validProps = {
   report: {
     data: {
@@ -80,7 +63,7 @@ const validProps = {
         }
       }
     },
-    result: {data: {}}
+    result: {data: []}
   }
 };
 

@@ -34,9 +34,11 @@ const Heatmap = ({report, formatter, errorMessage}) => {
     return <LoadingIndicator />;
   }
 
+  const resultObj = formatters.objectifyResult(result.data);
+
   let heatmapComponent;
   if (targetValue && targetValue.active && !targetValue.values.target) {
-    const heat = calculateTargetValueHeat(result.data, targetValue.values);
+    const heat = calculateTargetValueHeat(resultObj, targetValue.values);
     heatmapComponent = [
       <HeatmapOverlay
         key="heatmap"
@@ -49,7 +51,7 @@ const Heatmap = ({report, formatter, errorMessage}) => {
             targetValue.values[id].value,
             targetValue.values[id].unit
           );
-          const real = result.data[id];
+          const real = resultObj[id];
 
           node.innerHTML = `target duration: ${formatters.duration(target)}<br/>`;
 
@@ -74,7 +76,7 @@ const Heatmap = ({report, formatter, errorMessage}) => {
   } else {
     heatmapComponent = (
       <HeatmapOverlay
-        data={result.data}
+        data={resultObj}
         alwaysShow={alwaysShow}
         formatter={data =>
           getTooltipText(

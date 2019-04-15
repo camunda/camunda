@@ -10,6 +10,7 @@ import {shim as arrayFindShim} from 'array.prototype.find';
 import 'string.prototype.includes';
 import 'element-closest';
 
+import './array_flat';
 import './array_findIndex';
 import './number_isNaN';
 import './number_epsilon';

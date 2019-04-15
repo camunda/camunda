@@ -24,8 +24,8 @@ export default withErrorHandling(
       needEndpoint: false
     };
 
-    static getDerivedStateFromProps({report: {result, combined}}) {
-      if (result && !combined && isRaw(result.data)) {
+    static getDerivedStateFromProps({report: {result, combined, data}}) {
+      if (result && !combined && data.view.property === 'rawData') {
         return {needEndpoint: true};
       }
       return null;
@@ -75,7 +75,7 @@ export default withErrorHandling(
 
       let tableData;
       // raw data
-      if (isRaw(result.data)) {
+      if (data.view.property === 'rawData') {
         tableData = processRawData[reportType](this.props, this.state.camundaEndpoints);
       } else {
         // Normal single Report
@@ -91,7 +91,3 @@ export default withErrorHandling(
     };
   }
 );
-
-function isRaw(data) {
-  return data.length;
-}

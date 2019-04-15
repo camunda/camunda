@@ -6,7 +6,6 @@
 
 import {createDatasetOptions} from './createDefaultChartOptions';
 import {formatters} from 'services';
-import {isDate} from '../service';
 
 const {formatReportResult} = formatters;
 
@@ -22,7 +21,7 @@ export default function createDefaultChartData(props) {
 
   const datasets = [
     {
-      data: Object.values(formattedResult),
+      data: formattedResult.map(({value}) => value),
       ...createDatasetOptions(visualization, formattedResult, targetValue, color, false, isDark)
     }
   ];
@@ -34,19 +33,14 @@ export function extractDefaultChartData({report, theme, targetValue, flowNodeNam
   const {result, data} = report;
   const isDark = theme === 'dark';
   const {
-    groupBy,
     visualization,
     configuration: {color}
   } = data;
+
   const formattedResult = formatReportResult(data, result.data);
+  formattedResult.reverse();
 
-  let labels = Object.keys(formattedResult);
-
-  if (isDate(groupBy)) {
-    labels.sort((a, b) => {
-      return new Date(a) - new Date(b);
-    });
-  }
+  let labels = formattedResult.map(({key}) => key);
 
   if (data.groupBy.type === 'flowNodes') {
     labels = labels.map(key => flowNodeNames[key] || key);

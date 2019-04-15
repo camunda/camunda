@@ -13,7 +13,7 @@ it('should generate colors', () => {
 });
 
 it('should return red color for all bars below a target value', () => {
-  const data = {foo: 123, bar: 5};
+  const data = [{key: 'foo', value: 123}, {key: 'bar', value: 5}];
   const value = determineBarColor(
     {
       isBelow: false,

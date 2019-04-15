@@ -12,7 +12,9 @@ import {getDiagramElementsBetween} from 'services';
 import DiagramBehavior from './DiagramBehavior';
 
 jest.mock('services', () => {
+  const rest = jest.requireActual('services');
   return {
+    ...rest,
     getDiagramElementsBetween: jest.fn()
   };
 });
@@ -44,7 +46,7 @@ const props = {
   viewer,
   data: {
     result: {
-      data: {endEvent: 3},
+      data: [{key: 'endEvent', value: 3}],
       processInstanceCount: 5
     }
   },

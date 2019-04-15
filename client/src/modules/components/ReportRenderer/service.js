@@ -35,10 +35,7 @@ export function processResult({
       return {...result, data: result.data[aggregationType]};
     }
     if (result.type === 'durationMap') {
-      const newData = Object.entries(result.data).reduce((data, [key, value]) => {
-        data[key] = value[aggregationType];
-        return data;
-      }, {});
+      const newData = result.data.map(entry => ({...entry, value: entry.value[aggregationType]}));
       return {...result, data: newData};
     }
   }

@@ -10,7 +10,7 @@ import {uniteResults} from '../../service';
 
 jest.mock('../../service', () => {
   return {
-    uniteResults: jest.fn().mockReturnValue([{foo: 123, bar: 5}])
+    uniteResults: jest.fn().mockReturnValue([{key: 'foo', value: 123}, {key: 'bar', value: 5}])
   };
 });
 
@@ -24,7 +24,7 @@ jest.mock('../colorsUtils', () => {
 
 it('should return correct chart data object for a single report', () => {
   uniteResults.mockClear();
-  const result = {data: {foo: 123, bar: 5}};
+  const result = {data: [{key: 'foo', value: 123}, {key: 'bar', value: 5}]};
   uniteResults.mockReturnValue([result]);
 
   const chartData = createDefaultChartData({
@@ -46,11 +46,11 @@ it('should return correct chart data object for a single report', () => {
   });
 
   expect(chartData).toEqual({
-    labels: ['foo', 'bar'],
+    labels: ['bar', 'foo'],
     datasets: [
       {
         legendColor: 'testColor',
-        data: [123, 5],
+        data: [5, 123],
         borderColor: 'testColor',
         backgroundColor: 'transparent',
         borderWidth: 2

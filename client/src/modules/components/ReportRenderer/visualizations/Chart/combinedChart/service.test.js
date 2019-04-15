@@ -43,10 +43,7 @@ it('should return correct cominbed chart repot data properties for single report
     },
     result: {
       processInstanceCount: 100,
-      data: {
-        '2015-03-25T12:00:00Z': 2,
-        '2015-03-26T12:00:00Z': 3
-      }
+      data: [{key: '2015-03-25T12:00:00Z', value: 2}, {key: '2015-03-26T12:00:00Z', value: 3}]
     }
   };
 
@@ -64,8 +61,8 @@ it('should return correct cominbed chart repot data properties for single report
 
   expect(chartProps).toEqual({
     resultArr: [
-      {'2015-03-25T12:00:00Z': 2, '2015-03-26T12:00:00Z': 3},
-      {'2015-03-25T12:00:00Z': 2, '2015-03-26T12:00:00Z': 3}
+      [{key: '2015-03-25T12:00:00Z', value: 2}, {key: '2015-03-26T12:00:00Z', value: 3}],
+      [{key: '2015-03-25T12:00:00Z', value: 2}, {key: '2015-03-26T12:00:00Z', value: 3}]
     ],
     reportsNames: ['report A', 'report A'],
     reportColors: ['red', 'blue']
@@ -92,8 +89,8 @@ it('should convert results of a combined number report to a correctly formatted 
   });
 
   expect(chartProps).toEqual({
-    resultArr: [{'report A': 100}, {'report A': 100}],
+    reportColors: ['red', 'blue'],
     reportsNames: ['report A', 'report A'],
-    reportColors: ['red', 'blue']
+    resultArr: [[{key: 'report A', value: 100}], [{key: 'report A', value: 100}]]
   });
 });

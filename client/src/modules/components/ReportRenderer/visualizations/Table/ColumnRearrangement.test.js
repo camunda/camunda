@@ -18,7 +18,9 @@ jest.mock('services', () => {
 
 it('should render child node', () => {
   const node = shallow(
-    <ColumnRearrangement report={{result: {data: {}}}}>some child content</ColumnRearrangement>
+    <ColumnRearrangement report={{result: {data: {}}, data: {view: {}}}}>
+      some child content
+    </ColumnRearrangement>
   );
 
   expect(node).toIncludeText('some child content');

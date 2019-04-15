@@ -7,7 +7,7 @@
 import createTargetLineData from './createTargetLineData';
 
 it('should create two datasets for line chart with target values', () => {
-  const result = {data: {foo: 123, bar: 5, dar: 5}};
+  const result = {data: [{key: 'foo', value: 123}, {key: 'bar', value: 5}]};
   const targetValue = {target: 10};
 
   const chartData = createTargetLineData({
@@ -30,7 +30,7 @@ it('should create two datasets for line chart with target values', () => {
 });
 
 it('should create two datasets for each report in combined line charts with target values', () => {
-  const result = {data: {foo: 123, bar: 5, dar: 5}};
+  const result = {data: [{key: 'foo', value: 123}, {key: 'bar', value: 5}, {key: 'dar', value: 5}]};
   const name = 'test1';
   const targetValue = {target: 10};
   const chartData = createTargetLineData({

@@ -6,7 +6,6 @@
 
 import {createDatasetOptions} from '../defaultChart/createDefaultChartOptions';
 import {uniteResults} from '../../service';
-import {isDate} from '../service';
 import {getCombinedChartProps} from './service';
 
 export default function createCombinedChartData(props) {
@@ -23,7 +22,7 @@ export default function createCombinedChartData(props) {
   const datasets = unitedResults.map((report, index) => {
     return {
       label: reportsNames && reportsNames[index],
-      data: Object.values(report),
+      data: report.map(({value}) => value),
       ...createDatasetOptions(visualization, report, targetValue, reportColors[index], true, isDark)
     };
   });
@@ -40,13 +39,7 @@ export function extractCombinedData({report, theme, targetValue, flowNodeNames})
 
   const isDark = theme === 'dark';
 
-  let labels = Object.keys(Object.assign({}, ...resultArr));
-
-  if (isDate(data.groupBy)) {
-    labels.sort((a, b) => {
-      return new Date(a) - new Date(b);
-    });
-  }
+  let labels = [...new Set(resultArr.flat(2).map(({key}) => key))];
 
   const unitedResults = uniteResults(resultArr, labels);
 

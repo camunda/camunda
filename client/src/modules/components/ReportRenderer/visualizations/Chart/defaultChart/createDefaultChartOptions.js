@@ -18,7 +18,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
   const isDark = theme === 'dark';
   const instanceCountArr = [result.processInstanceCount || result.decisionInstanceCount || 0];
   const isDuration = isDurationReport(report);
-  const maxValue = isDuration ? Math.max(...Object.values(result.data)) : 0;
+  const maxValue = isDuration ? Math.max(...result.data.map(({value}) => value)) : 0;
   const isPersistedTooltips = isDuration
     ? configuration.alwaysShowAbsolute
     : configuration.alwaysShowAbsolute || configuration.alwaysShowRelative;
@@ -152,7 +152,7 @@ export function createDatasetOptions(type, data, targetValue, datasetColor, isSt
     case 'pie':
       return {
         borderColor: getColorFor('border', isDark),
-        backgroundColor: createColors(Object.keys(data).length, isDark),
+        backgroundColor: createColors(data.length, isDark),
         borderWidth: undefined
       };
     case 'line':

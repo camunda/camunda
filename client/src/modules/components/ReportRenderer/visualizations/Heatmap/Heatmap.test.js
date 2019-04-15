@@ -39,7 +39,11 @@ jest.mock('./service', () => {
 jest.mock('services', () => {
   const durationFct = jest.fn();
   return {
-    formatters: {duration: durationFct, convertToMilliseconds: jest.fn()},
+    formatters: {
+      duration: durationFct,
+      convertToMilliseconds: jest.fn(),
+      objectifyResult: jest.fn().mockReturnValue({a: 1, b: 2})
+    },
     isDurationReport: jest.fn().mockReturnValue(false),
     getTooltipText: jest.fn()
   };
@@ -57,7 +61,7 @@ const report = {
     },
     visualization: 'heat'
   },
-  result: {data: {a: 1, b: 2}, processInstanceCount: 5}
+  result: {data: [{key: 'a', value: 1}, {key: 'b', value: 2}], processInstanceCount: 5}
 };
 
 it('should load the process definition xml', () => {
@@ -118,7 +122,7 @@ it('should convert the data to target value heat when target value mode is activ
   );
 
   expect(calculateTargetValueHeat).toHaveBeenCalledWith(
-    report.result.data,
+    formatters.objectifyResult(report.result.data),
     heatmapTargetValue.values
   );
 });
@@ -190,12 +194,13 @@ it('should show a tooltip with information if no actual value is available', () 
   calculateTargetValueHeat.mockReturnValue({b: undefined});
   formatters.duration.mockReturnValueOnce('1ms');
   convertToMilliseconds.mockReturnValue(1);
+  formatters.objectifyResult.mockReturnValueOnce({});
 
   const node = shallow(
     <Heatmap
       report={{
         ...report,
-        result: {data: {}},
+        result: {data: []},
         data: {...report.data, configuration: {xml: 'test', heatmapTargetValue}}
       }}
     />

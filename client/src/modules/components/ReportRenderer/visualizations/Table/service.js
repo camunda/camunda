@@ -51,10 +51,10 @@ export function getBodyRows(
   displayAbsoluteValue,
   flowNodeNames = {}
 ) {
-  const rows = allKeys.map(key => {
+  const rows = allKeys.map((key, idx) => {
     const row = [flowNodeNames[key] || key];
     unitedResults.forEach((result, i) => {
-      const value = result[key];
+      const value = result[idx].value;
       if (displayAbsoluteValue) {
         row.push(formatter(typeof value !== 'undefined' && value !== null ? value : ''));
       }

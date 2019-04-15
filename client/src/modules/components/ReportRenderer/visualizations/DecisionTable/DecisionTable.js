@@ -10,6 +10,7 @@ import './DecisionTable.scss';
 import 'dmn-js/dist/assets/dmn-js-decision-table.css';
 
 import {themed} from 'theme';
+import {formatters} from 'services';
 
 import Viewer from 'dmn-js';
 import createHitsColumnAddon from './HitsColumnAddon';
@@ -76,14 +77,15 @@ export default themed(
 
     renderRuleCell = ruleId => {
       const {
-        result,
-        decisionInstanceCount,
+        result: {data, decisionInstanceCount},
         data: {
           configuration: {hideAbsoluteValue, hideRelativeValue, showGradientBars}
         }
       } = this.props.report;
 
-      const resultNumber = result.data[ruleId] || 0;
+      const resultObj = formatters.objectifyResult(data);
+
+      const resultNumber = resultObj[ruleId] || 0;
       const percentage = Math.round((resultNumber / decisionInstanceCount) * 1000) / 10 || 0;
 
       const node = this.state.entryPoints.rules[ruleId];
@@ -116,9 +118,11 @@ export default themed(
 
     render() {
       const {rules, summary} = this.state.entryPoints;
-      const {decisionInstanceCount, result} = this.props.report;
+      const {
+        result: {decisionInstanceCount, data}
+      } = this.props.report;
 
-      const hitCount = Object.values(result.data).reduce((sum, current) => sum + current, 0);
+      const hitCount = data.map(({value}) => value).reduce((sum, current) => sum + current, 0);
 
       return (
         <div ref={this.container} className="DecisionTable">

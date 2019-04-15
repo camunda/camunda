@@ -7,6 +7,7 @@
 import React from 'react';
 
 import {getDiagramElementsBetween} from 'services';
+import {formatters} from 'services';
 
 import './DiagramBehavior.scss';
 
@@ -140,9 +141,11 @@ export default class DiagramBehavior extends React.Component {
     const {
       viewer,
       data: {
-        result: {data: flowNodes, processInstanceCount: piCount}
+        result: {data, processInstanceCount: piCount}
       }
     } = this.props;
+
+    const flowNodes = formatters.objectifyResult(data);
 
     const overlays = viewer.get('overlays');
     const value = flowNodes[element.id] || 0;
