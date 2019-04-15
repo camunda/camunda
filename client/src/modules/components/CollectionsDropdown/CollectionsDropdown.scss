@@ -26,4 +26,17 @@
       background: rgba(#d8dce3, 0.8);
     }
   }
+
+  &.small {
+    .Button {
+      height: 26px;
+      font-size: 12px;
+      padding: 5px 10px;
+      padding-right: 25px;
+
+      .downIcon {
+        bottom: 5px;
+      }
+    }
+  }
 }

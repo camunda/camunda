@@ -28,7 +28,7 @@
 }
 
 .Dashboard__header {
-  margin-bottom: 27px;
+  margin-bottom: 1em;
 
   .head {
     display: flex;
@@ -51,6 +51,12 @@
       font-size: 14px;
       color: #666666;
       display: inline;
+
+      &:after {
+        content: '|';
+        color: #d8d8d8;
+        margin-left: 15px;
+      }
     }
   }
 

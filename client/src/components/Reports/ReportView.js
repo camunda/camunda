@@ -15,11 +15,20 @@ import {
   Popover,
   Icon,
   ConfirmationModal,
-  CollectionsDropdown
+  CollectionsDropdown,
+  EditCollectionModal
 } from 'components';
 
-import {checkDeleteConflict, toggleEntityCollection, deleteEntity} from 'services';
 import {shareReport, revokeReportSharing, getSharedReport, isSharingEnabled} from './service';
+
+import {
+  checkDeleteConflict,
+  loadEntities,
+  deleteEntity,
+  createEntity,
+  getEntitiesCollections,
+  toggleEntityCollection
+} from 'services';
 
 import './ReportView.scss';
 
@@ -27,11 +36,14 @@ export default class ReportView extends Component {
   state = {
     confirmModalVisible: false,
     conflict: null,
-    deleteLoading: false
+    deleteLoading: false,
+    collections: [],
+    creatingCollection: false
   };
 
   async componentDidMount() {
     const sharingEnabled = await isSharingEnabled();
+    await this.loadCollections();
 
     this.setState({sharingEnabled});
   }
@@ -87,15 +99,34 @@ export default class ReportView extends Component {
     });
   };
 
+  loadCollections = async () => {
+    const collections = await loadEntities('collection', 'created');
+    this.setState({collections});
+  };
+
+  openEditCollectionModal = () => {
+    this.setState({creatingCollection: true});
+  };
+
+  createCollection = async collection => {
+    await createEntity('collection', collection);
+    await this.loadCollections();
+    this.setState({creatingCollection: false});
+  };
+
   render() {
-    const {confirmModalVisible, conflict, redirect, sharingEnabled, deleteLoading} = this.state;
+    const {report} = this.props;
     const {
-      report,
+      confirmModalVisible,
+      conflict,
+      redirect,
+      sharingEnabled,
+      deleteLoading,
       collections,
-      reportCollections,
-      openEditCollectionModal,
-      loadCollections
-    } = this.props;
+      creatingCollection
+    } = this.state;
+
+    const reportCollections = getEntitiesCollections(collections)[report.id];
     const {id, name, lastModifier, lastModified} = report;
 
     if (redirect) {
@@ -164,9 +195,10 @@ export default class ReportView extends Component {
               <CollectionsDropdown
                 entity={report}
                 collections={collections}
-                toggleEntityCollection={toggleEntityCollection(loadCollections)}
+                toggleEntityCollection={toggleEntityCollection(this.loadCollections)}
                 entityCollections={reportCollections}
-                setCollectionToUpdate={openEditCollectionModal}
+                setCollectionToUpdate={this.openEditCollectionModal}
+                small
               />
             </div>
           </div>
@@ -176,6 +208,13 @@ export default class ReportView extends Component {
             </div>
           </div>
         </div>
+        {creatingCollection && (
+          <EditCollectionModal
+            collection={{data: {entities: [report.id]}}}
+            onClose={() => this.setState({creatingCollection: false})}
+            onConfirm={this.createCollection}
+          />
+        )}
       </>
     );
   }

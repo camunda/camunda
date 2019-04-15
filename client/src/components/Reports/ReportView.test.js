@@ -151,3 +151,20 @@ it('should render collections dropdown', async () => {
 
   expect(node.find('CollectionsDropdown')).toBePresent();
 });
+
+it('should open editCollectionModal when calling openEditCollectionModal', async () => {
+  const node = shallow(<ReportView report={report} />);
+
+  node.instance().openEditCollectionModal();
+
+  expect(node.find('EditCollectionModal')).toBePresent();
+});
+
+it('should invoke loadCollections on mount', async () => {
+  const node = shallow(<ReportView report={report} />);
+
+  node.instance().loadCollections = jest.fn();
+  await node.instance().componentDidMount();
+
+  expect(node.instance().loadCollections).toHaveBeenCalled();
+});

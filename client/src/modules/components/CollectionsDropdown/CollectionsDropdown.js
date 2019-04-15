@@ -7,6 +7,7 @@
 import React from 'react';
 import {Dropdown} from 'components';
 import './CollectionsDropdown.scss';
+import classnames from 'classnames';
 
 export default function CollectionsDropdown({
   collections,
@@ -14,7 +15,8 @@ export default function CollectionsDropdown({
   entity,
   entityCollections = [],
   setCollectionToUpdate,
-  currentCollection
+  currentCollection,
+  small
 }) {
   const collectionsCount = entityCollections.length;
   let label = <span className="noCollection">Add to Collection</span>;
@@ -29,7 +31,7 @@ export default function CollectionsDropdown({
   }
   return (
     <Dropdown
-      className="CollectionsDropdown"
+      className={classnames('CollectionsDropdown', {small})}
       label={label}
       fixedOptions={[
         <Dropdown.Option onClick={() => setCollectionToUpdate({data: {entities: [entity.id]}})}>

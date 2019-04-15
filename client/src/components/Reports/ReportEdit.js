@@ -14,15 +14,13 @@ import {
   LoadingIndicator,
   Message,
   ConfirmationModal,
-  EntityNameForm,
-  CollectionsDropdown
+  EntityNameForm
 } from 'components';
 
 import {
   loadDefinitions,
   incompatibleFilters,
   loadProcessDefinitionXml,
-  toggleEntityCollection,
   updateEntity,
   evaluateReport
 } from 'services';
@@ -173,7 +171,6 @@ export default withErrorHandling(
         saveLoading
       } = this.state;
       const {id, name, lastModifier, lastModified, data, combined, reportType} = report;
-      const {collections, reportCollections, openEditCollectionModal, loadCollections} = this.props;
 
       if (redirect) {
         return <Redirect to={redirect} />;
@@ -204,13 +201,6 @@ export default withErrorHandling(
                 <div className="metadata">
                   Last modified {moment(lastModified).format('lll')} by {lastModifier}
                 </div>
-                <CollectionsDropdown
-                  entity={report}
-                  collections={collections}
-                  toggleEntityCollection={toggleEntityCollection(loadCollections)}
-                  entityCollections={reportCollections}
-                  setCollectionToUpdate={openEditCollectionModal}
-                />
               </div>
             </div>
 

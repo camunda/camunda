@@ -7,8 +7,8 @@
 import React from 'react';
 
 import {withErrorHandling} from 'HOC';
-import {ErrorPage, LoadingIndicator, EditCollectionModal} from 'components';
-import {loadEntities, createEntity, getEntitiesCollections, evaluateReport} from 'services';
+import {ErrorPage, LoadingIndicator} from 'components';
+import {evaluateReport} from 'services';
 
 import ReportEdit from './ReportEdit';
 import ReportView from './ReportView';
@@ -38,7 +38,6 @@ export default withErrorHandling(
           this.setState({
             report: response
           });
-          await this.loadCollections();
         },
         ({status}) => {
           this.setState({
@@ -49,21 +48,6 @@ export default withErrorHandling(
       );
     };
 
-    loadCollections = async () => {
-      const collections = await loadEntities('collection', 'created');
-      this.setState({collections});
-    };
-
-    openEditCollectionModal = () => {
-      this.setState({creatingCollection: true});
-    };
-
-    createCollection = async collection => {
-      await createEntity('collection', collection);
-      await this.loadCollections();
-      this.setState({creatingCollection: false});
-    };
-
     componentDidUpdate() {
       if (this.isNew) {
         this.isNew = false;
@@ -71,7 +55,7 @@ export default withErrorHandling(
     }
 
     render() {
-      const {report, collections, creatingCollection, serverError} = this.state;
+      const {report, serverError} = this.state;
 
       if (serverError) {
         return <ErrorPage />;
@@ -83,31 +67,16 @@ export default withErrorHandling(
 
       const {viewMode} = this.props.match.params;
 
-      const commonProps = {
-        report,
-        collections,
-        reportCollections: getEntitiesCollections(collections)[report.id],
-        loadCollections: this.loadCollections,
-        openEditCollectionModal: this.openEditCollectionModal
-      };
-
       return (
         <div className="Report-container">
           {viewMode === 'edit' ? (
             <ReportEdit
               isNew={this.isNew}
               updateOverview={report => this.setState({report})}
-              {...commonProps}
+              report={report}
             />
           ) : (
-            <ReportView {...commonProps} />
-          )}
-          {creatingCollection && (
-            <EditCollectionModal
-              collection={{data: {entities: [report.id]}}}
-              onClose={() => this.setState({creatingCollection: false})}
-              onConfirm={this.createCollection}
-            />
+            <ReportView report={report} />
           )}
         </div>
       );

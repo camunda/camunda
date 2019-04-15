@@ -285,8 +285,7 @@ export default themed(
       };
 
       renderEditMode = state => {
-        const {name, lastModifier, lastModified, collections} = state;
-        const dashboardCollections = getEntitiesCollections(collections)[this.id];
+        const {name, lastModifier, lastModified} = state;
 
         return (
           <div className="Dashboard editMode">
@@ -305,13 +304,6 @@ export default themed(
                 <div className="metadata">
                   Last modified {moment(lastModified).format('lll')} by {lastModifier}
                 </div>
-                <CollectionsDropdown
-                  entity={{id: this.id}}
-                  collections={collections}
-                  toggleEntityCollection={toggleEntityCollection(this.loadCollections)}
-                  entityCollections={dashboardCollections}
-                  setCollectionToUpdate={this.openEditCollectionModal}
-                />
               </div>
             </div>
             <DashboardView
@@ -362,7 +354,7 @@ export default themed(
         return (
           <Fullscreen enabled={this.state.fullScreenActive} onChange={this.changeFullScreen}>
             <div
-              className={classnames('Dashboard', {
+              className={classnames('Dashboard viewMode', {
                 'Dashboard--fullscreen': this.state.fullScreenActive
               })}
             >
@@ -448,6 +440,7 @@ export default themed(
                     toggleEntityCollection={toggleEntityCollection(this.loadCollections)}
                     entityCollections={dashboardCollections}
                     setCollectionToUpdate={this.openEditCollectionModal}
+                    small
                   />
                 </div>
               </div>
@@ -474,6 +467,13 @@ export default themed(
                 <DimensionSetter reports={this.state.reports} />
               </DashboardView>
             </div>
+            {this.state.creatingCollection && (
+              <EditCollectionModal
+                collection={{data: {entities: [this.id]}}}
+                onClose={() => this.setState({creatingCollection: false})}
+                onConfirm={this.createCollection}
+              />
+            )}
           </Fullscreen>
         );
       };
@@ -522,14 +522,6 @@ export default themed(
             {viewMode === 'edit'
               ? this.renderEditMode(this.state)
               : this.renderViewMode(this.state)}
-
-            {this.state.creatingCollection && (
-              <EditCollectionModal
-                collection={{data: {entities: [this.id]}}}
-                onClose={() => this.setState({creatingCollection: false})}
-                onConfirm={this.createCollection}
-              />
-            )}
           </div>
         );
       }

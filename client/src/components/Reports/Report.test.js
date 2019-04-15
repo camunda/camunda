@@ -81,20 +81,3 @@ it('should render ReportView component if viewMode is view', async () => {
 
   expect(node.find('ReportView')).toBePresent();
 });
-
-it('should open editCollectionModal when calling openEditCollectionModal', async () => {
-  const node = await shallow(<Report {...props} />).dive();
-  node.setState({loaded: true, report});
-
-  node.instance().openEditCollectionModal();
-
-  expect(node.find('EditCollectionModal')).toBePresent();
-});
-
-it('should invoke loadCollections on mount', async () => {
-  const node = await shallow(<Report {...props} />).dive();
-  node.instance().loadCollections = jest.fn();
-  await node.instance().componentDidMount();
-
-  expect(node.instance().loadCollections).toHaveBeenCalled();
-});
