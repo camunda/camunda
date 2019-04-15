@@ -4,6 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+// CSS pollyfills
+import 'focus-visible';
+
+//JS pollyfills
 import {shim as objectValuesShim} from 'object.values';
 import {shim as arrayIncludesShim} from 'array-includes';
 import {shim as arrayFindShim} from 'array.prototype.find';

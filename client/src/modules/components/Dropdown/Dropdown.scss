@@ -19,12 +19,6 @@
     padding-left: 20px;
     text-align: left;
 
-    &:focus {
-      outline: none;
-      border: 1px solid $cam-blue;
-      box-shadow: 0 0 5px rgba($cam-blue, 1);
-    }
-
     .downIcon {
       position: absolute;
       right: 0;

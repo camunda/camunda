@@ -28,6 +28,15 @@ a.Button {
   text-decoration: none;
   display: inline-block;
 
+  &:focus {
+    outline: none;
+  }
+
+  &.focus-visible {
+    border: 1px solid $cam-blue;
+    box-shadow: 0 0 5px rgba($cam-blue, 1);
+  }
+
   &.Button--link {
     display: inline;
     align-items: normal;
@@ -64,13 +73,6 @@ a.Button:hover {
   border: 1px solid #adadad;
   cursor: pointer;
   transition: background-color 0.3s, border-color 0.3s;
-}
-
-.Button:focus,
-a.Button:focus {
-  outline: none;
-  border: 1px solid $cam-blue;
-  box-shadow: 0 0 5px rgba($cam-blue, 1);
 }
 
 .Button[disabled]:hover,
