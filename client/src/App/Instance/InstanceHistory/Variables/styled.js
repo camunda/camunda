@@ -24,6 +24,7 @@ export const Variables = themed(styled(Panel)`
     light: 'rgba(98, 98, 110, 0.8)'
   })};
   border-top: none;
+  border-left: none;
 `);
 
 export const VariablesContent = styled(Panel.Body)`
@@ -69,6 +70,8 @@ export const TD = themed(styled.td`
   })};
   font-weight: ${props => (props.isBold ? 'bold' : 'normal')};
   padding-left: 17px;
+  padding-top: 8px;
+  padding-bottom: 6px;
   height: 32px;
   min-width: 191px;
 
