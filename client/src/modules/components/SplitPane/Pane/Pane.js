@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Children, cloneElement} from 'react';
+import React, {Children, cloneElement, useContext} from 'react';
 import PropTypes from 'prop-types';
 
 import Panel from 'modules/components/Panel';
@@ -12,6 +12,8 @@ import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext
 import {PANE_ID, EXPAND_STATE, DIRECTION} from 'modules/constants';
 
 import * as Styled from './styled';
+
+const paneContext = React.createContext();
 
 export default class Pane extends React.Component {
   static propTypes = {
@@ -89,17 +91,31 @@ export default class Pane extends React.Component {
   };
 
   render() {
-    const {hasShiftableControls, ...otherProps} = this.props;
+    const {hasShiftableControls, children, ...otherProps} = this.props;
 
     return (
       <Styled.Pane {...otherProps} expandState={this.props.expandState}>
-        {this.props.paneId === PANE_ID.BOTTOM && this.getBottomPaneButtons()}
-        {this.getChildren()}
+        <paneContext.Provider value={{expandState: otherProps.expandState}}>
+          {this.props.paneId === PANE_ID.BOTTOM && this.getBottomPaneButtons()}
+          {children}
+        </paneContext.Provider>
       </Styled.Pane>
     );
   }
 }
 
-Pane.Header = Panel.Header;
-Pane.Body = Styled.Body;
-Pane.Footer = Styled.Footer;
+Pane.Header = function PaneHeader(props) {
+  const {expandState} = useContext(paneContext);
+  return <Panel.Header {...props} expandState={expandState} />;
+};
+
+Pane.Body = function PaneBody(props) {
+  const {expandState} = useContext(paneContext);
+
+  return <Styled.Body {...props} expandState={expandState} />;
+};
+
+Pane.Footer = function PaneFooter(props) {
+  const {expandState} = useContext(paneContext);
+  return <Styled.Footer {...props} expandState={expandState} />;
+};

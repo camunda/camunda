@@ -33,24 +33,6 @@ const mountNode = mockCustomProps => {
 };
 
 describe('Pane', () => {
-  it('should render children with expandState', () => {
-    // given
-    const node = mountNode({
-      paneId: PANE_ID.TOP,
-      expandState: EXPAND_STATE.EXPANDED
-    });
-
-    const HeaderNode = node.find(SplitPaneHeader);
-    const BodyNode = node.find(SplitPaneBody);
-
-    // then
-    expect(HeaderNode).toHaveLength(1);
-    expect(BodyNode).toHaveLength(1);
-
-    expect(HeaderNode.prop('expandState')).toBe(EXPAND_STATE.EXPANDED);
-    expect(BodyNode.prop('expandState')).toBe(EXPAND_STATE.EXPANDED);
-  });
-
   describe('top pane', () => {
     it('should not render expand buttons', () => {
       // given
