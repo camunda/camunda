@@ -83,7 +83,7 @@ public class BasicAuthenticationEnabledIT {
 
 
     //then
-    Integer activityCount = elasticSearchRule.getActivityCount(embeddedOptimizeRule.getConfigurationService());
+    Integer activityCount = elasticSearchRule.getActivityCount();
     assertThat(activityCount, is(3));
   }
 

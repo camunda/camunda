@@ -1,0 +1,17 @@
+engines:
+  'camunda-bpm':
+    name: default
+    rest: '${engine.url}'
+    authentication:
+      enabled: false
+    webapps:
+      endpoint: '${engine.url}'
+      enabled: true
+    importEnabled: true
+
+es:
+  connection:
+    timeout: 10000
+    nodes:
+      - host: '${es.host}'
+        httpPort: 9200

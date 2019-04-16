@@ -13,7 +13,9 @@
   <properties>
     <skip.tests>true</skip.tests>
     <test.argLine>-Xmx2048m</test.argLine>
-    <db.url />
+    <engine.url>http://localhost:8080/engine-rest</engine.url>
+    <es.host>localhost</es.host>
+    <cleanup.timeout.minutes>60</cleanup.timeout.minutes>
   </properties>
 
   <dependencies>

@@ -74,12 +74,12 @@ public abstract class AbstractImportTest {
       logger.info(
         "The Camunda Platform contains {} historic variable instances. Optimize: {}",
         engineDatabaseRule.countHistoricVariableInstances(),
-        elasticSearchRule.getVariableInstanceCount(configurationService)
+        elasticSearchRule.getVariableInstanceCount()
       );
       logger.info(
         "The Camunda Platform contains {} historic activity instances. Optimize: {}",
         engineDatabaseRule.countHistoricActivityInstances(),
-        elasticSearchRule.getActivityCount(configurationService)
+        elasticSearchRule.getActivityCount()
       );
     } catch (SQLException e) {
       logger.error("Failed producing stats", e);
@@ -129,12 +129,12 @@ public abstract class AbstractImportTest {
     );
     assertThat(
       "variableInstanceCount",
-      elasticSearchRule.getVariableInstanceCount(configurationService),
+      elasticSearchRule.getVariableInstanceCount(),
       is(engineDatabaseRule.countHistoricVariableInstances())
     );
     assertThat(
       "historicActivityInstanceCount",
-      elasticSearchRule.getActivityCount(configurationService),
+      elasticSearchRule.getActivityCount(),
       is(engineDatabaseRule.countHistoricActivityInstances())
     );
 

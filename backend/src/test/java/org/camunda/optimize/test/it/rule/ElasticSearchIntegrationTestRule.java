@@ -33,6 +33,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
@@ -67,9 +68,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ElasticSearchIntegrationTestRule extends TestWatcher {
+  private static final Logger logger = LoggerFactory.getLogger(ElasticSearchIntegrationTestRule.class);
 
-  private Logger logger = LoggerFactory.getLogger(ElasticSearchIntegrationTestRule.class);
-  private static final String DEFAULT_PROPERTIES_PATH = "integration-rules.properties";
   private static ObjectMapper objectMapper;
   private static RestHighLevelClient esClient;
   private static boolean haveToClean = true;
@@ -79,6 +79,18 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
 
   public ElasticSearchIntegrationTestRule() {
+  }
+
+  @Override
+  protected void starting(Description description) {
+    initConfigurationService();
+    initObjectMapper();
+    this.initEsClient();
+    if (haveToClean) {
+      logger.info("Cleaning elasticsearch...");
+      this.cleanAndVerify();
+      logger.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
+    }
   }
 
   private void initEsClient() {
@@ -122,25 +134,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     return objectMapper;
   }
 
-  @Override
-  protected void starting(Description description) {
-    initConfigurationService();
-    initObjectMapper();
-    this.initEsClient();
-    logger.info("Cleaning elasticsearch...");
-    this.cleanAndVerify();
-    logger.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
-  }
-
-  @Override
-  protected void finished(Description description) {
-    if (haveToClean) {
-      logger.info("cleaning up elasticsearch on finish");
-      this.cleanUpElasticSearch();
-      this.refreshAllOptimizeIndices();
-    }
-  }
-
   public void refreshAllOptimizeIndices() {
     try {
       RefreshRequest refreshAllIndicesRequest = new RefreshRequest();
@@ -178,26 +171,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     addEntryToTracker(type, id);
   }
 
-  public Integer getDocumentCountOf(final String elasticsearchType) {
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(QueryBuilders.matchAllQuery())
-      .fetchSource(false)
-      .size(0);
-
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(elasticsearchType))
-      .types(elasticsearchType)
-      .source(searchSourceBuilder);
-
-    SearchResponse searchResponse;
-    try {
-      searchResponse = getEsClient().search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Could not query the import count!", e);
-    }
-    return Long.valueOf(searchResponse.getHits().getTotalHits()).intValue();
-  }
-
   public OffsetDateTime getLastProcessInstanceImportTimestamp() throws IOException {
     GetRequest getRequest = new GetRequest(
       getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
@@ -227,9 +200,37 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     esClient.indices().putSettings(request, RequestOptions.DEFAULT);
   }
 
-  public Integer getActivityCount(ConfigurationService configurationService) {
+  public Integer getDocumentCountOf(final String elasticsearchType) {
+    return getDocumentCountOf(elasticsearchType, QueryBuilders.matchAllQuery());
+  }
+
+  public Integer getDocumentCountOf(final String elasticsearchType, final QueryBuilder documentQuery) {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(QueryBuilders.matchAllQuery())
+      .query(documentQuery)
+      .fetchSource(false)
+      .size(0);
+
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(getOptimizeIndexAliasForType(elasticsearchType))
+      .types(elasticsearchType)
+      .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not query the import count!", e);
+    }
+    return Long.valueOf(searchResponse.getHits().getTotalHits()).intValue();
+  }
+
+  public Integer getActivityCount() {
+    return getActivityCount(QueryBuilders.matchAllQuery());
+  }
+
+  public Integer getActivityCount(final QueryBuilder processInstanceQuery) {
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(processInstanceQuery)
       .fetchSource(false)
       .size(0)
       .aggregation(
@@ -260,9 +261,13 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     return Long.valueOf(countAggregator.getValue()).intValue();
   }
 
-  public Integer getVariableInstanceCount(ConfigurationService configurationService) {
+  public Integer getVariableInstanceCount() {
+    return getVariableInstanceCount(QueryBuilders.matchAllQuery());
+  }
+
+  public Integer getVariableInstanceCount(final QueryBuilder processInstanceQuery) {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(QueryBuilders.matchAllQuery())
+      .query(processInstanceQuery)
       .fetchSource(false)
       .size(0);
 
@@ -299,18 +304,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     return Long.valueOf(totalVariableCount).intValue();
   }
 
-  private void addEntryToTracker(String type, String id) {
-    if (!documentEntriesTracker.containsKey(type)) {
-      List<String> idList = new LinkedList<>();
-      idList.add(id);
-      documentEntriesTracker.put(type, idList);
-    } else {
-      List<String> ids = documentEntriesTracker.get(type);
-      ids.add(id);
-      documentEntriesTracker.put(type, ids);
-    }
-  }
-
   public void deleteAllOptimizeData() {
     DeleteByQueryRequest request = new DeleteByQueryRequest("_all")
       .setQuery(matchAllQuery())
@@ -339,8 +332,21 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     assureElasticsearchIsClean();
   }
 
+  private void addEntryToTracker(String type, String id) {
+    if (!documentEntriesTracker.containsKey(type)) {
+      List<String> idList = new LinkedList<>();
+      idList.add(id);
+      documentEntriesTracker.put(type, idList);
+    } else {
+      List<String> ids = documentEntriesTracker.get(type);
+      ids.add(id);
+      documentEntriesTracker.put(type, ids);
+    }
+  }
+
   private void cleanUpElasticSearch() {
     try {
+      refreshAllOptimizeIndices();
       deleteAllOptimizeData();
     } catch (Exception e) {
       //nothing to do

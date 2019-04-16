@@ -62,6 +62,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   private OptimizeRequestExecutor requestExecutor;
   private ObjectMapper objectMapper;
 
+  private boolean resetImportOnStart = true;
+
   /**
    * 1. Reset import start indexes
    * <p>
@@ -207,7 +209,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
           getAuthorizationCookieValue(),
           objectMapper
         );
-      resetImportStartIndexes();
+      if (isResetImportOnStart()) {
+        resetImportStartIndexes();
+      }
     } catch (Exception e) {
       //nothing to do here
     }
@@ -305,10 +309,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getOptimize().rootTarget();
   }
 
-  public String getProcessDefinitionEndpoint() {
-    return getConfigurationService().getProcessDefinitionEndpoint();
-  }
-
   public List<Long> getImportIndexes() {
     List<Long> indexes = new LinkedList<>();
 
@@ -398,5 +398,13 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public String formatToHistogramBucketKey(final OffsetDateTime offsetDateTime, final ChronoUnit unit) {
     return getDateTimeFormatter().format(truncateToStartOfUnit(offsetDateTime, unit));
+  }
+
+  public boolean isResetImportOnStart() {
+    return resetImportOnStart;
+  }
+
+  public void setResetImportOnStart(final boolean resetImportOnStart) {
+    this.resetImportOnStart = resetImportOnStart;
   }
 }

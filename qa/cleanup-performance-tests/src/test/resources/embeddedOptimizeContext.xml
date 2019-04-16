@@ -23,6 +23,7 @@
     <constructor-arg>
       <list>
         <value>service-config.yaml</value>
+        <value>environment-config.yaml</value>
       </list>
     </constructor-arg>
   </bean>

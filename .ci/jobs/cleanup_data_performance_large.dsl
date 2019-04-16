@@ -12,11 +12,11 @@ pipelineJob('cleanup-data-performance') {
 
   parameters {
     stringParam('BRANCH', 'master', 'Branch to use for performance tests.')
-    stringParam('CAMBPM_VERSION', '7.10.0', 'Camunda BPM version to use.')
-    stringParam('ES_VERSION', '6.2.0', 'Elasticsearch version to use.')
+    stringParam('SQL_DUMP', 'optimize_large_data_10M_procinst_wo_unneded_data_7.10.0_schema.sqlc', 'filename of the postgresql dump in gcloud storage `gs://camunda-ops/optimize/`')
+    stringParam('CLEANUP_TIMEOUT_MINUTES', '60', 'Time limit for a cleanup run to finish')
   }
 
   triggers {
-    cron('H 3 * * *')
+    cron('H 5 * * *')
   }
 }
