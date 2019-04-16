@@ -1,0 +1,90 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Instance should pass the right incidents data to IncidentsWrapper 1`] = `
+Object {
+  "errorTypes": Map {
+    "Condition error" => Object {
+      "count": 1,
+      "errorType": "Condition error",
+    },
+    "Extract value error" => Object {
+      "count": 1,
+      "errorType": "Extract value error",
+    },
+  },
+  "flowNodes": Map {
+    "flowNodeId_exclusiveGateway" => Object {
+      "count": 1,
+      "flowNodeId": "flowNodeId_exclusiveGateway",
+      "flowNodeName": "Unnamed Activity",
+    },
+    "flowNodeId_alwaysFailingTask" => Object {
+      "count": 1,
+      "flowNodeId": "flowNodeId_alwaysFailingTask",
+      "flowNodeName": "Unnamed Activity",
+    },
+  },
+  "forceSpinner": false,
+  "incidents": Array [
+    Object {
+      "creationTime": "2019-03-01T14:26:19",
+      "errorMessage": "Some Condition error has occured",
+      "errorType": "Condition error",
+      "flowNodeId": "flowNodeId_exclusiveGateway",
+      "flowNodeInstanceId": Object {},
+      "flowNodeName": "Unnamed Activity",
+      "hasActiveOperation": false,
+      "id": "id_4",
+      "jobId": "jobId_0",
+      "state": "ACTIVE",
+    },
+    Object {
+      "creationTime": "2019-03-01T14:26:19",
+      "errorMessage": "Some Condition error has occured",
+      "errorType": "Extract value error",
+      "flowNodeId": "flowNodeId_alwaysFailingTask",
+      "flowNodeInstanceId": Object {},
+      "flowNodeName": "Unnamed Activity",
+      "hasActiveOperation": false,
+      "id": "id_5",
+      "jobId": "jobId_1",
+      "state": "ACTIVE",
+    },
+  ],
+  "incidentsCount": 2,
+  "instance": Object {
+    "activities": Array [
+      Object {
+        "activityId": "activityId_1",
+        "endDate": "2018-10-10T09:20:38.658Z",
+        "id": "id_2",
+        "startDate": "2018-10-10T09:20:38.658Z",
+        "state": "ACTIVE",
+      },
+    ],
+    "bpmnProcessId": "someKey",
+    "endDate": null,
+    "id": "4294980768",
+    "operations": Array [
+      Object {
+        "endDate": "2018-10-10T09:20:38.661Z",
+        "errorMessage": "string",
+        "startDate": "2018-10-10T09:20:38.661Z",
+        "state": "SCHEDULED",
+        "type": "RESOLVE_INCIDENT",
+      },
+    ],
+    "sequenceFlows": Array [],
+    "startDate": "2018-06-21",
+    "state": "INCIDENT",
+    "workflowId": "2",
+    "workflowName": "someWorkflowName",
+    "workflowVersion": 1,
+  },
+  "onIncidentOperation": [Function],
+  "onIncidentSelection": [Function],
+  "selectedFlowNodeInstanceIds": Array [
+    "4294980768",
+  ],
+}
+`;

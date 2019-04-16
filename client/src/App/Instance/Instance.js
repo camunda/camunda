@@ -315,28 +315,21 @@ export default class Instance extends Component {
     };
   };
 
-  formatIncidents = () => {
-    if (this.state.instance.state !== 'INCIDENT') {
-      return [];
-    }
+  modifyElements = (arrayOfObjects, modifier) =>
+    arrayOfObjects.map(object => (modifier ? modifier(object) : object));
 
-    return this.state.incidents.incidents.map(item => {
-      const clone = Object.assign({}, item);
-      clone.flowNodeName =
-        this.state.activityIdToNameMap.get(item.flowNodeId) || UNNAMED_ACTIVITY;
+  mapify = (arrayOfObjects, uniqueKey, modifier) =>
+    arrayOfObjects.reduce((acc, object) => {
+      const modifiedObj = modifier ? modifier(object) : object;
+      return acc.set(modifiedObj[uniqueKey], modifiedObj);
+    }, new Map());
 
-      return clone;
-    });
-  };
-
-  formatFlowNodes = () => {
-    return this.state.incidents.flowNodes.map(item => {
-      const clone = Object.assign({}, item);
-      clone.flowNodeName =
-        this.state.activityIdToNameMap.get(item.flowNodeId) || UNNAMED_ACTIVITY;
-
-      return clone;
-    });
+  addFlowNodeName = object => {
+    const modifiedObject = {...object};
+    modifiedObject.flowNodeName =
+      this.state.activityIdToNameMap.get(modifiedObject.flowNodeId) ||
+      UNNAMED_ACTIVITY;
+    return modifiedObject;
   };
 
   handleIncidentOperation = () => {
@@ -410,6 +403,7 @@ export default class Instance extends Component {
       loaded,
       diagramDefinitions,
       instance,
+      incidents,
       selection,
       activityIdToActivityInstanceMap,
       activityIdToNameMap,
@@ -451,15 +445,22 @@ export default class Instance extends Component {
             >
               {this.state.instance.state === 'INCIDENT' && (
                 <IncidentsWrapper
-                  incidents={this.formatIncidents()}
+                  incidents={this.modifyElements(
+                    incidents.incidents,
+                    this.addFlowNodeName
+                  )}
                   incidentsCount={this.state.incidents.count}
                   instance={this.state.instance}
                   forceSpinner={this.state.forceIncidentsSpinner}
                   selectedFlowNodeInstanceIds={this.state.selection.treeRowIds}
                   onIncidentOperation={this.handleIncidentOperation}
                   onIncidentSelection={this.handleTreeRowSelection}
-                  flowNodes={this.formatFlowNodes()}
-                  errorTypes={this.state.incidents.errorTypes}
+                  flowNodes={this.mapify(
+                    incidents.flowNodes,
+                    'flowNodeId',
+                    this.addFlowNodeName
+                  )}
+                  errorTypes={this.mapify(incidents.errorTypes, 'errorType')}
                 />
               )}
               {diagramDefinitions && (

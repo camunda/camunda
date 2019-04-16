@@ -186,20 +186,7 @@ describe('Instance', () => {
     node.update();
 
     const IncidentsWrapper = node.find('IncidentsWrapper');
-    // then
-    expect(IncidentsWrapper.props().incidents.length).toEqual(
-      INCIDENTS.incidents.length
-    );
-    IncidentsWrapper.props().incidents.forEach((item, index) => {
-      expect(item.id).toEqual(INCIDENTS.incidents[index].id);
-      expect(item.flowNodeName).not.toBe(undefined);
-    });
-    expect(IncidentsWrapper.props().incidentsCount).toEqual(INCIDENTS.count);
-    expect(IncidentsWrapper.props().errorTypes).toEqual(INCIDENTS.errorTypes);
-    IncidentsWrapper.props().flowNodes.forEach((item, index) => {
-      expect(item.flowNodeId).toEqual(INCIDENTS.flowNodes[index].flowNodeId);
-      expect(item.flowNodeName).not.toBe(undefined);
-    });
+    expect(IncidentsWrapper.props()).toMatchSnapshot();
   });
 
   it('should fetch data from APIs', async () => {
