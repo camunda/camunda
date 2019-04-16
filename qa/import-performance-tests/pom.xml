@@ -23,12 +23,6 @@
       <artifactId>camunda-operate</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-starter-log4j2</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
@@ -54,7 +48,27 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
+
+    <!--<dependency>-->
+      <!--<groupId>org.springframework.boot</groupId>-->
+      <!--<artifactId>spring-boot-starter-log4j2</artifactId>-->
+      <!--<scope>test</scope>-->
+    <!--</dependency>-->
+
+    <!--<dependency>-->
+    <!--<groupId>org.slf4j</groupId>-->
+    <!--<artifactId>slf4j-simple</artifactId>-->
+    <!--<version>1.7.25</version>-->
+    <!--<scope>test</scope>-->
+    <!--</dependency>-->
+
 
   </dependencies>
 
@@ -93,9 +107,10 @@
         <configuration>
           <forkCount>${env.LIMITS_CPU}</forkCount>
           <reuseForks>true</reuseForks>
-          <redirectTestOutputToFile>true</redirectTestOutputToFile>
           <systemPropertyVariables>
             <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            <!--<org.slf4j.simpleLogger.defaultLogLevel>DEBUG</org.slf4j.simpleLogger.defaultLogLevel>-->
+            <!--<org.slf4j.simpleLogger.showDateTime>true</org.slf4j.simpleLogger.showDateTime>-->
           </systemPropertyVariables>
         </configuration>
       </plugin>
