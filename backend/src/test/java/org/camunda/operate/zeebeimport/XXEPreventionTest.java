@@ -17,13 +17,17 @@ import org.junit.Test;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-public class XXEPreventionTest extends DefaultHandler {
+public class XXEPreventionTest {
 
   @Test
   public void testCreateSecureSAXParser() throws Exception {
     URL xxeFileUrl = XXEPreventionTest.class.getClassLoader().getResource("xxe-test.txt");
-    String xxeAttack = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>" + "<!DOCTYPE foo [" + "  <!ELEMENT foo ANY>" + "  <!ENTITY xxe SYSTEM \"" + xxeFileUrl
-        + "\">" + "]>" + "<foo>&xxe;</foo>";
+    String xxeAttack = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>"
+      + "<!DOCTYPE foo ["
+      + "  <!ELEMENT foo ANY>"
+      + "  <!ENTITY xxe SYSTEM \"" + xxeFileUrl + "\">"
+      + "]>"
+      + "<foo>&xxe;</foo>";
     InputStream xmlInputStream = new ByteArrayInputStream(xxeAttack.getBytes(StandardCharsets.UTF_8));
     StringBuilder elementContent = new StringBuilder();
     
@@ -33,6 +37,7 @@ public class XXEPreventionTest extends DefaultHandler {
         elementContent.append(new String(ch, start, length));
       }
     });
+    //the file must not be read
     assertEquals("", elementContent.toString());
   }
 
