@@ -104,3 +104,9 @@ it('should show a no results message if no values are provided', () => {
   expect(node.find(Input)).toBeDisabled();
   expect(node.find(Input)).toHaveValue('No results found');
 });
+
+it('should show the initial value if provided on mount', () => {
+  const node = shallow(<Typeahead initialValue="foo" values={['bar']} formatter={v => v} />);
+
+  expect(node.find(Input)).toHaveValue('foo');
+});

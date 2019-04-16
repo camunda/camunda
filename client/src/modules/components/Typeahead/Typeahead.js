@@ -25,15 +25,22 @@ export default class Typeahead extends React.Component {
 
   componentDidMount() {
     document.body.addEventListener('click', this.close);
+    if (this.props.initialValue) {
+      this.applyInitialValue();
+    }
+  }
+
+  applyInitialValue() {
+    const value = this.getFormatter()(this.props.initialValue);
+    this.setState({
+      query: value,
+      lastCommittedValue: value
+    });
   }
 
   componentDidUpdate(prevProps) {
     if (this.props.initialValue && this.props.initialValue !== prevProps.initialValue) {
-      const value = this.getFormatter()(this.props.initialValue);
-      this.setState({
-        query: value,
-        lastCommittedValue: value
-      });
+      this.applyInitialValue();
     }
     if (this.props.disabled !== prevProps.disabled) {
       this.setState({
