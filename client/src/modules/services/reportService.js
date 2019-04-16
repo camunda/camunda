@@ -29,7 +29,10 @@ export async function evaluateReport(query) {
       response = await post(`api/report/evaluate/`, query);
     }
   } catch (e) {
-    return (await e.json()).reportDefinition;
+    if (e.status === 500) {
+      return (await e.json()).reportDefinition;
+    }
+    return null;
   }
 
   return await response.json();

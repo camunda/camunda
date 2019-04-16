@@ -77,6 +77,7 @@ export default themed(
             <ReportRenderer
               disableReportScrolling={disableReportScrolling}
               report={this.state.data}
+              isExternal={true}
             />
           </div>
           {children({loadReportData: this.loadReportData})}

@@ -40,11 +40,21 @@ export default function ReportRenderer(props) {
 
     const somethingMissing = checkReport(report);
     if (somethingMissing) {
-      if (updateReport) {
-        return <SetupNotice>{somethingMissing}</SetupNotice>;
-      } else {
+      if (props.isExternal) {
         return <IncompleteReport id={report.id} />;
       }
+
+      return (
+        <SetupNotice>
+          {updateReport ? (
+            somethingMissing
+          ) : (
+            <p>
+              Select the <b>Edit</b> button above.
+            </p>
+          )}
+        </SetupNotice>
+      );
     }
 
     const showNoDataMessage = !containsData(report);

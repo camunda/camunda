@@ -59,3 +59,15 @@ exports[`SetupNotice should instruct to add visualization option if not availabl
   </p>
 </SetupNotice>
 `;
+
+exports[`SetupNotice should instruct to click the edit button in report view 1`] = `
+<SetupNotice>
+  <p>
+    Select the 
+    <b>
+      Edit
+    </b>
+     button above.
+  </p>
+</SetupNotice>
+`;

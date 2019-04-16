@@ -99,13 +99,21 @@ it('should include the instance count if indicated in the config', () => {
   expect(node.find('.additionalInfo').text()).toContain('723');
 });
 
-it('should show an incomplete report notice when not in edit mode', () => {
-  const node = shallow(<ReportRenderer report={{data: {}}} />);
+it('should show an incomplete report notice when inside a dashboard', () => {
+  const node = shallow(<ReportRenderer report={{data: {}}} isExternal={true} />);
 
   expect(node.find('IncompleteReport')).toBePresent();
 });
 
 describe('SetupNotice', () => {
+  it('should instruct to click the edit button in report view', () => {
+    const newReport = {data: {}};
+
+    const node = shallow(<ReportRenderer report={newReport} />);
+
+    expect(node).toMatchSnapshot();
+  });
+
   it('should instruct to add a process definition key if not available', () => {
     const newReport = {
       ...reportTemplate,
