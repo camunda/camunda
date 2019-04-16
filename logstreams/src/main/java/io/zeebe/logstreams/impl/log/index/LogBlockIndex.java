@@ -154,9 +154,9 @@ public class LogBlockIndex {
   }
 
   /**
-   * Deletes mappings up to {@code deletePosition} (including), with the exception of the last entry
-   * in the index, which will not be deleted. Therefore, this method should be used solely as a
-   * best-effort attempt to free-up disk space and not as a dependable delete operation.
+   * Deletes mappings up to {@code deletePosition}, with the exception of the last entry in the
+   * index, which will not be deleted. Therefore, this method should be used solely as a best-effort
+   * attempt to free-up disk space and not as a dependable delete operation.
    *
    * @param indexContext the log block index context
    * @param deletePosition the position up to which entries will be deleted

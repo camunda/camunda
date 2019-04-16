@@ -41,13 +41,16 @@ public class StorageConfigurationManager extends Actor {
   private final List<StorageConfiguration> configurations = new ArrayList<>();
 
   private final int[] partitionCountPerDataDirectory;
+  private final String indexBlockSize;
   private final List<String> directories;
   private final String segmentSize;
 
-  public StorageConfigurationManager(List<String> dataDirectories, String segmentSize) {
+  public StorageConfigurationManager(
+      List<String> dataDirectories, String segmentSize, final String indexBlockSize) {
     this.directories = dataDirectories;
     this.segmentSize = segmentSize;
     this.partitionCountPerDataDirectory = new int[dataDirectories.size()];
+    this.indexBlockSize = indexBlockSize;
   }
 
   @Override
@@ -141,7 +144,8 @@ public class StorageConfigurationManager extends Actor {
 
               storage
                   .setPartitionId(partitionId)
-                  .setLogSegmentSize(new ByteValue(segmentSize).toBytes());
+                  .setLogSegmentSize(new ByteValue(segmentSize).toBytes())
+                  .setIndexBlockSize(new ByteValue(indexBlockSize).toBytes());
 
               configurations.add(storage);
 

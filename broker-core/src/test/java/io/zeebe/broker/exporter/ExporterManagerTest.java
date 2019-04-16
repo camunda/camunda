@@ -119,7 +119,7 @@ public class ExporterManagerTest {
 
   public static class TestExporter extends DebugLogExporter {
 
-    static List<Record> records = new CopyOnWriteArrayList<>();
+    public static List<Record> records = new CopyOnWriteArrayList<>();
 
     private Controller controller;
 

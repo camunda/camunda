@@ -150,6 +150,9 @@
 # The default size of data segments.
 # defaultSegmentSize = "512M"
 
+# The size of block index segments.
+# indexBlockSize = "4M"
+
 # How often we take snapshots of streams (time unit)
 # snapshotPeriod = "15m"
 

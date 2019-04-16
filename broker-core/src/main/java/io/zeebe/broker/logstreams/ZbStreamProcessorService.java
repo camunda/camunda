@@ -104,6 +104,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
 
               return createTypedStreamProcessor(partitionId, streamEnvironment, zeebeState);
             })
+        .deleteDataOnSnapshot(true)
         .build();
   }
 

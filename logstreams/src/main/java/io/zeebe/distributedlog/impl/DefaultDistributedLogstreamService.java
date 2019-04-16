@@ -120,6 +120,7 @@ public class DefaultDistributedLogstreamService
         LogStreams.createFsLogStream(partitionId)
             .logDirectory(logDirectory.getAbsolutePath())
             .logSegmentSize((int) config.getLogSegmentSize())
+            .indexBlockSize((int) config.getIndexBlockSize())
             .logName(logServiceName)
             .serviceContainer(serviceContainer)
             .indexStateStorage(stateStorage)

@@ -75,6 +75,7 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
 
     protected MetadataFilter customEventFilter;
     private StreamProcessorFactory streamProcessorFactory;
+    private boolean enableDeleteData;
 
     public Builder(Partition partition, ServiceName<Partition> serviceName) {
       this.logStream = partition.getLogStream();
@@ -101,6 +102,11 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
       return this;
     }
 
+    public Builder deleteDataOnSnapshot(final boolean enabled) {
+      this.enableDeleteData = enabled;
+      return this;
+    }
+
     public ActorFuture<StreamProcessorService> build() {
       EnsureUtil.ensureNotNull("stream processor factory", streamProcessorFactory);
       EnsureUtil.ensureNotNullOrEmpty("processor name", processorName);
@@ -122,6 +128,7 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
           .eventFilter(eventFilter)
           .additionalDependencies(additionalDependencies)
           .streamProcessorFactory(streamProcessorFactory)
+          .deleteDataOnSnapshot(enableDeleteData)
           .build();
     }
   }
