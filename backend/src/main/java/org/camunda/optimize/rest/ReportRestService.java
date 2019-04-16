@@ -99,7 +99,7 @@ public class ReportRestService {
       reportService.updateSingleDecisionReportWithAuthorizationCheck(reportId, singleReportUpdate, userId, force);
     } else {
       final CombinedReportDefinitionDto combinedReportUpdate = (CombinedReportDefinitionDto) updatedReport;
-      reportService.updateCombinedProcessReportWithAuthorizationCheck(reportId, combinedReportUpdate, userId, force);
+      reportService.updateCombinedProcessReportWithAuthorizationCheck(reportId, combinedReportUpdate);
     }
   }
 

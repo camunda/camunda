@@ -6,49 +6,46 @@
 package org.camunda.optimize.service.dashboard;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
-import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
-import org.camunda.optimize.service.security.SharingService;
+import org.camunda.optimize.service.relations.DashboardRelationService;
+import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedHashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 
 @Component
-public class DashboardService {
+public class DashboardService implements ReportReferencingService {
 
   private static final Logger logger = LoggerFactory.getLogger(DashboardService.class);
 
   private DashboardWriter dashboardWriter;
   private DashboardReader dashboardReader;
-  private SharingService sharingService;
-  private CollectionService collectionService;
+
+  private DashboardRelationService dashboardRelationService;
 
   @Autowired
-  // to cover for circular dependencies
-  @Lazy
-  public DashboardService(DashboardWriter dashboardWriter, DashboardReader dashboardReader,
-                          SharingService sharingService, CollectionService collectionService) {
+  public DashboardService(DashboardWriter dashboardWriter,
+                          DashboardReader dashboardReader,
+                          DashboardRelationService dashboardRelationService) {
     this.dashboardWriter = dashboardWriter;
     this.dashboardReader = dashboardReader;
-    this.sharingService = sharingService;
-    this.collectionService = collectionService;
+    this.dashboardRelationService = dashboardRelationService;
   }
 
   public IdDto createNewDashboardAndReturnId(String userId) {
@@ -60,11 +57,11 @@ public class DashboardService {
     updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     updateDto.setOwner(updatedDashboard.getOwner());
     updateDto.setName(updatedDashboard.getName());
-      updateDto.setReports(updatedDashboard.getReports());
+    updateDto.setReports(updatedDashboard.getReports());
     updateDto.setLastModifier(userId);
     updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     dashboardWriter.updateDashboard(updateDto, updatedDashboard.getId());
-    sharingService.adjustDashboardShares(updatedDashboard);
+    dashboardRelationService.handleUpdated(updatedDashboard.getId(), updatedDashboard);
   }
 
   public List<DashboardDefinitionDto> getDashboardDefinitions() {
@@ -91,9 +88,9 @@ public class DashboardService {
         throw new OptimizeConflictException(conflictedItems);
       }
     }
-
+    final DashboardDefinitionDto dashboardDefinition = getDashboardDefinition(dashboardId);
     dashboardWriter.deleteDashboard(dashboardId);
-    collectionService.removeEntityFromCollection(dashboardId);
+    dashboardRelationService.handleDeleted(dashboardDefinition);
   }
 
   public ConflictResponseDto getDashboardDeleteConflictingItems(String dashboardId) {
@@ -101,17 +98,32 @@ public class DashboardService {
   }
 
   private Set<ConflictedItemDto> getConflictedItemsForDeleteDashboard(String dashboardId) {
-    return new LinkedHashSet<>(
-      mapCollectionsToConflictingItems(
-        collectionService.findFirstCollectionsForEntity(dashboardId))
-    );
+    return dashboardRelationService.getConflictedItemsForDelete(getDashboardDefinition(dashboardId));
   }
 
-  private Set<ConflictedItemDto> mapCollectionsToConflictingItems(List<SimpleCollectionDefinitionDto> collections) {
-    return collections.stream()
-      .map(collection -> new ConflictedItemDto(
-        collection.getId(), ConflictedItemType.COLLECTION, collection.getName()
+  @Override
+  public Set<ConflictedItemDto> getConflictedItemsForReportDelete(final ReportDefinitionDto reportDefinition) {
+    return findFirstDashboardsForReport(reportDefinition.getId()).stream()
+      .map(dashboardDefinitionDto -> new ConflictedItemDto(
+        dashboardDefinitionDto.getId(), ConflictedItemType.DASHBOARD, dashboardDefinitionDto.getName()
       ))
       .collect(Collectors.toSet());
+  }
+
+  @Override
+  public void handleReportDeleted(final ReportDefinitionDto reportDefinition) {
+    removeReportFromDashboards(reportDefinition.getId());
+  }
+
+  @Override
+  public Set<ConflictedItemDto> getConflictedItemsForReportUpdate(final ReportDefinitionDto currentDefinition,
+                                                                  final ReportDefinitionDto updateDefinition) {
+    // NOOP
+    return Collections.emptySet();
+  }
+
+  @Override
+  public void handleReportUpdated(final String id, final ReportDefinitionDto updateDefinition) {
+    //NOOP
   }
 }

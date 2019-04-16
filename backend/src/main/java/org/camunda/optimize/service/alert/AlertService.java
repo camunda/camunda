@@ -18,9 +18,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
+import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.writer.AlertWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -43,13 +46,15 @@ import javax.annotation.PreDestroy;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
 @Component
-public class AlertService {
+public class AlertService implements ReportReferencingService {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
@@ -120,7 +125,7 @@ public class AlertService {
       logger.error("Couldn't initialize alert scheduling.", e);
       try {
         destroy();
-      } catch (Exception destroyException){
+      } catch (Exception destroyException) {
         logger.error("Failed destroying alertService", destroyException);
       }
       throw new RuntimeException(e);
@@ -145,6 +150,7 @@ public class AlertService {
     check.setEnabled(configurationService.getEmailEnabled());
     return check;
   }
+
 
   private List<Trigger> createReminderTriggers(Map<AlertDefinitionDto, JobDetail> reminderDetails) {
     List<Trigger> triggers = new ArrayList<>();
@@ -337,20 +343,20 @@ public class AlertService {
   public void deleteAlertsIfNeeded(String reportId, ReportDefinitionDto reportDefinition) {
     if (reportDefinition instanceof SingleProcessReportDefinitionDto) {
       SingleProcessReportDefinitionDto singleReport = (SingleProcessReportDefinitionDto) reportDefinition;
-      if (!validateIfProcessReportIsSuitableForAlert(singleReport)) {
+      if (!validateIfReportIsSuitableForAlert(singleReport)) {
         this.deleteAlertsForReport(reportId);
       }
     }
   }
 
-  public boolean validateIfProcessReportIsSuitableForAlert(SingleProcessReportDefinitionDto report) {
+  public boolean validateIfReportIsSuitableForAlert(SingleProcessReportDefinitionDto report) {
     final ProcessReportDataDto data = report.getData();
     return data != null && data.getGroupBy() != null
       && ProcessGroupByType.NONE.equals(data.getGroupBy().getType())
       && ProcessVisualization.NUMBER.equals(data.getVisualization());
   }
 
-  public boolean validateIfDecisionReportIsSuitableForAlert(SingleDecisionReportDefinitionDto report) {
+  public boolean validateIfReportIsSuitableForAlert(SingleDecisionReportDefinitionDto report) {
     final DecisionReportDataDto data = report.getData();
     return data != null && data.getGroupBy() != null
       && DecisionGroupByType.NONE.equals(data.getGroupBy().getType())
@@ -365,4 +371,46 @@ public class AlertService {
     return this.alertCheckJobFactory.createTrigger(fakeReportAlert, jobDetail);
   }
 
+
+  @Override
+  public Set<ConflictedItemDto> getConflictedItemsForReportDelete(final ReportDefinitionDto reportDefinition) {
+    return mapAlertsToConflictingItems(findFirstAlertsForReport(reportDefinition.getId()));
+  }
+
+  @Override
+  public void handleReportDeleted(final ReportDefinitionDto reportDefinition) {
+    deleteAlertsForReport(reportDefinition.getId());
+  }
+
+  @Override
+  public Set<ConflictedItemDto> getConflictedItemsForReportUpdate(ReportDefinitionDto currentDefinition,
+                                                                  ReportDefinitionDto updateDefinition) {
+    final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
+
+    if (currentDefinition instanceof SingleProcessReportDefinitionDto) {
+      if (validateIfReportIsSuitableForAlert((SingleProcessReportDefinitionDto) currentDefinition)
+        && !validateIfReportIsSuitableForAlert((SingleProcessReportDefinitionDto) updateDefinition)) {
+        conflictedItems.addAll(mapAlertsToConflictingItems(findFirstAlertsForReport(currentDefinition.getId())));
+      }
+    } else if (currentDefinition instanceof SingleDecisionReportDefinitionDto) {
+      if (validateIfReportIsSuitableForAlert((SingleDecisionReportDefinitionDto) currentDefinition)
+        && !validateIfReportIsSuitableForAlert((SingleDecisionReportDefinitionDto) updateDefinition)) {
+        conflictedItems.addAll(mapAlertsToConflictingItems(findFirstAlertsForReport(currentDefinition.getId())));
+      }
+    }
+
+    return conflictedItems;
+  }
+
+  @Override
+  public void handleReportUpdated(final String id, final ReportDefinitionDto updateDefinition) {
+    deleteAlertsIfNeeded(id, updateDefinition);
+  }
+
+
+  private Set<ConflictedItemDto> mapAlertsToConflictingItems(List<AlertDefinitionDto> alertsForReport) {
+    return alertsForReport.stream()
+      .map(alertDto -> new ConflictedItemDto(alertDto.getId(), ConflictedItemType.ALERT, alertDto.getName()))
+      .collect(Collectors.toSet());
+  }
 }

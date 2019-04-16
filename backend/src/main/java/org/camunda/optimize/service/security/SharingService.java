@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.SharingReader;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
@@ -20,6 +21,8 @@ import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.es.writer.SharingWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
+import org.camunda.optimize.service.relations.DashboardReferencingService;
+import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.slf4j.Logger;
@@ -29,32 +32,35 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
-public class SharingService {
+public class SharingService implements ReportReferencingService, DashboardReferencingService {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired
   private SharingWriter sharingWriter;
-
-  @Autowired
   private SharingReader sharingReader;
-
-  @Autowired
+  private PlainReportEvaluationHandler reportEvaluationHandler;
+  private DashboardService dashboardService;
   private ReportService reportService;
 
   @Autowired
-  private PlainReportEvaluationHandler reportEvaluationHandler;
-
-  @Autowired
-  private DashboardService dashboardService;
-
-  @Autowired
-  private SessionService sessionService;
+  public SharingService(final SharingWriter sharingWriter,
+                        final SharingReader sharingReader,
+                        final PlainReportEvaluationHandler reportEvaluationHandler,
+                        final ReportService reportService,
+                        final DashboardService dashboardService) {
+    this.sharingWriter = sharingWriter;
+    this.sharingReader = sharingReader;
+    this.reportService = reportService;
+    this.reportEvaluationHandler = reportEvaluationHandler;
+    this.dashboardService = dashboardService;
+  }
 
   public IdDto createNewReportShareIfAbsent(ReportShareDto createSharingDto, String userId) {
     validateAndCheckAuthorization(createSharingDto, userId);
@@ -68,6 +74,52 @@ public class SharingService {
         return idDto;
       })
       .orElseGet(() -> createNewReportShare(createSharingDto));
+  }
+
+  @Override
+  public Set<ConflictedItemDto> getConflictedItemsForReportDelete(final ReportDefinitionDto reportDefinition) {
+    //NOOP
+    return Collections.emptySet();
+  }
+
+  @Override
+  public void handleReportDeleted(final ReportDefinitionDto reportDefinition) {
+    deleteShareForReport(reportDefinition.getId());
+  }
+
+  @Override
+  public Set<ConflictedItemDto> getConflictedItemsForReportUpdate(final ReportDefinitionDto currentDefinition,
+                                                                  final ReportDefinitionDto updateDefinition) {
+    //NOOP
+    return Collections.emptySet();
+  }
+
+  @Override
+  public void handleReportUpdated(final String id, final ReportDefinitionDto updateDefinition) {
+    //NOOP
+  }
+
+  @Override
+  public Set<ConflictedItemDto> getConflictedItemsForDashboardDelete(final DashboardDefinitionDto definition) {
+    //NOOP
+    return Collections.emptySet();
+  }
+
+  @Override
+  public void handleDashboardDeleted(final DashboardDefinitionDto definition) {
+    deleteShareForDashboard(definition.getId());
+  }
+
+  @Override
+  public Set<ConflictedItemDto> getConflictedItemsForDashboardUpdate(final DashboardDefinitionDto currentDefinition,
+                                                                     final DashboardDefinitionDto updateDefinition) {
+    //NOOP
+    return Collections.emptySet();
+  }
+
+  @Override
+  public void handleDashboardUpdated(final String id, final DashboardDefinitionDto updateDefinition) {
+    adjustDashboardShares(updateDefinition);
   }
 
   private IdDto createNewReportShare(ReportShareDto createSharingDto) {
@@ -107,6 +159,7 @@ public class SharingService {
     try {
       DashboardDefinitionDto dashboardDefinition =
         dashboardService.getDashboardDefinition(dashboardId);
+
       List<String> authorizedReportIds = reportService
         .findAndFilterReports(userId)
         .stream()
@@ -210,10 +263,14 @@ public class SharingService {
   }
 
   public void deleteShareForReport(String reportId) {
-    Optional<ReportShareDto> share = findShareForReport(reportId);
-    share.ifPresent(dto -> this.deleteReportShare(dto.getId()));
+    findShareForReport(reportId)
+      .ifPresent(dto -> this.deleteReportShare(dto.getId()));
   }
 
+  public void deleteShareForDashboard(String dashboardId) {
+    findShareForDashboard(dashboardId)
+      .ifPresent(dto -> this.deleteDashboardShare(dto.getId()));
+  }
 
   public Optional<ReportShareDto> findShareForReport(String resourceId) {
     return sharingReader.findShareForReport(resourceId);
@@ -264,4 +321,5 @@ public class SharingService {
 
     return result;
   }
+
 }

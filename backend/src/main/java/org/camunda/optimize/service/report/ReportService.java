@@ -6,9 +6,6 @@
 package org.camunda.optimize.service.report;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -25,9 +22,6 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
-import org.camunda.optimize.service.alert.AlertService;
-import org.camunda.optimize.service.collection.CollectionService;
-import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
@@ -35,8 +29,8 @@ import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
-import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,29 +51,24 @@ public class ReportService {
 
   private final static Logger logger = LoggerFactory.getLogger(ReportService.class);
 
-  @Autowired
   private ReportWriter reportWriter;
-
-  @Autowired
   private ReportReader reportReader;
-
-  @Autowired
   private AuthorizationCheckReportEvaluationHandler reportEvaluator;
-
-  @Autowired
-  private AlertService alertService;
-
-  @Autowired
-  private SharingService sharingService;
-
-  @Autowired
-  private DashboardService dashboardService;
-
-  @Autowired
-  private CollectionService collectionService;
-
-  @Autowired
   private DefinitionAuthorizationService authorizationService;
+  private ReportRelationService reportRelationService;
+
+  @Autowired
+  public ReportService(final ReportWriter reportWriter,
+                       final ReportReader reportReader,
+                       final AuthorizationCheckReportEvaluationHandler reportEvaluator,
+                       final DefinitionAuthorizationService authorizationService,
+                       final ReportRelationService reportRelationService) {
+    this.reportWriter = reportWriter;
+    this.reportReader = reportReader;
+    this.reportEvaluator = reportEvaluator;
+    this.authorizationService = authorizationService;
+    this.reportRelationService = reportRelationService;
+  }
 
   public ConflictResponseDto getReportDeleteConflictingItemsWithAuthorizationCheck(String userId, String reportId) {
     ReportDefinitionDto currentReportVersion = getReportWithAuthorizationCheck(reportId, userId);
@@ -104,42 +93,23 @@ public class ReportService {
     }
 
     if (!reportDefinition.getCombined()) {
-      alertService.deleteAlertsForReport(reportId);
-      sharingService.deleteShareForReport(reportId);
       reportWriter.removeSingleReportFromCombinedReports(reportId);
       reportWriter.deleteSingleReport(reportId);
     } else {
       reportWriter.deleteCombinedReport(reportId);
     }
-    dashboardService.removeReportFromDashboards(reportId);
-    collectionService.removeEntityFromCollection(reportId);
+
+    reportRelationService.handleDeleted(reportDefinition);
   }
 
   private Set<ConflictedItemDto> getConflictedItemsForDeleteReport(ReportDefinitionDto reportDefinition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
-
-    final String reportId = reportDefinition.getId();
     if (!reportDefinition.getCombined()) {
       conflictedItems.addAll(
-        mapAlertsToConflictingItems(alertService.findFirstAlertsForReport(reportId))
-      );
-      conflictedItems.addAll(
-        mapCombinedReportsToConflictingItems(reportReader.findFirstCombinedReportsForSimpleReport(reportId))
-      );
-      conflictedItems.addAll(
-        mapDashboardsToConflictingItems(dashboardService.findFirstDashboardsForReport(reportId))
-      );
-      conflictedItems.addAll(
-        mapCollectionsToConflictingItems(collectionService.findFirstCollectionsForEntity(reportId))
-      );
-    } else {
-      conflictedItems.addAll(
-        mapDashboardsToConflictingItems(dashboardService.findFirstDashboardsForReport(reportId))
-      );
-      conflictedItems.addAll(
-        mapCollectionsToConflictingItems(collectionService.findFirstCollectionsForEntity(reportId))
+        mapCombinedReportsToConflictingItems(reportReader.findFirstCombinedReportsForSimpleReport(reportDefinition.getId()))
       );
     }
+    conflictedItems.addAll(reportRelationService.getConflictedItemsForDeleteReport(reportDefinition));
     return conflictedItems;
   }
 
@@ -156,9 +126,7 @@ public class ReportService {
   }
 
   public void updateCombinedProcessReportWithAuthorizationCheck(String reportId,
-                                                                CombinedReportDefinitionDto updatedReport,
-                                                                String userId,
-                                                                boolean force) {
+                                                                CombinedReportDefinitionDto updatedReport) {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
 
     final CombinedProcessReportDefinitionUpdateDto reportUpdate = convertToCombinedProcessReportUpdate(updatedReport);
@@ -204,7 +172,7 @@ public class ReportService {
     }
 
     reportWriter.updateSingleProcessReport(reportUpdate);
-    alertService.deleteAlertsIfNeeded(reportId, updatedReport);
+    reportRelationService.handleUpdated(reportId, updatedReport);
 
     if (semanticsForCombinedReportChanged(currentReportVersion, updatedReport)) {
       reportWriter.removeSingleReportFromCombinedReports(reportId);
@@ -226,7 +194,7 @@ public class ReportService {
     }
 
     reportWriter.updateSingleDecisionReport(reportUpdate);
-    alertService.deleteAlertsIfNeeded(reportId, updatedReport);
+    reportRelationService.handleUpdated(reportId, updatedReport);
   }
 
   private void checkForUpdateConflictsOnSingleProcessDefinition(SingleProcessReportDefinitionDto currentReportVersion,
@@ -242,10 +210,9 @@ public class ReportService {
       );
     }
 
-    if (alertService.validateIfProcessReportIsSuitableForAlert(currentReportVersion)
-      && !alertService.validateIfProcessReportIsSuitableForAlert(reportUpdateDto)) {
-      conflictedItems.addAll(mapAlertsToConflictingItems(alertService.findFirstAlertsForReport(reportId)));
-    }
+    conflictedItems.addAll(
+      reportRelationService.getConflictedItemsForUpdatedReport(currentReportVersion, reportUpdateDto)
+    );
 
     if (!conflictedItems.isEmpty()) {
       throw new OptimizeConflictException(conflictedItems);
@@ -255,14 +222,10 @@ public class ReportService {
   private void checkForUpdateConflictsOnSingleDecisionDefinition(SingleDecisionReportDefinitionDto currentReportVersion,
                                                                  SingleDecisionReportDefinitionDto reportUpdateDto) throws
                                                                                                                     OptimizeConflictException {
-    final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
-
-    final String reportId = currentReportVersion.getId();
-
-    if (alertService.validateIfDecisionReportIsSuitableForAlert(currentReportVersion)
-      && !alertService.validateIfDecisionReportIsSuitableForAlert(reportUpdateDto)) {
-      conflictedItems.addAll(mapAlertsToConflictingItems(alertService.findFirstAlertsForReport(reportId)));
-    }
+    final Set<ConflictedItemDto> conflictedItems = reportRelationService.getConflictedItemsForUpdatedReport(
+      currentReportVersion,
+      reportUpdateDto
+    );
 
     if (!conflictedItems.isEmpty()) {
       throw new OptimizeConflictException(conflictedItems);
@@ -395,22 +358,6 @@ public class ReportService {
     return reportEvaluator.evaluateReport(userId, reportDefinition);
   }
 
-  private Set<ConflictedItemDto> mapCollectionsToConflictingItems(List<SimpleCollectionDefinitionDto> collections) {
-    return collections.stream()
-      .map(collection -> new ConflictedItemDto(
-        collection.getId(), ConflictedItemType.COLLECTION, collection.getName()
-      ))
-      .collect(Collectors.toSet());
-  }
-
-  private Set<ConflictedItemDto> mapDashboardsToConflictingItems(List<DashboardDefinitionDto> dashboardDtos) {
-    return dashboardDtos.stream()
-      .map(dashboardDefinitionDto -> new ConflictedItemDto(
-        dashboardDefinitionDto.getId(), ConflictedItemType.DASHBOARD, dashboardDefinitionDto.getName()
-      ))
-      .collect(Collectors.toSet());
-  }
-
   private Set<ConflictedItemDto> mapCombinedReportsToConflictingItems(List<CombinedReportDefinitionDto> combinedReportDtos) {
     return combinedReportDtos.stream()
       .map(combinedReportDto -> new ConflictedItemDto(
@@ -418,11 +365,4 @@ public class ReportService {
       ))
       .collect(Collectors.toSet());
   }
-
-  private Set<ConflictedItemDto> mapAlertsToConflictingItems(List<AlertDefinitionDto> alertsForReport) {
-    return alertsForReport.stream()
-      .map(alertDto -> new ConflictedItemDto(alertDto.getId(), ConflictedItemType.ALERT, alertDto.getName()))
-      .collect(Collectors.toSet());
-  }
-
 }
