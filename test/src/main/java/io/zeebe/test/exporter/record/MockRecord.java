@@ -62,16 +62,6 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
   }
 
   @Override
-  public int getRaftTerm() {
-    return raftTerm;
-  }
-
-  public MockRecord setRaftTerm(int raftTerm) {
-    this.raftTerm = raftTerm;
-    return this;
-  }
-
-  @Override
   public long getSourceRecordPosition() {
     return sourceRecordPosition;
   }
@@ -164,7 +154,6 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
 
     final MockRecord record = (MockRecord) o;
     return getPosition() == record.getPosition()
-        && getRaftTerm() == record.getRaftTerm()
         && getSourceRecordPosition() == record.getSourceRecordPosition()
         && getProducerId() == record.getProducerId()
         && getKey() == record.getKey()
@@ -177,7 +166,6 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
   public int hashCode() {
     return Objects.hash(
         getPosition(),
-        getRaftTerm(),
         getSourceRecordPosition(),
         getProducerId(),
         getKey(),

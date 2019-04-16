@@ -19,12 +19,12 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -292,9 +292,9 @@ public class StreamProcessorReprocessingTest {
         .extracting(LoggedEvent::getPosition)
         .containsOnly(eventPosition1, eventPosition2);
 
-    verify(streamProcessor, times(2)).onEvent(any());
-    verify(dbContext, atLeast(3)).getCurrentTransaction();
-    verify(eventProcessor, times(3)).processEvent();
+    verify(streamProcessor, timeout(500).times(2)).onEvent(any());
+    verify(dbContext, timeout(500).atLeast(3)).getCurrentTransaction();
+    verify(eventProcessor, timeout(500).times(3)).processEvent();
   }
 
   @Test
@@ -410,37 +410,6 @@ public class StreamProcessorReprocessingTest {
 
     // then
     verify(streamProcessor, times(1)).onRecovered();
-  }
-
-  @Test
-  public void shouldNotReprocessEventsIfReadOnly() {
-    final StreamProcessorBuilder builder =
-        LogStreams.createStreamProcessor("read-only", PROCESSOR_ID)
-            .logStream(logStreamRule.getLogStream())
-            .snapshotController(stateSnapshotController)
-            .streamProcessorFactory((zeebeDb1, dbContext) -> createStreamProcessor(zeebeDb1))
-            .actorScheduler(logStreamRule.getActorScheduler())
-            .serviceContainer(logStreamRule.getServiceContainer())
-            .readOnly(true);
-
-    // given [1|S:-] --> [2|S:1]
-    final long eventPosition1 = writeEvent();
-    final long eventPosition2 =
-        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
-
-    // when
-    builder.build().join();
-
-    waitUntil(() -> streamProcessor.getProcessedEventCount() == 2);
-
-    // then
-    assertThat(streamProcessor.getEvents())
-        .extracting(LoggedEvent::getPosition)
-        .containsExactly(eventPosition1, eventPosition2);
-
-    verify(eventProcessor, times(2)).processEvent();
-    verify(eventProcessor, times(2)).executeSideEffects();
-    verify(eventProcessor, times(2)).writeEvent(any());
   }
 
   @Test
@@ -562,8 +531,7 @@ public class StreamProcessorReprocessingTest {
         w -> {
           w.key(-1).value(EVENT);
           wr.accept(w);
-        },
-        true);
+        });
   }
 
   private void waitUntilProcessedAndFailedCountReached(int processCount, int failedCount) {

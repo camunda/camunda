@@ -18,9 +18,7 @@ package io.zeebe.logstreams.impl;
 import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,28 +37,22 @@ public class LogStorageAppender extends Actor {
   private long commitPosition;
 
   private final String name;
-  private final LogStorage logStorage;
   private final Subscription writeBufferSubscription;
-  private final ActorConditions logStorageAppendConditions;
 
-  private Runnable peekedBlockHandler = this::appendBlock;
-  private int maxAppendBlockSize;
+  private final Runnable peekedBlockHandler = this::appendBlock;
+  private final int maxAppendBlockSize;
 
   private final DistributedLogstreamPartition distributedLog;
 
   public LogStorageAppender(
       String name,
-      LogStorage logStorage,
       DistributedLogstreamPartition distributedLog,
       Subscription writeBufferSubscription,
-      int maxBlockSize,
-      ActorConditions logStorageAppendConditions) {
+      int maxBlockSize) {
     this.name = name;
-    this.logStorage = logStorage;
     this.distributedLog = distributedLog;
     this.writeBufferSubscription = writeBufferSubscription;
     this.maxAppendBlockSize = maxBlockSize;
-    this.logStorageAppendConditions = logStorageAppendConditions;
   }
 
   @Override
@@ -126,12 +118,6 @@ public class LogStorageAppender extends Actor {
       remaining = buffer.length - bufferOffset;
     }
     return lastEventPosition;
-  }
-
-  private void discardBlock() {
-    blockPeek.markFailed();
-    // continue with next block
-    actor.yield();
   }
 
   public ActorFuture<Void> close() {

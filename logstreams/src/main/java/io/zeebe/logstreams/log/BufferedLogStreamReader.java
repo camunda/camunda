@@ -43,7 +43,6 @@ public class BufferedLogStreamReader implements LogStreamReader {
       new CompleteEventsInBlockProcessor();
 
   // wrapped logstream
-  private LogStream logStream;
   private LogStorage logStorage;
   private LogBlockIndex logBlockIndex;
   private LogBlockIndexContext indexContext;
@@ -51,16 +50,16 @@ public class BufferedLogStreamReader implements LogStreamReader {
   // state
   private IteratorState state;
   private long nextLogStorageReadAddress;
-  private LoggedEventImpl nextEvent = new LoggedEventImpl();
+  private final LoggedEventImpl nextEvent = new LoggedEventImpl();
   // event returned to caller (important: has to be preserved even after compact/buffer resize)
-  private LoggedEventImpl returnedEvent = new LoggedEventImpl();
+  private final LoggedEventImpl returnedEvent = new LoggedEventImpl();
 
   // buffer
   private final BufferAllocator bufferAllocator = new DirectBufferAllocator();
   private AllocatedBuffer allocatedBuffer;
   private ByteBuffer byteBuffer;
   private int bufferOffset;
-  private DirectBuffer directBuffer = new UnsafeBuffer(0, 0);
+  private final DirectBuffer directBuffer = new UnsafeBuffer(0, 0);
 
   public BufferedLogStreamReader(final LogStream logStream) {
     this();
@@ -78,7 +77,6 @@ public class BufferedLogStreamReader implements LogStreamReader {
 
   @Override
   public void wrap(final LogStream log, final long position) {
-    logStream = log;
     wrap(log.getLogStorage(), log.getLogBlockIndex(), position);
   }
 
@@ -165,7 +163,6 @@ public class BufferedLogStreamReader implements LogStreamReader {
       directBuffer.wrap(0, 0);
       bufferOffset = 0;
 
-      logStream = null;
       logStorage = null;
       logBlockIndex = null;
 

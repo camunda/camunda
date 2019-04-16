@@ -70,11 +70,6 @@ public class RecordingExporterTest {
     }
 
     @Override
-    public int getRaftTerm() {
-      return 0;
-    }
-
-    @Override
     public long getSourceRecordPosition() {
       return 0;
     }

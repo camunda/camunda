@@ -158,9 +158,6 @@ public class DefaultDistributedLogstreamService
     final ByteBuffer buffer = ByteBuffer.wrap(blockBuffer);
     final long appendResult = logStorage.append(buffer);
     if (appendResult > 0) {
-      // TODO: (https://github.com/zeebe-io/zeebe/issues/2058)
-      logStream.signalOnAppendCondition();
-      // Commit position may be not required anymore. https://github.com/zeebe-io/zeebe/issues/2058.
       // Following is required to trigger the commit listeners.
       logStream.setCommitPosition(commitPosition);
       lastPosition = commitPosition;

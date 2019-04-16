@@ -147,7 +147,7 @@ public class StreamProcessorControllerTest {
         });
 
     // when
-    writer.writeEvent(EVENT_1, true);
+    writer.writeEvent(EVENT_1);
     latch.await();
     streamProcessorController.closeAsync().join();
 
@@ -237,8 +237,8 @@ public class StreamProcessorControllerTest {
     // return null as event processor for first event
     changeMockInActorContext(
         () -> doReturn(null).doCallRealMethod().when(streamProcessor).onEvent(any()));
-    writer.writeEvent(EVENT_1, true);
-    final long secondEventPosition = writer.writeEvent(EVENT_2, true);
+    writer.writeEvent(EVENT_1);
+    final long secondEventPosition = writer.writeEvent(EVENT_2);
 
     // then
     waitUntil(() -> streamProcessor.getEvents().size() == 1);
@@ -255,8 +255,8 @@ public class StreamProcessorControllerTest {
   public void shouldSkipEventIfEventFilterIsNotMet() {
     // when
     changeMockInActorContext(() -> when(eventFilter.applies(any())).thenReturn(false, true));
-    writer.writeEvent(EVENT_1, true);
-    final long secondEventPosition = writer.writeEvent(EVENT_2, true);
+    writer.writeEvent(EVENT_1);
+    final long secondEventPosition = writer.writeEvent(EVENT_2);
 
     // then
     waitUntil(() -> streamProcessor.getEvents().size() == 1);
@@ -278,7 +278,7 @@ public class StreamProcessorControllerTest {
     assertThat(streamProcessorController.isSuspended()).isTrue();
 
     // when
-    writer.writeEvent(EVENT_1, true);
+    writer.writeEvent(EVENT_1);
     streamProcessor.resume();
 
     // then
@@ -352,7 +352,7 @@ public class StreamProcessorControllerTest {
                     })
                 .when(eventProcessor)
                 .executeSideEffects());
-    writer.writeEvent(EVENT_1, true);
+    writer.writeEvent(EVENT_1);
 
     waitUntil(() -> invocations.get() >= 1);
 
@@ -379,7 +379,7 @@ public class StreamProcessorControllerTest {
                     })
                 .when(eventProcessor)
                 .writeEvent(any()));
-    writer.writeEvent(EVENT_1, true);
+    writer.writeEvent(EVENT_1);
 
     waitUntil(() -> invocations.get() >= 1);
 
@@ -524,7 +524,7 @@ public class StreamProcessorControllerTest {
                 .onEvent(any()));
 
     // when
-    writer.writeEvents(3, EVENT_1, true);
+    writer.writeEvents(3, EVENT_1);
 
     // then
     waitUntil(() -> count.get() == 3);
@@ -563,7 +563,7 @@ public class StreamProcessorControllerTest {
                 .processEvent());
 
     // when
-    writer.writeEvents(3, EVENT_1, true);
+    writer.writeEvents(3, EVENT_1);
 
     // then
     waitUntil(() -> count.get() == 3);
@@ -593,7 +593,7 @@ public class StreamProcessorControllerTest {
                     })
                 .when(eventProcessor)
                 .executeSideEffects());
-    writer.writeEvents(2, EVENT_1, true);
+    writer.writeEvents(2, EVENT_1);
 
     // then
     latch.await();
@@ -623,7 +623,7 @@ public class StreamProcessorControllerTest {
                 .writeEvent(any()));
     changeMockInActorContext(
         () -> doThrow(new RuntimeException("expected")).when(eventProcessor).executeSideEffects());
-    writer.writeEvents(2, EVENT_1, true);
+    writer.writeEvents(2, EVENT_1);
 
     // then
     latch.await();
@@ -654,7 +654,7 @@ public class StreamProcessorControllerTest {
                     })
                 .when(eventProcessor)
                 .writeEvent(any()));
-    writer.writeEvents(2, EVENT_1, true);
+    writer.writeEvents(2, EVENT_1);
 
     // then
     latch.await();
@@ -670,59 +670,6 @@ public class StreamProcessorControllerTest {
     inOrder.verify(eventProcessor, timeout(500L).times(1)).writeEvent(any());
     inOrder.verify(eventProcessor, timeout(500L).times(1)).executeSideEffects();
     inOrder.verifyNoMoreInteractions();
-  }
-
-  @Test
-  public void shouldFailToWriteEventIfReadOnly() throws Exception {
-    // when
-    final CountDownLatch latch = new CountDownLatch(1);
-    streamProcessorController.closeAsync().join();
-
-    streamProcessorController =
-        LogStreams.createStreamProcessor("read-only", PROCESSOR_ID)
-            .logStream(logStreamRule.getLogStream())
-            .actorScheduler(logStreamRule.getActorScheduler())
-            .serviceContainer(logStreamRule.getServiceContainer())
-            .snapshotController(snapshotController)
-            .streamProcessorFactory(this::createStreamProcessor)
-            .readOnly(true)
-            .build()
-            .join()
-            .getController();
-
-    // given
-    changeMockInActorContext(
-        () ->
-            when(eventProcessor.writeEvent(any()))
-                .thenAnswer(
-                    inv -> {
-                      final LogStreamRecordWriter writer = inv.getArgument(0);
-
-                      return writer.key(2L).metadata(wrapString("META")).value(EVENT_2).tryWrite();
-                    }));
-
-    changeMockInActorContext(
-        () ->
-            doAnswer(
-                    invocationOnMock -> {
-                      latch.countDown();
-                      return invocationOnMock.callRealMethod();
-                    })
-                .when(eventProcessor)
-                .onError(any()));
-
-    // when
-    writer.writeEvent(EVENT_1, true);
-
-    // then
-    latch.await();
-
-    final InOrder inOrder = inOrder(eventProcessor);
-    inOrder.verify(eventProcessor, times(1)).processEvent();
-    inOrder.verify(eventProcessor, times(1)).writeEvent(any());
-    // loop
-    inOrder.verify(eventProcessor, times(1)).onError(any(RuntimeException.class));
-    inOrder.verify(eventProcessor, times(1)).writeEvent(any());
   }
 
   private void installStreamProcessorService() throws IOException {
@@ -783,7 +730,7 @@ public class StreamProcessorControllerTest {
     final int beforeProcessed = streamProcessor.getProcessedEventCount();
     final int beforeFailed = streamProcessor.getProcessingFailedCount();
 
-    final long eventPosition = writer.writeEvent(event, true);
+    final long eventPosition = writer.writeEvent(event);
 
     waitUntilProcessedOrFailed(beforeProcessed, beforeFailed);
     return eventPosition;
@@ -799,7 +746,7 @@ public class StreamProcessorControllerTest {
   private long writeEventAndWaitUntilProcessed(DirectBuffer event) {
     final int before = streamProcessor.getProcessedEventCount();
 
-    final long eventPosition = writer.writeEvent(event, true);
+    final long eventPosition = writer.writeEvent(event);
 
     waitUntil(() -> streamProcessor.getProcessedEventCount() >= before + 1);
     return eventPosition;

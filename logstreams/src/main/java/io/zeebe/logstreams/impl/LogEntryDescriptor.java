@@ -67,8 +67,6 @@ public class LogEntryDescriptor {
 
   public static final int POSITION_OFFSET;
 
-  public static final int RAFT_TERM_OFFSET;
-
   public static final int PRODUCER_ID_OFFSET;
 
   public static final int SOURCE_EVENT_POSITION_OFFSET;
@@ -94,9 +92,6 @@ public class LogEntryDescriptor {
 
     POSITION_OFFSET = offset;
     offset += SIZE_OF_LONG;
-
-    RAFT_TERM_OFFSET = offset;
-    offset += SIZE_OF_INT;
 
     PRODUCER_ID_OFFSET = offset;
     offset += SIZE_OF_INT;
@@ -133,10 +128,6 @@ public class LogEntryDescriptor {
     return POSITION_OFFSET + offset;
   }
 
-  public static int raftTermOffset(final int offset) {
-    return RAFT_TERM_OFFSET + offset;
-  }
-
   public static long getPosition(final DirectBuffer buffer, final int offset) {
     return buffer.getLong(positionOffset(messageOffset(offset)), Protocol.ENDIANNESS);
   }
@@ -144,15 +135,6 @@ public class LogEntryDescriptor {
   public static void setPosition(
       final MutableDirectBuffer buffer, final int offset, final long position) {
     buffer.putLong(positionOffset(offset), position, Protocol.ENDIANNESS);
-  }
-
-  public static int getRaftTerm(final DirectBuffer buffer, final int offset) {
-    return buffer.getInt(raftTermOffset(offset), Protocol.ENDIANNESS);
-  }
-
-  public static void setRaftTerm(
-      final MutableDirectBuffer buffer, final int offset, final int raftTerm) {
-    buffer.putInt(raftTermOffset(offset), raftTerm, Protocol.ENDIANNESS);
   }
 
   public static int producerIdOffset(final int offset) {

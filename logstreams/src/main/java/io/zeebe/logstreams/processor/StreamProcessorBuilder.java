@@ -18,7 +18,6 @@ package io.zeebe.logstreams.processor;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.DisabledLogStreamWriter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -44,12 +43,10 @@ public class StreamProcessorBuilder {
   protected Duration snapshotPeriod;
   protected SnapshotController snapshotController;
 
-  protected LogStreamReader logStreamReader;
+  private LogStreamReader logStreamReader;
   protected LogStreamRecordWriter logStreamWriter;
 
-  protected EventFilter eventFilter;
-
-  protected boolean readOnly;
+  private EventFilter eventFilter;
 
   protected ServiceContainer serviceContainer;
   private List<ServiceName<?>> additionalDependencies;
@@ -104,11 +101,6 @@ public class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder readOnly(boolean readOnly) {
-    this.readOnly = readOnly;
-    return this;
-  }
-
   public StreamProcessorBuilder serviceContainer(ServiceContainer serviceContainer) {
     this.serviceContainer = serviceContainer;
     return this;
@@ -160,7 +152,6 @@ public class StreamProcessorBuilder {
     ctx.setActorScheduler(actorScheduler);
 
     ctx.setEventFilter(eventFilter);
-    ctx.setReadOnly(readOnly);
 
     if (snapshotPeriod == null) {
       snapshotPeriod = Duration.ofMinutes(1);
@@ -173,11 +164,7 @@ public class StreamProcessorBuilder {
     logStreamReader = new BufferedLogStreamReader();
     ctx.setLogStreamReader(logStreamReader);
 
-    if (readOnly) {
-      logStreamWriter = new DisabledLogStreamWriter();
-    } else {
-      logStreamWriter = new LogStreamWriterImpl();
-    }
+    logStreamWriter = new LogStreamWriterImpl();
     ctx.setLogStreamWriter(logStreamWriter);
 
     return ctx;

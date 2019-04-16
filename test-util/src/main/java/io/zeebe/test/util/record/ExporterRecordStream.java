@@ -59,10 +59,6 @@ public abstract class ExporterRecordStream<
     return filter(r -> r.getPosition() == position);
   }
 
-  public S withRaftTerm(final int raftTerm) {
-    return filter(r -> r.getRaftTerm() == raftTerm);
-  }
-
   public S withSourceRecordPosition(final long sourceRecordPosition) {
     return filter(r -> r.getSourceRecordPosition() == sourceRecordPosition);
   }

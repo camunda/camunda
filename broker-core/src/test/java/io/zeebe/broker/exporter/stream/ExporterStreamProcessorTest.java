@@ -868,7 +868,6 @@ public class ExporterStreamProcessorTest {
 
     assertThat(actualRecord)
         .hasPosition(loggedEvent.getPosition())
-        .hasRaftTerm(loggedEvent.getRaftTerm())
         .hasSourceRecordPosition(loggedEvent.getSourceEventPosition())
         .hasProducerId(loggedEvent.getProducerId())
         .hasKey(loggedEvent.getKey())

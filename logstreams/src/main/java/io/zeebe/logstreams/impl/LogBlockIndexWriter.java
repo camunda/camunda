@@ -16,7 +16,7 @@
 package io.zeebe.logstreams.impl;
 
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.getPosition;
-import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
+import static io.zeebe.logstreams.impl.service.LogStreamService.INVALID_ADDRESS;
 import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INVALID_ADDR;
 
