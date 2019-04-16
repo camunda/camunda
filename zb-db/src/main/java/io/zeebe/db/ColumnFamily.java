@@ -150,6 +150,15 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
   void delete(KeyType key);
 
   /**
+   * Deletes the key-value pair with the given key from the column family. Uses the provided {@code
+   * dbContext} instead of the default instance, to be thread-safe.
+   *
+   * @param dbContext the database context
+   * @param key the key which identifies the pair
+   */
+  void delete(DbContext dbContext, KeyType key);
+
+  /**
    * Checks for key existence in the column family.
    *
    * @param key the key to look for

@@ -142,6 +142,7 @@ class TransactionalColumnFamily<
     delete(context, key);
   }
 
+  @Override
   public void delete(DbContext context, KeyType key) {
     transactionDb.delete(handle, context, key);
   }

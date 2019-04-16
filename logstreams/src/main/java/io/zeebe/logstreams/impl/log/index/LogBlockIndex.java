@@ -153,6 +153,43 @@ public class LogBlockIndex {
   }
 
   /**
+   * Deletes mappings up to {@code deletePosition} (including), with the exception of the last entry
+   * in the index, which will not be deleted. Therefore, this method should be used solely as a
+   * best-effort attempt to free-up disk space and not as a dependable delete operation.
+   *
+   * @param indexContext the log block index context
+   * @param deletePosition the position up to which entries will be deleted
+   */
+  public void deleteUpToPosition(
+      final LogBlockIndexContext indexContext, final long deletePosition) {
+    final AtomicLong lastBlockPosition = new AtomicLong(VALUE_NOT_FOUND);
+
+    indexColumnFamily.whileTrue(
+        indexContext.getDbContext(),
+        (key, val) -> {
+          final long storedBlockPosition = key.getValue();
+
+          if (storedBlockPosition <= deletePosition) {
+            if (lastBlockPosition.get() != VALUE_NOT_FOUND) {
+              deleteEntry(indexContext, lastBlockPosition.get());
+            }
+
+            lastBlockPosition.set(storedBlockPosition);
+            return true;
+          }
+
+          return false;
+        },
+        indexContext.getKeyInstance(),
+        indexContext.getValueInstance());
+  }
+
+  private void deleteEntry(final LogBlockIndexContext indexContext, final long blockPosition) {
+    final DbLong dbBlockPosition = indexContext.writeKeyInstance(blockPosition);
+    indexColumnFamily.delete(indexContext.getDbContext(), dbBlockPosition);
+  }
+
+  /**
    * Checks if the log block index has entries.
    *
    * @param indexContext the log block index context
