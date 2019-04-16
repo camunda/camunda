@@ -11,6 +11,7 @@
   </Appenders>
   <Loggers>
     <Logger name="org.camunda.operate.zeebeimport" level="OFF" />
+    <Logger name="org.camunda.operate.util.ElasticsearchUtil" level="OFF" />
     <Logger name="org.camunda.operate.qa.performance.ImportPerformanceStaticDataTest" level="INFO"/>
     <Root level="OFF">
       <AppenderRef ref="Console"/>
