@@ -30,6 +30,8 @@ container:
     # max number of threads\sessions that will be kept to report status
     connections:
       max: 10
+  # Optional url to access Optimize (used for links to Optimize in e.g. alert emails)
+  accessUrl: null
 
 # Configuration for engines used to import data. Please note that you have to have at
 # least one engine configured at all times.
@@ -155,7 +157,7 @@ es:
     # an Elasticsearch cluster with several nodes it is recommended to define
     # several connection points in case one node fails.
     nodes:
-        # the address/hostname under which the Elasticsearch node is available.
+      # the address/hostname under which the Elasticsearch node is available.
       - host: '${elasticsearch.host}'
         # A port number used by Elasticsearch to accept HTTP connections.
         httpPort: ${elasticsearch.httpPort}

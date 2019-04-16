@@ -136,6 +136,8 @@ public class ConfigurationService {
   private String containerKeystoreLocation;
   private Integer containerHttpsPort;
 
+  private String containerAccessUrl;
+
   // we use an optional here to allow to test if
   // certain cookie flags are set when http is disabled.
   @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -738,6 +740,17 @@ public class ConfigurationService {
       containerKeystorePassword = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_KEYSTORE_PASSWORD);
     }
     return containerKeystorePassword;
+  }
+
+  public Optional<String> getContainerAccessUrl() {
+    if (containerAccessUrl == null) {
+      containerAccessUrl = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_ACCESSURL);
+    }
+    return Optional.ofNullable(containerAccessUrl);
+  }
+
+  public void setContainerAccessUrl(String accessUrl) {
+    containerAccessUrl = accessUrl;
   }
 
   public List<String> getDecisionInputImportPluginBasePackages() {

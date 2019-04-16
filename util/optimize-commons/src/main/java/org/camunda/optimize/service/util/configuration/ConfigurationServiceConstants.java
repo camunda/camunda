@@ -82,6 +82,8 @@ public interface ConfigurationServiceConstants {
   String CONTAINER_HTTP_PORT = "$.container.ports.http";
   String CONTAINER_STATUS_MAX_CONNECTIONS = "$.container.status.connections.max";
 
+  String CONTAINER_ACCESSURL = "$.container.accessUrl";
+
   String EXPORT_CSV_LIMIT = "$.export.csv.limit";
   String EXPORT_CSV_OFFSET = "$.export.csv.offset";
 

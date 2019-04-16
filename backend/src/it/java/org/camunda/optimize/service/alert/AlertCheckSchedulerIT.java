@@ -42,9 +42,9 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule)
-      .around(engineRule)
-      .around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule)
+    .around(engineRule)
+    .around(embeddedOptimizeRule);
 
   private GreenMail greenMail;
 
@@ -73,9 +73,9 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     Response response =
       embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateAlertRequest(simpleAlert)
-            .execute();
+        .getRequestExecutor()
+        .buildCreateAlertRequest(simpleAlert)
+        .execute();
 
     assertThat(response.getStatus(), is(200));
 
@@ -95,9 +95,9 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     //alert is deleted from ES
     List<AlertDefinitionDto> alertDefinitionDtos =
       embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetAllAlertsRequest()
-            .executeAndReturnList(AlertDefinitionDto.class, 200);
+        .getRequestExecutor()
+        .buildGetAllAlertsRequest()
+        .executeAndReturnList(AlertDefinitionDto.class, 200);
 
     assertThat(alertDefinitionDtos.size(), is(0));
   }
@@ -108,18 +108,18 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     AlertCreationDto simpleAlert = setupBasicProcessAlert();
 
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateAlertRequest(simpleAlert)
-            .execute();
+      .getRequestExecutor()
+      .buildCreateAlertRequest(simpleAlert)
+      .execute();
 
     assertThat(response.getStatus(), is(200));
 
     // when
     response =
       embeddedOptimizeRule
-            .getRequestExecutor()
+        .getRequestExecutor()
         .buildDeleteReportRequest(simpleAlert.getReportId(), true)
-            .execute();
+        .execute();
 
     // then
     assertThat(response.getStatus(), is(204));
@@ -129,13 +129,14 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     );
 
     response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetAllAlertsRequest()
-            .execute();
+      .getRequestExecutor()
+      .buildGetAllAlertsRequest()
+      .execute();
 
     assertThat(response.getStatus(), is(200));
     List<AlertDefinitionDto> alertDefinitionDtos = response.readEntity(
-      new GenericType<List<AlertDefinitionDto>>() {}
+      new GenericType<List<AlertDefinitionDto>>() {
+      }
     );
     assertThat(alertDefinitionDtos.size(), is(0));
   }
@@ -148,9 +149,9 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     // when
     String id =
       embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateAlertRequest(simpleAlert)
-            .execute(String.class, 200);
+        .getRequestExecutor()
+        .buildCreateAlertRequest(simpleAlert)
+        .execute(String.class, 200);
 
     // then
     assertThat(id, is(notNullValue()));
@@ -169,9 +170,9 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     // when
     String id =
       embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateAlertRequest(simpleAlert)
-            .execute(String.class, 200);
+        .getRequestExecutor()
+        .buildCreateAlertRequest(simpleAlert)
+        .execute(String.class, 200);
 
     // then
     assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
@@ -183,16 +184,16 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     AlertCreationDto simpleAlert = setupBasicProcessAlert();
 
     String alertId = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateAlertRequest(simpleAlert)
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateAlertRequest(simpleAlert)
+      .execute(IdDto.class, 200)
+      .getId();
 
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildDeleteAlertRequest(alertId)
-            .execute();
+      .getRequestExecutor()
+      .buildDeleteAlertRequest(alertId)
+      .execute();
 
     // then
     assertThat(response.getStatus(), is(204));
@@ -209,16 +210,16 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     String alertId =
       embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateAlertRequest(simpleAlert)
-            .execute(IdDto.class, 200)
-            .getId();
+        .getRequestExecutor()
+        .buildCreateAlertRequest(simpleAlert)
+        .execute(IdDto.class, 200)
+        .getId();
 
     Trigger trigger = embeddedOptimizeRule.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
     assertThat(
       getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS),
       is(
-        Instant.now().plus(1,ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS)
+        Instant.now().plus(1, ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS)
       )
     );
 
@@ -226,9 +227,9 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     simpleAlert.getCheckInterval().setValue(30);
 
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildUpdateAlertRequest(alertId, simpleAlert)
-            .execute();
+      .getRequestExecutor()
+      .buildUpdateAlertRequest(alertId, simpleAlert)
+      .execute();
 
     // then
     assertThat(response.getStatus(), is(204));
@@ -274,6 +275,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
       .getRequestExecutor()
       .buildCreateAlertRequest(simpleAlert)
       .execute();
+
     assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
 
     //then
@@ -284,6 +286,31 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     assertThat(content, containsString(simpleAlert.getName()));
     assertThat(content, containsString("http://localhost:8090/#/report/" + reportId));
   }
+
+  @Test
+  public void testAccessUrlInAlertNotification() throws Exception {
+    //given
+    String reportId = startProcessAndCreateReport();
+    setEmailConfiguration();
+    embeddedOptimizeRule.getConfigurationService().setContainerAccessUrl("http://test.de:8090");
+
+
+    // when
+    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
+    embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateAlertRequest(simpleAlert)
+      .execute();
+
+    assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
+
+    //then
+    MimeMessage[] emails = greenMail.getReceivedMessages();
+    assertThat(emails.length, is(1));
+    String content = emails[0].getContent().toString();
+    assertThat(content, containsString("http://test.de:8090/#/report/" + reportId));
+  }
+
 
   private String startProcessAndCreateReport() {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
@@ -301,7 +328,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     //given
     AlertService alertService = embeddedOptimizeRule.getAlertService();
     int intervalValue = 11;
-    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue,"Minutes");
+    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Minutes");
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
@@ -309,7 +336,11 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
     Instant nextFireTime = getNextFireTime(trigger).truncatedTo(ChronoUnit.MINUTES);
 
-    assertThat(nextFireTime, is(now.truncatedTo(ChronoUnit.MINUTES).plus(intervalValue, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.MINUTES)));
+    assertThat(nextFireTime,
+               is(now.truncatedTo(ChronoUnit.MINUTES)
+                    .plus(intervalValue, ChronoUnit.MINUTES)
+                    .truncatedTo(ChronoUnit.MINUTES))
+    );
   }
 
   @Test
@@ -317,7 +348,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     //given
     AlertService alertService = embeddedOptimizeRule.getAlertService();
     int intervalValue = 11;
-    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue,"Hours");
+    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Hours");
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
@@ -335,7 +366,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     //given
     AlertService alertService = embeddedOptimizeRule.getAlertService();
     int intervalValue = 5;
-    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue,"Days");
+    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Days");
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
@@ -353,7 +384,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     //given
     AlertService alertService = embeddedOptimizeRule.getAlertService();
     int intervalValue = 5;
-    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue,"Weeks");
+    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Weeks");
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
@@ -361,10 +392,11 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     Instant nextFireTime = getNextFireTime(trigger);
 
     assertThat(
-        nextFireTime.truncatedTo(ChronoUnit.SECONDS),
-        is(Instant.now().plus(intervalValue*7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS))
+      nextFireTime.truncatedTo(ChronoUnit.SECONDS),
+      is(Instant.now().plus(intervalValue * 7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS))
     );
   }
+
 
 
   private Instant getNextFireTime(Trigger cronTrigger) {
@@ -388,8 +420,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
   private List<AlertDefinitionDto> getAllAlerts() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetAllAlertsRequest()
-            .executeAndReturnList(AlertDefinitionDto.class, 200);
+      .getRequestExecutor()
+      .buildGetAllAlertsRequest()
+      .executeAndReturnList(AlertDefinitionDto.class, 200);
   }
 }

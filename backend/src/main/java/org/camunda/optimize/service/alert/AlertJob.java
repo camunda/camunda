@@ -63,11 +63,11 @@ public class AlertJob implements Job {
       AlertJobResult alertJobResult = null;
       if (thresholdExceeded(alert, reportResult)) {
         alertJobResult = notifyIfNeeded(
-            jobExecutionContext.getJobDetail().getKey(),
-            alertId,
-            alert,
-            reportDefinition,
-            reportResult
+          jobExecutionContext.getJobDetail().getKey(),
+          alertId,
+          alert,
+          reportDefinition,
+          reportResult
         );
       } else if (alert.isTriggered()) {
         alert.setTriggered(false);
@@ -94,25 +94,31 @@ public class AlertJob implements Job {
 
   private String composeFixText(AlertDefinitionDto alert, ReportDefinitionDto reportDefinition, NumberResult result) {
     String statusText = alert.getThresholdOperator().equals(AlertDefinitionDto.LESS)
-            ? "has been reached" : "is not exceeded anymore";
+      ? "has been reached" : "is not exceeded anymore";
     String emailBody = "Camunda Optimize - Report Status\n" +
-        "Alert name: " + alert.getName() + "\n" +
-        "Report name: " + reportDefinition.getName() + "\n" +
-        "Status: Given threshold [" +
-        alert.getThreshold() +
-        "] " + statusText +
-        ". Current value: " +
-        result.getResultAsNumber() +
-        ". Please check your Optimize report for more information! \n" +
-        createViewLink(alert);
+      "Alert name: " + alert.getName() + "\n" +
+      "Report name: " + reportDefinition.getName() + "\n" +
+      "Status: Given threshold [" +
+      alert.getThreshold() +
+      "] " + statusText +
+      ". Current value: " +
+      result.getResultAsNumber() +
+      ". Please check your Optimize report for more information! \n" +
+      createViewLink(alert);
     return emailBody;
   }
 
   private String createViewLink(AlertDefinitionDto alert) {
-    Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
-    String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
-    Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
-    return httpPrefix + configurationService.getContainerHost() + ":" + port + "/#/report/" + alert.getReportId();
+    final Optional<String> containerAccessUrl = configurationService.getContainerAccessUrl();
+
+    if (containerAccessUrl.isPresent()) {
+      return containerAccessUrl.get() + "/#/report/" + alert.getReportId();
+    } else {
+      Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
+      String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
+      Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
+      return httpPrefix + configurationService.getContainerHost() + ":" + port + "/#/report/" + alert.getReportId();
+    }
   }
 
   private AlertJobResult notifyIfNeeded(
@@ -134,8 +140,8 @@ public class AlertJob implements Job {
       alertWriter.writeAlertStatus(true, alertId);
 
       notificationService.notifyRecipient(
-          composeAlertText(alert, reportDefinition, result),
-          alert.getEmail()
+        composeAlertText(alert, reportDefinition, result),
+        alert.getEmail()
       );
 
       alertJobResult.setStatusChanged(true);
@@ -154,17 +160,17 @@ public class AlertJob implements Job {
     NumberResult result
   ) {
     String statusText = alert.getThresholdOperator().equals(AlertDefinitionDto.LESS)
-            ? "is not reached" : "was exceeded";
+      ? "is not reached" : "was exceeded";
     String emailBody = "Camunda Optimize - Report Status\n" +
-        "Alert name: " + alert.getName() + "\n" +
-        "Report name: " + reportDefinition.getName() + "\n" +
-        "Status: Given threshold [" +
-        alert.getThreshold() +
-        "] " + statusText +
-        ". Current value: " +
-        result.getResultAsNumber() +
-        ". Please check your Optimize report for more information!\n" +
-        createViewLink(alert);
+      "Alert name: " + alert.getName() + "\n" +
+      "Report name: " + reportDefinition.getName() + "\n" +
+      "Status: Given threshold [" +
+      alert.getThreshold() +
+      "] " + statusText +
+      ". Current value: " +
+      result.getResultAsNumber() +
+      ". Please check your Optimize report for more information!\n" +
+      createViewLink(alert);
     return emailBody;
   }
 
