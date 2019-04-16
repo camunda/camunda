@@ -598,6 +598,48 @@ export const createIncidents = () => {
   };
 };
 
+export const createIncidentTableProps = () => {
+  return {
+    count: 2,
+    incidents: [
+      createIncident({
+        errorType: 'Condition error',
+        flowNodeId: 'flowNodeId_exclusiveGateway'
+      }),
+      createIncident({
+        errorType: 'Extract value error',
+        flowNodeName: 'flowNodeName_alwaysFailingTask'
+      })
+    ],
+    errorTypes: new Map(
+      Object.entries({
+        'Condition error': {
+          errorType: 'Condition error',
+          count: 1
+        },
+        'Extract value error': {
+          errorType: 'Extract value error',
+          count: 1
+        }
+      })
+    ),
+    flowNodes: new Map(
+      Object.entries({
+        flowNodeId_exclusiveGateway: {
+          flowNodeId: 'flowNodeId_exclusiveGateway',
+          flowNodeName: 'flowNodeName_exclusiveGateway',
+          count: 1
+        },
+        flowNodeId_alwaysFailingTask: {
+          flowNodeId: 'flowNodeId_alwaysFailingTask',
+          flowNodeName: 'flowNodeName_alwaysFailingTask',
+          count: 1
+        }
+      })
+    )
+  };
+};
+
 export const createVariables = () => {
   return [
     {

@@ -23,8 +23,8 @@ export default class IncidentsFilter extends React.Component {
       selectedErrorTypes,
       selectedFlowNodes
     } = this.props;
-    const groupedFlowNodes = splitArray(flowNodes);
-    const groupedErrorTypes = splitArray(errorTypes);
+    const groupedFlowNodes = splitArray([...flowNodes.values()]);
+    const groupedErrorTypes = splitArray([...errorTypes.values()]);
 
     return (
       <Styled.FiltersWrapper>
@@ -155,20 +155,9 @@ export default class IncidentsFilter extends React.Component {
 }
 
 IncidentsFilter.propTypes = {
-  errorTypes: PropTypes.arrayOf(
-    PropTypes.shape({
-      errorType: PropTypes.string,
-      errorTypeTitle: PropTypes.string,
-      count: PropTypes.number
-    })
-  ),
+  errorTypes: PropTypes.object,
   selectedErrorTypes: PropTypes.arrayOf(PropTypes.string),
-  flowNodes: PropTypes.arrayOf(
-    PropTypes.shape({
-      flowNodeId: PropTypes.string,
-      count: PropTypes.number
-    })
-  ),
+  flowNodes: PropTypes.object,
   selectedFlowNodes: PropTypes.arrayOf(PropTypes.string),
   onFlowNodeSelect: PropTypes.func.isRequired,
   onErrorTypeSelect: PropTypes.func.isRequired,

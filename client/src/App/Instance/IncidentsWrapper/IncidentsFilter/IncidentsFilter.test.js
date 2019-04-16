@@ -10,10 +10,11 @@ import IncidentsFilter from './IncidentsFilter';
 import Pill from 'modules/components/Pill';
 import Dropdown from 'modules/components/Dropdown';
 import {mount} from 'enzyme';
-import {createIncidents} from 'modules/testUtils';
+import {createIncidentTableProps} from 'modules/testUtils';
 
-const incidentsMock = createIncidents();
+const incidentsMock = createIncidentTableProps();
 const onClearAllMock = jest.fn();
+
 const mockProps = {
   errorTypes: incidentsMock.errorTypes,
   flowNodes: incidentsMock.flowNodes,
@@ -60,8 +61,12 @@ describe('IncidentsFilter', () => {
       .at(0)
       .find(Pill);
     expect(FirstPill.props().type).toEqual('FILTER');
-    expect(FirstPill.text()).toContain(mockProps.errorTypes[0].errorType);
-    expect(FirstPill.props().count).toEqual(mockProps.errorTypes[0].count);
+    expect(FirstPill.text()).toContain(
+      mockProps.errorTypes.get('Condition error').errorType
+    );
+    expect(FirstPill.props().count).toEqual(
+      mockProps.errorTypes.get('Condition error').count
+    );
   });
 
   it('should render correctly a flownode pill', () => {
@@ -71,31 +76,36 @@ describe('IncidentsFilter', () => {
       .at(0)
       .find(Pill);
     expect(FirstPill.props().type).toEqual('FILTER');
-    expect(FirstPill.text()).toContain(mockProps.flowNodes[0].flowNodeName);
-    expect(FirstPill.props().count).toEqual(mockProps.flowNodes[0].count);
+    expect(FirstPill.text()).toContain(
+      mockProps.flowNodes.get('flowNodeId_exclusiveGateway').flowNodeName
+    );
+    expect(FirstPill.props().count).toEqual(
+      mockProps.flowNodes.get('flowNodeId_exclusiveGateway').count
+    );
   });
 
   it('should show a more button', () => {
-    const mockPropsClone = Object.assign({}, mockProps);
-    mockPropsClone.errorTypes = [
-      ...mockPropsClone.errorTypes,
-      {
+    const newErrorTypeMap = new Map(incidentsMock.errorTypes);
+    newErrorTypeMap
+      .set('error type 1', {
         errorType: 'error type 1',
         count: 1
-      },
-      {
+      })
+      .set('error type 2', {
         errorType: 'error type 2',
         count: 1
-      },
-      {
+      })
+      .set('error type 3', {
         errorType: 'error type 3',
         count: 1
-      },
-      {
+      })
+      .set('error type 4', {
         errorType: 'error type 4',
         count: 1
-      }
-    ];
+      });
+
+    const mockPropsClone = Object.assign({}, mockProps);
+    mockPropsClone.errorTypes = newErrorTypeMap;
 
     const node = mount(
       <ThemeProvider>
