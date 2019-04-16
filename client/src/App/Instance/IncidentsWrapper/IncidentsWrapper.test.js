@@ -8,7 +8,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
-import {createIncidents, createInstance} from 'modules/testUtils';
+import {createIncidentTableProps, createInstance} from 'modules/testUtils';
 import {SORT_ORDER} from 'modules/constants';
 import {act} from 'react-dom/test-utils';
 
@@ -20,7 +20,7 @@ import IncidentsTable from './IncidentsTable';
 import IncidentsBar from './IncidentsBar';
 import IncidentsFilter from './IncidentsFilter';
 
-const incidentsMock = createIncidents();
+const incidentsMock = createIncidentTableProps();
 
 const mockProps = {
   instance: createInstance(),
@@ -242,7 +242,6 @@ describe('IncidentsWrapper', () => {
       expect(node.find(IncidentsTable).find('tr').length).toBe(2);
     });
 
-    //
     it('should remove filter when only related incident gets resolved', () => {
       // given
       node
@@ -261,13 +260,19 @@ describe('IncidentsWrapper', () => {
 
       // when
       // Incident is resolved
+      const newErrorTypeMap = new Map(incidentsMock.errorTypes);
+      newErrorTypeMap.delete('Condition error');
+
+      const newFlowNodeMap = new Map(incidentsMock.flowNodes);
+      newFlowNodeMap.delete('flowNodeId_exclusiveGateway');
+
       node.setProps({
         children: (
           <IncidentsWrapper
             {...mockProps}
             incidents={[incidentsMock.incidents[0]]}
-            errorTypes={[incidentsMock.errorTypes[1]]}
-            flowNodes={[incidentsMock.flowNodes[1]]}
+            errorTypes={newErrorTypeMap}
+            flowNodes={newFlowNodeMap}
           />
         )
       });
@@ -295,10 +300,6 @@ describe('IncidentsWrapper', () => {
       // then (3)
       // remaining filters still applied
       expect(node.find(IncidentsTable).find('tr').length).toBe(2);
-    });
-
-    it('should', () => {
-      //
     });
 
     it('should drop all filters when clicking the clear all button', () => {

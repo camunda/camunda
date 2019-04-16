@@ -4,7 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useEffect, useMemo} from 'react';
+import React, {useState, useEffect, useMemo, useRef} from 'react';
+import {isEqual} from 'lodash';
 
 import PropTypes from 'prop-types';
 import IncidentsBar from './IncidentsBar';
@@ -34,30 +35,37 @@ function IncidentsWrapper(props) {
   const [selectedFlowNodes, setSelectedFlowNodes] = useState([]);
   const [selectedErrorTypes, setSelectedErrorTypes] = useState([]);
 
-  useEffect(
-    () => {
-      setSelectedFlowNodes(
-        updateSelectedFilters(selectedFlowNodes, flowNodes, 'flowNodeId')
-      );
-    },
-    [flowNodes.length]
-  );
+  const prevErrorTypes = usePrevious(errorTypes);
+  const prevFlowNodes = usePrevious(flowNodes);
 
-  useEffect(
-    () => {
-      setSelectedErrorTypes(
-        updateSelectedFilters(selectedErrorTypes, errorTypes, 'errorType')
-      );
-    },
-    [errorTypes.length]
-  );
+  useEffect(() => {
+    if (didFiltersChange(prevErrorTypes, errorTypes)) {
+      setSelectedErrorTypes(updateFilters(selectedErrorTypes, errorTypes));
+    }
+  });
 
-  function updateSelectedFilters(currentState, props, type) {
-    return currentState.reduce(
-      (updatedState, element) =>
-        props.find(newElement => newElement[type] === element)
-          ? [...updatedState, element]
-          : updatedState,
+  useEffect(() => {
+    if (didFiltersChange(prevFlowNodes, flowNodes)) {
+      setSelectedFlowNodes(updateFilters(selectedFlowNodes, flowNodes));
+    }
+  });
+
+  function usePrevious(value) {
+    const ref = useRef();
+    useEffect(() => {
+      ref.current = value;
+    });
+    return ref.current;
+  }
+
+  function didFiltersChange(previous, current) {
+    return previous && !isEqual([...current.keys()], [...previous.keys()]);
+  }
+
+  function updateFilters(previous, current) {
+    return previous.reduce(
+      (updatedFilters, element) =>
+        !!current.get(element) ? [...updatedFilters, element] : updatedFilters,
       []
     );
   }
@@ -107,20 +115,23 @@ function IncidentsWrapper(props) {
       return incidents;
     }
 
-    return incidents.filter(item => {
-      if (!hasSelectedFlowNodes) {
+    const isSelected = item => {
+      if (hasSelectedErrorTypes && hasSelectedFlowNodes) {
+        return (
+          selectedFlowNodes.includes(item.flowNodeId) &&
+          selectedErrorTypes.includes(item.errorType)
+        );
+      }
+      if (hasSelectedErrorTypes) {
         return selectedErrorTypes.includes(item.errorType);
       }
 
-      if (!hasSelectedErrorTypes) {
+      if (hasSelectedFlowNodes) {
         return selectedFlowNodes.includes(item.flowNodeId);
       }
+    };
 
-      return (
-        selectedFlowNodes.includes(item.flowNodeId) &&
-        selectedErrorTypes.includes(item.errorType)
-      );
-    });
+    return [...incidents.values()].filter(item => isSelected(item));
   }
 
   const sortedIncidents = sortData(
@@ -140,9 +151,9 @@ function IncidentsWrapper(props) {
       {isOpen && (
         <IncidentsOverlay>
           <IncidentsFilter
-            flowNodes={props.flowNodes}
+            flowNodes={flowNodes}
             selectedFlowNodes={selectedFlowNodes}
-            errorTypes={props.errorTypes}
+            errorTypes={errorTypes}
             selectedErrorTypes={selectedErrorTypes}
             onFlowNodeSelect={handleSelection(
               selectedFlowNodes,
@@ -178,8 +189,8 @@ IncidentsWrapper.propTypes = {
   forceSpinner: PropTypes.bool,
   selectedFlowNodeInstanceIds: PropTypes.array,
   onIncidentSelection: PropTypes.func.isRequired,
-  flowNodes: PropTypes.array,
-  errorTypes: PropTypes.array
+  flowNodes: PropTypes.object,
+  errorTypes: PropTypes.object
 };
 
 export default IncidentsWrapper;
