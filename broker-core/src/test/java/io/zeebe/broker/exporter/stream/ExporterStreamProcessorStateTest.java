@@ -19,6 +19,7 @@ package io.zeebe.broker.exporter.stream;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
 import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
@@ -139,6 +140,34 @@ public class ExporterStreamProcessorStateTest {
 
     // then
     assertThat(state.getPosition(id)).isEqualTo(position);
+  }
+
+  @Test
+  public void shouldRemovePosition() {
+    // given
+    state.setPosition("e1", 1L);
+    state.setPosition("e2", 2L);
+
+    // when
+    state.removePosition("e2");
+
+    // then
+    assertThat(state.getPosition("e1")).isEqualTo(1L);
+    assertThat(state.getPosition("e2")).isEqualTo(ExporterRecord.POSITION_UNKNOWN);
+  }
+
+  @Test
+  public void shouldVisitPositions() {
+    // given
+    state.setPosition("e1", 1L);
+    state.setPosition("e2", 2L);
+
+    // when
+    final Map<String, Long> positions = new HashMap<>();
+    state.visitPositions((exporterId, position) -> positions.put(exporterId, position));
+
+    // then
+    assertThat(positions).hasSize(2).contains(entry("e1", 1L), entry("e2", 2L));
   }
 
   @Test

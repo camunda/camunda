@@ -23,6 +23,7 @@ import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
+import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
 
 public class ExporterStreamProcessorState {
@@ -103,5 +104,15 @@ public class ExporterStreamProcessorState {
         });
 
     return record;
+  }
+
+  public void visitPositions(BiConsumer<String, Long> consumer) {
+    exporterPositionColumnFamily.forEach(
+        (exporterId, position) -> consumer.accept(exporterId.toString(), position.getValue()));
+  }
+
+  public void removePosition(String exporter) {
+    exporterId.wrapString(exporter);
+    exporterPositionColumnFamily.delete(exporterId);
   }
 }

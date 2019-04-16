@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.exporter.stream;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.context.ExporterContext;
 import io.zeebe.broker.exporter.record.RecordMetadataImpl;
@@ -42,9 +43,13 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ExporterStreamProcessor implements StreamProcessor {
+
+  private static final Logger LOG = Loggers.EXPORTER_LOGGER;
 
   private final RecordMetadata rawMetadata = new RecordMetadata();
   private final List<ExporterContainer> containers;
@@ -119,6 +124,24 @@ public class ExporterStreamProcessor implements StreamProcessor {
     for (final ExporterContainer container : containers) {
       container.exporter.open(container);
     }
+
+    clearExporterState();
+  }
+
+  private void clearExporterState() {
+    final List<String> exporterIds =
+        containers.stream().map(ExporterContainer::getId).collect(Collectors.toList());
+
+    state.visitPositions(
+        (exporterId, position) -> {
+          if (!exporterIds.contains(exporterId)) {
+            state.removePosition(exporterId);
+
+            LOG.info(
+                "The exporter '{}' is not configured anymore. Its position is removed from the state.",
+                exporterId);
+          }
+        });
   }
 
   @Override
