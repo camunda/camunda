@@ -6,6 +6,7 @@
 package org.camunda.operate.entities.listview;
 
 import java.time.OffsetDateTime;
+
 import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 
@@ -41,6 +42,9 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
   }
 
   public String getWorkflowName() {
+    if(workflowName == null || workflowName.isEmpty()) {
+      return bpmnProcessId;
+    }
     return workflowName;
   }
 

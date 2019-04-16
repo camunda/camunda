@@ -125,6 +125,24 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   protected void processAllEvents(int expectedMinEventsCount, ImportValueType workflowInstance) {
     elasticsearchTestRule.processAllEvents(expectedMinEventsCount, workflowInstance);
   }
+  
+  @Test
+  public void testCreateWorkflowInstanceWithEmptyWorkflowName() {
+    // given a process with empty name
+    String processId = "emptyNameProcess";
+    final String workflowId = deployWorkflow("emptyNameProcess.bpmn");
+    
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    // when import in operate search
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    processAllEvents(1, ImportValueType.WORKFLOW_INSTANCE);
+
+    // then it should returns the processId instead of an empty name 
+    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(workflowInstanceEntity.getWorkflowId()).isEqualTo(workflowId);
+    assertThat(workflowInstanceEntity.getBpmnProcessId()).isEqualTo(processId);
+    assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo(processId);
+  }
 
   @Test
   public void testIncidentCreatesWorkflowInstance() {
