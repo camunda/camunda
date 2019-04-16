@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.clustering.base.partitions;
 
-import io.atomix.core.election.LeaderElection;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class PartitionServiceNames {
@@ -32,10 +31,11 @@ public class PartitionServiceNames {
         String.format("cluster.base.partition.%s.leader", partitionName), Partition.class);
   }
 
-  public static final ServiceName<LeaderElection> partitionLeaderElectionServiceName(
+  public static final ServiceName<PartitionLeaderElection> partitionLeaderElectionServiceName(
       String logName) {
     return ServiceName.newServiceName(
-        String.format("cluster.base.partition.%s.leader.election", logName), LeaderElection.class);
+        String.format("cluster.base.partition.%s.leader.election", logName),
+        PartitionLeaderElection.class);
   }
 
   public static final ServiceName<Void> partitionLeadershipEventListenerServiceName(

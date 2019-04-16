@@ -16,19 +16,18 @@
 package io.zeebe.logstreams.impl.service;
 
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 
 public class LeaderOpenLogStreamAppenderService implements Service<Void> {
-  private final LogStream logStream;
-
-  public LeaderOpenLogStreamAppenderService(LogStream logStream) {
-    this.logStream = logStream;
-  }
+  private LogStream logStream;
+  private final Injector<LogStream> logStreamInjector = new Injector<>();
 
   @Override
   public void start(ServiceStartContext startContext) {
+    logStream = logStreamInjector.getValue();
     startContext.async(logStream.openAppender());
   }
 
@@ -40,5 +39,9 @@ public class LeaderOpenLogStreamAppenderService implements Service<Void> {
   @Override
   public Void get() {
     return null;
+  }
+
+  public Injector<LogStream> getLogStreamInjector() {
+    return logStreamInjector;
   }
 }

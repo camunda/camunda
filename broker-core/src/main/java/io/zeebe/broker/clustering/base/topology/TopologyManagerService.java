@@ -18,7 +18,7 @@
 package io.zeebe.broker.clustering.base.topology;
 
 import io.atomix.core.Atomix;
-import io.atomix.core.election.LeaderElection;
+import io.zeebe.broker.clustering.base.partitions.PartitionLeaderElection;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
@@ -29,11 +29,11 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 public class TopologyManagerService implements Service<TopologyManager> {
   private TopologyManagerImpl topologyManager;
 
-  private final ServiceGroupReference<LeaderElection> leaderElectionReference =
-      ServiceGroupReference.<LeaderElection>create()
+  private final ServiceGroupReference<PartitionLeaderElection> leaderElectionReference =
+      ServiceGroupReference.<PartitionLeaderElection>create()
           .onAdd(
               (name, election) ->
-                  topologyManager.onLeaderElectionStarted((LeaderElection<String>) election))
+                  topologyManager.onLeaderElectionStarted((PartitionLeaderElection) election))
           .build();
 
   private final NodeInfo localMember;
@@ -64,7 +64,7 @@ public class TopologyManagerService implements Service<TopologyManager> {
     return topologyManager;
   }
 
-  public ServiceGroupReference<LeaderElection> getLeaderElectionReference() {
+  public ServiceGroupReference<PartitionLeaderElection> getLeaderElectionReference() {
     return leaderElectionReference;
   }
 
