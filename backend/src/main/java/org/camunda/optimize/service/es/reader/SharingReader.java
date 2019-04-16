@@ -100,8 +100,7 @@ public class SharingReader {
       getOptimizeIndexAliasForType(REPORT_SHARE_TYPE),
       REPORT_SHARE_TYPE,
       shareId
-    )
-      .realtime(false);
+    );
 
     GetResponse getResponse;
     try {
@@ -131,8 +130,7 @@ public class SharingReader {
       getOptimizeIndexAliasForType(DASHBOARD_SHARE_TYPE),
       DASHBOARD_SHARE_TYPE,
       shareId
-    )
-      .realtime(false);
+    );
 
     GetResponse getResponse;
     try {

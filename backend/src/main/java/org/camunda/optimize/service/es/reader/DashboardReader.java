@@ -56,8 +56,7 @@ public class DashboardReader {
       getOptimizeIndexAliasForType(DASHBOARD_TYPE),
       DASHBOARD_TYPE,
       dashboardId
-    )
-      .realtime(false);
+    );
 
     GetResponse getResponse;
     try {

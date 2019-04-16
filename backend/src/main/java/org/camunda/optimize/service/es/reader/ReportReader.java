@@ -115,7 +115,6 @@ public class ReportReader {
       COMBINED_REPORT_TYPE,
       reportId
     ));
-    request.realtime(false);
 
     MultiGetResponse multiGetItemResponses;
     try {
@@ -133,8 +132,7 @@ public class ReportReader {
     GetRequest getRequest = new GetRequest(
         getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
         SINGLE_PROCESS_REPORT_TYPE,
-        reportId)
-      .realtime(true);
+        reportId);
 
     GetResponse getResponse;
     try {
@@ -164,8 +162,7 @@ public class ReportReader {
     GetRequest getRequest = new GetRequest(
         getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
         SINGLE_DECISION_REPORT_TYPE,
-        reportId)
-      .realtime(true);
+        reportId);
 
     GetResponse getResponse;
     try {

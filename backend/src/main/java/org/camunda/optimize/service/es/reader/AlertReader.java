@@ -86,8 +86,7 @@ public class AlertReader {
     GetRequest getRequest = new GetRequest(
         getOptimizeIndexAliasForType(ALERT_TYPE),
         ALERT_TYPE,
-        alertId)
-      .realtime(true);
+        alertId);
 
     GetResponse getResponse;
     try {

@@ -203,7 +203,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
       TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
       EsHelper.constructKey(ElasticsearchConstants.PROC_INSTANCE_TYPE, "1")
-    ).realtime(false);
+    );
 
     String content = esClient.get(getRequest, RequestOptions.DEFAULT).getSourceAsString();
     TimestampBasedImportIndexDto timestampBasedImportIndexDto = objectMapper.readValue(

@@ -47,8 +47,7 @@ public class TimestampBasedImportIndexReader {
         getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
         TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
         EsHelper.constructKey(typeIndexComesFrom, engineAlias)
-      )
-        .realtime(false);
+      );
       getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
     } catch (Exception ignored) {}
 

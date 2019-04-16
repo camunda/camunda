@@ -44,8 +44,7 @@ public class ImportIndexReader {
       getOptimizeIndexAliasForType(IMPORT_INDEX_TYPE),
       IMPORT_INDEX_TYPE,
       id
-    )
-      .realtime(false);
+    );
 
     GetResponse getResponse = null;
     try {

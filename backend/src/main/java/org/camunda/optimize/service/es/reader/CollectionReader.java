@@ -70,8 +70,7 @@ public class CollectionReader {
       getOptimizeIndexAliasForType(COLLECTION_TYPE),
       COLLECTION_TYPE,
       collectionId
-    )
-      .realtime(false);
+    );
 
     GetResponse getResponse;
     try {
