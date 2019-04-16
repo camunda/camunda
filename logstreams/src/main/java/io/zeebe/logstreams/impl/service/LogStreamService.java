@@ -45,6 +45,7 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.function.Supplier;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
 
@@ -69,6 +70,8 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   private final int maxAppendBlockSize;
 
   private final Position commitPosition;
+
+  private Supplier<Long> exporterPositionSupplier;
   private LogBlockIndexContext logBlockIndexContext;
 
   private ServiceStartContext serviceContext;
@@ -230,6 +233,15 @@ public class LogStreamService implements LogStream, Service<LogStream> {
 
   @Override
   public void delete(long position) {
+    if (isClosed()) {
+      return;
+    }
+
+    if (exporterPositionSupplier != null) {
+      final long minExportedPosition = exporterPositionSupplier.get();
+      position = Math.min(position, minExportedPosition);
+    }
+
     final long blockAddress = logBlockIndex.lookupBlockAddress(logBlockIndexContext, position);
 
     if (blockAddress != LogBlockIndex.VALUE_NOT_FOUND) {
@@ -237,12 +249,18 @@ public class LogStreamService implements LogStream, Service<LogStream> {
           "Delete data from logstream until position '{}' (address: '{}').",
           position,
           blockAddress);
+
+      logBlockIndex.deleteUpToPosition(logBlockIndexContext, position);
       logStorage.delete(blockAddress);
     } else {
       LOG.debug(
           "Tried to delete from log stream, but found no corresponding address in the log block index for the given position {}.",
           position);
     }
+  }
+
+  private boolean isClosed() {
+    return appender == null;
   }
 
   @Override
@@ -260,6 +278,11 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   @Override
   public void removeOnCommitPositionUpdatedCondition(final ActorCondition condition) {
     onCommitPositionUpdatedConditions.removeConsumer(condition);
+  }
+
+  @Override
+  public void setExporterPositionSupplier(final Supplier<Long> supplier) {
+    exporterPositionSupplier = supplier;
   }
 
   public Injector<LogBlockIndex> getLogBlockIndexInjector() {

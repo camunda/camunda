@@ -200,7 +200,8 @@ public class StreamProcessorController extends Actor {
             logStream::removeOnCommitPositionUpdatedCondition,
             logStream::getCommitPosition,
             metrics,
-            maxSnapshots);
+            maxSnapshots,
+            logStream::delete);
 
     actorScheduler.submitActor(asyncSnapshotDirector);
 

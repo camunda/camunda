@@ -16,6 +16,7 @@
 package io.zeebe.logstreams.processor;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -46,7 +47,7 @@ import org.mockito.Mockito;
 
 public class AsyncSnapshotingTest {
   private static final long TIMEOUT = 2_000L;
-  private static final int MAX_SNAPSHOTS = 3;
+  private static final int MAX_SNAPSHOTS = 2;
 
   private final TemporaryFolder tempFolderRule = new TemporaryFolder();
   private final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
@@ -59,6 +60,7 @@ public class AsyncSnapshotingTest {
   private StateSnapshotController snapshotController;
   private LogStream logStream;
   private AsyncSnapshotDirector asyncSnapshotDirector;
+  private NoopConsumer mockDeleteCallback;
 
   @Before
   public void setup() throws IOException {
@@ -86,6 +88,8 @@ public class AsyncSnapshotingTest {
     when(writtenSupplier.get())
         .thenReturn(CompletableActorFuture.completed(99L), CompletableActorFuture.completed(100L));
 
+    mockDeleteCallback = mock(NoopConsumer.class);
+
     asyncSnapshotDirector =
         new AsyncSnapshotDirector(
             "processor-1",
@@ -97,7 +101,8 @@ public class AsyncSnapshotingTest {
             actorCondition -> logStream.removeOnCommitPositionUpdatedCondition(actorCondition),
             () -> logStream.getCommitPosition(),
             mock(StreamProcessorMetrics.class),
-            MAX_SNAPSHOTS);
+            MAX_SNAPSHOTS,
+            mockDeleteCallback::noop);
     actorScheduler.submitActor(asyncSnapshotDirector).join();
   }
 
@@ -130,7 +135,10 @@ public class AsyncSnapshotingTest {
     final InOrder inOrder = Mockito.inOrder(snapshotController);
     inOrder.verify(snapshotController, timeout(TIMEOUT).times(1)).takeTempSnapshot();
     inOrder.verify(snapshotController, timeout(TIMEOUT).times(1)).moveValidSnapshot(25);
-    inOrder.verify(snapshotController, timeout(TIMEOUT).times(1)).ensureMaxSnapshotCount(3);
+    inOrder
+        .verify(snapshotController, timeout(TIMEOUT).times(1))
+        .ensureMaxSnapshotCount(MAX_SNAPSHOTS);
+    inOrder.verify(snapshotController, timeout(TIMEOUT).times(1)).getValidSnapshotsCount();
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -168,5 +176,10 @@ public class AsyncSnapshotingTest {
 
     // then
     verify(snapshotController, timeout(500).times(1)).moveValidSnapshot(32);
+    verify(mockDeleteCallback).noop(eq(32L));
+  }
+
+  public class NoopConsumer {
+    public void noop(long position) {}
   }
 }

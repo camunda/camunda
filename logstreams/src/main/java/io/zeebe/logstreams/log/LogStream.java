@@ -22,6 +22,7 @@ import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.function.Supplier;
 
 /**
  * Represents a stream of events from a log storage.
@@ -121,4 +122,6 @@ public interface LogStream extends AutoCloseable {
   void registerOnCommitPositionUpdatedCondition(ActorCondition condition);
 
   void removeOnCommitPositionUpdatedCondition(ActorCondition condition);
+
+  void setExporterPositionSupplier(Supplier<Long> supplier);
 }

@@ -54,4 +54,11 @@ public interface SnapshotController extends AutoCloseable {
    * @param maxSnapshotCount the maximum count of snapshots which should be kept
    */
   void ensureMaxSnapshotCount(int maxSnapshotCount) throws Exception;
+
+  /**
+   * Returns the current number of valid snapshots.
+   *
+   * @return valid snapshots count
+   */
+  int getValidSnapshotsCount();
 }

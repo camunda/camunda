@@ -171,6 +171,10 @@ public class StateSnapshotController implements SnapshotController {
     }
   }
 
+  public int getValidSnapshotsCount() {
+    return storage.list().size();
+  }
+
   @Override
   public void close() throws Exception {
     if (db != null) {

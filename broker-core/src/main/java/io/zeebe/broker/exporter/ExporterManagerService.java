@@ -99,12 +99,19 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
           .processorName(PROCESSOR_NAME)
           .snapshotController(snapshotController)
           .streamProcessorFactory(
-              (zeebeDb, dbContext) ->
-                  new ExporterStreamProcessor(
-                      zeebeDb,
-                      dbContext,
-                      partition.getPartitionId(),
-                      exporterRepository.getExporters().values()))
+              (zeebeDb, dbContext) -> {
+                final ExporterStreamProcessor exporterStreamProcessor =
+                    new ExporterStreamProcessor(
+                        zeebeDb,
+                        dbContext,
+                        partition.getPartitionId(),
+                        exporterRepository.getExporters().values());
+                partition
+                    .getLogStream()
+                    .setExporterPositionSupplier(
+                        exporterStreamProcessor::getPositionToRecoveryFrom);
+                return exporterStreamProcessor;
+              })
           .build();
     }
   }

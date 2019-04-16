@@ -248,6 +248,7 @@ public class LogStreamDeleteTest {
         buildLogStream(
             c -> c.logSegmentSize(segmentSize).readBlockSize(idxSize).indexBlockSize(idxSize));
     logStream.openAppender().join();
+    logStream.getLogStorageAppender(); // wait for appender
     closeables.manage(logStream);
     final byte[] largeEvent = new byte[remainingCapacity];
 

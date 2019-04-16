@@ -16,6 +16,7 @@
 package io.zeebe.logstreams.log;
 
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
+import static io.zeebe.logstreams.log.LogBlockIndexTest.ADDRESS_MULTIPLIER;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,6 +31,8 @@ import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
+import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
+import io.zeebe.logstreams.impl.log.index.LogBlockIndexContext;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -67,6 +70,8 @@ public class LogStreamTest {
           .around(actorScheduler)
           .around(serviceContainer)
           .around(closeables);
+
+  private LogBlockIndexContext indexContext;
 
   protected LogStream buildLogStream(final Consumer<LogStreamBuilder> streamConfig) {
     final StateStorage stateStorage =
@@ -215,7 +220,7 @@ public class LogStreamTest {
   }
 
   @Test
-  public void shouldSetCommitPosition() throws Exception {
+  public void shouldSetCommitPosition() {
     // given
     final LogStream logStream = buildLogStream();
 
@@ -224,6 +229,66 @@ public class LogStreamTest {
 
     // then
     assertThat(logStream.getCommitPosition()).isEqualTo(123L);
+  }
+
+  @Test
+  public void shouldDeleteMinExportedPosition() {
+    // given
+    final LogStream logStream = buildLogStream();
+    logStream.openAppender().join();
+    logStream.getLogStorageAppender(); // wait for appender
+
+    final LogBlockIndex blockIndex = logStream.getLogBlockIndex();
+    indexContext = blockIndex.createLogBlockIndexContext();
+
+    // when
+    final long firstPosition = writeAndAddToIndex(logStream);
+    final long secondPosition = writeAndAddToIndex(logStream);
+    final long lastPosition = writeAndAddToIndex(logStream);
+
+    logStream.setExporterPositionSupplier(() -> secondPosition);
+    logStream.delete(lastPosition);
+
+    // then
+    assertThat(blockIndex.lookupBlockAddress(indexContext, firstPosition))
+        .isEqualTo(LogBlockIndex.VALUE_NOT_FOUND);
+    assertThat(blockIndex.lookupBlockAddress(indexContext, secondPosition))
+        .isEqualTo(secondPosition * ADDRESS_MULTIPLIER);
+    assertThat(blockIndex.lookupBlockAddress(indexContext, lastPosition))
+        .isEqualTo(lastPosition * ADDRESS_MULTIPLIER);
+  }
+
+  @Test
+  public void shouldDeleteWithNoExporter() {
+    // given
+    final LogStream logStream = buildLogStream();
+    logStream.openAppender().join();
+    logStream.getLogStorageAppender(); // wait for appender
+
+    final LogBlockIndex blockIndex = logStream.getLogBlockIndex();
+    indexContext = blockIndex.createLogBlockIndexContext();
+
+    // when
+    final long firstPosition = writeAndAddToIndex(logStream);
+    final long secondPosition = writeAndAddToIndex(logStream);
+    final long lastPosition = writeAndAddToIndex(logStream);
+
+    logStream.delete(lastPosition);
+
+    // then
+    assertThat(blockIndex.lookupBlockAddress(indexContext, firstPosition))
+        .isEqualTo(LogBlockIndex.VALUE_NOT_FOUND);
+    assertThat(blockIndex.lookupBlockAddress(indexContext, secondPosition))
+        .isEqualTo(LogBlockIndex.VALUE_NOT_FOUND);
+    assertThat(blockIndex.lookupBlockAddress(indexContext, lastPosition))
+        .isEqualTo(lastPosition * ADDRESS_MULTIPLIER);
+  }
+
+  private long writeAndAddToIndex(final LogStream logStream) {
+    final LogBlockIndex blockIndex = logStream.getLogBlockIndex();
+    final long position = writeEvent(logStream);
+    blockIndex.addBlock(indexContext, position, position * ADDRESS_MULTIPLIER);
+    return position;
   }
 
   static long writeEvent(final LogStream logStream) {
