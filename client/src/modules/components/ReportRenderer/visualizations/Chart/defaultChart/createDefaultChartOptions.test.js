@@ -4,7 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {createDatasetOptions} from './createDefaultChartOptions';
+import {
+  createDatasetOptions,
+  default as createDefaultChartOptions,
+  createBarOptions
+} from './createDefaultChartOptions';
 
 it('should create dataset option for barchart report', () => {
   const data = [{key: 'foo', value: 123}, {key: 'bar', value: 5}];
@@ -25,4 +29,20 @@ it('should create dataset option for pie reports', () => {
     borderColor: '#fff',
     borderWidth: undefined
   });
+});
+
+it('should create default chart options', () => {
+  expect(
+    createDefaultChartOptions({
+      report: {data: {visualization: 'pie', configuration: {}}, result: {data: []}}
+    })
+  ).toMatchSnapshot();
+});
+
+it('should create bar options', () => {
+  expect(
+    createBarOptions({
+      configuration: {}
+    })
+  ).toMatchSnapshot();
 });

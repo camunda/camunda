@@ -1,0 +1,71 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should create bar options 1`] = `
+Object {
+  "layout": Object {
+    "padding": Object {
+      "top": 0,
+    },
+  },
+  "legend": Object {
+    "display": false,
+  },
+  "lineAt": undefined,
+  "scales": Object {
+    "xAxes": Array [
+      Object {
+        "gridLines": Object {
+          "color": "rgba(0,0,0,0.1)",
+        },
+        "scaleLabel": Object {
+          "display": false,
+          "labelString": undefined,
+        },
+        "stacked": undefined,
+        "ticks": Object {
+          "autoSkip": undefined,
+          "fontColor": "#666",
+        },
+      },
+    ],
+    "yAxes": Array [
+      Object {
+        "gridLines": Object {
+          "color": "rgba(0,0,0,0.1)",
+        },
+        "scaleLabel": Object {
+          "display": false,
+          "labelString": undefined,
+        },
+        "ticks": Object {
+          "beginAtZero": true,
+          "fontColor": "#666",
+          "suggestedMax": undefined,
+        },
+      },
+    ],
+  },
+}
+`;
+
+exports[`should create default chart options 1`] = `
+Object {
+  "animation": false,
+  "legend": Object {
+    "display": true,
+    "labels": Object {
+      "fontColor": "#666",
+    },
+  },
+  "maintainAspectRatio": false,
+  "responsive": true,
+  "showAllTooltips": undefined,
+  "tooltips": Object {
+    "callbacks": Object {
+      "beforeLabel": [Function],
+      "label": [Function],
+      "labelColor": [Function],
+    },
+  },
+}
+`;
