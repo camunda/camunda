@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessRe
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
@@ -35,7 +35,7 @@ public class CombinedProcessReportResultTest {
   @Test
   public void testGetResultAsCsvForMapResult() {
     // given
-    final ProcessReportMapResultDto mapResultDto = new ProcessReportMapResultDto();
+    final ProcessCountReportMapResultDto mapResultDto = new ProcessCountReportMapResultDto();
     final List<MapResultEntryDto<Long>> resultDtoMap = new ArrayList<>();
     resultDtoMap.add(new MapResultEntryDto<>("900.0", 1L));
     resultDtoMap.add(new MapResultEntryDto<>("10.99", 1L));
@@ -311,8 +311,8 @@ public class CombinedProcessReportResultTest {
                                                               final SingleProcessReportDefinitionDto singleDefDto) {
     ReportEvaluationResult reportResult = null;
 
-    if (reportResultDto instanceof ProcessReportMapResultDto) {
-      reportResult = new SingleProcessMapReportResult((ProcessReportMapResultDto) reportResultDto, singleDefDto);
+    if (reportResultDto instanceof ProcessCountReportMapResultDto) {
+      reportResult = new SingleProcessMapReportResult((ProcessCountReportMapResultDto) reportResultDto, singleDefDto);
 
     } else if (reportResultDto instanceof ProcessReportNumberResultDto) {
       reportResult = new SingleProcessNumberReportResult((ProcessReportNumberResultDto) reportResultDto, singleDefDto);

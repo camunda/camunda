@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
+import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -24,6 +25,8 @@ public class CommandContext<T extends ReportDefinitionDto> {
   private T reportDefinition;
   private Range<OffsetDateTime> dateIntervalRange;
   private IntervalAggregationService intervalAggregationService;
+  private ProcessDefinitionReader processDefinitionReader;
+
 
   public RestHighLevelClient getEsClient() {
     return esClient;
@@ -79,5 +82,13 @@ public class CommandContext<T extends ReportDefinitionDto> {
 
   public void setIntervalAggregationService(IntervalAggregationService intervalAggregationService) {
     this.intervalAggregationService = intervalAggregationService;
+  }
+
+  public ProcessDefinitionReader getProcessDefinitionReader() {
+    return processDefinitionReader;
+  }
+
+  public void setProcessDefinitionReader(final ProcessDefinitionReader processDefinitionReader) {
+    this.processDefinitionReader = processDefinitionReader;
   }
 }

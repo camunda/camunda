@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
+import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
@@ -98,18 +99,23 @@ public class SingleReportEvaluator {
   protected final DecisionQueryFilterEnhancer decisionQueryFilterEnhancer;
   protected final RestHighLevelClient esClient;
   protected final IntervalAggregationService intervalAggregationService;
+  protected final ProcessDefinitionReader processDefinitionReader;
 
   @Autowired
-  public SingleReportEvaluator(ConfigurationService configurationService, ObjectMapper objectMapper,
-                               ProcessQueryFilterEnhancer processQueryFilterEnhancer,
-                               DecisionQueryFilterEnhancer decisionQueryFilterEnhancer, RestHighLevelClient esClient,
-                               IntervalAggregationService intervalAggregationService) {
+  public SingleReportEvaluator(final ConfigurationService configurationService,
+                               final ObjectMapper objectMapper,
+                               final ProcessQueryFilterEnhancer processQueryFilterEnhancer,
+                               final DecisionQueryFilterEnhancer decisionQueryFilterEnhancer,
+                               final RestHighLevelClient esClient,
+                               final IntervalAggregationService intervalAggregationService,
+                               final ProcessDefinitionReader processDefinitionReader) {
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
     this.processQueryFilterEnhancer = processQueryFilterEnhancer;
     this.decisionQueryFilterEnhancer = decisionQueryFilterEnhancer;
     this.esClient = esClient;
     this.intervalAggregationService = intervalAggregationService;
+    this.processDefinitionReader = processDefinitionReader;
   }
 
   private static void addCountProcessInstanceFrequencyReports() {
@@ -223,6 +229,7 @@ public class SingleReportEvaluator {
     } else if (reportDefinition instanceof SingleDecisionReportDefinitionDto) {
       commandContext.setQueryFilterEnhancer(decisionQueryFilterEnhancer);
     }
+    commandContext.setProcessDefinitionReader(processDefinitionReader);
     commandContext.setReportDefinition(reportDefinition);
     return commandContext;
   }

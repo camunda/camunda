@@ -5,10 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.result;
 
+import java.util.Optional;
+
 public class MapResultEntryDto<T> {
 
   private String key;
   private T value;
+
+  private String label;
 
   protected MapResultEntryDto() {
   }
@@ -32,5 +36,13 @@ public class MapResultEntryDto<T> {
 
   public void setValue(final T value) {
     this.value = value;
+  }
+
+  public Optional<String> getLabel() {
+    return Optional.ofNullable(label);
+  }
+
+  public void setLabel(final String label) {
+    this.label = label;
   }
 }

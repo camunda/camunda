@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.process.flownode.frequency;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.process.FlowNodeGroupingCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
@@ -63,7 +63,7 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCom
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ProcessReportMapResultDto resultDto = mapToReportResult(response);
+      final ProcessCountReportMapResultDto resultDto = mapToReportResult(response);
       return new SingleProcessMapReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
@@ -106,8 +106,8 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCom
     // @formatter:on
   }
 
-  private ProcessReportMapResultDto mapToReportResult(final SearchResponse response) {
-    final ProcessReportMapResultDto resultDto = new ProcessReportMapResultDto();
+  private ProcessCountReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ProcessCountReportMapResultDto resultDto = new ProcessCountReportMapResultDto();
 
     final Aggregations aggregations = response.getAggregations();
     final Nested activities = aggregations.get("events");

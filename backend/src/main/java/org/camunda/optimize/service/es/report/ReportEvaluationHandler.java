@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
@@ -120,7 +120,7 @@ public abstract class ReportEvaluationHandler {
   private boolean isProcessMapOrNumberResult(ReportEvaluationResult reportResult) {
     final ReportResultDto resultAsDto = reportResult.getResultAsDto();
     return resultAsDto instanceof ProcessReportNumberResultDto ||
-      resultAsDto instanceof ProcessReportMapResultDto ||
+      resultAsDto instanceof ProcessCountReportMapResultDto ||
       resultAsDto instanceof ProcessDurationReportNumberResultDto ||
       resultAsDto instanceof ProcessDurationReportMapResultDto;
   }

@@ -10,6 +10,7 @@ import java.util.Optional;
 public class SortingDto {
   public static final String SORT_BY_KEY = "key";
   public static final String SORT_BY_VALUE = "value";
+  public static final String SORT_BY_LABEL = "label";
 
   private String by;
   private SortOrder order;

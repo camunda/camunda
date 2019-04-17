@@ -9,7 +9,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
@@ -62,11 +62,11 @@ public class CombinedProcessReportResult
   private List<String[]> mapCombinedReportResultsToCsvList(final Integer limit, final Integer offset,
                                                            final ProcessReportResultDto firstResult) {
     final List<String[]> csvStrings;
-    if (firstResult instanceof ProcessReportMapResultDto) {
+    if (firstResult instanceof ProcessCountReportMapResultDto) {
       csvStrings = mapCombinedReportResultsToCsvList(
         limit,
         offset,
-        (CombinedProcessReportResultDto<ProcessReportMapResultDto>) reportResult,
+        (CombinedProcessReportResultDto<ProcessCountReportMapResultDto>) reportResult,
         r -> new String[]{r.getReportDefinition().getName(), "", ""},
         evaluationResult -> new SingleProcessMapReportResult(
           evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()

@@ -30,7 +30,7 @@ public abstract class ReportCommand<R extends ReportEvaluationResult, RD extends
   protected Range<OffsetDateTime> dateIntervalRange;
 
   @Override
-  public R evaluate(CommandContext<RD> commandContext) throws OptimizeException {
+  public R evaluate(final CommandContext<RD> commandContext) throws OptimizeException {
     reportDefinition = commandContext.getReportDefinition();
     esClient = commandContext.getEsClient();
     configurationService = commandContext.getConfigurationService();
@@ -40,18 +40,27 @@ public abstract class ReportCommand<R extends ReportEvaluationResult, RD extends
 
     final R evaluationResult = evaluate();
     final R filteredResultData = filterResultData(commandContext, evaluationResult);
-    sortResultData(filteredResultData);
-    return filteredResultData;
+    final R enrichedResultData = enrichResultData(commandContext, filteredResultData);
+    sortResultData(enrichedResultData);
+    return enrichedResultData;
   }
 
-  protected abstract void beforeEvaluate(CommandContext<RD> commandContext);
+  protected abstract void beforeEvaluate(final CommandContext<RD> commandContext);
 
   protected abstract R evaluate() throws OptimizeException;
 
   protected abstract void sortResultData(R evaluationResult);
 
-  protected R filterResultData(CommandContext<RD> commandContext, R evaluationResult) {
+  protected R filterResultData(final CommandContext<RD> commandContext, R evaluationResult) {
     return evaluationResult;
+  }
+
+  protected R enrichResultData(final CommandContext<RD> commandContext, final R evaluationResult) {
+    return evaluationResult;
+  }
+
+  public RD getReportDefinition() {
+    return reportDefinition;
   }
 
   @SuppressWarnings("unchecked")

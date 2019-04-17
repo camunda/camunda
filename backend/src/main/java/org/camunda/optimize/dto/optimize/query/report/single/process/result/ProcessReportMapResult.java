@@ -7,18 +7,16 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.result;
 
 import org.camunda.optimize.dto.optimize.query.report.single.result.LimitedResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class ProcessReportMapResultDto extends ProcessReportResultDto implements LimitedResultDto {
-
-  private List<MapResultEntryDto<Long>> data = new ArrayList<>();
+public abstract class ProcessReportMapResult<T> extends ProcessReportResultDto implements LimitedResultDto {
+  private List<MapResultEntryDto<T>> data = new ArrayList<>();
   private Boolean isComplete = true;
 
-  public Optional<MapResultEntryDto<Long>> getDataEntryForKey(final String key) {
+  public Optional<MapResultEntryDto<T>> getDataEntryForKey(final String key) {
     return data.stream().filter(entry -> key.equals(entry.getKey())).findFirst();
   }
 
@@ -31,16 +29,12 @@ public class ProcessReportMapResultDto extends ProcessReportResultDto implements
     isComplete = complete;
   }
 
-  public List<MapResultEntryDto<Long>> getData() {
+  public List<MapResultEntryDto<T>> getData() {
     return data;
   }
 
-  public void setData(List<MapResultEntryDto<Long>> data) {
+  public void setData(List<MapResultEntryDto<T>> data) {
     this.data = data;
   }
 
-  @Override
-  public ResultType getType() {
-    return ResultType.FREQUENCY_MAP;
-  }
 }

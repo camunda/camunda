@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.f
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
@@ -76,7 +76,7 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ProcessReportMapResultDto mapResultDto = mapToReportResult(response);
+      final ProcessCountReportMapResultDto mapResultDto = mapToReportResult(response);
       return new SingleProcessMapReportResult(mapResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
@@ -129,8 +129,8 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
         ).subAggregation(aggregationBuilder));
   }
 
-  private ProcessReportMapResultDto mapToReportResult(final SearchResponse response) {
-    final ProcessReportMapResultDto resultDto = new ProcessReportMapResultDto();
+  private ProcessCountReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ProcessCountReportMapResultDto resultDto = new ProcessCountReportMapResultDto();
 
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);

@@ -9,8 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
-import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
-import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
@@ -41,8 +39,10 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
@@ -86,118 +86,19 @@ public class ProcessDefinitionReader {
     return definitionsResult;
   }
 
-  /**
-   * This function retrieves all process definitions independent of if the respective xml was already imported or not.
-   */
-  public List<ProcessDefinitionOptimizeDto> fetchAllProcessDefinitionsWithoutXmlAsService() {
-    logger.debug("Fetching all process definitions including those where the xml hasn't been fetched yet.");
-    final QueryBuilder query = QueryBuilders.matchAllQuery();
-    return fetchProcessDefinitions(false, query);
-  }
+  public Optional<ProcessDefinitionOptimizeDto> getFullyImportedProcessDefinitionAsService(
+    final String processDefinitionKey,
+    final String processDefinitionVersion) {
 
-  public List<ProcessDefinitionOptimizeDto> fetchProcessDefinitions(final boolean withXml, final QueryBuilder query) {
-    final String[] fieldsToExclude = withXml ? null : new String[]{ProcessDefinitionType.PROCESS_DEFINITION_XML};
-
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
-      .size(LIST_FETCH_LIMIT)
-      .fetchSource(null, fieldsToExclude);
-    final SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(PROC_DEF_TYPE))
-        .types(PROC_DEF_TYPE)
-        .source(searchSourceBuilder)
-        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
-
-    final SearchResponse scrollResp;
-    try {
-      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      logger.error("Was not able to retrieve process definitions!", e);
-      throw new OptimizeRuntimeException("Was not able to retrieve process definitions!", e);
-    }
-
-    return ElasticsearchHelper.retrieveAllScrollResults(
-      scrollResp,
-      ProcessDefinitionOptimizeDto.class,
-      objectMapper,
-      esClient,
-      configurationService.getElasticsearchScrollTimeout()
-    );
-  }
-
-  public Optional<String> getProcessDefinitionXml(String userId, String definitionKey, String definitionVersion) {
-    return getProcessDefinitionWithXml(definitionKey, definitionVersion)
-      .flatMap(processDefinitionOptimizeDto -> {
-        if (isAuthorizedToReadProcessDefinition(userId, processDefinitionOptimizeDto)) {
-          return Optional.ofNullable(processDefinitionOptimizeDto.getBpmn20Xml());
-        } else {
-          throw new ForbiddenException("Current user is not authorized to access data of the process definition");
-        }
-      });
-  }
-
-  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey(String userId) {
-    Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = getKeyToProcessDefinitionMap(userId);
-    return new ArrayList<>(resultMap.values());
-  }
-
-  public FlowNodeNamesResponseDto getFlowNodeNames(FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto) {
-    FlowNodeNamesResponseDto result = new FlowNodeNamesResponseDto();
-
-    final Optional<ProcessDefinitionOptimizeDto> processDefinitionXmlDto = getProcessDefinitionWithXml(
-      flowNodeIdsToNamesRequestDto.getProcessDefinitionKey(),
-      flowNodeIdsToNamesRequestDto.getProcessDefinitionVersion()
-    );
-    if (processDefinitionXmlDto.isPresent()) {
-      List<String> nodeIds = flowNodeIdsToNamesRequestDto.getNodeIds();
-      if (nodeIds != null && !nodeIds.isEmpty()) {
-        for (String id : nodeIds) {
-          result.getFlowNodeNames().put(id, processDefinitionXmlDto.get().getFlowNodeNames().get(id));
-        }
-      } else {
-        result.setFlowNodeNames(processDefinitionXmlDto.get().getFlowNodeNames());
-      }
-    } else {
-      logger.debug(
-        "No process definition found for key {} and version {}, returning empty result.",
-        flowNodeIdsToNamesRequestDto.getProcessDefinitionKey(),
-        flowNodeIdsToNamesRequestDto.getProcessDefinitionVersion()
-      );
-    }
-
-    return result;
-  }
-
-  private List<ProcessDefinitionOptimizeDto> filterAuthorizedProcessDefinitions(final String userId,
-                                                                                final List<ProcessDefinitionOptimizeDto> processDefinitions) {
-    return processDefinitions
-      .stream()
-      .filter(def -> isAuthorizedToReadProcessDefinition(userId, def))
-      .collect(Collectors.toList());
-  }
-
-  private boolean isAuthorizedToReadProcessDefinition(final String userId, final ProcessDefinitionOptimizeDto def) {
-    return authorizationService.isAuthorizedToSeeProcessDefinition(userId, def.getKey());
-  }
-
-  private String convertToValidVersion(String processDefinitionKey, String processDefinitionVersion) {
-    if (ReportConstants.ALL_VERSIONS.equals(processDefinitionVersion)) {
-      return getLatestVersionToKey(processDefinitionKey);
-    } else {
-      return processDefinitionVersion;
-    }
-  }
-
-  private Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionWithXml(String processDefinitionKey,
-                                                                             String processDefinitionVersion) {
     if (processDefinitionKey == null || processDefinitionVersion == null) {
       return Optional.empty();
     }
 
-    processDefinitionVersion = convertToValidVersion(processDefinitionKey, processDefinitionVersion);
+    String validVersion = convertToValidVersion(processDefinitionKey, processDefinitionVersion);
     QueryBuilder query = QueryBuilders.boolQuery()
       .must(termQuery(PROCESS_DEFINITION_KEY, processDefinitionKey))
-      .must(termQuery(PROCESS_DEFINITION_VERSION, processDefinitionVersion));
+      .must(termQuery(PROCESS_DEFINITION_VERSION, validVersion))
+      .must(existsQuery(PROCESS_DEFINITION_XML));
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
@@ -228,13 +129,79 @@ public class ProcessDefinitionReader {
         logger.error("Could not read process definition from Elasticsearch!", e);
       }
     } else {
-      logger.warn(
+      logger.debug(
         "Could not find process definition xml with key [{}] and version [{}]",
         processDefinitionKey,
         processDefinitionVersion
       );
     }
     return Optional.ofNullable(xml);
+  }
+
+  public Optional<String> getProcessDefinitionXml(String userId, String definitionKey, String definitionVersion) {
+    return getFullyImportedProcessDefinitionAsService(definitionKey, definitionVersion)
+      .map(processDefinitionOptimizeDto -> {
+        if (isAuthorizedToReadProcessDefinition(userId, processDefinitionOptimizeDto)) {
+          return processDefinitionOptimizeDto.getBpmn20Xml();
+        } else {
+          throw new ForbiddenException("Current user is not authorized to access data of the process definition");
+        }
+      });
+  }
+
+  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey(String userId) {
+    Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = getKeyToProcessDefinitionMap(userId);
+    return new ArrayList<>(resultMap.values());
+  }
+
+  private List<ProcessDefinitionOptimizeDto> filterAuthorizedProcessDefinitions(final String userId,
+                                                                                final List<ProcessDefinitionOptimizeDto> processDefinitions) {
+    return processDefinitions
+      .stream()
+      .filter(def -> isAuthorizedToReadProcessDefinition(userId, def))
+      .collect(Collectors.toList());
+  }
+
+  private List<ProcessDefinitionOptimizeDto> fetchProcessDefinitions(final boolean withXml, final QueryBuilder query) {
+    final String[] fieldsToExclude = withXml ? null : new String[]{ProcessDefinitionType.PROCESS_DEFINITION_XML};
+
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .size(LIST_FETCH_LIMIT)
+      .fetchSource(null, fieldsToExclude);
+    final SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(PROC_DEF_TYPE))
+        .types(PROC_DEF_TYPE)
+        .source(searchSourceBuilder)
+        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+
+    final SearchResponse scrollResp;
+    try {
+      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Was not able to retrieve process definitions!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve process definitions!", e);
+    }
+
+    return ElasticsearchHelper.retrieveAllScrollResults(
+      scrollResp,
+      ProcessDefinitionOptimizeDto.class,
+      objectMapper,
+      esClient,
+      configurationService.getElasticsearchScrollTimeout()
+    );
+  }
+
+  private boolean isAuthorizedToReadProcessDefinition(final String userId, final ProcessDefinitionOptimizeDto def) {
+    return authorizationService.isAuthorizedToSeeProcessDefinition(userId, def.getKey());
+  }
+
+  private String convertToValidVersion(String processDefinitionKey, String processDefinitionVersion) {
+    if (ReportConstants.ALL_VERSIONS.equals(processDefinitionVersion)) {
+      return getLatestVersionToKey(processDefinitionKey);
+    } else {
+      return processDefinitionVersion;
+    }
   }
 
   private String getLatestVersionToKey(String key) {

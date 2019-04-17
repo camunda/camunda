@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
@@ -83,7 +83,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceDto.getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
     );
-    ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -96,7 +96,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     StartDateGroupByDto startDateGroupByDto = (StartDateGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(startDateGroupByDto.getValue().getUnit(), is(GroupByDateUnit.DAY));
 
-    final ProcessReportMapResultDto result = evaluationResponse.getResult();
+    final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getProcessInstanceCount(), is(1L));
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
@@ -117,7 +117,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     );
 
     // when
-    ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluationResponse = evaluateReportById(reportId);
+    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateReportById(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -130,7 +130,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     StartDateGroupByDto startDateGroupByDto = (StartDateGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(startDateGroupByDto.getValue().getUnit(), is(GroupByDateUnit.DAY));
 
-    final ProcessReportMapResultDto result = evaluationResponse.getResult();
+    final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
@@ -158,7 +158,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceDto.getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
     );
-    final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -191,7 +191,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       GroupByDateUnit.DAY
     );
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -230,7 +230,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       GroupByDateUnit.DAY
     );
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.DESC));
-    final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
     assertThat(result.getIsComplete(), is(true));
@@ -270,7 +270,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceDto.getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
     );
-    final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -295,7 +295,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceDto.getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -334,7 +334,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceDto.getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -380,7 +380,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceEngineDto.getProcessDefinitionVersion(),
       GroupByDateUnit.HOUR
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -439,7 +439,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceEngineDto.getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -463,7 +463,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceEngineDto.getProcessDefinitionVersion(),
       GroupByDateUnit.WEEK
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -487,7 +487,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceEngineDto.getProcessDefinitionVersion(),
       GroupByDateUnit.MONTH
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -511,7 +511,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceEngineDto.getProcessDefinitionVersion(),
       GroupByDateUnit.YEAR
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -531,7 +531,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByStartDate(
       processInstanceDto.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS, GroupByDateUnit.DAY
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -553,7 +553,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       processInstanceDto.getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
     );
-    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -584,7 +584,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       .buildList();
 
     reportData.getFilter().addAll(flowNodeFilter);
-    ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -700,21 +700,21 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       .getId();
   }
 
-  private ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluateReportById(String reportId) {
+  private ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluateReportById(String reportId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessReportMapResultDto>>() {});
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>>() {});
       // @formatter:on
   }
 
-  private ProcessReportEvaluationResultDto<ProcessReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
+  private ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessReportMapResultDto>>() {});
+      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>>() {});
       // @formatter:on
   }
 

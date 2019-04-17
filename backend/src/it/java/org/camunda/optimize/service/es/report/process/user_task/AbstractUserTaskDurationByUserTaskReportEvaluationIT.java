@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
+import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -233,6 +234,42 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
       resultKeys,
       // expect ascending order
       contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
+    );
+  }
+
+  @Test
+  public void testCustomOrderOnResultLabelIsApplied() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+
+    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
+    finishAllUserTasks(processInstanceDto1);
+    changeDuration(processInstanceDto1, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto1, USER_TASK_2, 20L);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
+    finishAllUserTasks(processInstanceDto2);
+    changeDuration(processInstanceDto2, USER_TASK_1, 10L);
+    changeDuration(processInstanceDto2, USER_TASK_2, 20L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.DESC));
+    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+
+    // then
+    final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
+    assertThat(resultData.size(), is(2));
+    final List<String> resultLabels = resultData.stream()
+      .map(entry -> entry.getLabel().orElse(""))
+      .collect(Collectors.toList());
+    assertThat(
+      resultLabels,
+      // expect ascending order
+      contains(resultLabels.stream().sorted(Comparator.reverseOrder()).toArray())
     );
   }
 

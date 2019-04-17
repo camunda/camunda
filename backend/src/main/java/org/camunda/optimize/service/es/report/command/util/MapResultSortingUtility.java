@@ -82,6 +82,9 @@ public class MapResultSortingUtility {
           }
         });
         break;
+      case SortingDto.SORT_BY_LABEL:
+        comparator = Comparator.comparing(entry -> entry.getLabel().orElse(""));
+        break;
     }
 
     comparator = sortOrder.equals(SortOrder.DESC) ? comparator.reversed() : comparator;

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.result.process;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.export.CSVUtils;
 
@@ -15,9 +15,9 @@ import java.util.List;
 import java.util.Set;
 
 public class SingleProcessMapReportResult
-  extends ReportEvaluationResult<ProcessReportMapResultDto, SingleProcessReportDefinitionDto> {
+  extends ReportEvaluationResult<ProcessCountReportMapResultDto, SingleProcessReportDefinitionDto> {
 
-  public SingleProcessMapReportResult(@NotNull final ProcessReportMapResultDto reportResult,
+  public SingleProcessMapReportResult(@NotNull final ProcessCountReportMapResultDto reportResult,
                                       @NotNull final SingleProcessReportDefinitionDto reportDefinition) {
     super(reportResult, reportDefinition);
   }

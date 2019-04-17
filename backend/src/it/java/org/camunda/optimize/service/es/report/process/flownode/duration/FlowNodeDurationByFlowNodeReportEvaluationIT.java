@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
+import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeHeatmapReport;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -98,7 +99,10 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(3));
     assertThat(result.getDataEntryForKey(SERVICE_TASK_ID).isPresent(), is(true));
-    assertThat(result.getDataEntryForKey(SERVICE_TASK_ID).get().getValue(), is(calculateExpectedValueGivenDurations(20L)));
+    assertThat(
+      result.getDataEntryForKey(SERVICE_TASK_ID).get().getValue(),
+      is(calculateExpectedValueGivenDurations(20L))
+    );
     assertThat(result.getDataEntryForKey(START_EVENT).isPresent(), is(true));
     assertThat(result.getDataEntryForKey(START_EVENT).get().getValue(), is(calculateExpectedValueGivenDurations(20L)));
     assertThat(result.getDataEntryForKey(END_EVENT).isPresent(), is(true));
@@ -234,6 +238,43 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
       resultKeys,
       // expect ascending order
       contains(resultKeys.stream().sorted(Comparator.naturalOrder()).toArray())
+    );
+  }
+
+  @Test
+  public void testCustomOrderOnResultLabelIsApplied() throws SQLException {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
+
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
+    processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 200L);
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 10L);
+    processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 900L);
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 90L);
+
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+
+    // then
+    List<MapResultEntryDto<AggregationResultDto>> resultData = evaluationResponse.getResult().getData();
+    assertThat(resultData.size(), is(4));
+    final List<String> resultLabels = resultData.stream()
+      .map(entry -> entry.getLabel().orElse(""))
+      .collect(Collectors.toList());
+    assertThat(
+      resultLabels,
+      // expect ascending order
+      contains(resultLabels.stream().sorted(Comparator.naturalOrder()).toArray())
     );
   }
 

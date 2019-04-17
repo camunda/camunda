@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.StartDateGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
@@ -86,7 +86,7 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ProcessReportMapResultDto mapResultDto = mapToReportResult(response);
+      final ProcessCountReportMapResultDto mapResultDto = mapToReportResult(response);
       return new SingleProcessMapReportResult(mapResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
@@ -151,8 +151,8 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
     }
   }
 
-  private ProcessReportMapResultDto mapToReportResult(final SearchResponse response) {
-    final ProcessReportMapResultDto resultDto = new ProcessReportMapResultDto();
+  private ProcessCountReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ProcessCountReportMapResultDto resultDto = new ProcessCountReportMapResultDto();
     resultDto.setData(processAggregations(response.getAggregations()));
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
     resultDto.setComplete(isResultComplete(response));
