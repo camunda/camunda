@@ -95,16 +95,19 @@ public class BrokerTopologyManagerImpl extends Actor
     newTopology.setPartitionsCount(remoteTopology.getPartitionsCount());
     newTopology.setReplicationFactor(remoteTopology.getReplicationFactor());
 
+    final int nodeId = remoteTopology.getNodeId();
     for (Integer partitionId : remoteTopology.getPartitionRoles().keySet()) {
       newTopology.addPartitionIfAbsent(partitionId);
 
       if (remoteTopology.getPartitionNodeRole(partitionId)) {
-        newTopology.setPartitionLeader(partitionId, remoteTopology.getNodeId());
+        newTopology.setPartitionLeader(partitionId, nodeId);
+      } else {
+        newTopology.addPartitionFollower(partitionId, nodeId);
       }
     }
 
     final String clientAddress = remoteTopology.getApiAddress(BrokerInfo.CLIENT_API_PROPERTY);
-    newTopology.setBrokerAddressIfPresent(remoteTopology.getNodeId(), clientAddress);
-    registerEndpoint.accept(remoteTopology.getNodeId(), SocketAddress.from(clientAddress));
+    newTopology.setBrokerAddressIfPresent(nodeId, clientAddress);
+    registerEndpoint.accept(nodeId, SocketAddress.from(clientAddress));
   }
 }

@@ -33,6 +33,8 @@ public interface BrokerClusterState {
 
   int getLeaderForPartition(int partition);
 
+  List<Integer> getFollowersForPartition(int partition);
+
   /**
    * @return the node id of a random broker or {@link ClientTransport#UNKNOWN_NODE_ID} if no brokers
    *     are known

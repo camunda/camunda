@@ -496,7 +496,10 @@ public class ClusteringRule extends ExternalResource {
 
   public void waitForTopology(final Function<List<BrokerInfo>, Boolean> topologyPredicate) {
     waitUntil(
-        () -> topologyPredicate.apply(getTopologyFromClient().getBrokers()), TOPOLOGY_RETRIES);
+        () -> topologyPredicate.apply(getTopologyFromClient().getBrokers()),
+        TOPOLOGY_RETRIES,
+        "Failed to wait for topology %s",
+        getTopologyFromClient());
   }
 
   public long createWorkflowInstanceOnPartition(int partitionId, String bpmnProcessId) {

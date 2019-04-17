@@ -239,9 +239,13 @@ public class TopologyManagerImpl extends Actor
     for (PartitionInfo partitionInfo : topology.getPartitions()) {
       final int partitionId = partitionInfo.getPartitionId();
       final NodeInfo leader = topology.getLeader(partitionId);
+      final List<NodeInfo> followers = topology.getFollowers(partitionId);
 
       final boolean isLeader = leader != null && leader.getNodeId() == local.getNodeId();
-      distributionInfo.setPartitionRole(partitionId, isLeader);
+
+      if (isLeader || followers.contains(local)) {
+        distributionInfo.setPartitionRole(partitionId, isLeader);
+      }
     }
 
     return distributionInfo;
