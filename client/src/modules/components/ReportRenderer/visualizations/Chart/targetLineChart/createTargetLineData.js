@@ -42,12 +42,12 @@ function createCombinedTargetLineData(props) {
     isDark
   } = extractCombinedData(props);
 
-  const datasets = unitedResults.reduce((prevDataset, report, i) => {
+  const datasets = unitedResults.reduce((prevDataset, reportData, i) => {
     return [
       ...prevDataset,
       ...createSingleTargetLineDataset(
         targetValue,
-        report,
+        reportData,
         reportColors[i],
         reportsNames[i],
         true,
@@ -60,7 +60,7 @@ function createCombinedTargetLineData(props) {
 }
 
 function createSingleTargetLineDataset(targetValue, data, color, reportName, isCombined, isDark) {
-  const allValues = Object.values(data);
+  const allValues = data.map(({value}) => value);
   const {targetOptions, normalLineOptions} = getTargetLineOptions(
     color,
     targetValue.isBelow,

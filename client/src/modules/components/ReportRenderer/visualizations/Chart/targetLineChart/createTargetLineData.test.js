@@ -6,7 +6,7 @@
 
 import createTargetLineData from './createTargetLineData';
 
-it('should create two datasets for line chart with target values', () => {
+it('should create two datasets with the same data for line chart with target values', () => {
   const result = {data: [{key: 'foo', value: 123}, {key: 'bar', value: 5}]};
   const targetValue = {target: 10};
 
@@ -27,6 +27,8 @@ it('should create two datasets for line chart with target values', () => {
     targetValue
   });
   expect(chartData.datasets).toHaveLength(2);
+  expect(chartData.datasets[0].data).toEqual([5, 123]);
+  expect(chartData.datasets[1].data).toEqual([5, 123]);
 });
 
 it('should create two datasets for each report in combined line charts with target values', () => {
