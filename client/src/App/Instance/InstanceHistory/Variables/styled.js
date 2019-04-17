@@ -125,11 +125,10 @@ export const VariablesFooter = styled(Panel.Footer)`
 
 export const Button = styled(DefaultButton)`
   display: flex;
+  justify-content: center;
   align-items: center;
-`;
-
-export const AddButton = styled(Button)`
-  width: 93px;
+  height: 22px;
+  width: 119px;
 `;
 
 export const Plus = styled(DefaultPlus)`

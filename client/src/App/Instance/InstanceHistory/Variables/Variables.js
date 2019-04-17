@@ -117,7 +117,7 @@ export default function Variables({
         )}
       </Styled.VariablesContent>
       <Styled.VariablesFooter>
-        <Styled.AddButton
+        <Styled.Button
           title="Add variable"
           size="small"
           data-test="add-var-btn"
@@ -125,7 +125,7 @@ export default function Variables({
           disabled={isEditMode || !isEditable}
         >
           <Styled.Plus /> Add Variable
-        </Styled.AddButton>
+        </Styled.Button>
       </Styled.VariablesFooter>
     </Styled.Variables>
   );
