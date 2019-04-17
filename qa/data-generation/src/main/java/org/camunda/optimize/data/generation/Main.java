@@ -19,11 +19,14 @@ public class Main {
   private long numberOfProcessInstancesToGenerate;
   private String engineRestEndpoint;
   private long timeoutInHours;
+  private boolean removeDeployments;
 
-  private Main(long numberOfProcessInstancesToGenerate, String engineRestEndpoint, long timeoutInHours) {
+  private Main(long numberOfProcessInstancesToGenerate, String engineRestEndpoint, long timeoutInHours,
+               boolean removeDeployments) {
     this.numberOfProcessInstancesToGenerate = numberOfProcessInstancesToGenerate;
     this.engineRestEndpoint = engineRestEndpoint;
     this.timeoutInHours = timeoutInHours;
+    this.removeDeployments = removeDeployments;
   }
 
   public static void main(String[] args) {
@@ -34,8 +37,9 @@ public class Main {
     String engineRestEndpoint = arguments.get("engineRest");
     long timeoutInHours =
       Long.parseLong(arguments.get("timeoutInHours"));
+    boolean removeDeployments = Boolean.parseBoolean(arguments.get("removeDeployments"));
 
-    Main main = new Main(numberOfProcessInstancesToGenerate, engineRestEndpoint, timeoutInHours);
+    Main main = new Main(numberOfProcessInstancesToGenerate, engineRestEndpoint, timeoutInHours, removeDeployments);
     main.generateData();
   }
 
@@ -64,6 +68,7 @@ public class Main {
     arguments.put("numberOfProcessInstances", String.valueOf(100_000));
     arguments.put("engineRest", "http://localhost:8080/engine-rest");
     arguments.put("timeoutInHours", String.valueOf(16));
+    arguments.put("removeDeployments", "true");
   }
 
   private static String stripLeadingHyphens(String str) {
@@ -81,7 +86,7 @@ public class Main {
 
   private void generateData() {
     DataGenerationExecutor dataGenerationExecutor =
-      new DataGenerationExecutor(numberOfProcessInstancesToGenerate, engineRestEndpoint, timeoutInHours);
+      new DataGenerationExecutor(numberOfProcessInstancesToGenerate, engineRestEndpoint, timeoutInHours, removeDeployments);
     dataGenerationExecutor.executeDataGeneration();
     dataGenerationExecutor.awaitDataGenerationTermination();
     logger.info("Finished data generation!");

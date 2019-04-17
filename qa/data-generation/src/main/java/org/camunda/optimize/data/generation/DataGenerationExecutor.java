@@ -49,6 +49,7 @@ public class DataGenerationExecutor {
   private Long totalInstanceCount;
   private String engineRestEndpoint;
   private long timeoutInHours;
+  private boolean removeDeployments;
   private SimpleEngineClient engineClient;
 
   private List<DataGenerator> dataGenerators;
@@ -58,10 +59,12 @@ public class DataGenerationExecutor {
   private ScheduledExecutorService progressReporter;
   private UserTaskCompleter completer;
 
-  public DataGenerationExecutor(long totalInstanceCount, String engineRestEndpoint, long timeoutInHours) {
+  public DataGenerationExecutor(long totalInstanceCount, String engineRestEndpoint, long timeoutInHours,
+                                boolean removeDeployments) {
     this.totalInstanceCount = totalInstanceCount;
     this.engineRestEndpoint = engineRestEndpoint;
     this.timeoutInHours = timeoutInHours;
+    this.removeDeployments = removeDeployments;
   }
 
   private void init() {
@@ -71,6 +74,9 @@ public class DataGenerationExecutor {
       3, 20, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue, new WaitHandler());
 
     engineClient = new SimpleEngineClient(engineRestEndpoint);
+    if (this.removeDeployments) {
+      engineClient.cleanUpDeployments();
+    }
     initGenerators(engineClient);
   }
 

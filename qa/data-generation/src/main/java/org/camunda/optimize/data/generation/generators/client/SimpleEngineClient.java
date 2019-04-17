@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -83,6 +84,41 @@ public class SimpleEngineClient {
     return getProcessDefinitionId(deploymentDto);
   }
 
+  public void cleanUpDeployments() {
+    logger.info("Starting deployments clean up");
+    HttpGet get = new HttpGet(getDeploymentUri());
+    String responseString;
+    List<DeploymentDto> result = null;
+    try {
+      CloseableHttpResponse response = client.execute(get);
+      responseString = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+      result = objectMapper.readValue(
+        responseString,
+        new TypeReference<List<DeploymentDto>>() {
+        }
+      );
+      logger.info("Fetched " + result.size() + " deployments");
+    } catch (IOException e) {
+      logger.error("Could fetch deployments from the Engine");
+    }
+    if (result != null) {
+      result.forEach((deployment) -> {
+        HttpDelete delete = new HttpDelete(getDeploymentUri() + deployment.getId());
+        try {
+          URI uri = new URIBuilder(delete.getURI())
+            .addParameter("cascade", "true")
+            .build();
+          delete.setURI(uri);
+          client.execute(delete);
+          logger.info("Deleted deployment with id " + deployment.getId());
+        } catch (IOException | URISyntaxException e) {
+          logger.error("Could not delete deployment");
+        }
+      });
+    }
+    logger.info("Deployment clean up finished");
+  }
+
   private String getProcessDefinitionId(DeploymentDto deployment) {
     List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(deployment);
     if (processDefinitions.size() != 1) {
@@ -128,9 +164,13 @@ public class SimpleEngineClient {
     return  engineRestEndpoint + "/decision-definition";
   }
 
-  private String getDeploymentUri() {
-    return engineRestEndpoint + "/deployment/create";
+  private String getCreateDeploymentUri() {
+    return getDeploymentUri() + "create";
   }
+  private String getDeploymentUri() {
+    return engineRestEndpoint + "/deployment/";
+  }
+
 
   private DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance) {
     String process = Bpmn.convertToString(bpmnModelInstance);
@@ -224,7 +264,7 @@ public class SimpleEngineClient {
   }
 
   private HttpPost createProcessDeploymentRequest(String process) {
-    HttpPost post = new HttpPost(getDeploymentUri());
+    HttpPost post = new HttpPost(getCreateDeploymentUri());
     HttpEntity entity = MultipartEntityBuilder
       .create()
       .addTextBody("deployment-name", "deployment")
@@ -237,7 +277,7 @@ public class SimpleEngineClient {
   }
 
   private HttpPost createDecisionDeploymentRequest(String decision) {
-    HttpPost post = new HttpPost(getDeploymentUri());
+    HttpPost post = new HttpPost(getCreateDeploymentUri());
     HttpEntity entity = MultipartEntityBuilder
       .create()
       .addTextBody("deployment-name", "deployment")

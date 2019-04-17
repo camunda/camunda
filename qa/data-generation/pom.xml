@@ -53,6 +53,8 @@
             <!--<argument>100000</argument>-->
             <!--<argument>engineRest</argument>-->
             <!--<argument>http://localhost:8080/engine-rest</argument>-->
+            <!--<argument>removeDeployments</argument>-->
+            <!--<argument>true</argument>-->
           </arguments>
         </configuration>
       </plugin>
