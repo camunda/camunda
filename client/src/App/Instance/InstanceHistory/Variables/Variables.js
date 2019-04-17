@@ -118,13 +118,13 @@ export default function Variables({
       </Styled.VariablesContent>
       <Styled.VariablesFooter>
         <Styled.AddButton
-          title="Add key"
+          title="Add variable"
           size="small"
           data-test="add-var-btn"
           onClick={toggleIsEdit}
           disabled={isEditMode || !isEditable}
         >
-          <Styled.Plus /> Add Key
+          <Styled.Plus /> Add Variable
         </Styled.AddButton>
       </Styled.VariablesFooter>
     </Styled.Variables>
