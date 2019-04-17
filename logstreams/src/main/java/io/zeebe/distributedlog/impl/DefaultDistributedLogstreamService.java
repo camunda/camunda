@@ -27,6 +27,7 @@ import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.DistributedLogstreamType;
 import io.zeebe.distributedlog.StorageConfiguration;
 import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
@@ -53,28 +54,32 @@ public class DefaultDistributedLogstreamService
 
   private String logName;
 
-  private final DistributedLogstreamServiceConfig config;
   private ServiceContainer serviceContainer;
 
   public DefaultDistributedLogstreamService(DistributedLogstreamServiceConfig config) {
     super(DistributedLogstreamType.instance(), DistributedLogstreamClient.class);
-    this.config = config;
     lastPosition = -1;
   }
 
   @Override
   protected void configure(ServiceExecutor executor) {
     super.configure(executor);
-    logName = getRaftPartitionName(executor);
-    LOG.info(
-        "Configuring DistLog {} on node {} with logName {}",
-        getServiceName(),
-        getLocalMemberId().id(),
-        logName);
     try {
+      logName = getRaftPartitionName(executor);
+      LOG.info(
+          "Configuring {} on node {} with logName {}",
+          getServiceName(),
+          getLocalMemberId().id(),
+          logName);
+
       createLogStream(logName);
     } catch (Exception e) {
-      e.printStackTrace();
+      LOG.error(
+          "Failed to configure {} on node {} with logName {}",
+          getServiceName(),
+          getLocalMemberId().id(),
+          logName,
+          e);
       throw e;
     }
   }
@@ -107,26 +112,33 @@ public class DefaultDistributedLogstreamService
     final String localmemberId = getLocalMemberId().id();
     serviceContainer = LogstreamConfig.getServiceContainer(localmemberId);
 
-    final StorageConfiguration config =
-        LogstreamConfig.getConfig(localmemberId, partitionId).join();
+    if (serviceContainer.hasService(LogStreamServiceNames.logStreamServiceName(logServiceName))) {
+      logStream = LogstreamConfig.getLogStream(localmemberId, partitionId);
+    } else {
 
-    final File logDirectory = config.getLogDirectory();
-    final File snapshotDirectory = config.getSnapshotsDirectory();
-    final File blockIndexDirectory = config.getBlockIndexDirectory();
+      final StorageConfiguration config =
+          LogstreamConfig.getConfig(localmemberId, partitionId).join();
 
-    final StateStorage stateStorage = new StateStorage(blockIndexDirectory, snapshotDirectory);
+      final File logDirectory = config.getLogDirectory();
+      final File snapshotDirectory = config.getSnapshotsDirectory();
+      final File blockIndexDirectory = config.getBlockIndexDirectory();
 
-    logStream =
-        LogStreams.createFsLogStream(partitionId)
-            .logDirectory(logDirectory.getAbsolutePath())
-            .logSegmentSize((int) config.getLogSegmentSize())
-            .indexBlockSize((int) config.getIndexBlockSize())
-            .logName(logServiceName)
-            .serviceContainer(serviceContainer)
-            .indexStateStorage(stateStorage)
-            .build()
-            .join();
+      final StateStorage stateStorage = new StateStorage(blockIndexDirectory, snapshotDirectory);
+
+      logStream =
+          LogStreams.createFsLogStream(partitionId)
+              .logDirectory(logDirectory.getAbsolutePath())
+              .logSegmentSize((int) config.getLogSegmentSize())
+              .indexBlockSize((int) config.getIndexBlockSize())
+              .logName(logServiceName)
+              .serviceContainer(serviceContainer)
+              .indexStateStorage(stateStorage)
+              .build()
+              .join();
+    }
     this.logStorage = this.logStream.getLogStorage();
+
+    LogstreamConfig.putLogStream(localmemberId, partitionId, logStream);
 
     final BufferedLogStreamReader reader = new BufferedLogStreamReader(logStream);
     reader.seekToLastEvent();
@@ -149,7 +161,7 @@ public class DefaultDistributedLogstreamService
     if (commitPosition <= lastPosition) {
       // This case can happen due to raft-replay or when appender retries due to timeout or other
       // exceptions.
-      LOG.debug("Rejecting append request at position {}", commitPosition);
+      LOG.trace("Rejecting append request at position {}", commitPosition);
       return 1; // Assume the append was successful because event was previously appended.
     }
 

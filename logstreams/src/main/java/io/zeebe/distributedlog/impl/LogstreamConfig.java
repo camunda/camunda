@@ -17,6 +17,7 @@ package io.zeebe.distributedlog.impl;
 
 import io.zeebe.distributedlog.StorageConfiguration;
 import io.zeebe.distributedlog.StorageConfigurationManager;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.Map;
@@ -27,6 +28,7 @@ public class LogstreamConfig {
 
   private static final Map<String, ServiceContainer> SERVICE_CONTAINERS = new ConcurrentHashMap<>();
   private static final Map<String, StorageConfigurationManager> CONFIGS = new ConcurrentHashMap<>();
+  private static final Map<String, LogStream> LOGSTREAMS = new ConcurrentHashMap<>();
 
   public static void putServiceContainer(String nodeId, ServiceContainer serviceContainer) {
     SERVICE_CONTAINERS.put(nodeId, serviceContainer);
@@ -42,5 +44,17 @@ public class LogstreamConfig {
 
   public static void putConfig(String nodeId, StorageConfigurationManager configManager) {
     CONFIGS.put(nodeId, configManager);
+  }
+
+  public static void putLogStream(String nodeId, int partitionId, LogStream logstream) {
+    LOGSTREAMS.put(key(nodeId, partitionId), logstream);
+  }
+
+  public static LogStream getLogStream(String nodeId, int partitionId) {
+    return LOGSTREAMS.get(key(nodeId, partitionId));
+  }
+
+  private static String key(String nodeId, int partitionId) {
+    return String.format("%s-%d", nodeId, partitionId);
   }
 }
