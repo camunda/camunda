@@ -6,15 +6,6 @@
 
 import {request, formatQuery, put, post, get, addHandler, removeHandler} from './request';
 
-import {fromCache, toCache} from './backendCache';
-
-jest.mock('./backendCache', () => {
-  return {
-    fromCache: jest.fn(),
-    toCache: jest.fn()
-  };
-});
-
 const successResponse = {
   status: 200,
   content: 'I have so much content'
@@ -255,25 +246,5 @@ describe('methods shortcuts functions', () => {
     it('should return request response', async () => {
       expect(await get()).toBe(successResponse);
     });
-  });
-});
-
-describe('caching', () => {
-  it('should store responses in cache', async () => {
-    toCache.mockClear();
-    const params = {url: 'something', query: {a: 1, b: 2}};
-
-    await request(params);
-
-    expect(toCache).toHaveBeenCalledWith(params, successResponse);
-  });
-
-  it('should return cached responses', async () => {
-    const cachedResponse = {};
-    fromCache.mockReturnValueOnce(cachedResponse);
-
-    const response = await request();
-
-    expect(response).toBe(cachedResponse);
   });
 });
