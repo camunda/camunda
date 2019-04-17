@@ -27,6 +27,7 @@ import {
   getFilterWithDefaults,
   getLastVersionOfWorkflow
 } from './service';
+import VariableFilterInput from './VariableFilterInput';
 
 import {ALL_VERSIONS_OPTION, DEFAULT_CONTROLLED_VALUES} from './constants';
 
@@ -263,6 +264,11 @@ export default class Filters extends React.Component {
                       placeholder="Flow Node"
                       options={this.props.activityIds}
                       onChange={this.handleFieldChange}
+                    />
+                  </Styled.Field>
+                  <Styled.Field>
+                    <VariableFilterInput
+                      onFilterChange={this.props.onFilterChange}
                     />
                   </Styled.Field>
                   <Styled.CheckboxGroup
