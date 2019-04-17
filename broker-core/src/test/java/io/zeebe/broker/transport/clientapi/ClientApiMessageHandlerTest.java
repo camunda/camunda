@@ -186,7 +186,7 @@ public class ClientApiMessageHandlerTest {
     messageHandler = new ClientApiMessageHandler();
 
     final Partition partition =
-        new Partition(new PartitionInfo(LOG_STREAM_PARTITION_ID, 1), RaftState.LEADER) {
+        new Partition(new PartitionInfo(LOG_STREAM_PARTITION_ID), RaftState.LEADER) {
           @Override
           public LogStream getLogStream() {
             return logStream;

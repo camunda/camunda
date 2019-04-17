@@ -108,7 +108,7 @@ public class TopologyManagerImpl extends Actor
           final NodeInfo memberInfo = topology.getLocal();
 
           // TODO: is replicationFactor ever used? https://github.com/zeebe-io/zeebe/issues/2326
-          updatePartition(partitionId, -1, memberInfo, state);
+          updatePartition(partitionId, memberInfo, state);
           publishTopologyChanges();
         });
   }
@@ -123,10 +123,8 @@ public class TopologyManagerImpl extends Actor
     updateRole(RaftState.LEADER, partitionId);
   }
 
-  public void updatePartition(
-      int partitionId, int replicationFactor, NodeInfo member, RaftState raftState) {
-    final PartitionInfo updatedPartition =
-        topology.updatePartition(partitionId, replicationFactor, member, raftState);
+  public void updatePartition(int partitionId, NodeInfo member, RaftState raftState) {
+    final PartitionInfo updatedPartition = topology.updatePartition(partitionId, member, raftState);
 
     notifyPartitionUpdated(updatedPartition, member);
   }
@@ -191,8 +189,7 @@ public class TopologyManagerImpl extends Actor
       final RaftState role =
           brokerInfo.getPartitionNodeRole(partitionId) ? RaftState.LEADER : RaftState.FOLLOWER;
 
-      final PartitionInfo updatedPartition =
-          topology.updatePartition(partitionId, topology.getReplicationFactor(), nodeInfo, role);
+      final PartitionInfo updatedPartition = topology.updatePartition(partitionId, nodeInfo, role);
       notifyPartitionUpdated(updatedPartition, nodeInfo);
     }
   }

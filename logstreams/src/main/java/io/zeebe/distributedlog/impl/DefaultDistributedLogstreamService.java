@@ -25,6 +25,7 @@ import io.atomix.protocols.raft.service.RaftServiceContext;
 import io.zeebe.distributedlog.DistributedLogstreamClient;
 import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.DistributedLogstreamType;
+import io.zeebe.distributedlog.StorageConfiguration;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
@@ -99,30 +100,26 @@ public class DefaultDistributedLogstreamService
   }
 
   private void createLogStream(String logServiceName) {
-    final String localmemberId = getLocalMemberId().id();
-    serviceContainer = LogstreamConfig.getServiceContainer(localmemberId);
-    final String partitionDirectory =
-        LogstreamConfig.getLogDirectory(localmemberId) + "/" + logServiceName;
-
-    final File logDirectory = new File(partitionDirectory, "log");
-    logDirectory.mkdirs();
-
-    final File snapshotDirectory = new File(partitionDirectory, "snapshot");
-    snapshotDirectory.mkdirs();
-
-    final File blockIndexDirectory = new File(partitionDirectory, "index");
-    blockIndexDirectory.mkdirs();
-
-    final StateStorage stateStorage = new StateStorage(blockIndexDirectory, snapshotDirectory);
-
     // A hack to get partitionId from the name
     final String[] splitted = logServiceName.split("-");
     final int partitionId = Integer.parseInt(splitted[splitted.length - 1]);
 
+    final String localmemberId = getLocalMemberId().id();
+    serviceContainer = LogstreamConfig.getServiceContainer(localmemberId);
+
+    final StorageConfiguration config =
+        LogstreamConfig.getConfig(localmemberId, partitionId).join();
+
+    final File logDirectory = config.getLogDirectory();
+    final File snapshotDirectory = config.getSnapshotsDirectory();
+    final File blockIndexDirectory = config.getBlockIndexDirectory();
+
+    final StateStorage stateStorage = new StateStorage(blockIndexDirectory, snapshotDirectory);
+
     logStream =
         LogStreams.createFsLogStream(partitionId)
             .logDirectory(logDirectory.getAbsolutePath())
-            .logSegmentSize(config.getLogSegmentSize())
+            .logSegmentSize((int) config.getLogSegmentSize())
             .logName(logServiceName)
             .serviceContainer(serviceContainer)
             .indexStateStorage(stateStorage)

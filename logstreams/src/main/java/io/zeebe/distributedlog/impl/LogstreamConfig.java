@@ -15,23 +15,18 @@
  */
 package io.zeebe.distributedlog.impl;
 
+import io.zeebe.distributedlog.StorageConfiguration;
+import io.zeebe.distributedlog.StorageConfigurationManager;
 import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /* Used by DefaultDistributedLogstreamService to get the node specific objects/configuration */
 public class LogstreamConfig {
 
-  private static final Map<String, String> LOG_DIRS = new ConcurrentHashMap<>();
   private static final Map<String, ServiceContainer> SERVICE_CONTAINERS = new ConcurrentHashMap<>();
-
-  public static void putLogDirectory(String nodeId, String dirPath) {
-    LOG_DIRS.put(nodeId, dirPath);
-  }
-
-  public static String getLogDirectory(String nodeId) {
-    return LOG_DIRS.get(nodeId);
-  }
+  private static final Map<String, StorageConfigurationManager> CONFIGS = new ConcurrentHashMap<>();
 
   public static void putServiceContainer(String nodeId, ServiceContainer serviceContainer) {
     SERVICE_CONTAINERS.put(nodeId, serviceContainer);
@@ -39,5 +34,13 @@ public class LogstreamConfig {
 
   public static ServiceContainer getServiceContainer(String nodeId) {
     return SERVICE_CONTAINERS.get(nodeId);
+  }
+
+  public static ActorFuture<StorageConfiguration> getConfig(String nodeId, int partitionId) {
+    return CONFIGS.get(nodeId).createConfiguration(partitionId);
+  }
+
+  public static void putConfig(String nodeId, StorageConfigurationManager configManager) {
+    CONFIGS.put(nodeId, configManager);
   }
 }

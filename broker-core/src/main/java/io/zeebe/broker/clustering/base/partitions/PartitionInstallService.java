@@ -31,10 +31,10 @@ import static io.zeebe.broker.logstreams.LogStreamServiceNames.stateStorageFacto
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.broker.logstreams.state.StateStorageFactoryService;
+import io.zeebe.distributedlog.StorageConfiguration;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.logstreams.impl.service.LeaderOpenLogStreamAppenderService;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
@@ -58,7 +58,7 @@ public class PartitionInstallService extends Actor
     implements Service<Void>, PartitionRoleChangeListener {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
-  private final RaftPersistentConfiguration configuration;
+  private final StorageConfiguration configuration;
   private final PartitionInfo partitionInfo;
 
   private ServiceStartContext startContext;
@@ -71,10 +71,9 @@ public class PartitionInstallService extends Actor
   private ActorFuture<PartitionLeaderElection> leaderElectionInstallFuture;
   private PartitionLeaderElection leaderElection;
 
-  public PartitionInstallService(final RaftPersistentConfiguration configuration) {
+  public PartitionInstallService(final StorageConfiguration configuration) {
     this.configuration = configuration;
-    this.partitionInfo =
-        new PartitionInfo(configuration.getPartitionId(), configuration.getReplicationFactor());
+    this.partitionInfo = new PartitionInfo(configuration.getPartitionId());
   }
 
   @Override

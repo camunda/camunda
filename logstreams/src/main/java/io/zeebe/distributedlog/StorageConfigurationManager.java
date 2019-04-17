@@ -1,24 +1,20 @@
 /*
- * Zeebe Broker Core
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-package io.zeebe.broker.clustering.base.raft;
+package io.zeebe.distributedlog;
 
-import io.zeebe.broker.clustering.base.partitions.PartitionAlreadyExistsException;
-import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.Actor;
@@ -28,12 +24,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
- * Manages {@link RaftPersistentConfiguration} instances. When the broker is started, it loads the
- * stored files. Knows where to put new configuration files when a new raft is started.
+ * Manages {@link StorageConfiguration} instances. When the broker is started, it loads the stored
+ * files. Knows where to put new configuration files when a new raft is started.
  */
-public class RaftPersistentConfigurationManager extends Actor {
+public class StorageConfigurationManager extends Actor {
   private static final String PARTITION_METAFILE_NAME = "partition.json";
   private static final String PARTITION_LOG_DIR = "segments";
   private static final String PARTITION_STATES_DIR = "state";
@@ -41,20 +38,20 @@ public class RaftPersistentConfigurationManager extends Actor {
   private static final String PARTITION_INDEX_RUNTIME_DIR = "runtime";
   private static final String PARTITION_INDEX_SNAPSHOTS_DIR = "snapshots";
 
-  private final List<RaftPersistentConfiguration> configurations = new ArrayList<>();
-  private final DataCfg dataConfiguration;
+  private final List<StorageConfiguration> configurations = new ArrayList<>();
 
   private final int[] partitionCountPerDataDirectory;
+  private final List<String> directories;
+  private final String segmentSize;
 
-  public RaftPersistentConfigurationManager(DataCfg dataConfiguration) {
-    this.dataConfiguration = dataConfiguration;
-    this.partitionCountPerDataDirectory = new int[dataConfiguration.getDirectories().size()];
+  public StorageConfigurationManager(List<String> dataDirectories, String segmentSize) {
+    this.directories = dataDirectories;
+    this.segmentSize = segmentSize;
+    this.partitionCountPerDataDirectory = new int[dataDirectories.size()];
   }
 
   @Override
   protected void onActorStarting() {
-    final List<String> directories = dataConfiguration.getDirectories();
-
     for (int i = 0; i < directories.size(); i++) {
       readConfigurations(directories.get(i), i);
     }
@@ -78,7 +75,7 @@ public class RaftPersistentConfigurationManager extends Actor {
             new File(indexDirectory, PARTITION_INDEX_SNAPSHOTS_DIR);
 
         configurations.add(
-            new RaftPersistentConfiguration(
+            new StorageConfiguration(
                 configFile,
                 logDirectory,
                 indexSnapshotsDirectory,
@@ -89,27 +86,27 @@ public class RaftPersistentConfigurationManager extends Actor {
     }
   }
 
-  public ActorFuture<List<RaftPersistentConfiguration>> getConfigurations() {
+  public ActorFuture<List<StorageConfiguration>> getConfigurations() {
     return actor.call(() -> new ArrayList<>(configurations));
   }
 
-  public ActorFuture<RaftPersistentConfiguration> createConfiguration(
-      int partitionId, int replicationFactor, List<Integer> members) {
-    final ActorFuture<RaftPersistentConfiguration> future = new CompletableActorFuture<>();
+  // get existing or create new
+  public ActorFuture<StorageConfiguration> createConfiguration(int partitionId) {
+    final ActorFuture<StorageConfiguration> future = new CompletableActorFuture<>();
 
     actor.run(
         () -> {
-          final boolean partitionExists =
-              configurations.stream().anyMatch((config) -> config.getPartitionId() == partitionId);
-
-          if (partitionExists) {
-            future.completeExceptionally(new PartitionAlreadyExistsException(partitionId));
+          final Optional<StorageConfiguration> partitionConfig =
+              configurations.stream()
+                  .filter((config) -> config.getPartitionId() == partitionId)
+                  .findAny();
+          if (partitionConfig.isPresent()) {
+            future.complete(partitionConfig.get());
           } else {
             final String partitionName = String.format("partition-%d", partitionId);
 
             final int assignedDataDirOffset = assignDataDirectory();
-            final String assignedDataDirectoryName =
-                dataConfiguration.getDirectories().get(assignedDataDirOffset);
+            final String assignedDataDirectoryName = directories.get(assignedDataDirOffset);
             final File partitionDirectory = new File(assignedDataDirectoryName, partitionName);
 
             try {
@@ -134,8 +131,8 @@ public class RaftPersistentConfigurationManager extends Actor {
                   new File(indexDirectory, PARTITION_INDEX_SNAPSHOTS_DIR);
               indexSnapshotsDirectory.mkdir();
 
-              final RaftPersistentConfiguration storage =
-                  new RaftPersistentConfiguration(
+              final StorageConfiguration storage =
+                  new StorageConfiguration(
                       metafile,
                       logDirectory,
                       indexSnapshotsDirectory,
@@ -144,11 +141,7 @@ public class RaftPersistentConfigurationManager extends Actor {
 
               storage
                   .setPartitionId(partitionId)
-                  .setReplicationFactor(replicationFactor)
-                  .setMembers(members)
-                  .setLogSegmentSize(
-                      new ByteValue(dataConfiguration.getDefaultLogSegmentSize()).toBytes())
-                  .save();
+                  .setLogSegmentSize(new ByteValue(segmentSize).toBytes());
 
               configurations.add(storage);
 
@@ -187,11 +180,10 @@ public class RaftPersistentConfigurationManager extends Actor {
     return minOffset;
   }
 
-  public ActorFuture<Void> deleteConfiguration(RaftPersistentConfiguration configuration) {
+  public ActorFuture<Void> deleteConfiguration(StorageConfiguration configuration) {
     return actor.call(
         () -> {
           configurations.remove(configuration);
-          configuration.delete();
         });
   }
 

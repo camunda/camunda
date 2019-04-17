@@ -21,19 +21,13 @@ import java.util.Objects;
 
 public class PartitionInfo {
   private final int partitionId;
-  private final int replicationFactor;
 
-  public PartitionInfo(final int partitionId, final int replicationFactor) {
+  public PartitionInfo(final int partitionId) {
     this.partitionId = partitionId;
-    this.replicationFactor = replicationFactor;
   }
 
   public int getPartitionId() {
     return partitionId;
-  }
-
-  public int getReplicationFactor() {
-    return replicationFactor;
   }
 
   @Override
@@ -45,21 +39,16 @@ public class PartitionInfo {
       return false;
     }
     final PartitionInfo that = (PartitionInfo) o;
-    return partitionId == that.partitionId && replicationFactor == that.replicationFactor;
+    return partitionId == that.partitionId;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(partitionId, replicationFactor);
+    return Objects.hash(partitionId);
   }
 
   @Override
   public String toString() {
-    return "PartitionInfo{"
-        + "partitionId="
-        + partitionId
-        + ", replicationFactor="
-        + replicationFactor
-        + '}';
+    return "PartitionInfo{" + "partitionId=" + partitionId + '}';
   }
 }
