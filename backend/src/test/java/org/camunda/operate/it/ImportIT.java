@@ -5,9 +5,12 @@
  */
 package org.camunda.operate.it;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Predicate;
+
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.IncidentEntity;
@@ -18,9 +21,9 @@ import org.camunda.operate.es.reader.ActivityInstanceReader;
 import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
+import org.camunda.operate.rest.dto.activity.ActivityInstanceDto;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeDto;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeRequestDto;
-import org.camunda.operate.rest.dto.activity.ActivityInstanceDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
@@ -32,19 +35,16 @@ import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.ImportValueType;
-import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 public class ImportIT extends OperateZeebeIntegrationTest {
 
@@ -59,9 +59,6 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private ListViewReader listViewReader;
-
-  @Autowired
-  private WorkflowCache workflowCache;
 
   @Autowired
   @Qualifier("activityIsTerminatedCheck")
@@ -104,11 +101,6 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     super.before();
     testStartTime = OffsetDateTime.now();
     zeebeClient = super.getClient();
-    try {
-      FieldSetter.setField(workflowCache, WorkflowCache.class.getDeclaredField("zeebeClient"), super.getClient());
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject ZeebeClient into some of the beans");
-    }
   }
 
   @After

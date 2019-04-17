@@ -5,10 +5,17 @@
  */
 package org.camunda.operate.zeebeimport;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
@@ -18,9 +25,9 @@ import org.camunda.operate.es.reader.ActivityInstanceReader;
 import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
+import org.camunda.operate.rest.dto.activity.ActivityInstanceDto;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeDto;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeRequestDto;
-import org.camunda.operate.rest.dto.activity.ActivityInstanceDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
@@ -30,17 +37,17 @@ import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
 import com.fasterxml.jackson.core.type.TypeReference;
+
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.IncidentRecordValue;
@@ -48,20 +55,11 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
-
-  @Autowired
-  private WorkflowCache workflowCache;
 
   @Autowired
   private ZeebeESImporter zeebeESImporter;
@@ -90,11 +88,6 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     testStartTime = OffsetDateTime.now();
     zeebeClient = super.getClient();
     mockMvc = mockMvcTestRule.getMockMvc();
-    try {
-      FieldSetter.setField(workflowCache, WorkflowCache.class.getDeclaredField("zeebeClient"), super.getClient());
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject ZeebeClient into some of the beans");
-    }
   }
 
   @After
@@ -114,6 +107,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     //1st load workflow instance index, then deployment
     processAllEvents(10, ImportValueType.WORKFLOW_INSTANCE);
     processAllEvents(2, ImportValueType.DEPLOYMENT);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
@@ -134,8 +128,9 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     // when import in operate search
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
     processAllEvents(1, ImportValueType.WORKFLOW_INSTANCE);
+    processAllEvents(1, ImportValueType.DEPLOYMENT);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     // then it should returns the processId instead of an empty name 
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));

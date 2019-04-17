@@ -16,7 +16,6 @@ import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdUtil;
-import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.camunda.operate.zeebeimport.record.value.VariableRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -47,9 +46,6 @@ public class VariableZeebeRecordProcessor {
 
   @Autowired
   private VariableTemplate variableTemplate;
-
-  @Autowired
-  private WorkflowCache workflowCache;
 
   @Autowired
   private BatchOperationWriter batchOperationWriter;

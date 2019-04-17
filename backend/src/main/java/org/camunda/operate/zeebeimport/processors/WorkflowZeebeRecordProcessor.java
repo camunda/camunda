@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -20,12 +21,16 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.camunda.operate.entities.WorkflowEntity;
+import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
+import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.record.value.DeploymentRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +59,15 @@ public class WorkflowZeebeRecordProcessor {
   static {
     STATES.add(DeploymentIntent.CREATED.name());
   }
+  
+  @Autowired
+  private ListViewTemplate listViewTemplate;
+  
+  @Autowired
+  private WorkflowInstanceReader workflowInstanceReader;
+  
+  @Autowired
+  private RestHighLevelClient esClient;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -83,26 +97,26 @@ public class WorkflowZeebeRecordProcessor {
     logger.debug("Workflow: id {}, bpmnProcessId {}", workflowEntity.getId(), workflowEntity.getBpmnProcessId());
 
     try {
+      updateFieldsInInstancesFor(workflowEntity);
 
-      //find workflow instances with empty workflow name and version
-      //FIXME
-      //        final List<String> workflowInstanceIds = workflowInstanceReader.queryWorkflowInstancesWithEmptyWorkflowVersion(entity.getKey());
-      //        for (String workflowInstanceId : workflowInstanceIds) {
-      //          Map<String, Object> updateFields = new HashMap<>();
-      //          updateFields.put(IncidentTemplate.WORKFLOW_NAME, entity.getName());
-      //          updateFields.put(IncidentTemplate.WORKFLOW_VERSION, entity.getVersion());
-      //          bulkRequestBuilder.add(esClient
-      //            .prepareUpdate(workflowInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
-      //            .setDoc(updateFields));
-      //        }
-
-      bulkRequest.add(
-        new IndexRequest(workflowIndex.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowEntity.getId())
+      bulkRequest.add(new IndexRequest(workflowIndex.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowEntity.getId())
           .source(objectMapper.writeValueAsString(workflowEntity), XContentType.JSON)
       );
     } catch (JsonProcessingException e) {
       logger.error("Error preparing the query to insert workflow", e);
       throw new PersistenceException(String.format("Error preparing the query to insert workflow [%s]", workflowEntity.getId()), e);
+    }
+  }
+
+  private void updateFieldsInInstancesFor(final WorkflowEntity workflowEntity) throws PersistenceException {
+    List<String> workflowInstanceIds = workflowInstanceReader.queryWorkflowInstancesWithEmptyWorkflowVersion(workflowEntity.getId());
+    for (String workflowInstanceId : workflowInstanceIds) {
+      Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(ListViewTemplate.WORKFLOW_NAME, workflowEntity.getName());
+      updateFields.put(ListViewTemplate.WORKFLOW_VERSION, workflowEntity.getVersion());
+      UpdateRequest updateRequest = new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
+          .doc(updateFields);
+      ElasticsearchUtil.executeUpdate(esClient, updateRequest);
     }
   }
 

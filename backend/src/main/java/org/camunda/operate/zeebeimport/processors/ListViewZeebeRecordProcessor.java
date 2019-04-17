@@ -240,10 +240,9 @@ public class ListViewZeebeRecordProcessor {
     wiEntity.setPartitionId(record.getMetadata().getPartitionId());
     wiEntity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
     wiEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
-
     //find out workflow name and version
-    wiEntity.setWorkflowName(workflowCache.getWorkflowName(wiEntity.getWorkflowId(), recordValue.getBpmnProcessId()));
-    wiEntity.setWorkflowVersion(workflowCache.getWorkflowVersion(wiEntity.getWorkflowId(), recordValue.getBpmnProcessId()));
+    wiEntity.setWorkflowName(workflowCache.getWorkflowName(wiEntity.getWorkflowId()));
+    wiEntity.setWorkflowVersion(workflowCache.getWorkflowVersion(wiEntity.getWorkflowId()));
 
     if (intentStr.equals(ELEMENT_COMPLETED.name()) || intentStr.equals(ELEMENT_TERMINATED.name())) {
       wiEntity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));

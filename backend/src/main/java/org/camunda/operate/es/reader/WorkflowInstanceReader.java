@@ -8,10 +8,12 @@ package org.camunda.operate.es.reader;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
@@ -27,6 +29,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.IdsQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.join.query.HasChildQueryBuilder;
@@ -56,24 +59,25 @@ public class WorkflowInstanceReader extends AbstractReader {
    * @param workflowId
    * @return
    */
-  //TODO
-//  public List<String> queryWorkflowInstancesWithEmptyWorkflowVersion(long workflowId) {
-//
-//    final QueryBuilder queryBuilder =
-//      joinWithAnd(
-//        termQuery(IncidentTemplate.WORKFLOW_ID, workflowId),
-//        boolQuery()
-//          .mustNot(existsQuery(IncidentTemplate.WORKFLOW_VERSION)));
-////    workflow name can be null, as some workflows does not have name
-//
-//
-//    final SearchRequestBuilder searchRequestBuilder =
-//      esClient.prepareSearch(workflowInstanceTemplate.getAlias())
-//        .setQuery(constantScoreQuery(queryBuilder))
-//        .setFetchSource(false);
-//
-//    return ElasticsearchUtil.scrollIdsToList(searchRequestBuilder, esClient);
-//  }
+  public List<String> queryWorkflowInstancesWithEmptyWorkflowVersion(String workflowId) {
+      QueryBuilder queryBuilder = constantScoreQuery(
+          joinWithAnd(
+              termQuery(ListViewTemplate.WORKFLOW_ID, workflowId),
+              boolQuery().mustNot(existsQuery(ListViewTemplate.WORKFLOW_VERSION))
+          )
+      );
+      SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
+                                      .source(new SearchSourceBuilder()
+                                      .query(queryBuilder)
+                                      .fetchSource(ListViewTemplate.WORKFLOW_ID, null));
+      try {
+        return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
+      } catch (IOException e) {
+        final String message = String.format("Exception occurred, while obtaining workflow instance that has empty versions: %s", e.getMessage());
+        logger.error(message, e);
+        throw new OperateRuntimeException(message, e);
+      }
+  }
 
   /**
    * Searches for workflow instance by id.

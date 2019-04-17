@@ -18,7 +18,6 @@ import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdUtil;
-import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.camunda.operate.zeebeimport.record.Intent;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
@@ -57,9 +56,6 @@ public class ActivityInstanceZeebeRecordProcessor {
 
   @Autowired
   private ActivityInstanceTemplate activityInstanceTemplate;
-
-  @Autowired
-  private WorkflowCache workflowCache;
 
   public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     final String intentStr = record.getMetadata().getIntent().name();

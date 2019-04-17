@@ -32,11 +32,6 @@ public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
   public void init() {
     super.before();
     zeebeClient = super.getClient();
-    try {
-      FieldSetter.setField(workflowCache, WorkflowCache.class.getDeclaredField("zeebeClient"), super.getClient());
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject ZeebeClient into some of the beans");
-    }
   }
 
   @After
@@ -46,16 +41,16 @@ public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
     try {
       FieldSetter.setField(workflowCache, WorkflowCache.class.getDeclaredField("cache"), new LinkedHashMap<>());
     } catch (NoSuchFieldException e) {
-      fail("Failed to inject ZeebeClient into some of the beans");
+      fail("Failed to inject cache into some of the beans");
     }
   }
 
   @Test
   public void testWorkflowDoesNotExist() {
-    final String demoProcessName = workflowCache.getWorkflowName("1", "demoProcess");
+    final String demoProcessName = workflowCache.getWorkflowName("1");
     assertThat(demoProcessName).isNull();
 
-    final Integer demoProcessVersion = workflowCache.getWorkflowVersion("1", "demoProcess");
+    final Integer demoProcessVersion = workflowCache.getWorkflowVersion("1");
     assertThat(demoProcessVersion).isNull();
   }
 
@@ -64,18 +59,19 @@ public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
     ZeebeTestUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
     ZeebeTestUtil.deployWorkflow(zeebeClient, "processWithGateway.bpmn");
 
+    elasticsearchTestRule.processAllEvents(2);
 
-    String demoProcessName = workflowCache.getWorkflowName("1", "demoProcess");
+    String demoProcessName = workflowCache.getWorkflowName("1");
     assertThat(demoProcessName).isNotNull();
 
     //request once again, the cache should be used
-    demoProcessName = workflowCache.getWorkflowName("1", "demoProcess");
+    demoProcessName = workflowCache.getWorkflowName("1");
     assertThat(demoProcessName).isNotNull();
 
-    Integer demoProcessVersion = workflowCache.getWorkflowVersion("1", "demoProcess");
+    Integer demoProcessVersion = workflowCache.getWorkflowVersion("1");
     assertThat(demoProcessVersion).isNotNull();
 
-    demoProcessVersion = workflowCache.getWorkflowVersion("1", "demoProcess");
+    demoProcessVersion = workflowCache.getWorkflowVersion("1");
     assertThat(demoProcessVersion).isNotNull();
 
     verify(workflowCache, times(1)).putToCache(any(), any());
