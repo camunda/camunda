@@ -53,4 +53,9 @@ public class PartitionServiceNames {
     return ServiceName.newServiceName(
         String.format("cluster.base.partition.install.%s", partitionName), Void.class);
   }
+
+  public static ServiceName<Void> leaderInstallServiceRootName(final String partitionName) {
+    return ServiceName.newServiceName(
+        String.format("cluster.base.partition.leader.install.root.%s", partitionName), Void.class);
+  }
 }

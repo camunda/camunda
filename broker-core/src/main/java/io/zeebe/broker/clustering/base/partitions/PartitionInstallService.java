@@ -45,6 +45,8 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.Arrays;
 import org.slf4j.Logger;
 
 /**
@@ -66,9 +68,12 @@ public class PartitionInstallService extends Actor
   private ServiceName<Void> openLogStreamServiceName;
   private ServiceName<Partition> leaderPartitionServiceName;
   private ServiceName<Partition> followerPartitionServiceName;
+  private ServiceName<Void> leaderInstallRootServiceName;
   private String logName;
   private ActorFuture<PartitionLeaderElection> leaderElectionInstallFuture;
   private PartitionLeaderElection leaderElection;
+
+  private ActorFuture<Void> transitionFuture;
 
   public PartitionInstallService(final StorageConfiguration configuration) {
     this.configuration = configuration;
@@ -94,6 +99,7 @@ public class PartitionInstallService extends Actor
         startContext.createComposite(raftInstallServiceName);
 
     logStreamServiceName = LogStreamServiceNames.logStreamServiceName(logName);
+    leaderInstallRootServiceName = PartitionServiceNames.leaderInstallServiceRootName(logName);
 
     // TODO: Do we have to move to distributed log service
     final StateStorageFactoryService stateStorageFactoryService =
@@ -137,38 +143,72 @@ public class PartitionInstallService extends Actor
   public void onTransitionToLeader(int partitionId, long term) {
     actor.call(
         () -> {
-          removeFollowerPartitionService();
-          installLeaderPartition(term);
+          final CompletableActorFuture<Void> nextTransitionFuture = new CompletableActorFuture<>();
+          if (transitionFuture != null && !transitionFuture.isDone()) {
+            // wait until previous transition is complete
+            actor.runOnCompletion(
+                transitionFuture, (r, e) -> transitionToLeader(nextTransitionFuture, term));
+
+          } else {
+            transitionToLeader(nextTransitionFuture, term);
+          }
+          transitionFuture = nextTransitionFuture;
         });
+  }
+
+  private void transitionToLeader(CompletableActorFuture<Void> transitionComplete, long term) {
+    final ActorFuture<Void> removeFuture = removeFollowerPartitionService();
+    final ActorFuture<Void> installFuture = installLeaderPartition(term);
+    actor.runOnCompletion(
+        Arrays.asList((ActorFuture) removeFuture, (ActorFuture) installFuture),
+        e -> transitionComplete.complete(null));
   }
 
   public void onTransitionToFollower(int partitionId) {
     actor.call(
         () -> {
-          removeLeaderPartitionService();
-          installFollowerPartition();
+          final CompletableActorFuture<Void> nextTransitionFuture = new CompletableActorFuture<>();
+          if (transitionFuture != null && !transitionFuture.isDone()) {
+            // wait until previous transition is complete
+            actor.runOnCompletion(
+                transitionFuture, (r, e) -> transitionToFollower(nextTransitionFuture));
+
+          } else {
+            transitionToFollower(nextTransitionFuture);
+          }
+          transitionFuture = nextTransitionFuture;
         });
   }
 
-  private void removeLeaderPartitionService() {
-    if (startContext.hasService(leaderPartitionServiceName)) {
-      LOG.debug("Removing leader partition services for partition {}", partitionId);
-      startContext.removeService(leaderPartitionServiceName);
-      startContext.removeService(openLogStreamServiceName);
+  private void transitionToFollower(CompletableActorFuture<Void> transitionComplete) {
+    final ActorFuture<Void> removeFuture = removeLeaderPartitionService();
+    final ActorFuture<Partition> installFuture = installFollowerPartition();
 
-      // Remove distributedlog partition service. It is needed only by the leader to append.
-      startContext.removeService(distributedLogPartitionServiceName(logName));
-    }
+    actor.runOnCompletion(
+        Arrays.asList((ActorFuture) removeFuture, (ActorFuture) installFuture),
+        e -> transitionComplete.complete(null));
   }
 
-  private void installLeaderPartition(long leaderTerm) {
+  private ActorFuture<Void> removeLeaderPartitionService() {
+    if (startContext.hasService(leaderInstallRootServiceName)) {
+      LOG.debug("Removing leader partition services for partition {}", partitionId);
+      return startContext.removeService(leaderInstallRootServiceName);
+    }
+    return CompletableActorFuture.completed(null);
+  }
+
+  private ActorFuture<Void> installLeaderPartition(long leaderTerm) {
     LOG.debug("Installing leader partition service for partition {}", partitionId);
     final Partition partition = new Partition(partitionId, RaftState.LEADER);
+
+    final CompositeServiceBuilder leaderInstallService =
+        startContext.createComposite(leaderInstallRootServiceName);
 
     // Get an instance of DistributedLog
     final DistributedLogstreamPartition distributedLogstreamPartition =
         new DistributedLogstreamPartition(partitionId, leaderTerm);
-    startContext
+
+    leaderInstallService
         .createService(distributedLogPartitionServiceName(logName), distributedLogstreamPartition)
         .dependency(ATOMIX_SERVICE, distributedLogstreamPartition.getAtomixInjector())
         .install();
@@ -176,26 +216,28 @@ public class PartitionInstallService extends Actor
     // Open logStreamAppender
     final LeaderOpenLogStreamAppenderService leaderOpenLogStreamAppenderService =
         new LeaderOpenLogStreamAppenderService();
-    startContext
+    leaderInstallService
         .createService(openLogStreamServiceName, leaderOpenLogStreamAppenderService)
         .dependency(logStreamServiceName, leaderOpenLogStreamAppenderService.getLogStreamInjector())
         .dependency(distributedLogPartitionServiceName(logName))
         .install();
 
-    startContext
+    leaderInstallService
         .createService(leaderPartitionServiceName, partition)
         .dependency(openLogStreamServiceName)
         .dependency(logStreamServiceName, partition.getLogStreamInjector())
         .dependency(stateStorageFactoryServiceName, partition.getStateStorageFactoryInjector())
         .group(LEADER_PARTITION_GROUP_NAME)
         .install();
+
+    return leaderInstallService.install();
   }
 
-  private void installFollowerPartition() {
+  private ActorFuture<Partition> installFollowerPartition() {
     LOG.debug("Installing follower partition service for partition {}", partitionId);
     final Partition partition = new Partition(partitionId, RaftState.FOLLOWER);
 
-    startContext
+    return startContext
         .createService(followerPartitionServiceName, partition)
         .dependency(logStreamServiceName, partition.getLogStreamInjector())
         .dependency(stateStorageFactoryServiceName, partition.getStateStorageFactoryInjector())
@@ -203,10 +245,11 @@ public class PartitionInstallService extends Actor
         .install();
   }
 
-  private void removeFollowerPartitionService() {
+  private ActorFuture<Void> removeFollowerPartitionService() {
     if (startContext.hasService(followerPartitionServiceName)) {
       LOG.debug("Removing follower partition service for partition {}", partitionId);
-      startContext.removeService(followerPartitionServiceName);
+      return startContext.removeService(followerPartitionServiceName);
     }
+    return CompletableActorFuture.completed(null);
   }
 }
