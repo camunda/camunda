@@ -82,7 +82,7 @@ export default class Typeahead extends React.Component {
 
   updateValues = () => {
     this.setState({
-      selectedValueIdx: 0,
+      selectedValueIdx: -1,
       firstShownOptionIdx: 0
     });
   };
@@ -101,7 +101,7 @@ export default class Typeahead extends React.Component {
     this.setState({
       query: formattedValue,
       lastCommittedValue: formattedValue,
-      selectedValueIdx: 0,
+      selectedValueIdx: -1,
       firstShownOptionIdx: 0,
       optionsVisible: false
     });
