@@ -182,7 +182,7 @@ pipeline {
               // Compile Operate and skip tests
               sh ("mvn -B -s settings.xml -DskipTests -P skipFrontendBuild clean install")
               // Compile QA
-              sh ("cd qa && mvn -B -s ../settings.xml -DskipTests clean install")
+              sh ("mvn -B -s settings.xml -f qa -DskipTests clean install")
             }
           }
         }
@@ -191,11 +191,11 @@ pipeline {
             container('maven') {
                 // Create repository
                 sh ("""
-                    curl -q -H "Content-Type: application/json" -d '{ "type": "gcs", "settings": { "bucket": "operate-data", "client": "operate_ci_service_account" }}' -XPUT "http://localhost:9200/_snapshot/my_gcs_repository"
+                    echo \$(curl -sq -H "Content-Type: application/json" -d '{ "type": "gcs", "settings": { "bucket": "operate-data", "client": "operate_ci_service_account" }}' -XPUT "http://localhost:9200/_snapshot/my_gcs_repository")
                 """)
                 // Restore Snapshot
                 sh ("""
-                    curl -q -XPOST 'http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1/_restore?wait_for_completion=true'
+                    echo \$(curl -sq -XPOST 'http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1/_restore?wait_for_completion=true')
                 """)
             }
           }
@@ -206,7 +206,7 @@ pipeline {
       steps {
         container('maven') {
           // Generate Data
-          sh ("cd qa/import-performance-tests && mvn -B -s ../../settings.xml -P -docker verify")
+          sh ("mvn -B -s settings.xml -f qa/import-performance-tests -P -docker verify")
         }
       }
     }

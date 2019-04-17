@@ -211,15 +211,15 @@ pipeline {
         container('maven') {
             // Create repository
             sh ("""
-                curl -s -H "Content-Type: application/json" -d '{ "type": "gcs", "settings": { "bucket": "operate-data", "client": "operate_ci_service_account" }}' -XPUT "http://localhost:9200/_snapshot/my_gcs_repository" 2>&1
+                echo \$(curl -qs -H "Content-Type: application/json" -d '{ "type": "gcs", "settings": { "bucket": "operate-data", "client": "operate_ci_service_account" }}' -XPUT "http://localhost:9200/_snapshot/my_gcs_repository")
             """)
             // Delete previous Snapshot
             sh ("""
-                curl -s -XDELETE "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1" 2>&1
+                echo \$(curl -qs -XDELETE "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1")
             """)
             // Trigger Snapshot
             sh ("""
-                curl -s -XPUT "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1?wait_for_completion=true" 2>&1
+                echo \$(curl -qs -XPUT "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1?wait_for_completion=true")
             """)
         }
       }
