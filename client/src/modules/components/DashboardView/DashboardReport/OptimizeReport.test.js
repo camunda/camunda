@@ -5,11 +5,12 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import ThemedOptimizeReport from './OptimizeReport';
 
-const {WrappedComponent: OptimizeReport} = ThemedOptimizeReport;
+const {WrappedComponent: OptimizeReportWithErrorHandling} = ThemedOptimizeReport;
+const {WrappedComponent: OptimizeReport} = OptimizeReportWithErrorHandling;
 
 jest.mock('react-router-dom', () => {
   return {
@@ -40,11 +41,12 @@ const props = {
   report: {
     id: 'a'
   },
-  loadReport
+  loadReport,
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
 };
 
 it('should load the report provided by id', () => {
-  mount(<OptimizeReport {...props} />);
+  shallow(<OptimizeReport {...props} />);
 
   expect(loadReport).toHaveBeenCalledWith(props.report.id);
 });
@@ -52,38 +54,38 @@ it('should load the report provided by id', () => {
 it('should render the ReportRenderer if data is loaded', async () => {
   loadReport.mockReturnValue('data');
 
-  const node = mount(<OptimizeReport {...props} />);
+  const node = shallow(<OptimizeReport {...props} />);
 
-  await node.instance().loadReportData();
+  await node.instance().loadReport();
 
   expect(node).toIncludeText('ReportRenderer');
 });
 
 it('should contain the report name', async () => {
   loadReport.mockReturnValue({name: 'Report Name'});
-  const node = mount(<OptimizeReport {...props} />);
+  const node = shallow(<OptimizeReport {...props} />);
 
-  await node.instance().loadReportData();
+  await node.instance().loadReport();
 
-  expect(node).toIncludeText('Report Name');
+  expect(node.find('Link').children()).toIncludeText('Report Name');
 });
 
 it('should provide a link to the report', async () => {
   loadReport.mockReturnValue({name: 'Report Name'});
-  const node = mount(<OptimizeReport {...props} />);
+  const node = shallow(<OptimizeReport {...props} />);
 
-  await node.instance().loadReportData();
+  await node.instance().loadReport();
   node.update();
 
-  expect(node.find('a')).toIncludeText('Report Name');
-  expect(node.find('a')).toHaveProp('href', '/report/a');
+  expect(node.find('Link').children()).toIncludeText('Report Name');
+  expect(node.find('Link')).toHaveProp('to', '/report/a');
 });
 
 it('should not provide a link to the report when link is disabled', async () => {
   loadReport.mockReturnValue({name: 'Report Name'});
-  const node = mount(<OptimizeReport {...props} disableNameLink />);
+  const node = shallow(<OptimizeReport {...props} disableNameLink />);
 
-  await node.instance().loadReportData();
+  await node.instance().loadReport();
   node.update();
 
   expect(node.find('a')).not.toBePresent();
@@ -95,9 +97,9 @@ it('should display the name of a failing report', async () => {
     errorMessage: 'Is failing',
     reportDefinition: {name: 'Failing Name'}
   });
-  const node = mount(<OptimizeReport {...props} disableNameLink />);
+  const node = shallow(<OptimizeReport {...props} disableNameLink />);
 
-  await node.instance().loadReportData();
+  await node.instance().loadReport();
 
   expect(node).toIncludeText('Failing Name');
 });

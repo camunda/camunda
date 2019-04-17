@@ -25,7 +25,7 @@ const errorMessage =
   'Cannot display data for the given report settings. Please choose another combination!';
 
 export default function ReportRenderer(props) {
-  const {report, updateReport} = props;
+  const {report, updateReport, isExternal} = props;
   let View;
   if (report) {
     const isDecision = report.reportType === 'decision';
@@ -40,21 +40,19 @@ export default function ReportRenderer(props) {
 
     const somethingMissing = checkReport(report);
     if (somethingMissing) {
-      if (props.isExternal) {
+      if (isExternal) {
         return <IncompleteReport id={report.id} />;
-      }
-
-      return (
-        <SetupNotice>
-          {updateReport ? (
-            somethingMissing
-          ) : (
+      } else if (updateReport) {
+        return <SetupNotice>{somethingMissing}</SetupNotice>;
+      } else {
+        return (
+          <SetupNotice>
             <p>
               Select the <b>Edit</b> button above.
             </p>
-          )}
-        </SetupNotice>
-      );
+          </SetupNotice>
+        );
+      }
     }
 
     const showNoDataMessage = !containsData(report);

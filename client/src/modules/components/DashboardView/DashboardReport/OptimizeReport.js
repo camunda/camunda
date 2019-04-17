@@ -10,79 +10,94 @@ import classnames from 'classnames';
 
 import {ReportRenderer, LoadingIndicator} from 'components';
 import {Link} from 'react-router-dom';
+import {withErrorHandling} from 'HOC';
 
 import {themed} from 'theme';
 
 import './OptimizeReport.scss';
 
 export default themed(
-  class OptimizeReport extends React.Component {
-    constructor(props) {
-      super(props);
+  withErrorHandling(
+    class OptimizeReport extends React.Component {
+      constructor(props) {
+        super(props);
 
-      this.state = {
-        data: undefined
+        this.state = {
+          data: undefined
+        };
+      }
+
+      async componentDidMount() {
+        await this.loadReport();
+      }
+
+      loadReport = async () => {
+        await this.props.mightFail(
+          this.props.loadReport(this.props.report.id),
+          response => {
+            this.setState({
+              data: response
+            });
+          },
+          async e => {
+            const report = (await e.json()).reportDefinition;
+            if (report) {
+              this.setState({data: report});
+            }
+            return;
+          }
+        );
       };
-    }
 
-    componentDidMount() {
-      this.loadReportData();
-    }
+      getName = () => {
+        const {name, reportDefinition} = this.state.data;
 
-    loadReportData = async () => {
-      this.setState({
-        data: await this.props.loadReport(this.props.report.id)
-      });
-    };
+        return name || (reportDefinition && reportDefinition.name);
+      };
 
-    getName = () => {
-      const {name, reportDefinition} = this.state.data;
+      exitDarkmode = () => {
+        if (this.props.theme === 'dark') {
+          this.props.toggleTheme();
+        }
+      };
 
-      return name || (reportDefinition && reportDefinition.name);
-    };
+      render() {
+        if (!this.state.data) {
+          return <LoadingIndicator />;
+        }
 
-    exitDarkmode = () => {
-      if (this.props.theme === 'dark') {
-        this.props.toggleTheme();
-      }
-    };
+        const {report, disableNameLink, disableReportScrolling, children = () => {}} = this.props;
 
-    render() {
-      if (!this.state.data) {
-        return <LoadingIndicator />;
-      }
-
-      const {report, disableNameLink, disableReportScrolling, children = () => {}} = this.props;
-
-      return (
-        <div className="DashboardReport__wrapper">
-          <div className="OptimizeReport__header">
-            {disableNameLink ? (
-              <span className="OptimizeReport__heading">{this.getName()}</span>
-            ) : (
-              <Link
-                to={`/report/${report.id}`}
-                onClick={this.exitDarkmode}
-                className="OptimizeReport__heading"
-              >
-                {this.getName()}
-              </Link>
-            )}
+        return (
+          <div className="DashboardReport__wrapper">
+            <div className="OptimizeReport__header">
+              {disableNameLink ? (
+                <span className="OptimizeReport__heading">{this.getName()}</span>
+              ) : (
+                <Link
+                  to={`/report/${report.id}`}
+                  onClick={this.exitDarkmode}
+                  className="OptimizeReport__heading"
+                >
+                  {this.getName()}
+                </Link>
+              )}
+            </div>
+            <div
+              className={classnames('OptimizeReport__visualization', {
+                'OptimizeReport__visualization--unscrollable': disableReportScrolling
+              })}
+            >
+              <ReportRenderer
+                disableReportScrolling={disableReportScrolling}
+                report={this.state.data}
+                isExternal
+              />
+            </div>
+            {children({loadReportData: this.loadReport})}
           </div>
-          <div
-            className={classnames('OptimizeReport__visualization', {
-              'OptimizeReport__visualization--unscrollable': disableReportScrolling
-            })}
-          >
-            <ReportRenderer
-              disableReportScrolling={disableReportScrolling}
-              report={this.state.data}
-              isExternal={true}
-            />
-          </div>
-          {children({loadReportData: this.loadReportData})}
-        </div>
-      );
+        );
+      }
     }
-  }
+  )
 );

@@ -20,19 +20,12 @@ export function isDurationReport(report) {
 export async function evaluateReport(query) {
   let response;
 
-  try {
-    if (typeof query !== 'object') {
-      // evaluate saved report
-      response = await get(`api/report/${query}/evaluate`);
-    } else {
-      // evaluate unsaved report
-      response = await post(`api/report/evaluate/`, query);
-    }
-  } catch (e) {
-    if (e.status === 500) {
-      return (await e.json()).reportDefinition;
-    }
-    return null;
+  if (typeof query !== 'object') {
+    // evaluate saved report
+    response = await get(`api/report/${query}/evaluate`);
+  } else {
+    // evaluate unsaved report
+    response = await post(`api/report/evaluate/`, query);
   }
 
   return await response.json();

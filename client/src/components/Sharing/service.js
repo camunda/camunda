@@ -26,7 +26,7 @@ export function createLoadReportCallback(dashboardShareId) {
       );
       return await response.json();
     } catch (error) {
-      return await error.json();
+      return (await error.json()).reportDefinition;
     }
   };
 }

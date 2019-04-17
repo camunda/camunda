@@ -130,19 +130,34 @@ export default withErrorHandling(
           ...this.state.report,
           data: newReport
         };
-
-        this.setState({
-          loadingReportData: true
-        });
-        this.setState({
-          report: await evaluateReport(query),
-          loadingReportData: false
-        });
+        await this.loadReport(query);
       } else {
         this.setState(({report}) => ({
           report: update(report, {data: change})
         }));
       }
+    };
+
+    loadReport = async query => {
+      this.setState({
+        loadingReportData: true
+      });
+      await this.props.mightFail(
+        evaluateReport(query),
+        response => {
+          this.setState({
+            report: response,
+            loadingReportData: false
+          });
+        },
+        async e => {
+          const report = (await e.json()).reportDefinition;
+          if (report) {
+            this.setState({report, loadingReportData: false});
+          }
+          return;
+        }
+      );
     };
 
     showIncompleteResultWarning = () => {

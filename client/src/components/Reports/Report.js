@@ -33,16 +33,21 @@ export default withErrorHandling(
 
     componentDidMount = async () => {
       await this.props.mightFail(
-        await evaluateReport(this.id),
+        evaluateReport(this.id),
         async response => {
           this.setState({
             report: response
           });
         },
-        ({status}) => {
-          this.setState({
-            serverError: status
-          });
+        async e => {
+          const report = (await e.json()).reportDefinition;
+          if (report) {
+            this.setState({report});
+          } else {
+            this.setState({
+              serverError: e.status
+            });
+          }
           return;
         }
       );
