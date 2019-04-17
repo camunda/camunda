@@ -309,35 +309,6 @@
                       <isset property="env.JENKINS_URL"/>
                     </condition>
 
-                    <!-- Start Optimize 2.1.0 and generate data-->
-                    <exec dir="${project.build.directory}/2.1.0/"
-                          executable="${project.build.directory}/2.1.0/optimize-startup.sh" spawn="true"/>
-
-                    <echo message="Wait for Optimize to start..."/>
-                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <socket server="localhost" port="8090"/>
-                    </waitfor>
-
-                    <echo message="Waiting for Optimize to populate ES..."/>
-                    <exec executable="/bin/bash">
-                      <arg value="-c"/>
-                      <arg
-                          value="until test $(curl -s 'http://localhost:9200/optimize-metadata/_count' | jq '.count // 0') -eq 1; do sleep 2; done"/>
-                    </exec>
-
-                    <echo message="Generating optimize data"/>
-                    <exec executable="/bin/bash" failonerror="true">
-                      <arg value="-c"/>
-                      <arg
-                          value="set -o pipefail; java -jar ${project.build.directory}/generators/generator2.1.0.jar ${maven-settings} | sed 's/^/[OPTIMIZE DATA GENERATION]: /'"/>
-                    </exec>
-
-                    <echo message="Killing Optimize 2.1.0..."/>
-                    <exec executable="/bin/bash">
-                      <arg value="-c"/>
-                      <arg value="pkill -f org.camunda.optimize.Main"/>
-                    </exec>
-
                     <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
                       <sequential>
                         <!-- Migrate -->
@@ -399,6 +370,38 @@
                               <arg value="pkill -f org.camunda.optimize.Main"/>
                             </exec>
                           </ac:then>
+                        <ac:else>
+                          <!--If the first version in the list-->
+                          <!-- Start the first version in the list and generate data-->
+
+                          <exec dir="${project.build.directory}/@{currentVersion}/"
+                                executable="${project.build.directory}/@{currentVersion}/optimize-startup.sh" spawn="true"/>
+
+                          <echo message="Wait for Optimize to start..."/>
+                          <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                            <socket server="localhost" port="8090"/>
+                          </waitfor>
+
+                          <echo message="Waiting for Optimize to populate ES..."/>
+                          <exec executable="/bin/bash">
+                            <arg value="-c"/>
+                            <arg
+                                value="until test $(curl -s 'http://localhost:9200/optimize-metadata/_count' | jq '.count // 0') -eq 1; do sleep 2; done"/>
+                          </exec>
+
+                          <echo message="Generating optimize data"/>
+                          <exec executable="/bin/bash" failonerror="true">
+                            <arg value="-c"/>
+                            <arg
+                                value="set -o pipefail; java -jar ${project.build.directory}/generators/generator@{currentVersion}.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'"/>
+                          </exec>
+
+                          <echo message="Killing Optimize @{currentVersion}..."/>
+                          <exec executable="/bin/bash">
+                            <arg value="-c"/>
+                            <arg value="pkill -f org.camunda.optimize.Main"/>
+                          </exec>
+                        </ac:else>
                         </ac:if>
                       </sequential>
                     </ac:for>
