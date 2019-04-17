@@ -35,17 +35,15 @@ public class ExporterComponent implements Component {
 
     final List<ExporterCfg> exporters = context.getBrokerConfiguration().getExporters();
 
-    if (!exporters.isEmpty()) {
-      final ExporterManagerService exporterManagerService = new ExporterManagerService(exporters);
+    final ExporterManagerService exporterManagerService = new ExporterManagerService(exporters);
 
-      serviceContainer
-          .createService(EXPORTER_MANAGER, exporterManagerService)
-          .dependency(
-              STREAM_PROCESSOR_SERVICE_FACTORY,
-              exporterManagerService.getStreamProcessorServiceFactoryInjector())
-          .groupReference(
-              LEADER_PARTITION_GROUP_NAME, exporterManagerService.getPartitionsGroupReference())
-          .install();
-    }
+    serviceContainer
+        .createService(EXPORTER_MANAGER, exporterManagerService)
+        .dependency(
+            STREAM_PROCESSOR_SERVICE_FACTORY,
+            exporterManagerService.getStreamProcessorServiceFactoryInjector())
+        .groupReference(
+            LEADER_PARTITION_GROUP_NAME, exporterManagerService.getPartitionsGroupReference())
+        .install();
   }
 }

@@ -17,108 +17,122 @@
  */
 package io.zeebe.broker.exporter;
 
-import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.RecordMetadata;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
+import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class ExporterManagerTest {
 
-  private static final int PARTITIONS = 3;
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("process").startEvent().done();
+
+  private ExporterCfg exporterCfg;
 
   public EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(
           brokerCfg -> {
-            brokerCfg.getCluster().setPartitionsCount(PARTITIONS);
-
-            final ExporterCfg exporterCfg = new ExporterCfg();
+            exporterCfg = new ExporterCfg();
             exporterCfg.setClassName(TestExporter.class.getName());
             exporterCfg.setId("test-exporter");
 
-            brokerCfg.getExporters().add(exporterCfg);
+            brokerCfg.setExporters(Collections.singletonList(exporterCfg));
           });
 
   public ClientApiRule clientRule = new ClientApiRule(brokerRule::getAtomix);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
-  @Test
-  public void shouldRunExporterForEveryPartition() throws InterruptedException {
-    // given
-    IntStream.range(START_PARTITION_ID, START_PARTITION_ID + PARTITIONS).forEach(this::createJob);
+  private PartitionTestClient testClient;
 
-    // then
-    assertThat(TestExporter.configureLatch.await(5, TimeUnit.SECONDS)).isTrue();
-    assertThat(TestExporter.openLatch.await(5, TimeUnit.SECONDS)).isTrue();
-    assertThat(TestExporter.exportLatch.await(5, TimeUnit.SECONDS)).isTrue();
+  @Before
+  public void init() {
+    testClient = clientRule.partitionClient();
 
-    // when
-    brokerRule.stopBroker();
-
-    // then
-    assertThat(TestExporter.closeLatch.await(5, TimeUnit.SECONDS)).isTrue();
+    TestExporter.records.clear();
   }
 
-  void createJob(final int partitionId) {
-    clientRule
-        .createCmdRequest()
-        .partitionId(partitionId)
-        .type(ValueType.JOB, JobIntent.CREATE)
-        .command()
-        .put("type", "foo")
-        .put("retries", 3)
-        .done()
-        .sendAndAwait();
+  @Test
+  public void shouldRestoreExporterFromState() {
+
+    // given
+    final long deploymentKey1 = testClient.deploy(WORKFLOW);
+    waitUntil(() -> isDeploymentExported(deploymentKey1));
+
+    // when
+    TestExporter.records.clear();
+    brokerRule.restartBroker();
+
+    // then
+    final long deploymentKey2 = testClient.deploy(WORKFLOW);
+    waitUntil(() -> isDeploymentExported(deploymentKey2));
+
+    assertThat(TestExporter.records).extracting(r -> r.getKey()).doesNotContain(deploymentKey1);
+  }
+
+  @Test
+  public void shouldRemoveExporterFromState() {
+
+    // given
+    final long deploymentKey1 = testClient.deploy(WORKFLOW);
+    waitUntil(() -> isDeploymentExported(deploymentKey1));
+
+    // when
+    brokerRule.getBrokerCfg().setExporters(Collections.emptyList());
+    brokerRule.restartBroker();
+
+    TestExporter.records.clear();
+    brokerRule.getBrokerCfg().setExporters(Collections.singletonList(exporterCfg));
+    brokerRule.restartBroker();
+
+    // then
+    final long deploymentKey2 = testClient.deploy(WORKFLOW);
+    waitUntil(() -> isDeploymentExported(deploymentKey2));
+
+    assertThat(TestExporter.records)
+        .extracting(r -> r.getKey())
+        .contains(deploymentKey1, deploymentKey2);
+  }
+
+  private boolean isDeploymentExported(long deploymentKey1) {
+    return TestExporter.records.stream()
+        .anyMatch(
+            r ->
+                r.getKey() == deploymentKey1
+                    && r.getMetadata().getIntent() == DeploymentIntent.DISTRIBUTED);
   }
 
   public static class TestExporter extends DebugLogExporter {
 
-    // configure will be called initial for validation and after that for every partition
-    static CountDownLatch configureLatch = new CountDownLatch(PARTITIONS + 1);
-    static CountDownLatch openLatch = new CountDownLatch(PARTITIONS);
-    static CountDownLatch closeLatch = new CountDownLatch(PARTITIONS);
-    static CountDownLatch exportLatch = new CountDownLatch(PARTITIONS);
+    static List<Record> records = new CopyOnWriteArrayList<>();
+
+    private Controller controller;
 
     @Override
-    public void configure(final Context context) {
-      configureLatch.countDown();
-      super.configure(context);
-    }
-
-    @Override
-    public void open(final Controller controller) {
-      openLatch.countDown();
-      super.open(controller);
-    }
-
-    @Override
-    public void close() {
-      closeLatch.countDown();
-      super.close();
+    public void open(Controller controller) {
+      this.controller = controller;
     }
 
     @Override
     public void export(final Record record) {
-      final RecordMetadata metadata = record.getMetadata();
-      if (metadata.getValueType() == ValueType.JOB && metadata.getIntent() == JobIntent.CREATED) {
-        exportLatch.countDown();
-      }
+      controller.updateLastExportedRecordPosition(record.getPosition());
 
-      super.export(record);
+      records.add(record);
     }
   }
 }

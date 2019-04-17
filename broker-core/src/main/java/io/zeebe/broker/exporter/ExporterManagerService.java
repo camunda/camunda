@@ -17,28 +17,31 @@
  */
 package io.zeebe.broker.exporter;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.exporter.jar.ExporterJarLoadException;
 import io.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.zeebe.broker.exporter.repo.ExporterRepository;
 import io.zeebe.broker.exporter.stream.ExporterColumnFamilies;
 import io.zeebe.broker.exporter.stream.ExporterStreamProcessor;
+import io.zeebe.broker.exporter.stream.ExporterStreamProcessorState;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.broker.system.configuration.ExporterCfg;
+import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.*;
 import java.util.List;
+import org.slf4j.Logger;
 
 public class ExporterManagerService implements Service<ExporterManagerService> {
+
   public static final int EXPORTER_PROCESSOR_ID = 1003;
   public static final String PROCESSOR_NAME = "exporter";
+
+  private static final Logger LOG = Loggers.EXPORTER_LOGGER;
 
   private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector =
       new Injector<>();
@@ -82,19 +85,55 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
         new StateSnapshotController(
             DefaultZeebeDbFactory.defaultFactory(ExporterColumnFamilies.class), stateStorage);
 
-    streamProcessorServiceFactory
-        .createService(partition, partitionName)
-        .processorId(EXPORTER_PROCESSOR_ID)
-        .processorName(PROCESSOR_NAME)
-        .snapshotController(snapshotController)
-        .streamProcessorFactory(
-            (zeebeDb, dbContext) ->
-                new ExporterStreamProcessor(
-                    zeebeDb,
-                    dbContext,
-                    partition.getInfo().getPartitionId(),
-                    exporterRepository.getExporters().values()))
-        .build();
+    if (exporterRepository.getExporters().isEmpty()) {
+      clearExporterState(snapshotController);
+
+    } else {
+      streamProcessorServiceFactory
+          .createService(partition, partitionName)
+          .processorId(EXPORTER_PROCESSOR_ID)
+          .processorName(PROCESSOR_NAME)
+          .snapshotController(snapshotController)
+          .streamProcessorFactory(
+              (zeebeDb, dbContext) ->
+                  new ExporterStreamProcessor(
+                      zeebeDb,
+                      dbContext,
+                      partition.getInfo().getPartitionId(),
+                      exporterRepository.getExporters().values()))
+          .build();
+    }
+  }
+
+  private void clearExporterState(SnapshotController snapshotController) {
+    // We need to remove the exporter positions from the state in case that one of the exporters is
+    // configured later again. The processor would try to continue from the previous position which
+    // may not
+    // exist anymore in the logstream.
+
+    try {
+      // TODO (saig0): don't open and recover the latest snapshot in the service - #2353
+      final long snapshotPosition = snapshotController.recover();
+      final ZeebeDb<ExporterColumnFamilies> db = snapshotController.openDb();
+      final ExporterStreamProcessorState state =
+          new ExporterStreamProcessorState(db, db.createContext());
+
+      state.visitPositions(
+          (exporterId, position) -> {
+            state.removePosition(exporterId);
+
+            LOG.info(
+                "The exporter '{}' is not configured anymore. Its position is removed from the state.",
+                exporterId);
+          });
+
+      // TODO (saig0): don't take a new snapshot in the service - #2353
+      snapshotController.takeSnapshot(snapshotPosition + 1);
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      LOG.error("Failed to remove exporters from state", e);
+    }
   }
 
   public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector() {
