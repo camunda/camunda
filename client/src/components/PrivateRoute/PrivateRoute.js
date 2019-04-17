@@ -5,17 +5,20 @@
  */
 
 import React from 'react';
-import {Route, Redirect} from 'react-router-dom';
-import {addHandler, removeHandler} from 'request';
-import {addNotification} from 'notifications';
-import debounce from 'debounce';
+import {Route} from 'react-router-dom';
+import classnames from 'classnames';
+import {addHandler, removeHandler, request} from 'request';
+
+import {Login} from './Login';
+
+import './PrivateRoute.scss';
 
 export default class PrivateRoute extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      forceRedirect: false
+      showLogin: false
     };
   }
 
@@ -23,14 +26,23 @@ export default class PrivateRoute extends React.Component {
     addHandler(this.handleResponse);
   }
 
-  handleResponse = response => {
+  handleResponse = (response, payload) => {
     if (response.status === 401) {
       this.setState({
-        forceRedirect: true
+        showLogin: true
+      });
+    } else if (response.status === 200 && payload.url === 'api/authentication') {
+      this.setState({
+        showLogin: false
       });
     }
 
     return response;
+  };
+
+  handleLoginSuccess = () => {
+    this.setState({showLogin: false});
+    redoOutstandingRequests();
   };
 
   render() {
@@ -39,27 +51,17 @@ export default class PrivateRoute extends React.Component {
       <Route
         {...rest}
         render={props => {
-          return !this.state.forceRedirect ? (
-            <Component {...props} />
-          ) : (
-            <Redirect
-              to={{
-                pathname: '/login',
-                state: {from: props.location}
-              }}
-            />
+          return (
+            <>
+              <div className={classnames('PrivateRoute', {showLogin: this.state.showLogin})}>
+                <Component {...props} />
+              </div>
+              {this.state.showLogin && <Login {...props} onLogin={this.handleLoginSuccess} />}
+            </>
           );
         }}
       />
     );
-  }
-
-  componentDidUpdate() {
-    if (this.state.forceRedirect) {
-      this.setState({
-        forceRedirect: false
-      });
-    }
   }
 
   componentWillUnmount() {
@@ -67,14 +69,24 @@ export default class PrivateRoute extends React.Component {
   }
 }
 
-// We sometimes trigger multiple requests that all return 401 when the session times out.
-// To prevent multiple messages appearing, we debounce the addNotification function by 500ms
-const debouncedNotification = debounce((...args) => addNotification(...args), 500, true);
-
-addHandler(response => {
-  if (response.status === 401 && !response.url.includes('authentication')) {
-    debouncedNotification({text: 'Your Session timed out.', type: 'warning'});
+const outstandingRequests = [];
+addHandler((response, payload) => {
+  if (response.status === 401 && payload.url !== 'api/authentication') {
+    return new Promise((resolve, reject) => {
+      outstandingRequests.push({resolve, reject, payload});
+    });
   }
 
   return response;
-});
+}, -1);
+
+function redoOutstandingRequests() {
+  outstandingRequests.forEach(async ({resolve, reject, payload}) => {
+    try {
+      resolve(await request(payload));
+    } catch (e) {
+      reject(e);
+    }
+  });
+  outstandingRequests.length = 0;
+}

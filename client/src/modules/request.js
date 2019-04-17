@@ -42,15 +42,17 @@ export function del(url, query, options = {}) {
   });
 }
 
-export function addHandler(fct) {
-  handlers.push(fct);
+export function addHandler(fct, priority = 0) {
+  handlers.push({fct, priority});
+  handlers.sort((a, b) => b.priority - a.priority);
 }
 
 export function removeHandler(fct) {
-  handlers.splice(handlers.indexOf(fct), 1);
+  handlers.splice(handlers.indexOf(handlers.find(entry => entry.fct === fct)), 1);
 }
 
-export async function request({url, method, body, query, headers}) {
+export async function request(payload) {
+  const {url, method, body, query, headers} = payload;
   const resourceUrl = query ? `${url}?${formatQuery(query)}` : url;
 
   let response = await fetch(resourceUrl, {
@@ -64,9 +66,9 @@ export async function request({url, method, body, query, headers}) {
     credentials: 'same-origin'
   });
 
-  handlers.forEach(async fct => {
-    response = await fct(response);
-  });
+  for (let i = 0; i < handlers.length; i++) {
+    response = await handlers[i].fct(response, payload);
+  }
 
   if (response.status >= 200 && response.status < 300) {
     return response;

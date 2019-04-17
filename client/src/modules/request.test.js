@@ -129,24 +129,39 @@ describe('request', () => {
 
 describe('handlers', () => {
   it('should call a registered handler with the response', async () => {
-    const spy = jest.fn();
+    const spy = jest.fn().mockReturnValue(successResponse);
 
     addHandler(spy);
 
     await request({url});
 
-    expect(spy).toHaveBeenCalledWith(successResponse);
+    expect(spy).toHaveBeenCalledWith(successResponse, {url});
   });
 
   it('should not call a handler after it has been unregistered', async () => {
-    const spy = jest.fn();
+    const spy = jest.fn().mockReturnValue(successResponse);
 
     addHandler(spy);
     removeHandler(spy);
 
     await request({url});
 
-    expect(spy).not.toHaveBeenCalledWith(successResponse);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('should call handlers in order of their priority', async () => {
+    const out = [];
+    const handler = i => r => out.push(i) && r;
+
+    addHandler(handler(0), 0);
+    addHandler(handler(-4), -4);
+    addHandler(handler(0));
+    addHandler(handler(1), 1);
+    addHandler(handler(3), 3);
+
+    await request({url});
+
+    expect(out).toEqual([3, 1, 0, 0, -4]);
   });
 });
 

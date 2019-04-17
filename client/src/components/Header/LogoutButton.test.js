@@ -21,7 +21,10 @@ jest.mock('react-router-dom', () => {
     },
     Redirect: ({children, onClick}) => {
       return <a onClick={onClick}>{children}</a>;
-    }
+    },
+    withRouter: Component => props => (
+      <Component {...props} history={{push: jest.fn(), replace: jest.fn()}} />
+    )
   };
 });
 

@@ -11,7 +11,6 @@ import {
   PrivateRoute,
   Header,
   Footer,
-  Login,
   Overview,
   Alerts,
   Report,
@@ -32,14 +31,13 @@ const App = () => (
       <Route
         path="/"
         render={({location: {pathname}}) => {
-          const hideHeader = pathname.indexOf('/login') === 0 || pathname.indexOf('/share') === 0;
+          const hideHeader = pathname.indexOf('/share') === 0;
 
           return (
             <div className="Root-container">
               {!hideHeader && <Header name="Camunda Optimize" />}
               <main>
                 <ErrorBoundary>
-                  <Route exact path="/login" component={Login} />
                   <PrivateRoute exact path="/" component={Overview} />
                   <PrivateRoute exact path="/analysis" component={Analysis} />
                   <PrivateRoute exact path="/alerts" component={Alerts} />

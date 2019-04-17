@@ -8,6 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import PrivateRoute from './PrivateRoute';
+import {Login} from './Login';
 
 import {addHandler, removeHandler} from 'request';
 
@@ -19,47 +20,30 @@ jest.mock('request', () => {
     removeHandler: jest.fn()
   };
 });
-jest.mock('react-router-dom', () => {
-  return {
-    Redirect: ({to}) => {
-      return (
-        <div>
-          REDIRECT to {to.pathname} from {to.state.from}
-        </div>
-      );
-    },
-    Route: props => {
-      return props.render(props);
-    }
-  };
-});
 
 it('should render the component if the user is logged in', () => {
-  const node = shallow(<PrivateRoute component={TestComponent} />).dive();
+  const node = shallow(<PrivateRoute component={TestComponent} />).renderProp('render')({});
 
   expect(node).toIncludeText('TestComponent');
 });
 
-it('should provide the login component with the requested route', () => {
-  const node = shallow(<PrivateRoute component={TestComponent} location="/private" />);
+it('should render the login component', () => {
+  const node = shallow(<PrivateRoute component={TestComponent} />);
 
-  node.instance().componentDidUpdate = jest.fn();
-
-  node.setState({forceRedirect: true}, () => {
-    const wrapper = node.renderProp('render')({location: 'test'});
-    expect(wrapper.find('Redirect')).toBePresent();
-    expect(wrapper.props().to.state).toEqual({from: 'test'});
+  node.setState({showLogin: true}, () => {
+    const wrapper = node.renderProp('render')({});
+    expect(wrapper.find(Login)).toBePresent();
   });
 });
 
 it('should register a response handler', () => {
-  shallow(<PrivateRoute component={TestComponent} location="/private" />);
+  shallow(<PrivateRoute component={TestComponent} />);
 
   expect(addHandler).toHaveBeenCalled();
 });
 
 it('should unregister the response handler when it is destroyed', () => {
-  const node = shallow(<PrivateRoute component={TestComponent} location="/private" />);
+  const node = shallow(<PrivateRoute component={TestComponent} />);
   node.unmount();
 
   expect(removeHandler).toHaveBeenCalled();

@@ -17,14 +17,6 @@ it('should include a header for the Alert page', () => {
   expect(content.find('Footer')).toBePresent();
 });
 
-it('should not include a header for the login page', () => {
-  const node = shallow(<App />);
-  const content = shallow(node.find('Route').prop('render')({location: {pathname: '/login'}}));
-
-  expect(content.find('Header')).not.toBePresent();
-  expect(content.find('Footer')).not.toBePresent();
-});
-
 it('should not include a header for shared resources', () => {
   const node = shallow(<App />);
   const content = shallow(

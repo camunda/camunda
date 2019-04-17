@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import {Redirect} from 'react-router-dom';
 
 import {login} from './service';
 
@@ -20,8 +19,7 @@ export default class Login extends React.Component {
     this.state = {
       username: '',
       password: '',
-      error: null,
-      redirect: false
+      error: null
     };
   }
 
@@ -39,7 +37,7 @@ export default class Login extends React.Component {
     const authResult = await login(username, password);
 
     if (authResult.token) {
-      this.setState({error: null, redirect: true});
+      this.props.onLogin(authResult.token);
     } else {
       const error = authResult.errorMessage || 'An error occurred. Could not log you in.';
       this.setState({error});
@@ -49,12 +47,7 @@ export default class Login extends React.Component {
   };
 
   render() {
-    const {username, password, redirect, error} = this.state;
-    const locationState = this.props.location && this.props.location.state;
-
-    if (redirect) {
-      return <Redirect to={(locationState && locationState.from) || '/'} />;
-    }
+    const {username, password, error} = this.state;
 
     return (
       <form className="Login">

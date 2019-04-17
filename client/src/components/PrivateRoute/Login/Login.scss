@@ -1,12 +1,22 @@
 @import 'shared-styles/shared-styles.scss';
 
 .Login {
-  display: block;
-  margin: 128px auto 0 auto;
-  width: 340px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  background-color: white;
+  padding-top: 164px;
 
   .label {
     @include visually-hidden;
+  }
+
+  > * {
+    width: 340px;
+    margin-left: calc(50vw - 170px);
   }
 }
 
@@ -43,7 +53,6 @@
 
 .Login__button {
   display: block;
-  width: 100%;
   font-size: 1em;
   padding: 8px 14px 9px;
 }
