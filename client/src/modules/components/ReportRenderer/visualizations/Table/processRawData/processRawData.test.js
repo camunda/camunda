@@ -6,17 +6,6 @@
 
 import processRawData from './processRawData';
 
-jest.mock('services', () => ({
-  formatters: {
-    formatReportResult: (data, result) => result,
-    convertCamelToSpaces: v => v
-  }
-}));
-
-jest.mock('./service', () => ({
-  sortColumns: (head, body) => ({sortedHead: head, sortedBody: body})
-}));
-
 const data = {
   configuration: {
     excludedColumns: []
@@ -46,7 +35,7 @@ const result = {
 
 it('should transform data to table compatible format', () => {
   expect(processRawData({report: {data, result}})).toEqual({
-    head: ['processInstanceId', 'prop2', {label: 'Variables', columns: ['var1', 'var2']}],
+    head: ['Process Instance Id', 'Prop2', {label: 'Variables', columns: ['var1', 'var2']}],
     body: [['foo', 'bar', '12', ''], ['xyz', 'abc', '', 'true']]
   });
 });
@@ -58,7 +47,7 @@ it('should not include columns that are hidden', () => {
     }
   };
   expect(processRawData({report: {data, result}})).toEqual({
-    head: ['processInstanceId', {label: 'Variables', columns: ['var1', 'var2']}],
+    head: ['Process Instance Id', {label: 'Variables', columns: ['var1', 'var2']}],
     body: [['foo', '12', ''], ['xyz', '', 'true']]
   });
 });
@@ -70,7 +59,7 @@ it('should exclude variable columns using the var__ prefix', () => {
     }
   };
   expect(processRawData({report: {data, result}})).toEqual({
-    head: ['processInstanceId', 'prop2', {label: 'Variables', columns: ['var2']}],
+    head: ['Process Instance Id', 'Prop2', {label: 'Variables', columns: ['var2']}],
     body: [['foo', 'bar', ''], ['xyz', 'abc', 'true']]
   });
 });

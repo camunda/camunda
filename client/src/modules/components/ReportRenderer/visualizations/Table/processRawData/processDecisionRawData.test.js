@@ -6,17 +6,6 @@
 
 import processDecisionRawData from './processDecisionRawData';
 
-jest.mock('services', () => ({
-  formatters: {
-    formatReportResult: (data, result) => result,
-    convertCamelToSpaces: v => v
-  }
-}));
-
-jest.mock('./service', () => ({
-  sortColumns: (head, body) => ({sortedHead: head, sortedBody: body})
-}));
-
 const data = {
   configuration: {
     excludedColumns: []
@@ -78,8 +67,8 @@ it('should return correct table props for decision tables', () => {
 
   expect(processDecisionRawData({report: {result, reportType: 'decision', data}})).toEqual({
     head: [
-      'decisionInstanceId',
-      'prop2',
+      'Decision Instance Id',
+      'Prop2',
       {
         label: 'Input Variables',
         columns: [{id: 'var1', label: 'Var 1'}, {id: 'var2', label: 'Var 2'}]

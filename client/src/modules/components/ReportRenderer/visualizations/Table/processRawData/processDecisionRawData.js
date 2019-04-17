@@ -4,56 +4,48 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-
 import {formatters} from 'services';
-import {sortColumns} from './service';
+import {sortColumns, cockpitLink, noData} from './service';
 
-const {convertCamelToSpaces, formatReportResult} = formatters;
+const {convertCamelToSpaces} = formatters;
 
-export default function processDecisionRawData({report: {data, result}}, endpoints = {}) {
-  const {
-    configuration: {
-      excludedColumns = [],
-      columnOrder = {instanceProps: [], variables: [], inputVariables: [], outputVariables: []}
+export default function processDecisionRawData(
+  {
+    report: {
+      data: {
+        configuration: {
+          excludedColumns = [],
+          columnOrder = {instanceProps: [], variables: [], inputVariables: [], outputVariables: []}
+        }
+      },
+      result: {data: result}
     }
-  } = data;
-
-  const formattedResult = formatReportResult(data, result.data);
-
-  const instanceProps = Object.keys(formattedResult[0]).filter(
+  },
+  endpoints = {}
+) {
+  const instanceProps = Object.keys(result[0]).filter(
     entry =>
       entry !== 'inputVariables' && entry !== 'outputVariables' && !excludedColumns.includes(entry)
   );
 
-  const inputVariables = Object.keys(formattedResult[0].inputVariables).filter(
+  const inputVariables = Object.keys(result[0].inputVariables).filter(
     entry => !excludedColumns.includes('inp__' + entry)
   );
-  const outputVariables = Object.keys(formattedResult[0].outputVariables).filter(
+  const outputVariables = Object.keys(result[0].outputVariables).filter(
     entry => !excludedColumns.includes('out__' + entry)
   );
 
   if (instanceProps.length + inputVariables.length + outputVariables.length === 0) {
-    return {head: ['No Data'], body: [['You need to enable at least one table column']]};
+    return noData;
   }
 
-  function applyBehavior(type, instance) {
-    const content = instance[type];
-    if (type === 'decisionInstanceId') {
-      const {endpoint, engineName} = endpoints[instance.engineName] || {};
-      if (endpoint) {
-        return (
-          <a href={`${endpoint}/app/cockpit/${engineName}/#/decision-instance/${content}`}>
-            {content}
-          </a>
-        );
+  const body = result.map(instance => {
+    const propertyValues = instanceProps.map(entry => {
+      if (entry === 'decisionInstanceId') {
+        return cockpitLink(endpoints, instance, 'decision');
       }
-    }
-    return content;
-  }
-
-  const body = formattedResult.map(instance => {
-    const propertyValues = instanceProps.map(entry => applyBehavior(entry, instance));
+      return instance[entry];
+    });
     const inputVariableValues = inputVariables.map(entry => {
       const value = instance.inputVariables[entry].value;
       if (value === null) {
@@ -78,7 +70,7 @@ export default function processDecisionRawData({report: {data, result}}, endpoin
     head.push({
       label: 'Input Variables',
       columns: inputVariables.map(key => {
-        const {name, id} = formattedResult[0].inputVariables[key];
+        const {name, id} = result[0].inputVariables[key];
         return {label: name || id, id: key};
       })
     });
@@ -87,7 +79,7 @@ export default function processDecisionRawData({report: {data, result}}, endpoin
     head.push({
       label: 'Output Variables',
       columns: outputVariables.map(key => {
-        const {name, id} = formattedResult[0].outputVariables[key];
+        const {name, id} = result[0].outputVariables[key];
         return {label: name || id, id: key};
       })
     });

@@ -5,6 +5,20 @@
  */
 
 import {flatten} from 'services';
+import React from 'react';
+
+export const noData = {head: ['No Data'], body: [['You need to enable at least one table column']]};
+
+export function cockpitLink(endpoints, instance, type) {
+  const content = instance[type + 'InstanceId'];
+  const {endpoint, engineName} = endpoints[instance.engineName] || {};
+  if (endpoint) {
+    return (
+      <a href={`${endpoint}/app/cockpit/${engineName}/#/${type}-instance/${content}`}>{content}</a>
+    );
+  }
+  return content;
+}
 
 export function sortColumns(head, body, columnOrder) {
   const sortedHead = sortHead(head, columnOrder);
