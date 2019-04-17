@@ -336,7 +336,8 @@ it('flip dropdown vertically when there is no enough space for four items', () =
 
   node.instance().menuContainer = {
     current: {
-      clientHeight: 70
+      clientHeight: 70,
+      querySelector: () => ({clientHeight: 30})
     }
   };
 
@@ -376,7 +377,8 @@ it('should not add scrollable class when the item is flipped and there is no eno
 
   node.instance().menuContainer = {
     current: {
-      clientHeight: 400
+      clientHeight: 400,
+      querySelector: () => ({clientHeight: 30})
     }
   };
 

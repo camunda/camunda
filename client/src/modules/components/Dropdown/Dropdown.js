@@ -18,7 +18,6 @@ export default class Dropdown extends React.Component {
 
   constructor(props) {
     super(props);
-    this.options = [];
     this.initilizeHeaderAndFooterRefs();
 
     this.state = {
@@ -81,7 +80,7 @@ export default class Dropdown extends React.Component {
 
     if (open && buttonPosition.bottom + overlay.clientHeight > footerTop) {
       const listItemsCount = React.Children.count(this.props.children);
-      const oneItemHeight = this.options[0].clientHeight;
+      const oneItemHeight = overlay.querySelector('li').clientHeight;
       const fixedListHeight = this.props.fixedOptions
         ? this.props.fixedOptions.length * oneItemHeight
         : 0;
@@ -107,15 +106,7 @@ export default class Dropdown extends React.Component {
   };
 
   handleKeyPress = evt => {
-    const dropdownButton = this.container.children[0];
-
-    const options = this.options.filter(
-      option => option && option.getAttribute('disabled') === null
-    );
-
-    if (options[0] !== dropdownButton) {
-      options.unshift(dropdownButton);
-    }
+    const options = [...this.container.querySelectorAll('.activateButton, li > :not([disabled])')];
 
     evt = evt || window.event;
     const selectedOption = options.indexOf(document.activeElement);
@@ -134,12 +125,19 @@ export default class Dropdown extends React.Component {
 
     if (evt.key === 'ArrowRight') {
       if (options[selectedOption].classList.contains('Submenu')) {
-        this.setState({fixedSubmenu: this.options.indexOf(document.activeElement)}, () => {
-          const childElement = document.activeElement.querySelector('[tabindex="0"]');
-          if (childElement) {
-            childElement.focus();
+        this.setState(
+          {
+            fixedSubmenu: [...this.container.querySelectorAll('li > *')].indexOf(
+              options[selectedOption]
+            )
+          },
+          () => {
+            const childElement = document.activeElement.querySelector('[tabindex="0"]');
+            if (childElement) {
+              childElement.focus();
+            }
           }
-        });
+        );
       }
     }
 
@@ -188,7 +186,7 @@ export default class Dropdown extends React.Component {
         >
           <ul className={classnames({scrollable})} style={listStyles}>
             {React.Children.map(this.props.children, (child, idx) => (
-              <li ref={this.optionRef} key={idx}>
+              <li key={idx}>
                 {child && child.type === Submenu
                   ? React.cloneElement(child, {
                       open:
@@ -216,22 +214,12 @@ export default class Dropdown extends React.Component {
           </ul>
           <ul className="fixedList">
             {this.props.fixedOptions &&
-              this.props.fixedOptions.map((item, idx) => (
-                <li ref={this.optionRef} key={idx}>
-                  {item}
-                </li>
-              ))}
+              this.props.fixedOptions.map((item, idx) => <li key={idx}>{item}</li>)}
           </ul>
         </div>
       </div>
     );
   }
-
-  optionRef = option => {
-    if (option) {
-      this.options.push(option.children[0]);
-    }
-  };
 
   storeContainer = node => {
     this.container = node;
