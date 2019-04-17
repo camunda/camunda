@@ -110,6 +110,11 @@ export default withErrorHandling(
               }
             });
           } else {
+            this.setState({
+              saveLoading: false,
+              confirmModalVisible: false,
+              conflict: null
+            });
             addNotification({text: `Report "${updatedName}" could not be saved.`, type: 'error'});
           }
         }
