@@ -18,8 +18,7 @@
 package io.zeebe.broker.clustering.base.topology;
 
 import io.zeebe.transport.SocketAddress;
-import java.util.HashSet;
-import java.util.Set;
+import org.agrona.collections.IntHashSet;
 
 public class NodeInfo {
   private final int nodeId;
@@ -28,8 +27,8 @@ public class NodeInfo {
   private final SocketAddress replicationApiAddress;
   private final SocketAddress subscriptionApiAddress;
 
-  private final Set<PartitionInfo> leaders = new HashSet<>();
-  private final Set<PartitionInfo> followers = new HashSet<>();
+  private final IntHashSet leaders = new IntHashSet();
+  private final IntHashSet followers = new IntHashSet();
 
   public NodeInfo(
       int nodeId,
@@ -64,28 +63,28 @@ public class NodeInfo {
     return subscriptionApiAddress;
   }
 
-  public Set<PartitionInfo> getLeaders() {
+  public IntHashSet getLeaders() {
     return leaders;
   }
 
-  public boolean addLeader(final PartitionInfo leader) {
-    return leaders.add(leader);
+  public boolean addLeader(final int partitionId) {
+    return leaders.add(partitionId);
   }
 
-  public boolean removeLeader(final PartitionInfo leader) {
-    return leaders.remove(leader);
+  public boolean removeLeader(final int partitionId) {
+    return leaders.remove(partitionId);
   }
 
-  public Set<PartitionInfo> getFollowers() {
+  public IntHashSet getFollowers() {
     return followers;
   }
 
-  public boolean addFollower(final PartitionInfo follower) {
-    return followers.add(follower);
+  public boolean addFollower(final int partitionId) {
+    return followers.add(partitionId);
   }
 
-  public boolean removeFollower(final PartitionInfo follower) {
-    return followers.remove(follower);
+  public boolean removeFollower(final int partitionId) {
+    return followers.remove(partitionId);
   }
 
   @Override

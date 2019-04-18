@@ -32,7 +32,11 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
 import java.util.List;
 import org.slf4j.Logger;
 
@@ -99,7 +103,7 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
                   new ExporterStreamProcessor(
                       zeebeDb,
                       dbContext,
-                      partition.getInfo().getPartitionId(),
+                      partition.getPartitionId(),
                       exporterRepository.getExporters().values()))
           .build();
     }

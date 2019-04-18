@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
@@ -46,7 +44,6 @@ public class TopologyManagerImpl extends Actor
   private final Topology topology;
   private final Atomix atomix;
   private final BrokerInfo distributionInfo;
-  private final ObjectMapper mapper = new ObjectMapper();
 
   private final List<TopologyMemberListener> topologyMemberListeners = new ArrayList<>();
   private final List<TopologyPartitionListener> topologyPartitionListeners = new ArrayList<>();
@@ -107,7 +104,6 @@ public class TopologyManagerImpl extends Actor
         () -> {
           final NodeInfo memberInfo = topology.getLocal();
 
-          // TODO: is replicationFactor ever used? https://github.com/zeebe-io/zeebe/issues/2326
           updatePartition(partitionId, memberInfo, state);
           publishTopologyChanges();
         });
@@ -124,9 +120,8 @@ public class TopologyManagerImpl extends Actor
   }
 
   public void updatePartition(int partitionId, NodeInfo member, RaftState raftState) {
-    final PartitionInfo updatedPartition = topology.updatePartition(partitionId, member, raftState);
-
-    notifyPartitionUpdated(updatedPartition, member);
+    topology.updatePartition(partitionId, member, raftState);
+    notifyPartitionUpdated(partitionId, member);
   }
 
   @Override
@@ -185,13 +180,15 @@ public class TopologyManagerImpl extends Actor
   private void onMetadataChanged(BrokerInfo brokerInfo) {
     final NodeInfo nodeInfo = topology.getMember(brokerInfo.getNodeId());
 
-    for (Integer partitionId : brokerInfo.getPartitionRoles().keySet()) {
-      final RaftState role =
-          brokerInfo.getPartitionNodeRole(partitionId) ? RaftState.LEADER : RaftState.FOLLOWER;
-
-      final PartitionInfo updatedPartition = topology.updatePartition(partitionId, nodeInfo, role);
-      notifyPartitionUpdated(updatedPartition, nodeInfo);
-    }
+    brokerInfo.consumePartitions(
+        leaderPartitionId -> {
+          topology.updatePartition(leaderPartitionId, nodeInfo, RaftState.LEADER);
+          notifyPartitionUpdated(leaderPartitionId, nodeInfo);
+        },
+        followerPartitionId -> {
+          topology.updatePartition(followerPartitionId, nodeInfo, RaftState.FOLLOWER);
+          notifyPartitionUpdated(followerPartitionId, nodeInfo);
+        });
   }
 
   private BrokerInfo readBrokerInfo(Member eventSource) {
@@ -217,35 +214,22 @@ public class TopologyManagerImpl extends Actor
 
   // Propagate local partition info to other nodes through Atomix member properties
   private void publishTopologyChanges() {
-    try {
-      final Properties memberProperties =
-          atomix.getMembershipService().getLocalMember().properties();
-      final BrokerInfo distributionInfo = createDistributionTopology();
-      memberProperties.setProperty(
-          BrokerInfo.PROPERTY_NAME, mapper.writeValueAsString(distributionInfo));
-    } catch (JsonProcessingException e) {
-      LOG.error(
-          "{}: Couldn't publish topology information - {}",
-          topology.getLocal().getNodeId(),
-          e.getMessage());
-    }
+    final BrokerInfo distributionInfo = createLocalNodeBrokerInfo();
+    final Properties memberProperties = atomix.getMembershipService().getLocalMember().properties();
+    BrokerInfo.writeIntoProperties(memberProperties, distributionInfo);
   }
 
   // Transforms the local topology into a the serializable format
-  private BrokerInfo createDistributionTopology() {
+  private BrokerInfo createLocalNodeBrokerInfo() {
     final NodeInfo local = topology.getLocal();
     distributionInfo.clearPartitions();
 
-    for (PartitionInfo partitionInfo : topology.getPartitions()) {
-      final int partitionId = partitionInfo.getPartitionId();
-      final NodeInfo leader = topology.getLeader(partitionId);
-      final List<NodeInfo> followers = topology.getFollowers(partitionId);
+    for (int partitionId : local.getLeaders()) {
+      distributionInfo.addLeaderForPartition(partitionId);
+    }
 
-      final boolean isLeader = leader != null && leader.getNodeId() == local.getNodeId();
-
-      if (isLeader || followers.contains(local)) {
-        distributionInfo.setPartitionRole(partitionId, isLeader);
-      }
+    for (int partitionId : local.getFollowers()) {
+      distributionInfo.addFollowerForPartition(partitionId);
     }
 
     return distributionInfo;
@@ -264,19 +248,13 @@ public class TopologyManagerImpl extends Actor
           // notify initially
           topology
               .getMembers()
-              .forEach(
-                  (m) -> {
-                    LogUtil.catchAndLog(LOG, () -> listener.onMemberAdded(m, topology));
-                  });
+              .forEach((m) -> LogUtil.catchAndLog(LOG, () -> listener.onMemberAdded(m, topology)));
         });
   }
 
   @Override
   public void removeTopologyMemberListener(TopologyMemberListener listener) {
-    actor.run(
-        () -> {
-          topologyMemberListeners.remove(listener);
-        });
+    actor.run(() -> topologyMemberListeners.remove(listener));
   }
 
   @Override
@@ -289,20 +267,19 @@ public class TopologyManagerImpl extends Actor
           topology
               .getPartitions()
               .forEach(
-                  (p) ->
+                  (partitionId) ->
                       LogUtil.catchAndLog(
                           LOG,
                           () -> {
-                            final NodeInfo leader = topology.getLeader(p.getPartitionId());
+                            final NodeInfo leader = topology.getLeader(partitionId);
                             if (leader != null) {
-                              listener.onPartitionUpdated(p, leader);
+                              listener.onPartitionUpdated(partitionId, leader);
                             }
 
-                            final List<NodeInfo> followers =
-                                topology.getFollowers(p.getPartitionId());
+                            final List<NodeInfo> followers = topology.getFollowers(partitionId);
                             if (followers != null && !followers.isEmpty()) {
                               followers.forEach(
-                                  follower -> listener.onPartitionUpdated(p, follower));
+                                  follower -> listener.onPartitionUpdated(partitionId, follower));
                             }
                           }));
         });
@@ -310,10 +287,7 @@ public class TopologyManagerImpl extends Actor
 
   @Override
   public void removeTopologyPartitionListener(TopologyPartitionListener listener) {
-    actor.run(
-        () -> {
-          topologyPartitionListeners.remove(listener);
-        });
+    actor.run(() -> topologyPartitionListeners.remove(listener));
   }
 
   private void notifyMemberAdded(NodeInfo memberInfo) {
@@ -328,9 +302,9 @@ public class TopologyManagerImpl extends Actor
     }
   }
 
-  private void notifyPartitionUpdated(PartitionInfo partitionInfo, NodeInfo member) {
+  private void notifyPartitionUpdated(int partitionId, NodeInfo member) {
     for (TopologyPartitionListener listener : topologyPartitionListeners) {
-      LogUtil.catchAndLog(LOG, () -> listener.onPartitionUpdated(partitionInfo, member));
+      LogUtil.catchAndLog(LOG, () -> listener.onPartitionUpdated(partitionId, member));
     }
   }
 }

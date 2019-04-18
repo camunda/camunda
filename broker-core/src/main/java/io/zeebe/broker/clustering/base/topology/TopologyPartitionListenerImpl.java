@@ -30,20 +30,17 @@ public class TopologyPartitionListenerImpl implements TopologyPartitionListener 
   }
 
   @Override
-  public void onPartitionUpdated(final PartitionInfo partitionInfo, final NodeInfo member) {
-    if (member.getLeaders().contains(partitionInfo)) {
-      actor.submit(
-          () -> {
-            updatePartitionLeader(partitionInfo, member);
-          });
+  public void onPartitionUpdated(final int partitionId, final NodeInfo member) {
+    if (member.getLeaders().contains(partitionId)) {
+      actor.submit(() -> updatePartitionLeader(partitionId, member));
     }
   }
 
-  private void updatePartitionLeader(final PartitionInfo partitionInfo, final NodeInfo member) {
-    final NodeInfo currentLeader = partitionLeaders.get(partitionInfo.getPartitionId());
+  private void updatePartitionLeader(final int partitionId, final NodeInfo member) {
+    final NodeInfo currentLeader = partitionLeaders.get(partitionId);
 
     if (currentLeader == null || !currentLeader.equals(member)) {
-      partitionLeaders.put(partitionInfo.getPartitionId(), member);
+      partitionLeaders.put(partitionId, member);
     }
   }
 

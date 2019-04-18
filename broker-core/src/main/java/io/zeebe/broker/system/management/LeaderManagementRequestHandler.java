@@ -72,11 +72,11 @@ public class LeaderManagementRequestHandler extends Actor
   }
 
   private void addPartition(final Partition partition) {
-    actor.submit(() -> leaderForPartitions.put(partition.getInfo().getPartitionId(), partition));
+    actor.submit(() -> leaderForPartitions.put(partition.getPartitionId(), partition));
   }
 
   private void removePartition(final Partition partition) {
-    actor.submit(() -> leaderForPartitions.remove(partition.getInfo().getPartitionId()));
+    actor.submit(() -> leaderForPartitions.remove(partition.getPartitionId()));
   }
 
   public ServiceGroupReference<Partition> getLeaderPartitionsGroupReference() {

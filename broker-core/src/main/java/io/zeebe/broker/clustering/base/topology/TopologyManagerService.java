@@ -31,9 +31,7 @@ public class TopologyManagerService implements Service<TopologyManager> {
 
   private final ServiceGroupReference<PartitionLeaderElection> leaderElectionReference =
       ServiceGroupReference.<PartitionLeaderElection>create()
-          .onAdd(
-              (name, election) ->
-                  topologyManager.onLeaderElectionStarted((PartitionLeaderElection) election))
+          .onAdd((name, election) -> topologyManager.onLeaderElectionStarted(election))
           .build();
 
   private final NodeInfo localMember;

@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.clustering.base.partitions;
 
-import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.Injector;
@@ -36,7 +35,7 @@ public class Partition implements Service<Partition> {
 
   private final Injector<StateStorageFactory> stateStorageFactoryInjector = new Injector<>();
 
-  private final PartitionInfo info;
+  private final int partitionId;
 
   private final RaftState state;
 
@@ -44,8 +43,8 @@ public class Partition implements Service<Partition> {
 
   private StateStorageFactory stateStorageFactory;
 
-  public Partition(final PartitionInfo partitionInfo, final RaftState state) {
-    this.info = partitionInfo;
+  public Partition(final int partitionId, final RaftState state) {
+    this.partitionId = partitionId;
     this.state = state;
   }
 
@@ -60,8 +59,8 @@ public class Partition implements Service<Partition> {
     return this;
   }
 
-  public PartitionInfo getInfo() {
-    return info;
+  public int getPartitionId() {
+    return partitionId;
   }
 
   public RaftState getState() {

@@ -89,25 +89,25 @@ public class BrokerTopologyManagerImpl extends Actor
   }
 
   // Update topology information based on the distributed event
-  private void processProperties(BrokerInfo remoteTopology, BrokerClusterStateImpl newTopology) {
+  private void processProperties(
+      BrokerInfo distributedBrokerInfo, BrokerClusterStateImpl newTopology) {
 
-    newTopology.setClusterSize(remoteTopology.getClusterSize());
-    newTopology.setPartitionsCount(remoteTopology.getPartitionsCount());
-    newTopology.setReplicationFactor(remoteTopology.getReplicationFactor());
+    newTopology.setClusterSize(distributedBrokerInfo.getClusterSize());
+    newTopology.setPartitionsCount(distributedBrokerInfo.getPartitionsCount());
+    newTopology.setReplicationFactor(distributedBrokerInfo.getReplicationFactor());
 
-    final int nodeId = remoteTopology.getNodeId();
-    for (Integer partitionId : remoteTopology.getPartitionRoles().keySet()) {
-      newTopology.addPartitionIfAbsent(partitionId);
+    final int nodeId = distributedBrokerInfo.getNodeId();
 
-      if (remoteTopology.getPartitionNodeRole(partitionId)) {
-        newTopology.setPartitionLeader(partitionId, nodeId);
-      } else {
-        newTopology.addPartitionFollower(partitionId, nodeId);
-      }
+    distributedBrokerInfo.consumePartitions(
+        newTopology::addPartitionIfAbsent,
+        leaderPartitionId -> newTopology.setPartitionLeader(leaderPartitionId, nodeId),
+        followerPartitionId -> newTopology.addPartitionFollower(followerPartitionId, nodeId));
+
+    final String clientAddress =
+        distributedBrokerInfo.getApiAddress(BrokerInfo.CLIENT_API_PROPERTY);
+    if (clientAddress != null) {
+      newTopology.setBrokerAddressIfPresent(nodeId, clientAddress);
+      registerEndpoint.accept(nodeId, SocketAddress.from(clientAddress));
     }
-
-    final String clientAddress = remoteTopology.getApiAddress(BrokerInfo.CLIENT_API_PROPERTY);
-    newTopology.setBrokerAddressIfPresent(nodeId, clientAddress);
-    registerEndpoint.accept(nodeId, SocketAddress.from(clientAddress));
   }
 }
