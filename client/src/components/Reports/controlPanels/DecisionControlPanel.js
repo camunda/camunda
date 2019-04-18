@@ -115,7 +115,7 @@ export default class DecisionControlPanel extends React.Component {
       <div className="DecisionControlPanel ReportControlPanel">
         <ul>
           <li className="select">
-            <Labeled label="Decision definition">
+            <Labeled label="Decision Definition">
               <Popover className="processDefinitionPopover" title={this.createTitle()}>
                 <DefinitionSelection
                   type="decision"

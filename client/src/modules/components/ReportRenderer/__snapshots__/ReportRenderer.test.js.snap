@@ -29,7 +29,7 @@ exports[`SetupNotice should instruct to add group by option if not available 1`]
   <p>
     Select what to 
     <b>
-      Group by
+      Group By
     </b>
      above.
   </p>
@@ -53,7 +53,7 @@ exports[`SetupNotice should instruct to add visualization option if not availabl
   <p>
     Select an option for 
     <b>
-      Visualize as
+      Visualization
     </b>
      above.
   </p>

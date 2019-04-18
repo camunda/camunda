@@ -144,13 +144,13 @@ function checkSingleReport(data, reportType) {
   } else if (!data.groupBy) {
     return (
       <p>
-        Select what to <b>Group by</b> above.
+        Select what to <b>Group By</b> above.
       </p>
     );
   } else if (!data.visualization) {
     return (
       <p>
-        Select an option for <b>Visualize as</b> above.
+        Select an option for <b>Visualization</b> above.
       </p>
     );
   } else {

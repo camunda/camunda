@@ -137,7 +137,7 @@ export default class ReportControlPanel extends React.Component {
       <div className="ReportControlPanel">
         <ul>
           <li className="select">
-            <Labeled label="Process definition">
+            <Labeled label="Process Definition">
               <Popover className="processDefinitionPopover" title={this.createTitle()}>
                 <DefinitionSelection
                   type="process"
