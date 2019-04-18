@@ -70,8 +70,8 @@ export default class Configuration extends React.Component {
     );
   };
 
-  updateConfiguration = change => {
-    this.props.onChange({configuration: change});
+  updateConfiguration = (change, needsReevaluation) => {
+    this.props.onChange({configuration: change}, needsReevaluation);
   };
 
   render() {

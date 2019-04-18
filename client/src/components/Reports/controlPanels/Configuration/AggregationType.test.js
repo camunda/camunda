@@ -28,3 +28,18 @@ it('should render an aggregation selection for duration reports', () => {
 it('should not crash when no resultType is set (e.g. for combined reports)', () => {
   shallow(<AggregationType report={{result: {}}} />);
 });
+
+it('should reevaluate the report when changing aggregartion type', () => {
+  const spy = jest.fn();
+
+  const node = shallow(
+    <AggregationType
+      report={{result: {type: 'durationMap'}, data: {configuration: {aggregationType: 'median'}}}}
+      onChange={spy}
+    />
+  );
+
+  node.find('Select').simulate('change', {target: {value: 'max'}});
+
+  expect(spy).toHaveBeenCalledWith({aggregationType: {$set: 'max'}}, true);
+});

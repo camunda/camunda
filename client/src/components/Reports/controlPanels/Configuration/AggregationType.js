@@ -23,7 +23,7 @@ export default function AggregationType({
         <legend>Aggregation</legend>
         <Select
           value={data.configuration.aggregationType}
-          onChange={evt => onChange({aggregationType: {$set: evt.target.value}})}
+          onChange={evt => onChange({aggregationType: {$set: evt.target.value}}, true)}
         >
           <Select.Option value="min">Minimum</Select.Option>
           <Select.Option value="avg">Average</Select.Option>
