@@ -31,14 +31,8 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
   private static Response.Status getStatusForError(Throwable e) {
     final Class<?> errorClass = e.getClass();
 
-    if (NotAuthorizedException.class.equals(errorClass)) {
-      return Response.Status.UNAUTHORIZED;
-    }
     if (NotFoundException.class.equals(errorClass)) {
       return Response.Status.NOT_FOUND;
-    }
-    if (ForbiddenException.class.equals(errorClass)) {
-      return Response.Status.FORBIDDEN;
     }
     if (BadRequestException.class.equals(errorClass)) {
       return Response.Status.BAD_REQUEST;

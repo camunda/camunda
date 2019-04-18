@@ -72,14 +72,14 @@ public class AuthenticationService {
     if (userWasAuthenticated) {
       // could not find an engine that grants optimize permission
       String errorMessage = "The user [" + credentials.getUsername() + "] is not authorized to "
-          + "access Optimize. Please check the Camunda Admin configuration to change user " 
+          + "access Optimize.\n Please check the Camunda Admin configuration to change user "
           + "authorizations in at least one process engine.";
-      logger.error(errorMessage);
+      logger.warn(errorMessage);
       throw new ForbiddenException(errorMessage);
     } else {
       // could not find an engine that authenticates user
       String authenticationErrorMessage = createNotAuthenticatedErrorMessage(authenticationResults);
-      logger.error(authenticationErrorMessage);
+      logger.warn(authenticationErrorMessage);
       throw new NotAuthorizedException(authenticationErrorMessage, "ignored");
     }
   }
