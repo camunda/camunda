@@ -5,13 +5,10 @@
  */
 
 import {isEmpty} from 'lodash';
-
 import {isValidJSON} from 'modules/utils';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {getWorkflowByVersion} from 'modules/utils/filter';
-import {NOT_SELECTABLE_FLOWNODE_TYPES} from 'modules/constants';
-import {sortBy} from 'lodash';
 
 export function parseQueryString(queryString = '') {
   var params = {};
@@ -67,38 +64,21 @@ export function decodeFields(object) {
 }
 
 export function getSelectableFlowNodes(bpmnElements) {
-  let namedFlowNodes = [];
-  let unnameFlowNodes = [];
-
-  for (let element in bpmnElements) {
-    const {$type: type, id, name} = bpmnElements[element];
-    const flowNodeType = type.split(':')[1];
-
-    const isSelectable = !Object.values(NOT_SELECTABLE_FLOWNODE_TYPES).some(
-      selectableType => flowNodeType === selectableType
-    );
-
-    if (isSelectable && name) {
-      namedFlowNodes.push({
-        value: id,
-        label: name
-      });
-    } else if (isSelectable) {
-      unnameFlowNodes.push({
-        value: id,
-        label: 'Unnamed' + flowNodeType.replace(/([A-Z])/g, ' $1')
-      });
-    }
+  if (!bpmnElements) {
+    return {ids: [], flowNodes: []};
   }
 
-  return [
-    ...sortByFlowNodeLabel(namedFlowNodes),
-    ...sortByFlowNodeLabel(unnameFlowNodes)
-  ];
-}
+  let flowNodes = [];
+  let ids = [];
 
-function sortByFlowNodeLabel(flowNodes) {
-  return sortBy(flowNodes, flowNode => flowNode.label.toLowerCase());
+  Object.values(bpmnElements).forEach(bpmnElement => {
+    if (bpmnElement.$instanceOf('bpmn:FlowNode')) {
+      flowNodes.push(bpmnElement);
+      ids.push(bpmnElement.id);
+    }
+  });
+
+  return {ids, flowNodes};
 }
 
 export function getWorkflowName(workflow) {

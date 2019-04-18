@@ -78,9 +78,10 @@ export default class Instances extends Component {
 
     const workflowName = getWorkflowNameFromFilter({filter, groupedWorkflows});
 
-    const selectableFlowNodes = getSelectableFlowNodes(
-      this.props.diagramModel.bpmnElements
-    );
+    const {
+      ids: selectableIds,
+      flowNodes: selectableFlowNodes
+    } = getSelectableFlowNodes(this.props.diagramModel.bpmnElements);
 
     return (
       <SelectionProvider
@@ -108,7 +109,7 @@ export default class Instances extends Component {
                 <Styled.Content>
                   <Styled.FilterSection>
                     <Filters
-                      activityIds={selectableFlowNodes}
+                      selectableFlowNodes={selectableFlowNodes}
                       groupedWorkflows={this.props.groupedWorkflows}
                       filter={this.props.filter}
                       filterCount={this.props.filterCount}
@@ -136,9 +137,7 @@ export default class Instances extends Component {
                         flowNodesStatistics={this.props.statistics}
                         onFlowNodeSelection={this.handleFlowNodeSelection}
                         selectedFlowNodeId={this.props.filter.activityId}
-                        selectableFlowNodes={selectableFlowNodes.map(
-                          item => item.value
-                        )}
+                        selectableFlowNodes={selectableIds}
                       />
                     </TopPane>
 
