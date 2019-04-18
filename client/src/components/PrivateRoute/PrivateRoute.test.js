@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import PrivateRoute from './PrivateRoute';
 
@@ -35,28 +35,31 @@ jest.mock('react-router-dom', () => {
 });
 
 it('should render the component if the user is logged in', () => {
-  const node = mount(<PrivateRoute component={TestComponent} />);
+  const node = shallow(<PrivateRoute component={TestComponent} />).dive();
 
   expect(node).toIncludeText('TestComponent');
 });
 
 it('should provide the login component with the requested route', () => {
-  const node = mount(<PrivateRoute component={TestComponent} location="/private" />);
+  const node = shallow(<PrivateRoute component={TestComponent} location="/private" />);
+
+  node.instance().componentDidUpdate = jest.fn();
 
   node.setState({forceRedirect: true}, () => {
-    expect(node).toIncludeText('REDIRECT');
-    expect(node).toIncludeText('from /private');
+    const wrapper = node.renderProp('render')({location: 'test'});
+    expect(wrapper.find('Redirect')).toBePresent();
+    expect(wrapper.props().to.state).toEqual({from: 'test'});
   });
 });
 
 it('should register a response handler', () => {
-  mount(<PrivateRoute component={TestComponent} location="/private" />);
+  shallow(<PrivateRoute component={TestComponent} location="/private" />);
 
   expect(addHandler).toHaveBeenCalled();
 });
 
 it('should unregister the response handler when it is destroyed', () => {
-  const node = mount(<PrivateRoute component={TestComponent} location="/private" />);
+  const node = shallow(<PrivateRoute component={TestComponent} location="/private" />);
   node.unmount();
 
   expect(removeHandler).toHaveBeenCalled();
