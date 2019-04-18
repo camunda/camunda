@@ -17,7 +17,7 @@ import {
   BADGE_TYPE
 } from 'modules/constants';
 import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext';
-import {isEqual, isEmpty} from 'lodash';
+import {isEqual, isEmpty, sortBy} from 'lodash';
 
 import * as Styled from './styled';
 import {
@@ -49,12 +49,7 @@ export default class Filters extends React.Component {
     filterCount: PropTypes.number.isRequired,
     onFilterChange: PropTypes.func.isRequired,
     onFilterReset: PropTypes.func.isRequired,
-    activityIds: PropTypes.arrayOf(
-      PropTypes.shape({
-        label: PropTypes.string,
-        value: PropTypes.string
-      })
-    ),
+    selectableFlowNodes: PropTypes.arrayOf(PropTypes.object),
     groupedWorkflows: PropTypes.object
   };
 
@@ -152,6 +147,66 @@ export default class Filters extends React.Component {
         this.props.onFilterReset();
       }
     );
+  };
+
+  sortByFlowNodeLabel = flowNodes => {
+    return sortBy(flowNodes, flowNode => flowNode.label.toLowerCase());
+  };
+
+  sortAndModify = (bpmnElements, ...modifiers) => {
+    if (bpmnElements.length < 1) {
+      return [];
+    }
+
+    const named = [];
+    const unnamed = [];
+
+    bpmnElements.forEach(bpmnElement => {
+      const enhancedElement = this.modifierIterator(bpmnElement, 0, modifiers);
+
+      if (enhancedElement.name) {
+        named.push(enhancedElement);
+      } else {
+        unnamed.push(enhancedElement);
+      }
+    });
+
+    return [
+      ...this.sortByFlowNodeLabel(named),
+      ...this.sortByFlowNodeLabel(unnamed)
+    ];
+  };
+
+  addLabelModifier = bpmnElement => {
+    return {
+      ...bpmnElement,
+      label: bpmnElement.name
+        ? bpmnElement.name
+        : 'Unnamed' + bpmnElement.$type.split(':')[1].replace(/([A-Z])/g, ' $1')
+    };
+  };
+
+  addValueModifier = bpmnElement => {
+    return {
+      ...bpmnElement,
+      value: bpmnElement.id
+    };
+  };
+
+  modifierIterator = (object, currentModifierIndex, modifiers) => {
+    const modifierFunction = modifiers[currentModifierIndex];
+    const modifiedObject = modifierFunction(object);
+
+    currentModifierIndex++;
+
+    while (currentModifierIndex < modifiers.length) {
+      return this.modifierIterator(
+        modifiedObject,
+        currentModifierIndex,
+        modifiers
+      );
+    }
+    return modifiedObject;
   };
 
   render() {
@@ -262,7 +317,11 @@ export default class Filters extends React.Component {
                       }
                       name="activityId"
                       placeholder="Flow Node"
-                      options={this.props.activityIds}
+                      options={this.sortAndModify(
+                        this.props.selectableFlowNodes,
+                        this.addLabelModifier,
+                        this.addValueModifier
+                      )}
                       onChange={this.handleFieldChange}
                     />
                   </Styled.Field>

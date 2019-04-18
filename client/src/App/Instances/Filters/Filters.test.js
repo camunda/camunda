@@ -102,16 +102,16 @@ describe('Filters', () => {
     onFilterChange: spy,
     onFilterReset: resetSpy,
     filterCount: 1,
-    activityIds: []
+    selectableFlowNodes: []
   };
 
-  const mockPropsWithActivityIds = {
+  const mockPropsWithSelectableFlowNodes = {
     onFilterChange: spy,
     onFilterReset: resetSpy,
     filterCount: 1,
-    activityIds: [
-      {value: 'taskA', label: 'task A'},
-      {value: 'taskB', label: 'taskB'}
+    selectableFlowNodes: [
+      {id: 'TaskA', $type: 'bpmn:StartEvent', name: 'task A'},
+      {id: 'TaskB', $type: 'bpmn:EndEvent'}
     ]
   };
 
@@ -760,7 +760,7 @@ describe('Filters', () => {
     });
   });
 
-  describe('activityId filter', () => {
+  describe('selectable FlowNode filter', () => {
     it('should exist and be disabled by default', () => {
       // given
       const node = mount(
@@ -886,14 +886,14 @@ describe('Filters', () => {
       expect(field.props().value).toEqual('');
     });
 
-    it('should read the options from this.props.activityIds', () => {
+    it('should read the options from this.props.selectableFlowNodes', () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
               groupedWorkflows={workflows}
-              {...mockPropsWithActivityIds}
+              {...mockPropsWithSelectableFlowNodes}
               filter={DEFAULT_FILTER}
             />
           </CollapsablePanelProvider>
@@ -912,8 +912,55 @@ describe('Filters', () => {
         .find(Styled.Select)
         .filterWhere(n => n.props().name === 'activityId');
 
-      expect(field.props().options[0].value).toEqual('taskA');
-      expect(field.props().options[1].value).toEqual('taskB');
+      expect(field.props().options[0].value).toEqual(
+        mockPropsWithSelectableFlowNodes.selectableFlowNodes[0].id
+      );
+      expect(field.props().options[1].value).toEqual(
+        mockPropsWithSelectableFlowNodes.selectableFlowNodes[1].id
+      );
+
+      // Use name for the label if it exists
+      expect(field.props().options[0].label).toEqual(
+        mockPropsWithSelectableFlowNodes.selectableFlowNodes[0].name
+      );
+
+      // Use a fall-back name for the label if it the flowNode doesn't have one
+      expect(field.props().options[1].label).toEqual('Unnamed End Event');
+    });
+
+    it('should split the selectable flowNode options by named/unnamed & sort alphabetically', () => {
+      const unsortedSelectableFlowNodes = [
+        {id: 'TaskC', $type: 'bpmn:StartEvent', name: 'task C'},
+        {id: 'TaskA', $type: 'bpmn:StartEvent', name: 'task A'},
+        {id: 'TaskD', $type: 'bpmn:AEndEvent'},
+        {id: 'TaskE', $type: 'bpmn:CEndEvent'}
+      ];
+
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflows={workflows}
+              {...mockPropsWithSelectableFlowNodes}
+              filter={DEFAULT_FILTER}
+              selectableFlowNodes={unsortedSelectableFlowNodes}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
+      );
+
+      const field = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'activityId');
+
+      expect(field.props().options[0].label).toEqual(
+        unsortedSelectableFlowNodes[1].name
+      );
+      expect(field.props().options[1].label).toEqual(
+        unsortedSelectableFlowNodes[0].name
+      );
+      expect(field.props().options[2].label).toEqual('Unnamed A End Event');
+      expect(field.props().options[3].label).toEqual('Unnamed C End Event');
     });
 
     it('should be disabled after the workflow name is reseted', async () => {
@@ -958,7 +1005,7 @@ describe('Filters', () => {
           <CollapsablePanelProvider>
             <Filters
               groupedWorkflows={workflows}
-              {...mockPropsWithActivityIds}
+              {...mockPropsWithSelectableFlowNodes}
               filter={DEFAULT_FILTER}
             />
           </CollapsablePanelProvider>
@@ -975,11 +1022,13 @@ describe('Filters', () => {
     it('should set the state on activityId selection', async () => {
       // given
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const activityId = mockPropsWithActivityIds.activityIds[0].value;
+      const activityId =
+        mockPropsWithSelectableFlowNodes.selectableFlowNodes[0].id;
+
       const node = shallow(
         <Filters
           groupedWorkflows={workflows}
-          {...mockPropsWithActivityIds}
+          {...mockPropsWithSelectableFlowNodes}
           filter={DEFAULT_FILTER}
         />
       );
@@ -991,7 +1040,7 @@ describe('Filters', () => {
 
       node.instance().handleFieldChange({
         target: {
-          value: mockPropsWithActivityIds.activityIds[0].value,
+          value: mockPropsWithSelectableFlowNodes.selectableFlowNodes[0].id,
           name: 'activityId'
         }
       });
