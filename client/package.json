@@ -21,7 +21,7 @@
     "react": "16.3.1",
     "react-app-polyfill": "^0.1.3",
     "react-date-range": "^0.9.4",
-    "react-dom": "16.3.1",
+    "react-dom": "16.3.3",
     "react-full-screen": "^0.2.3",
     "react-router": "^4.3.1",
     "react-router-dom": "^4.2.2",
