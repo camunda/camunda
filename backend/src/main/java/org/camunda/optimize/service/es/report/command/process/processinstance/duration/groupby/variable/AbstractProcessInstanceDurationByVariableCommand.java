@@ -23,17 +23,21 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.report.command.process.util.GroupByDateVariableIntervalSelection
+  .createDateVariableAggregation;
+import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.RANGE_AGGREGATION;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabelForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldLabelForType;
@@ -48,9 +52,11 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 public abstract class AbstractProcessInstanceDurationByVariableCommand
   extends ProcessReportCommand<SingleProcessMapDurationReportResult> {
 
-  private static final String NESTED_AGGREGATION = "nested";
+  private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+
+  public static final String NESTED_AGGREGATION = "nested";
   private static final String VARIABLES_AGGREGATION = "variables";
-  private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
+  public static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
   private static final String REVERSE_NESTED_AGGREGATION = "reverseNested";
 
   @Override
@@ -103,35 +109,34 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
   }
 
   private AggregationBuilder createAggregation(String variableName, VariableType variableType) {
-
     String path = variableTypeToFieldLabel(variableType);
     String nestedVariableNameFieldLabel = getNestedVariableNameFieldLabelForType(variableType);
     String nestedVariableValueFieldLabel = getNestedVariableValueFieldLabelForType(variableType);
-    TermsAggregationBuilder collectVariableValueCount = AggregationBuilders
+
+    AggregationBuilder aggregationBuilder = AggregationBuilders
       .terms(VARIABLES_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
       .field(nestedVariableValueFieldLabel);
 
     if (VariableType.DATE.equals(variableType)) {
-      collectVariableValueCount.format(OPTIMIZE_DATE_FORMAT);
+      aggregationBuilder = createDateVariableAggregation(
+        variableName,
+        nestedVariableNameFieldLabel,
+        nestedVariableValueFieldLabel,
+        intervalAggregationService,
+        esClient,
+        setupBaseQuery(getReportData())
+      );
     }
 
-    return nested(NESTED_AGGREGATION, path)
-      .subAggregation(
-        filter(
-          FILTERED_VARIABLES_AGGREGATION,
-          boolQuery()
-            .must(
-              termQuery(nestedVariableNameFieldLabel, variableName)
-            )
-        )
-          .subAggregation(
-            collectVariableValueCount
-              .subAggregation(
-                addOperationsAggregation(AggregationBuilders.reverseNested(REVERSE_NESTED_AGGREGATION))
-              )
-          )
-      );
+    AggregationBuilder operationsAggregation = addOperationsAggregation(AggregationBuilders.reverseNested(
+      REVERSE_NESTED_AGGREGATION));
+
+    return nested(NESTED_AGGREGATION, path).subAggregation(
+      filter(
+        FILTERED_VARIABLES_AGGREGATION,
+        boolQuery().must(termQuery(nestedVariableNameFieldLabel, variableName))
+      ).subAggregation(aggregationBuilder.subAggregation(operationsAggregation)));
   }
 
   private AggregationBuilder addOperationsAggregation(AggregationBuilder aggregationBuilder) {
@@ -145,21 +150,28 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
 
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-    final Terms variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
+
+    MultiBucketsAggregation variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
+    if (variableTerms == null) variableTerms = filteredVariables.getAggregations().get(RANGE_AGGREGATION);
 
     final List<MapResultEntryDto<AggregationResultDto>> resultData = new ArrayList<>();
-    for (Terms.Bucket b : variableTerms.getBuckets()) {
+    for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
       ReverseNested reverseNested = b.getAggregations().get(REVERSE_NESTED_AGGREGATION);
       AggregationResultDto operationsResult = processAggregationOperation(reverseNested.getAggregations());
       resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), operationsResult));
     }
 
     resultDto.setData(resultData);
-    resultDto.setComplete(variableTerms.getSumOfOtherDocCounts() == 0L);
+    resultDto.setComplete(isResultComplete(variableTerms));
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
 
     return resultDto;
   }
+
+  private boolean isResultComplete(MultiBucketsAggregation variableTerms) {
+    return !(variableTerms instanceof Terms) || ((Terms) variableTerms).getSumOfOtherDocCounts() == 0L;
+  }
+
 
   protected abstract AggregationResultDto processAggregationOperation(Aggregations aggs);
 

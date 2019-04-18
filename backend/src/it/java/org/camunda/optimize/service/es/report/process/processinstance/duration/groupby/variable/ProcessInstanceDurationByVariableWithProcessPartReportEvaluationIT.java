@@ -43,6 +43,7 @@ import org.junit.runner.RunWith;
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Collections;
@@ -699,7 +700,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     OffsetDateTime endDate = startDate.plusSeconds(1);
     Map<String, VariableType> varNameToTypeMap = createVarNameToTypeMap();
     Map<String, Object> variables = new HashMap<>();
-    variables.put("dateVar", OffsetDateTime.now().withOffsetSameLocal(ZoneOffset.UTC));
+    variables.put("dateVar", OffsetDateTime.now());
     variables.put("boolVar", true);
     variables.put("shortVar", (short) 2);
     variables.put("intVar", 5);
@@ -734,11 +735,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
 
-        String dateAsString = embeddedOptimizeRule.getDateTimeFormatter().format(
-          // Note: we use UTC here as this is what we get back in the terms aggregation used
-          // will get resolved with OPT-1713
-          temporal.withOffsetSameLocal(ZoneOffset.UTC)
-        );
+        String dateAsString = embeddedOptimizeRule.getDateTimeFormatter().format(temporal.atZoneSameInstant(ZoneId.systemDefault()));
         assertThat(resultData.get(0).getKey(), is(dateAsString));
         assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurations(1000L)));
       } else {
@@ -875,7 +872,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       // @formatter:on
   }
 
-  private ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
+  private ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateReport(ProcessReportDataDto
+                                                                                               reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)

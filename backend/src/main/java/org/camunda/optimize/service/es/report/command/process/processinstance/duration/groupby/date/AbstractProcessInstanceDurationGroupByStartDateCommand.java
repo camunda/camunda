@@ -128,8 +128,8 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
       return addOperationsAggregation(createAutomaticIntervalAggregation(query));
     }
 
-    final DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
-    final DateHistogramAggregationBuilder dateHistogramAggregation = AggregationBuilders
+    DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
+    DateHistogramAggregationBuilder dateHistogramAggregation = AggregationBuilders
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
       .field(START_DATE)
       .order(BucketOrder.key(false))

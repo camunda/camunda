@@ -202,11 +202,7 @@ public class VariableValueRetrievalIT {
       String expectedValue;
       if (name.equals("dateVar")) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(name);
-        expectedValue = embeddedOptimizeRule.getDateTimeFormatter().format(
-          // Note: we use UTC here as this is what we get back in the terms aggregation used
-          // will get resolved with OPT-1713
-          temporal.withOffsetSameLocal(ZoneOffset.UTC)
-        );
+        expectedValue = embeddedOptimizeRule.getDateTimeFormatter().format(temporal);
       } else {
         expectedValue = variables.get(name).toString();
       }

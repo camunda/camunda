@@ -35,6 +35,7 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -414,7 +415,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     // given
     Map<String, VariableType> varNameToTypeMap = createVarNameToTypeMap();
     Map<String, Object> variables = new HashMap<>();
-    variables.put("dateVar", OffsetDateTime.now().withOffsetSameLocal(ZoneOffset.UTC));
+    variables.put("dateVar", OffsetDateTime.now());
     variables.put("boolVar", true);
     variables.put("shortVar", (short) 2);
     variables.put("intVar", 5);
@@ -442,11 +443,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
       assertThat(resultData.size(), is(1));
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
-        String dateAsString = embeddedOptimizeRule.getDateTimeFormatter().format(
-          // Note: we use UTC here as this is what we get back in the terms aggregation used
-          // will get resolved with OPT-1713
-          temporal.withOffsetSameLocal(ZoneOffset.UTC)
-        );
+        String dateAsString = embeddedOptimizeRule.getDateTimeFormatter().format(temporal.atZoneSimilarLocal(ZoneId.systemDefault()));
         assertThat(resultData.get(0).getKey(), is(dateAsString));
         assertThat(resultData.get(0).getValue(), is(1L));
       } else {

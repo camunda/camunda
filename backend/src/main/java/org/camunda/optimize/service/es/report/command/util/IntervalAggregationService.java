@@ -46,7 +46,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 public class IntervalAggregationService {
 
   private static final String STATS_AGGREGATION = "minMaxValueOfData";
-  private static final String RANGE_AGGREGATION = "rangeAggregation";
+  public static final String RANGE_AGGREGATION = "rangeAggregation";
   private static final Logger logger = LoggerFactory.getLogger(IntervalAggregationService.class);
 
   private RestHighLevelClient esClient;
@@ -137,8 +137,8 @@ public class IntervalAggregationService {
     return Math.round((maxInMs - minInMs) / (NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
   }
 
-  private Optional<AggregationBuilder> createIntervalAggregationFromGivenRange(String field, OffsetDateTime min,
-                                                                               OffsetDateTime max) {
+  public Optional<AggregationBuilder> createIntervalAggregationFromGivenRange(String field, OffsetDateTime min,
+                                                                              OffsetDateTime max) {
     long msAsUnit = getDateHistogramIntervalFromMinMax(min, max);
     RangeAggregationBuilder rangeAgg = AggregationBuilders
       .range(RANGE_AGGREGATION)

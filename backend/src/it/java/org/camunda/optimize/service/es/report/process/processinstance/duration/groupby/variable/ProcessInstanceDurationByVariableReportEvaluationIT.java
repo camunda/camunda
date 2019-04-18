@@ -21,6 +21,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -44,7 +45,10 @@ import org.junit.runner.RunWith;
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -57,7 +61,11 @@ import java.util.stream.Stream;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants
+  .NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -548,7 +556,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     OffsetDateTime endDate = startDate.plusSeconds(1);
     Map<String, VariableType> varNameToTypeMap = createVarNameToTypeMap();
     Map<String, Object> variables = new HashMap<>();
-    variables.put("dateVar", OffsetDateTime.now().withOffsetSameLocal(ZoneOffset.UTC));
+    variables.put("dateVar", OffsetDateTime.now());
     variables.put("boolVar", true);
     variables.put("shortVar", (short) 2);
     variables.put("intVar", 5);
@@ -582,17 +590,45 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       assertThat(resultData.size(), is(1));
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
-        String dateAsString = embeddedOptimizeRule.getDateTimeFormatter().format(
-          // Note: we use utc here as this is what we get back in the terms aggregation used
-          // will get resolved with OPT-1713
-          temporal.withOffsetSameLocal(ZoneOffset.UTC)
-        );
+        String dateAsString = embeddedOptimizeRule.getDateTimeFormatter()
+          .format(temporal.atZoneSameInstant(ZoneId.systemDefault()));
         assertThat(resultData.get(0).getKey(), is(dateAsString));
         assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurations(1000L)));
       } else {
         assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurations(1000L)));
       }
     }
+  }
+
+  @Test
+  public void groupByDateVariableIntervalSelection() {
+    //given
+    Map<String, Object> variables = new HashMap<>();
+    OffsetDateTime now = OffsetDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+    variables.put("dateVar", now.withOffsetSameLocal(ZoneOffset.UTC));
+    ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartSimpleServiceTaskProcess(variables);
+
+    int numberOfDataPoints = NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION/2;
+    for (int i = 1; i < numberOfDataPoints; i++) {
+      variables.put("dateVar", now.plusMinutes(i).withOffsetSameLocal(ZoneOffset.UTC));
+      deployAndStartSimpleServiceTaskProcess(variables);
+    }
+
+    //when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(ALL_VERSIONS)
+      .setVariableName("dateVar")
+      .setVariableType(VariableType.DATE)
+      .build();
+    ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData).getResult();
+
+    //then
+    assertThat(resultDto.getData().size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
   }
 
   private Map<String, VariableType> createVarNameToTypeMap() {
@@ -826,7 +862,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       .getId();
   }
 
-  private ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
+  private ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateReport(ProcessReportDataDto
+                                                                                               reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)

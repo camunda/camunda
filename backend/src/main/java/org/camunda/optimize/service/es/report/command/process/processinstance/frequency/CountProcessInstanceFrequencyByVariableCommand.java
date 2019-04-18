@@ -21,21 +21,23 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.report.command.process.util.GroupByDateVariableIntervalSelection
+  .createDateVariableAggregation;
+import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.RANGE_AGGREGATION;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabelForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldLabelForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -45,7 +47,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 public class CountProcessInstanceFrequencyByVariableCommand extends ProcessReportCommand<SingleProcessMapReportResult> {
 
   private static final String NESTED_AGGREGATION = "nested";
-  private static final String VARIABLES_AGGREGATION = "variables";
+  public static final String VARIABLES_AGGREGATION = "variables";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
 
   @Override
@@ -102,27 +104,29 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
     String path = variableTypeToFieldLabel(variableType);
     String nestedVariableNameFieldLabel = getNestedVariableNameFieldLabelForType(variableType);
     String nestedVariableValueFieldLabel = getNestedVariableValueFieldLabelForType(variableType);
-    TermsAggregationBuilder collectVariableValueCount = AggregationBuilders
+
+    AggregationBuilder aggregationBuilder = AggregationBuilders
       .terms(VARIABLES_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
       .field(nestedVariableValueFieldLabel);
 
-    if (VariableType.DATE.equals(variableType)) {
-      collectVariableValueCount.format(OPTIMIZE_DATE_FORMAT);
+    if (variableType.equals(VariableType.DATE)) {
+      aggregationBuilder = createDateVariableAggregation(
+        variableName,
+        nestedVariableNameFieldLabel,
+        nestedVariableValueFieldLabel,
+        intervalAggregationService,
+        esClient,
+        setupBaseQuery(getReportData())
+      );
     }
 
     return nested(NESTED_AGGREGATION, path)
       .subAggregation(
         filter(
           FILTERED_VARIABLES_AGGREGATION,
-          boolQuery()
-            .must(
-              termQuery(nestedVariableNameFieldLabel, variableName)
-            )
-        )
-          .subAggregation(collectVariableValueCount)
-
-      );
+          boolQuery().must(termQuery(nestedVariableNameFieldLabel, variableName))
+        ).subAggregation(aggregationBuilder));
   }
 
   private ProcessReportMapResultDto mapToReportResult(final SearchResponse response) {
@@ -130,18 +134,24 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
 
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-    final Terms variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
+    MultiBucketsAggregation variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
+    if (variableTerms == null) {
+      variableTerms = filteredVariables.getAggregations().get(RANGE_AGGREGATION);
+    }
 
     final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
-    for (Terms.Bucket b : variableTerms.getBuckets()) {
+    for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
       resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), b.getDocCount()));
     }
 
     resultDto.setData(resultData);
-    resultDto.setComplete(variableTerms.getSumOfOtherDocCounts() == 0L);
+    resultDto.setComplete(isResultComplete(variableTerms));
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
 
     return resultDto;
   }
 
+  private boolean isResultComplete(MultiBucketsAggregation variableTerms) {
+    return !(variableTerms instanceof Terms) || ((Terms) variableTerms).getSumOfOtherDocCounts() == 0L;
+  }
 }
