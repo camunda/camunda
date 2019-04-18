@@ -125,10 +125,7 @@ export default class ReportControlPanel extends React.Component {
   };
 
   updateReport = (type, newValue) => {
-    this.props.updateReport(
-      processConfig.update(type, newValue, this.props),
-      type !== 'visualization'
-    );
+    this.props.updateReport(processConfig.update(type, newValue, this.props), true);
   };
 
   render() {

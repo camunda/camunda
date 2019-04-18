@@ -95,10 +95,7 @@ export default class DecisionControlPanel extends React.Component {
   };
 
   updateReport = (type, newValue) => {
-    this.props.updateReport(
-      decisionConfig.update(type, newValue, this.props),
-      type !== 'visualization'
-    );
+    this.props.updateReport(decisionConfig.update(type, newValue, this.props), true);
   };
 
   render() {
