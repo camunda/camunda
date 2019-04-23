@@ -30,6 +30,8 @@ public class AuthCookieService {
 
   public static final String AUTH_COOKIE_TOKEN_VALUE_PREFIX = "Bearer ";
   public static String OPTIMIZE_AUTHORIZATION = "X-Optimize-Authorization";
+  public static String SAME_SITE_COOKIE_FLAG = "SameSite";
+  public static String SAME_SITE_COOKIE_STRICT_VALUE = "Strict";
 
   private final ConfigurationService configurationService;
 
@@ -52,9 +54,9 @@ public class AuthCookieService {
     );
   }
 
-  public NewCookie createNewOptimizeAuthCookie(final String securityToken) {
+  public String createNewOptimizeAuthCookie(final String securityToken) {
     logger.trace("Creating Optimize authentication cookie.");
-    return new NewCookie(
+    NewCookie newCookie = new NewCookie(
       OPTIMIZE_AUTHORIZATION,
       AuthCookieService.createOptimizeAuthCookieValue(securityToken),
       "/",
@@ -70,8 +72,17 @@ public class AuthCookieService {
       configurationService.isHttpDisabled(),
       true
     );
+    
+    String newCookieAsString = newCookie.toString();
+    if (configurationService.getSameSiteCookieFlagEnabled()) {
+      newCookieAsString = addSameSiteCookieFlag(newCookieAsString);
+    }
+    return newCookieAsString;
   }
 
+  private String addSameSiteCookieFlag(String newCookieAsString) {
+    return newCookieAsString + String.format(";%s=%s", SAME_SITE_COOKIE_FLAG, SAME_SITE_COOKIE_STRICT_VALUE);
+  }
 
   public static Optional<String> getToken(ContainerRequestContext requestContext) {
     return extractAuthorizationCookie(requestContext)
@@ -83,7 +94,7 @@ public class AuthCookieService {
       .flatMap(AuthCookieService::extractTokenFromAuthorizationValue);
   }
 
-  public static Optional<Date> getTokenIssuedAt(String token) {
+  private static Optional<Date> getTokenIssuedAt(String token) {
     return getTokenAttribute(token, DecodedJWT::getIssuedAt);
   }
 

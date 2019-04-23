@@ -12,12 +12,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.service.security.AuthCookieService.SAME_SITE_COOKIE_FLAG;
+import static org.camunda.optimize.service.security.AuthCookieService.SAME_SITE_COOKIE_STRICT_VALUE;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
@@ -140,6 +145,38 @@ public class AuthenticationRestServiceIT {
 
     // then
     assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isHttpOnly(), is(true));
+  }
+
+  @Test
+  public void canDisableSameSiteCookieFlag() {
+    // given
+    embeddedOptimizeRule.getConfigurationService().setSameSiteCookieFlagEnabled(false);
+
+    // when
+    Response authResponse = embeddedOptimizeRule
+      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+
+    // then
+    assertThat(
+      authResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE).toString(),
+      not(containsString(SAME_SITE_COOKIE_FLAG))
+    );
+
+    // cleanup
+    embeddedOptimizeRule.getConfigurationService().setSameSiteCookieFlagEnabled(true);
+  }
+
+  @Test
+  public void cookieHasSameSiteCookieFlagEnabledByDefault() {
+    // when
+    Response authResponse = embeddedOptimizeRule
+      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+
+    // then
+    assertThat(
+      authResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE).toString(),
+      containsString(SAME_SITE_COOKIE_FLAG + "=" + SAME_SITE_COOKIE_STRICT_VALUE)
+    );
   }
 
   private String authenticateAdminUser() {

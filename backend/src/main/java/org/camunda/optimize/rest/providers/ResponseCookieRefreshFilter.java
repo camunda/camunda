@@ -56,7 +56,7 @@ public class ResponseCookieRefreshFilter implements ContainerResponseFilter {
       .flatMap(sessionService::refreshAuthToken)
       .ifPresent(newToken -> responseContext.getHeaders().add(
         HttpHeaders.SET_COOKIE,
-        authCookieService.createNewOptimizeAuthCookie(newToken).toString()
+        authCookieService.createNewOptimizeAuthCookie(newToken)
       ));
   }
 }

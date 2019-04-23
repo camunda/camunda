@@ -73,6 +73,8 @@ public class ConfigurationService {
   private Map<String, EngineConfiguration> configuredEngines;
   private Integer tokenLifeTime;
   private String tokenSecret;
+  private Boolean sameSiteCookieFlagEnabled;
+
   private String userValidationEndpoint;
   private String processDefinitionEndpoint;
   private String processDefinitionXmlEndpoint;
@@ -397,6 +399,14 @@ public class ConfigurationService {
       tokenLifeTime = configJsonContext.read(ConfigurationServiceConstants.TOKEN_LIFE_TIME, Integer.class);
     }
     return tokenLifeTime;
+  }
+
+  public Boolean getSameSiteCookieFlagEnabled() {
+    if (sameSiteCookieFlagEnabled == null) {
+      sameSiteCookieFlagEnabled =
+        configJsonContext.read(ConfigurationServiceConstants.SAME_SITE_COOKIE_FLAG_ENABLED, Boolean.class);
+    }
+    return sameSiteCookieFlagEnabled;
   }
 
   public List<ElasticsearchConnectionNodeConfiguration> getElasticsearchConnectionNodes() {
@@ -1106,5 +1116,9 @@ public class ConfigurationService {
 
   public void setImportDmnDataEnabled(Boolean importDmnDataEnabled) {
     this.importDmnDataEnabled = importDmnDataEnabled;
+  }
+
+  public void setSameSiteCookieFlagEnabled(Boolean sameSiteCookieFlagEnabled) {
+    this.sameSiteCookieFlagEnabled = sameSiteCookieFlagEnabled;
   }
 }

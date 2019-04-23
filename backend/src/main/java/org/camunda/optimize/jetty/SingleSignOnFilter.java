@@ -26,7 +26,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.NewCookie;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -147,10 +146,11 @@ public class SingleSignOnFilter implements Filter {
   private void setOptimizeAuthCookie(HttpServletRequest servletRequest,
                                      HttpServletResponse servletResponse,
                                      String token) {
-    final NewCookie optimizeAuthCookie = authCookieService.createNewOptimizeAuthCookie(token);
+    final String optimizeAuthCookie = authCookieService.createNewOptimizeAuthCookie(token);
+    final String optimizeAuthToken = AuthCookieService.createOptimizeAuthCookieValue(token);
     // for direct access by request filters
-    servletRequest.setAttribute(OPTIMIZE_AUTHORIZATION, optimizeAuthCookie.getValue());
-    servletResponse.addHeader(HttpHeaders.SET_COOKIE, optimizeAuthCookie.toString());
+    servletRequest.setAttribute(OPTIMIZE_AUTHORIZATION, optimizeAuthToken);
+    servletResponse.addHeader(HttpHeaders.SET_COOKIE, optimizeAuthCookie);
   }
 
   private Optional<Cookie> retrieveOptimizeAuthCookie(HttpServletRequest servletRequest) {

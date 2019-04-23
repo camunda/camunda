@@ -12,6 +12,7 @@ package org.camunda.optimize.service.util.configuration;
 public interface ConfigurationServiceConstants {
   String TOKEN_LIFE_TIME = "$.auth.token.lifeMin";
   String TOKEN_SECRET = "$.auth.token.secret";
+  String SAME_SITE_COOKIE_FLAG_ENABLED = "$.auth.cookie.same-site.enabled";
 
   String CONFIGURED_ENGINES = "$.engines";
 

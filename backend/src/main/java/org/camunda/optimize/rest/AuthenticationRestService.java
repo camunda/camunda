@@ -20,6 +20,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 /**
@@ -57,7 +58,7 @@ public class AuthenticationRestService {
     String securityToken = authenticationService.authenticateUser(credentials);
     // Return the token on the response
     return Response.ok(securityToken)
-      .cookie(authCookieService.createNewOptimizeAuthCookie(securityToken))
+      .header(HttpHeaders.SET_COOKIE, authCookieService.createNewOptimizeAuthCookie(securityToken))
       .build();
   }
 

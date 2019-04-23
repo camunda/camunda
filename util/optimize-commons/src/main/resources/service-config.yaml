@@ -1,5 +1,9 @@
 ---
 auth:
+  cookie:
+    same-site:
+      # decides if the optimize auth cookie has the same site cookie flag set
+      enabled: true
   token:
     # Optimize uses token-based authentication to keep track of which users are
     # logged in. Define when a token is supposed to expire.
