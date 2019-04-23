@@ -206,7 +206,7 @@ pipeline {
               cp -R --parents /es-storage/logs /cambpm-storage .
               chown -R 10000:1000 ./{es-storage,cambpm-storage}
             ''')
-            archiveArtifacts artifacts: 'es-storage/logs/*,cambpm-storage/**/*', onlyIfSuccessful: false
+            archiveArtifacts artifacts: 'es-storage/logs/*,cambpm-storage/**/*,target/surefire-reports/*', onlyIfSuccessful: false
           }
         }
       }
