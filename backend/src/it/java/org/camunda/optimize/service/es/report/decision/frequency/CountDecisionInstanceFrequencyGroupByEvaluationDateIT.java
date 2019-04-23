@@ -10,7 +10,11 @@ import junitparams.Parameters;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
@@ -28,6 +32,7 @@ import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -146,11 +151,20 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(result.getIsComplete(), is(true));
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData.size(), is(3));
-    assertThat(resultData.get(0).getKey(), is(formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS)));
+    assertThat(
+      resultData.get(0).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS))
+    );
     assertThat(resultData.get(0).getValue(), is(2L));
-    assertThat(resultData.get(1).getKey(), is(formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS)));
+    assertThat(
+      resultData.get(1).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS))
+    );
     assertThat(resultData.get(1).getValue(), is(2L));
-    assertThat(resultData.get(2).getKey(), is(formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS)));
+    assertThat(
+      resultData.get(2).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS))
+    );
     assertThat(resultData.get(2).getValue(), is(3L));
   }
 
@@ -193,16 +207,26 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
+    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult =
+      evaluateMapReport(reportData);
 
     // then
     final DecisionReportMapResultDto result = evaluationResult.getResult();
     assertThat(result.getIsComplete(), is(true));
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData.size(), is(3));
-    assertThat(resultData.get(0).getKey(), is(formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS)));
-    assertThat(resultData.get(1).getKey(), is(formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS)));
-    assertThat(resultData.get(2).getKey(), is(formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS)));
+    assertThat(
+      resultData.get(0).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS))
+    );
+    assertThat(
+      resultData.get(1).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS))
+    );
+    assertThat(
+      resultData.get(2).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS))
+    );
 
   }
 
@@ -245,7 +269,8 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
+    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult =
+      evaluateMapReport(reportData);
 
     // then
     final DecisionReportMapResultDto result = evaluationResult.getResult();
@@ -257,6 +282,81 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       bucketValues,
       contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
     );
+  }
+
+  @Test
+  public void testEmptyBucketsAreReturnedForEvaluationDateFilterPeriod() throws SQLException {
+    // given
+    final OffsetDateTime startDate = OffsetDateTime.now();
+
+    // third bucket
+    final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
+    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+
+    final OffsetDateTime secondBucketEvaluationDate = startDate.minusDays(2);
+    engineDatabaseRule.changeDecisionInstanceEvaluationDate(startDate, secondBucketEvaluationDate);
+
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+
+    // when
+    final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto();
+    dateFilterDataDto.setStart(new RelativeDateFilterStartDto(
+      4L,
+      RelativeDateFilterUnit.DAYS
+    ));
+
+    final EvaluationDateFilterDto dateFilterDto = new EvaluationDateFilterDto(dateFilterDataDto);
+
+    final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
+      .setDecisionDefinitionVersion(decisionDefinitionVersion1)
+      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setFilter(dateFilterDto)
+      .build();
+
+    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult =
+      evaluateMapReport(reportData);
+
+
+    // then
+    final List<MapResultEntryDto<Long>> resultData = evaluationResult.getResult().getData();
+    assertThat(resultData.size(), is(5));
+
+    assertThat(
+      resultData.get(0).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
+    );
+    assertThat(resultData.get(0).getValue(), is(1L));
+
+    assertThat(
+      resultData.get(1).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
+    );
+    assertThat(resultData.get(1).getValue(), is(0L));
+
+    assertThat(
+      resultData.get(2).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
+    );
+    assertThat(resultData.get(2).getValue(), is(2L));
+
+    assertThat(
+      resultData.get(3).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
+    );
+    assertThat(resultData.get(3).getValue(), is(0L));
+
+    assertThat(
+      resultData.get(4).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
+    );
+    assertThat(resultData.get(4).getValue(), is(0L));
   }
 
   @Test
@@ -298,7 +398,8 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
-    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
+    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult =
+      evaluateMapReport(reportData);
 
     // then
     final DecisionReportMapResultDto result = evaluationResult.getResult();
@@ -345,11 +446,20 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData.size(), is(3));
-    assertThat(resultData.get(0).getKey(), is(formatToHistogramBucketKey(lastEvaluationDateFilter, chronoUnit)));
+    assertThat(
+      resultData.get(0).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(lastEvaluationDateFilter, chronoUnit))
+    );
     assertThat(resultData.get(0).getValue(), is(2L));
-    assertThat(resultData.get(1).getKey(), is(formatToHistogramBucketKey(secondBucketEvaluationDate, chronoUnit)));
+    assertThat(
+      resultData.get(1).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(secondBucketEvaluationDate, chronoUnit))
+    );
     assertThat(resultData.get(1).getValue(), is(0L));
-    assertThat(resultData.get(2).getKey(), is(formatToHistogramBucketKey(thirdBucketEvaluationDate, chronoUnit)));
+    assertThat(
+      resultData.get(2).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(thirdBucketEvaluationDate, chronoUnit))
+    );
     assertThat(resultData.get(2).getValue(), is(3L));
   }
 
@@ -479,7 +589,8 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
         INPUT_AMOUNT_ID, FilterOperatorConstants.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();
-    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
+    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult =
+      evaluateMapReport(reportData);
 
     // then
     final DecisionReportMapResultDto result = evaluationResult.getResult();
@@ -543,9 +654,5 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     return evaluateMapReport(reportData);
   }
 
-
-  private String formatToHistogramBucketKey(final OffsetDateTime offsetDateTime, final ChronoUnit unit) {
-    return embeddedOptimizeRule.getDateTimeFormatter().format(truncateToStartOfUnit(offsetDateTime, unit));
-  }
 
 }

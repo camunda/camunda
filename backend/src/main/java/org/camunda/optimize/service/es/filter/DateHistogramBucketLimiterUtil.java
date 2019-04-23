@@ -15,11 +15,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndD
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.search.aggregations.bucket.histogram.ExtendedBounds;
 
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -60,30 +63,78 @@ public class DateHistogramBucketLimiterUtil {
     return limitFilterQuery;
   }
 
+
+  public static List<DateFilterDataDto> limitFiltersToMaxBuckets(final List<DateFilterDataDto> dateFilters,
+                                                                 final GroupByDateUnit unit,
+                                                                 final int bucketLimit,
+                                                                 final boolean createDefaultFilter) {
+    final ChronoUnit groupByChronoUnit = mapToChronoUnit(unit);
+    if (!dateFilters.isEmpty()) {
+      // user defined filters present, limit all of them to return less than limit buckets
+      return limitFiltersToMaxBucketsForUnit(dateFilters, groupByChronoUnit, bucketLimit);
+    } else if (createDefaultFilter) {
+      // no filters present and createDefaultFilter = true -> generate default limiting filters
+      final RelativeDateFilterDataDto defaultFilter = new RelativeDateFilterDataDto();
+      defaultFilter.setStart(
+        new RelativeDateFilterStartDto((long) bucketLimit, RelativeDateFilterUnit.valueOf(groupByChronoUnit.name()))
+      );
+      return Collections.singletonList(defaultFilter);
+    }
+
+    return dateFilters;
+  }
+
+
   public static BoolQueryBuilder createHistogramBucketLimitingFilterFor(final List<DateFilterDataDto> dateFilters,
                                                                         final GroupByDateUnit unit,
                                                                         final int bucketLimit,
                                                                         final DateQueryFilter queryFilterService) {
 
     final BoolQueryBuilder limitFilterQuery = boolQuery();
-    final ChronoUnit groupByChronoUnit = mapToChronoUnit(unit);
-    if (!dateFilters.isEmpty()) {
-      // user defined filters present, limit all of them to return less than limit buckets
-      final List<DateFilterDataDto> limitedFilters = limitFiltersToMaxBucketsForUnit(
-        dateFilters, groupByChronoUnit, bucketLimit
-      );
-      queryFilterService.addFilters(limitFilterQuery, limitedFilters);
-    } else {
-      // no filters present generate default limiting filters
-      final RelativeDateFilterDataDto defaultFilter = new RelativeDateFilterDataDto();
-      defaultFilter.setStart(
-        new RelativeDateFilterStartDto((long) bucketLimit, RelativeDateFilterUnit.valueOf(groupByChronoUnit.name()))
-      );
-      queryFilterService.addFilters(limitFilterQuery, Collections.singletonList(defaultFilter));
-    }
-
+    final List<DateFilterDataDto> limitedFilters = limitFiltersToMaxBuckets(
+      dateFilters,
+      unit,
+      bucketLimit,
+      true
+    );
+    queryFilterService.addFilters(limitFilterQuery, limitedFilters);
     return limitFilterQuery;
   }
+
+  public static Optional<ExtendedBounds> getExtendedBoundsFromDateFilters(final List<DateFilterDataDto> dateFilters,
+                                                                          final DateTimeFormatter dateFormatter) {
+
+    //in case of several dateFilters, use min (oldest) one as start, and max (newest) one as end
+    final OffsetDateTime filterEnd = getMaxDateFilterOffsetDateTime(dateFilters);
+    final Optional<OffsetDateTime> filterStart = getMinDateFilterOffsetDateTime(dateFilters);
+
+    return filterStart.map(start -> new ExtendedBounds(dateFormatter.format(start), dateFormatter.format(filterEnd)));
+  }
+
+  private static OffsetDateTime getMaxDateFilterOffsetDateTime(final List<DateFilterDataDto> dateFilters) {
+    return dateFilters.stream()
+      .map(DateFilterDataDto::getEnd)
+      .filter(Objects::nonNull)
+      .max(OffsetDateTime::compareTo)
+      .orElse(OffsetDateTime.now());
+  }
+
+  private static Optional<OffsetDateTime> getMinDateFilterOffsetDateTime(final List<DateFilterDataDto> dateFilters) {
+    final OffsetDateTime now = OffsetDateTime.now();
+    return Stream.concat(
+      dateFilters.stream()
+        .filter(FixedDateFilterDataDto.class::isInstance)
+        .map(date -> (OffsetDateTime) date.getStart()),
+      dateFilters.stream()
+        .filter(RelativeDateFilterDataDto.class::isInstance)
+        .map(filter -> {
+          final RelativeDateFilterStartDto startDto = (RelativeDateFilterStartDto) filter.getStart();
+          final ChronoUnit filterUnit = ChronoUnit.valueOf(startDto.getUnit().name());
+          return now.minus(startDto.getValue(), filterUnit);
+        })
+    ).min(OffsetDateTime::compareTo);
+  }
+
 
   static List<DateFilterDataDto> limitFiltersToMaxBucketsForUnit(final List<DateFilterDataDto> dateFilters,
                                                                  final ChronoUnit groupByUnit,

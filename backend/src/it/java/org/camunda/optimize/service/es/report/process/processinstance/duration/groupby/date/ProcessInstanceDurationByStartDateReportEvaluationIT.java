@@ -16,10 +16,14 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
@@ -396,6 +400,75 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
     assertThat(resultData.size(), is(2));
     assertThat(result.getIsComplete(), is(false));
+  }
+
+  @Test
+  public void testEmptyBucketsAreReturnedForStartDateFilterPeriod() {
+    // given
+    final OffsetDateTime startDate = OffsetDateTime.now();
+    final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
+    final String processDefinitionId = processInstanceDto1.getDefinitionId();
+    final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
+    final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
+    adjustProcessInstanceDates(processInstanceDto1.getId(), startDate, 0L, 1L);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinitionId);
+    adjustProcessInstanceDates(processInstanceDto2.getId(), startDate, -2L, 2L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto();
+    dateFilterDataDto.setStart(new RelativeDateFilterStartDto(
+      4L,
+      RelativeDateFilterUnit.DAYS
+    ));
+    final StartDateFilterDto startDateFilterDto = new StartDateFilterDto(dateFilterDataDto);
+
+    final ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
+      .setFilter(startDateFilterDto)
+      .build();
+    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+
+
+    // then
+    final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
+    assertThat(resultData.size(), is(5));
+
+    assertThat(
+      resultData.get(0).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
+    );
+    assertThat(resultData.get(0).getValue(), is(new AggregationResultDto(1000L, 1000L, 1000L, 1000L)));
+
+    assertThat(
+      resultData.get(1).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
+    );
+    assertThat(resultData.get(1).getValue(), is(new AggregationResultDto(0L, 0L, 0L, 0L)));
+
+    assertThat(
+      resultData.get(2).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
+    );
+    assertThat(resultData.get(2).getValue(), is(new AggregationResultDto(2000L, 2000L, 2000L, 2000L)));
+
+    assertThat(
+      resultData.get(3).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
+    );
+    assertThat(resultData.get(3).getValue(), is(new AggregationResultDto(0L, 0L, 0L, 0L)));
+
+    assertThat(
+      resultData.get(4).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
+    );
+    assertThat(resultData.get(4).getValue(), is(new AggregationResultDto(0L, 0L, 0L, 0L)));
   }
 
   @Test
@@ -921,5 +994,4 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
       Math.round(statistics.getPercentile(50.0D))
     );
   }
-
 }

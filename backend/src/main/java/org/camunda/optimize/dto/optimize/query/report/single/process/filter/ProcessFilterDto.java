@@ -15,19 +15,26 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = StartDateFilterDto.class, name = "startDate"),
-    @JsonSubTypes.Type(value = EndDateFilterDto.class, name = "endDate"),
-    @JsonSubTypes.Type(value = DurationFilterDto.class, name = "processInstanceDuration"),
-    @JsonSubTypes.Type(value = VariableFilterDto.class, name = "variable"),
-    @JsonSubTypes.Type(value = ExecutedFlowNodeFilterDto.class, name = "executedFlowNodes"),
-    @JsonSubTypes.Type(value = RunningInstancesOnlyFilterDto.class, name = "runningInstancesOnly"),
-    @JsonSubTypes.Type(value = CompletedInstancesOnlyFilterDto.class, name = "completedInstancesOnly"),
-    @JsonSubTypes.Type(value = CanceledInstancesOnlyFilterDto.class, name = "canceledInstancesOnly"),
-    @JsonSubTypes.Type(value = NonCanceledInstancesOnlyFilterDto.class, name = "nonCanceledInstancesOnly"),
+  @JsonSubTypes.Type(value = StartDateFilterDto.class, name = "startDate"),
+  @JsonSubTypes.Type(value = EndDateFilterDto.class, name = "endDate"),
+  @JsonSubTypes.Type(value = DurationFilterDto.class, name = "processInstanceDuration"),
+  @JsonSubTypes.Type(value = VariableFilterDto.class, name = "variable"),
+  @JsonSubTypes.Type(value = ExecutedFlowNodeFilterDto.class, name = "executedFlowNodes"),
+  @JsonSubTypes.Type(value = RunningInstancesOnlyFilterDto.class, name = "runningInstancesOnly"),
+  @JsonSubTypes.Type(value = CompletedInstancesOnlyFilterDto.class, name = "completedInstancesOnly"),
+  @JsonSubTypes.Type(value = CanceledInstancesOnlyFilterDto.class, name = "canceledInstancesOnly"),
+  @JsonSubTypes.Type(value = NonCanceledInstancesOnlyFilterDto.class, name = "nonCanceledInstancesOnly"),
 })
 
 public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
   protected DATA data;
+
+  public ProcessFilterDto() {
+  }
+
+  public ProcessFilterDto(final DATA data) {
+    this.data = data;
+  }
 
   public DATA getData() {
     return data;

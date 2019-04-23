@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.Eva
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByEvaluationDateTimeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByEvaluationDateTimeValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
@@ -35,12 +36,15 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createHistogramBucketLimitingFilterFor;
+import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.getExtendedBoundsFromDateFilters;
+import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.limitFiltersToMaxBuckets;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.isResultComplete;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
@@ -123,6 +127,25 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
       .timeZone(DateTimeZone.getDefault());
 
     final DecisionReportDataDto reportData = getReportData();
+
+    final List<DateFilterDataDto> dateFilterDataDtos = queryFilterEnhancer.extractFilters(
+      reportData.getFilter(),
+      EvaluationDateFilterDto.class
+    );
+
+    final List<DateFilterDataDto> limitedFilters = limitFiltersToMaxBuckets(
+      dateFilterDataDtos,
+      unit,
+      configurationService.getEsAggregationBucketLimit(),
+      false
+    );
+
+    getExtendedBoundsFromDateFilters(
+      limitedFilters,
+      DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat())
+    )
+      .ifPresent(dateHistogramAggregation::extendedBounds);
+
     final BoolQueryBuilder limitFilterQuery = createHistogramBucketLimitingFilterFor(
       queryFilterEnhancer.extractFilters(reportData.getFilter(), EvaluationDateFilterDto.class),
       unit,

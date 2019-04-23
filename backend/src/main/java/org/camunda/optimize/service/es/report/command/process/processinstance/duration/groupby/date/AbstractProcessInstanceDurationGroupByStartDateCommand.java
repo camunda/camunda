@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.date;
 
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.StartDateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
@@ -37,6 +39,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -45,6 +48,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createProcessStartDateHistogramBucketLimitingFilterFor;
+import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.getExtendedBoundsFromDateFilters;
+import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.limitFiltersToMaxBuckets;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.isResultComplete;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
@@ -137,6 +142,25 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
       .timeZone(DateTimeZone.getDefault());
 
     final ProcessReportDataDto reportData = getReportData();
+
+    final List<DateFilterDataDto> startFilterDataDtos = queryFilterEnhancer.extractFilters(
+      reportData.getFilter(),
+      StartDateFilterDto.class
+    );
+
+    final List<DateFilterDataDto> limitedFilters = limitFiltersToMaxBuckets(
+      startFilterDataDtos,
+      unit,
+      configurationService.getEsAggregationBucketLimit(),
+      false
+    );
+
+    getExtendedBoundsFromDateFilters(
+      limitedFilters,
+      DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat())
+    ).ifPresent(dateHistogramAggregation::extendedBounds);
+
+
     final BoolQueryBuilder limitFilterQuery = createProcessStartDateHistogramBucketLimitingFilterFor(
       reportData.getFilter(), unit, configurationService.getEsAggregationBucketLimit(), queryFilterEnhancer
     );

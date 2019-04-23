@@ -44,10 +44,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+
+import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
 /**
  * Helper rule to start embedded jetty with Camunda Optimize on bord.
@@ -391,5 +394,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public String format(OffsetDateTime offsetDateTime) {
     return this.getDateTimeFormatter().format(offsetDateTime);
+  }
+
+  public String formatToHistogramBucketKey(final OffsetDateTime offsetDateTime, final ChronoUnit unit) {
+    return getDateTimeFormatter().format(truncateToStartOfUnit(offsetDateTime, unit));
   }
 }

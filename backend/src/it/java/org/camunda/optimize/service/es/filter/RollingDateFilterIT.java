@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
@@ -41,7 +42,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
     OffsetDateTime processInstanceStartTime =
-        engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+      engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
 
     engineRule.finishAllUserTasks(processInstance.getId());
 
@@ -50,7 +51,8 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
 
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
-    ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = createAndEvaluateReportWithRollingStartDateFilter(
+    ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
+      createAndEvaluateReportWithRollingStartDateFilter(
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
       RelativeDateFilterUnit.DAYS,
@@ -64,10 +66,10 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
 
     //token has to be refreshed, as the old one expired already after moving the date
     result = createAndEvaluateReportWithRollingStartDateFilter(
-        processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion(),
-        RelativeDateFilterUnit.DAYS,
-        true
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion(),
+      RelativeDateFilterUnit.DAYS,
+      true
     );
 
     assertResults(processInstance, result, 0);
@@ -81,7 +83,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     engineRule.finishAllUserTasks(processInstance.getId());
 
     OffsetDateTime processInstanceEndTime =
-            engineRule.getHistoricProcessInstance(processInstance.getId()).getEndTime();
+      engineRule.getHistoricProcessInstance(processInstance.getId()).getEndTime();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -89,11 +91,12 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     LocalDateUtil.setCurrentTime(processInstanceEndTime);
 
     //token has to be refreshed, as the old one expired already after moving the date
-    ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = createAndEvaluateReportWithRollingEndDateFilter(
-            processInstance.getProcessDefinitionKey(),
-            processInstance.getProcessDefinitionVersion(),
-            RelativeDateFilterUnit.DAYS,
-            true
+    ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
+      createAndEvaluateReportWithRollingEndDateFilter(
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion(),
+      RelativeDateFilterUnit.DAYS,
+      true
     );
 
     assertResults(processInstance, result, 1);
@@ -102,10 +105,10 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
 
     //token has to be refreshed, as the old one expired already after moving the date
     result = createAndEvaluateReportWithRollingEndDateFilter(
-            processInstance.getProcessDefinitionKey(),
-            processInstance.getProcessDefinitionVersion(),
-            RelativeDateFilterUnit.DAYS,
-            true
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion(),
+      RelativeDateFilterUnit.DAYS,
+      true
     );
 
     assertResults(processInstance, result, 0);
@@ -155,8 +158,26 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
 
     // then
     List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
-    MatcherAssert.assertThat(resultData.size(), is(1));
+    MatcherAssert.assertThat(resultData.size(), is(2));
     MatcherAssert.assertThat(result.getIsComplete(), is(false));
+
+    MatcherAssert.assertThat(
+      resultData.get(0).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
+    );
+    MatcherAssert.assertThat(
+      resultData.get(0).getValue(),
+      is(new AggregationResultDto(1000L, 1000L, 1000L, 1000L))
+    );
+
+    MatcherAssert.assertThat(
+      resultData.get(1).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
+    );
+    MatcherAssert.assertThat(
+      resultData.get(1).getValue(),
+      is(new AggregationResultDto(0L, 0L, 0L, 0L))
+    );
   }
 
   @Test

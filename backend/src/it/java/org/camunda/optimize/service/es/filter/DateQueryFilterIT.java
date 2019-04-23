@@ -318,7 +318,7 @@ public class DateQueryFilterIT {
 
     // then
     List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
-    MatcherAssert.assertThat(resultData.size(), is(2));
+    MatcherAssert.assertThat(resultData.size(), is(3));
     MatcherAssert.assertThat(result.getIsComplete(), is(false));
   }
 
@@ -395,8 +395,9 @@ public class DateQueryFilterIT {
     adjustProcessInstanceDates(processInstanceDto5.getId(), startDate, -2L, 0L);
     final ProcessInstanceEngineDto processInstanceDto6 = engineRule.startProcessInstance(processDefinitionId);
     adjustProcessInstanceDates(processInstanceDto6.getId(), startDate, -2L, 0L);
+
     final ProcessInstanceEngineDto processInstanceDto7 = engineRule.startProcessInstance(processDefinitionId);
-    adjustProcessInstanceDates(processInstanceDto7.getId(), startDate, -2L, 0L);
+    adjustProcessInstanceDates(processInstanceDto7.getId(), startDate, -3L, 0L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -413,12 +414,12 @@ public class DateQueryFilterIT {
     reportData.setFilter(
       ProcessFilterBuilder.filter()
         .fixedEndDate()
-        .start(OffsetDateTime.now().minus(5, ChronoUnit.DAYS))
-        .end(OffsetDateTime.now())
+        .start(startDate.minus(5, ChronoUnit.DAYS))
+        .end(startDate)
         .add()
         .fixedStartDate()
-        .start(OffsetDateTime.now().minus(10, ChronoUnit.DAYS))
-        .end(OffsetDateTime.now().minus(1L, ChronoUnit.DAYS))
+        .start(startDate.minus(10, ChronoUnit.DAYS))
+        .end(startDate.minus(1L, ChronoUnit.DAYS))
         .add()
         .buildList()
     );
@@ -426,8 +427,21 @@ public class DateQueryFilterIT {
 
     // then
     List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
-    MatcherAssert.assertThat(resultData.size(), is(1));
+    MatcherAssert.assertThat(resultData.size(), is(3));
     MatcherAssert.assertThat(result.getIsComplete(), is(false));
+
+    MatcherAssert.assertThat(
+      resultData.get(0).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
+    );
+    MatcherAssert.assertThat(
+      resultData.get(1).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
+    );
+    MatcherAssert.assertThat(
+      resultData.get(2).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
+    );
   }
 
   private void startAndImportSimpleProcess() {

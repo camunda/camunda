@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
@@ -220,7 +221,17 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     final DecisionReportMapResultDto result = evaluationResult.getResult();
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(result.getIsComplete(), is(false));
-    assertThat(resultData.size(), is(1));
+    assertThat(resultData.size(), is(2));
+
+    assertThat(
+      resultData.get(0).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS))
+    );
+
+    assertThat(
+      resultData.get(1).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS))
+    );
   }
 
   @Test
@@ -269,7 +280,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     final DecisionReportMapResultDto result = evaluationResult.getResult();
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(result.getIsComplete(), is(false));
-    assertThat(resultData.size(), is(1));
+    assertThat(resultData.size(), is(2));
   }
 
   private DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateReportWithNewAuthToken(final DecisionReportDataDto reportData) {
