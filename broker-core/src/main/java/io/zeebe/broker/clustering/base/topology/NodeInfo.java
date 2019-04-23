@@ -23,24 +23,13 @@ import org.agrona.collections.IntHashSet;
 public class NodeInfo {
   private final int nodeId;
   private final SocketAddress clientApiAddress;
-  private final SocketAddress managementApiAddress;
-  private final SocketAddress replicationApiAddress;
-  private final SocketAddress subscriptionApiAddress;
 
   private final IntHashSet leaders = new IntHashSet();
   private final IntHashSet followers = new IntHashSet();
 
-  public NodeInfo(
-      int nodeId,
-      final SocketAddress clientApiAddress,
-      final SocketAddress managementApiAddress,
-      final SocketAddress replicationApiAddress,
-      final SocketAddress subscriptionApiAddress) {
+  public NodeInfo(int nodeId, final SocketAddress clientApiAddress) {
     this.nodeId = nodeId;
     this.clientApiAddress = clientApiAddress;
-    this.managementApiAddress = managementApiAddress;
-    this.replicationApiAddress = replicationApiAddress;
-    this.subscriptionApiAddress = subscriptionApiAddress;
   }
 
   public int getNodeId() {
@@ -49,18 +38,6 @@ public class NodeInfo {
 
   public SocketAddress getClientApiAddress() {
     return clientApiAddress;
-  }
-
-  public SocketAddress getManagementApiAddress() {
-    return managementApiAddress;
-  }
-
-  public SocketAddress getReplicationApiAddress() {
-    return replicationApiAddress;
-  }
-
-  public SocketAddress getSubscriptionApiAddress() {
-    return subscriptionApiAddress;
   }
 
   public IntHashSet getLeaders() {
@@ -89,13 +66,7 @@ public class NodeInfo {
 
   @Override
   public String toString() {
-    return String.format(
-        "Node{nodeId=%d, clientApi=%s, managementApi=%s, replicationApi=%s, subscriptionApi=%s}",
-        nodeId,
-        clientApiAddress,
-        managementApiAddress,
-        replicationApiAddress,
-        subscriptionApiAddress);
+    return String.format("Node{nodeId=%d, clientApi=%s}", nodeId, clientApiAddress);
   }
 
   @Override

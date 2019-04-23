@@ -83,18 +83,6 @@ public class EmbeddedBrokerConfigurator {
     return cfg -> cfg.getNetwork().getClient().setPort(port);
   }
 
-  public static Consumer<BrokerCfg> setManagementApiPort(final int port) {
-    return cfg -> cfg.getNetwork().getManagement().setPort(port);
-  }
-
-  public static Consumer<BrokerCfg> setReplicationApiPort(final int port) {
-    return cfg -> cfg.getNetwork().getReplication().setPort(port);
-  }
-
-  public static Consumer<BrokerCfg> setSubscriptionApiPort(final int port) {
-    return cfg -> cfg.getNetwork().getSubscription().setPort(port);
-  }
-
   public static Consumer<BrokerCfg> setMetricsPort(final int port) {
     return cfg -> cfg.getMetrics().setPort(port);
   }

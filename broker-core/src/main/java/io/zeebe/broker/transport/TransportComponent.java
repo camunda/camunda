@@ -20,71 +20,31 @@ package io.zeebe.broker.transport;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_MESSAGE_HANDLER;
 import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
 
-import io.zeebe.broker.services.DispatcherService;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
-import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.transport.clientapi.ClientApiMessageHandlerService;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.DispatcherBuilder;
-import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.BufferingServerTransport;
-import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerRequestHandler;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.ByteValue;
-import io.zeebe.util.collection.IntTuple;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.Collections;
 
 public class TransportComponent implements Component {
   @Override
   public void init(final SystemContext context) {
     createSocketBindings(context);
-    createClientTransports(context);
-  }
-
-  private void createClientTransports(final SystemContext context) {
-    final ServiceContainer serviceContainer = context.getServiceContainer();
-    final BrokerCfg brokerCfg = context.getBrokerConfiguration();
-    final NetworkCfg networkCfg = brokerCfg.getNetwork();
-    final int nodeId = brokerCfg.getCluster().getNodeId();
-    final SocketAddress managementEndpoint = networkCfg.getManagement().toSocketAddress();
-
-    final ActorFuture<ClientTransport> managementClientFuture =
-        createClientTransport(
-            serviceContainer,
-            MANAGEMENT_API_CLIENT_NAME,
-            new ByteValue(networkCfg.getDefaultSendBufferSize()),
-            Collections.singletonList(new IntTuple<>(nodeId, managementEndpoint)));
-
-    context.addRequiredStartAction(managementClientFuture);
   }
 
   private void createSocketBindings(final SystemContext context) {
     final NetworkCfg networkCfg = context.getBrokerConfiguration().getNetwork();
     final ServiceContainer serviceContainer = context.getServiceContainer();
-
-    final ActorFuture<BufferingServerTransport> managementApiFuture =
-        bindBufferingProtocolEndpoint(
-            context,
-            serviceContainer,
-            MANAGEMENT_API_SERVER_NAME,
-            networkCfg.getManagement(),
-            new ByteValue(networkCfg.getManagement().getReceiveBufferSize()));
-
-    context.addRequiredStartAction(managementApiFuture);
 
     final ActorFuture<ServerTransport> clientApiFuture =
         bindNonBufferingProtocolEndpoint(
@@ -104,24 +64,6 @@ public class TransportComponent implements Component {
         .groupReference(
             LEADER_PARTITION_GROUP_NAME, messageHandlerService.getLeaderParitionsGroupReference())
         .install();
-  }
-
-  protected ActorFuture<BufferingServerTransport> bindBufferingProtocolEndpoint(
-      final SystemContext systemContext,
-      final ServiceContainer serviceContainer,
-      final String name,
-      final SocketBindingCfg socketBindingCfg,
-      final ByteValue receiveBufferSize) {
-
-    final SocketAddress bindAddr = socketBindingCfg.toSocketAddress();
-
-    return createBufferingServerTransport(
-        systemContext,
-        serviceContainer,
-        name,
-        bindAddr.toInetSocketAddress(),
-        new ByteValue(socketBindingCfg.getSendBufferSize()),
-        receiveBufferSize);
   }
 
   protected ActorFuture<ServerTransport> bindNonBufferingProtocolEndpoint(
@@ -161,60 +103,6 @@ public class TransportComponent implements Component {
         .createService(TransportServiceNames.serverTransport(name), service)
         .dependency(requestHandlerDependency, service.getRequestHandlerInjector())
         .dependency(messageHandlerDependency, service.getMessageHandlerInjector())
-        .install();
-  }
-
-  protected ActorFuture<BufferingServerTransport> createBufferingServerTransport(
-      final SystemContext systemContext,
-      final ServiceContainer serviceContainer,
-      final String name,
-      final InetSocketAddress bindAddress,
-      final ByteValue sendBufferSize,
-      final ByteValue receiveBufferSize) {
-    final ServiceName<Dispatcher> receiveBufferName =
-        createReceiveBuffer(serviceContainer, name, receiveBufferSize);
-
-    final BufferingServerTransportService service =
-        new BufferingServerTransportService(name, bindAddress, sendBufferSize);
-
-    systemContext.addResourceReleasingDelegate(service.getReleasingResourcesDelegate());
-    return serviceContainer
-        .createService(TransportServiceNames.bufferingServerTransport(name), service)
-        .dependency(receiveBufferName, service.getReceiveBufferInjector())
-        .install();
-  }
-
-  protected void createDispatcher(
-      final ServiceContainer serviceContainer,
-      final ServiceName<Dispatcher> name,
-      final ByteValue sendBufferSize) {
-    final DispatcherBuilder dispatcherBuilder = Dispatchers.create(null).bufferSize(sendBufferSize);
-
-    final DispatcherService receiveBufferService = new DispatcherService(dispatcherBuilder);
-    serviceContainer.createService(name, receiveBufferService).install();
-  }
-
-  protected ServiceName<Dispatcher> createReceiveBuffer(
-      final ServiceContainer serviceContainer,
-      final String transportName,
-      final ByteValue bufferSize) {
-    final ServiceName<Dispatcher> serviceName =
-        TransportServiceNames.receiveBufferName(transportName);
-    createDispatcher(serviceContainer, serviceName, bufferSize);
-
-    return serviceName;
-  }
-
-  protected ActorFuture<ClientTransport> createClientTransport(
-      final ServiceContainer serviceContainer,
-      final String name,
-      final ByteValue sendBufferSize,
-      final Collection<IntTuple<SocketAddress>> defaultEndpoints) {
-    final ClientTransportService service =
-        new ClientTransportService(name, defaultEndpoints, sendBufferSize);
-
-    return serviceContainer
-        .createService(TransportServiceNames.clientTransport(name), service)
         .install();
   }
 }

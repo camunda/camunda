@@ -4,14 +4,8 @@ host = "gatewayHost"
 [network.client]
 host = "clientHost"
 
-[network.management]
-host = "managementHost"
-
-[network.replication]
-host = "replicationHost"
-
-[network.subscription]
-host = "subscriptionHost"
+[network.atomix]
+host = "atomixHost"
 
 [metrics]
 host = "metricsHost"

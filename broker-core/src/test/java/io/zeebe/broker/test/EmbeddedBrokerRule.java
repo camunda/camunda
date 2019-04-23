@@ -25,10 +25,7 @@ import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setAtomixApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setClientApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayClusterPort;
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setManagementApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setMetricsPort;
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setReplicationApiPort;
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setSubscriptionApiPort;
 
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Broker;
@@ -131,9 +128,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
     setGatewayApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
     setGatewayClusterPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
     setClientApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
-    setManagementApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
-    setReplicationApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
-    setSubscriptionApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
     setAtomixApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
     setMetricsPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
   }
@@ -192,10 +186,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
   public SocketAddress getGatewayAddress() {
     return brokerCfg.getGateway().getNetwork().toSocketAddress();
-  }
-
-  public SocketAddress getManagementAddress() {
-    return brokerCfg.getNetwork().getManagement().toSocketAddress();
   }
 
   public Broker getBroker() {
