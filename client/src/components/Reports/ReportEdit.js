@@ -234,8 +234,8 @@ export default withErrorHandling(
 
             {this.showIncompleteResultWarning() && (
               <Message type="warning">
-                The visualization below is limited to{' '}
-                {report.result.data.length || Object.keys(report.result.data).length} data points
+                Showing {report.result.data.length || Object.keys(report.result.data).length} data
+                points in the result. To refine the set of results, edit your set-up above.
               </Message>
             )}
 
