@@ -24,18 +24,9 @@ export default class Table extends React.Component {
   }
 
   render() {
-    const {
-      className,
-      head,
-      body,
-      disableReportScrolling,
-      disablePagination,
-      resultType = '',
-      updateSorting,
-      sorting
-    } = this.props;
+    const {className, head, body, disableReportScrolling, disablePagination} = this.props;
 
-    const columns = Table.formatColumns(resultType, head);
+    const columns = Table.formatColumns(head);
     const data = Table.formatData(head, body);
 
     // react-table does not support Infinity as page size 👎
@@ -62,27 +53,42 @@ export default class Table extends React.Component {
           onResizedChange={this.updateResizedState}
           PreviousComponent={props => <Button {...props} />}
           NextComponent={props => <Button {...props} />}
-          getTheadThProps={(state, rowInfo, {sortBy}) => ({
-            style: {
-              cursor: updateSorting ? 'pointer' : 'default',
-              boxShadow:
-                sortBy === (sorting && sorting.by)
-                  ? `inset 0 ${sorting.order === 'desc' ? '-' : ''}3px 0 0 rgba(0,0,0,.6)`
-                  : 'none'
-            },
-            onClick: evt => {
-              if (evt.target.className !== 'rt-resizer' && updateSorting) {
-                updateSorting(
-                  sortBy,
-                  sorting && sorting.by === sortBy && sorting.order === 'asc' ? 'desc' : 'asc'
-                );
-              }
-            }
-          })}
+          getTheadThProps={this.applySortingBehavior}
         />
       </div>
     );
   }
+
+  applySortingBehavior = (state, rowInfo, {id}) => {
+    const {resultType = '', updateSorting, sorting, sortByLabel = false} = this.props;
+
+    let sortBy = id;
+    if (resultType.includes('Map')) {
+      if (id === state.columns[0].accessor) {
+        sortBy = sortByLabel ? 'label' : 'key';
+      } else {
+        sortBy = 'value';
+      }
+    }
+
+    return {
+      style: {
+        cursor: updateSorting ? 'pointer' : 'default',
+        boxShadow:
+          sortBy === (sorting && sorting.by)
+            ? `inset 0 ${sorting.order === 'desc' ? '-' : ''}3px 0 0 rgba(0,0,0,.6)`
+            : 'none'
+      },
+      onClick: evt => {
+        if (evt.target.className !== 'rt-resizer' && updateSorting) {
+          updateSorting(
+            sortBy,
+            sorting && sorting.by === sortBy && sorting.order === 'asc' ? 'desc' : 'asc'
+          );
+        }
+      }
+    };
+  };
 
   updateResizedState = columns => {
     this.setState({
@@ -131,24 +137,18 @@ export default class Table extends React.Component {
     window.removeEventListener('resize', this.fixColumnAlignment);
   }
 
-  static formatColumns = (resultType, head, ctx = '') => {
-    return head.map((elem, i) => {
+  static formatColumns = (head, ctx = '') => {
+    return head.map(elem => {
       if (typeof elem === 'string' || elem.id) {
-        const accessor = convertHeaderNameToAccessor(ctx + (elem.id || elem));
-        let sortBy = accessor;
-        if (resultType.includes('Map')) {
-          sortBy = i === 0 ? 'key' : 'value';
-        }
         return {
           Header: elem.label || elem,
-          accessor,
-          minWidth: 100,
-          sortBy
+          accessor: convertHeaderNameToAccessor(ctx + (elem.id || elem)),
+          minWidth: 100
         };
       }
       return {
         Header: elem.label,
-        columns: Table.formatColumns(resultType, elem.columns, ctx + elem.label)
+        columns: Table.formatColumns(elem.columns, ctx + elem.label)
       };
     });
   };

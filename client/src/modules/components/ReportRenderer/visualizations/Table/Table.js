@@ -85,6 +85,7 @@ export default withErrorHandling(
       return {
         ...tableData,
         resultType: result.type,
+        sortByLabel: data.groupBy.type === 'flowNodes',
         updateSorting: updateReport && this.updateSorting,
         sorting: parameters && parameters.sorting
       };
