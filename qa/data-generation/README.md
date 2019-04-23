@@ -38,6 +38,12 @@ mvn clean compile exec:java -Dexec.args="--engineRest http://localhost:8080/engi
 mvn clean compile exec:java -Dexec.args="--timeoutInHours 16"
 ```
 
+* clean up all the deployments before generating data (the default value is displayed):
+
+```
+mvn clean compile exec:java -Dexec.args="--removeDeployments true"
+```
+
 ### Data generation progress
 
 Once the data generation is started, it will print out the progress of
