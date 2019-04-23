@@ -23,8 +23,6 @@ import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.base.partitions.PartitionLeaderElection;
-import io.zeebe.broker.clustering.base.partitions.PartitionRoleChangeListener;
 import io.zeebe.broker.clustering.base.partitions.RaftState;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.protocol.impl.data.cluster.BrokerInfo;
@@ -38,7 +36,7 @@ import java.util.Properties;
 import org.slf4j.Logger;
 
 public class TopologyManagerImpl extends Actor
-    implements TopologyManager, ClusterMembershipEventListener, PartitionRoleChangeListener {
+    implements TopologyManager, ClusterMembershipEventListener {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private final Topology topology;
@@ -91,15 +89,7 @@ public class TopologyManagerImpl extends Actor
     return "topology";
   }
 
-  public void onLeaderElectionStarted(PartitionLeaderElection election) {
-    actor.call(
-        () -> {
-          LOG.debug("Topology manager adding leader election listener");
-          election.addListener(this);
-        });
-  }
-
-  private void updateRole(RaftState state, int partitionId) {
+  public void updateRole(RaftState state, int partitionId) {
     actor.call(
         () -> {
           final NodeInfo memberInfo = topology.getLocal();
@@ -107,16 +97,6 @@ public class TopologyManagerImpl extends Actor
           updatePartition(partitionId, memberInfo, state);
           publishTopologyChanges();
         });
-  }
-
-  @Override
-  public void onTransitionToFollower(int partitionId) {
-    updateRole(RaftState.FOLLOWER, partitionId);
-  }
-
-  @Override
-  public void onTransitionToLeader(int partitionId, long leaderTerm) {
-    updateRole(RaftState.LEADER, partitionId);
   }
 
   public void updatePartition(int partitionId, NodeInfo member, RaftState raftState) {

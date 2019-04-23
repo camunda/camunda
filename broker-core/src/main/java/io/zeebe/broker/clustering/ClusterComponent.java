@@ -21,8 +21,9 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMI
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.CLUSTERING_BASE_LAYER;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.DISTRIBUTED_LOG_CREATE_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.FOLLOWER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.GATEWAY_SERVICE;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADERSHIP_SERVICE_GROUP;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.PARTITIONS_BOOTSTRAP_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_CONFIGURATION_MANAGER;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.REMOTE_ADDRESS_MANAGER_SERVICE;
@@ -83,7 +84,9 @@ public class ClusterComponent implements Component {
         .createService(TOPOLOGY_MANAGER_SERVICE, topologyManagerService)
         .dependency(ATOMIX_SERVICE, topologyManagerService.getAtomixInjector())
         .groupReference(
-            LEADERSHIP_SERVICE_GROUP, topologyManagerService.getLeaderElectionReference())
+            LEADER_PARTITION_GROUP_NAME, topologyManagerService.getLeaderInstallReference())
+        .groupReference(
+            FOLLOWER_PARTITION_GROUP_NAME, topologyManagerService.getFollowerInstallReference())
         .install();
 
     final RemoteAddressManager remoteAddressManager = new RemoteAddressManager();

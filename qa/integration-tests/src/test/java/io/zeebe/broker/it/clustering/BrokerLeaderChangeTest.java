@@ -136,6 +136,49 @@ public class BrokerLeaderChangeTest {
   }
 
   @Test
+  public void shouldReactToFastLeaderChanges() {
+    // given
+    final int partition = Protocol.START_PARTITION_ID;
+    final String partitionName = Partition.getPartitionName(partition);
+
+    // get leader election primitive for a partition
+    final LeaderElection<String> election = getElection(getBroker(0), partition).getElection();
+
+    // when
+
+    // Force repeated leader change
+    election.async().anoint("0");
+    election.async().anoint("1");
+    election.anoint("2");
+
+    assertThat(election.getLeadership().leader().id()).isEqualTo(String.valueOf(2));
+    waitUntil(() -> clusteringRule.getLeaderForPartition(partition).getNodeId() == 2);
+
+    // then
+
+    // leader services are started.
+    final Broker newLeader = getBroker(2);
+
+    assertBrokerHasService(
+        newLeader, LogStreamServiceNames.logStorageAppenderServiceName(partitionName));
+    assertBrokerHasService(
+        newLeader, PartitionServiceNames.leaderPartitionServiceName(partitionName));
+    assertBrokerNoService(
+        newLeader, PartitionServiceNames.followerPartitionServiceName(partitionName));
+
+    // other nodes has stopped leader services
+    assertBrokerNoService(
+        getBroker(0), PartitionServiceNames.leaderPartitionServiceName(partitionName));
+    assertBrokerHasService(
+        getBroker(0), PartitionServiceNames.followerPartitionServiceName(partitionName));
+
+    assertBrokerNoService(
+        getBroker(1), PartitionServiceNames.leaderPartitionServiceName(partitionName));
+    assertBrokerHasService(
+        getBroker(1), PartitionServiceNames.followerPartitionServiceName(partitionName));
+  }
+
+  @Test
   public void shouldContinueProcessingAfterLeaderChange() {
     // given
     final int partition = 1;
