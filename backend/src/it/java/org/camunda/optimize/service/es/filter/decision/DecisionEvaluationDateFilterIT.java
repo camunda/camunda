@@ -205,7 +205,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
-    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(1);
+    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(2);
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -280,7 +280,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     final DecisionReportMapResultDto result = evaluationResult.getResult();
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(result.getIsComplete(), is(false));
-    assertThat(resultData.size(), is(2));
+    assertThat(resultData.size(), is(1));
   }
 
   private DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateReportWithNewAuthToken(final DecisionReportDataDto reportData) {

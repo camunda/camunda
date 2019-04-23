@@ -17,12 +17,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.time.DayOfWeek;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collection;
 
+import static java.time.temporal.TemporalAdjusters.firstDayOfMonth;
+import static java.time.temporal.TemporalAdjusters.firstDayOfYear;
+import static java.time.temporal.TemporalAdjusters.previousOrSame;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -70,8 +74,32 @@ public class DateHistogramBucketLimiterUtilTest {
     final FixedDateFilterDataDto limitedFixedDateFilter =
       DateHistogramBucketLimiterUtil.limitFixedDateFilterToMaxBucketsForUnit(unit, dateFilterDataDto, limit.intValue());
 
-    assertThat(limitedFixedDateFilter.getStart(), is(dateFilterDataDto.getEnd().minus(limit, unit)));
+    assertThat(limitedFixedDateFilter.getStart(), is(calculateExpectedStartDate(dateFilterDataDto.getEnd())));
     assertThat(limitedFixedDateFilter.getEnd(), is(dateFilterDataDto.getEnd()));
+  }
+
+  private OffsetDateTime calculateExpectedStartDate(final OffsetDateTime endDateTime) {
+    return calculateExpectedStartDate(endDateTime, unit);
+  }
+
+  private OffsetDateTime calculateExpectedStartDate(final OffsetDateTime endDateTime, final ChronoUnit groupByUnit) {
+    OffsetDateTime result = endDateTime;
+    switch (groupByUnit) {
+      case YEARS:
+        result = result.with(firstDayOfYear()).truncatedTo(ChronoUnit.DAYS);
+        break;
+      case MONTHS:
+        result = result.with(firstDayOfMonth()).truncatedTo(ChronoUnit.DAYS);
+        break;
+      case WEEKS:
+        result = result.with(previousOrSame(DayOfWeek.MONDAY)).truncatedTo(ChronoUnit.DAYS);
+        break;
+      default:
+        result = result.truncatedTo(groupByUnit);
+        break;
+    }
+    return result.minus(limit - 1, groupByUnit);
+
   }
 
   @Test
@@ -88,15 +116,38 @@ public class DateHistogramBucketLimiterUtilTest {
       );
 
     assertThat(limitedFixedDateFilter.getStart().getUnit(), is(RelativeDateFilterUnit.valueOf(unit.name())));
-    assertThat(limitedFixedDateFilter.getStart().getValue(), is(limit));
+    assertThat(limitedFixedDateFilter.getStart().getValue(), is(limit - 1));
     assertThat(limitedFixedDateFilter.getEnd(), is(dateFilterDataDto.getEnd()));
+  }
+
+  @Test
+  public void testCreateHistogramBucketLimitingFilterFor_defaultFilters_customDefaultEnd() {
+    final GroupByDateUnit groupByUnit = GroupByDateUnit.valueOf(unit.name().substring(0, unit.name().length() - 1));
+    final OffsetDateTime defaultEndTime = OffsetDateTime.now().minusYears(1L);
+    final BoolQueryBuilder filterQuery =
+      DateHistogramBucketLimiterUtil.createDateHistogramBucketLimitingFilter(
+        ImmutableList.of(),
+        groupByUnit,
+        limit.intValue(),
+        defaultEndTime,
+        new StartDateQueryFilter(dateTimeFormatter)
+      );
+
+    filterQuery.filter().forEach(queryBuilder -> {
+      final RangeQueryBuilder rangeQueryBuilder = (RangeQueryBuilder) queryBuilder;
+      final OffsetDateTime fromDate = OffsetDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.from()));
+      final OffsetDateTime toDate = OffsetDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.to()));
+
+      assertThat(toDate, is(defaultEndTime));
+      assertThat(fromDate, is(calculateExpectedStartDate(toDate)));
+    });
   }
 
   @Test
   public void testCreateHistogramBucketLimitingFilterFor_defaultFilters_sameUnitForFilterAndGroup() {
     final GroupByDateUnit groupByUnit = GroupByDateUnit.valueOf(unit.name().substring(0, unit.name().length() - 1));
     final BoolQueryBuilder filterQuery =
-      DateHistogramBucketLimiterUtil.createHistogramBucketLimitingFilterFor(
+      DateHistogramBucketLimiterUtil.createDateHistogramBucketLimitingFilter(
         ImmutableList.of(),
         groupByUnit,
         limit.intValue(),
@@ -108,7 +159,7 @@ public class DateHistogramBucketLimiterUtilTest {
       final OffsetDateTime fromDate = OffsetDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.from()));
       final OffsetDateTime toDate = OffsetDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.to()));
 
-      assertThat(fromDate, is(toDate.minus(limit, unit)));
+      assertThat(fromDate, is(calculateExpectedStartDate(toDate)));
     });
   }
 
@@ -116,7 +167,7 @@ public class DateHistogramBucketLimiterUtilTest {
   public void testCreateHistogramBucketLimitingFilterFor_defaultFilters_differentUnitForFilterAndGroup() {
     final GroupByDateUnit groupByUnit = GroupByDateUnit.MINUTE;
     final BoolQueryBuilder filterQuery =
-      DateHistogramBucketLimiterUtil.createHistogramBucketLimitingFilterFor(
+      DateHistogramBucketLimiterUtil.createDateHistogramBucketLimitingFilter(
         ImmutableList.of(),
         groupByUnit,
         limit.intValue(),
@@ -128,7 +179,7 @@ public class DateHistogramBucketLimiterUtilTest {
       final OffsetDateTime fromDate = OffsetDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.from()));
       final OffsetDateTime toDate = OffsetDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.to()));
 
-      assertThat(fromDate, is(greaterThanOrEqualTo(toDate.minus(limit, ChronoUnit.MINUTES))));
+      assertThat(fromDate, is(greaterThanOrEqualTo(calculateExpectedStartDate(toDate, ChronoUnit.MINUTES))));
     });
   }
 
@@ -141,7 +192,7 @@ public class DateHistogramBucketLimiterUtilTest {
 
     final GroupByDateUnit groupByUnit = GroupByDateUnit.valueOf(unit.name().substring(0, unit.name().length() - 1));
     final BoolQueryBuilder filterQuery =
-      DateHistogramBucketLimiterUtil.createHistogramBucketLimitingFilterFor(
+      DateHistogramBucketLimiterUtil.createDateHistogramBucketLimitingFilter(
         ImmutableList.of(fixedDateFilterDataDto, relativeDateFilterDataDto),
         groupByUnit,
         limit.intValue(),
@@ -153,7 +204,7 @@ public class DateHistogramBucketLimiterUtilTest {
       final OffsetDateTime fromDate = OffsetDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.from()));
       final OffsetDateTime toDate = OffsetDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.to()));
 
-      assertThat(fromDate, is(toDate.minus(limit, unit)));
+      assertThat(fromDate, is(greaterThanOrEqualTo(calculateExpectedStartDate(toDate))));
     });
   }
 
@@ -166,7 +217,7 @@ public class DateHistogramBucketLimiterUtilTest {
 
     final GroupByDateUnit groupByUnit = GroupByDateUnit.MINUTE;
     final BoolQueryBuilder filterQuery =
-      DateHistogramBucketLimiterUtil.createHistogramBucketLimitingFilterFor(
+      DateHistogramBucketLimiterUtil.createDateHistogramBucketLimitingFilter(
         ImmutableList.of(fixedDateFilterDataDto, relativeDateFilterDataDto),
         groupByUnit,
         limit.intValue(),
@@ -178,7 +229,7 @@ public class DateHistogramBucketLimiterUtilTest {
       final OffsetDateTime fromDate = OffsetDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.from()));
       final OffsetDateTime toDate = OffsetDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.to()));
 
-      assertThat(fromDate, is(greaterThanOrEqualTo(toDate.minus(limit, ChronoUnit.MINUTES))));
+      assertThat(fromDate, is(greaterThanOrEqualTo(calculateExpectedStartDate(toDate, ChronoUnit.MINUTES))));
     });
   }
 
@@ -195,7 +246,7 @@ public class DateHistogramBucketLimiterUtilTest {
       startAmountToSubtract,
       RelativeDateFilterUnit.valueOf(unit.name())
     ));
-    dateFilterDataDto.setEnd(now.minus(endAmountToSubtract, unit));
+    dateFilterDataDto.setEnd(now.minus(endAmountToSubtract - 1, unit));
     return dateFilterDataDto;
   }
 }

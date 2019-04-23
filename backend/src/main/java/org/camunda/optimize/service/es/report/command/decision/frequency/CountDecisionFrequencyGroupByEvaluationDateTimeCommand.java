@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
+import org.camunda.optimize.service.es.report.command.decision.util.DecisionInstanceQueryUtil;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -41,9 +42,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createHistogramBucketLimitingFilterFor;
+import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createDateHistogramBucketLimitingFilter;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.getExtendedBoundsFromDateFilters;
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.limitFiltersToMaxBuckets;
+import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.limitFiltersToMaxBucketsForGroupByUnit;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.isResultComplete;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
@@ -51,6 +52,7 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.EVALUATION_DATE_TIME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
   extends DecisionReportCommand<SingleDecisionMapReportResult> {
@@ -128,29 +130,30 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     final DecisionReportDataDto reportData = getReportData();
 
     final List<DateFilterDataDto> dateFilterDataDtos = queryFilterEnhancer.extractFilters(
-      reportData.getFilter(),
-      EvaluationDateFilterDto.class
+      reportData.getFilter(), EvaluationDateFilterDto.class
     );
+    final BoolQueryBuilder limitFilterQuery;
+    if (!dateFilterDataDtos.isEmpty()) {
+      final List<DateFilterDataDto> limitedFilters = limitFiltersToMaxBucketsForGroupByUnit(
+        dateFilterDataDtos, unit, configurationService.getEsAggregationBucketLimit()
+      );
 
-    final List<DateFilterDataDto> limitedFilters = limitFiltersToMaxBuckets(
-      dateFilterDataDtos,
-      unit,
-      configurationService.getEsAggregationBucketLimit(),
-      false
-    );
+      getExtendedBoundsFromDateFilters(
+        limitedFilters,
+        DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat())
+      ).ifPresent(dateHistogramAggregation::extendedBounds);
 
-    getExtendedBoundsFromDateFilters(
-      limitedFilters,
-      DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat())
-    )
-      .ifPresent(dateHistogramAggregation::extendedBounds);
-
-    final BoolQueryBuilder limitFilterQuery = createHistogramBucketLimitingFilterFor(
-      queryFilterEnhancer.extractFilters(reportData.getFilter(), EvaluationDateFilterDto.class),
-      unit,
-      configurationService.getEsAggregationBucketLimit(),
-      queryFilterEnhancer.getEvaluationDateQueryFilter()
-    );
+      limitFilterQuery = boolQuery();
+      queryFilterEnhancer.getEvaluationDateQueryFilter().addFilters(limitFilterQuery, limitedFilters);
+    } else {
+      limitFilterQuery = createDateHistogramBucketLimitingFilter(
+        dateFilterDataDtos,
+        unit,
+        configurationService.getEsAggregationBucketLimit(),
+        DecisionInstanceQueryUtil.getLatestEvaluationDate(query, esClient).orElse(null),
+        queryFilterEnhancer.getEvaluationDateQueryFilter()
+      );
+    }
 
     return wrapWithFilterLimitedParentAggregation(limitFilterQuery, dateHistogramAggregation);
   }

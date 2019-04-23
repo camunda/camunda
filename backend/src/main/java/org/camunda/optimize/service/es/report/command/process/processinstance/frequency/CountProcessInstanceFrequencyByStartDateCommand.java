@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
+import org.camunda.optimize.service.es.report.command.process.util.ProcessInstanceQueryUtil;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
@@ -45,7 +46,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createProcessStartDateHistogramBucketLimitingFilterFor;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.getExtendedBoundsFromDateFilters;
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.limitFiltersToMaxBuckets;
+import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.limitFiltersToMaxBucketsForGroupByUnit;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.isResultComplete;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
@@ -53,6 +54,7 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessReportCommand<SingleProcessMapReportResult>
   implements AutomaticGroupByDateCommand {
@@ -134,25 +136,30 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
     final ProcessReportDataDto reportData = getReportData();
 
     final List<DateFilterDataDto> startFilterDataDtos = queryFilterEnhancer.extractFilters(
-      reportData.getFilter(),
-      StartDateFilterDto.class
+      reportData.getFilter(), StartDateFilterDto.class
     );
+    final BoolQueryBuilder limitFilterQuery;
+    if (!startFilterDataDtos.isEmpty()) {
+      final List<DateFilterDataDto> limitedFilters = limitFiltersToMaxBucketsForGroupByUnit(
+        startFilterDataDtos, unit, configurationService.getEsAggregationBucketLimit()
+      );
 
-    final List<DateFilterDataDto> limitedFilters = limitFiltersToMaxBuckets(
-      startFilterDataDtos,
-      unit,
-      configurationService.getEsAggregationBucketLimit(),
-      false
-    );
+      getExtendedBoundsFromDateFilters(
+        limitedFilters,
+        DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat())
+      ).ifPresent(dateHistogramAggregation::extendedBounds);
 
-    getExtendedBoundsFromDateFilters(
-      limitedFilters,
-      DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat())
-    ).ifPresent(dateHistogramAggregation::extendedBounds);
-
-    final BoolQueryBuilder limitFilterQuery = createProcessStartDateHistogramBucketLimitingFilterFor(
-      reportData.getFilter(), unit, configurationService.getEsAggregationBucketLimit(), queryFilterEnhancer
-    );
+      limitFilterQuery = boolQuery();
+      queryFilterEnhancer.getStartDateQueryFilterService().addFilters(limitFilterQuery, limitedFilters);
+    } else {
+      limitFilterQuery = createProcessStartDateHistogramBucketLimitingFilterFor(
+        reportData.getFilter(),
+        unit,
+        configurationService.getEsAggregationBucketLimit(),
+        ProcessInstanceQueryUtil.getLatestStartDate(query, esClient).orElse(null),
+        queryFilterEnhancer
+      );
+    }
 
     return wrapWithFilterLimitedParentAggregation(limitFilterQuery, dateHistogramAggregation);
   }
