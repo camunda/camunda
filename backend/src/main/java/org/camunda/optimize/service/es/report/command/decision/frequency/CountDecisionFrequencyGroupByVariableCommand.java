@@ -136,7 +136,7 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
     }
 
     resultDto.setData(resultData);
-    resultDto.setComplete(variableTerms.getSumOfOtherDocCounts() == 0L);
+    resultDto.setIsComplete(variableTerms.getSumOfOtherDocCounts() == 0L);
     resultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
 
     return resultDto;

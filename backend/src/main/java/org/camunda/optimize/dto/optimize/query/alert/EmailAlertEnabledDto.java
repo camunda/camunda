@@ -5,15 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.alert;
 
+import lombok.Data;
+
+@Data
 public class EmailAlertEnabledDto {
 
   protected boolean isEnabled;
-
-  public boolean isEnabled() {
-    return isEnabled;
-  }
-
-  public void setEnabled(boolean enabled) {
-    isEnabled = enabled;
-  }
 }

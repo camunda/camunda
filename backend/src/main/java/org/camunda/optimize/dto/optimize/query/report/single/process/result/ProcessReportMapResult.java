@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.result;
 
+import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.result.LimitedResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Data
 public abstract class ProcessReportMapResult<T> extends ProcessReportResultDto implements LimitedResultDto {
   private List<MapResultEntryDto<T>> data = new ArrayList<>();
   private Boolean isComplete = true;
@@ -19,22 +21,4 @@ public abstract class ProcessReportMapResult<T> extends ProcessReportResultDto i
   public Optional<MapResultEntryDto<T>> getDataEntryForKey(final String key) {
     return data.stream().filter(entry -> key.equals(entry.getKey())).findFirst();
   }
-
-  @Override
-  public Boolean getIsComplete() {
-    return isComplete;
-  }
-
-  public void setComplete(final Boolean complete) {
-    isComplete = complete;
-  }
-
-  public List<MapResultEntryDto<T>> getData() {
-    return data;
-  }
-
-  public void setData(List<MapResultEntryDto<T>> data) {
-    this.data = data;
-  }
-
 }

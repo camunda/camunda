@@ -120,7 +120,7 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCom
     }
 
     resultDto.setData(resultData);
-    resultDto.setComplete(activityTerms.getSumOfOtherDocCounts() == 0L);
+    resultDto.setIsComplete(activityTerms.getSumOfOtherDocCounts() == 0L);
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
     return resultDto;
   }

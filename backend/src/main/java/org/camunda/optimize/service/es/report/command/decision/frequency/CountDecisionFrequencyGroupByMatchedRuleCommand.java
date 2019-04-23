@@ -101,7 +101,7 @@ public class CountDecisionFrequencyGroupByMatchedRuleCommand
     }
 
     resultDto.setData(resultData);
-    resultDto.setComplete(matchedRuleTerms.getSumOfOtherDocCounts() == 0L);
+    resultDto.setIsComplete(matchedRuleTerms.getSumOfOtherDocCounts() == 0L);
     resultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
 
     return resultDto;

@@ -9,6 +9,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.filter.data.variab
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
@@ -44,34 +45,11 @@ import static org.camunda.optimize.service.util.ProcessVariableHelper.STRING_TYP
     @JsonSubTypes.Type(value = DateVariableFilterDataDto.class, name = DATE_TYPE),
     @JsonSubTypes.Type(value = DateVariableFilterDataDto.class, name = DATE_TYPE_LOWERCASE),
 })
+@Data
 public abstract class VariableFilterDataDto<DATA> implements FilterDataDto {
   @JsonProperty
   protected VariableType type;
 
   protected String name;
   protected DATA data;
-
-  public VariableType getType() {
-    return type;
-  }
-
-  public void setType(VariableType type) {
-    this.type = type;
-  }
-
-  public DATA getData() {
-    return data;
-  }
-
-  public void setData(DATA data) {
-    this.data = data;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
 }

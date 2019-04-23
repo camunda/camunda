@@ -162,7 +162,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     }
 
     resultDto.setData(resultData);
-    resultDto.setComplete(isResultComplete(variableTerms));
+    resultDto.setIsComplete(isResultComplete(variableTerms));
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
 
     return resultDto;

@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable.value;
 
+import lombok.Data;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
+@Data
 public abstract class VariableInstanceDto<T> implements OptimizeDto {
 
   private String id;
@@ -14,38 +16,5 @@ public abstract class VariableInstanceDto<T> implements OptimizeDto {
   private String type;
   private Long version;
 
-  public String getId() {
-    return id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getType() {
-    return type;
-  }
-
-  public void setType(String type) {
-    this.type = type;
-  }
-
-  public Long getVersion() {
-    return version;
-  }
-
-  public void setVersion(Long version) {
-    this.version = version;
-  }
-
   public abstract T getValue();
-
 }

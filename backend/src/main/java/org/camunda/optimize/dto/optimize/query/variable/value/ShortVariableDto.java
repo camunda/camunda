@@ -5,8 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable.value;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import static org.camunda.optimize.service.util.ProcessVariableHelper.SHORT_TYPE;
 
+@Getter
+@Setter
 public class ShortVariableDto extends VariableInstanceDto<Short> {
 
   private Short value;
@@ -15,13 +20,4 @@ public class ShortVariableDto extends VariableInstanceDto<Short> {
     super();
     setType(SHORT_TYPE);
   }
-
-  public Short getValue() {
-    return value;
-  }
-
-  public void setValue(Short value) {
-    this.value = value;
-  }
-
 }

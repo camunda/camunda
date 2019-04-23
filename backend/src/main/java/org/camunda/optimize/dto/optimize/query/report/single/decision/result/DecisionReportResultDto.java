@@ -7,6 +7,8 @@ package org.camunda.optimize.dto.optimize.query.report.single.decision.result;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Getter;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 
@@ -22,14 +24,6 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.RAW_RESULT_TYPE;
 })
 public abstract class DecisionReportResultDto implements ReportResultDto {
 
-  protected long decisionInstanceCount;
-
-  public long getDecisionInstanceCount() {
-    return decisionInstanceCount;
-  }
-
-  public void setDecisionInstanceCount(final long decisionInstanceCount) {
-    this.decisionInstanceCount = decisionInstanceCount;
-  }
+  @Getter @Setter protected long decisionInstanceCount;
 
 }

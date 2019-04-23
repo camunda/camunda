@@ -6,6 +6,8 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.ArrayList;
@@ -14,7 +16,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class OutputVariableEntry extends VariableEntry {
-  private List<Object> values = new ArrayList<>();
+  @Getter @Setter private List<Object> values = new ArrayList<>();
 
   protected OutputVariableEntry() {
   }
@@ -37,14 +39,6 @@ public class OutputVariableEntry extends VariableEntry {
   @JsonIgnore
   public Object getFirstValue() {
     return this.values.stream().findFirst().orElse(null);
-  }
-
-  public List<Object> getValues() {
-    return values;
-  }
-
-  public void setValues(final List<Object> values) {
-    this.values = values;
   }
 
   @Override

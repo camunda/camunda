@@ -142,7 +142,7 @@ public class CombinedReportHandlingIT {
     String singleReportId = createNewSingleNumberReport(engineDto);
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
     report.setData(createCombinedReport(singleReportId));
-    report.getData().getConfiguration().setxLabel("FooXLabel");
+    report.getData().getConfiguration().setXLabel("FooXLabel");
     report.setId("shouldNotBeUpdated");
     report.setLastModifier("shouldNotBeUpdatedManually");
     report.setName("MyReport");
@@ -161,7 +161,7 @@ public class CombinedReportHandlingIT {
       .filter(r -> r instanceof CombinedReportDefinitionDto).findFirst().get();
     assertThat(newReport.getData().getReportIds().isEmpty(), is(false));
     assertThat(newReport.getData().getReportIds().get(0), is(singleReportId));
-    assertThat(newReport.getData().getConfiguration().getxLabel(), is("FooXLabel"));
+    assertThat(newReport.getData().getConfiguration().getXLabel(), is("FooXLabel"));
     assertThat(newReport.getData().getVisualization(), is(ProcessVisualization.NUMBER));
     assertThat(newReport.getId(), is(id));
     assertThat(newReport.getCreated(), is(not(shouldBeIgnoredDate)));

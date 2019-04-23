@@ -5,37 +5,21 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
+import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.LimitedResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
 import java.util.List;
 
+@Data
 public class RawDataDecisionReportResultDto extends DecisionReportResultDto implements LimitedResultDto {
 
   protected List<RawDataDecisionInstanceDto> data;
   private Boolean isComplete = true;
 
   @Override
-  public Boolean getIsComplete() {
-    return isComplete;
-  }
-
-  public void setComplete(final Boolean complete) {
-    isComplete = complete;
-  }
-
-  public List<RawDataDecisionInstanceDto> getData() {
-    return data;
-  }
-
-  public void setData(List<RawDataDecisionInstanceDto> data) {
-    this.data = data;
-  }
-
-  @Override
   public ResultType getType() {
     return ResultType.RAW;
   }
-
 }

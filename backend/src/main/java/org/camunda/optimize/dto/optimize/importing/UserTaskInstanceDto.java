@@ -6,11 +6,13 @@
 package org.camunda.optimize.dto.optimize.importing;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Set;
 
+@Getter
 public class UserTaskInstanceDto extends SimpleUserTaskInstanceDto {
 
   @JsonIgnore
@@ -61,21 +63,5 @@ public class UserTaskInstanceDto extends SimpleUserTaskInstanceDto {
     this.processDefinitionKey = processDefinitionKey;
     this.processInstanceId = processInstanceId;
     this.engine = engine;
-  }
-
-  public String getProcessDefinitionId() {
-    return processDefinitionId;
-  }
-
-  public String getProcessDefinitionKey() {
-    return processDefinitionKey;
-  }
-
-  public String getProcessInstanceId() {
-    return processInstanceId;
-  }
-
-  public String getEngine() {
-    return engine;
   }
 }

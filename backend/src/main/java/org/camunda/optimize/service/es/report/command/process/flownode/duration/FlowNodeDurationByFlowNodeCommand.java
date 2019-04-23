@@ -155,7 +155,7 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
     }
 
     resultDto.setData(resultData);
-    resultDto.setComplete(activityIdTerms.getSumOfOtherDocCounts() == 0L);
+    resultDto.setIsComplete(activityIdTerms.getSumOfOtherDocCounts() == 0L);
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
     return resultDto;
   }

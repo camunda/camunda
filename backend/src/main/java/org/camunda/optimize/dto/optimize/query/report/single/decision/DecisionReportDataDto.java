@@ -6,6 +6,8 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
@@ -17,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+@Getter
+@Setter
 public class DecisionReportDataDto extends SingleReportDataDto implements Combinable {
 
   protected String decisionDefinitionKey;
@@ -26,62 +30,6 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
   protected DecisionGroupByDto groupBy;
   protected DecisionVisualization visualization;
   protected DecisionParametersDto parameters = new DecisionParametersDto();
-
-  public String getDecisionDefinitionKey() {
-    return decisionDefinitionKey;
-  }
-
-  public void setDecisionDefinitionKey(final String decisionDefinitionKey) {
-    this.decisionDefinitionKey = decisionDefinitionKey;
-  }
-
-  public String getDecisionDefinitionVersion() {
-    return decisionDefinitionVersion;
-  }
-
-  public void setDecisionDefinitionVersion(final String decisionDefinitionVersion) {
-    this.decisionDefinitionVersion = decisionDefinitionVersion;
-  }
-
-  public List<DecisionFilterDto> getFilter() {
-    return filter;
-  }
-
-  public void setFilter(List<DecisionFilterDto> filter) {
-    this.filter = filter;
-  }
-
-  public DecisionViewDto getView() {
-    return view;
-  }
-
-  public void setView(DecisionViewDto view) {
-    this.view = view;
-  }
-
-  public DecisionGroupByDto getGroupBy() {
-    return groupBy;
-  }
-
-  public void setGroupBy(DecisionGroupByDto groupBy) {
-    this.groupBy = groupBy;
-  }
-
-  public DecisionVisualization getVisualization() {
-    return visualization;
-  }
-
-  public void setVisualization(DecisionVisualization visualization) {
-    this.visualization = visualization;
-  }
-
-  public DecisionParametersDto getParameters() {
-    return parameters;
-  }
-
-  public void setParameters(final DecisionParametersDto parameters) {
-    this.parameters = parameters;
-  }
 
   @JsonIgnore
   @Override

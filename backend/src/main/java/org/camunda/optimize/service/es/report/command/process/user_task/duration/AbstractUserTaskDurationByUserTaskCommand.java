@@ -143,7 +143,7 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
     }
 
     resultDto.setData(resultData);
-    resultDto.setComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
+    resultDto.setIsComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
 
     return resultDto;

@@ -6,11 +6,13 @@
 package org.camunda.optimize.dto.optimize.importing;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
+@Getter
 public class UserOperationLogEntryDto implements OptimizeDto {
 
   private final String id;
@@ -51,54 +53,6 @@ public class UserOperationLogEntryDto implements OptimizeDto {
     this.originalValue = originalValue;
     this.newValue = newValue;
     this.engineAlias = engineAlias;
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  public String getProcessDefinitionId() {
-    return processDefinitionId;
-  }
-
-  public String getProcessDefinitionKey() {
-    return processDefinitionKey;
-  }
-
-  public String getProcessInstanceId() {
-    return processInstanceId;
-  }
-
-  public String getUserTaskId() {
-    return userTaskId;
-  }
-
-  public String getUserId() {
-    return userId;
-  }
-
-  public OffsetDateTime getTimestamp() {
-    return timestamp;
-  }
-
-  public String getOperationType() {
-    return operationType;
-  }
-
-  public String getProperty() {
-    return property;
-  }
-
-  public String getOriginalValue() {
-    return originalValue;
-  }
-
-  public String getNewValue() {
-    return newValue;
-  }
-
-  public String getEngineAlias() {
-    return engineAlias;
   }
 
   @Override

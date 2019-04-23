@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.Dec
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
@@ -177,7 +176,7 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     final DecisionReportMapResultDto resultDto = new DecisionReportMapResultDto();
     resultDto.setData(processAggregations(response.getAggregations()));
     resultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
-    resultDto.setComplete(isResultComplete(response));
+    resultDto.setIsComplete(isResultComplete(response));
     return resultDto;
   }
 

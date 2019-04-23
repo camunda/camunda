@@ -178,7 +178,7 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
     final ProcessCountReportMapResultDto resultDto = new ProcessCountReportMapResultDto();
     resultDto.setData(processAggregations(response.getAggregations()));
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    resultDto.setComplete(isResultComplete(response));
+    resultDto.setIsComplete(isResultComplete(response));
     return resultDto;
   }
 

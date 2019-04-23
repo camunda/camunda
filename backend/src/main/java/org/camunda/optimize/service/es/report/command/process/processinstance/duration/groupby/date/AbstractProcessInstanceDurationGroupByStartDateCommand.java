@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.value
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
@@ -41,9 +40,7 @@ import org.joda.time.DateTimeZone;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -193,7 +190,7 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
   private ProcessDurationReportMapResultDto mapToReportResult(final SearchResponse response) {
     final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();
     resultDto.setData(processAggregations(response.getAggregations()));
-    resultDto.setComplete(isResultComplete(response));
+    resultDto.setIsComplete(isResultComplete(response));
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
     return resultDto;
   }

@@ -5,30 +5,19 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+@Getter
+@Setter
 public class HeatmapTargetValueDto {
 
   private Boolean active = false;
   private Map<String, HeatmapTargetValueEntryDto> values = new HashMap<>();
-
-  public Boolean getActive() {
-    return active;
-  }
-
-  public void setActive(Boolean active) {
-    this.active = active;
-  }
-
-  public Map<String, HeatmapTargetValueEntryDto> getValues() {
-    return values;
-  }
-
-  public void setValues(Map<String, HeatmapTargetValueEntryDto> values) {
-    this.values = values;
-  }
 
   @Override
   public boolean equals(Object o) {

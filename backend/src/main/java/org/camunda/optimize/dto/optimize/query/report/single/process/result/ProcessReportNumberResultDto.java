@@ -5,19 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.result;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
 public class ProcessReportNumberResultDto extends ProcessReportResultDto {
 
-  private long data;
-
-  public long getData() {
-    return data;
-  }
-
-  public void setData(long data) {
-    this.data = data;
-  }
+  @Getter @Setter private long data;
 
   @Override
   public ResultType getType() {

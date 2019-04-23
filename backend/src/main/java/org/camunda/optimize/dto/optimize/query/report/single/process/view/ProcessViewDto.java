@@ -7,11 +7,15 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.view;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
+import lombok.Getter;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 
 import java.util.Objects;
 import java.util.Set;
 
+@Getter
+@Setter
 public class ProcessViewDto implements Combinable {
   private static final Set<ProcessViewProperty> DURATION_PROPERTIES = ImmutableSet.of(
     ProcessViewProperty.DURATION, ProcessViewProperty.IDLE_DURATION, ProcessViewProperty.WORK_DURATION
@@ -34,22 +38,6 @@ public class ProcessViewDto implements Combinable {
   public ProcessViewDto(final ProcessViewEntity entity,
                         final ProcessViewProperty property) {
     this.entity = entity;
-    this.property = property;
-  }
-
-  public ProcessViewEntity getEntity() {
-    return entity;
-  }
-
-  public void setEntity(ProcessViewEntity entity) {
-    this.entity = entity;
-  }
-
-  public ProcessViewProperty getProperty() {
-    return property;
-  }
-
-  public void setProperty(ProcessViewProperty property) {
     this.property = property;
   }
 

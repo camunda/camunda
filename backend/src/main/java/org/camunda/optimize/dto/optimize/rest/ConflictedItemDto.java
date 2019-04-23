@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
+import lombok.Getter;
+
+@Getter
 public class ConflictedItemDto {
   private String id;
   private ConflictedItemType type;
@@ -17,17 +20,5 @@ public class ConflictedItemDto {
     this.id = id;
     this.type = type;
     this.name = name;
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  public ConflictedItemType getType() {
-    return type;
-  }
-
-  public String getName() {
-    return name;
   }
 }

@@ -7,6 +7,8 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Getter;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 
 /**
@@ -27,20 +29,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
 })
 
 public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
-  protected DATA data;
+  @Getter @Setter protected DATA data;
 
   public ProcessFilterDto() {
   }
 
   public ProcessFilterDto(final DATA data) {
-    this.data = data;
-  }
-
-  public DATA getData() {
-    return data;
-  }
-
-  public void setData(DATA data) {
     this.data = data;
   }
 

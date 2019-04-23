@@ -105,7 +105,7 @@ public class RawProcessDataResultDtoMapper {
                                                      final Long totalHits) {
     final RawDataProcessReportResultDto result = new RawDataProcessReportResultDto();
     result.setData(limitedRawDataResult);
-    result.setComplete(limitedRawDataResult.size() == totalHits);
+    result.setIsComplete(limitedRawDataResult.size() == totalHits);
     result.setProcessInstanceCount(totalHits);
     return result;
   }

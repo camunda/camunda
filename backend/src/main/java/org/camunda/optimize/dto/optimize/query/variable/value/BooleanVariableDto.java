@@ -5,8 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable.value;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import static org.camunda.optimize.service.util.ProcessVariableHelper.BOOLEAN_TYPE;
 
+@Getter
+@Setter
 public class BooleanVariableDto extends VariableInstanceDto {
 
   private Boolean value;
@@ -15,13 +20,4 @@ public class BooleanVariableDto extends VariableInstanceDto {
     super();
     setType(BOOLEAN_TYPE);
   }
-
-  public Boolean getValue() {
-    return value;
-  }
-
-  public void setValue(Boolean value) {
-    this.value = value;
-  }
-
 }

@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class RelativeDateFilterStartDto {
 
   protected Long value;
@@ -17,21 +22,4 @@ public class RelativeDateFilterStartDto {
     this.unit = unit;
     this.value = value;
   }
-
-  public Long getValue() {
-    return value;
-  }
-
-  public void setValue(Long value) {
-    this.value = value;
-  }
-
-  public RelativeDateFilterUnit getUnit() {
-    return unit;
-  }
-
-  public void setUnit(RelativeDateFilterUnit unit) {
-    this.unit = unit;
-  }
-
 }

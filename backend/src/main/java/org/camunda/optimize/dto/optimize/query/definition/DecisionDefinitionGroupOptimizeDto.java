@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.query.definition;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 
@@ -13,18 +15,12 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+@Setter
+@Getter
 public class DecisionDefinitionGroupOptimizeDto extends KeyDefinitionOptimizeDto
   implements Serializable, OptimizeDto {
 
   protected List<DecisionDefinitionOptimizeDto> versions = new ArrayList<>();
-
-  public List<DecisionDefinitionOptimizeDto> getVersions() {
-    return versions;
-  }
-
-  public void setVersions(List<DecisionDefinitionOptimizeDto> versions) {
-    this.versions = versions;
-  }
 
   public void sort() {
     versions.sort(

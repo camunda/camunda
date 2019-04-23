@@ -5,8 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.Objects;
 
+@Getter
+@Setter
 public class SingleReportTargetValueDto {
 
   private SingleReportCountChartDto countChart = new SingleReportCountChartDto();
@@ -14,46 +19,6 @@ public class SingleReportTargetValueDto {
   private Boolean active = false;
   private CountProgressDto countProgress = new CountProgressDto();
   private SingleReportDurationChartDto durationChart = new SingleReportDurationChartDto();
-
-  public SingleReportCountChartDto getCountChart() {
-    return countChart;
-  }
-
-  public void setCountChart(SingleReportCountChartDto countChart) {
-    this.countChart = countChart;
-  }
-
-  public DurationProgressDto getDurationProgress() {
-    return durationProgress;
-  }
-
-  public void setDurationProgress(DurationProgressDto durationProgress) {
-    this.durationProgress = durationProgress;
-  }
-
-  public Boolean getActive() {
-    return active;
-  }
-
-  public void setActive(Boolean active) {
-    this.active = active;
-  }
-
-  public CountProgressDto getCountProgress() {
-    return countProgress;
-  }
-
-  public void setCountProgress(CountProgressDto countProgress) {
-    this.countProgress = countProgress;
-  }
-
-  public SingleReportDurationChartDto getDurationChart() {
-    return durationChart;
-  }
-
-  public void setDurationChart(SingleReportDurationChartDto durationChart) {
-    this.durationChart = durationChart;
-  }
 
   @Override
   public boolean equals(Object o) {

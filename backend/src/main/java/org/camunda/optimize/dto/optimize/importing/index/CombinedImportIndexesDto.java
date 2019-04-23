@@ -5,21 +5,18 @@
  */
 package org.camunda.optimize.dto.optimize.importing.index;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@Getter
+@Setter
 public class CombinedImportIndexesDto {
 
   private List<TimestampBasedImportIndexDto> definitionBasedIndexes = new ArrayList<>();
   private List<AllEntitiesBasedImportIndexDto> allEntitiesBasedImportIndexes = new ArrayList<>();
-
-  public List<TimestampBasedImportIndexDto> getDefinitionBasedIndexes() {
-    return definitionBasedIndexes;
-  }
-
-  public List<AllEntitiesBasedImportIndexDto> getAllEntitiesBasedImportIndexes() {
-    return allEntitiesBasedImportIndexes;
-  }
 
   public void addDefinitionBasedIndexDto(TimestampBasedImportIndexDto timestampBasedImportIndexDto) {
     definitionBasedIndexes.add(timestampBasedImportIndexDto);
@@ -27,13 +24,5 @@ public class CombinedImportIndexesDto {
 
   public void addAllEntitiesBasedIndexDto(AllEntitiesBasedImportIndexDto importIndexDto) {
     allEntitiesBasedImportIndexes.add(importIndexDto);
-  }
-
-  public void setDefinitionBasedIndexes(List<TimestampBasedImportIndexDto> definitionBasedIndexes) {
-    this.definitionBasedIndexes = definitionBasedIndexes;
-  }
-
-  public void setAllEntitiesBasedImportIndexes(List<AllEntitiesBasedImportIndexDto> allEntitiesBasedImportIndexes) {
-    this.allEntitiesBasedImportIndexes = allEntitiesBasedImportIndexes;
   }
 }

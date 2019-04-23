@@ -6,6 +6,8 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -20,6 +22,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+@Getter
+@Setter
 public class ProcessReportDataDto extends SingleReportDataDto implements Combinable {
 
   protected String processDefinitionKey;
@@ -29,62 +33,6 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   protected ProcessGroupByDto groupBy;
   protected ProcessVisualization visualization;
   protected ProcessParametersDto parameters = new ProcessParametersDto();
-
-  public String getProcessDefinitionKey() {
-    return processDefinitionKey;
-  }
-
-  public void setProcessDefinitionKey(String processDefinitionKey) {
-    this.processDefinitionKey = processDefinitionKey;
-  }
-
-  public String getProcessDefinitionVersion() {
-    return processDefinitionVersion;
-  }
-
-  public void setProcessDefinitionVersion(String processDefinitionVersion) {
-    this.processDefinitionVersion = processDefinitionVersion;
-  }
-
-  public List<ProcessFilterDto> getFilter() {
-    return filter;
-  }
-
-  public void setFilter(List<ProcessFilterDto> filter) {
-    this.filter = filter;
-  }
-
-  public ProcessViewDto getView() {
-    return view;
-  }
-
-  public void setView(ProcessViewDto view) {
-    this.view = view;
-  }
-
-  public ProcessGroupByDto getGroupBy() {
-    return groupBy;
-  }
-
-  public void setGroupBy(ProcessGroupByDto groupBy) {
-    this.groupBy = groupBy;
-  }
-
-  public ProcessVisualization getVisualization() {
-    return visualization;
-  }
-
-  public void setVisualization(ProcessVisualization visualization) {
-    this.visualization = visualization;
-  }
-
-  public ProcessParametersDto getParameters() {
-    return parameters;
-  }
-
-  public void setParameters(ProcessParametersDto parameters) {
-    this.parameters = parameters;
-  }
 
   @JsonIgnore
   @Override

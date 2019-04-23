@@ -5,37 +5,18 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.Objects;
 
+@Setter
+@Getter
 public class CombinedReportTargetValueDto {
 
   private CombinedReportCountChartDto countChart = new CombinedReportCountChartDto();
   private Boolean active = false;
   private CombinedReportDurationChartDto durationChart = new CombinedReportDurationChartDto();
-
-  public CombinedReportCountChartDto getCountChart() {
-    return countChart;
-  }
-
-  public void setCountChart(CombinedReportCountChartDto countChart) {
-    this.countChart = countChart;
-  }
-
-  public Boolean getActive() {
-    return active;
-  }
-
-  public void setActive(Boolean active) {
-    this.active = active;
-  }
-
-  public CombinedReportDurationChartDto getDurationChart() {
-    return durationChart;
-  }
-
-  public void setDurationChart(CombinedReportDurationChartDto durationChart) {
-    this.durationChart = durationChart;
-  }
 
   @Override
   public boolean equals(Object o) {

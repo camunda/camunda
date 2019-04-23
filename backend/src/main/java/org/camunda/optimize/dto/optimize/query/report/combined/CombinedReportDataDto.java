@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.combined;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
@@ -16,27 +17,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Data
 public class CombinedReportDataDto implements ReportDataDto {
 
   protected CombinedReportConfigurationDto configuration = new CombinedReportConfigurationDto();
   protected ProcessVisualization visualization;
   protected List<CombinedReportItemDto> reports = new ArrayList<>();
-
-  public CombinedReportConfigurationDto getConfiguration() {
-    return configuration;
-  }
-
-  public void setConfiguration(CombinedReportConfigurationDto configuration) {
-    this.configuration = configuration;
-  }
-
-  public ProcessVisualization getVisualization() {
-    return visualization;
-  }
-
-  public void setVisualization(ProcessVisualization visualization) {
-    this.visualization = visualization;
-  }
 
   @JsonIgnore
   public List<String> getReportIds() {
@@ -44,14 +30,6 @@ public class CombinedReportDataDto implements ReportDataDto {
       .map(Collection::stream)
       .map(reportIdStream -> reportIdStream.map(CombinedReportItemDto::getId).collect(Collectors.toList()))
       .orElse(new ArrayList<>());
-  }
-
-  public List<CombinedReportItemDto> getReports() {
-    return Optional.ofNullable(reports).orElse(new ArrayList<>());
-  }
-
-  public void setReports(List<CombinedReportItemDto> reports) {
-    this.reports = reports;
   }
 
   @Override

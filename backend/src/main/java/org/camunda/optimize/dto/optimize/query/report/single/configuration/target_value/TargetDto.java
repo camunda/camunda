@@ -5,28 +5,17 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.Objects;
 
+@Getter
+@Setter
 public class TargetDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
   private String value = "2";
-
-  public TargetValueUnit getUnit() {
-    return unit;
-  }
-
-  public void setUnit(TargetValueUnit unit) {
-    this.unit = unit;
-  }
-
-  public String getValue() {
-    return value;
-  }
-
-  public void setValue(String value) {
-    this.value = value;
-  }
 
   @Override
   public boolean equals(Object o) {

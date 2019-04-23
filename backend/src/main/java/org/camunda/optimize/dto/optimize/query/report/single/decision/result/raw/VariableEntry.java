@@ -5,10 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.Objects;
 
+@Getter
+@Setter
 public class VariableEntry {
   private String id;
   private String name;
@@ -22,31 +26,6 @@ public class VariableEntry {
     this.name = name;
     this.type = type;
   }
-
-  public String getId() {
-    return id;
-  }
-
-  public void setId(final String id) {
-    this.id = id;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(final String name) {
-    this.name = name;
-  }
-
-  public VariableType getType() {
-    return type;
-  }
-
-  public void setType(final VariableType type) {
-    this.type = type;
-  }
-
   @Override
   public boolean equals(final Object o) {
     if (this == o) {

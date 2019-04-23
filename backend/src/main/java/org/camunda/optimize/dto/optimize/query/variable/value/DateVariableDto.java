@@ -5,10 +5,15 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable.value;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.OffsetDateTime;
 
 import static org.camunda.optimize.service.util.ProcessVariableHelper.DATE_TYPE;
 
+@Getter
+@Setter
 public class DateVariableDto extends VariableInstanceDto {
 
   private OffsetDateTime value;
@@ -17,13 +22,4 @@ public class DateVariableDto extends VariableInstanceDto {
     super();
     setType(DATE_TYPE);
   }
-
-  public OffsetDateTime getValue() {
-    return value;
-  }
-
-  public void setValue(OffsetDateTime value) {
-    this.value = value;
-  }
-
 }

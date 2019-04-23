@@ -5,8 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable.value;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import static org.camunda.optimize.service.util.ProcessVariableHelper.LONG_TYPE;
 
+@Getter
+@Setter
 public class LongVariableDto extends VariableInstanceDto {
 
   private Long value;
@@ -15,13 +20,4 @@ public class LongVariableDto extends VariableInstanceDto {
     super();
     setType(LONG_TYPE);
   }
-
-  public Long getValue() {
-    return value;
-  }
-
-  public void setValue(Long value) {
-    this.value = value;
-  }
-
 }

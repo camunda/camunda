@@ -145,7 +145,7 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
     }
 
     resultDto.setData(resultData);
-    resultDto.setComplete(isResultComplete(variableTerms));
+    resultDto.setIsComplete(isResultComplete(variableTerms));
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
 
     return resultDto;

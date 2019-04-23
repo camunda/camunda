@@ -5,11 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.importing;
 
+import lombok.Getter;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
+@Getter
 public class UserOperationDto implements OptimizeDto {
 
   private String id;
@@ -34,35 +36,6 @@ public class UserOperationDto implements OptimizeDto {
     this.property = property;
     this.originalValue = originalValue;
     this.newValue = newValue;
-  }
-
-  public String getId() {
-    return id;
-  }
-
-
-  public String getUserId() {
-    return userId;
-  }
-
-  public OffsetDateTime getTimestamp() {
-    return timestamp;
-  }
-
-  public String getType() {
-    return type;
-  }
-
-  public String getProperty() {
-    return property;
-  }
-
-  public String getOriginalValue() {
-    return originalValue;
-  }
-
-  public String getNewValue() {
-    return newValue;
   }
 
   @Override

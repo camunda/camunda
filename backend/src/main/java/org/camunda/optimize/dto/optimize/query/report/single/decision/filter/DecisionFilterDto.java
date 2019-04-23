@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.decision.filter;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
@@ -16,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
     @JsonSubTypes.Type(value = OutputVariableFilterDto.class, name = "outputVariable"),
 }
 )
+@Data
 public abstract class DecisionFilterDto<DATA extends FilterDataDto> {
   protected DATA data;
 
@@ -23,14 +25,6 @@ public abstract class DecisionFilterDto<DATA extends FilterDataDto> {
   }
 
   public DecisionFilterDto(final DATA data) {
-    this.data = data;
-  }
-
-  public DATA getData() {
-    return data;
-  }
-
-  public void setData(DATA data) {
     this.data = data;
   }
 

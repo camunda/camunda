@@ -6,12 +6,16 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.result.duration;
 
 import com.google.common.base.MoreObjects;
+import lombok.Getter;
+import lombok.Setter;
 import net.minidev.json.annotate.JsonIgnore;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.Objects;
 
+@Getter
+@Setter
 public class AggregationResultDto {
 
   private Long min;
@@ -26,38 +30,6 @@ public class AggregationResultDto {
     this.min = min;
     this.max = max;
     this.avg = avg;
-    this.median = median;
-  }
-
-  public Long getMin() {
-    return min;
-  }
-
-  public void setMin(Long min) {
-    this.min = min;
-  }
-
-  public Long getMax() {
-    return max;
-  }
-
-  public void setMax(Long max) {
-    this.max = max;
-  }
-
-  public Long getAvg() {
-    return avg;
-  }
-
-  public void setAvg(Long avg) {
-    this.avg = avg;
-  }
-
-  public Long getMedian() {
-    return median;
-  }
-
-  public void setMedian(Long median) {
     this.median = median;
   }
 

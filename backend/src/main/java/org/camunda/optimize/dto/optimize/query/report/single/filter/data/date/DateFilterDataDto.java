@@ -7,6 +7,8 @@ package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Getter;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 
 import java.time.OffsetDateTime;
@@ -24,34 +26,12 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.RELATIVE_DATE_FI
   @JsonSubTypes.Type(value = FixedDateFilterDataDto.class, name = FIXED_DATE_FILTER),
 })
 
+@Getter
+@Setter
 public abstract class DateFilterDataDto<START> implements FilterDataDto {
 
   protected DateFilterType type;
 
   protected START start;
   protected OffsetDateTime end;
-
-  public DateFilterType getType() {
-    return type;
-  }
-
-  public void setType(DateFilterType type) {
-    this.type = type;
-  }
-
-  public OffsetDateTime getEnd() {
-    return end;
-  }
-
-  public void setEnd(OffsetDateTime end) {
-    this.end = end;
-  }
-
-  public START getStart() {
-    return start;
-  }
-
-  public void setStart(START start) {
-    this.start = start;
-  }
 }

@@ -5,21 +5,15 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.decision.group.value;
 
+import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 
 import java.util.Objects;
 
+@Data
 public class DecisionGroupByEvaluationDateTimeValueDto implements DecisionGroupByValueDto {
 
   protected GroupByDateUnit unit;
-
-  public GroupByDateUnit getUnit() {
-    return unit;
-  }
-
-  public void setUnit(GroupByDateUnit unit) {
-    this.unit = unit;
-  }
 
   @Override
   public boolean isCombinable(Object o) {

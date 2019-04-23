@@ -7,6 +7,8 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.result;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Getter;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
@@ -28,14 +30,5 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.RAW_RESULT_TYPE;
 })
 public abstract class ProcessReportResultDto implements ReportResultDto {
 
-  protected long processInstanceCount;
-
-  public long getProcessInstanceCount() {
-    return processInstanceCount;
-  }
-
-  public void setProcessInstanceCount(long processInstanceCount) {
-    this.processInstanceCount = processInstanceCount;
-  }
-
+  @Getter @Setter protected long processInstanceCount;
 }

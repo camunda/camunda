@@ -5,14 +5,16 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.result;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.Optional;
 
 public class MapResultEntryDto<T> {
 
-  private String key;
-  private T value;
-
-  private String label;
+  @Getter @Setter private String key;
+  @Getter @Setter private T value;
+  @Setter private String label;
 
   protected MapResultEntryDto() {
   }
@@ -22,27 +24,7 @@ public class MapResultEntryDto<T> {
     this.value = value;
   }
 
-  public String getKey() {
-    return key;
-  }
-
-  public void setKey(final String key) {
-    this.key = key;
-  }
-
-  public T getValue() {
-    return value;
-  }
-
-  public void setValue(final T value) {
-    this.value = value;
-  }
-
   public Optional<String> getLabel() {
     return Optional.ofNullable(label);
-  }
-
-  public void setLabel(final String label) {
-    this.label = label;
   }
 }

@@ -6,9 +6,11 @@
 package org.camunda.optimize.dto.engine;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
 
 import java.io.Serializable;
 
+@Data
 public class DecisionDefinitionEngineDto implements Serializable,EngineDto {
 
   protected String id;
@@ -24,57 +26,8 @@ public class DecisionDefinitionEngineDto implements Serializable,EngineDto {
   protected Integer historyTimeToLive;
   protected String versionTag;
 
-  public String getId() {
-    return id;
-  }
-
-  public String getKey() {
-    return key;
-  }
-
-  public String getCategory() {
-    return category;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public int getVersion() {
-    return version;
-  }
-
   @JsonIgnore
   public String getVersionAsString() {
     return String.valueOf(version);
   }
-
-  public String getResource() {
-    return resource;
-  }
-
-  public String getDeploymentId() {
-    return deploymentId;
-  }
-
-  public String getTenantId() {
-    return tenantId;
-  }
-
-  public String getDecisionRequirementsDefinitionId() {
-    return decisionRequirementsDefinitionId;
-  }
-
-  public String getDecisionRequirementsDefinitionKey() {
-    return decisionRequirementsDefinitionKey;
-  }
-
-  public Integer getHistoryTimeToLive() {
-    return historyTimeToLive;
-  }
-
-  public String getVersionTag(){
-    return versionTag;
-  }
-
 }

@@ -5,35 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
+import lombok.Data;
+
 import java.util.List;
 
+@Data
 public class FlowNodeIdsToNamesRequestDto {
 
   protected String processDefinitionKey;
   protected String processDefinitionVersion;
   protected List<String> nodeIds;
-
-  public String getProcessDefinitionKey() {
-    return processDefinitionKey;
-  }
-
-  public void setProcessDefinitionKey(String processDefinitionKey) {
-    this.processDefinitionKey = processDefinitionKey;
-  }
-
-  public String getProcessDefinitionVersion() {
-    return processDefinitionVersion;
-  }
-
-  public void setProcessDefinitionVersion(String processDefinitionVersion) {
-    this.processDefinitionVersion = processDefinitionVersion;
-  }
-
-  public List<String> getNodeIds() {
-    return nodeIds;
-  }
-
-  public void setNodeIds(List<String> nodeIds) {
-    this.nodeIds = nodeIds;
-  }
 }

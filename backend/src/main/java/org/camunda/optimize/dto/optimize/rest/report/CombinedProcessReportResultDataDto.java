@@ -5,12 +5,16 @@
  */
 package org.camunda.optimize.dto.optimize.rest.report;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
 import java.util.Map;
 
+@Getter
+@Setter
 public class CombinedProcessReportResultDataDto<RESULT extends ProcessReportResultDto> implements ReportResultDto {
   protected Map<String, ProcessReportEvaluationResultDto<RESULT>> data;
 
@@ -18,14 +22,6 @@ public class CombinedProcessReportResultDataDto<RESULT extends ProcessReportResu
   }
 
   public CombinedProcessReportResultDataDto(final Map<String, ProcessReportEvaluationResultDto<RESULT>> data) {
-    this.data = data;
-  }
-
-  public Map<String, ProcessReportEvaluationResultDto<RESULT>> getData() {
-    return data;
-  }
-
-  public void setData(Map<String, ProcessReportEvaluationResultDto<RESULT>> data) {
     this.data = data;
   }
 

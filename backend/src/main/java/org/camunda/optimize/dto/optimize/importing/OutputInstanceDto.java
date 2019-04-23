@@ -5,8 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.importing;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
+@Getter
+@Setter
 public class OutputInstanceDto {
   private String id;
   private String clauseId;
@@ -29,70 +33,6 @@ public class OutputInstanceDto {
     this.ruleOrder = ruleOrder;
     this.variableName = variableName;
     this.type = type;
-    this.value = value;
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  public String getClauseId() {
-    return clauseId;
-  }
-
-  public String getClauseName() {
-    return clauseName;
-  }
-
-  public String getRuleId() {
-    return ruleId;
-  }
-
-  public Integer getRuleOrder() {
-    return ruleOrder;
-  }
-
-  public String getVariableName() {
-    return variableName;
-  }
-
-  public VariableType getType() {
-    return type;
-  }
-
-  public String getValue() {
-    return value;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public void setClauseId(String clauseId) {
-    this.clauseId = clauseId;
-  }
-
-  public void setClauseName(String clauseName) {
-    this.clauseName = clauseName;
-  }
-
-  public void setRuleId(String ruleId) {
-    this.ruleId = ruleId;
-  }
-
-  public void setRuleOrder(Integer ruleOrder) {
-    this.ruleOrder = ruleOrder;
-  }
-
-  public void setVariableName(String variableName) {
-    this.variableName = variableName;
-  }
-
-  public void setType(VariableType type) {
-    this.type = type;
-  }
-
-  public void setValue(String value) {
     this.value = value;
   }
 }

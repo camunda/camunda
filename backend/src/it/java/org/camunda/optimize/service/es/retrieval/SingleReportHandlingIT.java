@@ -162,7 +162,7 @@ public class SingleReportHandlingIT {
     reportData.setProcessDefinitionVersion("123");
     reportData.setFilter(Collections.emptyList());
     SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
-    configuration.setyLabel("fooYLabel");
+    configuration.setYLabel("fooYLabel");
     reportData.setConfiguration(configuration);
     ProcessPartDto processPartDto = new ProcessPartDto();
     processPartDto.setStart("start123");
@@ -187,7 +187,7 @@ public class SingleReportHandlingIT {
     SingleProcessReportDefinitionDto newReport = (SingleProcessReportDefinitionDto) reports.get(0);
     assertThat(newReport.getData().getProcessDefinitionKey(), is("procdef"));
     assertThat(newReport.getData().getProcessDefinitionVersion(), is("123"));
-    assertThat(newReport.getData().getConfiguration().getyLabel(), is("fooYLabel"));
+    assertThat(newReport.getData().getConfiguration().getYLabel(), is("fooYLabel"));
     assertThat(newReport.getData().getParameters().getProcessPart().getStart(), is("start123"));
     assertThat(newReport.getData().getParameters().getProcessPart().getEnd(), is("end123"));
     assertThat(newReport.getId(), is(id));

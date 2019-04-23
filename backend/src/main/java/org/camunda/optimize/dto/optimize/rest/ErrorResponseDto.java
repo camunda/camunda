@@ -5,8 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 
+@Getter
+@Setter
 public class ErrorResponseDto {
   private String errorMessage;
   private ReportDefinitionDto reportDefinition;
@@ -21,21 +25,5 @@ public class ErrorResponseDto {
 
   public ErrorResponseDto(String errorMessage) {
     this.errorMessage = errorMessage;
-  }
-
-  public String getErrorMessage() {
-    return errorMessage;
-  }
-
-  public void setErrorMessage(String errorMessage) {
-    this.errorMessage = errorMessage;
-  }
-
-  public ReportDefinitionDto getReportDefinition() {
-    return reportDefinition;
-  }
-
-  public void setReportDefinition(ReportDefinitionDto reportDefinition) {
-    this.reportDefinition = reportDefinition;
   }
 }

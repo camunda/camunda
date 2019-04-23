@@ -9,6 +9,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Getter;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByValueDto;
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
@@ -30,27 +32,13 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_OUTPUT_
   @JsonSubTypes.Type(value = DecisionGroupByMatchedRuleDto.class, name = GROUP_BY_MATCHED_RULE_TYPE)
 }
 )
+@Getter
+@Setter
 public abstract class DecisionGroupByDto<VALUE extends DecisionGroupByValueDto> implements Combinable {
 
   @JsonProperty
   protected DecisionGroupByType type;
   protected VALUE value;
-
-  public VALUE getValue() {
-    return value;
-  }
-
-  public void setValue(VALUE value) {
-    this.value = value;
-  }
-
-  public DecisionGroupByType getType() {
-    return type;
-  }
-
-  public void setType(DecisionGroupByType type) {
-    this.type = type;
-  }
 
   @Override
   public String toString() {
