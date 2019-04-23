@@ -13,36 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.broker.it.clustering;
+package io.zeebe.broker.it.clustering.topology;
 
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.GrpcClientRule;
+import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.PartitionBrokerRole;
+import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.commands.Topology;
 import java.util.List;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 public class TopologyClusterTest {
 
-  public Timeout testTimeout = Timeout.seconds(120);
-  public ClusteringRule clusteringRule = new ClusteringRule();
-  public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
+  private static final Timeout TEST_TIMEOUT = Timeout.seconds(120);
+  private static final ClusteringRule CLUSTERING_RULE = new ClusteringRule();
+  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(CLUSTERING_RULE);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
+  @ClassRule
+  public static final RuleChain RULE_CHAIN =
+      RuleChain.outerRule(TEST_TIMEOUT).around(CLUSTERING_RULE).around(CLIENT_RULE);
 
   @Test
   public void shouldContainAllBrokers() {
 
     // when
-    final Topology topology = clientRule.getClient().newTopologyRequest().send().join();
+    final Topology topology = CLIENT_RULE.getClient().newTopologyRequest().send().join();
 
     // then
     final List<BrokerInfo> brokers = topology.getBrokers();
@@ -56,15 +58,15 @@ public class TopologyClusterTest {
   @Test
   public void shouldContainAllPartitions() {
     // when
-    final Topology topology = clientRule.getClient().newTopologyRequest().send().join();
+    final Topology topology = CLIENT_RULE.getClient().newTopologyRequest().send().join();
 
     // then
     final List<BrokerInfo> brokers = topology.getBrokers();
 
     assertThat(brokers)
-        .flatExtracting(brokerInfo -> brokerInfo.getPartitions())
-        .filteredOn(p -> p.isLeader())
-        .extracting(partitionInfos -> partitionInfos.getPartitionId())
+        .flatExtracting(BrokerInfo::getPartitions)
+        .filteredOn(PartitionInfo::isLeader)
+        .extracting(PartitionInfo::getPartitionId)
         .containsExactlyInAnyOrder(
             START_PARTITION_ID, START_PARTITION_ID + 1, START_PARTITION_ID + 2);
 
@@ -73,11 +75,11 @@ public class TopologyClusterTest {
     assertPartitionInTopology(brokers, START_PARTITION_ID + 2);
   }
 
-  public void assertPartitionInTopology(List<BrokerInfo> brokers, int partition) {
+  private void assertPartitionInTopology(List<BrokerInfo> brokers, int partition) {
     assertThat(brokers)
-        .flatExtracting(brokerInfo -> brokerInfo.getPartitions())
+        .flatExtracting(BrokerInfo::getPartitions)
         .filteredOn(p -> p.getPartitionId() == partition)
-        .extracting(partitionInfos -> partitionInfos.getRole())
+        .extracting(PartitionInfo::getRole)
         .containsExactlyInAnyOrder(
             PartitionBrokerRole.LEADER, PartitionBrokerRole.FOLLOWER, PartitionBrokerRole.FOLLOWER);
   }
@@ -85,11 +87,11 @@ public class TopologyClusterTest {
   @Test
   public void shouldExposeClusterSettings() {
     // when
-    final Topology topology = clientRule.getClient().newTopologyRequest().send().join();
+    final Topology topology = CLIENT_RULE.getClient().newTopologyRequest().send().join();
 
     // then
-    assertThat(topology.getClusterSize()).isEqualTo(clusteringRule.getClusterSize());
-    assertThat(topology.getPartitionsCount()).isEqualTo(clusteringRule.getPartitionCount());
-    assertThat(topology.getReplicationFactor()).isEqualTo(clusteringRule.getReplicationFactor());
+    assertThat(topology.getClusterSize()).isEqualTo(CLUSTERING_RULE.getClusterSize());
+    assertThat(topology.getPartitionsCount()).isEqualTo(CLUSTERING_RULE.getPartitionCount());
+    assertThat(topology.getReplicationFactor()).isEqualTo(CLUSTERING_RULE.getReplicationFactor());
   }
 }

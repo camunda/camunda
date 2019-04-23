@@ -17,6 +17,7 @@ package io.zeebe.gateway.impl.broker.cluster;
 
 import static io.zeebe.transport.ClientTransport.UNKNOWN_NODE_ID;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import org.agrona.collections.Int2IntHashMap;
@@ -26,6 +27,7 @@ import org.agrona.collections.IntArrayList;
 public class BrokerClusterStateImpl implements BrokerClusterState {
 
   private final Int2IntHashMap partitionLeaders;
+  private final Int2ObjectHashMap<List<Integer>> partitionFollowers;
   private final Int2ObjectHashMap<String> brokerAddresses;
   private final IntArrayList brokers;
   private final IntArrayList partitions;
@@ -38,6 +40,7 @@ public class BrokerClusterStateImpl implements BrokerClusterState {
     this();
     if (topology != null) {
       partitionLeaders.putAll(topology.partitionLeaders);
+      partitionFollowers.putAll(topology.partitionFollowers);
       brokerAddresses.putAll(topology.brokerAddresses);
 
       brokers.addAll(topology.brokers);
@@ -51,7 +54,8 @@ public class BrokerClusterStateImpl implements BrokerClusterState {
 
   public BrokerClusterStateImpl() {
     partitionLeaders = new Int2IntHashMap(NODE_ID_NULL);
-    brokerAddresses = new Int2ObjectHashMap();
+    partitionFollowers = new Int2ObjectHashMap<>();
+    brokerAddresses = new Int2ObjectHashMap<>();
     brokers = new IntArrayList(5, NODE_ID_NULL);
     partitions = new IntArrayList(32, PARTITION_ID_NULL);
     randomBroker = new Random();
@@ -59,6 +63,14 @@ public class BrokerClusterStateImpl implements BrokerClusterState {
 
   public void setPartitionLeader(int partitionId, int leaderId) {
     partitionLeaders.put(partitionId, leaderId);
+    final List<Integer> followers = partitionFollowers.get(partitionId);
+    if (followers != null) {
+      followers.removeIf(follower -> follower == leaderId);
+    }
+  }
+
+  public void addPartitionFollower(int partitionId, int followerId) {
+    partitionFollowers.computeIfAbsent(partitionId, ArrayList::new).add(followerId);
   }
 
   public void addPartitionIfAbsent(int partitionId) {
@@ -121,6 +133,11 @@ public class BrokerClusterStateImpl implements BrokerClusterState {
   @Override
   public int getLeaderForPartition(int partition) {
     return partitionLeaders.get(partition);
+  }
+
+  @Override
+  public List<Integer> getFollowersForPartition(int partition) {
+    return partitionFollowers.get(partition);
   }
 
   @Override

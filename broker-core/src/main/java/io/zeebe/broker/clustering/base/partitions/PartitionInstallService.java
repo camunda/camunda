@@ -31,7 +31,6 @@ import static io.zeebe.broker.logstreams.LogStreamServiceNames.stateStorageFacto
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.broker.logstreams.state.StateStorageFactoryService;
 import io.zeebe.distributedlog.StorageConfiguration;
@@ -59,7 +58,7 @@ public class PartitionInstallService extends Actor
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private final StorageConfiguration configuration;
-  private final PartitionInfo partitionInfo;
+  private final int partitionId;
 
   private ServiceStartContext startContext;
   private ServiceName<LogStream> logStreamServiceName;
@@ -73,7 +72,7 @@ public class PartitionInstallService extends Actor
 
   public PartitionInstallService(final StorageConfiguration configuration) {
     this.configuration = configuration;
-    this.partitionInfo = new PartitionInfo(configuration.getPartitionId());
+    this.partitionId = configuration.getPartitionId();
   }
 
   @Override
@@ -153,8 +152,7 @@ public class PartitionInstallService extends Actor
 
   private void removeLeaderPartitionService() {
     if (startContext.hasService(leaderPartitionServiceName)) {
-      LOG.debug(
-          "Removing leader partition services for partition {}", partitionInfo.getPartitionId());
+      LOG.debug("Removing leader partition services for partition {}", partitionId);
       startContext.removeService(leaderPartitionServiceName);
       startContext.removeService(openLogStreamServiceName);
 
@@ -164,13 +162,12 @@ public class PartitionInstallService extends Actor
   }
 
   private void installLeaderPartition(long leaderTerm) {
-    LOG.debug(
-        "Installing leader partition service for partition {}", partitionInfo.getPartitionId());
-    final Partition partition = new Partition(partitionInfo, RaftState.LEADER);
+    LOG.debug("Installing leader partition service for partition {}", partitionId);
+    final Partition partition = new Partition(partitionId, RaftState.LEADER);
 
     // Get an instance of DistributedLog
     final DistributedLogstreamPartition distributedLogstreamPartition =
-        new DistributedLogstreamPartition(partitionInfo.getPartitionId(), leaderTerm);
+        new DistributedLogstreamPartition(partitionId, leaderTerm);
     startContext
         .createService(distributedLogPartitionServiceName(logName), distributedLogstreamPartition)
         .dependency(ATOMIX_SERVICE, distributedLogstreamPartition.getAtomixInjector())
@@ -195,9 +192,8 @@ public class PartitionInstallService extends Actor
   }
 
   private void installFollowerPartition() {
-    LOG.debug(
-        "Installing follower partition service for partition {}", partitionInfo.getPartitionId());
-    final Partition partition = new Partition(partitionInfo, RaftState.FOLLOWER);
+    LOG.debug("Installing follower partition service for partition {}", partitionId);
+    final Partition partition = new Partition(partitionId, RaftState.FOLLOWER);
 
     startContext
         .createService(followerPartitionServiceName, partition)
@@ -209,7 +205,7 @@ public class PartitionInstallService extends Actor
 
   private void removeFollowerPartitionService() {
     if (startContext.hasService(followerPartitionServiceName)) {
-      LOG.debug("Removing follower partition service for partition {}", partitionInfo);
+      LOG.debug("Removing follower partition service for partition {}", partitionId);
       startContext.removeService(followerPartitionServiceName);
     }
   }

@@ -67,11 +67,11 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
   }
 
   private void addPartition(final ServiceName<Partition> sericeName, final Partition partition) {
-    actor.submit(() -> leaderPartitions.put(partition.getInfo().getPartitionId(), partition));
+    actor.submit(() -> leaderPartitions.put(partition.getPartitionId(), partition));
   }
 
   private void removePartition(final ServiceName<Partition> sericeName, final Partition partition) {
-    actor.submit(() -> leaderPartitions.remove(partition.getInfo().getPartitionId()));
+    actor.submit(() -> leaderPartitions.remove(partition.getPartitionId()));
   }
 
   @Override

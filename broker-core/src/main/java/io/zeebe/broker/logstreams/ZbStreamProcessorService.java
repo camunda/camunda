@@ -92,7 +92,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
 
   public void startStreamProcessors(
       final ServiceName<Partition> partitionServiceName, final Partition partition) {
-    final int partitionId = partition.getInfo().getPartitionId();
+    final int partitionId = partition.getPartitionId();
 
     final Builder streamProcessorServiceBuilder =
         streamProcessorServiceFactory

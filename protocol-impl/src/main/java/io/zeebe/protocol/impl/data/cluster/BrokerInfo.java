@@ -15,16 +15,29 @@
  */
 package io.zeebe.protocol.impl.data.cluster;
 
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.impl.Loggers;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.function.Consumer;
 
 public class BrokerInfo {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  static {
+    // access properties instead of getters
+    OBJECT_MAPPER.setVisibility(PropertyAccessor.ALL, NONE);
+    OBJECT_MAPPER.setVisibility(PropertyAccessor.FIELD, ANY);
+  }
 
   public static final String PROPERTY_NAME = "brokerInfo";
   public static final String CLIENT_API_PROPERTY = "client";
@@ -37,10 +50,10 @@ public class BrokerInfo {
   private int partitionsCount;
   private int clusterSize;
   private int replicationFactor;
-  private Map<String, String> addresses;
+  private final Map<String, String> addresses;
 
   // dynamic topology info
-  private Map<Integer, Boolean> partitionRoles;
+  private final Map<Integer, Boolean> partitionRoles;
 
   public static BrokerInfo fromProperties(Properties properties) {
     BrokerInfo brokerInfo = null;
@@ -58,6 +71,19 @@ public class BrokerInfo {
     return brokerInfo;
   }
 
+  public static void writeIntoProperties(Properties memberProperties, BrokerInfo distributionInfo) {
+    try {
+      memberProperties.setProperty(
+          PROPERTY_NAME, OBJECT_MAPPER.writeValueAsString(distributionInfo));
+    } catch (JsonProcessingException e) {
+      Loggers.PROTOCOL_LOGGER.error(
+          "Couldn't write broker info {} into member properties {}",
+          distributionInfo,
+          memberProperties,
+          e);
+    }
+  }
+
   public BrokerInfo() {
     addresses = new HashMap<>();
     partitionRoles = new HashMap<>();
@@ -71,30 +97,45 @@ public class BrokerInfo {
     this.replicationFactor = replicationFactor;
   }
 
-  public BrokerInfo setApiAddress(String apiName, String address) {
+  public void setApiAddress(String apiName, String address) {
     addresses.put(apiName, address);
+  }
+
+  public Set<Integer> getPartitions() {
+    return partitionRoles.keySet();
+  }
+
+  public void addLeaderForPartition(int partition) {
+    partitionRoles.put(partition, true);
+  }
+
+  public void addFollowerForPartition(int partition) {
+    partitionRoles.put(partition, false);
+  }
+
+  public BrokerInfo consumePartitions(
+      Consumer<Integer> leaderPartitionConsumer, Consumer<Integer> followerPartitionsConsumer) {
+    return consumePartitions(p -> {}, leaderPartitionConsumer, followerPartitionsConsumer);
+  }
+
+  public BrokerInfo consumePartitions(
+      Consumer<Integer> partitionConsumer,
+      Consumer<Integer> leaderPartitionConsumer,
+      Consumer<Integer> followerPartitionsConsumer) {
+    partitionRoles.forEach(
+        (partition, state) -> {
+          partitionConsumer.accept(partition);
+          if (state) {
+            leaderPartitionConsumer.accept(partition);
+          } else {
+            followerPartitionsConsumer.accept(partition);
+          }
+        });
     return this;
-  }
-
-  public BrokerInfo setPartitionRole(int partition, boolean isLeader) {
-    partitionRoles.put(partition, isLeader);
-    return this;
-  }
-
-  public Map<String, String> getAddresses() {
-    return addresses;
-  }
-
-  public Map<Integer, Boolean> getPartitionRoles() {
-    return partitionRoles;
   }
 
   public String getApiAddress(String apiName) {
     return addresses.get(apiName);
-  }
-
-  public Boolean getPartitionNodeRole(int partition) {
-    return partitionRoles.get(partition);
   }
 
   public int getNodeId() {

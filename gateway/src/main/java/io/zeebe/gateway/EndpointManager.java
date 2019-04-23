@@ -60,6 +60,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.msgpack.MsgpackPropertyException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
@@ -133,7 +134,14 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
               if (topology.getLeaderForPartition(partitionId) == brokerId) {
                 partitionBuilder.setRole(PartitionBrokerRole.LEADER);
               } else {
-                partitionBuilder.setRole(PartitionBrokerRole.FOLLOWER);
+                final List<Integer> followersForPartition =
+                    topology.getFollowersForPartition(partitionId);
+
+                if (followersForPartition != null && followersForPartition.contains(brokerId)) {
+                  partitionBuilder.setRole(PartitionBrokerRole.FOLLOWER);
+                } else {
+                  return;
+                }
               }
               brokerInfo.addPartitions(partitionBuilder);
             });

@@ -19,13 +19,11 @@ package io.zeebe.broker.clustering.base.topology;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.RaftState;
-import io.zeebe.transport.SocketAddress;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
 import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.IntHashSet;
 import org.slf4j.Logger;
 
 /**
@@ -37,7 +35,7 @@ public class Topology {
 
   private final NodeInfo local;
 
-  private final Int2ObjectHashMap<PartitionInfo> partitions = new Int2ObjectHashMap<>();
+  private final IntHashSet partitions = new IntHashSet();
   private final List<NodeInfo> members = new ArrayList<>();
 
   private final Int2ObjectHashMap<NodeInfo> partitionLeaders = new Int2ObjectHashMap<>();
@@ -86,21 +84,6 @@ public class Topology {
     return member;
   }
 
-  protected NodeInfo getMemberByApi(
-      Function<NodeInfo, SocketAddress> apiAddressMapper, SocketAddress apiAddress) {
-    NodeInfo member = null;
-
-    for (int i = 0; i < members.size() && member == null; i++) {
-      final NodeInfo current = members.get(i);
-
-      if (apiAddressMapper.apply(current).equals(apiAddress)) {
-        member = current;
-      }
-    }
-
-    return member;
-  }
-
   public List<NodeInfo> getMembers() {
     return members;
   }
@@ -113,8 +96,8 @@ public class Topology {
     return partitionFollowers.getOrDefault(partitionId, Collections.emptyList());
   }
 
-  public Collection<PartitionInfo> getPartitions() {
-    return new ArrayList<>(partitions.values());
+  public IntHashSet getPartitions() {
+    return partitions;
   }
 
   public boolean addMember(NodeInfo member) {
@@ -129,55 +112,28 @@ public class Topology {
   public void removeMember(NodeInfo member) {
     LOG.debug("Removing {} from list of known members", member);
 
-    for (PartitionInfo partition : member.getFollowers()) {
-      final List<NodeInfo> followers = partitionFollowers.get(partition.getPartitionId());
+    for (int partitionId : member.getFollowers()) {
+      final List<NodeInfo> followers = partitionFollowers.get(partitionId);
 
       if (followers != null) {
         followers.remove(member);
       }
     }
 
-    for (PartitionInfo partition : member.getLeaders()) {
-      partitionLeaders.remove(partition.getPartitionId());
+    for (int partitionId : member.getLeaders()) {
+      partitionLeaders.remove(partitionId);
     }
 
     members.remove(member);
   }
 
-  public void removePartitionForMember(int partitionId, NodeInfo memberInfo) {
-    final PartitionInfo partition = partitions.get(partitionId);
-    if (partition == null) {
-      return;
-    }
-
-    LOG.debug("Removing {} list of known partitions", partition);
-
-    memberInfo.removeLeader(partition);
-    memberInfo.removeFollower(partition);
-
-    final List<NodeInfo> followers = partitionFollowers.get(partitionId);
-    if (followers != null) {
-      followers.remove(memberInfo);
-    }
-
-    final NodeInfo member = partitionLeaders.get(partitionId);
-    if (member != null && member.equals(memberInfo)) {
-      partitionLeaders.remove(partitionId);
-    }
-  }
-
-  public PartitionInfo updatePartition(int partitionId, NodeInfo member, RaftState state) {
+  public void updatePartition(int partitionId, NodeInfo member, RaftState state) {
     List<NodeInfo> followers = partitionFollowers.get(partitionId);
 
-    PartitionInfo partition = partitions.get(partitionId);
-    if (partition == null) {
-      partition = new PartitionInfo(partitionId);
-      partitions.put(partitionId, partition);
-    }
-
+    partitions.add(partitionId);
     LOG.debug(
         "Updating partition information for partition {} on {} with state {}",
-        partition,
+        partitionId,
         member,
         state);
 
@@ -189,8 +145,8 @@ public class Topology {
           }
           partitionLeaders.put(partitionId, member);
 
-          member.removeFollower(partition);
-          member.addLeader(partition);
+          member.removeFollower(partitionId);
+          member.addLeader(partitionId);
           break;
 
         case FOLLOWER:
@@ -205,12 +161,10 @@ public class Topology {
             followers.add(member);
           }
 
-          member.removeLeader(partition);
-          member.addFollower(partition);
+          member.removeLeader(partitionId);
+          member.addFollower(partitionId);
           break;
       }
     }
-
-    return partition;
   }
 }

@@ -155,11 +155,11 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
   }
 
   public void addPartition(final Partition partition) {
-    cmdQueue.add(() -> leaderPartitions.put(partition.getInfo().getPartitionId(), partition));
+    cmdQueue.add(() -> leaderPartitions.put(partition.getPartitionId(), partition));
   }
 
   public void removePartition(final Partition partition) {
-    cmdQueue.add(() -> leaderPartitions.remove(partition.getInfo().getPartitionId()));
+    cmdQueue.add(() -> leaderPartitions.remove(partition.getPartitionId()));
   }
 
   @Override
