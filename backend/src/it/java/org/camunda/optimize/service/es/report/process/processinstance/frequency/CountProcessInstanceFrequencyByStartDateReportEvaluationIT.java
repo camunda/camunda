@@ -202,7 +202,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     ));
     reportData.setFilter(Collections.singletonList(new StartDateFilterDto(dateFilterDataDto)));
 
-    final ProcessReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
