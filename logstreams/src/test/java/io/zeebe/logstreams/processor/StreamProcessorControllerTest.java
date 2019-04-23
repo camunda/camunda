@@ -48,6 +48,7 @@ import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.util.exception.RecoverableException;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
@@ -96,6 +97,8 @@ public class StreamProcessorControllerTest {
   private ZeebeDb zeebeDb;
   private DbContext dbContext;
   private StateStorage stateStorage;
+  private ActorFuture<Void> openedFuture;
+  private CountDownLatch processorCreated;
 
   @Before
   public void setup() throws Exception {
@@ -463,7 +466,10 @@ public class StreamProcessorControllerTest {
     final List<LoggedEvent> seenEventsBefore = streamProcessor.getEvents();
 
     // when
+    processorCreated = new CountDownLatch(1);
     streamProcessorController.openAsync().join();
+    processorCreated.await();
+    openedFuture.join();
     final long secondEventPosition = writeEventAndWaitUntilProcessed(EVENT_2);
 
     // then
@@ -672,7 +678,7 @@ public class StreamProcessorControllerTest {
     inOrder.verifyNoMoreInteractions();
   }
 
-  private void installStreamProcessorService() throws IOException {
+  private void installStreamProcessorService() throws Exception {
     stateStorage = createStateStorage();
     snapshotController =
         spy(
@@ -692,6 +698,7 @@ public class StreamProcessorControllerTest {
                 },
                 stateStorage));
 
+    processorCreated = new CountDownLatch(1);
     streamProcessorService =
         LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID)
             .logStream(logStreamRule.getLogStream())
@@ -700,16 +707,25 @@ public class StreamProcessorControllerTest {
             .serviceContainer(logStreamRule.getServiceContainer())
             .snapshotController(snapshotController)
             .maxSnapshots(MAX_SNAPSHOTS)
-            .streamProcessorFactory(this::createStreamProcessor)
+            .streamProcessorFactory(
+                (db, ctx) -> {
+                  openedFuture = new CompletableActorFuture<>();
+                  processorCreated.countDown();
+                  return createStreamProcessor(db, openedFuture);
+                })
             .snapshotPeriod(SNAPSHOT_INTERVAL)
             .build()
             .join();
 
+    processorCreated.await();
+    openedFuture.join();
+    openedFuture = null;
+
     streamProcessorController = streamProcessorService.getController();
   }
 
-  private StreamProcessor createStreamProcessor(ZeebeDb zeebeDb, DbContext dbContext) {
-    streamProcessor = RecordingStreamProcessor.createSpy(zeebeDb);
+  private StreamProcessor createStreamProcessor(ZeebeDb zeebeDb, ActorFuture<Void> openFuture) {
+    streamProcessor = RecordingStreamProcessor.createSpy(zeebeDb, openFuture);
     changeRecordingStreamProcessor.accept(streamProcessor);
     eventProcessor = streamProcessor.getEventProcessorSpy();
     return streamProcessor;

@@ -25,6 +25,7 @@ import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,6 +51,7 @@ public class RecordingStreamProcessor implements StreamProcessor {
               failedEvents.incrementAndGet();
             }
           });
+  private final ActorFuture<Void> openFuture;
 
   private StreamProcessorContext context = null;
   private long failedEventPosition;
@@ -57,18 +59,20 @@ public class RecordingStreamProcessor implements StreamProcessor {
   private final ColumnFamily<DbString, DbLong> lastProcessedPositionColumnFamily;
   private final DbLong valueInstance;
 
-  public RecordingStreamProcessor(ZeebeDb zeebeDb) {
+  public RecordingStreamProcessor(ZeebeDb zeebeDb, ActorFuture<Void> openFuture) {
     keyInstance = new DbString();
     keyInstance.wrapString(LAST_PROCESSED_EVENT);
     valueInstance = new DbLong();
     lastProcessedPositionColumnFamily =
         zeebeDb.createColumnFamily(
             DefaultColumnFamily.DEFAULT, zeebeDb.createContext(), keyInstance, valueInstance);
+    this.openFuture = openFuture;
   }
 
   @Override
   public void onOpen(StreamProcessorContext context) {
     this.context = context;
+    openFuture.complete(null);
   }
 
   @Override
@@ -101,8 +105,8 @@ public class RecordingStreamProcessor implements StreamProcessor {
     return value == null ? NO_EVENTS_PROCESSED : value.getValue();
   }
 
-  public static RecordingStreamProcessor createSpy(ZeebeDb db) {
-    return spy(new RecordingStreamProcessor(db));
+  public static RecordingStreamProcessor createSpy(ZeebeDb db, ActorFuture<Void> openFuture) {
+    return spy(new RecordingStreamProcessor(db, openFuture));
   }
 
   public void suspend() {

@@ -72,6 +72,8 @@ import io.zeebe.protocol.intent.Intent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -403,7 +405,7 @@ public class TestStreams {
 
       currentStreamProcessorService = null;
       currentController = null;
-      currentStreamProcessor.wrap(null);
+      currentStreamProcessor.wrap(null, null);
     }
 
     @Override
@@ -429,18 +431,24 @@ public class TestStreams {
       final StateStorage stateStorage = getStateStorageFactory().create(streamProcessorId, name);
       currentSnapshotController = spy(new StateSnapshotController(zeebeDbFactory, stateStorage));
 
-      return LogStreams.createStreamProcessor(name, streamProcessorId)
-          .logStream(stream)
-          .snapshotController(currentSnapshotController)
-          .actorScheduler(actorScheduler)
-          .serviceContainer(serviceContainer)
-          .streamProcessorFactory(
-              (zeebeDb, dbContext) -> {
-                currentStreamProcessor.wrap(factory.createProcessor(zeebeDb, dbContext));
-                return currentStreamProcessor;
-              })
-          .build()
-          .join();
+      final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
+
+      final StreamProcessorService processorService =
+          LogStreams.createStreamProcessor(name, streamProcessorId)
+              .logStream(stream)
+              .snapshotController(currentSnapshotController)
+              .actorScheduler(actorScheduler)
+              .serviceContainer(serviceContainer)
+              .streamProcessorFactory(
+                  (zeebeDb, dbContext) -> {
+                    currentStreamProcessor.wrap(
+                        factory.createProcessor(zeebeDb, dbContext), openFuture);
+                    return currentStreamProcessor;
+                  })
+              .build()
+              .join();
+      openFuture.join();
+      return processorService;
     }
   }
 
@@ -454,9 +462,11 @@ public class TestStreams {
     private final ErrorRecord errorRecord = new ErrorRecord();
     protected boolean blockAfterCurrentEvent;
     private StreamProcessorContext context;
+    private ActorFuture<Void> openFuture;
 
-    public void wrap(StreamProcessor streamProcessor) {
+    public void wrap(StreamProcessor streamProcessor, ActorFuture<Void> openFuture) {
       wrappedProcessor = streamProcessor;
+      this.openFuture = openFuture;
     }
 
     public void resume() {
@@ -522,6 +532,7 @@ public class TestStreams {
     public void onOpen(final StreamProcessorContext context) {
       this.context = context;
       wrappedProcessor.onOpen(this.context);
+      openFuture.complete(null);
     }
 
     @Override
