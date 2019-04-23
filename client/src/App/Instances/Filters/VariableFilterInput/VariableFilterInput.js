@@ -26,12 +26,14 @@ export default function VariableFilterInput({onFilterChange}) {
       <Styled.TextInput
         placeholder="Variable"
         name="name"
+        data-test="nameInput"
         onChange={e => setName(e.target.value)}
         onBlur={handleBlur}
       />
       <Styled.TextInput
         placeholder="Value"
         name="value"
+        data-test="valueInput"
         onChange={e => setValue(e.target.value)}
         onBlur={handleBlur}
       />
