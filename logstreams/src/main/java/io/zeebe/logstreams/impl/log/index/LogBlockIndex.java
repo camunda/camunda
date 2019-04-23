@@ -70,6 +70,7 @@ public class LogBlockIndex {
     if (zeebeDb != null) {
       stateSnapshotController.close();
       zeebeDb = null;
+      indexColumnFamily = null;
     }
   }
 

@@ -42,6 +42,7 @@ import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -108,26 +109,28 @@ public class StreamProcessorReprocessingTest {
     when(eventFilter.applies(any())).thenReturn(true);
   }
 
-  private StreamProcessorService openStreamProcessorController() {
-    return openStreamProcessorControllerAsync(() -> {}).join();
+  private void openStreamProcessorController() {
+    openStreamProcessorControllerAsync(() -> {}).join();
   }
 
-  private StreamProcessorService openStreamProcessorController(Runnable runnable) {
-    return openStreamProcessorControllerAsync(runnable).join();
+  private void openStreamProcessorController(Runnable runnable) {
+    openStreamProcessorControllerAsync(runnable).join();
   }
 
-  private ActorFuture<StreamProcessorService> openStreamProcessorControllerAsync(
-      Runnable runnable) {
-    return openStreamProcessorControllerAsync(
+  private ActorFuture<Void> openStreamProcessorControllerAsync(Runnable runnable) {
+    final ActorFuture<Void> openedFuture = new CompletableActorFuture<>();
+    openStreamProcessorControllerAsync(
         (zeebeDb, dbContext) -> {
-          createStreamProcessor(zeebeDb);
+          createStreamProcessor(zeebeDb, openedFuture);
           runnable.run();
           return streamProcessor;
         });
+    return openedFuture;
   }
 
-  private StreamProcessor createStreamProcessor(ZeebeDb zeebeDb) {
-    final RecordingStreamProcessor recordingProcessor = RecordingStreamProcessor.createSpy(zeebeDb);
+  private StreamProcessor createStreamProcessor(ZeebeDb zeebeDb, ActorFuture<Void> openFuture) {
+    final RecordingStreamProcessor recordingProcessor =
+        RecordingStreamProcessor.createSpy(zeebeDb, openFuture);
     this.streamProcessor = recordingProcessor;
     eventProcessor = recordingProcessor.getEventProcessorSpy();
     return streamProcessor;
@@ -399,7 +402,7 @@ public class StreamProcessorReprocessingTest {
     final long eventPosition1 = writeEvent();
     writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
 
-    final ActorFuture<StreamProcessorService> future =
+    final ActorFuture<Void> future =
         openStreamProcessorControllerAsync(
             () -> {
               doThrow(new RuntimeException("expected")).when(streamProcessor).onEvent(any());

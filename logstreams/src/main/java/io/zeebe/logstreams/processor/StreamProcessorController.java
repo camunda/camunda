@@ -50,6 +50,7 @@ public class StreamProcessorController extends Actor {
 
   private final ActorScheduler actorScheduler;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
+
   private Phase phase = Phase.REPROCESSING;
 
   private long snapshotPosition = -1L;
@@ -106,7 +107,10 @@ public class StreamProcessorController extends Actor {
 
     logStreamReader.wrap(logStream);
     logStreamWriter.wrap(logStream);
+  }
 
+  @Override
+  protected void onActorStarted() {
     try {
       LOG.info("Recovering state of partition {} from snapshot", partitionId);
       snapshotPosition = recoverFromSnapshot();
@@ -117,20 +121,17 @@ public class StreamProcessorController extends Actor {
       LangUtil.rethrowUnchecked(e);
     }
 
-    processingStateMachine =
-        ProcessingStateMachine.builder()
-            .setStreamProcessorContext(streamProcessorContext)
-            .setMetrics(metrics)
-            .setStreamProcessor(streamProcessor)
-            .setDbContext(dbContext)
-            .setShouldProcessNext(() -> isOpened() && !isSuspended())
-            .setAbortCondition(this::isClosed)
-            .build();
-  }
-
-  @Override
-  protected void onActorStarted() {
     try {
+      processingStateMachine =
+          ProcessingStateMachine.builder()
+              .setStreamProcessorContext(streamProcessorContext)
+              .setMetrics(metrics)
+              .setStreamProcessor(streamProcessor)
+              .setDbContext(dbContext)
+              .setShouldProcessNext(() -> isOpened() && !isSuspended())
+              .setAbortCondition(this::isClosed)
+              .build();
+
       final ReProcessingStateMachine reProcessingStateMachine =
           ReProcessingStateMachine.builder()
               .setStreamProcessorContext(streamProcessorContext)
