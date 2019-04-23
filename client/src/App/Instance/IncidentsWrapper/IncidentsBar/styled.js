@@ -6,9 +6,10 @@
 
 import styled from 'styled-components';
 import {INCIDENTS_BAR_HEIGHT} from 'modules/constants.js';
-import {Colors} from 'modules/theme';
+import {Colors, themed, themeStyle} from 'modules/theme';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
+import {default as TransitionComponent} from 'modules/components/Transition';
 
 export const IncidentsBar = styled.button`
   display: flex;
@@ -28,10 +29,30 @@ export const IncidentsBar = styled.button`
   cursor: pointer;
 `;
 
+export const Transition = themed(styled(TransitionComponent)`
+  &.transition-enter {
+    transform: rotate(-90deg);
+  }
+  &.transition-enter-active {
+    transform: none;
+    transition: transform ${({timeout}) => timeout.enter + 'ms'};
+  }
+
+  &.transition-enter-done {
+    transform: none;
+  }
+
+  &.transition-exit {
+    transform: none;
+  }
+  &.transition-exit-active {
+    transform: rotate(-90deg);
+    transition: transform ${({timeout}) => timeout.exit + 'ms'};
+  }
+`);
+
 export const Arrow = styled(withStrippedProps(['isFlipped'])(Down))`
   margin-right: 11px;
   position: relative;
-
-  transform: ${props => (props.isFlipped ? 'none' : 'rotate(-90deg)')};
-  left: ${props => (props.isFlipped ? '2px' : '0')};
+  transform: rotate(-90deg);
 `;

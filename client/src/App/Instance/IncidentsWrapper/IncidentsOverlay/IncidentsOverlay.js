@@ -10,7 +10,7 @@ import PropTypes from 'prop-types';
 import * as Styled from './styled';
 
 function IncidentsOverlay(props) {
-  return <Styled.Overlay>{props.children}</Styled.Overlay>;
+  return <Styled.Overlay {...props}>{props.children}</Styled.Overlay>;
 }
 
 IncidentsOverlay.propTypes = {

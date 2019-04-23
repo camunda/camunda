@@ -15,6 +15,8 @@ import IncidentsFilter from './IncidentsFilter';
 import {SORT_ORDER} from 'modules/constants';
 import {sortData} from './service';
 
+import * as Styled from './styled';
+
 function IncidentsWrapper(props) {
   const {
     incidents,
@@ -34,6 +36,7 @@ function IncidentsWrapper(props) {
   });
   const [selectedFlowNodes, setSelectedFlowNodes] = useState([]);
   const [selectedErrorTypes, setSelectedErrorTypes] = useState([]);
+  const [isInTransition, setIsInTransition] = useState(false);
 
   const prevErrorTypes = usePrevious(errorTypes);
   const prevFlowNodes = usePrevious(flowNodes);
@@ -71,7 +74,7 @@ function IncidentsWrapper(props) {
   }
 
   function handleToggle() {
-    setIsOpen(!isOpen);
+    !isInTransition && setIsOpen(!isOpen);
   }
 
   function handleSelection(selectedFilters, updateFilterState) {
@@ -140,6 +143,22 @@ function IncidentsWrapper(props) {
     sorting.sortOrder
   );
 
+  const onEnter = () => {
+    setIsInTransition(true);
+  };
+
+  const onEntered = () => {
+    setIsInTransition(false);
+  };
+
+  const onExit = () => {
+    setIsInTransition(true);
+  };
+
+  const onExited = () => {
+    setIsInTransition(false);
+  };
+
   return (
     <>
       <IncidentsBar
@@ -148,7 +167,16 @@ function IncidentsWrapper(props) {
         onClick={handleToggle}
         isArrowFlipped={isOpen}
       />
-      {isOpen && (
+      <Styled.Transition
+        in={isOpen}
+        onEnter={onEnter}
+        onEntered={onEntered}
+        onExit={onExit}
+        onExited={onExited}
+        mountOnEnter
+        unmountOnExit
+        timeout={{enter: 400, exit: 400}}
+      >
         <IncidentsOverlay>
           <IncidentsFilter
             flowNodes={flowNodes}
@@ -176,7 +204,7 @@ function IncidentsWrapper(props) {
             onSort={handleSort}
           />
         </IncidentsOverlay>
-      )}
+      </Styled.Transition>
     </>
   );
 }
