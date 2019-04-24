@@ -19,7 +19,7 @@
     </composite>
 
     <composite name="blob">
-      <type name="length" primitiveType="uint32" maxValue="524288"/>
+      <type name="length" primitiveType="uint32" maxValue="2147483647"/>
       <type name="varData" primitiveType="uint8" length="0"/>
     </composite>
 
@@ -53,6 +53,13 @@
   <sbe:message name="PushDeploymentResponse" id="14">
     <field name="partitionId" id="0" type="uint16"/>
     <field name="deploymentKey" id="1" type="uint64"/>
+  </sbe:message>
+
+  <sbe:message name="SnapshotChunk" id="15">
+    <field name="snapshotPosition" id="0" type="uint64"/>
+    <field name="totalCount" id="1" type="int32"/>
+    <data name="chunkName" id="2" type="varDataEncoding"/>
+    <data name="content" id="3" type="blob"/>
   </sbe:message>
 
 </sbe:messageSchema>

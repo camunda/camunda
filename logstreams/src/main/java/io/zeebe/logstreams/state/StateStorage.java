@@ -61,6 +61,12 @@ public class StateStorage {
     return snapshotsDirectory;
   }
 
+  public File getTmpSnapshotDirectoryFor(String position) {
+    final String path = String.format("%s-%s", position, TEMP_SNAPSHOT_DIRECTORY);
+
+    return new File(snapshotsDirectory, path);
+  }
+
   public File getSnapshotDirectoryFor(long position) {
     final String path = String.format("%d", position);
 

@@ -91,6 +91,7 @@ public class ClusteringRule extends ExternalResource {
   // cluster
   private ZeebeClient client;
   private Gateway gateway;
+  private AtomixCluster atomixCluster;
 
   public ClusteringRule() {
     this(3);
@@ -164,7 +165,8 @@ public class ClusteringRule extends ExternalResource {
       waitForPartitionReplicationFactor();
       LOG.info("Full replication factor");
       waitUntilBrokersInTopology();
-      LOG.info("All brokers in topology");
+      LOG.info("All brokers in topology {}", getTopologyFromClient());
+
     } catch (Error e) {
       // If the previous waits timeouts, the brokers are not closed automatically.
       closables.after();
@@ -172,7 +174,7 @@ public class ClusteringRule extends ExternalResource {
     }
   }
 
-  private Broker getBroker(final int nodeId) {
+  public Broker getBroker(final int nodeId) {
     return brokers.computeIfAbsent(nodeId, this::createBroker);
   }
 
@@ -259,7 +261,7 @@ public class ClusteringRule extends ExternalResource {
     final ClusterCfg clusterCfg = gatewayCfg.getCluster();
 
     // copied from StandaloneGateway
-    final AtomixCluster atomixCluster =
+    atomixCluster =
         AtomixCluster.builder()
             .withMemberId(clusterCfg.getMemberId())
             .withAddress(Address.from(clusterCfg.getHost(), clusterCfg.getPort()))
@@ -270,7 +272,7 @@ public class ClusteringRule extends ExternalResource {
                     .build())
             .build();
 
-    atomixCluster.start();
+    atomixCluster.start().join();
 
     final Gateway gateway = new Gateway(gatewayCfg, atomixCluster);
     closables.manage(gateway::stop);
@@ -524,6 +526,10 @@ public class ClusteringRule extends ExternalResource {
     }
   }
 
+  public AtomixCluster getAtomixCluster() {
+    return atomixCluster;
+  }
+
   public SocketAddress getGatewayAddress() {
     return gateway.getGatewayCfg().getNetwork().toSocketAddress();
   }
@@ -534,5 +540,12 @@ public class ClusteringRule extends ExternalResource {
 
   public List<Integer> getPartitionIds() {
     return partitionIds;
+  }
+
+  public List<Broker> getOtherBrokerObjects(int leaderNodeId) {
+    return brokers.keySet().stream()
+        .filter(id -> id != leaderNodeId)
+        .map(brokers::get)
+        .collect(Collectors.toList());
   }
 }

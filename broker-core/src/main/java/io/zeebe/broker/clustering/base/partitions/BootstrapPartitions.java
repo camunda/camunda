@@ -26,7 +26,6 @@ import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.distributedlog.StorageConfiguration;
 import io.zeebe.distributedlog.StorageConfigurationManager;
 import io.zeebe.servicecontainer.Injector;
@@ -54,7 +53,6 @@ public class BootstrapPartitions implements Service<Void> {
 
   public BootstrapPartitions(final BrokerCfg brokerCfg) {
     this.brokerCfg = brokerCfg;
-    final ClusterCfg cluster = brokerCfg.getCluster();
   }
 
   @Override
@@ -103,7 +101,7 @@ public class BootstrapPartitions implements Service<Void> {
         partitionInstallServiceName(partitionName);
 
     final PartitionInstallService partitionInstallService =
-        new PartitionInstallService(configuration);
+        new PartitionInstallService(atomix.getEventService(), configuration);
 
     startContext.createService(partitionInstallServiceName, partitionInstallService).install();
   }

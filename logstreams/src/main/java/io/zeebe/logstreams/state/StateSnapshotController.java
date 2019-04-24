@@ -15,29 +15,42 @@
  */
 package io.zeebe.logstreams.state;
 
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
+
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.logstreams.impl.Loggers;
+import io.zeebe.logstreams.processor.SnapshotChunk;
+import io.zeebe.logstreams.processor.SnapshotReplication;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 /** Controls how snapshot/recovery operations are performed */
 public class StateSnapshotController implements SnapshotController {
-  private static final Logger LOG = Loggers.ROCKSDB_LOGGER;
+  private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
 
   private final StateStorage storage;
+  private final SnapshotReplication replication;
   private final ZeebeDbFactory zeebeDbFactory;
   private ZeebeDb db;
 
   public StateSnapshotController(final ZeebeDbFactory rocksDbFactory, final StateStorage storage) {
-    this.zeebeDbFactory = rocksDbFactory;
+    this(rocksDbFactory, storage, new NoneSnapshotReplication());
+  }
+
+  public StateSnapshotController(
+      ZeebeDbFactory zeebeDbFactory, StateStorage storage, SnapshotReplication replication) {
     this.storage = storage;
+    this.replication = replication;
+    this.zeebeDbFactory = zeebeDbFactory;
   }
 
   @Override
@@ -86,6 +99,93 @@ public class StateSnapshotController implements SnapshotController {
         snapshotDir.getAbsolutePath());
 
     Files.move(previousLocation.toPath(), snapshotDir.toPath());
+  }
+
+  public void replicateLatestSnapshot(Consumer<Runnable> executor) {
+    final List<File> snapshots = storage.listByPositionDesc();
+
+    if (snapshots != null && !snapshots.isEmpty()) {
+      final File latestSnapshotDirectory = snapshots.get(0);
+      LOG.debug("Start replicating latest snapshot {}", latestSnapshotDirectory.toPath());
+      final long snapshotPosition = Long.parseLong(latestSnapshotDirectory.getName());
+
+      final File[] files = latestSnapshotDirectory.listFiles();
+      for (File snapshotChunk : files) {
+        executor.accept(
+            () -> {
+              try {
+                LOG.debug("Replicate snapshot chunk {}", snapshotChunk.toPath());
+                final byte[] content = Files.readAllBytes(snapshotChunk.toPath());
+                replication.replicate(
+                    new SnapshotChunkImpl(
+                        snapshotPosition, files.length, snapshotChunk.getName(), content));
+              } catch (IOException ioe) {
+                LOG.error(
+                    "Unexpected error on reading snapshot chunk from file '{}'.",
+                    snapshotChunk,
+                    ioe);
+              }
+            });
+      }
+    }
+  }
+
+  public void consumeReplicatedSnapshots() {
+    replication.consume(
+        (snapshotChunk -> {
+          final String snapshotName = Long.toString(snapshotChunk.getSnapshotPosition());
+          LOG.debug("Consume snapshot chunk {}", snapshotName);
+          final File tmpSnapshotDirectory = storage.getTmpSnapshotDirectoryFor(snapshotName);
+
+          if (!tmpSnapshotDirectory.exists()) {
+            tmpSnapshotDirectory.mkdirs();
+          }
+
+          final File snapshotFile = new File(tmpSnapshotDirectory, snapshotChunk.getChunkName());
+          if (!snapshotFile.exists()) {
+            writeReceivedSnapshotChunk(snapshotChunk, tmpSnapshotDirectory, snapshotFile);
+          } else {
+            LOG.debug("Received a snapshot file which already exist '{}'.", snapshotFile);
+          }
+        }));
+  }
+
+  private void writeReceivedSnapshotChunk(
+      SnapshotChunk snapshotChunk, File tmpSnapshotDirectory, File snapshotFile) {
+    try {
+      Files.write(
+          snapshotFile.toPath(), snapshotChunk.getContent(), CREATE_NEW, StandardOpenOption.WRITE);
+      LOG.debug("Wrote replicated snapshot chunk to file {}", snapshotFile.toPath());
+    } catch (IOException ioe) {
+      LOG.error(
+          "Unexpected error occurred on writing an snapshot chunk to '{}'.", snapshotFile, ioe);
+    }
+
+    try {
+      final int totalChunkCount = snapshotChunk.getTotalCount();
+      final int currentChunks = tmpSnapshotDirectory.listFiles().length;
+
+      if (currentChunks == totalChunkCount) {
+        final File validSnapshotDirectory =
+            storage.getSnapshotDirectoryFor(snapshotChunk.getSnapshotPosition());
+        LOG.debug(
+            "Received all snapshot chunks ({}/{}), snapshot is valid. Move to {}",
+            currentChunks,
+            totalChunkCount,
+            validSnapshotDirectory.toPath());
+        Files.move(tmpSnapshotDirectory.toPath(), validSnapshotDirectory.toPath());
+      } else {
+        LOG.debug(
+            "Waiting for more snapshot chunks, currently have {}/{}.",
+            currentChunks,
+            totalChunkCount);
+      }
+    } catch (IOException ioe) {
+      LOG.error(
+          "Unexpected error occurred on moving replicated snapshot from '{}'.",
+          tmpSnapshotDirectory.toPath(),
+          ioe);
+    }
   }
 
   @Override
@@ -181,5 +281,37 @@ public class StateSnapshotController implements SnapshotController {
 
   public boolean isDbOpened() {
     return db != null;
+  }
+
+  private final class SnapshotChunkImpl implements SnapshotChunk {
+    private final long snapshotPosition;
+    private final int totalCount;
+    private final String chunkName;
+    private final byte[] content;
+
+    SnapshotChunkImpl(long snapshotPosition, int totalCount, String chunkName, byte[] content) {
+      this.snapshotPosition = snapshotPosition;
+      this.totalCount = totalCount;
+      this.chunkName = chunkName;
+      this.content = content;
+    }
+
+    public long getSnapshotPosition() {
+      return snapshotPosition;
+    }
+
+    @Override
+    public String getChunkName() {
+      return chunkName;
+    }
+
+    @Override
+    public int getTotalCount() {
+      return totalCount;
+    }
+
+    public byte[] getContent() {
+      return content;
+    }
   }
 }

@@ -17,6 +17,7 @@ package io.zeebe.logstreams.spi;
 
 import io.zeebe.db.ZeebeDb;
 import java.io.IOException;
+import java.util.function.Consumer;
 
 public interface SnapshotController extends AutoCloseable {
   /**
@@ -38,6 +39,18 @@ public interface SnapshotController extends AutoCloseable {
    * @throws IOException thrown if moving the snapshot fails
    */
   void moveValidSnapshot(long lowerBoundSnapshotPosition) throws IOException;
+
+  /**
+   * Replicates the latest valid snapshot. The given executor is called for each snapshot chunk in
+   * the latest snapshot. The executor should execute/run the given Runnable in a specific
+   * environment (e.g. ActorThread).
+   *
+   * @param executor executor which executed the given Runnable
+   */
+  void replicateLatestSnapshot(Consumer<Runnable> executor);
+
+  /** Registers to consumes replicated snapshots. */
+  void consumeReplicatedSnapshots();
 
   /**
    * Recovers the state from the latest snapshot and returns the lower bound snapshot position.

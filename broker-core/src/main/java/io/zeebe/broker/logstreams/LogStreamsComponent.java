@@ -23,8 +23,6 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOL
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.ZB_STREAM_PROCESSOR_SERVICE_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 import static io.zeebe.broker.transport.TransportServiceNames.serverTransport;
 
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
@@ -60,9 +58,6 @@ public class LogStreamsComponent implements Component {
             serverTransport(CLIENT_API_SERVER_NAME),
             streamProcessorService.getClientApiTransportInjector())
         .dependency(TOPOLOGY_MANAGER_SERVICE, streamProcessorService.getTopologyManagerInjector())
-        .dependency(
-            clientTransport(MANAGEMENT_API_CLIENT_NAME),
-            streamProcessorService.getManagementApiClientInjector())
         .dependency(
             STREAM_PROCESSOR_SERVICE_FACTORY,
             streamProcessorService.getStreamProcessorServiceFactoryInjector())
