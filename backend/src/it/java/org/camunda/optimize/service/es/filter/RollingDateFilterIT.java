@@ -229,6 +229,16 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
     MatcherAssert.assertThat(resultData.size(), is(2));
     MatcherAssert.assertThat(result.getIsComplete(), is(false));
+
+    MatcherAssert.assertThat(
+      resultData.get(0).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
+    );
+
+    MatcherAssert.assertThat(
+      resultData.get(1).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
+    );
   }
 
   private void adjustProcessInstanceDates(String processInstanceId,

@@ -146,7 +146,7 @@ public class DateQueryFilterIT {
   }
 
   @Test
-  public void testGetHeatMapWithGteEndDateCriteria() throws Exception {
+  public void testGetHeatMapWithGteEndDateCriteria() {
     //given
     startAndImportSimpleProcess();
 
@@ -191,7 +191,7 @@ public class DateQueryFilterIT {
   }
 
   @Test
-  public void testGetHeatMapWithLteEndDateCriteria() throws Exception {
+  public void testGetHeatMapWithLteEndDateCriteria() {
     //given
     startAndImportSimpleProcess();
 
@@ -322,6 +322,11 @@ public class DateQueryFilterIT {
     List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
     MatcherAssert.assertThat(resultData.size(), is(1));
     MatcherAssert.assertThat(result.getIsComplete(), is(false));
+
+    MatcherAssert.assertThat(
+      resultData.get(0).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
+    );
   }
 
   @Test
@@ -423,6 +428,15 @@ public class DateQueryFilterIT {
     List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
     MatcherAssert.assertThat(resultData.size(), is(2));
     MatcherAssert.assertThat(result.getIsComplete(), is(false));
+
+    MatcherAssert.assertThat(
+      resultData.get(0).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
+    );
+    MatcherAssert.assertThat(
+      resultData.get(1).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
+    );
   }
 
   @Test
