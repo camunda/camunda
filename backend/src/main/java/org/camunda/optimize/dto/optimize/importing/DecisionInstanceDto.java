@@ -5,7 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.importing;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.time.OffsetDateTime;
@@ -14,32 +17,27 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+@Accessors(chain = true)
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 public class DecisionInstanceDto implements OptimizeDto {
 
   private String decisionInstanceId;
   private String processDefinitionId;
   private String processDefinitionKey;
-
   private String decisionDefinitionId;
   private String decisionDefinitionKey;
   private String decisionDefinitionVersion;
-
   private OffsetDateTime evaluationDateTime;
-
   private String processInstanceId;
   private String rootProcessInstanceId;
-
   private String activityId;
-
   private Double collectResultValue;
-
   private String rootDecisionInstanceId;
-
   private List<InputInstanceDto> inputs = new ArrayList<>();
   private List<OutputInstanceDto> outputs = new ArrayList<>();
-
   private Set<String> matchedRules = new HashSet<>();
-
   private String engine;
+  private String tenantId;
 }

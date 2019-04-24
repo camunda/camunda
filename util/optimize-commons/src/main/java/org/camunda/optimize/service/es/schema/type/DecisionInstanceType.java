@@ -54,6 +54,7 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
   public static final String MATCHED_RULES = "matchedRules";
 
   public static final String ENGINE = "engine";
+  public static final String TENANT_ID = "tenantId";
 
   public static final String MULTIVALUE_FIELD_DATE = "date";
   public static final String MULTIVALUE_FIELD_LONG = "long";
@@ -130,6 +131,9 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
               .field("type", "keyword")
             .endObject()
             .startObject(ENGINE)
+              .field("type", "keyword")
+            .endObject()
+            .startObject(TENANT_ID)
               .field("type", "keyword")
             .endObject();
     // @formatter:on

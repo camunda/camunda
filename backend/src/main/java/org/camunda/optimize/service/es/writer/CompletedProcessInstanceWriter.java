@@ -7,6 +7,9 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableSet;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
@@ -22,46 +25,47 @@ import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.BUSINESS_KEY;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DURATION;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ENGINE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STATE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+@AllArgsConstructor
 @Component
+@Slf4j
 public class CompletedProcessInstanceWriter {
-  private final Logger logger = LoggerFactory.getLogger(getClass());
-
+  private static final Set<String> PRIMITIVE_UPDATABLE_FIELDS = ImmutableSet.of(
+    PROCESS_DEFINITION_KEY, PROCESS_DEFINITION_VERSION, PROCESS_DEFINITION_ID,
+    BUSINESS_KEY, START_DATE, END_DATE, DURATION, STATE,
+    ENGINE, TENANT_ID
+  );
 
   private RestHighLevelClient esClient;
   private ObjectMapper objectMapper;
   private DateTimeFormatter dateTimeFormatter;
 
-  @Autowired
-  public CompletedProcessInstanceWriter(RestHighLevelClient esClient,
-                                        ObjectMapper objectMapper,
-                                        DateTimeFormatter dateTimeFormatter) {
-    this.esClient = esClient;
-    this.objectMapper = objectMapper;
-    this.dateTimeFormatter = dateTimeFormatter;
-  }
-
   public void importProcessInstances(List<ProcessInstanceDto> processInstances) throws Exception {
-    logger.debug("Writing [{}] completed process instances to elasticsearch", processInstances.size());
+    log.debug("Writing [{}] completed process instances to elasticsearch", processInstances.size());
 
     BulkRequest processInstanceBulkRequest = new BulkRequest();
 
@@ -71,7 +75,7 @@ public class CompletedProcessInstanceWriter {
     BulkResponse bulkResponse = esClient.bulk(processInstanceBulkRequest, RequestOptions.DEFAULT);
     if (bulkResponse.hasFailures()) {
       String errorMessage = String.format(
-        "There were failures while writing process instances with message: {}",
+        "There were failures while writing process instances with message: %s",
         bulkResponse.buildFailureMessage()
       );
       throw new OptimizeRuntimeException(errorMessage);
@@ -80,7 +84,7 @@ public class CompletedProcessInstanceWriter {
 
   public void deleteProcessInstancesByProcessDefinitionKeyAndEndDateOlderThan(final String processDefinitionKey,
                                                                               final OffsetDateTime endDate) {
-    logger.info(
+    log.info(
       "Deleting process instances for processDefinitionKey {} and endDate past {}",
       processDefinitionKey,
       endDate
@@ -106,16 +110,16 @@ public class CompletedProcessInstanceWriter {
         String reason =
           String.format("Could not delete process instances " +
                           "for process definition key [%s] and end date [%s].", processDefinitionKey, endDate);
-        logger.error(reason, e);
+        log.error(reason, e);
         throw new OptimizeRuntimeException(reason, e);
       }
 
-      logger.debug(
+      log.debug(
         "BulkByScrollResponse on deleting process instances for processDefinitionKey {}: {}",
         processDefinitionKey,
         bulkByScrollResponse
       );
-      logger.info(
+      log.info(
         "Deleted {} process instances for processDefinitionKey {} and endDate past {}",
         bulkByScrollResponse.getDeleted(),
         processDefinitionKey,
@@ -127,37 +131,16 @@ public class CompletedProcessInstanceWriter {
 
   }
 
-  private void addImportProcessInstanceRequest(BulkRequest bulkRequest, ProcessInstanceDto procInst) throws
-                                                                                                     JsonProcessingException {
-    String processInstanceId = procInst.getProcessInstanceId();
-    Map<String, Object> params = new HashMap<>();
-    params.put(ProcessInstanceType.START_DATE, dateTimeFormatter.format(procInst.getStartDate()));
-    String endDate = (procInst.getEndDate() != null) ? dateTimeFormatter.format(procInst.getEndDate()) : null;
-    if (endDate == null) {
-      logger.warn("End date should not be null for completed process instances!");
+  private void addImportProcessInstanceRequest(BulkRequest bulkRequest, ProcessInstanceDto procInst)
+    throws JsonProcessingException {
+
+    if (procInst.getEndDate() == null) {
+      log.warn("End date should not be null for completed process instances!");
     }
-    params.put(ProcessInstanceType.STATE, procInst.getState());
-    params.put(ProcessInstanceType.END_DATE, endDate);
-    params.put(ProcessInstanceType.ENGINE, procInst.getEngine());
-    params.put(ProcessInstanceType.DURATION, procInst.getDurationInMs());
-    params.put(ProcessInstanceType.PROCESS_DEFINITION_VERSION, procInst.getProcessDefinitionVersion());
-    params.put(ProcessInstanceType.BUSINESS_KEY, procInst.getBusinessKey());
 
-    Script updateScript = new Script(
-      ScriptType.INLINE,
-      Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.startDate = params.startDate; " +
-        "ctx._source.endDate = params.endDate; " +
-        "ctx._source.durationInMs = params.durationInMs;" +
-        "ctx._source.processDefinitionVersion = params.processDefinitionVersion;" +
-        "ctx._source.engine = params.engine;" +
-        "ctx._source.businessKey = params.businessKey;" +
-        "ctx._source.state = params.state;",
-      params
-    );
-
-    String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
-
+    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(PRIMITIVE_UPDATABLE_FIELDS, procInst);
+    final String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
+    final String processInstanceId = procInst.getProcessInstanceId();
     UpdateRequest request =
       new UpdateRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE), PROC_INSTANCE_TYPE, processInstanceId)
         .script(updateScript)

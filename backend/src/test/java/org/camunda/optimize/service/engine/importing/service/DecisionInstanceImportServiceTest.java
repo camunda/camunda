@@ -63,9 +63,8 @@ public class DecisionInstanceImportServiceTest {
       .thenReturn(Optional.of(VERSION_RESULT));
 
     this.underTest = new DecisionInstanceImportService(
-      decisionInstanceWriter, elasticsearchImportJobExecutor,
-      engineContext, decisionDefinitionVersionResolverService,
-      decisionInputImportAdapterProvider, decisionOutputImportAdapterProvider
+      elasticsearchImportJobExecutor, engineContext, decisionInstanceWriter,
+      decisionDefinitionVersionResolverService, decisionInputImportAdapterProvider, decisionOutputImportAdapterProvider
     );
   }
 

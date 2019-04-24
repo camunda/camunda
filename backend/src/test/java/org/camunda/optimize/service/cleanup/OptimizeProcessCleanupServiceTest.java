@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.cleanup;
 
 import org.apache.commons.collections.ListUtils;
-import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
@@ -285,7 +284,8 @@ public class OptimizeProcessCleanupServiceTest {
     final List<ProcessDefinitionOptimizeDto> processDefinitionOptimizeDtos = processDefinitionIds.stream()
       .map(this::createProcessDefinitionDto)
       .collect(Collectors.toList());
-    when(processDefinitionReader.fetchFullyImportedProcessDefinitionsAsService()).thenReturn(processDefinitionOptimizeDtos);
+    when(processDefinitionReader.fetchFullyImportedProcessDefinitionsAsService()).thenReturn(
+      processDefinitionOptimizeDtos);
     return processDefinitionIds;
   }
 
@@ -296,15 +296,8 @@ public class OptimizeProcessCleanupServiceTest {
   }
 
   private ProcessDefinitionOptimizeDto createProcessDefinitionDto(String key) {
-    ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = new ProcessDefinitionOptimizeDto();
-    processDefinitionOptimizeDto.setKey(key);
+    ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = new ProcessDefinitionOptimizeDto().setKey(key);
     return processDefinitionOptimizeDto;
-  }
-
-  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key) {
-    DecisionDefinitionOptimizeDto decisionDefinitionOptimizeDto = new DecisionDefinitionOptimizeDto();
-    decisionDefinitionOptimizeDto.setKey(key);
-    return decisionDefinitionOptimizeDto;
   }
 
   private OptimizeCleanupService createOptimizeCleanupServiceToTest() {

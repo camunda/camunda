@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
@@ -17,10 +18,8 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -31,23 +30,17 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
-
+@AllArgsConstructor
 @Component
 public abstract class AbstractActivityInstanceWriter {
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private RestHighLevelClient esClient;
-  private ObjectMapper objectMapper;
-
-  @Autowired
-  public AbstractActivityInstanceWriter(RestHighLevelClient esClient,
-                                        ObjectMapper objectMapper) {
-    this.esClient = esClient;
-    this.objectMapper = objectMapper;
-  }
+  private final RestHighLevelClient esClient;
+  private final ObjectMapper objectMapper;
 
   public void importActivityInstances(List<FlowNodeEventDto> events) throws Exception {
     logger.debug("Writing [{}] activity instances to elasticsearch", events.size());
@@ -79,36 +72,25 @@ public abstract class AbstractActivityInstanceWriter {
     }
   }
 
-  private void addActivityInstancesToProcessInstanceRequest(
-    BulkRequest addEventToProcessInstanceBulkRequest,
-    List<FlowNodeEventDto> processEvents, String processInstanceId) throws IOException {
+  private void addActivityInstancesToProcessInstanceRequest(BulkRequest addEventToProcessInstanceBulkRequest,
+                                                            List<FlowNodeEventDto> processEvents,
+                                                            String processInstanceId) throws IOException {
 
-    List<SimpleEventDto> simpleEvents = getSimpleEventDtos(processEvents);
-    Map<String, Object> params = new HashMap<>();
+    final List<SimpleEventDto> simpleEvents = getSimpleEventDtos(processEvents);
+    final Map<String, Object> params = new HashMap<>();
     // see https://discuss.elastic.co/t/how-to-update-nested-objects-in-elasticsearch-2-2-script-via-java-api/43135
-    List jsonMap = objectMapper.readValue(
-      objectMapper.writeValueAsString(simpleEvents),
-      List.class
-    );
+    final List jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(simpleEvents), List.class);
     params.put(EVENTS, jsonMap);
+    final Script updateScript = createDefaultScript(createInlineUpdateScript(), params);
 
-    Script updateScript = new Script(
-      ScriptType.INLINE,
-      Script.DEFAULT_SCRIPT_LANG,
-      createInlineUpdateScript(),
-      params
-    );
+    final FlowNodeEventDto e = getFirst(processEvents);
+    final ProcessInstanceDto procInst = new ProcessInstanceDto()
+      .setProcessInstanceId(e.getProcessInstanceId())
+      .setEngine(e.getEngineAlias())
+      .setEvents(simpleEvents);
+    final String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 
-    FlowNodeEventDto e = getFirst(processEvents);
-    ProcessInstanceDto procInst = new ProcessInstanceDto();
-    procInst.setProcessDefinitionId(e.getProcessDefinitionId());
-    procInst.setProcessDefinitionKey(e.getProcessDefinitionKey());
-    procInst.setProcessInstanceId(e.getProcessInstanceId());
-    procInst.getEvents().addAll(simpleEvents);
-    procInst.setEngine(e.getEngineAlias());
-    String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
-
-    UpdateRequest request =
+    final UpdateRequest request =
       new UpdateRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE), PROC_INSTANCE_TYPE, processInstanceId)
         .script(updateScript)
         .upsert(newEntryIfAbsent, XContentType.JSON)

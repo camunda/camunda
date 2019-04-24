@@ -56,7 +56,8 @@ public class MixedFilterIT {
 
       // this is the process instance that should be filtered
     ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), variables);
-    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    final String expectedInstanceId = instanceEngineDto.getId();
+    engineRule.finishAllUserTasks(expectedInstanceId);
 
       // wrong not executed flow node
     engineRule.startProcessInstance(processDefinition.getId(), variables);
@@ -102,6 +103,7 @@ public class MixedFilterIT {
 
     // then
     assertThat(rawDataReportResultDto.getData().size(), is(1));
+    assertThat(rawDataReportResultDto.getData().get(0).getProcessInstanceId(), is(expectedInstanceId));
   }
 
   private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<ProcessFilterDto> filter) {

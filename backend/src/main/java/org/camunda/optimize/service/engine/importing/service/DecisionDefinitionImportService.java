@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.engine.importing.service;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -12,30 +14,20 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.DecisionDefinitionElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.DecisionDefinitionWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@AllArgsConstructor
+@Slf4j
 public class DecisionDefinitionImportService implements ImportService<DecisionDefinitionEngineDto> {
-  private static final Logger logger = LoggerFactory.getLogger(DecisionDefinitionImportService.class);
-
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  private final String engineAlias;
+  private final EngineContext engineContext;
   private final DecisionDefinitionWriter decisionDefinitionWriter;
-
-  public DecisionDefinitionImportService(final DecisionDefinitionWriter decisionDefinitionWriter,
-                                         final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                         final EngineContext engineContext) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-    this.engineAlias = engineContext.getEngineAlias();
-    this.decisionDefinitionWriter = decisionDefinitionWriter;
-  }
 
   @Override
   public void executeImport(final List<DecisionDefinitionEngineDto> engineDtoList) {
-    logger.trace("Importing entities from engine...");
+    log.trace("Importing entities from engine...");
     final boolean newDataIsAvailable = !engineDtoList.isEmpty();
     if (newDataIsAvailable) {
       final List<DecisionDefinitionOptimizeDto> optimizeDtos = mapEngineEntitiesToOptimizeEntities(
@@ -74,12 +66,14 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
   }
 
   private DecisionDefinitionOptimizeDto mapEngineEntityToOptimizeEntity(final DecisionDefinitionEngineDto engineDto) {
-    final DecisionDefinitionOptimizeDto optimizeDto = new DecisionDefinitionOptimizeDto();
-    optimizeDto.setName(engineDto.getName());
-    optimizeDto.setKey(engineDto.getKey());
-    optimizeDto.setId(engineDto.getId());
-    optimizeDto.setVersion(String.valueOf(engineDto.getVersion()));
-    optimizeDto.setEngine(engineAlias);
+    final DecisionDefinitionOptimizeDto optimizeDto = new DecisionDefinitionOptimizeDto(
+      engineDto.getId(),
+      engineDto.getKey(),
+      String.valueOf(engineDto.getVersion()),
+      engineDto.getName(),
+      engineContext.getEngineAlias(),
+      engineDto.getTenantId()
+    );
     return optimizeDto;
   }
 

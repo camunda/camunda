@@ -8,15 +8,13 @@ package org.camunda.optimize.service.importing;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.filter.CanceledInstancesOnlyQueryFilter;
+import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -26,9 +24,7 @@ import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.After;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -37,7 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
@@ -46,7 +42,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.hamcrest.CoreMatchers.is;
@@ -59,16 +54,12 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertTrue;
 
 
-public class ImportIT {
+public class ProcessImportIT extends AbstractImportIT {
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
+  protected static final Set<String> PROCESS_INSTANCE_NULLABLE_FIELDS =
+    Collections.singleton(ProcessInstanceType.TENANT_ID);
+  protected static final Set<String> PROCESS_DEFINITION_NULLABLE_FIELDS =
+    Collections.singleton(ProcessDefinitionType.TENANT_ID);
 
   @Test
   public void importCanBeDisabled() throws IOException {
@@ -97,7 +88,7 @@ public class ImportIT {
   }
 
   @Test
-  public void allProcessDefinitionFieldDataOfImportIsAvailable() throws IOException {
+  public void allProcessDefinitionFieldDataIsAvailable() throws IOException {
     //given
     deployAndStartSimpleServiceTask();
 
@@ -106,11 +97,28 @@ public class ImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    allEntriesInElasticsearchHaveAllData(PROC_DEF_TYPE);
+    allEntriesInElasticsearchHaveAllData(PROC_DEF_TYPE, PROCESS_DEFINITION_NULLABLE_FIELDS);
   }
 
   @Test
-  public void allEventFieldDataOfImportIsAvailable() throws IOException {
+  public void processDefinitionTenantIdIsImportedIfPresent() throws IOException {
+    //given
+    final String tenantId = "reallyAwesomeTenantId";
+    deployProcessDefinitionWithTenant(tenantId);
+
+    //when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //then
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_DEF_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    final SearchHit hit = idsResp.getHits().getHits()[0];
+    assertThat(hit.getSourceAsMap().get(ProcessDefinitionType.TENANT_ID), is(tenantId));
+  }
+
+  @Test
+  public void allProcessInstanceDataIsAvailable() throws IOException {
     //given
     deployAndStartSimpleServiceTask();
 
@@ -119,7 +127,24 @@ public class ImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    allEntriesInElasticsearchHaveAllData(PROC_INSTANCE_TYPE);
+    allEntriesInElasticsearchHaveAllData(PROC_INSTANCE_TYPE, PROCESS_INSTANCE_NULLABLE_FIELDS);
+  }
+
+  @Test
+  public void processInstanceTenantIdIsImportedIfPresent() throws IOException {
+    //given
+    final String tenantId = "myTenant";
+    deployAndStartSimpleServiceTaskWithTenant(tenantId);
+
+    //when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //then
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    final SearchHit hit = idsResp.getHits().getHits()[0];
+    assertThat(hit.getSourceAsMap().get(ProcessInstanceType.TENANT_ID), is(tenantId));
   }
 
   @Test
@@ -160,11 +185,11 @@ public class ImportIT {
 
   @Test
   public void xmlFetchingIsNotRetriedOn4xx() throws IOException {
-    ProcessDefinitionOptimizeDto procDef = new ProcessDefinitionOptimizeDto();
-    procDef.setId("123");
-    procDef.setVersion("1");
-    procDef.setEngine("1");
-    procDef.setName("lol");
+    final ProcessDefinitionOptimizeDto procDef = new ProcessDefinitionOptimizeDto()
+      .setId("123")
+      .setKey("lol")
+      .setVersion("1")
+      .setEngine("1");
 
     elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, procDef.getId(), procDef);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -277,7 +302,7 @@ public class ImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(PROC_INSTANCE_TYPE, 4L);
+    allEntriesInElasticsearchHaveAllDataWithCount(PROC_INSTANCE_TYPE, 4L, PROCESS_INSTANCE_NULLABLE_FIELDS);
   }
 
   @Test
@@ -546,7 +571,7 @@ public class ImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(PROC_INSTANCE_TYPE, 2L);
+    allEntriesInElasticsearchHaveAllDataWithCount(PROC_INSTANCE_TYPE, 2L, PROCESS_INSTANCE_NULLABLE_FIELDS);
     embeddedOptimizeRule.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(originalMaxPageSize);
   }
 
@@ -589,6 +614,16 @@ public class ImportIT {
     engineDatabaseRule.updateProcessInstanceEndDates(procInstEndDateUpdates);
   }
 
+  private ProcessDefinitionEngineDto deployProcessDefinitionWithTenant(String tenantId) {
+    BpmnModelInstance processModel = createSimpleProcessDefinition();
+    return engineRule.deployProcessAndGetProcessDefinition(processModel, tenantId);
+  }
+
+  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskWithTenant(String tenantId) {
+    final ProcessDefinitionEngineDto processDefinitionEngineDto = deployProcessDefinitionWithTenant(tenantId);
+    return engineRule.startProcessInstance(processDefinitionEngineDto.getId());
+  }
+
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTask() {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aVariable", "aStringVariables");
@@ -596,56 +631,25 @@ public class ImportIT {
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+    BpmnModelInstance processModel = createSimpleProcessDefinition();
+    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
+  }
+
+  private BpmnModelInstance createSimpleProcessDefinition() {
+    return Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent()
       .serviceTask()
       .camundaExpression("${true}")
       .endEvent()
       .done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
-  }
-
-  private void allEntriesInElasticsearchHaveAllData(String elasticsearchType) throws IOException {
-    allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchType, 1L);
-  }
-
-  private void allEntriesInElasticsearchHaveAllDataWithCount(String elasticsearchType, long count) throws IOException {
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticsearchType);
-
-    assertThat(idsResp.getHits().getTotalHits(), is(count));
-    for (SearchHit searchHit : idsResp.getHits().getHits()) {
-      for (Entry searchHitField : searchHit.getSourceAsMap().entrySet()) {
-        String errorMessage = "Something went wrong during fetching of field: " + searchHitField.getKey() +
-          ". Should actually have a value!";
-        assertThat(errorMessage, searchHitField.getValue(), is(notNullValue()));
-        if (searchHitField.getValue() instanceof String) {
-          String value = (String) searchHitField.getValue();
-          assertThat(errorMessage, value.isEmpty(), is(false));
-        }
-      }
-    }
-  }
-
-  private SearchResponse getSearchResponseForAllDocumentsOfType(String elasticsearchType) throws IOException {
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(matchAllQuery())
-      .size(100);
-
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(elasticsearchType))
-      .types(elasticsearchType)
-      .source(searchSourceBuilder);
-
-    return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstances() {
     return createImportAndDeleteTwoProcessInstancesWithVariables(new HashMap<>());
   }
 
-  private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object>
-                                                                                           variables) {
+  private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object> variables) {
     ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTaskWithVariables(variables);
     ProcessInstanceEngineDto secondProcInst = engineRule.startProcessInstance(
       firstProcInst.getDefinitionId(),

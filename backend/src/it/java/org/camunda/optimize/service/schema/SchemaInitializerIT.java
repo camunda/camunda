@@ -8,7 +8,7 @@ package org.camunda.optimize.service.schema;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
-import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
 import org.camunda.optimize.service.es.schema.TypeMappingCreator;
@@ -191,8 +191,8 @@ public class SchemaInitializerIT {
     thrown.expect(ElasticsearchStatusException.class);
 
     // when I add a document to an unknown type
-    FlowNodeEventDto flowNodeEventDto = new FlowNodeEventDto();
-    elasticSearchRule.addEntryToElasticsearch("myAwesomeNewIndex", "12312412", flowNodeEventDto);
+    ProcessInstanceDto dto = new ProcessInstanceDto();
+    elasticSearchRule.addEntryToElasticsearch("myAwesomeNewIndex", "12312412", dto);
   }
 
   @Test

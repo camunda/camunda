@@ -6,8 +6,15 @@
 package org.camunda.optimize.plugin.importing.variable;
 
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.Map;
 
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
 public class PluginVariableDto {
 
   /*
@@ -41,11 +48,11 @@ public class PluginVariableDto {
 
   /**
    * A map containing additional, value-type-dependent properties.
-   *
+   * <p>
    * For variables of type Object, the following properties are returned:
-   *
-   *     objectTypeName: A string representation of the object's type name, e.g. "com.example.MyObject".
-   *     serializationDataFormat: The serialization format used to store the variable, e.g. "application/xml".
+   * <p>
+   * objectTypeName: A string representation of the object's type name, e.g. "com.example.MyObject".
+   * serializationDataFormat: The serialization format used to store the variable, e.g. "application/xml".
    */
   private Map<String, Object> valueInfo;
 
@@ -74,98 +81,26 @@ public class PluginVariableDto {
    * The version of the variable value. While a process instance is running
    * the same variable can be updated several times. This value indicates
    * which update number this variable is.
-   *
+   * <p>
    * Note: This field is required in order to be imported to Optimize.
    */
   private Long version;
 
   /**
-   *  The field states the engine the variable is coming from.
-   *  In Optimize you can configure multiple engines to import data from.
-   *  Each engine configuration should have an unique engine alias associated
-   *  with it.
-   *
+   * The field states the engine the variable is coming from.
+   * In Optimize you can configure multiple engines to import data from.
+   * Each engine configuration should have an unique engine alias associated
+   * with it.
+   * <p>
    * Note: This field is required in order to be imported to Optimize.
    */
   private String engineAlias;
 
-  public String getId() {
-    return id;
-  }
+  /**
+   * The field states the tenant this variable instance belongs to.
+   *
+   * Note: Might be null if no tenant is assigned.
+   */
+  private String tenantId;
 
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getType() {
-    return type;
-  }
-
-  public void setType(String type) {
-    this.type = type;
-  }
-
-  public String getValue() {
-    return value;
-  }
-
-  public void setValue(String value) {
-    this.value = value;
-  }
-
-  public String getProcessDefinitionKey() {
-    return processDefinitionKey;
-  }
-
-  public void setProcessDefinitionKey(String processDefinitionKey) {
-    this.processDefinitionKey = processDefinitionKey;
-  }
-
-  public String getProcessDefinitionId() {
-    return processDefinitionId;
-  }
-
-  public void setProcessDefinitionId(String processDefinitionId) {
-    this.processDefinitionId = processDefinitionId;
-  }
-
-  public String getProcessInstanceId() {
-    return processInstanceId;
-  }
-
-  public void setProcessInstanceId(String processInstanceId) {
-    this.processInstanceId = processInstanceId;
-  }
-
-  public Long getVersion() {
-    return version;
-  }
-
-  public void setVersion(Long version) {
-    this.version = version;
-  }
-
-  public String getEngineAlias() {
-    return engineAlias;
-  }
-
-  public void setEngineAlias(String engineAlias) {
-    this.engineAlias = engineAlias;
-  }
-
-  public Map<String, Object> getValueInfo() {
-    return valueInfo;
-  }
-
-  public void setValueInfo(Map<String, Object> valueInfo) {
-    this.valueInfo = valueInfo;
-  }
 }

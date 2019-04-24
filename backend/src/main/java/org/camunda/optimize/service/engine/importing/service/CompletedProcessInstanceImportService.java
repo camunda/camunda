@@ -15,7 +15,7 @@ import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -69,19 +69,19 @@ public class CompletedProcessInstanceImportService implements ImportService<Hist
   }
 
   private ProcessInstanceDto mapEngineEntityToOptimizeEntity(HistoricProcessInstanceDto engineEntity) {
-    ProcessInstanceDto processInstanceDto = new ProcessInstanceDto();
-    processInstanceDto.setProcessDefinitionKey(engineEntity.getProcessDefinitionKey());
-    processInstanceDto.setProcessDefinitionVersion(engineEntity.getProcessDefinitionVersionAsString());
-    processInstanceDto.setProcessDefinitionId(engineEntity.getProcessDefinitionId());
-    processInstanceDto.setProcessInstanceId(engineEntity.getId());
-    processInstanceDto.setBusinessKey(engineEntity.getBusinessKey());
-    OffsetDateTime startDate = engineEntity.getStartTime();
-    OffsetDateTime endDate = engineEntity.getEndTime();
-    processInstanceDto.setStartDate(startDate);
-    processInstanceDto.setEndDate(endDate);
-    processInstanceDto.setState(engineEntity.getState());
-    processInstanceDto.setDurationInMs(endDate.toInstant().toEpochMilli() - startDate.toInstant().toEpochMilli());
-    processInstanceDto.setEngine(this.engineContext.getEngineAlias());
+    final ProcessInstanceDto processInstanceDto = new ProcessInstanceDto(
+      engineEntity.getProcessDefinitionKey(),
+      engineEntity.getProcessDefinitionVersionAsString(),
+      engineEntity.getProcessDefinitionId(),
+      engineEntity.getId(),
+      engineEntity.getBusinessKey(),
+      engineEntity.getStartTime(),
+      engineEntity.getEndTime(),
+      engineEntity.getStartTime().until(engineEntity.getEndTime(), ChronoUnit.MILLIS),
+      engineEntity.getState(),
+      engineContext.getEngineAlias(),
+      engineEntity.getTenantId()
+    );
     return processInstanceDto;
   }
 

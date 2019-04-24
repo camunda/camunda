@@ -6,10 +6,12 @@
 package org.camunda.optimize.dto.optimize.query.alert;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.time.OffsetDateTime;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class AlertDefinitionDto extends AlertCreationDto {
   public static final String GREATER = ">";
   public static final String LESS = "<";

@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.LimitedResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
@@ -13,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import java.util.List;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class RawDataDecisionReportResultDto extends DecisionReportResultDto implements LimitedResultDto {
 
   protected List<RawDataDecisionInstanceDto> data;

@@ -7,6 +7,8 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -37,9 +39,6 @@ import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
@@ -62,23 +61,17 @@ import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+@AllArgsConstructor
 @Component
+@Slf4j
 public class ReportWriter {
-  private static final Logger logger = LoggerFactory.getLogger(ReportWriter.class);
-
   private static final String DEFAULT_REPORT_NAME = "New Report";
-  private final ObjectMapper objectMapper;
-  private RestHighLevelClient esClient;
 
-  @Autowired
-  public ReportWriter(final RestHighLevelClient esClient,
-                      final ObjectMapper objectMapper) {
-    this.esClient = esClient;
-    this.objectMapper = objectMapper;
-  }
+  private final ObjectMapper objectMapper;
+  private final RestHighLevelClient esClient;
 
   public IdDto createNewCombinedReport(final String userId) {
-    logger.debug("Writing new combined report to Elasticsearch");
+    log.debug("Writing new combined report to Elasticsearch");
     final String id = IdGenerator.getNextId();
     final CombinedReportDefinitionDto reportDefinitionDto = new CombinedReportDefinitionDto();
     reportDefinitionDto.setId(id);
@@ -103,23 +96,23 @@ public class ReportWriter {
 
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write report to Elasticsearch. ";
-        logger.error(message);
+        log.error(message);
         throw new OptimizeRuntimeException(message);
       }
 
-      logger.debug("Report with id [{}] has successfully been created.", id);
+      log.debug("Report with id [{}] has successfully been created.", id);
       IdDto idDto = new IdDto();
       idDto.setId(id);
       return idDto;
     } catch (IOException e) {
       String errorMessage = "Was not able to insert combined report.!";
-      logger.error(errorMessage, e);
+      log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
 
   public IdDto createNewSingleProcessReport(final String userId) {
-    logger.debug("Writing new single report to Elasticsearch");
+    log.debug("Writing new single report to Elasticsearch");
 
     final String id = IdGenerator.getNextId();
     final SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
@@ -143,23 +136,23 @@ public class ReportWriter {
 
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write single process report to Elasticsearch.";
-        logger.error(message);
+        log.error(message);
         throw new OptimizeRuntimeException(message);
       }
 
-      logger.debug("Single process report with id [{}] has successfully been created.", id);
+      log.debug("Single process report with id [{}] has successfully been created.", id);
       IdDto idDto = new IdDto();
       idDto.setId(id);
       return idDto;
     } catch (IOException e) {
       String errorMessage = "Was not able to insert single process report.";
-      logger.error(errorMessage, e);
+      log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
 
   public IdDto createNewSingleDecisionReport(final String userId) {
-    logger.debug("Writing new single report to Elasticsearch");
+    log.debug("Writing new single report to Elasticsearch");
 
     final String id = IdGenerator.getNextId();
     final SingleDecisionReportDefinitionDto reportDefinitionDto = new SingleDecisionReportDefinitionDto();
@@ -182,17 +175,17 @@ public class ReportWriter {
 
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write single decision report to Elasticsearch.";
-        logger.error(message);
+        log.error(message);
         throw new OptimizeRuntimeException(message);
       }
 
-      logger.debug("Single decision report with id [{}] has successfully been created.", id);
+      log.debug("Single decision report with id [{}] has successfully been created.", id);
       IdDto idDto = new IdDto();
       idDto.setId(id);
       return idDto;
     } catch (IOException e) {
       String errorMessage = "Was not able to insert single decision report.";
-      logger.error(errorMessage, e);
+      log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
@@ -210,7 +203,7 @@ public class ReportWriter {
   }
 
   private void updateReport(ReportDefinitionUpdateDto updatedReport, String elasticsearchType) {
-    logger.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
+    log.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
     try {
       final UpdateRequest request =
         new UpdateRequest(
@@ -224,7 +217,7 @@ public class ReportWriter {
 
       final UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
       if (updateResponse.getShardInfo().getFailed() > 0) {
-        logger.error(
+        log.error(
           "Was not able to update report with id [{}] and name [{}].", updatedReport.getId(), updatedReport.getName()
         );
         throw new OptimizeRuntimeException("Was not able to update collection!");
@@ -233,7 +226,7 @@ public class ReportWriter {
       String errorMessage = String.format(
         "Was not able to update report with id [%s].", updatedReport.getId()
       );
-      logger.error(errorMessage, e);
+      log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     } catch (DocumentMissingException e) {
       String errorMessage = String.format(
@@ -241,13 +234,13 @@ public class ReportWriter {
         updatedReport.getId(),
         updatedReport.getName()
       );
-      logger.error(errorMessage, e);
+      log.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
     }
   }
 
   public void deleteSingleReport(final String reportId) {
-    logger.debug("Deleting single report with id [{}]", reportId);
+    log.debug("Deleting single report with id [{}]", reportId);
 
     DeleteByQueryRequest request = new DeleteByQueryRequest(
       getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
@@ -262,7 +255,7 @@ public class ReportWriter {
     } catch (IOException e) {
       String reason =
         String.format("Could not delete single report with id [%s].", reportId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -272,7 +265,7 @@ public class ReportWriter {
           + "Maybe it was already deleted by someone else?",
         reportId
       );
-      logger.error(message);
+      log.error(message);
       throw new OptimizeRuntimeException(message);
     }
   }
@@ -310,7 +303,7 @@ public class ReportWriter {
       bulkByScrollResponse = esClient.updateByQuery(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format("Could not remove report with id [%s] from combined report.", reportId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -321,13 +314,13 @@ public class ReportWriter {
           reportId,
           bulkByScrollResponse.getBulkFailures()
         );
-      logger.error(errorMessage);
+      log.error(errorMessage);
       throw new OptimizeRuntimeException(errorMessage);
     }
   }
 
   public void deleteCombinedReport(final String reportId) {
-    logger.debug("Deleting combined report with id [{}]", reportId);
+    log.debug("Deleting combined report with id [{}]", reportId);
 
     DeleteRequest request =
       new DeleteRequest(getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE), COMBINED_REPORT_TYPE, reportId)
@@ -339,7 +332,7 @@ public class ReportWriter {
     } catch (IOException e) {
       String reason =
         String.format("Could not delete combined report with id [%s].", reportId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -348,7 +341,7 @@ public class ReportWriter {
         String.format("Could not delete combined process report with id [%s]. " +
                         "Combined process report does not exist." +
                         "Maybe it was already deleted by someone else?", reportId);
-      logger.error(message);
+      log.error(message);
       throw new NotFoundException(message);
     }
   }

@@ -5,49 +5,41 @@
  */
 package org.camunda.optimize.service.es.writer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableSet;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_XML;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
+@AllArgsConstructor
 @Component
+@Slf4j
 public class DecisionDefinitionXmlWriter {
-  private static final Logger logger = LoggerFactory.getLogger(DecisionDefinitionXmlWriter.class);
+  private static final Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(DECISION_DEFINITION_XML);
 
   private RestHighLevelClient esClient;
   private ObjectMapper objectMapper;
 
-  @Autowired
-  public DecisionDefinitionXmlWriter(RestHighLevelClient esClient,
-                                     ObjectMapper objectMapper) {
-    this.esClient = esClient;
-    this.objectMapper = objectMapper;
-  }
-
   public void importProcessDefinitionXmls(final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
-    logger.debug("writing [{}] decision definition XMLs to ES", decisionDefinitions.size());
+    log.debug("writing [{}] decision definition XMLs to ES", decisionDefinitions.size());
 
     final BulkRequest processDefinitionXmlBulkRequest = new BulkRequest();
     for (DecisionDefinitionOptimizeDto decisionDefinition : decisionDefinitions) {
@@ -60,53 +52,33 @@ public class DecisionDefinitionXmlWriter {
         if (bulkResponse.hasFailures()) {
           String errorMessage = String.format(
             "There were failures while writing decision definition xml information. " +
-              "Received error message: {}",
+              "Received error message: %s",
             bulkResponse.buildFailureMessage()
           );
           throw new OptimizeRuntimeException(errorMessage);
         }
       } catch (IOException e) {
-        logger.error("There were errors while writing decision definition xml information.", e);
+        log.error("There were errors while writing decision definition xml information.", e);
       }
     } else {
-      logger.warn("Cannot import empty list of decision definition xmls.");
+      log.warn("Cannot import empty list of decision definition xmls.");
     }
   }
 
   private void addImportProcessDefinitionXmlRequest(final BulkRequest bulkRequest,
-                                                    final DecisionDefinitionOptimizeDto newEntryIfAbsent) {
-
-    final Map<String, Object> params = new HashMap<>();
-    params.put(DecisionDefinitionType.DECISION_DEFINITION_XML, newEntryIfAbsent.getDmn10Xml());
-
-    final Script updateScript = buildUpdateScript(params);
-
-    String source = null;
-    try {
-      source = objectMapper.writeValueAsString(newEntryIfAbsent);
-    } catch (JsonProcessingException e) {
-      logger.error("can't serialize to JSON", e);
-    }
-
+                                                    final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
+    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(FIELDS_TO_UPDATE, decisionDefinitionDto);
     UpdateRequest updateRequest =
       new UpdateRequest(
         getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE),
         DECISION_DEFINITION_TYPE,
-        newEntryIfAbsent.getId()
+        decisionDefinitionDto.getId()
       )
         .script(updateScript)
-        .upsert(source, XContentType.JSON)
+        .upsert(objectMapper.convertValue(decisionDefinitionDto, Map.class))
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
     bulkRequest.add(updateRequest);
   }
 
-  private Script buildUpdateScript(final Map<String, Object> params) {
-    return new Script(
-      ScriptType.INLINE,
-      Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.dmn10Xml = params.dmn10Xml; ",
-      params
-    );
-  }
 }

@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.service.es.writer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableSet;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -14,18 +16,13 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.FLOW_NODE_NAMES;
@@ -33,23 +30,19 @@ import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 
+@AllArgsConstructor
 @Component
+@Slf4j
 public class ProcessDefinitionXmlWriter {
-
-  private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionXmlWriter.class);
+  private static final Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(
+    FLOW_NODE_NAMES, PROCESS_DEFINITION_XML
+  );
 
   private RestHighLevelClient esClient;
   private ObjectMapper objectMapper;
 
-  @Autowired
-  public ProcessDefinitionXmlWriter(RestHighLevelClient esClient,
-                                    ObjectMapper objectMapper) {
-    this.esClient = esClient;
-    this.objectMapper = objectMapper;
-  }
-
   public void importProcessDefinitionXmls(List<ProcessDefinitionOptimizeDto> xmls) {
-    logger.debug("writing [{}] process definition XMLs to ES", xmls.size());
+    log.debug("writing [{}] process definition XMLs to ES", xmls.size());
     BulkRequest processDefinitionXmlBulkRequest = new BulkRequest();
 
     for (ProcessDefinitionOptimizeDto procDefXml : xmls) {
@@ -68,40 +61,24 @@ public class ProcessDefinitionXmlWriter {
           throw new OptimizeRuntimeException(errorMessage);
         }
       } catch (IOException e) {
-        logger.error("There were errors while writing process definition xml information.", e);
+        log.error("There were errors while writing process definition xml information.", e);
       }
     } else {
-      logger.warn("Cannot import empty list of process definition xmls.");
+      log.warn("Cannot import empty list of process definition xmls.");
     }
   }
 
-  private void addImportProcessDefinitionXmlRequest(BulkRequest bulkRequest,
-                                                    ProcessDefinitionOptimizeDto newEntryIfAbsent) {
-
-    Map<String, Object> params = new HashMap<>();
-    params.put(FLOW_NODE_NAMES, newEntryIfAbsent.getFlowNodeNames());
-    params.put(PROCESS_DEFINITION_XML, newEntryIfAbsent.getBpmn20Xml());
-
-    Script updateScript = new Script(
-      ScriptType.INLINE,
-      Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.flowNodeNames = params.flowNodeNames; " +
-        "ctx._source.bpmn20Xml = params.bpmn20Xml; ",
-      params
-    );
-
-    String source = null;
-    try {
-      source = objectMapper.writeValueAsString(newEntryIfAbsent);
-    } catch (JsonProcessingException e) {
-      logger.error("can't serialize to JSON", e);
-    }
-
-    UpdateRequest updateRequest =
-      new UpdateRequest(getOptimizeIndexAliasForType(PROC_DEF_TYPE), PROC_DEF_TYPE, newEntryIfAbsent.getId())
-        .script(updateScript)
-        .upsert(source, XContentType.JSON)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+  private void addImportProcessDefinitionXmlRequest(final BulkRequest bulkRequest,
+                                                    final ProcessDefinitionOptimizeDto processDefinitionDto) {
+    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(FIELDS_TO_UPDATE, processDefinitionDto);
+    final UpdateRequest updateRequest = new UpdateRequest(
+      getOptimizeIndexAliasForType(PROC_DEF_TYPE),
+      PROC_DEF_TYPE,
+      processDefinitionDto.getId()
+    )
+      .script(updateScript)
+      .upsert(objectMapper.convertValue(processDefinitionDto, Map.class))
+      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
     bulkRequest.add(updateRequest);
   }

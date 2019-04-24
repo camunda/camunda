@@ -367,7 +367,6 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
-
   public ProcessInstanceEngineDto deployAndStartProcessWithVariables(BpmnModelInstance bpmnModelInstance,
                                                                      Map<String, Object> variables) {
     return deployAndStartProcessWithVariables(bpmnModelInstance, variables, "aBusinessKey");
@@ -513,24 +512,36 @@ public class EngineIntegrationRule extends TestWatcher {
     return startProcessInstance(processDefinitionId, client, new HashMap<>());
   }
 
+
+
   public ProcessInstanceEngineDto deployAndStartProcess(BpmnModelInstance bpmnModelInstance) {
     return deployAndStartProcessWithVariables(bpmnModelInstance, new HashMap<>());
   }
 
   public String deployProcessAndGetId(BpmnModelInstance modelInstance) {
-    ProcessDefinitionEngineDto processDefinitionId = deployProcessAndGetProcessDefinition(modelInstance);
+    ProcessDefinitionEngineDto processDefinitionId = deployProcessAndGetProcessDefinition(modelInstance, null);
     return processDefinitionId.getId();
   }
 
   public ProcessDefinitionEngineDto deployProcessAndGetProcessDefinition(BpmnModelInstance modelInstance) {
+    return deployProcessAndGetProcessDefinition(modelInstance, null);
+  }
+
+  public ProcessDefinitionEngineDto deployProcessAndGetProcessDefinition(BpmnModelInstance modelInstance,
+                                                                         String tenantId) {
     CloseableHttpClient client = getHttpClient();
-    DeploymentDto deploymentDto = deployProcess(modelInstance, client);
+    DeploymentDto deploymentDto = deployProcess(modelInstance, client, tenantId);
     return getProcessDefinitionEngineDto(deploymentDto, client);
   }
 
   private DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance, CloseableHttpClient client) {
+    return deployProcess(bpmnModelInstance, client, null);
+  }
+
+  private DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance, CloseableHttpClient client,
+                                      String tenantId) {
     String process = Bpmn.convertToString(bpmnModelInstance);
-    HttpPost deploymentRequest = createDeploymentRequest(process, "test.bpmn");
+    HttpPost deploymentRequest = createDeploymentRequest(process, "test.bpmn", tenantId);
     DeploymentDto deployment = new DeploymentDto();
     try {
       CloseableHttpResponse response = client.execute(deploymentRequest);
@@ -592,14 +603,23 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private HttpPost createDeploymentRequest(String process, String fileName) {
+    return createDeploymentRequest(process, fileName, null);
+  }
+
+  private HttpPost createDeploymentRequest(String process, String fileName, String tenantId) {
     HttpPost post = new HttpPost(getDeploymentUri());
-    HttpEntity entity = MultipartEntityBuilder
+    final MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder
       .create()
       .addTextBody("deployment-name", "deployment")
       .addTextBody("enable-duplicate-filtering", "false")
       .addTextBody("deployment-source", "process application")
-      .addBinaryBody("data", process.getBytes(StandardCharsets.UTF_8), ContentType.APPLICATION_OCTET_STREAM, fileName)
-      .build();
+      .addBinaryBody("data", process.getBytes(StandardCharsets.UTF_8), ContentType.APPLICATION_OCTET_STREAM, fileName);
+
+    if (tenantId != null) {
+      multipartEntityBuilder.addTextBody("tenant-id", tenantId);
+    }
+
+    final HttpEntity entity = multipartEntityBuilder.build();
     post.setEntity(entity);
     return post;
   }
@@ -988,6 +1008,13 @@ public class EngineIntegrationRule extends TestWatcher {
     return deployDecisionDefinition(DEFAULT_DMN_DEFINITION_PATH);
   }
 
+  public DecisionDefinitionEngineDto deployDecisionDefinitionWithTenant(String tenantId) {
+    final DmnModelInstance dmnModelInstance = Dmn.readModelFromStream(
+      getClass().getClassLoader().getResourceAsStream(DEFAULT_DMN_DEFINITION_PATH)
+    );
+    return deployDecisionDefinition(dmnModelInstance, tenantId);
+  }
+
   public DecisionDefinitionEngineDto deployDecisionDefinition(String dmnPath) {
     final DmnModelInstance dmnModelInstance = Dmn.readModelFromStream(
       getClass().getClassLoader().getResourceAsStream(dmnPath)
@@ -1002,14 +1029,18 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public DecisionDefinitionEngineDto deployDecisionDefinition(DmnModelInstance dmnModelInstance) {
+    return deployDecisionDefinition(dmnModelInstance, null);
+  }
+
+  public DecisionDefinitionEngineDto deployDecisionDefinition(DmnModelInstance dmnModelInstance, String tenantId) {
     CloseableHttpClient client = getHttpClient();
-    DeploymentDto deploymentDto = deployDecisionDefinition(dmnModelInstance, client);
+    DeploymentDto deploymentDto = deployDecisionDefinition(dmnModelInstance, client, tenantId);
     return getDecisionDefinitionByDeployment(deploymentDto);
   }
 
-  private DeploymentDto deployDecisionDefinition(DmnModelInstance dmnModelInstance, CloseableHttpClient client) {
+  private DeploymentDto deployDecisionDefinition(DmnModelInstance dmnModelInstance, CloseableHttpClient client, String tenantId) {
     String decisionDefinition = Dmn.convertToString(dmnModelInstance);
-    HttpPost deploymentRequest = createDeploymentRequest(decisionDefinition, "test.dmn");
+    HttpPost deploymentRequest = createDeploymentRequest(decisionDefinition, "test.dmn", tenantId);
     DeploymentDto deployment = new DeploymentDto();
     try (CloseableHttpResponse response = client.execute(deploymentRequest)) {
       if (response.getStatusLine().getStatusCode() != 200) {

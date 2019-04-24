@@ -10,13 +10,13 @@ import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.junit.Test;
 
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
@@ -172,14 +172,11 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
   }
 
   private void addDecisionDefinitionWithoutXmlToElasticsearch() {
-    DecisionDefinitionOptimizeDto decisionDefinitionWithoutXml = new DecisionDefinitionOptimizeDto();
-    decisionDefinitionWithoutXml.setDmn10Xml(null);
-    decisionDefinitionWithoutXml.setKey("aDecDefKey");
-    decisionDefinitionWithoutXml.setVersion("aDevDefVersion");
-    decisionDefinitionWithoutXml.setId("aDecDefId");
-    elasticSearchRule.addEntryToElasticsearch(
-      ElasticsearchConstants.DECISION_DEFINITION_TYPE, "fooId", decisionDefinitionWithoutXml
-    );
+    final DecisionDefinitionOptimizeDto decisionDefinitionWithoutXml = new DecisionDefinitionOptimizeDto()
+      .setId("aDecDefId")
+      .setKey("aDecDefKey")
+      .setVersion("aDevDefVersion");
+    elasticSearchRule.addEntryToElasticsearch(DECISION_DEFINITION_TYPE, "fooId", decisionDefinitionWithoutXml);
   }
 
 }

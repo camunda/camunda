@@ -7,6 +7,8 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
@@ -21,9 +23,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -38,24 +37,17 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+@AllArgsConstructor
 @Component
+@Slf4j
 public class DecisionInstanceWriter {
-  private static final Logger logger = LoggerFactory.getLogger(DecisionInstanceWriter.class);
+
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
   private RestHighLevelClient esClient;
 
-  @Autowired
-  public DecisionInstanceWriter(final RestHighLevelClient esClient,
-                                final ObjectMapper objectMapper,
-                                final DateTimeFormatter dateTimeFormatter) {
-    this.esClient = esClient;
-    this.objectMapper = objectMapper;
-    this.dateTimeFormatter = dateTimeFormatter;
-  }
-
   public void importDecisionInstances(List<DecisionInstanceDto> decisionInstanceDtos) throws Exception {
-    logger.debug("Writing [{}] decision instances to elasticsearch", decisionInstanceDtos.size());
+    log.debug("Writing [{}] decision instances to elasticsearch", decisionInstanceDtos.size());
 
     BulkRequest processInstanceBulkRequest = new BulkRequest();
 
@@ -66,14 +58,13 @@ public class DecisionInstanceWriter {
       BulkResponse bulkResponse = esClient.bulk(processInstanceBulkRequest, RequestOptions.DEFAULT);
       if (bulkResponse.hasFailures()) {
         String errorMessage = String.format(
-          "There were failures while writing decision instances. " +
-            "Received error message: {}",
+          "There were failures while writing decision instances. Received error message: %s",
           bulkResponse.buildFailureMessage()
         );
         throw new OptimizeRuntimeException(errorMessage);
       }
     } catch (IOException e) {
-      logger.error("There were failures while writing decision instances.", e);
+      log.error("There were failures while writing decision instances.", e);
     }
   }
 
@@ -83,7 +74,7 @@ public class DecisionInstanceWriter {
     final String decisionInstanceId = decisionInstanceDto.getDecisionInstanceId();
     final String source = objectMapper.writeValueAsString(decisionInstanceDto);
 
-    IndexRequest request = new IndexRequest(
+    final IndexRequest request = new IndexRequest(
       getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE),
       DECISION_INSTANCE_TYPE,
       decisionInstanceId
@@ -95,7 +86,7 @@ public class DecisionInstanceWriter {
 
   public void deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(final String decisionDefinitionKey,
                                                                                final OffsetDateTime evaluationDate) {
-    logger.info(
+    log.info(
       "Deleting decision instances for decisionDefinitionKey {} and evaluationDate past {}",
       decisionDefinitionKey, evaluationDate
     );
@@ -118,19 +109,19 @@ public class DecisionInstanceWriter {
         bulkByScrollResponse = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
       } catch (IOException e) {
         String reason =
-          String.format("Could not delete decision instances " +
-                          "for decision definition key [%s] and evaluation date [%s].",
-                        decisionDefinitionKey, evaluationDate
+          String.format(
+            "Could not delete decision instances for decision definition key [%s] and evaluation date [%s].",
+            decisionDefinitionKey, evaluationDate
           );
-        logger.error(reason, e);
+        log.error(reason, e);
         throw new OptimizeRuntimeException(reason, e);
       }
 
-      logger.debug(
+      log.debug(
         "BulkByScrollResponse on deleting decision instances for decisionDefinitionKey {}: {}",
         decisionDefinitionKey, bulkByScrollResponse
       );
-      logger.info(
+      log.info(
         "Deleted {} decision instances for decisionDefinitionKey {} and evaluationDate past {}",
         bulkByScrollResponse.getDeleted(), decisionDefinitionKey, evaluationDate
       );

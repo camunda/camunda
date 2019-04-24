@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.writer.variable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -33,11 +34,8 @@ import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.UpdateByQueryAction;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.text.MessageFormat;
@@ -51,6 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.isVariableTypeSupported;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
@@ -61,21 +60,13 @@ import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.scriptQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-@Component
+@AllArgsConstructor
 public abstract class VariableWriter {
-
   protected final Logger logger = LoggerFactory.getLogger(getClass());
-  protected final ObjectMapper objectMapper;
-  private final RestHighLevelClient esClient;
-  private final DateTimeFormatter dateTimeFormatter;
 
-  @Autowired
-  public VariableWriter(RestHighLevelClient esClient,
-                        ObjectMapper objectMapper, DateTimeFormatter dateTimeFormatter) {
-    this.esClient = esClient;
-    this.objectMapper = objectMapper;
-    this.dateTimeFormatter = dateTimeFormatter;
-  }
+  private final RestHighLevelClient esClient;
+  protected final ObjectMapper objectMapper;
+  private final DateTimeFormatter dateTimeFormatter;
 
   public void importVariables(List<VariableDto> variables) throws Exception {
     logger.debug("Writing [{}] variables to elasticsearch", variables.size());
@@ -91,18 +82,14 @@ public abstract class VariableWriter {
       //for every type execute one upsert
       addImportVariablesRequest(addVariablesToProcessInstanceBulkRequest, entry.getKey(), entry.getValue());
     }
-    try {
-      if (addVariablesToProcessInstanceBulkRequest.numberOfActions() != 0) {
-        BulkResponse bulkResponse = esClient.bulk(addVariablesToProcessInstanceBulkRequest, RequestOptions.DEFAULT);
-        if (bulkResponse.hasFailures()) {
-          logger.warn(
-            "There were failures while writing variables with message: {}",
-            bulkResponse.buildFailureMessage()
-          );
-        }
+    if (addVariablesToProcessInstanceBulkRequest.numberOfActions() != 0) {
+      BulkResponse bulkResponse = esClient.bulk(addVariablesToProcessInstanceBulkRequest, RequestOptions.DEFAULT);
+      if (bulkResponse.hasFailures()) {
+        logger.warn(
+          "There were failures while writing variables with message: {}",
+          bulkResponse.buildFailureMessage()
+        );
       }
-    } catch (NullPointerException e) {
-      logger.error("NPE for PID [{}]", e);
     }
   }
 
@@ -161,7 +148,10 @@ public abstract class VariableWriter {
     Map<String, Map<String, List<VariableDto>>> processInstanceIdToTypedVariables = new HashMap<>();
     for (VariableDto variable : variableUpdates) {
       if (isVariableFromCaseDefinition(variable) || !isVariableTypeSupported(variable.getType())) {
-        logger.warn("Variable [{}] is either a case definition variable or the type [{}] is not supported!");
+        logger.warn(
+          "Variable [{}] is either a case definition variable or the type [{}] is not supported!",
+          variable, variable.getType()
+        );
         continue;
       }
 
@@ -190,12 +180,7 @@ public abstract class VariableWriter {
 
     Map<String, Object> params = buildParameters(typeMappedVars);
 
-    Script updateScript = new Script(
-      ScriptType.INLINE,
-      Script.DEFAULT_SCRIPT_LANG,
-      createInlineUpdateScript(typeMappedVars),
-      params
-    );
+    final Script updateScript = createDefaultScript(createInlineUpdateScript(typeMappedVars), params);
 
     String newEntryIfAbsent = getNewProcessInstanceRecordString(processInstanceId, typeMappedVars);
 

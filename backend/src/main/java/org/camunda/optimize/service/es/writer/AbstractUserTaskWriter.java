@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import lombok.AllArgsConstructor;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.importing.UserTaskInstanceDto;
 
@@ -23,13 +24,10 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.US
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_WORK_DURATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
+@AllArgsConstructor
 public abstract class AbstractUserTaskWriter {
 
   protected final ObjectMapper objectMapper;
-
-  protected AbstractUserTaskWriter(final ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
-  }
 
   @SuppressWarnings("unchecked")
   protected List<Map<String, String>> mapToParameterSet(final List<UserTaskInstanceDto> userTaskInstanceDtos) {

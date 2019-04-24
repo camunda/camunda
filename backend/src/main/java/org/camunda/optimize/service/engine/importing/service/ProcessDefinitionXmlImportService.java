@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.engine.importing.service;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
@@ -15,8 +17,6 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ProcessDefinitionXmlElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
@@ -24,28 +24,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
+@AllArgsConstructor
 public class ProcessDefinitionXmlImportService implements ImportService<ProcessDefinitionXmlEngineDto> {
-
-  protected Logger logger = LoggerFactory.getLogger(getClass());
-
-  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  protected EngineContext engineContext;
-  private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
-
-  public ProcessDefinitionXmlImportService(
-    ProcessDefinitionXmlWriter processDefinitionXmlWriter,
-    ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-    EngineContext engineContext
-  ) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-    this.engineContext = engineContext;
-    this.processDefinitionXmlWriter = processDefinitionXmlWriter;
-
-  }
+  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final EngineContext engineContext;
+  private final ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
   @Override
   public void executeImport(List<ProcessDefinitionXmlEngineDto> pageOfEngineEntities) {
-    logger.trace("Importing entities from engine...");
+    log.trace("Importing entities from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
@@ -83,11 +71,13 @@ public class ProcessDefinitionXmlImportService implements ImportService<ProcessD
   }
 
   private ProcessDefinitionOptimizeDto mapEngineEntityToOptimizeEntity(ProcessDefinitionXmlEngineDto engineEntity) {
-    ProcessDefinitionOptimizeDto optimizeDto = new ProcessDefinitionOptimizeDto();
-    optimizeDto.setBpmn20Xml(engineEntity.getBpmn20Xml());
-    optimizeDto.setId(engineEntity.getId());
-    optimizeDto.setFlowNodeNames(constructFlowNodeNames(engineEntity.getBpmn20Xml()));
-    optimizeDto.setEngine(engineContext.getEngineAlias());
+    final ProcessDefinitionOptimizeDto optimizeDto = new ProcessDefinitionOptimizeDto(
+      engineEntity.getId(),
+      engineContext.getEngineAlias(),
+      engineEntity.getTenantId(),
+      engineEntity.getBpmn20Xml(),
+      constructFlowNodeNames(engineEntity.getBpmn20Xml())
+    );
     return optimizeDto;
   }
 

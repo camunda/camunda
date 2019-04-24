@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.definition;
 
-import lombok.Data;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.io.Serializable;
 
-@Data
-public class KeyDefinitionOptimizeDto implements Serializable, OptimizeDto {
+public interface KeyDefinitionOptimizeDto extends Serializable, OptimizeDto {
 
-  protected String key;
+  String getKey();
+
 }

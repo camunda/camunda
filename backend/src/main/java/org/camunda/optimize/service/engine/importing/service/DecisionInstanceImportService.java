@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.engine.importing.service;
 
+import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricDecisionInputInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionOutputInstanceDto;
@@ -24,8 +27,6 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.DecisionInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,35 +35,19 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.ProcessVariableHelper.isVariableTypeSupported;
 
+@AllArgsConstructor
+@Slf4j
 public class DecisionInstanceImportService implements ImportService<HistoricDecisionInstanceDto> {
-  private static final Logger logger = LoggerFactory.getLogger(DecisionInstanceImportService.class);
-
-  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  protected String engineAlias;
-  private DecisionInstanceWriter decisionInstanceWriter;
-  private DecisionDefinitionVersionResolverService decisionDefinitionVersionResolverService;
-  private DecisionInputImportAdapterProvider decisionInputImportAdapterProvider;
-  private DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider;
-
-  public DecisionInstanceImportService(DecisionInstanceWriter decisionInstanceWriter,
-                                       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                       EngineContext engineContext,
-                                       DecisionDefinitionVersionResolverService
-                                         decisionDefinitionVersionResolverService,
-                                       DecisionInputImportAdapterProvider decisionInputImportAdapterProvider,
-                                       DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider
-  ) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-    this.engineAlias = engineContext.getEngineAlias();
-    this.decisionInstanceWriter = decisionInstanceWriter;
-    this.decisionDefinitionVersionResolverService = decisionDefinitionVersionResolverService;
-    this.decisionInputImportAdapterProvider = decisionInputImportAdapterProvider;
-    this.decisionOutputImportAdapterProvider = decisionOutputImportAdapterProvider;
-  }
+  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final EngineContext engineContext;
+  private final DecisionInstanceWriter decisionInstanceWriter;
+  private final DecisionDefinitionVersionResolverService decisionDefinitionVersionResolverService;
+  private final DecisionInputImportAdapterProvider decisionInputImportAdapterProvider;
+  private final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider;
 
   @Override
   public void executeImport(List<HistoricDecisionInstanceDto> engineDtoList, Runnable callback) {
-    logger.trace("Importing entities from engine...");
+    log.trace("Importing entities from engine...");
     boolean newDataIsAvailable = !engineDtoList.isEmpty();
 
     if (newDataIsAvailable) {
@@ -73,10 +58,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
           optimizeDtos, callback);
         addElasticsearchImportJobToQueue(elasticsearchImportJob);
       } catch (OptimizeDecisionDefinitionFetchException e) {
-        logger.debug(
-          "Required Decision Definition not imported yet, skipping current decision instance import cycle.",
-          e.getMessage()
-        );
+        log.debug("Required Decision Definition not imported yet, skipping current decision instance import cycle.", e);
       }
     }
 
@@ -110,56 +92,52 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
 
   public DecisionInstanceDto mapEngineEntityToOptimizeEntity(HistoricDecisionInstanceDto engineEntity)
     throws OptimizeDecisionDefinitionFetchException {
-    DecisionInstanceDto decisionInstanceDto = new DecisionInstanceDto();
-    decisionInstanceDto.setDecisionInstanceId(engineEntity.getId());
-    decisionInstanceDto.setProcessDefinitionKey(engineEntity.getProcessDefinitionKey());
-    decisionInstanceDto.setProcessDefinitionId(engineEntity.getProcessDefinitionId());
-    decisionInstanceDto.setDecisionDefinitionId(engineEntity.getDecisionDefinitionId());
-    decisionInstanceDto.setDecisionDefinitionKey(engineEntity.getDecisionDefinitionKey());
-    decisionInstanceDto.setDecisionDefinitionVersion(resolveDecisionDefinitionVersion(engineEntity));
-    decisionInstanceDto.setEvaluationDateTime(engineEntity.getEvaluationTime());
-    decisionInstanceDto.setProcessInstanceId(engineEntity.getProcessInstanceId());
-    decisionInstanceDto.setRootProcessInstanceId(engineEntity.getRootProcessInstanceId());
-    decisionInstanceDto.setActivityId(engineEntity.getActivityId());
-    decisionInstanceDto.setCollectResultValue(engineEntity.getCollectResultValue());
-    decisionInstanceDto.setRootDecisionInstanceId(engineEntity.getRootDecisionInstanceId());
-
-    prepareAndSetInputs(engineEntity, decisionInstanceDto);
-
-    prepareAndSetOutputs(engineEntity, decisionInstanceDto);
-
-    decisionInstanceDto.setMatchedRules(
+    final DecisionInstanceDto decisionInstanceDto = new DecisionInstanceDto(
+      engineEntity.getId(),
+      engineEntity.getProcessDefinitionId(),
+      engineEntity.getProcessDefinitionKey(),
+      engineEntity.getDecisionDefinitionId(),
+      engineEntity.getDecisionDefinitionKey(),
+      resolveDecisionDefinitionVersion(engineEntity),
+      engineEntity.getEvaluationTime(),
+      engineEntity.getProcessInstanceId(),
+      engineEntity.getRootProcessInstanceId(),
+      engineEntity.getActivityId(),
+      engineEntity.getCollectResultValue(),
+      engineEntity.getRootDecisionInstanceId(),
+      mapDecisionInputs(engineEntity),
+      mapDecisionOutputs(engineEntity),
       engineEntity.getOutputs().stream()
         .map(HistoricDecisionOutputInstanceDto::getRuleId)
-        .collect(Collectors.toSet())
+        .collect(Collectors.toSet()),
+      engineContext.getEngineAlias(),
+      engineEntity.getTenantId()
     );
-
-    decisionInstanceDto.setEngine(engineAlias);
     return decisionInstanceDto;
   }
 
-  private void prepareAndSetOutputs(HistoricDecisionInstanceDto engineEntity, DecisionInstanceDto decisionInstanceDto) {
+  private List<OutputInstanceDto> mapDecisionOutputs(HistoricDecisionInstanceDto engineEntity) {
     List<PluginDecisionOutputDto> outputInstanceDtoList = engineEntity.getOutputs()
       .stream()
-      .map(o -> mapEngineOutputDtoToPluginOutputDto(decisionInstanceDto, o))
+      .map(o -> mapEngineOutputDtoToPluginOutputDto(engineEntity, o))
       .collect(Collectors.toList());
 
     for (DecisionOutputImportAdapter dmnInputImportAdapter : decisionOutputImportAdapterProvider.getPlugins()) {
       outputInstanceDtoList = dmnInputImportAdapter.adaptOutputs(outputInstanceDtoList);
     }
 
-    List<OutputInstanceDto> outputList = outputInstanceDtoList.stream()
+    final List<OutputInstanceDto> outputList = outputInstanceDtoList.stream()
       .map(this::mapPluginOutputDtoToOptimizeOutputDto)
       .filter(this::isValidOutputInstanceDto)
       .collect(Collectors.toList());
 
-    decisionInstanceDto.setOutputs(outputList);
+    return outputList;
   }
 
-  private void prepareAndSetInputs(HistoricDecisionInstanceDto engineEntity, DecisionInstanceDto decisionInstanceDto) {
+  private List<InputInstanceDto> mapDecisionInputs(HistoricDecisionInstanceDto engineEntity) {
     List<PluginDecisionInputDto> inputInstanceDtoList = engineEntity.getInputs()
       .stream()
-      .map(i -> mapEngineInputDtoToPluginInputDto(decisionInstanceDto, i))
+      .map(i -> mapEngineInputDtoToPluginInputDto(engineEntity, i))
       .collect(Collectors.toList());
 
 
@@ -167,12 +145,12 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
       inputInstanceDtoList = decisionInputImportAdapter.adaptInputs(inputInstanceDtoList);
     }
 
-    List<InputInstanceDto> inputList = inputInstanceDtoList.stream()
+    final List<InputInstanceDto> inputList = inputInstanceDtoList.stream()
       .map(this::mapPluginInputDtoToOptimizeInputDto)
       .filter(this::isValidInputInstanceDto)
       .collect(Collectors.toList());
 
-    decisionInstanceDto.setInputs(inputList);
+    return inputList;
   }
 
   private InputInstanceDto mapPluginInputDtoToOptimizeInputDto(PluginDecisionInputDto pluginDecisionInputDto) {
@@ -211,8 +189,9 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
       });
   }
 
-  private PluginDecisionInputDto mapEngineInputDtoToPluginInputDto(DecisionInstanceDto decisionInstanceDto, final
-  HistoricDecisionInputInstanceDto engineInputDto) {
+  @SneakyThrows
+  private PluginDecisionInputDto mapEngineInputDtoToPluginInputDto(final HistoricDecisionInstanceDto decisionInstanceDto,
+                                                                   final HistoricDecisionInputInstanceDto engineInputDto) {
     return new PluginDecisionInputDto(
       engineInputDto.getId(),
       engineInputDto.getClauseId(),
@@ -220,15 +199,17 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
       engineInputDto.getType(),
       String.valueOf(engineInputDto.getValue()),
       decisionInstanceDto.getDecisionDefinitionKey(),
-      decisionInstanceDto.getDecisionDefinitionVersion(),
+      resolveDecisionDefinitionVersion(decisionInstanceDto),
       decisionInstanceDto.getDecisionDefinitionId(),
-      decisionInstanceDto.getDecisionInstanceId(),
-      engineAlias
+      decisionInstanceDto.getId(),
+      engineContext.getEngineAlias(),
+      decisionInstanceDto.getTenantId()
     );
   }
 
-  private PluginDecisionOutputDto mapEngineOutputDtoToPluginOutputDto(DecisionInstanceDto decisionInstanceDto, final
-  HistoricDecisionOutputInstanceDto engineOutputDto) {
+  @SneakyThrows
+  private PluginDecisionOutputDto mapEngineOutputDtoToPluginOutputDto(final HistoricDecisionInstanceDto decisionInstanceDto,
+                                                                      final HistoricDecisionOutputInstanceDto engineOutputDto) {
     return new PluginDecisionOutputDto(
       engineOutputDto.getId(),
       engineOutputDto.getClauseId(),
@@ -239,16 +220,17 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
       engineOutputDto.getType(),
       String.valueOf(engineOutputDto.getValue()),
       decisionInstanceDto.getDecisionDefinitionKey(),
-      decisionInstanceDto.getDecisionDefinitionVersion(),
+      resolveDecisionDefinitionVersion(decisionInstanceDto),
       decisionInstanceDto.getDecisionDefinitionId(),
-      decisionInstanceDto.getDecisionInstanceId(),
-      engineAlias
+      decisionInstanceDto.getId(),
+      engineContext.getEngineAlias(),
+      decisionInstanceDto.getTenantId()
     );
   }
 
   private boolean isValidInputInstanceDto(final InputInstanceDto inputInstanceDto) {
     if (!isVariableTypeSupported(inputInstanceDto.getType())) {
-      logger.info(
+      log.info(
         "Refuse to add input variable [{}] of type [{}]. Variable has no type or type is not supported.",
         inputInstanceDto.getId(),
         inputInstanceDto.getType()
@@ -261,7 +243,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
 
   private boolean isValidOutputInstanceDto(final OutputInstanceDto outputInstanceDto) {
     if (!isVariableTypeSupported(outputInstanceDto.getType())) {
-      logger.info(
+      log.info(
         "Refuse to add output variable [{}] of type [{}]. Variable has no type or type is not supported.",
         outputInstanceDto.getId(),
         outputInstanceDto.getType()

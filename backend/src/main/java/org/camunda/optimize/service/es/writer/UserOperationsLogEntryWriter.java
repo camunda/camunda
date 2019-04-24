@@ -21,7 +21,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,11 +33,12 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
 @Component
-public class UserOperationsLogEntryWriter extends AbstractUserTaskWriter  {
+public class UserOperationsLogEntryWriter extends AbstractUserTaskWriter {
   private static final Logger logger = LoggerFactory.getLogger(UserOperationsLogEntryWriter.class);
 
   private final RestHighLevelClient esClient;
@@ -66,11 +66,9 @@ public class UserOperationsLogEntryWriter extends AbstractUserTaskWriter  {
         final UserOperationLogEntryDto firstOperationEntry = entry.getValue().get(0);
         final UserTaskInstanceDto userTaskInstanceDto = new UserTaskInstanceDto(
           firstOperationEntry.getUserTaskId(),
-          firstOperationEntry.getProcessDefinitionId(),
-          firstOperationEntry.getProcessDefinitionKey(),
           firstOperationEntry.getProcessInstanceId(),
-          mapToUserOperationDtos(entry.getValue()),
-          firstOperationEntry.getEngineAlias()
+          firstOperationEntry.getEngine(),
+          mapToUserOperationDtos(entry.getValue())
         );
         return userTaskInstanceDto;
       })
@@ -99,14 +97,12 @@ public class UserOperationsLogEntryWriter extends AbstractUserTaskWriter  {
       .findFirst()
       .orElseThrow(() -> new IllegalArgumentException("Expected at least one user task entry"));
 
-    final ProcessInstanceDto procInst = new ProcessInstanceDto();
-    procInst.setProcessDefinitionId(firstUserTaskEntry.getProcessDefinitionId());
-    procInst.setProcessDefinitionKey(firstUserTaskEntry.getProcessDefinitionKey());
-    procInst.setProcessInstanceId(firstUserTaskEntry.getProcessInstanceId());
-    procInst.getUserTasks().addAll(userTasks);
-    procInst.setEngine(firstUserTaskEntry.getEngine());
-    final String newProcessInstanceIfAbsent = objectMapper.writeValueAsString(procInst);
+    final ProcessInstanceDto procInst = new ProcessInstanceDto()
+      .setProcessInstanceId(firstUserTaskEntry.getProcessInstanceId())
+      .setEngine(firstUserTaskEntry.getEngine())
+      .setUserTasks(userTasks);
 
+    final String newProcessInstanceIfAbsent = objectMapper.writeValueAsString(procInst);
     final Script updateScript = createUpdateUserOperationsScript(userTasks);
     final UpdateRequest request =
       new UpdateRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE), PROC_INSTANCE_TYPE, processInstanceId)
@@ -132,9 +128,7 @@ public class UserOperationsLogEntryWriter extends AbstractUserTaskWriter  {
   }
 
   private Script createUpdateUserOperationsScript(final List<UserTaskInstanceDto> userTasksWithOperations) {
-    return new Script(
-      ScriptType.INLINE,
-      Script.DEFAULT_SCRIPT_LANG,
+    return createDefaultScript(
       // @formatter:off
       // 1 check for existing userTask
       "if (ctx._source.userTasks == null) ctx._source.userTasks = [];\n" +

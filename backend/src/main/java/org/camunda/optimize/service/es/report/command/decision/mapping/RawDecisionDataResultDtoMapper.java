@@ -83,8 +83,8 @@ public class RawDecisionDataResultDtoMapper {
     });
   }
 
-  private Set<InputVariableEntry> getInputVariables(final DecisionInstanceDto processInstanceDto) {
-    return processInstanceDto.getInputs().stream()
+  private Set<InputVariableEntry> getInputVariables(final DecisionInstanceDto decisionInstanceDto) {
+    return decisionInstanceDto.getInputs().stream()
       .map(inputInstanceDto -> new InputVariableEntry(
         inputInstanceDto.getClauseId(),
         inputInstanceDto.getClauseName(),
@@ -94,8 +94,8 @@ public class RawDecisionDataResultDtoMapper {
       .collect(Collectors.toSet());
   }
 
-  private Set<OutputVariableEntry> getOutputVariables(final DecisionInstanceDto processInstanceDto) {
-    return processInstanceDto.getOutputs().stream()
+  private Set<OutputVariableEntry> getOutputVariables(final DecisionInstanceDto decisionInstanceDto) {
+    return decisionInstanceDto.getOutputs().stream()
       .map(outputInstanceDto -> new OutputVariableEntry(
         outputInstanceDto.getClauseId(),
         outputInstanceDto.getClauseName(),

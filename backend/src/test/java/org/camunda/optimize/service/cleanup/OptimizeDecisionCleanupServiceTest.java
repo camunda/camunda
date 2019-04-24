@@ -180,11 +180,16 @@ public class OptimizeDecisionCleanupServiceTest {
     filteredInvocationArguments.values().forEach(instant -> assertThat(instant, is(dateFilterValue)));
   }
 
-  private void assertDeleteDecisionInstancesExecutedFor(List<String> expectedDecisionDefinitionKeys, Period expectedTtl) {
+  private void assertDeleteDecisionInstancesExecutedFor(List<String> expectedDecisionDefinitionKeys,
+                                                        Period expectedTtl) {
     final Map<String, OffsetDateTime> decisionInstanceKeysWithDateFilter =
       verifyDeleteDecisionInstanceExecutionReturnCapturedArguments(expectedDecisionDefinitionKeys);
 
-    assertKeysWereCalledWithExpectedTtl(decisionInstanceKeysWithDateFilter, expectedDecisionDefinitionKeys, expectedTtl);
+    assertKeysWereCalledWithExpectedTtl(
+      decisionInstanceKeysWithDateFilter,
+      expectedDecisionDefinitionKeys,
+      expectedTtl
+    );
   }
 
   private Map<String, OffsetDateTime> verifyDeleteDecisionInstanceExecutionReturnCapturedArguments(
@@ -211,7 +216,8 @@ public class OptimizeDecisionCleanupServiceTest {
     final List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos = decisionDefinitionIds.stream()
       .map(this::createDecisionDefinitionDto)
       .collect(Collectors.toList());
-    when(decisionDefinitionReader.fetchFullyImportedDecisionDefinitionsAsService()).thenReturn(decisionDefinitionOptimizeDtos);
+    when(decisionDefinitionReader.fetchFullyImportedDecisionDefinitionsAsService()).thenReturn(
+      decisionDefinitionOptimizeDtos);
     return decisionDefinitionIds;
   }
 
@@ -222,8 +228,7 @@ public class OptimizeDecisionCleanupServiceTest {
   }
 
   private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key) {
-    DecisionDefinitionOptimizeDto decisionDefinitionOptimizeDto = new DecisionDefinitionOptimizeDto();
-    decisionDefinitionOptimizeDto.setKey(key);
+    DecisionDefinitionOptimizeDto decisionDefinitionOptimizeDto = new DecisionDefinitionOptimizeDto().setKey(key);
     return decisionDefinitionOptimizeDto;
   }
 

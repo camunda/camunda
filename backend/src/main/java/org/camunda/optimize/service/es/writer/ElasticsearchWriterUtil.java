@@ -1,0 +1,66 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package org.camunda.optimize.service.es.writer;
+
+import lombok.experimental.UtilityClass;
+import org.apache.commons.beanutils.PropertyUtils;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
+
+import java.lang.reflect.InvocationTargetException;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+
+@UtilityClass
+public class ElasticsearchWriterUtil {
+  private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+
+  static Script createPrimitiveFieldUpdateScript(final Set<String> fields,
+                                                 final Object entityDto) {
+    final Map<String, Object> params = new HashMap<>();
+    for (String fieldName : fields) {
+      try {
+        Object fieldValue = PropertyUtils.getProperty(entityDto, fieldName);
+        if (fieldValue instanceof TemporalAccessor) {
+          fieldValue = dateTimeFormatter.format((TemporalAccessor) fieldValue);
+        }
+        params.put(fieldName, fieldValue);
+      } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        throw new OptimizeRuntimeException("Could not read field from entity: " + fieldName, e);
+      }
+    }
+
+    return createDefaultScript(ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()), params);
+  }
+
+  public static Script createDefaultScript(final String inlineUpdateScript, final Map<String, Object> params) {
+    return new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      inlineUpdateScript,
+      params
+    );
+  }
+
+  static String createUpdateFieldsScript(final Set<String> fieldKeys) {
+    return createUpdateFieldsScript("ctx._source", fieldKeys);
+  }
+
+  static String createUpdateFieldsScript(final String fieldPath, final Set<String> fieldKeys) {
+    return fieldKeys
+      .stream()
+      .map(fieldKey -> String.format("%s.%s = params.%s;\n", fieldPath, fieldKey, fieldKey))
+      .collect(Collectors.joining());
+  }
+
+}

@@ -90,18 +90,19 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   }
 
   private VariableDto convertPluginVariableToImportVariable(PluginVariableDto pluginVariableDto) {
-    VariableDto variableDto = new VariableDto();
-    variableDto.setId(pluginVariableDto.getId());
-    variableDto.setName(pluginVariableDto.getName());
-    variableDto.setValue(pluginVariableDto.getValue());
-    variableDto.setValueInfo(pluginVariableDto.getValueInfo());
-    variableDto.setType(pluginVariableDto.getType());
-    variableDto.setProcessInstanceId(pluginVariableDto.getProcessInstanceId());
-    variableDto.setProcessDefinitionId(pluginVariableDto.getProcessDefinitionId());
-    variableDto.setProcessDefinitionKey(pluginVariableDto.getProcessDefinitionKey());
-    variableDto.setVersion(pluginVariableDto.getVersion());
-    variableDto.setEngineAlias(pluginVariableDto.getEngineAlias());
-
+    final VariableDto variableDto = new VariableDto(
+      pluginVariableDto.getId(),
+      pluginVariableDto.getName(),
+      pluginVariableDto.getType(),
+      pluginVariableDto.getValue(),
+      pluginVariableDto.getValueInfo(),
+      pluginVariableDto.getProcessDefinitionKey(),
+      pluginVariableDto.getProcessDefinitionId(),
+      pluginVariableDto.getProcessInstanceId(),
+      pluginVariableDto.getVersion(),
+      pluginVariableDto.getEngineAlias(),
+      pluginVariableDto.getTenantId()
+    );
     return variableDto;
   }
 
@@ -119,19 +120,19 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   }
 
   private VariableDto mapEngineEntityToOptimizeEntity(HistoricVariableUpdateInstanceDto engineEntity) {
-    VariableDto optimizeDto = new VariableDto();
-    optimizeDto.setId(engineEntity.getVariableInstanceId());
-    optimizeDto.setName(engineEntity.getVariableName());
-    optimizeDto.setType(engineEntity.getVariableType());
-    optimizeDto.setValue(engineEntity.getValue());
-    optimizeDto.setValueInfo(engineEntity.getValueInfo());
-
-    optimizeDto.setProcessDefinitionId(engineEntity.getProcessDefinitionId());
-    optimizeDto.setProcessDefinitionKey(engineEntity.getProcessDefinitionKey());
-    optimizeDto.setProcessInstanceId(engineEntity.getProcessInstanceId());
-    optimizeDto.setVersion(engineEntity.getSequenceCounter());
-    optimizeDto.setEngineAlias(engineContext.getEngineAlias());
-
+    final VariableDto optimizeDto = new VariableDto(
+      engineEntity.getVariableInstanceId(),
+      engineEntity.getVariableName(),
+      engineEntity.getVariableType(),
+      engineEntity.getValue(),
+      engineEntity.getValueInfo(),
+      engineEntity.getProcessDefinitionKey(),
+      engineEntity.getProcessDefinitionId(),
+      engineEntity.getProcessInstanceId(),
+      engineEntity.getSequenceCounter(),
+      engineContext.getEngineAlias(),
+      engineEntity.getTenantId()
+    );
     return optimizeDto;
   }
 

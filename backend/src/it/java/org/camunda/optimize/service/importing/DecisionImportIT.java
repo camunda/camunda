@@ -11,22 +11,19 @@ import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
+import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.Map.Entry;
+import java.util.Collections;
+import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.ES_TYPE_INDEX_REFERS_TO;
@@ -36,7 +33,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_IN
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -44,16 +40,12 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 
-public class DecisionImportIT {
+public class DecisionImportIT extends AbstractImportIT {
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
+  protected static final Set<String> DECISION_INSTANCE_NULLABLE_FIELDS =
+    Collections.singleton(DecisionInstanceType.TENANT_ID);
+  protected static final Set<String> DECISION_DEFINITION_NULLABLE_FIELDS =
+    Collections.singleton(DecisionDefinitionType.TENANT_ID);
 
   @Test
   public void importOfDecisionDataCanBeDisabled() throws IOException {
@@ -76,7 +68,24 @@ public class DecisionImportIT {
   }
 
   @Test
-  public void allDecisionDefinitionFieldDataOfImportIsAvailable() throws IOException {
+  public void decisionDefinitionTenantIdIsImportedIfPresent() throws IOException {
+    //given
+    final String tenantId = "reallyAwesomeTenantId";
+    engineRule.deployDecisionDefinitionWithTenant(tenantId);
+
+    //when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //then
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_DEFINITION_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    final SearchHit hit = idsResp.getHits().getHits()[0];
+    assertThat(hit.getSourceAsMap().get(DecisionDefinitionType.TENANT_ID), is(tenantId));
+  }
+
+  @Test
+  public void allDecisionDefinitionFieldDataIsAvailable() throws IOException {
     //given
     engineRule.deployDecisionDefinition();
     engineRule.deployDecisionDefinition();
@@ -86,11 +95,12 @@ public class DecisionImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_TYPE, 2L);
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_TYPE, 2L, DECISION_DEFINITION_NULLABLE_FIELDS);
   }
 
+
   @Test
-  public void directlyExecutedDecisionInstanceFieldDataOfImportIsAvailable() throws IOException {
+  public void decisionInstanceFieldDataIsAvailable() throws IOException {
     //given
     engineRule.deployAndStartDecisionDefinition();
 
@@ -103,7 +113,25 @@ public class DecisionImportIT {
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
 
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertDecisionInstanceFieldSetAsExpected(hit);
+    assertDecisionInstanceFieldSetAsExpected(hit, false);
+  }
+
+  @Test
+  public void decisionInstanceTenantIdIsImportedIfPresent() throws IOException {
+    //given
+    final String tenantId = "reallyAwesomeTenantId";
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinitionWithTenant(tenantId);
+    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
+
+    //when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //then
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    final SearchHit hit = idsResp.getHits().getHits()[0];
+    assertThat(hit.getSourceAsMap().get(DecisionInstanceType.TENANT_ID), is(tenantId));
   }
 
   @Test
@@ -204,21 +232,29 @@ public class DecisionImportIT {
     }
   }
 
+  @Override
+  protected void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchType,
+                                                               final long count) throws IOException {
+    allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchType, count, false);
+  }
+
   private void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchType,
-                                                             final long count) throws IOException {
+                                                               final long count,
+                                                               final boolean expectTenant) throws IOException {
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticsearchType);
 
     assertThat(idsResp.getHits().getTotalHits(), is(count));
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
+      // in this test suite we only care about decision types, no asserts besides count on others
       if (DECISION_INSTANCE_TYPE.equals(elasticsearchType)) {
-        assertDecisionInstanceFieldSetAsExpected(searchHit);
-      } else {
-        assertAllFieldsSet(searchHit);
+        assertDecisionInstanceFieldSetAsExpected(searchHit, expectTenant);
+      } else if (DECISION_DEFINITION_TYPE.equals(elasticsearchType)) {
+        assertAllFieldsSet(DECISION_DEFINITION_NULLABLE_FIELDS, searchHit);
       }
     }
   }
 
-  private void assertDecisionInstanceFieldSetAsExpected(final SearchHit hit) {
+  private void assertDecisionInstanceFieldSetAsExpected(final SearchHit hit, final boolean expectTenant) {
     final DecisionInstanceDto dto = parseToDto(hit, DecisionInstanceDto.class);
     assertThat(dto.getProcessDefinitionId(), is(nullValue()));
     assertThat(dto.getProcessDefinitionKey(), is(nullValue()));
@@ -250,30 +286,7 @@ public class DecisionImportIT {
       assertThat(outputInstanceDto.getRuleOrder(), is(notNullValue()));
     });
     assertThat(dto.getEngine(), is(notNullValue()));
-  }
-
-  private void assertAllFieldsSet(final SearchHit searchHit) {
-    for (Entry searchHitField : searchHit.getSourceAsMap().entrySet()) {
-      String errorMessage = "Something went wrong during fetching of field: " + searchHitField.getKey() +
-        ". Should actually have a value!";
-      assertThat(errorMessage, searchHitField.getValue(), is(notNullValue()));
-      if (searchHitField.getValue() instanceof String) {
-        String value = (String) searchHitField.getValue();
-        assertThat(errorMessage, value.isEmpty(), is(false));
-      }
-    }
-  }
-
-  private SearchResponse getSearchResponseForAllDocumentsOfType(final String elasticsearchType) throws IOException {
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(matchAllQuery())
-      .size(100);
-
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(elasticsearchType))
-      .types(elasticsearchType)
-      .source(searchSourceBuilder);
-    return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    assertThat(dto.getTenantId(), is(expectTenant ? notNullValue() : nullValue()));
   }
 
 }

@@ -70,17 +70,15 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
   private UserTaskInstanceDto mapEngineEntityToOptimizeEntity(final HistoricUserTaskInstanceDto engineEntity) {
     final UserTaskInstanceDto userTaskInstanceDto = new UserTaskInstanceDto(
       engineEntity.getId(),
-      engineEntity.getProcessDefinitionId(),
-      engineEntity.getProcessDefinitionKey(),
       engineEntity.getProcessInstanceId(),
+      engineContext.getEngineAlias(),
       engineEntity.getTaskDefinitionKey(),
       engineEntity.getActivityInstanceId(),
       engineEntity.getStartTime(),
       engineEntity.getEndTime(),
       engineEntity.getDue(),
       engineEntity.getDeleteReason(),
-      engineEntity.getDuration(),
-      engineContext.getEngineAlias()
+      engineEntity.getDuration()
     );
     return userTaskInstanceDto;
   }

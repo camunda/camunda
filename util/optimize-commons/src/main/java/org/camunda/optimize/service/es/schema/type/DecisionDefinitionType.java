@@ -23,6 +23,7 @@ public class DecisionDefinitionType extends StrictTypeMappingCreator {
   public static final String DECISION_DEFINITION_NAME = "name";
   public static final String DECISION_DEFINITION_XML = "dmn10Xml";
   public static final String ENGINE = "engine";
+  public static final String TENANT_ID = "tenantId";
 
   @Override
   public String getType() {
@@ -48,6 +49,9 @@ public class DecisionDefinitionType extends StrictTypeMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(ENGINE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(TENANT_ID)
         .field("type", "keyword")
       .endObject()
       .startObject(DECISION_DEFINITION_NAME)

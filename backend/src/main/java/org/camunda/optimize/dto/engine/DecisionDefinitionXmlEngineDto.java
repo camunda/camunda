@@ -9,7 +9,7 @@ import lombok.Data;
 
 @Data
 public class DecisionDefinitionXmlEngineDto implements EngineDto {
-
-  protected String id;
-  protected String dmnXml;
+  private String id;
+  private String dmnXml;
+  private String tenantId;
 }

@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.result;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.camunda.optimize.dto.optimize.query.report.single.result.LimitedResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 public abstract class ProcessReportMapResult<T> extends ProcessReportResultDto implements LimitedResultDto {
   private List<MapResultEntryDto<T>> data = new ArrayList<>();
   private Boolean isComplete = true;

@@ -5,26 +5,31 @@
  */
 package org.camunda.optimize.dto.optimize.importing;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 
-
+@Accessors(chain = true)
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 public class FlowNodeEventDto implements Serializable,OptimizeDto {
-
-  protected String id;
-  protected String activityId;
-  protected String activityInstanceId;
-  protected OffsetDateTime timestamp;
-  protected String processDefinitionKey;
-  protected String processDefinitionId;
-  protected String processInstanceId;
-  protected OffsetDateTime startDate;
-  protected OffsetDateTime endDate;
-  protected Long durationInMs;
-  protected String activityType;
-  protected String engineAlias;
+  private String id;
+  private String activityId;
+  private String activityInstanceId;
+  private OffsetDateTime timestamp;
+  private String processDefinitionKey;
+  private String processDefinitionId;
+  private String processInstanceId;
+  private OffsetDateTime startDate;
+  private OffsetDateTime endDate;
+  private Long durationInMs;
+  private String activityType;
+  private String engineAlias;
+  private String tenantId;
 }

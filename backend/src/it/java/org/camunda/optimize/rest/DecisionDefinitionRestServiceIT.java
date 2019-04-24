@@ -272,11 +272,11 @@ public class DecisionDefinitionRestServiceIT {
   }
 
   private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key, String version) {
-    DecisionDefinitionOptimizeDto decisionDefinitionDto = new DecisionDefinitionOptimizeDto();
-    decisionDefinitionDto.setDmn10Xml("DecisionModelXml");
-    decisionDefinitionDto.setKey(key);
-    decisionDefinitionDto.setVersion(version);
-    decisionDefinitionDto.setId("id-" + key + "-version-" + version);
+    DecisionDefinitionOptimizeDto decisionDefinitionDto = new DecisionDefinitionOptimizeDto()
+      .setId("id-" + key + "-version-" + version)
+      .setKey(key)
+      .setVersion(version)
+      .setDmn10Xml("DecisionModelXml");
     elasticSearchRule.addEntryToElasticsearch(
       DECISION_DEFINITION_TYPE, decisionDefinitionDto.getId(), decisionDefinitionDto
     );

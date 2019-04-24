@@ -48,9 +48,9 @@ public class DecisionInstanceEngineImportMediator
     importIndexHandler = provider.getDecisionInstanceImportIndexHandler(engineContext.getEngineAlias());
     decisionInstanceFetcher = beanFactory.getBean(DecisionInstanceFetcher.class, engineContext);
     importService = new DecisionInstanceImportService(
-      decisionInstanceWriter,
       elasticsearchImportJobExecutor,
       engineContext,
+      decisionInstanceWriter,
       decisionDefinitionVersionResolverService,
       decisionInputImportAdapterProvider,
       decisionOutputImportAdapterProvider

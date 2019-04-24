@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -17,9 +19,6 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
@@ -30,23 +29,16 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_S
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_TYPE;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
+@AllArgsConstructor
 @Component
+@Slf4j
 public class SharingWriter {
-
-  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private RestHighLevelClient esClient;
   private ObjectMapper objectMapper;
-
-  @Autowired
-  public SharingWriter(RestHighLevelClient esClient,
-                       ObjectMapper objectMapper) {
-    this.esClient = esClient;
-    this.objectMapper = objectMapper;
-  }
-
+  
   public ReportShareDto saveReportShare(ReportShareDto createSharingDto) {
-    logger.debug("Writing new report share to Elasticsearch");
+    log.debug("Writing new report share to Elasticsearch");
     String id = IdGenerator.getNextId();
     createSharingDto.setId(id);
     try {
@@ -63,21 +55,21 @@ public class SharingWriter {
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write report share to Elasticsearch. " +
           "Maybe the connection to Elasticsearch got lost?";
-        logger.error(message);
+        log.error(message);
         throw new OptimizeRuntimeException(message);
       }
     } catch (IOException e) {
       String errorMessage = "Could not create report share.";
-      logger.error(errorMessage, e);
+      log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
 
-    logger.debug("report share with id [{}] for resource [{}] has been created", id, createSharingDto.getReportId());
+    log.debug("report share with id [{}] for resource [{}] has been created", id, createSharingDto.getReportId());
     return createSharingDto;
   }
 
   public DashboardShareDto saveDashboardShare(DashboardShareDto createSharingDto) {
-    logger.debug("Writing new dashboard share to Elasticsearch");
+    log.debug("Writing new dashboard share to Elasticsearch");
     String id = IdGenerator.getNextId();
     createSharingDto.setId(id);
     try {
@@ -94,16 +86,16 @@ public class SharingWriter {
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write dashboard share to Elasticsearch. " +
           "Maybe the connection to Elasticsearch got lost?";
-        logger.error(message);
+        log.error(message);
         throw new OptimizeRuntimeException(message);
       }
     } catch (IOException e) {
       String errorMessage = "Could not create dashboard share.";
-      logger.error(errorMessage, e);
+      log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
 
-    logger.debug(
+    log.debug(
       "dashboard share with id [{}] for resource [{}] has been created",
       id,
       createSharingDto.getDashboardId()
@@ -127,7 +119,7 @@ public class SharingWriter {
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED) &&
         !indexResponse.getResult().equals(IndexResponse.Result.UPDATED)) {
         String message = "Could not write dashboard share to Elasticsearch.";
-        logger.error(message);
+        log.error(message);
         throw new OptimizeRuntimeException(message);
       }
     } catch (IOException e) {
@@ -136,15 +128,15 @@ public class SharingWriter {
         id,
         updatedShare.getDashboardId()
       );
-      logger.error(errorMessage, e);
+      log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
 
-    logger.debug("dashboard share with id [{}] for resource [{}] has been updated", id, updatedShare.getDashboardId());
+    log.debug("dashboard share with id [{}] for resource [{}] has been updated", id, updatedShare.getDashboardId());
   }
 
   public void deleteReportShare(String shareId) {
-    logger.debug("Deleting report share with id [{}]", shareId);
+    log.debug("Deleting report share with id [{}]", shareId);
     DeleteRequest request =
       new DeleteRequest(
         getOptimizeIndexAliasForType(REPORT_SHARE_TYPE),
@@ -159,7 +151,7 @@ public class SharingWriter {
     } catch (IOException e) {
       String reason =
         String.format("Could not delete report share with id [%s].", shareId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -167,13 +159,13 @@ public class SharingWriter {
       String message =
         String.format("Could not delete report share with id [%s]. Report share does not exist." +
                         "Maybe it was already deleted by someone else?", shareId);
-      logger.error(message);
+      log.error(message);
       throw new NotFoundException(message);
     }
   }
 
   public void deleteDashboardShare(String shareId) {
-    logger.debug("Deleting dashboard share with id [{}]", shareId);
+    log.debug("Deleting dashboard share with id [{}]", shareId);
     DeleteRequest request =
       new DeleteRequest(
         getOptimizeIndexAliasForType(DASHBOARD_SHARE_TYPE),
@@ -188,7 +180,7 @@ public class SharingWriter {
     } catch (IOException e) {
       String reason =
         String.format("Could not delete dashboard share with id [%s].", shareId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -196,7 +188,7 @@ public class SharingWriter {
       String message =
         String.format("Could not delete dashboard share with id [%s]. Dashboard share does not exist." +
                         "Maybe it was already deleted by someone else?", shareId);
-      logger.error(message);
+      log.error(message);
       throw new NotFoundException(message);
     }
   }

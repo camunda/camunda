@@ -27,7 +27,7 @@ public class FlowNodeRestServiceIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   @Test
   public void mapFlowNodeWithoutAuthentication() {
@@ -39,10 +39,10 @@ public class FlowNodeRestServiceIT {
 
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
-            .withoutAuthentication()
-            .execute();
+      .getRequestExecutor()
+      .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
+      .withoutAuthentication()
+      .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(200));
@@ -58,33 +58,33 @@ public class FlowNodeRestServiceIT {
 
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
-            .withoutAuthentication()
-            .execute();
+      .getRequestExecutor()
+      .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
+      .withoutAuthentication()
+      .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(200));
   }
 
   private void createProcessDefinition(String processDefinitionKey, String processDefinitionVersion) {
-    ProcessDefinitionOptimizeDto expected = new ProcessDefinitionOptimizeDto();
     String expectedProcessDefinitionId = processDefinitionKey + ":" + processDefinitionVersion;
-    expected.setId(expectedProcessDefinitionId);
-    expected.setKey(processDefinitionKey);
-    expected.setVersion(processDefinitionVersion);
-    expected.setEngine("testEngine");
+    ProcessDefinitionOptimizeDto expected = new ProcessDefinitionOptimizeDto()
+      .setId(expectedProcessDefinitionId)
+      .setKey(processDefinitionKey)
+      .setVersion(processDefinitionVersion)
+      .setEngine("testEngine");
     elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, expectedProcessDefinitionId, expected);
     createProcessDefinitionXml(processDefinitionKey, processDefinitionVersion);
   }
 
   private void createProcessDefinitionXml(String processDefinitionKey, String processDefinitionVersion) {
-    ProcessDefinitionOptimizeDto expectedXml = new ProcessDefinitionOptimizeDto();
     String expectedProcessDefinitionId = processDefinitionKey + ":" + processDefinitionVersion;
-    expectedXml.setBpmn20Xml("XML123");
-    expectedXml.setKey(processDefinitionKey);
-    expectedXml.setVersion(processDefinitionVersion);
-    expectedXml.setId(expectedProcessDefinitionId);
+    ProcessDefinitionOptimizeDto expectedXml = new ProcessDefinitionOptimizeDto()
+      .setId(expectedProcessDefinitionId)
+      .setKey(processDefinitionKey)
+      .setVersion(processDefinitionVersion)
+      .setBpmn20Xml("XML123");
     elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, expectedProcessDefinitionId, expectedXml);
   }
 }

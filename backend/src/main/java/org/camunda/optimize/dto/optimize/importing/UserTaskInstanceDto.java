@@ -6,62 +6,63 @@
 package org.camunda.optimize.dto.optimize.importing;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Getter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.time.OffsetDateTime;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
-@Getter
-public class UserTaskInstanceDto extends SimpleUserTaskInstanceDto {
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
+public class UserTaskInstanceDto implements OptimizeDto {
+
+  private String id;
 
   @JsonIgnore
-  private final String processDefinitionId;
+  private String processInstanceId;
   @JsonIgnore
-  private final String processDefinitionKey;
-  @JsonIgnore
-  private final String processInstanceId;
-  @JsonIgnore
-  private final String engine;
+  private String engine;
 
-  public UserTaskInstanceDto(final String id,
-                             final String processDefinitionId, final String processDefinitionKey, final String processInstanceId,
-                             final String activityId, final String activityInstanceId, final OffsetDateTime startDate,
-                             final OffsetDateTime endDate, final OffsetDateTime dueDate, final String deleteReason,
-                             final Long totalDurationInMs, final String engine) {
-    this(id, processDefinitionId, processDefinitionKey, processInstanceId,
-         activityId, activityInstanceId, startDate, endDate, dueDate, deleteReason, totalDurationInMs, engine,
-         Collections.emptySet()
-    );
-  }
+  private String activityId;
+  private String activityInstanceId;
 
-  public UserTaskInstanceDto(final String id, final String processDefinitionId, final String processDefinitionKey,
-                             final String processInstanceId, final Set<UserOperationDto> userOperations, final String engine) {
-    this(id, processDefinitionId, processDefinitionKey, processInstanceId, null,
-         null, null, null, null, null, null, engine, userOperations
-    );
-  }
+  private OffsetDateTime startDate;
+  private OffsetDateTime endDate;
+  private OffsetDateTime dueDate;
 
-  public UserTaskInstanceDto(final String id,
-                             final String processDefinitionId, final String processDefinitionKey,
-                             final String processInstanceId, final String activityId, final String activityInstanceId,
-                             final OffsetDateTime startDate, final OffsetDateTime endDate,
-                             final OffsetDateTime dueDate, final String deleteReason, final Long totalDurationInMs,
-                             final String engine, final Set<UserOperationDto> userOperations) {
-    super(
-      id,
-      activityId,
-      activityInstanceId,
-      startDate,
-      endDate,
-      dueDate,
-      deleteReason,
-      totalDurationInMs,
-      userOperations
-    );
-    this.processDefinitionId = processDefinitionId;
-    this.processDefinitionKey = processDefinitionKey;
+  private String deleteReason;
+
+  private Long totalDurationInMs;
+  private Long idleDurationInMs;
+  private Long workDurationInMs;
+
+  private Set<UserOperationDto> userOperations = new HashSet<>();
+
+  public UserTaskInstanceDto(final String id, final String processInstanceId, final String engine,
+                             final Set<UserOperationDto> userOperations) {
+    this.id = id;
     this.processInstanceId = processInstanceId;
     this.engine = engine;
+    this.userOperations = userOperations;
+  }
+
+  public UserTaskInstanceDto(final String id, final String processInstanceId, final String engine,
+                             final String activityId, final String activityInstanceId, final OffsetDateTime startDate,
+                             final OffsetDateTime endDate, final OffsetDateTime dueDate, final String deleteReason,
+                             final Long totalDurationInMs) {
+    this.id = id;
+    this.processInstanceId = processInstanceId;
+    this.engine = engine;
+    this.activityId = activityId;
+    this.activityInstanceId = activityInstanceId;
+    this.startDate = startDate;
+    this.endDate = endDate;
+    this.dueDate = dueDate;
+    this.deleteReason = deleteReason;
+    this.totalDurationInMs = totalDurationInMs;
   }
 }

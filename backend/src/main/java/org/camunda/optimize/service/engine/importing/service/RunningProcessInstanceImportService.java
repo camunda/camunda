@@ -70,16 +70,19 @@ public class RunningProcessInstanceImportService implements ImportService<Histor
   }
 
   private ProcessInstanceDto mapEngineEntityToOptimizeEntity(HistoricProcessInstanceDto engineEntity) {
-    ProcessInstanceDto processInstanceDto = new ProcessInstanceDto();
-    processInstanceDto.setProcessDefinitionKey(engineEntity.getProcessDefinitionKey());
-    processInstanceDto.setProcessDefinitionVersion(engineEntity.getProcessDefinitionVersionAsString());
-    processInstanceDto.setProcessDefinitionId(engineEntity.getProcessDefinitionId());
-    processInstanceDto.setProcessInstanceId(engineEntity.getId());
-    processInstanceDto.setBusinessKey(engineEntity.getBusinessKey());
-    processInstanceDto.setStartDate(engineEntity.getStartTime());
-    processInstanceDto.setState(engineEntity.getState());
-    processInstanceDto.setEndDate(null);
-    processInstanceDto.setEngine(engineContext.getEngineAlias());
+    final ProcessInstanceDto processInstanceDto = new ProcessInstanceDto(
+      engineEntity.getProcessDefinitionKey(),
+      engineEntity.getProcessDefinitionVersionAsString(),
+      engineEntity.getProcessDefinitionId(),
+      engineEntity.getId(),
+      engineEntity.getBusinessKey(),
+      engineEntity.getStartTime(),
+      null,
+      null,
+      engineEntity.getState(),
+      engineContext.getEngineAlias(),
+      engineEntity.getTenantId()
+    );
     return processInstanceDto;
   }
 

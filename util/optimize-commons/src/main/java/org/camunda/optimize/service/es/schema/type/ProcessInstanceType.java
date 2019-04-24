@@ -80,6 +80,7 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
   public static final String USER_OPERATION_NEW_VALUE = "newValue";
 
   public static final String ENGINE = "engine";
+  public static final String TENANT_ID = "tenantId";
 
   @Override
   public String getType() {
@@ -93,6 +94,7 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
 
   @Override
   public XContentBuilder addProperties(XContentBuilder builder) throws IOException {
+    // @formatter:off
     XContentBuilder newBuilder =  builder
             .startObject(PROCESS_DEFINITION_KEY)
               .field("type", "keyword")
@@ -123,6 +125,9 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
             .startObject(ENGINE)
               .field("type", "keyword")
             .endObject()
+            .startObject(TENANT_ID)
+              .field("type", "keyword")
+            .endObject()
             .startObject(STATE)
               .field("type", "keyword")
             .endObject()
@@ -142,6 +147,7 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
            .endObject();
             addVariableFields(newBuilder);
     return newBuilder;
+    // @formatter:on
   }
 
   private XContentBuilder addNestedEventField(XContentBuilder builder) throws IOException {
@@ -218,6 +224,7 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
           .endObject()
         .endObject();
     return newBuilder;
+    // @formatter:on
   }
 
   private XContentBuilder addNestedVariableField(XContentBuilder builder, String type) throws IOException {

@@ -9,7 +9,6 @@ import lombok.Data;
 
 @Data
 public class HistoricVariableInstanceDto implements EngineDto {
-
   private String id;
   private String name;
   private String type;
@@ -17,4 +16,5 @@ public class HistoricVariableInstanceDto implements EngineDto {
   private String processDefinitionKey;
   private String processDefinitionId;
   private String processInstanceId;
+  private String tenantId;
 }

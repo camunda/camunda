@@ -24,6 +24,7 @@ public class ProcessDefinitionType extends StrictTypeMappingCreator {
   public static final String PROCESS_DEFINITION_XML = "bpmn20Xml";
   public static final String FLOW_NODE_NAMES = "flowNodeNames";
   public static final String ENGINE = "engine";
+  public static final String TENANT_ID = "tenantId";
 
   @Override
   public String getType() {
@@ -48,6 +49,9 @@ public class ProcessDefinitionType extends StrictTypeMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(ENGINE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(TENANT_ID)
         .field("type", "keyword")
       .endObject()
       .startObject(PROCESS_DEFINITION_NAME)

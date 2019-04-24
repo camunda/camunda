@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.engine.importing.service;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -12,34 +14,20 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ProcessDefinitionElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@AllArgsConstructor
+@Slf4j
 public class ProcessDefinitionImportService implements ImportService<ProcessDefinitionEngineDto> {
-
-  protected Logger logger = LoggerFactory.getLogger(getClass());
-
-  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  protected EngineContext engineContext;
-  private ProcessDefinitionWriter processDefinitionWriter;
-
-  public ProcessDefinitionImportService(
-    ProcessDefinitionWriter processDefinitionWriter,
-    ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-    EngineContext engineContext
-  ) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-    this.engineContext = engineContext;
-    this.processDefinitionWriter = processDefinitionWriter;
-
-  }
+  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final EngineContext engineContext;
+  private final ProcessDefinitionWriter processDefinitionWriter;
 
   @Override
   public void executeImport(List<ProcessDefinitionEngineDto> pageOfEngineEntities) {
-    logger.trace("Importing entities from engine...");
+    log.trace("Importing entities from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
@@ -77,12 +65,14 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
   }
 
   private ProcessDefinitionOptimizeDto mapEngineEntityToOptimizeEntity(ProcessDefinitionEngineDto engineEntity) {
-    ProcessDefinitionOptimizeDto optimizeDto = new ProcessDefinitionOptimizeDto();
-    optimizeDto.setName(engineEntity.getName());
-    optimizeDto.setKey(engineEntity.getKey());
-    optimizeDto.setId(engineEntity.getId());
-    optimizeDto.setVersion(String.valueOf(engineEntity.getVersion()));
-    optimizeDto.setEngine(engineContext.getEngineAlias());
+    final ProcessDefinitionOptimizeDto optimizeDto = new ProcessDefinitionOptimizeDto(
+      engineEntity.getId(),
+      engineEntity.getKey(),
+      String.valueOf(engineEntity.getVersion()),
+      engineEntity.getName(),
+      engineContext.getEngineAlias(),
+      engineEntity.getTenantId()
+    );
     return optimizeDto;
   }
 

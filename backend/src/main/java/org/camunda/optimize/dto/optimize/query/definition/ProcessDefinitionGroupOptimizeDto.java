@@ -6,18 +6,17 @@
 package org.camunda.optimize.dto.optimize.query.definition;
 
 import lombok.Data;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
 @Data
-public class ProcessDefinitionGroupOptimizeDto extends KeyDefinitionOptimizeDto implements Serializable, OptimizeDto {
+public class ProcessDefinitionGroupOptimizeDto implements KeyDefinitionOptimizeDto  {
 
-  protected List<ProcessDefinitionOptimizeDto> versions = new ArrayList<>();
+  private String key;
+  private List<ProcessDefinitionOptimizeDto> versions = new ArrayList<>();
 
   public void sort() {
     versions.sort(

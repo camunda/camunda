@@ -9,7 +9,7 @@ import lombok.Data;
 
 @Data
 public class ProcessDefinitionXmlEngineDto implements EngineDto {
-
-  protected String id;
-  protected String bpmn20Xml;
+  private String id;
+  private String bpmn20Xml;
+  private String tenantId;
 }

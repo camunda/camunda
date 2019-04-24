@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
@@ -30,9 +32,6 @@ import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
@@ -44,24 +43,17 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_T
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
+@AllArgsConstructor
 @Component
+@Slf4j
 public class DashboardWriter {
-
   private static final String DEFAULT_DASHBOARD_NAME = "New Dashboard";
-  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private RestHighLevelClient esClient;
   private ObjectMapper objectMapper;
 
-  @Autowired
-  public DashboardWriter(RestHighLevelClient esClient,
-                         ObjectMapper objectMapper) {
-    this.esClient = esClient;
-    this.objectMapper = objectMapper;
-  }
-
   public IdDto createNewDashboardAndReturnId(String userId) {
-    logger.debug("Writing new dashboard to Elasticsearch");
+    log.debug("Writing new dashboard to Elasticsearch");
 
     String id = IdGenerator.getNextId();
     DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
@@ -82,23 +74,23 @@ public class DashboardWriter {
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write dashboard to Elasticsearch. " +
           "Maybe the connection to Elasticsearch got lost?";
-        logger.error(message);
+        log.error(message);
         throw new OptimizeRuntimeException(message);
       }
     } catch (IOException e) {
       String errorMessage = "Could not create dashboard.";
-      logger.error(errorMessage, e);
+      log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
 
-    logger.debug("Dashboard with id [{}] has successfully been created.", id);
+    log.debug("Dashboard with id [{}] has successfully been created.", id);
     IdDto idDto = new IdDto();
     idDto.setId(id);
     return idDto;
   }
 
   public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) {
-    logger.debug("Updating dashboard with id [{}] in Elasticsearch", id);
+    log.debug("Updating dashboard with id [{}] in Elasticsearch", id);
     try {
       UpdateRequest request =
         new UpdateRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, id)
@@ -109,7 +101,7 @@ public class DashboardWriter {
       UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
 
       if (updateResponse.getShardInfo().getFailed() > 0) {
-        logger.error(
+        log.error(
           "Was not able to update dashboard with id [{}] and name [{}].",
           id,
           dashboard.getName()
@@ -122,7 +114,7 @@ public class DashboardWriter {
         id,
         dashboard.getName()
       );
-      logger.error(errorMessage, e);
+      log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     } catch (ElasticsearchStatusException e) {
       String errorMessage = String.format(
@@ -130,7 +122,7 @@ public class DashboardWriter {
         id,
         dashboard.getName()
       );
-      logger.error(errorMessage, e);
+      log.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
     }
   }
@@ -160,7 +152,7 @@ public class DashboardWriter {
       bulkByScrollResponse = esClient.updateByQuery(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format("Could not remove report with id [%s] from dashboards.", reportId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -171,13 +163,13 @@ public class DashboardWriter {
           reportId,
           bulkByScrollResponse.getBulkFailures()
         );
-      logger.error(errorMessage);
+      log.error(errorMessage);
       throw new OptimizeRuntimeException(errorMessage);
     }
   }
 
   public void deleteDashboard(String dashboardId) {
-    logger.debug("Deleting dashboard with id [{}]", dashboardId);
+    log.debug("Deleting dashboard with id [{}]", dashboardId);
     DeleteRequest request =
       new DeleteRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, dashboardId)
         .setRefreshPolicy(IMMEDIATE);
@@ -188,7 +180,7 @@ public class DashboardWriter {
     } catch (IOException e) {
       String reason =
         String.format("Could not delete dashboard with id [%s].", dashboardId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -196,7 +188,7 @@ public class DashboardWriter {
       String message =
         String.format("Could not delete dashboard with id [%s]. Dashboard does not exist." +
                         "Maybe it was already deleted by someone else?", dashboardId);
-      logger.error(message);
+      log.error(message);
       throw new NotFoundException(message);
     }
   }

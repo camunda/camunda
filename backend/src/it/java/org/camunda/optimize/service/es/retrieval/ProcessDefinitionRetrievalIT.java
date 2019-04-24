@@ -240,16 +240,11 @@ public class ProcessDefinitionRetrievalIT {
   }
 
   private void addProcessDefinitionWithoutXmlToElasticsearch() {
-    ProcessDefinitionOptimizeDto processDefinitionWithoutXml = new ProcessDefinitionOptimizeDto();
-    processDefinitionWithoutXml.setBpmn20Xml(null);
-    processDefinitionWithoutXml.setKey("aProcDefKey");
-    processDefinitionWithoutXml.setVersion("aProcDefVersion");
-    processDefinitionWithoutXml.setId("aProcDefId");
-    elasticSearchRule.addEntryToElasticsearch(
-      PROC_DEF_TYPE,
-      "fooId",
-      processDefinitionWithoutXml
-    );
+    ProcessDefinitionOptimizeDto processDefinitionWithoutXml = new ProcessDefinitionOptimizeDto()
+      .setId("aProcDefId")
+      .setKey("aProcDefKey")
+      .setVersion("aProcDefVersion");
+    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, "fooId", processDefinitionWithoutXml);
   }
 
 }

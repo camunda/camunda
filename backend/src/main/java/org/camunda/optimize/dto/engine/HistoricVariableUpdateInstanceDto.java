@@ -25,4 +25,6 @@ public class HistoricVariableUpdateInstanceDto implements EngineDto {
   private String processDefinitionKey;
   private String processDefinitionId;
   private String processInstanceId;
+
+  private String tenantId;
 }

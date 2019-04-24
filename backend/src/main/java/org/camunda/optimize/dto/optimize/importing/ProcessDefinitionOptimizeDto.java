@@ -5,23 +5,45 @@
  */
 package org.camunda.optimize.dto.optimize.importing;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 import org.camunda.optimize.dto.optimize.query.definition.KeyDefinitionOptimizeDto;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+@Accessors(chain = true)
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
-public class ProcessDefinitionOptimizeDto
-    extends KeyDefinitionOptimizeDto
-    implements Serializable, OptimizeDto {
+public class ProcessDefinitionOptimizeDto implements KeyDefinitionOptimizeDto {
+  private String id;
+  private String key;
+  private String version;
+  private String name;
+  private String engine;
+  private String tenantId;
+  private String bpmn20Xml;
+  private Map<String, String> flowNodeNames = new HashMap<>();
 
-  protected String id;
-  protected String name;
-  protected String version;
-  protected String engine;
-  protected String bpmn20Xml;
-  protected Map<String, String> flowNodeNames = new HashMap<>();
+  public ProcessDefinitionOptimizeDto(final String id, final String key, final String version, final String name,
+                                      final String engine, final String tenantId) {
+    this.id = id;
+    this.key = key;
+    this.version = version;
+    this.name = name;
+    this.engine = engine;
+    this.tenantId = tenantId;
+  }
+
+  public ProcessDefinitionOptimizeDto(final String id, final String engine, final String tenantId,
+                                      final String bpmn20Xml, final Map<String, String> flowNodeNames) {
+    this.id = id;
+    this.engine = engine;
+    this.tenantId = tenantId;
+    this.bpmn20Xml = bpmn20Xml;
+    this.flowNodeNames = flowNodeNames;
+  }
 }

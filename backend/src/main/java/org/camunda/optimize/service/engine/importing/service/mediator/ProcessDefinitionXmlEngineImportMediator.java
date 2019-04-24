@@ -40,9 +40,7 @@ public class ProcessDefinitionXmlEngineImportMediator
     engineEntityFetcher = beanFactory.getBean(ProcessDefinitionXmlFetcher.class, engineContext);
 
     importService = new ProcessDefinitionXmlImportService(
-      processDefinitionXmlWriter,
-      elasticsearchImportJobExecutor,
-      engineContext
+      elasticsearchImportJobExecutor, engineContext, processDefinitionXmlWriter
     );
   }
 

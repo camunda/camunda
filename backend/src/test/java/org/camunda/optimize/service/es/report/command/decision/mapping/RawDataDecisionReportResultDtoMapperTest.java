@@ -76,17 +76,18 @@ public class RawDataDecisionReportResultDtoMapperTest {
 
     final List<DecisionInstanceDto> decisionInstances = IntStream.rangeClosed(1, rawDataLimit.intValue())
       .mapToObj(i -> {
-        DecisionInstanceDto instanceDto = new DecisionInstanceDto();
-        instanceDto.getInputs().add(new InputInstanceDto(
-          "id" + i, "input_id_" + i, "input_name_" + i, VariableType.STRING, "a" + i
-        ));
         final OutputInstanceDto outputInstanceDto = new OutputInstanceDto();
         outputInstanceDto.setType(VariableType.SHORT);
         outputInstanceDto.setId("id" + i);
         outputInstanceDto.setClauseId("output_id_" + i);
         outputInstanceDto.setClauseName("output_name_" + i);
         outputInstanceDto.setValue("" + i);
-        instanceDto.getOutputs().add(outputInstanceDto);
+
+        final DecisionInstanceDto instanceDto = new DecisionInstanceDto()
+          .setInputs(Collections.singletonList(new InputInstanceDto(
+            "id" + i, "input_id_" + i, "input_name_" + i, VariableType.STRING, "a" + i
+          )))
+          .setOutputs(Collections.singletonList(outputInstanceDto));
 
         return instanceDto;
       })

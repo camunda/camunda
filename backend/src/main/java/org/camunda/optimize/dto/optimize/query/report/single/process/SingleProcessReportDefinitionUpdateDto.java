@@ -7,10 +7,12 @@ package org.camunda.optimize.dto.optimize.query.report.single.process;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class SingleProcessReportDefinitionUpdateDto extends ReportDefinitionUpdateDto {
 
   protected ProcessReportDataDto data;

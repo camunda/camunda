@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.plugin.importing.variable;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
 public class PluginDecisionInputDto {
 
   /**
@@ -60,101 +67,11 @@ public class PluginDecisionInputDto {
    */
   private String engineAlias;
 
-  public PluginDecisionInputDto() {
-  }
+  /**
+   * The field states the tenant this variable instance belongs to.
+   * <p>
+   * Note: Might be null if no tenant is assigned.
+   */
+  private String tenantId;
 
-  public PluginDecisionInputDto(String id, String clauseId, String clauseName, String type, String value, String
-    decisionDefinitionKey, String decisionDefinitionVersion, String decisionDefinitionId, String decisionInstanceId,
-                                String engineAlias) {
-    this.id = id;
-    this.clauseId = clauseId;
-    this.clauseName = clauseName;
-    this.type = type;
-    this.value = value;
-    this.decisionDefinitionKey = decisionDefinitionKey;
-    this.decisionDefinitionVersion = decisionDefinitionVersion;
-    this.decisionDefinitionId = decisionDefinitionId;
-    this.decisionInstanceId = decisionInstanceId;
-    this.engineAlias = engineAlias;
-  }
-
-  public String getDecisionDefinitionKey() {
-    return decisionDefinitionKey;
-  }
-
-  public void setDecisionDefinitionKey(String decisionDefinitionKey) {
-    this.decisionDefinitionKey = decisionDefinitionKey;
-  }
-
-  public String getDecisionDefinitionVersion() {
-    return decisionDefinitionVersion;
-  }
-
-  public void setDecisionDefinitionVersion(String decisionDefinitionVersion) {
-    this.decisionDefinitionVersion = decisionDefinitionVersion;
-  }
-
-  public String getDecisionDefinitionId() {
-    return decisionDefinitionId;
-  }
-
-  public void setDecisionDefinitionId(String decisionDefinitionId) {
-    this.decisionDefinitionId = decisionDefinitionId;
-  }
-
-  public String getDecisionInstanceId() {
-    return decisionInstanceId;
-  }
-
-  public void setDecisionInstanceId(String decisionInstanceId) {
-    this.decisionInstanceId = decisionInstanceId;
-  }
-
-  public String getEngineAlias() {
-    return engineAlias;
-  }
-
-  public void setEngineAlias(String engineAlias) {
-    this.engineAlias = engineAlias;
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  public void setId(final String id) {
-    this.id = id;
-  }
-
-  public String getClauseId() {
-    return clauseId;
-  }
-
-  public void setClauseId(final String clauseId) {
-    this.clauseId = clauseId;
-  }
-
-  public String getClauseName() {
-    return clauseName;
-  }
-
-  public void setClauseName(final String clauseName) {
-    this.clauseName = clauseName;
-  }
-
-  public String getType() {
-    return type;
-  }
-
-  public void setType(final String type) {
-    this.type = type;
-  }
-
-  public String getValue() {
-    return value;
-  }
-
-  public void setValue(final String value) {
-    this.value = value;
-  }
 }

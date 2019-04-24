@@ -26,7 +26,8 @@ public class ReturnMoreInputVariables implements DecisionInputImportAdapter {
         input.getDecisionDefinitionVersion(),
         input.getDecisionDefinitionId(),
         input.getDecisionInstanceId(),
-        input.getEngineAlias()
+        input.getEngineAlias(),
+        input.getTenantId()
       );
       newInputs.add(newInput);
     }

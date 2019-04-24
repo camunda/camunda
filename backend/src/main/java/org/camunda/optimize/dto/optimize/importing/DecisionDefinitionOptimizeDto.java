@@ -5,33 +5,42 @@
  */
 package org.camunda.optimize.dto.optimize.importing;
 
-import lombok.Getter;
-import lombok.Setter;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 import org.camunda.optimize.dto.optimize.query.definition.KeyDefinitionOptimizeDto;
 
-import java.io.Serializable;
-
-@Getter
-@Setter
-public class DecisionDefinitionOptimizeDto extends KeyDefinitionOptimizeDto implements Serializable, OptimizeDto {
+@Accessors(chain = true)
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
+public class DecisionDefinitionOptimizeDto implements KeyDefinitionOptimizeDto  {
   private String id;
+  private String key;
   private String version;
   private String name;
   private String dmn10Xml;
   private String engine;
-
-  public DecisionDefinitionOptimizeDto() {
-  }
-
+  private String tenantId;
 
   public DecisionDefinitionOptimizeDto(final String id, final String key, final String version, final String name,
-                                       final String dmn10Xml, final String engine) {
+                                       final String engine, final String tenantId) {
     this.id = id;
+    this.key = key;
     this.version = version;
     this.name = name;
+    this.engine = engine;
+    this.tenantId = tenantId;
+  }
+
+  public DecisionDefinitionOptimizeDto(final String id,
+                                       final String dmn10Xml,
+                                       final String engine,
+                                       final String tenantId) {
+    this.id = id;
     this.dmn10Xml = dmn10Xml;
     this.engine = engine;
-    setKey(key);
+    this.tenantId = tenantId;
   }
 }

@@ -9,8 +9,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.importing.SimpleUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationDto;
+import org.camunda.optimize.dto.optimize.importing.UserTaskInstanceDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
@@ -95,7 +95,7 @@ public class UserTaskImportIT {
       );
       assertThat(processInstanceDto.getUserTasks().size(), is(2));
       assertThat(
-        processInstanceDto.getUserTasks().stream().map(SimpleUserTaskInstanceDto::getActivityId).collect(toList()),
+        processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()),
         containsInAnyOrder(USER_TASK_1, USER_TASK_2)
 
       );
@@ -134,7 +134,7 @@ public class UserTaskImportIT {
       );
       assertThat(processInstanceDto.getUserTasks().size(), is(1));
       assertThat(
-        processInstanceDto.getUserTasks().stream().map(SimpleUserTaskInstanceDto::getActivityId).collect(toList()),
+        processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()),
         containsInAnyOrder(USER_TASK_1)
       );
     }
@@ -160,11 +160,11 @@ public class UserTaskImportIT {
       );
       assertThat(processInstanceDto.getUserTasks().size(), is(1));
       assertThat(
-        processInstanceDto.getUserTasks().stream().map(SimpleUserTaskInstanceDto::getActivityId).collect(toList()),
+        processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()),
         containsInAnyOrder(USER_TASK_1)
       );
       assertThat(
-        processInstanceDto.getUserTasks().stream().map(SimpleUserTaskInstanceDto::getId).collect(toList()),
+        processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getId).collect(toList()),
         not(containsInAnyOrder(independentUserTaskId))
       );
     }
@@ -197,7 +197,7 @@ public class UserTaskImportIT {
         assertThat(
           persistedProcessInstanceDto.getUserTasks()
             .stream()
-            .map(SimpleUserTaskInstanceDto::getActivityId)
+            .map(UserTaskInstanceDto::getActivityId)
             .collect(toList()),
           containsInAnyOrder(USER_TASK_1, USER_TASK_2)
         );
@@ -206,7 +206,7 @@ public class UserTaskImportIT {
         assertThat(
           persistedProcessInstanceDto.getUserTasks()
             .stream()
-            .map(SimpleUserTaskInstanceDto::getActivityId)
+            .map(UserTaskInstanceDto::getActivityId)
             .collect(toList()),
           containsInAnyOrder(USER_TASK_1)
         );

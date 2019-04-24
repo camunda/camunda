@@ -24,7 +24,8 @@ public class VariableUpdateWriter extends VariableWriter {
 
   @Autowired
   public VariableUpdateWriter(RestHighLevelClient esClient,
-                              ObjectMapper objectMapper, DateTimeFormatter dateTimeFormatter) {
+                              ObjectMapper objectMapper,
+                              DateTimeFormatter dateTimeFormatter) {
     super(esClient, objectMapper, dateTimeFormatter);
   }
 
@@ -59,21 +60,19 @@ public class VariableUpdateWriter extends VariableWriter {
   }
 
   @Override
-  protected String getNewProcessInstanceRecordString(String processInstanceId,
-                                                     Map<String, List<VariableDto>> typeMappedVars) throws
-                                                                                                    JsonProcessingException {
-
-    VariableDto firstVariable = grabFirstOne(typeMappedVars);
+  protected String getNewProcessInstanceRecordString(final String processInstanceId,
+                                                     final Map<String, List<VariableDto>> typeMappedVars)
+    throws JsonProcessingException {
+    final VariableDto firstVariable = grabFirstOne(typeMappedVars);
     if (firstVariable == null) {
       //all is lost, no variables to persist, should have crashed before.
       return null;
     }
 
-    ProcessInstanceDto procInst = new ProcessInstanceDto();
-    procInst.setProcessDefinitionId(firstVariable.getProcessDefinitionId());
-    procInst.setProcessDefinitionKey(firstVariable.getProcessDefinitionKey());
-    procInst.setProcessInstanceId(processInstanceId);
-    procInst.setEngine(firstVariable.getEngineAlias());
+    final ProcessInstanceDto procInst = new ProcessInstanceDto()
+      .setProcessInstanceId(processInstanceId)
+      .setEngine(firstVariable.getEngineAlias())
+      .setTenantId(firstVariable.getTenantId());
 
     for (Map.Entry<String, List<VariableDto>> entry : typeMappedVars.entrySet()) {
       for (VariableDto var : entry.getValue()) {

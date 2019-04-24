@@ -101,7 +101,8 @@ public class ProcessDefinitionRestServiceIT {
     engineRule.addUser(kermitUser, kermitUser);
     engineRule.grantUserOptimizeAccess(kermitUser);
     grantSingleDefinitionAuthorizationsForUser(kermitUser, authorizedDefinitionKey);
-    final ProcessDefinitionOptimizeDto notAuthorizedToSee = addProcessDefinitionToElasticsearch(notAuthorizedDefinitionKey);
+    final ProcessDefinitionOptimizeDto notAuthorizedToSee = addProcessDefinitionToElasticsearch(
+      notAuthorizedDefinitionKey);
     final ProcessDefinitionOptimizeDto authorizedToSee = addProcessDefinitionToElasticsearch(authorizedDefinitionKey);
 
     // when
@@ -333,13 +334,13 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   private ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(final String key, final String version) {
-    ProcessDefinitionOptimizeDto expectedXml = new ProcessDefinitionOptimizeDto();
-    expectedXml.setBpmn20Xml("ProcessModelXml");
-    expectedXml.setKey(key);
-    expectedXml.setVersion(version);
-    expectedXml.setId(key + version);
-    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, expectedXml.getId(), expectedXml);
-    return expectedXml;
+    final ProcessDefinitionOptimizeDto expectedDto = new ProcessDefinitionOptimizeDto()
+      .setId(key + version)
+      .setKey(key)
+      .setVersion(version)
+      .setBpmn20Xml("ProcessModelXml");
+    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, expectedDto.getId(), expectedDto);
+    return expectedDto;
   }
 
   private void createProcessDefinitionsForKey(String key, int count) {
@@ -349,48 +350,32 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   private void setupFullInstanceFlow() throws IOException {
+    final ProcessDefinitionOptimizeDto processDefinitionXmlDto = new ProcessDefinitionOptimizeDto()
+      .setId(PROCESS_DEFINITION_ID)
+      .setKey(PROCESS_DEFINITION_KEY)
+      .setVersion(PROCESS_DEFINITION_VERSION_1)
+      .setBpmn20Xml(readDiagram(DIAGRAM));
+    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, PROCESS_DEFINITION_ID, processDefinitionXmlDto);
 
-    ProcessDefinitionOptimizeDto processDefinitionXmlDto = new ProcessDefinitionOptimizeDto();
-    processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID);
-    processDefinitionXmlDto.setKey(PROCESS_DEFINITION_KEY);
-    processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_1);
-    processDefinitionXmlDto.setBpmn20Xml(readDiagram(DIAGRAM));
-    elasticSearchRule.addEntryToElasticsearch(
-      PROC_DEF_TYPE,
-      PROCESS_DEFINITION_ID,
-      processDefinitionXmlDto
-    );
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
     processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_2);
-    elasticSearchRule.addEntryToElasticsearch(
-      PROC_DEF_TYPE,
-      PROCESS_DEFINITION_ID_2,
-      processDefinitionXmlDto
-    );
+    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
 
-    ProcessInstanceDto procInst = new ProcessInstanceDto();
-    procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
-    procInst.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
-    procInst.setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_1);
-    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID);
-    procInst.setStartDate(OffsetDateTime.now());
-    procInst.setEndDate(OffsetDateTime.now());
-    procInst.setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}));
+    final ProcessInstanceDto procInst = new ProcessInstanceDto()
+      .setProcessDefinitionId(PROCESS_DEFINITION_ID)
+      .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
+      .setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_1)
+      .setProcessInstanceId(PROCESS_INSTANCE_ID)
+      .setStartDate(OffsetDateTime.now())
+      .setEndDate(OffsetDateTime.now())
+      .setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}));
+    elasticSearchRule.addEntryToElasticsearch(PROC_INSTANCE_TYPE, PROCESS_INSTANCE_ID, procInst);
 
-    elasticSearchRule.addEntryToElasticsearch(
-      PROC_INSTANCE_TYPE,
-      PROCESS_INSTANCE_ID,
-      procInst
-    );
     procInst.setEvents(
       createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY})
     );
     procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
-    elasticSearchRule.addEntryToElasticsearch(
-      PROC_INSTANCE_TYPE,
-      PROCESS_INSTANCE_ID_2,
-      procInst
-    );
+    elasticSearchRule.addEntryToElasticsearch(PROC_INSTANCE_TYPE, PROCESS_INSTANCE_ID_2, procInst);
   }
 
   private List<SimpleEventDto> createEventList(String[] activityIds) {

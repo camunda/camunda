@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
@@ -34,9 +36,6 @@ import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
@@ -54,24 +53,18 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROC
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 
+@AllArgsConstructor
 @Component
+@Slf4j
 public class CollectionWriter {
-
   public static final String DEFAULT_COLLECTION_NAME = "New Collection";
-  private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private RestHighLevelClient esClient;
-  private ObjectMapper objectMapper;
+  private final RestHighLevelClient esClient;
+  private final ObjectMapper objectMapper;
 
-  @Autowired
-  public CollectionWriter(RestHighLevelClient esClient,
-                          ObjectMapper objectMapper) {
-    this.esClient = esClient;
-    this.objectMapper = objectMapper;
-  }
 
   public IdDto createNewCollectionAndReturnId(String userId) {
-    logger.debug("Writing new collection to Elasticsearch");
+    log.debug("Writing new collection to Elasticsearch");
 
     String id = IdGenerator.getNextId();
 
@@ -92,23 +85,23 @@ public class CollectionWriter {
 
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write collection to Elasticsearch. ";
-        logger.error(message);
+        log.error(message);
         throw new OptimizeRuntimeException(message);
       }
     } catch (IOException e) {
       String errorMessage = "Could not create collection.";
-      logger.error(errorMessage, e);
+      log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
 
-    logger.debug("Collection with id [{}] has successfully been created.", id);
+    log.debug("Collection with id [{}] has successfully been created.", id);
     IdDto idDto = new IdDto();
     idDto.setId(id);
     return idDto;
   }
 
   public void updateCollection(CollectionDefinitionUpdateDto collection, String id) {
-    logger.debug("Updating collection with id [{}] in Elasticsearch", id);
+    log.debug("Updating collection with id [{}] in Elasticsearch", id);
 
     ensureThatAllProvidedEntityIdsExist(collection.getData());
     try {
@@ -121,7 +114,7 @@ public class CollectionWriter {
       UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
 
       if (updateResponse.getShardInfo().getFailed() > 0) {
-        logger.error(
+        log.error(
           "Was not able to update collection with id [{}] and name [{}].",
           id,
           collection.getName()
@@ -134,7 +127,7 @@ public class CollectionWriter {
         id,
         collection.getName()
       );
-      logger.error(errorMessage, e);
+      log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     } catch (ElasticsearchStatusException e) {
       String errorMessage = String.format(
@@ -142,7 +135,7 @@ public class CollectionWriter {
         id,
         collection.getName()
       );
-      logger.error(errorMessage, e);
+      log.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
     }
   }
@@ -153,7 +146,7 @@ public class CollectionWriter {
         .isEmpty();
     if (entityIdsAreProvided) {
       List<String> entityIds = collectionData.getEntities();
-      logger.debug("Checking that the given entity ids [{}] for a collection exist", entityIds);
+      log.debug("Checking that the given entity ids [{}] for a collection exist", entityIds);
 
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         .query(QueryBuilders.idsQuery().addIds(entityIds.toArray(new String[0])))
@@ -173,21 +166,21 @@ public class CollectionWriter {
         searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
       } catch (IOException e) {
         String reason = "Was not able to fetch collections.";
-        logger.error(reason, e);
+        log.error(reason, e);
         throw new OptimizeRuntimeException(reason, e);
       }
 
       if (searchResponse.getHits().getTotalHits() != entityIds.size()) {
         String errorMessage = "Could not update collection, since the update contains entity ids that " +
           "do not exist in Optimize any longer.";
-        logger.error(errorMessage);
+        log.error(errorMessage);
         throw new OptimizeRuntimeException(errorMessage);
       }
     }
   }
 
   public void removeEntityFromCollections(String entityId) {
-    logger.debug("Removing entity [{}] from all collections.", entityId);
+    log.debug("Removing entity [{}] from all collections.", entityId);
     Script removeEntityFromCollectionScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
@@ -214,7 +207,7 @@ public class CollectionWriter {
       bulkByScrollResponse = esClient.updateByQuery(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format("Could not remove entity with id [%s] from collections.", entityId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -225,13 +218,13 @@ public class CollectionWriter {
           entityId,
           bulkByScrollResponse.getBulkFailures()
         );
-      logger.error(errorMessage);
+      log.error(errorMessage);
       throw new OptimizeRuntimeException(errorMessage);
     }
   }
 
   public void deleteCollection(String collectionId) {
-    logger.debug("Deleting collection with id [{}]", collectionId);
+    log.debug("Deleting collection with id [{}]", collectionId);
     DeleteRequest request =
       new DeleteRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, collectionId)
       .setRefreshPolicy(IMMEDIATE);
@@ -242,14 +235,14 @@ public class CollectionWriter {
     } catch (IOException e) {
       String reason =
         String.format("Could not delete collection with id [%s]. ", collectionId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
     if (!deleteResponse.getResult().equals(DeleteResponse.Result.DELETED)) {
       String message = String.format("Could not delete collection with id [%s]. Collection does not exist." +
                                        "Maybe it was already deleted by someone else?", collectionId);
-      logger.error(message);
+      log.error(message);
       throw new NotFoundException(message);
     }
   }

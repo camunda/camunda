@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class UserOperationLogImportService implements ImportService<UserOperationLogEntryEngineDto>{
+public class UserOperationLogImportService implements ImportService<UserOperationLogEntryEngineDto> {
   private static final Logger logger = LoggerFactory.getLogger(UserOperationLogImportService.class);
 
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
@@ -59,9 +59,9 @@ public class UserOperationLogImportService implements ImportService<UserOperatio
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<UserOperationLogEntryDto> createElasticsearchImportJob(final
-                                                                                        List<UserOperationLogEntryDto> userTasks,
-                                                                                        Runnable callback) {
+  private ElasticsearchImportJob<UserOperationLogEntryDto> createElasticsearchImportJob(
+    final List<UserOperationLogEntryDto> userTasks,
+    final Runnable callback) {
     final UserOperationEntryElasticsearchImportJob importJob = new UserOperationEntryElasticsearchImportJob(
       userOperationsLogEntryWriter,
       callback
@@ -73,17 +73,15 @@ public class UserOperationLogImportService implements ImportService<UserOperatio
   private UserOperationLogEntryDto mapEngineEntityToOptimizeEntity(final UserOperationLogEntryEngineDto engineEntity) {
     final UserOperationLogEntryDto userTaskInstanceDto = new UserOperationLogEntryDto(
       engineEntity.getId(),
-      engineEntity.getProcessDefinitionId(),
-      engineEntity.getProcessDefinitionKey(),
       engineEntity.getProcessInstanceId(),
       engineEntity.getTaskId(),
+      engineContext.getEngineAlias(),
       engineEntity.getUserId(),
       engineEntity.getTimestamp(),
       engineEntity.getOperationType(),
       engineEntity.getProperty(),
       engineEntity.getOrgValue(),
-      engineEntity.getNewValue(),
-      engineContext.getEngineAlias()
+      engineEntity.getNewValue()
     );
     return userTaskInstanceDto;
   }

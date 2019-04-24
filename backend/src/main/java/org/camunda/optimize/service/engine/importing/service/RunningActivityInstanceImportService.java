@@ -67,19 +67,21 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
   }
 
   private FlowNodeEventDto mapEngineEntityToOptimizeEntity(HistoricActivityInstanceEngineDto engineEntity) {
-    FlowNodeEventDto flowNodeEventDto = new FlowNodeEventDto();
-    flowNodeEventDto.setId(engineEntity.getId());
-    flowNodeEventDto.setActivityId(engineEntity.getActivityId());
-    flowNodeEventDto.setActivityInstanceId(engineEntity.getParentActivityInstanceId());
-    flowNodeEventDto.setTimestamp(engineEntity.getStartTime());
-    flowNodeEventDto.setProcessDefinitionKey(engineEntity.getProcessDefinitionKey());
-    flowNodeEventDto.setProcessDefinitionId(engineEntity.getProcessDefinitionId());
-    flowNodeEventDto.setProcessInstanceId(engineEntity.getProcessInstanceId());
-    flowNodeEventDto.setStartDate(engineEntity.getStartTime());
-    flowNodeEventDto.setEndDate(null);
-    flowNodeEventDto.setActivityType(engineEntity.getActivityType());
-    flowNodeEventDto.setDurationInMs(null);
-    flowNodeEventDto.setEngineAlias(engineContext.getEngineAlias());
+    final FlowNodeEventDto flowNodeEventDto = new FlowNodeEventDto(
+      engineEntity.getId(),
+      engineEntity.getActivityId(),
+      engineEntity.getParentActivityInstanceId(),
+      engineEntity.getStartTime(),
+      engineEntity.getProcessDefinitionKey(),
+      engineEntity.getProcessDefinitionId(),
+      engineEntity.getProcessInstanceId(),
+      engineEntity.getStartTime(),
+      null,
+      null,
+      engineEntity.getActivityType(),
+      engineContext.getEngineAlias(),
+      engineEntity.getTenantId()
+    );
     return flowNodeEventDto;
   }
 

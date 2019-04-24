@@ -40,7 +40,7 @@ public class DecisionDefinitionEngineImportMediator extends BackoffImportMediato
     importIndexHandler = provider.getDecisionDefinitionImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanFactory.getBean(DecisionDefinitionFetcher.class, engineContext);
     definitionImportService = new DecisionDefinitionImportService(
-      processDefinitionWriter, elasticsearchImportJobExecutor, engineContext
+      elasticsearchImportJobExecutor, engineContext, processDefinitionWriter
     );
   }
 
