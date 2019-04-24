@@ -208,7 +208,7 @@ export default function AlertModal(reports) {
       } = this.state;
       return (
         <Modal open={this.props.entity} onClose={this.props.onClose}>
-          <Modal.Header>{this.isInEditingMode() ? 'Edit Alert' : 'Add new Alert'}</Modal.Header>
+          <Modal.Header>{this.isInEditingMode() ? 'Edit Alert' : 'Create New Alert'}</Modal.Header>
           <Modal.Content>
             <div className="AlertModal__topSection">
               <div className="AlertModal__inputGroup">
@@ -357,7 +357,7 @@ export default function AlertModal(reports) {
               onClick={this.confirm}
               disabled={this.state.invalid}
             >
-              {this.isInEditingMode() ? 'Apply Changes' : 'Add Alert'}
+              {this.isInEditingMode() ? 'Apply Changes' : 'Create Alert'}
             </Button>
           </Modal.Actions>
         </Modal>
