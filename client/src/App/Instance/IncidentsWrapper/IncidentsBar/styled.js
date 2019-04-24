@@ -6,7 +6,7 @@
 
 import styled from 'styled-components';
 import {INCIDENTS_BAR_HEIGHT} from 'modules/constants.js';
-import {Colors, themed, themeStyle} from 'modules/theme';
+import {Colors, themed} from 'modules/theme';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
 import {default as TransitionComponent} from 'modules/components/Transition';
