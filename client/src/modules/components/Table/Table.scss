@@ -1,76 +1,76 @@
 @import '~react-table/react-table.css';
 
-.Table__container {
+.Table {
   display: flex;
   flex-direction: column;
-}
 
-.Table__unscrollable-mode {
-  .rt-tbody,
-  .rt-table {
-    overflow: hidden;
-  }
-}
-
-.Table {
-  min-height: 0;
-  font-size: 14px;
-  border: none;
-
-  .rt-thead.-header {
-    box-shadow: none;
-    font-weight: bold;
-    border-bottom: 1px solid #e3e3e3;
-  }
-
-  .rt-table {
+  .ReactTable {
     min-height: 0;
-    -ms-overflow-style: -ms-autohiding-scrollbar; /* IE FIX */
-  }
+    font-size: 14px;
+    border: none;
 
-  .rt-tbody {
-    padding-bottom: 15px; /* IE FIX */
-  }
-
-  .rt-noData {
-    background: rgba(255, 255, 255, 1);
-    font-weight: bold;
-  }
-
-  .rt-thead .rt-tr {
-    text-align: left;
-  }
-
-  .rt-th {
-    &:focus {
-      outline: none;
-    }
-  }
-
-  .-pagination {
-    padding: 5px;
-    box-shadow: none;
-
-    .-previous,
-    .-next {
-      flex: 1 0;
-      padding: 0 20px;
+    .rt-thead.-header {
+      box-shadow: none;
+      font-weight: bold;
+      border-bottom: 1px solid #e3e3e3;
     }
 
-    .-previous {
-      text-align: right;
+    .rt-table {
+      min-height: 0;
+      -ms-overflow-style: -ms-autohiding-scrollbar; /* IE FIX */
     }
 
-    .-next {
+    .rt-tbody {
+      padding-bottom: 15px; /* IE FIX */
+    }
+
+    .rt-noData {
+      background: rgba(255, 255, 255, 1);
+      font-weight: bold;
+    }
+
+    .rt-thead .rt-tr {
       text-align: left;
     }
 
-    .-center {
-      flex: none;
+    .rt-th {
+      &:focus {
+        outline: none;
+      }
     }
 
-    .-pageInfo {
-      margin: 0;
+    .-pagination {
+      padding: 5px;
+      box-shadow: none;
+
+      .-previous,
+      .-next {
+        flex: 1 0;
+        padding: 0 20px;
+      }
+
+      .-previous {
+        text-align: right;
+      }
+
+      .-next {
+        text-align: left;
+      }
+
+      .-center {
+        flex: none;
+      }
+
+      .-pageInfo {
+        margin: 0;
+      }
+    }
+  }
+
+  .unscrollable-mode {
+    .rt-tbody,
+    .rt-table {
+      overflow: hidden;
     }
   }
 }

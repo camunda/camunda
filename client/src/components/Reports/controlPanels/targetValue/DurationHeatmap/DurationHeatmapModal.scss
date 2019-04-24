@@ -1,38 +1,52 @@
-.DurationHeatmapModal__modal-content-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
+.DurationHeatmapModal {
+  .content-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
 
-.DurationHeatmapModal__Table {
-  max-height: 30%;
-  overflow: auto;
-}
+  .diagram-container {
+    height: 70%;
+    display: flex;
+  }
 
-.DurationHeatmapModal__warning {
-  text-align: right;
-}
+  .Table {
+    max-height: 30%;
+    overflow: auto;
+  }
 
-.DurationHeatmapModal__DiagramContainer {
-  height: 70%;
-  display: flex;
-}
+  .ErrorMessage {
+    text-align: right;
+  }
 
-.DurationHeatmapModal__selection {
-  display: flex;
-  min-width: 0;
-  flex-grow: 1;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-direction: row;
-}
+  .selection {
+    display: flex;
+    min-width: 0;
+    flex-grow: 1;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-direction: row;
 
-.DurationHeatmapModal__selection--select {
-  min-width: 0;
-}
+    .Input {
+      min-width: 0;
+      flex-grow: 1;
+    }
 
-.DurationHeatmapModal__selection--input {
-  min-width: 0;
-  flex-grow: 1;
+    .Select {
+      min-width: 0;
+    }
+  }
+
+  &.type-UserTask {
+    .TargetValueDiagramBehavior__clickable .djs-outline {
+      stroke-width: 2px !important;
+      stroke: #276e8c !important;
+      fill: rgba(188, 211, 220, 0.4) !important;
+    }
+
+    .TargetValueDiagramBehavior__highlight .djs-outline {
+      fill: rgba(48, 116, 142, 0.6) !important;
+    }
+  }
 }

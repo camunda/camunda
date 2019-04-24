@@ -131,7 +131,7 @@ it('should set isInvalid property for input if value is invalid', async () => {
 
   expect(
     node
-      .find('.DurationHeatmapModal__selection--input')
+      .find('.selection > [type="number"]')
       .first()
       .props()
   ).toHaveProperty('isInvalid', true);

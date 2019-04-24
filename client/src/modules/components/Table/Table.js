@@ -33,7 +33,7 @@ export default class Table extends React.Component {
     const pageSize = disablePagination ? Number.MAX_VALUE : defaultPageSize;
 
     return (
-      <div className={classnames('Table__container', className)} ref={ref => (this.tableRef = ref)}>
+      <div className={classnames('Table', className)} ref={ref => (this.tableRef = ref)}>
         <ReactTable
           data={data}
           columns={columns}
@@ -46,8 +46,8 @@ export default class Table extends React.Component {
           minRows={0}
           sortable={false}
           multiSort={false}
-          className={classnames('-striped', '-highlight', 'Table', {
-            'Table__unscrollable-mode': disableReportScrolling
+          className={classnames('-striped', '-highlight', 'ReactTable', {
+            'unscrollable-mode': disableReportScrolling
           })}
           noDataText="No data available"
           onResizedChange={this.updateResizedState}

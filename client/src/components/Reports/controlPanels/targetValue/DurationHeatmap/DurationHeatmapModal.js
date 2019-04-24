@@ -6,6 +6,7 @@
 
 import React from 'react';
 import update from 'immutability-helper';
+import classnames from 'classnames';
 
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 
@@ -144,7 +145,7 @@ export default class DurationHeatmapModal extends React.Component {
           (resultEntry && resultEntry[this.props.report.data.configuration.aggregationType]) || 0
         ),
         <React.Fragment>
-          <div className="DurationHeatmapModal__selection">
+          <div className="selection">
             <Input
               value={settings.value}
               type="number"
@@ -156,7 +157,6 @@ export default class DurationHeatmapModal extends React.Component {
               onBlur={() => {
                 this.updateFocus(null);
               }}
-              className="DurationHeatmapModal__selection--input"
               isInvalid={!this.isValidInput(settings.value)}
             />
             <Select
@@ -165,7 +165,6 @@ export default class DurationHeatmapModal extends React.Component {
                 this.setTarget('unit', id)(evt);
                 this.updateFocus(id);
               }}
-              className="DurationHeatmapModal__selection--select"
             >
               <Select.Option value="millis">Milliseconds</Select.Option>
               <Select.Option value="seconds">Seconds</Select.Option>
@@ -249,17 +248,25 @@ export default class DurationHeatmapModal extends React.Component {
     if (!this.areAllFieldsNumbers()) {
       errorMessage += 'All fields should have a numeric value';
     }
+
+    const nodeType = this.getNodeType();
+
     return (
-      <Modal size="max" open={open} onClose={onClose} className="DurationHeatmapModal__Modal">
+      <Modal
+        size="max"
+        open={open}
+        onClose={onClose}
+        className={classnames('DurationHeatmapModal', 'type-' + nodeType)}
+      >
         <Modal.Header>Target Value Comparison </Modal.Header>
-        <Modal.Content className="DurationHeatmapModal__modal-content-container">
+        <Modal.Content className="content-container">
           {this.state.loading && <LoadingIndicator />}
-          <div className="DurationHeatmapModal__DiagramContainer">
+          <div className="diagram-container">
             <BPMNDiagram xml={report.data.configuration.xml}>
               <TargetValueDiagramBehavior
                 onClick={this.updateFocus}
                 focus={this.state.focus}
-                nodeType={this.getNodeType()}
+                nodeType={nodeType}
               />
               <TargetValueBadge values={this.state.values} />
             </BPMNDiagram>
@@ -269,12 +276,11 @@ export default class DurationHeatmapModal extends React.Component {
               head={['Activity', 'Actual Value', 'Target Value']}
               body={this.constructTableBody()}
               foot={[]}
-              className="DurationHeatmapModal__Table"
               disablePagination
             />
           )}
           {!this.validChanges() && !this.state.loading && (
-            <ErrorMessage className="DurationHeatmapModal__warning">{errorMessage}</ErrorMessage>
+            <ErrorMessage>{errorMessage}</ErrorMessage>
           )}
         </Modal.Content>
         <Modal.Actions>
