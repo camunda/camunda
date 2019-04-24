@@ -17,17 +17,6 @@ export const FLOWNODE_TYPE = {
   EVENT: 'Event'
 };
 
-export const NOT_SELECTABLE_FLOWNODE_TYPES = {
-  DEFINITION: 'Definitions',
-  PROCESS: 'Process',
-  MESSAGE: 'Message',
-  SEQUENCEFLOW: 'SequenceFlow',
-  SHAPE: 'BPMNShape',
-  EDGE: 'BPMNEdge',
-  DIAGRAM: 'BPMNDiagram',
-  PLANE: 'BPMNPlane'
-};
-
 export const FILTER_TYPES = {
   RUNNING: 'running',
   FINISHED: 'finished'
