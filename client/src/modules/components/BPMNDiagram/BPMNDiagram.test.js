@@ -24,6 +24,10 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
         resized: jest.fn(),
         zoom: jest.fn()
       };
+
+      this.zoomScroll = {
+        stepZoom: jest.fn()
+      };
     }
     attachTo = jest.fn();
     detach = jest.fn();
@@ -44,8 +48,8 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
         };
       }
     };
-    get = () => {
-      return this.canvas;
+    get = prop => {
+      return this[prop];
     };
   };
 });
@@ -85,7 +89,9 @@ jest.mock('bpmn-js/lib/Viewer', () => {
 
 jest.mock('components', () => {
   return {
-    LoadingIndicator: () => <div>LoadingIndicator</div>
+    LoadingIndicator: () => <div>LoadingIndicator</div>,
+    Button: props => <button {...props}>props.children</button>,
+    Icon: () => <span className="icon" />
   };
 });
 
@@ -226,4 +232,37 @@ it('should show a loading indicator while loading', () => {
   const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
 
   expect(node).toIncludeText('LoadingIndicator');
+});
+
+it('should show diagram zoom and reset controls', async () => {
+  const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
+
+  await flushPromises();
+
+  node.setState({loaded: true});
+
+  expect(node.find('.controls')).toBePresent();
+});
+
+it('should trigger diagram zoom on zoom button click', async () => {
+  const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
+
+  await flushPromises();
+
+  node.setState({loaded: true});
+  node.find('button.zoomIn').simulate('click');
+
+  expect(node.instance().viewer.zoomScroll.stepZoom).toHaveBeenCalled();
+});
+
+it('should reset diagram canvas view when clicking reset button', async () => {
+  const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
+
+  await flushPromises();
+
+  node.instance().fitDiagram = jest.fn();
+
+  node.setState({loaded: true});
+
+  expect(node.instance().viewer.canvas.zoom).toHaveBeenCalledWith('fit-viewport', 'auto');
 });

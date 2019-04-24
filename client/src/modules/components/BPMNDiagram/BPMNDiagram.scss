@@ -12,8 +12,37 @@
 
 .BPMNDiagram {
   flex-grow: 1;
+  position: relative;
 }
 
 .bjs-powered-by {
   display: none !important;
+}
+
+.controls {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 5;
+
+  .Button {
+    &.reset {
+      margin-bottom: 20px;
+    }
+
+    &.zoomIn {
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    &.zoomOut {
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+    }
+
+    display: block;
+    width: 28px;
+    height: 28px;
+    padding: 5px;
+  }
 }

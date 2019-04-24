@@ -13,7 +13,9 @@ import {withErrorHandling} from 'HOC';
 import {themed} from 'theme';
 
 import './BPMNDiagram.scss';
-import {LoadingIndicator} from 'components';
+import {LoadingIndicator, Button, Icon} from 'components';
+
+const zoomStepSize = 0.1;
 
 const availableViewers = [];
 
@@ -36,10 +38,31 @@ export default themed(
               React.Children.map(this.props.children, child =>
                 React.cloneElement(child, {viewer: this.viewer})
               )}
+            {this.state.loaded && this.renderControls()}
             {!this.state.loaded && <LoadingIndicator />}
           </div>
         );
       }
+
+      renderControls = () => {
+        return (
+          <div className="controls">
+            <Button className="reset" onClick={() => this.fitDiagram()}>
+              <Icon type="diagram-reset" />
+            </Button>
+            <Button className="zoomIn" onClick={() => this.zoom(zoomStepSize)}>
+              <Icon type="plus" />
+            </Button>
+            <Button className="zoomOut" onClick={() => this.zoom(-zoomStepSize)}>
+              <Icon type="minus" />
+            </Button>
+          </div>
+        );
+      };
+
+      zoom = val => {
+        this.viewer.get('zoomScroll').stepZoom(val);
+      };
 
       componentDidUpdate(prevProps) {
         if (prevProps.xml !== this.props.xml || prevProps.theme !== this.props.theme) {

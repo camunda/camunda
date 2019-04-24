@@ -2,4 +2,14 @@
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+
+  .BPMNDiagram {
+    .controls {
+      display: none;
+    }
+
+    &:hover .controls {
+      display: block;
+    }
+  }
 }

@@ -10,6 +10,8 @@ import {ReactComponent as deleteIcon} from './delete.svg';
 import {ReactComponent as exitFullscreen} from './exit-fullscreen.svg';
 import {ReactComponent as fullscreen} from './fullscreen.svg';
 import {ReactComponent as plus} from './plus.svg';
+import {ReactComponent as minus} from './minus.svg';
+import {ReactComponent as diagramReset} from './diagram-reset.svg';
 import {ReactComponent as share} from './share.svg';
 import {ReactComponent as edit} from './edit.svg';
 import {ReactComponent as close} from './close.svg';
@@ -42,6 +44,8 @@ const icons = {
   'exit-fullscreen': exitFullscreen,
   fullscreen,
   plus,
+  minus,
+  'diagram-reset': diagramReset,
   share,
   edit,
   close,
