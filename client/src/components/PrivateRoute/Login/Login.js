@@ -19,6 +19,7 @@ export default class Login extends React.Component {
     this.state = {
       username: '',
       password: '',
+      waitingForServer: false,
       error: null
     };
   }
@@ -34,7 +35,11 @@ export default class Login extends React.Component {
 
     const {username, password} = this.state;
 
+    this.setState({waitingForServer: true});
+
     const authResult = await login(username, password);
+
+    this.setState({waitingForServer: false});
 
     if (authResult.token) {
       this.props.onLogin(authResult.token);
@@ -47,20 +52,19 @@ export default class Login extends React.Component {
   };
 
   render() {
-    const {username, password, error} = this.state;
+    const {username, password, waitingForServer, error} = this.state;
 
     return (
       <form className="Login">
-        <h1 className="Login__heading">
-          <Logo className="Login__logo" />
+        <h1>
+          <Logo />
           Camunda Optimize
         </h1>
         {error ? <Message type="error">{error}</Message> : ''}
-        <div className="Login__controls">
-          <div className="Login__row">
+        <div className="controls">
+          <div className="row">
             <Labeled label="Username">
               <Input
-                className="Login__input"
                 type="text"
                 placeholder="Username"
                 value={username}
@@ -70,10 +74,9 @@ export default class Login extends React.Component {
               />
             </Labeled>
           </div>
-          <div className="Login__row">
+          <div className="row">
             <Labeled label="Password">
               <Input
-                className="Login__input"
                 placeholder="Password"
                 value={password}
                 onChange={this.handleInputChange}
@@ -84,7 +87,7 @@ export default class Login extends React.Component {
             </Labeled>
           </div>
         </div>
-        <Button onClick={this.submit} type="primary" color="blue" className="Login__button">
+        <Button onClick={this.submit} disabled={waitingForServer} type="primary" color="blue">
           Login
         </Button>
       </form>

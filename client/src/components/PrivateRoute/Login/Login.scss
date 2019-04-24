@@ -18,41 +18,41 @@
     width: 340px;
     margin-left: calc(50vw - 170px);
   }
-}
 
-.Login__heading {
-  font-size: 1.5em;
-  font-weight: normal;
-  margin-bottom: 36px;
-  text-align: center;
-}
+  h1 {
+    font-size: 1.5em;
+    font-weight: normal;
+    margin-bottom: 36px;
+    text-align: center;
+  }
 
-.Login__logo {
-  margin-right: 0.3em;
-  width: 21px;
-  height: 21px;
-  vertical-align: baseline;
-  position: relative;
-  top: 2px;
-}
+  .Logo {
+    margin-right: 0.3em;
+    width: 21px;
+    height: 21px;
+    vertical-align: baseline;
+    position: relative;
+    top: 2px;
+  }
 
-.Login__controls {
-  margin-bottom: 42px;
-}
+  .controls {
+    margin-bottom: 42px;
 
-.Login__row {
-  margin-bottom: 1.5em;
-}
+    .row {
+      margin-bottom: 1.5em;
+    }
 
-.Input.Login__input {
-  font-size: 1em;
-  display: block;
-  width: 100%;
-  padding: 8px 6px;
-}
+    .Input {
+      font-size: 1em;
+      display: block;
+      width: 100%;
+      padding: 8px 6px;
+    }
+  }
 
-.Login__button {
-  display: block;
-  font-size: 1em;
-  padding: 8px 14px 9px;
+  .Button {
+    display: block;
+    font-size: 1em;
+    padding: 8px 14px 9px;
+  }
 }

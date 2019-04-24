@@ -84,3 +84,11 @@ it('should set the error property on failed login', async () => {
 
   expect(node).toHaveState('error', 'Failed');
 });
+
+it('should disable the login button when waiting for server response', () => {
+  const node = shallow(<Login />);
+
+  node.find(Button).simulate('click', {preventDefault: jest.fn()});
+
+  expect(node.find(Button)).toBeDisabled();
+});
