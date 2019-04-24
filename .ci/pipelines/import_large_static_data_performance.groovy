@@ -175,7 +175,7 @@ pipeline {
         stage('Build Operate') {
           steps {
             git url: 'git@github.com:camunda/camunda-operate',
-                branch: "master",
+                branch: "OPE-517",
                 credentialsId: 'camunda-jenkins-github-ssh',
                 poll: false
             container('maven') {
