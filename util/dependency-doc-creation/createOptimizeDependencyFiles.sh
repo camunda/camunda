@@ -8,7 +8,7 @@ SETTINGS_PATH=`find ${OPTIMIZE_ROOT} -iname "settings.xml"`
 cd ./backend
 
 ## create back end third party
-mvn license:download-licenses -Dlicense.excludedScopes=test,system,provided -s ${SETTINGS_PATH} -B --fail-at-end
+mvn org.codehaus.mojo:license-maven-plugin:1.2:download-licenses -Dlicense.excludedScopes=test,system,provided -s ${SETTINGS_PATH} -B --fail-at-end
 
 ## store directory of license file
 GET_BACKEND_DIR=`pwd`
