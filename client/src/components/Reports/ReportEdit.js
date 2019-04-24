@@ -17,13 +17,7 @@ import {
   EntityNameForm
 } from 'components';
 
-import {
-  loadDefinitions,
-  incompatibleFilters,
-  loadProcessDefinitionXml,
-  updateEntity,
-  evaluateReport
-} from 'services';
+import {incompatibleFilters, updateEntity, evaluateReport} from 'services';
 import {addNotification} from 'notifications';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
@@ -39,40 +33,6 @@ export default withErrorHandling(
       originalData: this.props.report,
       report: this.props.report,
       saveLoading: false
-    };
-
-    getTheOnlyDefinition = async () => {
-      const availableDefinitions = await loadDefinitions('process');
-      if (availableDefinitions.length === 1) {
-        const theOnlyKey = availableDefinitions[0].key;
-        const latestVersion = availableDefinitions[0].versions[0].version;
-        return {theOnlyKey, latestVersion};
-      }
-
-      return {theOnlyKey: null, latestVersion: null};
-    };
-
-    loadTheOnlyDefinition = async () => {
-      const {theOnlyKey, latestVersion} = await this.getTheOnlyDefinition();
-
-      const data = {
-        processDefinitionKey: theOnlyKey || '',
-        processDefinitionVersion: latestVersion || ''
-      };
-
-      await this.loadXmlToConfiguration(data);
-
-      return data;
-    };
-
-    loadXmlToConfiguration = async data => {
-      if (data.processDefinitionKey && data.processDefinitionVersion) {
-        const xml = await loadProcessDefinitionXml(
-          data.processDefinitionKey,
-          data.processDefinitionVersion
-        );
-        data.configuration = {...data.configuration, xml};
-      }
     };
 
     save = async (evt, updatedName) => {
