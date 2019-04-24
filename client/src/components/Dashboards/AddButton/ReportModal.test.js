@@ -5,57 +5,28 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import ReportModal from './ReportModal';
 import {loadEntities} from 'services';
-
-jest.mock('components', () => {
-  const Modal = props => <div id="Modal">{props.open && props.children}</div>;
-  Modal.Header = props => <div id="modal_header">{props.children}</div>;
-  Modal.Content = props => <div id="modal_content">{props.children}</div>;
-  Modal.Actions = props => <div id="modal_actions">{props.children}</div>;
-
-  const Typeahead = props => (
-    <div>
-      {props.values.map((val, i) => (
-        <li key={i}>{props.formatter(val)}</li>
-      ))}
-      <div>{JSON.stringify(props)}</div>
-    </div>
-  );
-
-  return {
-    Modal,
-    Button: props => <button {...props}>{props.children}</button>,
-    ControlGroup: props => <div>{props.children}</div>,
-    Input: ({isInvalid, ...props}) => <input {...props} />,
-    Labeled: props => (
-      <div>
-        <label id={props.id}>{props.label}</label>
-        {props.children}
-      </div>
-    ),
-    ErrorMessage: props => <div {...props} />,
-    LoadingIndicator: () => <div className="sk-circle">Loading...</div>,
-    Typeahead
-  };
-});
+import {Button} from 'components';
 
 jest.mock('services', () => {
+  const rest = jest.requireActual('services');
   return {
+    ...rest,
     loadEntities: jest.fn().mockReturnValue([])
   };
 });
 
 it('should load the available reports', () => {
-  mount(<ReportModal />);
+  shallow(<ReportModal />);
 
   expect(loadEntities).toHaveBeenCalled();
 });
 
 it('should render a Typeahead element with the available reports as options', () => {
-  const node = mount(<ReportModal />);
+  const node = shallow(<ReportModal />);
 
   node.setState({
     availableReports: [
@@ -70,15 +41,17 @@ it('should render a Typeahead element with the available reports as options', ()
     ]
   });
 
+  const props = node.find('Typeahead').props();
+
   expect(node.find('Typeahead')).toBePresent();
-  expect(node.find('Typeahead')).toIncludeText('Select a Report');
-  expect(node.find('Typeahead')).toIncludeText('Report A');
-  expect(node.find('Typeahead')).toIncludeText('Report B');
+  expect(props.placeholder).toBe('Select a Report');
+  expect(props.values[0].name).toBe('Report A');
+  expect(props.values[1].name).toBe('Report B');
 });
 
 it('should call the callback when adding a report', () => {
   const spy = jest.fn();
-  const node = mount(<ReportModal confirm={spy} />);
+  const node = shallow(<ReportModal confirm={spy} />);
 
   node.setState({
     availableReports: [
@@ -94,7 +67,10 @@ it('should call the callback when adding a report', () => {
     selectedReportId: 'a'
   });
 
-  node.find('button[type="primary"]').simulate('click');
+  node
+    .find(Button)
+    .at(1)
+    .simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
     id: 'a'
@@ -102,61 +78,62 @@ it('should call the callback when adding a report', () => {
 });
 
 it('should show only "No reports created yet" option if no reports are available', async () => {
-  const node = await mount(<ReportModal />);
+  const node = await shallow(<ReportModal />);
 
-  expect(node).toIncludeText('No reports created yet');
-  expect(node).not.toIncludeText('Select a Report');
+  expect(node.find('p').at(0)).toIncludeText('No reports created yet');
 });
 
 it('should show a loading message while loading available reports', () => {
-  const node = mount(<ReportModal />);
+  const node = shallow(<ReportModal />);
 
-  expect(node.find('.sk-circle')).toBePresent();
-  expect(node).not.toIncludeText('Select a Report');
-  expect(node).not.toIncludeText('No reports created yet');
+  expect(node.find('LoadingIndicator')).toBePresent();
 });
 
 it("should truncate report name if it's longer than 90 signs", () => {
-  const node = mount(<ReportModal />);
+  const node = shallow(<ReportModal />);
+
+  const report = {
+    id: 'a',
+    name:
+      'a super long name that should be definitely longer longer longer longer longer longer than 90 signs.'
+  };
 
   node.setState({
-    availableReports: [
-      {
-        id: 'anId',
-        name:
-          'a super long name that should be definitely longer longer longer longer longer longer than 90 signs.'
-      }
-    ]
+    availableReports: [report]
   });
 
-  expect(node.find('Typeahead li').text().length).toBeLessThanOrEqual(90);
+  const truncatedText = node
+    .find('Typeahead')
+    .props()
+    .formatter(report);
+
+  expect(truncatedText.length).toBeLessThanOrEqual(90);
 });
 
 it('should contain an Add External Source field', () => {
-  const node = mount(<ReportModal />);
+  const node = shallow(<ReportModal />);
 
-  expect(node).toIncludeText('Add External Source');
+  expect(node.find('.ReportModal__externalSourceLink')).toIncludeText('Add External Source');
 });
 
 it('should contain a text input field if in external source mode', () => {
-  const node = mount(<ReportModal />);
+  const node = shallow(<ReportModal />);
 
   node.setState({external: true});
 
-  expect(node.find('input[name="externalInput"]')).toBePresent();
+  expect(node.find('.externalInput')).toBePresent();
 });
 
-it('should show an error and disable the submit button if the url does not start with http in external mode', () => {
-  const node = mount(<ReportModal />);
+it('should  disable the submit button if the url does not start with http in external mode', () => {
+  const node = shallow(<ReportModal />);
 
   node.setState({external: true, externalUrl: 'Dear computer, please show me a report. Thanks.'});
 
-  expect(node.find('button[type="primary"]')).toBeDisabled();
-  expect(node).toIncludeText('URL has to start with http:// or https://');
+  expect(node.find(Button).at(1)).toBeDisabled();
 });
 
 it('should disable the typeahead when external mode is enabled', () => {
-  const node = mount(<ReportModal />);
+  const node = shallow(<ReportModal />);
 
   node.setState({external: true, availableReports: [{name: 'test name'}]});
 

@@ -61,7 +61,6 @@ export default class EditCollectionModal extends Component {
             value={this.state.name}
             onChange={({target: {value}}) => this.setState({name: value})}
             onKeyDown={this.handleKeyPress}
-            isInvalid={!this.state.name}
             disabled={this.state.loading}
             autoComplete="off"
           />

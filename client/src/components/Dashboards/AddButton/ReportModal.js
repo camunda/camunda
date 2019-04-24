@@ -12,7 +12,6 @@ import {
   Select,
   ControlGroup,
   Input,
-  ErrorMessage,
   Typeahead,
   LoadingIndicator,
   Labeled
@@ -114,7 +113,6 @@ export default class ReportModal extends React.Component {
                   className="externalInput"
                   placeholder="https://www.example.com/widget/embed.html"
                   value={externalUrl}
-                  isInvalid={isInvalidExternal}
                   onChange={({target: {value}}) =>
                     this.setState({
                       externalUrl: value
@@ -122,11 +120,6 @@ export default class ReportModal extends React.Component {
                   }
                 />
               </Labeled>
-              {isInvalidExternal && (
-                <ErrorMessage className="ExternalModal__error">
-                  URL has to start with http:// or https://
-                </ErrorMessage>
-              )}
             </ControlGroup>
           )}
         </Modal.Content>

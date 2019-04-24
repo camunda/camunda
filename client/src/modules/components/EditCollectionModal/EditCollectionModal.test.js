@@ -21,17 +21,6 @@ const props = {
   onConfirm: jest.fn()
 };
 
-it('should add isInvalid prop to the name input if name is empty', async () => {
-  const node = await shallow(<EditCollectionModal {...props} />);
-  await node.instance().componentDidMount();
-
-  await node.setState({
-    name: ''
-  });
-
-  expect(node.find(Input).props()).toHaveProperty('isInvalid', true);
-});
-
 it('should provide name edit input', async () => {
   const node = await shallow(<EditCollectionModal {...props} />);
   node.setState({name: 'test name'});

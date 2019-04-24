@@ -7,27 +7,14 @@
 import React from 'react';
 
 import NumberInput from './NumberInput';
+import {Input} from 'components';
 
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 const props = {
   filter: NumberInput.defaultFilter,
   setValid: jest.fn()
 };
-
-jest.mock('components', () => {
-  return {
-    Button: props => <button {...props}>{props.children}</button>,
-    Input: props => {
-      const allowedProps = {...props};
-      delete allowedProps.isInvalid;
-      return <input {...allowedProps} />;
-    },
-    ErrorMessage: props => <div {...props}>{props.children}</div>,
-    ControlGroup: props => <div>{props.children}</div>,
-    ButtonGroup: props => <div {...props}>{props.children}</div>
-  };
-});
 
 it('should be initialized with an empty variable value', () => {
   expect(NumberInput.defaultFilter.values).toEqual(['']);
@@ -35,7 +22,7 @@ it('should be initialized with an empty variable value', () => {
 
 it('should store the input in the state value array at the correct position', () => {
   const spy = jest.fn();
-  const node = mount(
+  const node = shallow(
     <NumberInput
       {...props}
       filter={{operator: 'in', values: ['value0', 'value1', 'value2']}}
@@ -44,7 +31,8 @@ it('should store the input in the state value array at the correct position', ()
   );
 
   node
-    .find('.VariableFilter__valueFields input')
+    .find('.VariableFilter__valueFields')
+    .find(Input)
     .at(1)
     .simulate('change', {
       target: {getAttribute: jest.fn().mockReturnValue(1), value: 'newValue'}
@@ -54,35 +42,35 @@ it('should store the input in the state value array at the correct position', ()
 });
 
 it('should display the possibility to add another value', () => {
-  const node = mount(<NumberInput {...props} />);
+  const node = shallow(<NumberInput {...props} />);
 
   expect(node.find('.NumberInput__addValueButton')).toBePresent();
 });
 
 it('should add another value when clicking add another value button', () => {
   const spy = jest.fn();
-  const node = mount(<NumberInput {...props} changeFilter={spy} />);
+  const node = shallow(<NumberInput {...props} changeFilter={spy} />);
 
-  node.find('.NumberInput__addValueButton button').simulate('click');
+  node.find('.NumberInput__addValueButton').simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith({operator: 'in', values: ['', '']});
 });
 
 it('should not have the possibility to remove the value if there is only one value', () => {
-  const node = mount(<NumberInput {...props} />);
+  const node = shallow(<NumberInput {...props} />);
 
   expect(node.find('.NumberInput__removeItemButton').exists()).toBeFalsy();
 });
 
 it('should have the possibility to remove a value if there are multiple values', () => {
-  const node = mount(<NumberInput {...props} filter={{operator: 'in', values: ['1', '2']}} />);
+  const node = shallow(<NumberInput {...props} filter={{operator: 'in', values: ['1', '2']}} />);
 
-  expect(node.find('.NumberInput__removeItemButton button').length).toBe(2);
+  expect(node.find('.NumberInput__removeItemButton').length).toBe(2);
 });
 
 it('should remove all values except the first one if operator is "is less/greater than"', () => {
   const spy = jest.fn();
-  const node = mount(
+  const node = shallow(
     <NumberInput
       {...props}
       filter={{operator: 'in', values: ['123', '12', '17']}}
@@ -95,29 +83,16 @@ it('should remove all values except the first one if operator is "is less/greate
 });
 
 it('should not show the add value button for greater and less than operators', () => {
-  const node = mount(<NumberInput {...props} filter={{operator: '<', values: ['']}} />);
+  const node = shallow(<NumberInput {...props} filter={{operator: '<', values: ['']}} />);
 
   expect(node.find('.NumberInput__addValueButton')).not.toBePresent();
 });
 
 it('should disable add filter button if provided value is invalid', () => {
   const spy = jest.fn();
-  const node = mount(<NumberInput {...props} setValid={spy} />);
+  const node = shallow(<NumberInput {...props} setValid={spy} />);
 
   node.setProps({filter: {operator: 'in', values: ['123xxxx']}});
 
   expect(spy).toHaveBeenCalledWith(false);
-});
-
-it('should highlight value input if provided value is invalid', () => {
-  const node = mount(
-    <NumberInput {...props} filter={{operator: 'in', values: ['not a number']}} />
-  );
-
-  expect(
-    node
-      .find('Input')
-      .first()
-      .props()
-  ).toHaveProperty('isInvalid', true);
 });

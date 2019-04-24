@@ -6,7 +6,7 @@
 
 import React, {Component} from 'react';
 
-import {Input, Icon, ErrorMessage} from 'components';
+import {Input, Icon} from 'components';
 import {Link} from 'react-router-dom';
 
 import './EntityNameForm.scss';
@@ -47,12 +47,8 @@ export default class EntityNameForm extends Component {
             value={name || ''}
             className="name-input"
             placeholder={`${entity} name`}
-            isInvalid={!name}
             autoComplete="off"
           />
-          {!name && (
-            <ErrorMessage className="warning">{`${entity}'s name can not be empty`}</ErrorMessage>
-          )}
         </div>
         <div className="tools">
           <button

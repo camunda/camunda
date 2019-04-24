@@ -74,7 +74,7 @@ it('should apply the alert property to the state when changing props', () => {
     },
     reminder: null,
     fixNotification: true,
-    errorInput: null
+    invalid: false
   });
 });
 
@@ -149,19 +149,6 @@ it('should not display warning if email is configured', async () => {
   await node.update();
 
   expect(node.find('.AlertModal__configuration-warning').exists()).toBe(false);
-});
-
-it('should set isInvalid property for input if value is invalid', async () => {
-  const node = await shallow(<AlertModal reports={reports} />);
-  node.setState({name: ''});
-  await node.update();
-
-  expect(
-    node
-      .find('.AlertModal__input')
-      .first()
-      .props()
-  ).toHaveProperty('isInvalid', true);
 });
 
 it('should convert a duration threshold when opening', async () => {

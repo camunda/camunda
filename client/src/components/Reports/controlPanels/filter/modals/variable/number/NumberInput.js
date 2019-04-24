@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {ButtonGroup, Button, Input, ErrorMessage} from 'components';
+import {ButtonGroup, Button, Input} from 'components';
 import classnames from 'classnames';
 
 import './NumberInput.scss';
@@ -108,7 +108,6 @@ export default class NumberInput extends React.Component {
                     data-idx={idx}
                     onChange={this.changeValue}
                     placeholder="Enter value"
-                    isInvalid={!this.isValid(value)}
                   />
                   {values.length > 1 && (
                     <Button
@@ -124,11 +123,6 @@ export default class NumberInput extends React.Component {
                 </li>
               );
             })}
-            {!this.selectionIsValid() && (
-              <li className="NumberInput__valueListWarning">
-                <ErrorMessage>All fields should have a numeric value</ErrorMessage>
-              </li>
-            )}
             {!onlyOneValueAllowed && (
               <li className="NumberInput__valueListButton">
                 <Button onClick={this.addValue} className="NumberInput__addValueButton">

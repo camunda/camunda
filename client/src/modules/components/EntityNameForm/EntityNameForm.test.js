@@ -9,18 +9,6 @@ import {shallow} from 'enzyme';
 
 import EntityNameForm from './EntityNameForm';
 import {Input} from 'components';
-
-it('should add isInvalid prop to the name input is name is empty', async () => {
-  const node = await shallow(<EntityNameForm entity="" />);
-  await node.instance().componentDidMount();
-
-  await node.setState({
-    name: ''
-  });
-
-  expect(node.find(Input).props()).toHaveProperty('isInvalid', true);
-});
-
 it('should provide name edit input', async () => {
   const node = await shallow(<EntityNameForm entity="" />);
   node.setState({name: 'test name'});

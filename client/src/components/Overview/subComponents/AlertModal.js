@@ -7,17 +7,7 @@
 import React from 'react';
 import update from 'immutability-helper';
 
-import {
-  Modal,
-  Button,
-  Labeled,
-  Input,
-  LabeledInput,
-  Select,
-  ErrorMessage,
-  Typeahead,
-  Message
-} from 'components';
+import {Modal, Button, Labeled, Input, LabeledInput, Select, Typeahead, Message} from 'components';
 import {emailNotificationIsEnabled} from './service';
 import {getOptimizeVersion} from 'services';
 
@@ -48,7 +38,7 @@ export default function AlertModal(reports) {
 
       this.state = {
         ...newAlert,
-        errorInput: 'email'
+        invalid: false
       };
     }
 
@@ -108,10 +98,10 @@ export default function AlertModal(reports) {
       }
     };
 
-    setErrorField = field => {
-      if (this.state.errorInput !== field) {
+    setInvalid = isInvalid => {
+      if (this.state.invalid !== isInvalid) {
         this.setState({
-          errorInput: field
+          invalid: isInvalid
         });
       }
     };
@@ -137,7 +127,7 @@ export default function AlertModal(reports) {
         this.updateAlert();
       }
       if (!this.state.name.trim()) {
-        this.setErrorField('name');
+        this.setInvalid(true);
         return;
       }
       if (
@@ -146,15 +136,15 @@ export default function AlertModal(reports) {
         )
       ) {
         // taken from https://www.w3.org/TR/2012/WD-html-markup-20120320/input.email.html#input.email.attrs.value.single
-        this.setErrorField('email');
+        this.setInvalid(true);
         return;
       }
       if (!this.state.reportId) {
-        this.setErrorField('report');
+        this.setInvalid(true);
         return;
       }
       if (!this.isThresholdValid()) {
-        this.setErrorField('threshold');
+        this.setInvalid(true);
         return;
       }
       if (
@@ -162,7 +152,7 @@ export default function AlertModal(reports) {
         isNaN(this.state.checkInterval.value.trim()) ||
         !(this.state.checkInterval.value > 0)
       ) {
-        this.setErrorField('checkInterval');
+        this.setInvalid(true);
         return;
       }
       if (
@@ -171,10 +161,10 @@ export default function AlertModal(reports) {
           isNaN(this.state.reminder.value.trim()) ||
           !this.state.reminder.value > 0)
       ) {
-        this.setErrorField('reminder');
+        this.setInvalid(true);
         return;
       }
-      this.setErrorField(null);
+      this.setInvalid(false);
     }
 
     getReportType = reportId => {
@@ -214,7 +204,6 @@ export default function AlertModal(reports) {
         reminder,
         fixNotification,
         emailNotificationIsEnabled,
-        errorInput,
         optimizeVersion
       } = this.state;
       return (
@@ -239,37 +228,24 @@ export default function AlertModal(reports) {
                   id="name-input"
                   className="AlertModal__input"
                   label="Name"
-                  isInvalid={errorInput === 'name'}
                   value={name}
                   onChange={({target: {value}}) => this.setState({name: value})}
                   autoComplete="off"
-                >
-                  {errorInput === 'name' && (
-                    <ErrorMessage className="AlertModal__warning">Please enter a name</ErrorMessage>
-                  )}
-                </LabeledInput>
+                />
               </div>
               <div className="AlertModal__inputGroup">
                 <LabeledInput
                   id="email-input"
                   label="Send Email to"
                   className="AlertModal__input"
-                  isInvalid={errorInput === 'email'}
                   value={email}
                   onChange={({target: {value}}) => this.setState({email: value})}
-                >
-                  {errorInput === 'email' && (
-                    <ErrorMessage className="AlertModal__warning">
-                      Please enter a valid Email address
-                    </ErrorMessage>
-                  )}
-                </LabeledInput>
+                />
               </div>
               <div className="AlertModal__inputGroup">
                 <Labeled label="when Report">
                   <Typeahead
                     initialValue={reports.find(report => report.id === reportId)}
-                    isInvalid={errorInput === 'report'}
                     placeholder="Select a Report"
                     values={reports}
                     onSelect={this.updateReport}
@@ -296,15 +272,9 @@ export default function AlertModal(reports) {
                     id="value-input"
                     value={threshold}
                     onChange={threshold => this.setState({threshold})}
-                    isInvalid={errorInput === 'threshold'}
                     type={this.getReportType(reportId)}
                   />
                 </div>
-                {errorInput === 'threshold' && (
-                  <ErrorMessage className="AlertModal__warning">
-                    Please enter a numeric value
-                  </ErrorMessage>
-                )}
               </div>
             </div>
             <div className="AlertModal__inputGroup">
@@ -313,7 +283,6 @@ export default function AlertModal(reports) {
                   id="checkInterval-input"
                   label="Check Report every"
                   className="AlertModal__input"
-                  isInvalid={errorInput === 'checkInterval'}
                   value={checkInterval.value}
                   onChange={({target: {value}}) =>
                     this.setState(update(this.state, {checkInterval: {value: {$set: value}}}))
@@ -333,11 +302,6 @@ export default function AlertModal(reports) {
                   <Select.Option value="months">Months</Select.Option>
                 </Select>
               </div>
-              {errorInput === 'checkInterval' && (
-                <ErrorMessage className="AlertModal__warning">
-                  Please enter a numeric value
-                </ErrorMessage>
-              )}
             </div>
             <div className="AlertModal__inputGroup">
               <Input
@@ -363,7 +327,6 @@ export default function AlertModal(reports) {
                       id="reminder-input"
                       label="every"
                       className="AlertModal__input"
-                      isInvalid={errorInput === 'reminder'}
                       value={reminder.value}
                       onChange={({target: {value}}) =>
                         this.setState(update(this.state, {reminder: {value: {$set: value}}}))
@@ -382,11 +345,6 @@ export default function AlertModal(reports) {
                       <Select.Option value="months">Months</Select.Option>
                     </Select>
                   </div>
-                  {errorInput === 'reminder' && (
-                    <ErrorMessage className="AlertModal__warning">
-                      Please enter a numeric value
-                    </ErrorMessage>
-                  )}
                 </div>
               )}
             </div>
@@ -397,7 +355,7 @@ export default function AlertModal(reports) {
               type="primary"
               color="blue"
               onClick={this.confirm}
-              disabled={this.state.errorInput !== null}
+              disabled={this.state.invalid}
             >
               {this.isInEditingMode() ? 'Apply Changes' : 'Add Alert'}
             </Button>
