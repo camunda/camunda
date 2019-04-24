@@ -13,6 +13,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+/**
+ * Tests that even if the Zeebe data is imported twice, in Operate Elasticsearch is is still consistent.
+ */
 @SpringBootTest(
   classes = {ZeebeImportIdempotencyTestConfig.class, TestApplication.class},
   properties = {OperateProperties.PREFIX + ".startLoadingDataOnStartup = false", "spring.main.allow-bean-definition-overriding=true"})

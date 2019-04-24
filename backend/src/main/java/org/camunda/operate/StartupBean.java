@@ -10,7 +10,7 @@ import org.camunda.operate.data.DataGenerator;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.archiver.Archiver;
 import org.camunda.operate.zeebe.operation.OperationExecutor;
-import org.camunda.operate.zeebeimport.ZeebeESImporter;
+import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,7 @@ public class StartupBean {
   private DataGenerator dataGenerator;
 
   @Autowired
-  private ZeebeESImporter zeebeESImporter;
+  private ZeebeImporter zeebeImporter;
 
   @Autowired
   private OperationExecutor operationExecutor;
@@ -48,7 +48,7 @@ public class StartupBean {
       logger.error("Error occurred when generating demo data.", ex);
     }
     logger.info("INIT: Start importing Zeebe data...");
-    zeebeESImporter.startImportingData();
+    zeebeImporter.startImportingData();
     logger.info("INIT: Start operation executor...");
     operationExecutor.startExecuting();
     logger.info("INIT: Start archiving data...");

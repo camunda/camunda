@@ -2,9 +2,7 @@
 
 .PHONY: env-up
 env-up: env-down
-	docker-compose up --force-recreate --build -d elasticsearch kibana
-	sleep 3
-	docker-compose up --force-recreate --build -d zeebe operate
+	docker-compose up --force-recreate --build -d elasticsearch kibana zeebe operate
 
 .PHONY: env-down
 env-down:

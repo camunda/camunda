@@ -3,10 +3,9 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate.zeebeimport;
+package org.camunda.operate.zeebeimport.record;
 
 import java.io.IOException;
-import org.camunda.operate.zeebeimport.record.Intent;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;

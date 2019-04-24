@@ -6,7 +6,8 @@
 package org.camunda.operate.util;
 
 import java.util.function.Predicate;
-import org.camunda.operate.zeebeimport.ZeebeESImporter;
+import org.camunda.operate.zeebeimport.ImportPositionHolder;
+import org.camunda.operate.zeebeimport.PartitionHolder;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.Rule;
 import org.mockito.internal.util.reflection.FieldSetter;
@@ -37,7 +38,10 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
   @Autowired
-  private ZeebeESImporter zeebeESImporter;
+  private PartitionHolder partitionHolder;
+
+  @Autowired
+  private ImportPositionHolder importPositionHolder;
 
   @Autowired
   private WorkflowCache workflowCache;
@@ -69,14 +73,17 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     workerName = TestUtil.createRandomString(10);
 
     workflowCache.clearCache();
+    importPositionHolder.clearCache();
     try {
-      FieldSetter.setField(zeebeESImporter, ZeebeESImporter.class.getDeclaredField("zeebeClient"), getClient());
+      FieldSetter.setField(partitionHolder, PartitionHolder.class.getDeclaredField("zeebeClient"), getClient());
     } catch (NoSuchFieldException e) {
       fail("Failed to inject ZeebeClient into some of the beans");
     }
   }
 
   protected void after() {
+    workflowCache.clearCache();
+    importPositionHolder.clearCache();
     if (jobWorker != null && jobWorker.isOpen()) {
       jobWorker.close();
       jobWorker = null;

@@ -6,6 +6,7 @@
 package org.camunda.operate.it;
 
 import java.util.LinkedHashMap;
+import java.util.function.Predicate;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
@@ -13,6 +14,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import io.zeebe.client.ZeebeClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +30,10 @@ public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
 
   @SpyBean
   private WorkflowCache workflowCache;
+
+  @Autowired
+  @Qualifier("workflowIsDeployedCheck")
+  private Predicate<Object[]> workflowIsDeployedCheck;
 
   @Before
   public void init() {
@@ -56,10 +63,11 @@ public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
 
   @Test
   public void testWorkflowVersionAndNameReturnedAndReused() {
-    ZeebeTestUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
-    ZeebeTestUtil.deployWorkflow(zeebeClient, "processWithGateway.bpmn");
+    String workflowKey1 = ZeebeTestUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
+    String workflowKey2 = ZeebeTestUtil.deployWorkflow(zeebeClient, "processWithGateway.bpmn");
 
-    elasticsearchTestRule.processAllEvents(2);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey1);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey2);
 
     String demoProcessName = workflowCache.getWorkflowName("1");
     assertThat(demoProcessName).isNotNull();

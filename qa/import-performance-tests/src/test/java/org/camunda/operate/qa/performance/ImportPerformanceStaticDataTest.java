@@ -14,7 +14,7 @@ import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.qa.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.ZeebeESConstants;
-import org.camunda.operate.zeebeimport.ZeebeESImporter;
+import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,14 +44,14 @@ public class ImportPerformanceStaticDataTest {
 
   @Test
   public void test() throws InterruptedException, IOException {
-    final ZeebeESImporter zeebeESImporter = applicationContext.getBean(ZeebeESImporter.class);
+    final ZeebeImporter zeebeImporter = applicationContext.getBean(ZeebeImporter.class);
 
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
     logger.info("Starting data import...");
 
-    zeebeESImporter.start();
+    zeebeImporter.start();
 
-    final Object importFinishedLock = zeebeESImporter.getImportFinished();
+    final Object importFinishedLock = zeebeImporter.getImportFinished();
     synchronized (importFinishedLock) {
       importFinishedLock.wait();
       logger.info("Data import completed in: " + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()) + " s");

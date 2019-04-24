@@ -7,6 +7,8 @@ package org.camunda.operate.zeebeimport.processors;
 
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventMetadataEntity;
@@ -18,6 +20,7 @@ import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdUtil;
+import org.camunda.operate.zeebeimport.record.RecordImpl;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.JobRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
@@ -89,24 +92,39 @@ public class EventZeebeRecordProcessor {
 
   }
 
-  public void processJobRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
-    JobRecordValueImpl recordValue = (JobRecordValueImpl)record.getValue();
-    final String intentStr = record.getMetadata().getIntent().name();
-
-    if (JOB_EVENTS.contains(intentStr)) {
-      processJob(record, recordValue, bulkRequest);
+  public void processJobRecord(Map<Long, List<RecordImpl<JobRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
+    for (Map.Entry<Long, List<RecordImpl<JobRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
+      //we need only last event of the processed type
+      List<RecordImpl<JobRecordValueImpl>> jobRecords = wiRecordsEntry.getValue();
+      if (jobRecords.size() >= 1) {
+        for (int i = jobRecords.size() - 1; i>=0; i-- ) {
+          final String intentStr = jobRecords.get(i).getMetadata().getIntent().name();
+          if (JOB_EVENTS.contains(intentStr)) {
+            JobRecordValueImpl recordValue = jobRecords.get(i).getValue();
+            processJob(jobRecords.get(i), recordValue, bulkRequest);
+            break;
+          }
+        }
+      }
     }
-
   }
 
-  public void processWorkflowInstanceRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
-    WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
-    final String intentStr = record.getMetadata().getIntent().name();
 
-    if (WORKFLOW_INSTANCE_STATES.contains(intentStr)) {
-      processWorkflowInstance(record, recordValue, bulkRequest);
+  public void processWorkflowInstanceRecord(Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
+    for (Map.Entry<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
+      //we need only last event of the processed type
+      List<RecordImpl<WorkflowInstanceRecordValueImpl>> wiRecords = wiRecordsEntry.getValue();
+      if (wiRecords.size() >= 1) {
+        for (int i = wiRecords.size() - 1; i>=0; i-- ) {
+          final String intentStr = wiRecords.get(i).getMetadata().getIntent().name();
+          if (WORKFLOW_INSTANCE_STATES.contains(intentStr)) {
+            WorkflowInstanceRecordValueImpl recordValue = wiRecords.get(i).getValue();
+            processWorkflowInstance(wiRecords.get(i), recordValue, bulkRequest);
+            break;
+          }
+        }
+      }
     }
-
   }
 
   private void processWorkflowInstance(Record record, WorkflowInstanceRecordValueImpl recordValue, BulkRequest bulkRequest)

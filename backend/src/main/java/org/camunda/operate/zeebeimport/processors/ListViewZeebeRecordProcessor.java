@@ -8,6 +8,7 @@ package org.camunda.operate.zeebeimport.processors;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.ActivityState;
@@ -24,6 +25,8 @@ import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
+import org.camunda.operate.zeebeimport.record.Intent;
+import org.camunda.operate.zeebeimport.record.RecordImpl;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.VariableRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
@@ -42,7 +45,6 @@ import io.zeebe.protocol.intent.IncidentIntent;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN;
 
 @Component
 public class ListViewZeebeRecordProcessor {
@@ -84,26 +86,97 @@ public class ListViewZeebeRecordProcessor {
 
   }
 
-  public void processWorkflowInstanceRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
+  public void processWorkflowInstanceRecord(Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
 
-    final String intentStr = record.getMetadata().getIntent().name();
-    WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
-
-    if (isProcessEvent(recordValue)) {
-
-      //complete operation
-      if (intentStr.equals(ELEMENT_TERMINATED.name())) {
-        //TODO must be idempotent
-        //not possible to include UpdateByQueryRequestBuilder in bulk query -> executing at once
-        batchOperationWriter.completeOperation(IdUtil.getId(record.getKey(), record), null, OperationType.CANCEL_WORKFLOW_INSTANCE);
-        //if we update smth, we need it to have affect at once
-        bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+    for (Map.Entry<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
+      WorkflowInstanceForListViewEntity wiEntity = null;
+      Map<Long, ActivityInstanceForListViewEntity> actEntities = new HashMap<Long, ActivityInstanceForListViewEntity>();
+      String workflowInstanceId = null;
+      for (RecordImpl record: wiRecordsEntry.getValue()) {
+        workflowInstanceId = IdUtil.getId(wiRecordsEntry.getKey(), record);
+        final String intentStr = record.getMetadata().getIntent().name();
+        WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
+        if (isProcessEvent(recordValue)) {
+          //complete operation
+          if (intentStr.equals(ELEMENT_TERMINATED.name())) {
+            //TODO must be idempotent
+            //not possible to include UpdateByQueryRequestBuilder in bulk query -> executing at once
+            batchOperationWriter.completeOperation(IdUtil.getId(record.getKey(), record), null, OperationType.CANCEL_WORKFLOW_INSTANCE);
+            //if we update smth, we need it to have affect at once
+            bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+          }
+          wiEntity = updateWorkflowInstance(record, intentStr, recordValue, wiEntity);
+        } else if (!intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
+          updateActivityInstance(record, intentStr, recordValue, actEntities);
+        }
       }
-
-      bulkRequest.add(persistWorkflowInstance(record, intentStr, recordValue));
-    } else if (!intentStr.equals(SEQUENCE_FLOW_TAKEN.name())){
-      bulkRequest.add(persistActivityInstance(record, intentStr, recordValue));
+      if (wiEntity != null) {
+        bulkRequest.add(getWorfklowInstanceQuery(wiEntity));
+      }
+      for (ActivityInstanceForListViewEntity actEntity: actEntities.values()) {
+        bulkRequest.add(getActivityInstanceQuery(actEntity, workflowInstanceId));
+      }
     }
+  }
+
+
+  private WorkflowInstanceForListViewEntity updateWorkflowInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue, WorkflowInstanceForListViewEntity wiEntity) {
+    if (wiEntity == null) {
+      wiEntity = new WorkflowInstanceForListViewEntity();
+    }
+    wiEntity.setId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+    wiEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+    wiEntity.setKey(recordValue.getWorkflowInstanceKey());
+    wiEntity.setPartitionId(record.getMetadata().getPartitionId());
+    wiEntity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
+    wiEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
+    //find out workflow name and version
+    wiEntity.setWorkflowName(workflowCache.getWorkflowName(wiEntity.getWorkflowId()));
+    wiEntity.setWorkflowVersion(workflowCache.getWorkflowVersion(wiEntity.getWorkflowId()));
+
+    if (intentStr.equals(ELEMENT_COMPLETED.name()) || intentStr.equals(ELEMENT_TERMINATED.name())) {
+      wiEntity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
+      if (intentStr.equals(ELEMENT_TERMINATED.name())) {
+        wiEntity.setState(WorkflowInstanceState.CANCELED);
+      } else {
+        wiEntity.setState(WorkflowInstanceState.COMPLETED);
+      }
+    } else if (intentStr.equals(ELEMENT_ACTIVATING.name())) {
+      wiEntity.setStartDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
+      wiEntity.setState(WorkflowInstanceState.ACTIVE);
+    } else {
+      wiEntity.setState(WorkflowInstanceState.ACTIVE);
+    }
+    return wiEntity;
+  }
+
+
+  private void updateActivityInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue, Map<Long, ActivityInstanceForListViewEntity> entities) {
+    if (entities.get(record.getKey()) == null) {
+      entities.put(record.getKey(), new ActivityInstanceForListViewEntity());
+    }
+    ActivityInstanceForListViewEntity entity = entities.get(record.getKey());
+    entity.setId(IdUtil.getId(record.getKey(), record));
+    entity.setPartitionId(record.getMetadata().getPartitionId());
+    entity.setActivityId(recordValue.getElementId());
+    entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+
+    if (AI_FINISH_STATES.contains(intentStr)) {
+      if (intentStr.equals(ELEMENT_TERMINATED.name())) {
+        entity.setActivityState(ActivityState.TERMINATED);
+      } else {
+        entity.setActivityState(ActivityState.COMPLETED);
+      }
+    } else {
+      entity.setActivityState(ActivityState.ACTIVE);
+    }
+
+    entity.setActivityType(ActivityType.fromZeebeBpmnElementType(recordValue.getBpmnElementType()));
+
+    //set parent
+    String workflowInstanceId = IdUtil.getId(recordValue.getWorkflowInstanceKey(), record);
+    entity.getJoinRelation().setParent(workflowInstanceId);
+
   }
 
   private UpdateRequest persistActivityInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
@@ -130,33 +203,6 @@ public class ListViewZeebeRecordProcessor {
     return getActivityInstanceFromIncidentQuery(entity, workflowInstanceId);
   }
 
-  private UpdateRequest persistActivityInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue) throws PersistenceException {
-    ActivityInstanceForListViewEntity entity = new ActivityInstanceForListViewEntity();
-    entity.setId(IdUtil.getId(record.getKey(), record));
-    entity.setPartitionId(record.getMetadata().getPartitionId());
-    entity.setActivityId(recordValue.getElementId());
-    entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
-
-    if (AI_FINISH_STATES.contains(intentStr)) {
-      if (intentStr.equals(ELEMENT_TERMINATED.name())) {
-        entity.setActivityState(ActivityState.TERMINATED);
-      } else {
-        entity.setActivityState(ActivityState.COMPLETED);
-      }
-    } else {
-      entity.setActivityState(ActivityState.ACTIVE);
-    }
-
-    entity.setActivityType(ActivityType.fromZeebeBpmnElementType(recordValue.getBpmnElementType()));
-
-    //set parent
-    String workflowInstanceId = IdUtil.getId(recordValue.getWorkflowInstanceKey(), record);
-    entity.getJoinRelation().setParent(workflowInstanceId);
-
-    return getActivityInstanceQuery(entity, workflowInstanceId);
-
-  }
-
   private UpdateRequest persistVariable(Record record, VariableRecordValueImpl recordValue) throws PersistenceException {
     VariableForListViewEntity entity = new VariableForListViewEntity();
     entity.setId(IdUtil.getVariableId(recordValue.getScopeKey(), recordValue.getName()));
@@ -172,7 +218,6 @@ public class ListViewZeebeRecordProcessor {
     entity.getJoinRelation().setParent(workflowInstanceId);
 
     return getVariableQuery(entity, workflowInstanceId);
-
   }
 
   private UpdateRequest getActivityInstanceQuery(ActivityInstanceForListViewEntity entity, String workflowInstanceId) throws PersistenceException {
@@ -230,35 +275,6 @@ public class ListViewZeebeRecordProcessor {
       logger.error("Error preparing the query to upsert activity instance for list view", e);
       throw new PersistenceException(String.format("Error preparing the query to upsert activity instance [%s]  for list view", entity.getId()), e);
     }
-  }
-
-  private UpdateRequest persistWorkflowInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue) throws PersistenceException {
-    WorkflowInstanceForListViewEntity wiEntity = new WorkflowInstanceForListViewEntity();
-    wiEntity.setId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
-    wiEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
-    wiEntity.setKey(recordValue.getWorkflowInstanceKey());
-    wiEntity.setPartitionId(record.getMetadata().getPartitionId());
-    wiEntity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
-    wiEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
-    //find out workflow name and version
-    wiEntity.setWorkflowName(workflowCache.getWorkflowName(wiEntity.getWorkflowId()));
-    wiEntity.setWorkflowVersion(workflowCache.getWorkflowVersion(wiEntity.getWorkflowId()));
-
-    if (intentStr.equals(ELEMENT_COMPLETED.name()) || intentStr.equals(ELEMENT_TERMINATED.name())) {
-      wiEntity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
-      if (intentStr.equals(ELEMENT_TERMINATED.name())) {
-        wiEntity.setState(WorkflowInstanceState.CANCELED);
-      } else {
-        wiEntity.setState(WorkflowInstanceState.COMPLETED);
-      }
-    } else if (intentStr.equals(ELEMENT_ACTIVATING.name())) {
-      wiEntity.setStartDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
-      wiEntity.setState(WorkflowInstanceState.ACTIVE);
-    } else {
-      wiEntity.setState(WorkflowInstanceState.ACTIVE);
-    }
-
-    return getWorfklowInstanceQuery(wiEntity);
   }
 
   private UpdateRequest getWorfklowInstanceQuery(WorkflowInstanceForListViewEntity wiEntity) throws PersistenceException {

@@ -92,6 +92,8 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
     ZeebeTestUtil.failTask(zeebeClient, "taskC", getWorkerName(), 3, "some error");
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
 
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+
     //when
     ActivityInstanceTreeDto response = getActivityInstanceTreeFromRest(workflowInstanceKey);
 

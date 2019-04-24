@@ -15,6 +15,9 @@ camunda.operate:
     host: localhost
     port: 9200
     prefix: test-record
+  importProperties:
+    readerBackoff: 0
+    schedulerBackoff: 0
 logging:
   level:
     ROOT: INFO

@@ -92,6 +92,10 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   @Qualifier("workflowInstanceIsCreatedCheck")
   private Predicate<Object[]> workflowInstanceIsCreatedCheck;
 
+  @Autowired
+  @Qualifier("variableExistsCheck")
+  private Predicate<Object[]> variableExistsCheck;
+
   private ZeebeClient zeebeClient;
 
   private OffsetDateTime testStartTime;
@@ -158,6 +162,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     //when TC 1
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
+    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, "a");
 
     //then we can find the instance by 2 variable values: a = b, foo = b
     assertVariableExists(workflowInstanceKey, "a", "\"b\"");
@@ -516,7 +521,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"foo\": 6}");
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
 
     //assert activity instance tree
     final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);

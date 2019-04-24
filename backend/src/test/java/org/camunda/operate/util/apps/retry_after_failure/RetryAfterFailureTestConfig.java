@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate.util.apps.idempotency;
+package org.camunda.operate.util.apps.retry_after_failure;
 
 import java.util.HashSet;
 import java.util.List;
@@ -17,10 +17,10 @@ import org.springframework.context.annotation.Primary;
 import io.zeebe.exporter.api.record.Record;
 
 /**
- * Let's mock ElasticsearchBulkProcessor, so that it persists the data sucesfully, but throw an exception aftre that. This will cause the data to be imported twice.
+ * Let's mock ElasticsearchBulkProcessor, so that it throw an exception with the 2st run and persist the data only with the second run.
  */
 @Configuration
-public class ZeebeImportIdempotencyTestConfig {
+public class RetryAfterFailureTestConfig {
 
   @Bean
   @Primary
@@ -34,10 +34,11 @@ public class ZeebeImportIdempotencyTestConfig {
 
     @Override
     public void persistZeebeRecords(List<Record> zeebeRecords, ImportValueType importValueType) throws PersistenceException {
-      super.persistZeebeRecords(zeebeRecords, importValueType);
       if (!alreadyFailedTypes.contains(importValueType)) {
         alreadyFailedTypes.add(importValueType);
         throw new PersistenceException(String.format("Fake exception when saving data of type %s to Elasticsearch", importValueType));
+      } else {
+        super.persistZeebeRecords(zeebeRecords, importValueType);
       }
     }
 

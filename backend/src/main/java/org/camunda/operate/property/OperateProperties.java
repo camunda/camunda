@@ -40,6 +40,9 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private OperationExecutorProperties operationExecutor = new OperationExecutorProperties();
 
+  @NestedConfigurationProperty
+  private ImportProperties importProperties = new ImportProperties();
+
   public boolean isStartLoadingDataOnStartup() {
     return startLoadingDataOnStartup;
   }
@@ -86,5 +89,13 @@ public class OperateProperties {
 
   public void setOperationExecutor(OperationExecutorProperties operationExecutor) {
     this.operationExecutor = operationExecutor;
+  }
+
+  public ImportProperties getImportProperties() {
+    return importProperties;
+  }
+
+  public void setImportProperties(ImportProperties importProperties) {
+    this.importProperties = importProperties;
   }
 }

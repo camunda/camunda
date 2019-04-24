@@ -8,6 +8,7 @@ package org.camunda.operate.zeebeimport.processors;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.ActivityInstanceEntity;
@@ -19,6 +20,7 @@ import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebeimport.record.Intent;
+import org.camunda.operate.zeebeimport.record.RecordImpl;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -66,34 +68,27 @@ public class ActivityInstanceZeebeRecordProcessor {
 
   }
 
-  public void processWorkflowInstanceRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
+  public void processWorkflowInstanceRecord(Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
 
-    final String intentStr = record.getMetadata().getIntent().name();
-    WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
-
-    if (!isProcessEvent(recordValue) && !intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())){
-      bulkRequest.add(persistActivityInstance(record, intentStr, recordValue));
+    for (Map.Entry<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
+      ActivityInstanceEntity actEntity = null;
+      for (RecordImpl record: wiRecordsEntry.getValue()) {
+        final String intentStr = record.getMetadata().getIntent().name();
+        WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
+        if (!isProcessEvent(recordValue) && !intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
+          actEntity = updateActivityInstance(record, intentStr, recordValue, actEntity);
+        }
+      }
+      if (actEntity != null) {
+        bulkRequest.add(getActivityInstanceQuery(actEntity));
+      }
     }
   }
 
-  private UpdateRequest persistActivityInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
-    ActivityInstanceEntity entity = new ActivityInstanceEntity();
-    entity.setId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
-    entity.setKey(recordValue.getElementInstanceKey());
-    entity.setPartitionId(record.getMetadata().getPartitionId());
-    entity.setActivityId(recordValue.getElementId());
-    entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
-    if (intentStr.equals(IncidentIntent.CREATED.name())) {
-      entity.setIncidentKey(record.getKey());
-    } else if (intentStr.equals(IncidentIntent.CREATED.name())) {
-      entity.setIncidentKey(null);
+  private ActivityInstanceEntity updateActivityInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue, ActivityInstanceEntity entity) {
+    if (entity == null) {
+      entity = new ActivityInstanceEntity();
     }
-
-    return getActivityInstanceFromIncidentQuery(entity);
-  }
-
-  private UpdateRequest persistActivityInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue) throws PersistenceException {
-    ActivityInstanceEntity entity = new ActivityInstanceEntity();
     entity.setId(IdUtil.getId(record.getKey(), record));
     entity.setPartitionId(record.getMetadata().getPartitionId());
     entity.setActivityId(recordValue.getElementId());
@@ -117,8 +112,24 @@ public class ActivityInstanceZeebeRecordProcessor {
 
     entity.setType(ActivityType.fromZeebeBpmnElementType(recordValue.getBpmnElementType()));
 
-    return getActivityInstanceQuery(entity);
+    return entity;
 
+  }
+
+  private UpdateRequest persistActivityInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
+    ActivityInstanceEntity entity = new ActivityInstanceEntity();
+    entity.setId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
+    entity.setKey(recordValue.getElementInstanceKey());
+    entity.setPartitionId(record.getMetadata().getPartitionId());
+    entity.setActivityId(recordValue.getElementId());
+    entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+    if (intentStr.equals(IncidentIntent.CREATED.name())) {
+      entity.setIncidentKey(record.getKey());
+    } else if (intentStr.equals(IncidentIntent.CREATED.name())) {
+      entity.setIncidentKey(null);
+    }
+
+    return getActivityInstanceFromIncidentQuery(entity);
   }
 
   private UpdateRequest getActivityInstanceQuery(ActivityInstanceEntity entity) throws PersistenceException {

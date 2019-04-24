@@ -111,6 +111,10 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   private Predicate<Object[]> workflowInstanceIsCompletedCheck;
 
   @Autowired
+  @Qualifier("variableExistsCheck")
+  private Predicate<Object[]> variableExistsCheck;
+
+  @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
 
   @Autowired
@@ -433,6 +437,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //TC3 after we process messages from Zeebe, variables must have hasActiveOperation = false
     elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
+    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, newVar2Name);
     variables = variableReader.getVariables(workflowInstanceId, taskAId);
     assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, false);

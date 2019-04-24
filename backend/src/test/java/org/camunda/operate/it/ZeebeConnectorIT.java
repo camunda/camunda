@@ -13,8 +13,8 @@ import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.OperateZeebeRule;
 import org.camunda.operate.util.ZeebeClientRule;
-import org.camunda.operate.util.ZeebeTestUtil;
-import org.camunda.operate.zeebeimport.ZeebeESImporter;
+import org.camunda.operate.zeebeimport.PartitionHolder;
+import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;
 import org.junit.Before;
@@ -25,10 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.test.EmbeddedBrokerRule;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -38,7 +35,10 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
   @Autowired
-  private ZeebeESImporter zeebeESImporter;
+  private ZeebeImporter zeebeImporter;
+
+  @Autowired
+  private PartitionHolder partitionHolder;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -83,9 +83,9 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
       .andExpect(status().isOk())
       .andReturn();
     //import is working fine
-    zeebeESImporter.processNextEntitiesBatch();
+    zeebeImporter.performOneRoundOfImport();
     //partition list is empty
-    Assertions.assertThat(zeebeESImporter.getPartitionIds()).isEmpty();
+    Assertions.assertThat(partitionHolder.getPartitionIds()).isEmpty();
 
     //when 2
     //Zeebe is started
@@ -93,9 +93,9 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
     //then 2
     //data import is working
-    zeebeESImporter.processNextEntitiesBatch();
+    zeebeImporter.performOneRoundOfImport();
     //partition list is not empty
-    Assertions.assertThat(zeebeESImporter.getPartitionIds()).isNotEmpty();
+    Assertions.assertThat(partitionHolder.getPartitionIds()).isNotEmpty();
 
   }
 
@@ -112,7 +112,7 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
     clientRule.before();
     operateProperties.getZeebeElasticsearch().setPrefix(operateZeebeRule.getPrefix());
     try {
-      FieldSetter.setField(zeebeESImporter, ZeebeESImporter.class.getDeclaredField("zeebeClient"), clientRule.getClient());
+      FieldSetter.setField(partitionHolder, PartitionHolder.class.getDeclaredField("zeebeClient"), clientRule.getClient());
     } catch (NoSuchFieldException e) {
       Assertions.fail("Failed to inject ZeebeClient into some of the beans");
     }
@@ -126,7 +126,7 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
     //then 1
     //data import is working
-    zeebeESImporter.processNextEntitiesBatch();
+    zeebeImporter.performOneRoundOfImport();
 
     //when 2
     //Zeebe is restarted
@@ -137,7 +137,7 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
     //then 2
     //data import is still working
-    zeebeESImporter.processNextEntitiesBatch();
+    zeebeImporter.performOneRoundOfImport();
 
   }
 

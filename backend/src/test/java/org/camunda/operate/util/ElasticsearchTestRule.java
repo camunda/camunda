@@ -9,10 +9,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
@@ -28,9 +30,11 @@ import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
 import org.camunda.operate.zeebeimport.ImportValueType;
-import org.camunda.operate.zeebeimport.ZeebeESImporter;
+import org.camunda.operate.zeebeimport.ZeebeImporter;
+import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
+import org.camunda.operate.zeebeimport.RecordsReader;
+import org.camunda.operate.zeebeimport.RecordsReaderHolder;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -80,10 +84,13 @@ public class ElasticsearchTestRule extends TestWatcher {
   private ElasticsearchSchemaManager elasticsearchSchemaManager;
 
   @Autowired
-  private ZeebeESImporter zeebeESImporter;
+  private ZeebeImporter zeebeImporter;
 
   @Autowired
   private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
+
+  @Autowired
+  private RecordsReaderHolder recordsReaderHolder;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -131,7 +138,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       int emptyAttempts = 0;
       do {
         Thread.sleep(500L);
-        entitiesCount = zeebeESImporter.processNextEntitiesBatch();
+        entitiesCount = zeebeImporter.performOneRoundOfImport();
         totalCount += entitiesCount;
         if (entitiesCount > 0) {
           emptyAttempts = 0;
@@ -139,6 +146,11 @@ public class ElasticsearchTestRule extends TestWatcher {
           emptyAttempts++;
         }
       } while(totalCount < expectedMinEventsCount && emptyAttempts < 5);
+      if (totalCount < expectedMinEventsCount && emptyAttempts == 5) {
+        logTimeout();
+      } else {
+        waitForQueuesEmptiness(recordsReaderHolder.getAllRecordsReaders());
+      }
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
     }
@@ -151,7 +163,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       int emptyAttempts = 0;
       do {
         Thread.sleep(1000L);
-        entitiesCount = zeebeESImporter.processNextEntitiesBatch(0, importValueType);
+        entitiesCount = importOneType(importValueType);
         totalCount += entitiesCount;
         if (entitiesCount > 0) {
           emptyAttempts = 0;
@@ -159,15 +171,51 @@ public class ElasticsearchTestRule extends TestWatcher {
           emptyAttempts++;
         }
       } while(totalCount < expectedMinEventsCount && emptyAttempts < 5);
+      if (totalCount < expectedMinEventsCount && emptyAttempts == 5) {
+        logTimeout();
+      } else {
+        //wait till queues are empty
+        waitForQueuesEmptiness(getRecordsReaders(importValueType));
+      }
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
     }
   }
 
+  private void waitForQueuesEmptiness(Collection<RecordsReader> recordsReaders) throws InterruptedException {
+    int queueCheckAttempts = 0;
+    boolean queuesAreEmpty = true;
+    do {
+      Thread.sleep(300L);
+      for (RecordsReader reader : recordsReaders) {
+        queuesAreEmpty = queuesAreEmpty && reader.getImportJobs().size() == 0;
+      }
+      queueCheckAttempts ++;
+    } while (!queuesAreEmpty && queueCheckAttempts < 5);
+    if (!queuesAreEmpty && queueCheckAttempts == 5) {
+      logTimeout();
+    } else {
+      Thread.sleep(300L);
+    }
+  }
+
+  private int importOneType(ImportValueType importValueType) throws IOException {
+    List<RecordsReader> readers = getRecordsReaders(importValueType);
+    int count = 0;
+    for (RecordsReader reader: readers) {
+      count += zeebeImporter.importOneBatch(reader);
+    }
+    return count;
+  }
+
+  private List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
+    return recordsReaderHolder.getAllRecordsReaders().stream()
+          .filter(rr -> rr.getImportValueType().equals(importValueType)).collect(Collectors.toList());
+  }
 
   public void processOneBatchOfRecords(ImportValueType importValueType) {
     try {
-      zeebeESImporter.processNextEntitiesBatch(0, importValueType);
+      importOneType(importValueType);
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
     }
@@ -177,11 +225,11 @@ public class ElasticsearchTestRule extends TestWatcher {
   public void processAllRecordsAndWait(Predicate<Object[]> waitTill, Object... arguments) {
     try {
       int emptyAttempts = 0;
-      boolean found;
-      do {
+      boolean found = waitTill.test(arguments);
+      while(!found && emptyAttempts < 5) {
         Thread.sleep(300L);
         try {
-          zeebeESImporter.processNextEntitiesBatch();
+          zeebeImporter.performOneRoundOfImport();
         } catch (Exception e) {
           logger.error(e.getMessage(), e);
         }
@@ -190,16 +238,20 @@ public class ElasticsearchTestRule extends TestWatcher {
           emptyAttempts++;
           Thread.sleep(500L);
         }
-      } while(!found && emptyAttempts < 5);
+      }
       if (emptyAttempts == 5) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        new Throwable().printStackTrace(pw);
-        logger.error("Condition not reached: " + pw.toString());
+        logTimeout();
       }
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
     }
+  }
+
+  private void logTimeout() {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    new Throwable().printStackTrace(pw);
+    logger.warn("Condition not reached: " + sw.toString());
   }
 
   public void persistNew(OperateEntity... entitiesToPersist) {

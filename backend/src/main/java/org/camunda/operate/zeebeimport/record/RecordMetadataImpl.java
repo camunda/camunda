@@ -5,7 +5,6 @@
  */
 package org.camunda.operate.zeebeimport.record;
 
-import org.camunda.operate.zeebeimport.StringToIntentSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.zeebe.exporter.api.record.RecordMetadata;
 import io.zeebe.protocol.clientapi.RecordType;

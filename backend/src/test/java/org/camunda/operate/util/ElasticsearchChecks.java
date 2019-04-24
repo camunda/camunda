@@ -10,13 +10,17 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
+import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.es.reader.ActivityInstanceReader;
+import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.ListViewReader;
+import org.camunda.operate.es.reader.VariableReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.reader.WorkflowReader;
+import org.camunda.operate.rest.dto.VariableDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.exception.NotFoundException;
@@ -39,6 +43,12 @@ public class ElasticsearchChecks {
 
   @Autowired
   private ListViewReader listViewReader;
+
+  @Autowired
+  private IncidentReader incidentReader;
+
+  @Autowired
+  private VariableReader variableReader;
 
   @Bean(name = "workflowIsDeployedCheck")
   public Predicate<Object[]> getWorkflowIsDeployedCheck() {
@@ -72,6 +82,25 @@ public class ElasticsearchChecks {
         } else {
           return activities.get(0).getState().equals(ActivityState.ACTIVE);
         }
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  @Bean(name = "variableExistsCheck")
+  public Predicate<Object[]> getVariableExistsCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(3);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(Long.class);
+      assertThat(objects[2]).isInstanceOf(String.class);
+      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
+      String scopeId = IdTestUtil.getId((Long)objects[1]);
+      String varName = (String)objects[2];
+      try {
+        List<VariableDto> variables = variableReader.getVariables(workflowInstanceId, scopeId);
+        return variables.stream().anyMatch(v -> v.getName().equals(varName));
       } catch (NotFoundException ex) {
         return false;
       }
@@ -132,7 +161,12 @@ public class ElasticsearchChecks {
       String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       try {
         final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
-        return allActivityInstances.stream().anyMatch(ai -> ai.getIncidentKey() != null);
+        boolean found = allActivityInstances.stream().anyMatch(ai -> ai.getIncidentKey() != null);
+        if (found) {
+          List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceId);
+          found = allIncidents.size() > 0;
+        }
+        return found;
       } catch (NotFoundException ex) {
         return false;
       }

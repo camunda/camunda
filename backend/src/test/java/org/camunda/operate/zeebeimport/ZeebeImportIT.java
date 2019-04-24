@@ -5,18 +5,11 @@
  */
 package org.camunda.operate.zeebeimport;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
@@ -47,9 +40,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-
 import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.IncidentRecordValue;
@@ -57,6 +48,11 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
@@ -64,7 +60,10 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   private WorkflowInstanceReader workflowInstanceReader;
 
   @Autowired
-  private ZeebeESImporter zeebeESImporter;
+  private PartitionHolder partitionHolder;
+
+  @Autowired
+  private ZeebeImporter zeebeESImporter;
 
   @Autowired
   private ListViewReader listViewReader;
@@ -359,7 +358,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
   @Test
   public void testPartitionIds() {
-    final Set<Integer> operatePartitions = zeebeESImporter.getPartitionIds();
+    final Set<Integer> operatePartitions = partitionHolder.getPartitionIds();
     final int zeebePartitionsCount = zeebeClient.newTopologyRequest().send().join().getPartitionsCount();
     assertThat(operatePartitions).hasSize(zeebePartitionsCount);
     assertThat(operatePartitions).allMatch(id -> id < zeebePartitionsCount && id >= 0);
