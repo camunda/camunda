@@ -8,6 +8,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 import * as Styled from './styled';
 import IncidentsBar from './IncidentsBar';
+import {ThemeProvider} from 'modules/contexts/ThemeContext';
 
 const mockProps = {
   id: '1',
@@ -16,9 +17,16 @@ const mockProps = {
   isArrowFlipped: false
 };
 
+const mountComponent = mockProps =>
+  mount(
+    <ThemeProvider>
+      <IncidentsBar {...mockProps} />
+    </ThemeProvider>
+  );
+
 describe('IncidentsBar', () => {
   it('should show the right text for 1 incident', () => {
-    const node = mount(<IncidentsBar {...mockProps} />);
+    const node = mountComponent(mockProps);
     expect(node.text()).toContain('There is 1 Incident in Instance 1.');
   });
 
@@ -27,26 +35,20 @@ describe('IncidentsBar', () => {
       ...mockProps,
       count: 2
     };
-    const node = mount(<IncidentsBar {...mockProps2} />);
+    const node = mountComponent(mockProps2);
 
     expect(node.text()).toContain('There are 2 Incidents in Instance 1.');
   });
 
   it('should call the onClick handler', () => {
-    const node = mount(<IncidentsBar {...mockProps} />);
+    const node = mountComponent(mockProps);
     node.simulate('click');
 
     expect(mockProps.onClick).toHaveBeenCalledTimes(1);
   });
 
   it('should contain an arrow', () => {
-    const node = mount(<IncidentsBar {...mockProps} />);
-
-    expect(node.find(Styled.Arrow).props().isFlipped).toBe(false);
-
-    node.setProps({isArrowFlipped: true});
-    node.update();
-
-    expect(node.find(Styled.Arrow).props().isFlipped).toBe(true);
+    const node = mountComponent(mockProps);
+    expect(node.find(Styled.Arrow).length).toBe(1);
   });
 });

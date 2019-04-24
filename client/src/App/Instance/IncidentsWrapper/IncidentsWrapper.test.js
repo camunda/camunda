@@ -22,6 +22,14 @@ import IncidentsFilter from './IncidentsFilter';
 
 const incidentsMock = createIncidentTableProps();
 
+jest.mock('react-transition-group', () => {
+  const FakeTransition = jest.fn(({children}) => children);
+  const FakeCSSTransition = jest.fn(props =>
+    props.in ? <FakeTransition>{props.children}</FakeTransition> : null
+  );
+  return {CSSTransition: FakeCSSTransition, Transition: FakeTransition};
+});
+
 const mockProps = {
   instance: createInstance(),
   incidents: incidentsMock.incidents,
@@ -59,15 +67,18 @@ describe('IncidentsWrapper', () => {
 
   it('should toggle the IncidentsOverlay when clicking on the IncidentsBar', () => {
     const node = mountNode(mockProps);
+    expect(node.find(IncidentsOverlay).length).toEqual(0);
 
     // open overlay
     node.find(IncidentsBar).simulate('click');
-    node.update();
+
     expect(node.find(IncidentsOverlay).length).toEqual(1);
 
     // close overlay
     node.find(IncidentsBar).simulate('click');
+
     node.update();
+
     expect(node.find(IncidentsOverlay).length).toEqual(0);
   });
 
