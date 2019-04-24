@@ -305,4 +305,19 @@ describe('NoDataNotice', () => {
 
     expect(node.find(NoDataNotice)).not.toBePresent();
   });
+
+  it('should show a no data notice if the reports contains process instances, but no meaningful datapoints', () => {
+    const report = {
+      ...reportTemplate,
+      result: {
+        ...reportTemplate.result,
+        type: 'durationMap',
+        data: []
+      }
+    };
+
+    const node = shallow(<ReportRenderer report={report} />);
+
+    expect(node.find(NoDataNotice)).toBePresent();
+  });
 });

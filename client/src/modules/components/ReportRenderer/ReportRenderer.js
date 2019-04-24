@@ -95,9 +95,13 @@ function containsData(report) {
   if (report.combined) {
     return report.data.reports.length > 0 && Object.values(report.result.data).some(containsData);
   } else {
+    const {type, processInstanceCount, decisionInstanceCount, data} = report.result;
+    if ((type === 'durationMap' || type === 'frequencyMap') && data.length === 0) {
+      return false;
+    }
     return (
-      report.result.processInstanceCount ||
-      report.result.decisionInstanceCount ||
+      processInstanceCount ||
+      decisionInstanceCount ||
       (report.data.view.property === 'frequency' && report.data.visualization === 'number')
     );
   }
