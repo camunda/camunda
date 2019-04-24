@@ -476,17 +476,19 @@ export default class Instance extends Component {
               )}
             </DiagramPanel>
             <InstanceHistory>
-              <Styled.FlowNodeInstanceLog>
-                <Styled.NodeContainer>
-                  <FlowNodeInstancesTree
-                    node={this.state.activityInstancesTree}
-                    getNodeWithName={this.getNodeWithName}
-                    treeDepth={1}
-                    selectedTreeRowIds={this.state.selection.treeRowIds}
-                    onTreeRowSelection={this.handleTreeRowSelection}
-                  />
-                </Styled.NodeContainer>
-              </Styled.FlowNodeInstanceLog>
+              <Styled.Panel>
+                <Styled.FlowNodeInstanceLog>
+                  <Styled.NodeContainer>
+                    <FlowNodeInstancesTree
+                      node={this.state.activityInstancesTree}
+                      getNodeWithName={this.getNodeWithName}
+                      treeDepth={1}
+                      selectedTreeRowIds={this.state.selection.treeRowIds}
+                      onTreeRowSelection={this.handleTreeRowSelection}
+                    />
+                  </Styled.NodeContainer>
+                </Styled.FlowNodeInstanceLog>
+              </Styled.Panel>
               <Variables
                 variables={variables}
                 isEditMode={isEditMode}

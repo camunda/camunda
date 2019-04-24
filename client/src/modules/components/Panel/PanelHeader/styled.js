@@ -12,11 +12,15 @@ export const Header = themed(styled.div`
     dark: Colors.uiDark03,
     light: Colors.uiLight02
   })};
-  opacity: 0.9;
   color: ${themeStyle({
     dark: '#ffffff',
     light: Colors.uiLight06
   })};
+  border-bottom: solid 1px
+    ${themeStyle({
+      dark: Colors.uiDark04,
+      light: Colors.uiLight05
+    })};
   font-size: 15px;
   font-weight: bold;
   padding: 9px 10px;

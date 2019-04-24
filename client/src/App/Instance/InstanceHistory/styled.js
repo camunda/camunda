@@ -50,6 +50,7 @@ export const Pills = styled.div`
 export const PaneHeader = styled(SplitPane.Pane.Header)`
   display: flex;
   align-items: center;
+  border-bottom: none;
 `;
 
 export const Section = themed(styled.div`

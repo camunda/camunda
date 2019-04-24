@@ -19,12 +19,11 @@ export const Variables = themed(styled(Panel)`
   flex: 1;
   font-size: 14px;
   overflow: auto;
+  border-left: none;
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.8)',
     light: 'rgba(98, 98, 110, 0.8)'
   })};
-  border-top: none;
-  border-left: none;
 `);
 
 export const VariablesContent = styled(Panel.Body)`

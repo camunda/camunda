@@ -12,7 +12,12 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 import bgBlack from 'modules/components/ZeebraStripe/tree-view-bg-dark.png';
 import bgLight from 'modules/components/ZeebraStripe/tree-view-bg-light.png';
 
+import {default as PanelComponent} from 'modules/components/Panel';
 import SplitPane from 'modules/components/SplitPane';
+
+export const Panel = styled(PanelComponent)`
+  border-right: none;
+`;
 
 export const Instance = styled.main`
   display: flex;

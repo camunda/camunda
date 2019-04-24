@@ -62,7 +62,7 @@ export const Header = themed(styled.header`
   /* prevents user dropdown for going under content */
   /* each page content, with display: flex; should have a smaller z-index */
   position: relative;
-  z-index: 3;
+  z-index: 6;
 `);
 
 export const ListLink = themed(styled(withStrippedProps(['isActive'])(Link))`

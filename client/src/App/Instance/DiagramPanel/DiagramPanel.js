@@ -7,7 +7,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import SplitPane from 'modules/components/SplitPane';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
 import Actions from 'modules/components/Actions';
@@ -33,7 +32,7 @@ export default class DiagramPanel extends React.PureComponent {
     const {instance, onInstanceOperation, ...props} = this.props;
 
     return (
-      <SplitPane.Pane {...props}>
+      <Styled.SplitPane {...props}>
         <Styled.SplitPaneHeader>
           <Styled.Table>
             <tbody>
@@ -62,7 +61,7 @@ export default class DiagramPanel extends React.PureComponent {
         <Styled.SplitPaneBody data-test="diagram-panel-body">
           {this.props.children}
         </Styled.SplitPaneBody>
-      </SplitPane.Pane>
+      </Styled.SplitPane>
     );
   }
 }
