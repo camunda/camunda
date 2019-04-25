@@ -13,6 +13,7 @@ import {IncidentAction} from 'modules/components/Actions';
 import ColumnHeader from '../../../Instances/ListView/List/ColumnHeader';
 import Modal from 'modules/components/Modal';
 import {formatDate} from 'modules/utils/date';
+import {TransitionGroup} from 'react-transition-group';
 
 import * as Styled from './styled';
 const {THead, TBody, TH, TR, TD} = Table;
@@ -143,56 +144,69 @@ export default class IncidentsTable extends React.Component {
               </TH>
             </TR>
           </THead>
+
           <TBody>
-            {incidents.map((incident, index) => {
-              return (
-                <Styled.IncidentTR
-                  key={incident.id}
-                  isSelected={selectedFlowNodeInstanceIds.includes(
-                    incident.flowNodeInstanceId
-                  )}
-                  onClick={this.handleIncidentSelection.bind(this, incident)}
-                >
-                  <TD>
-                    <Styled.FirstCell>
-                      <Styled.Index>{index + 1}</Styled.Index>
-                      {incident.errorType}
-                    </Styled.FirstCell>
-                  </TD>
-                  <TD>{incident.flowNodeName}</TD>
-                  <TD>{incident.jobId || '--'}</TD>
-                  <TD>{formatDate(incident.creationTime)}</TD>
-                  <TD>
-                    <Styled.Flex>
-                      <Styled.ErrorMessageCell>
-                        {incident.errorMessage}
-                      </Styled.ErrorMessageCell>
-                      {incident.errorMessage.length >= 58 && (
-                        <Button
-                          size="small"
-                          onClick={this.handleMoreButtonClick.bind(
-                            this,
-                            incident
-                          )}
-                        >
-                          More...
-                        </Button>
+            <TransitionGroup component={null}>
+              {incidents.map((incident, index) => {
+                return (
+                  <Styled.Transition
+                    key={incident.id}
+                    timeout={{enter: 500, exit: 200}}
+                    mountOnEnter
+                    unmountOnExit
+                  >
+                    <Styled.IncidentTR
+                      isSelected={selectedFlowNodeInstanceIds.includes(
+                        incident.flowNodeInstanceId
                       )}
-                    </Styled.Flex>
-                  </TD>
-                  <TD>
-                    <IncidentAction
-                      instanceId={this.props.instanceId}
-                      onButtonClick={this.props.onIncidentOperation}
-                      incident={incident}
-                      showSpinner={
-                        this.props.forceSpinner || incident.hasActiveOperation
-                      }
-                    />
-                  </TD>
-                </Styled.IncidentTR>
-              );
-            })}
+                      onClick={this.handleIncidentSelection.bind(
+                        this,
+                        incident
+                      )}
+                    >
+                      <TD>
+                        <Styled.FirstCell>
+                          <Styled.Index>{index + 1}</Styled.Index>
+                          {incident.errorType}
+                        </Styled.FirstCell>
+                      </TD>
+                      <TD>{incident.flowNodeName}</TD>
+                      <TD>{incident.jobId || '--'}</TD>
+                      <TD>{formatDate(incident.creationTime)}</TD>
+                      <TD>
+                        <Styled.Flex>
+                          <Styled.ErrorMessageCell>
+                            {incident.errorMessage}
+                          </Styled.ErrorMessageCell>
+                          {incident.errorMessage.length >= 58 && (
+                            <Button
+                              size="small"
+                              onClick={this.handleMoreButtonClick.bind(
+                                this,
+                                incident
+                              )}
+                            >
+                              More...
+                            </Button>
+                          )}
+                        </Styled.Flex>
+                      </TD>
+                      <TD>
+                        <IncidentAction
+                          instanceId={this.props.instanceId}
+                          onButtonClick={this.props.onIncidentOperation}
+                          incident={incident}
+                          showSpinner={
+                            this.props.forceSpinner ||
+                            incident.hasActiveOperation
+                          }
+                        />
+                      </TD>
+                    </Styled.IncidentTR>
+                  </Styled.Transition>
+                );
+              })}
+            </TransitionGroup>
           </TBody>
         </Table>
         {this.state.isModalVisibile && this.renderModal()}

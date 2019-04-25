@@ -6,6 +6,7 @@
 
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
+import {default as TransitionComponent} from 'modules/components/Transition';
 
 import Table from 'modules/components/Table';
 const {TH, TR} = Table;
@@ -146,5 +147,15 @@ export const Fake = themed(styled.span`
       dark: Colors.uiDark03,
       light: Colors.uiLight02
     })};
+  }
+`);
+
+export const Transition = themed(styled(TransitionComponent)`
+  &.transition-enter {
+    opacity: 0.25;
+  }
+  &.transition-enter-active {
+    opacity: 1;
+    transition: opacity ${({timeout}) => timeout.enter + 'ms'};
   }
 `);
