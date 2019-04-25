@@ -123,14 +123,6 @@ it('should clear the selection when another process definition is selected', asy
   expect(node.state().config.filter).toEqual([]);
 });
 
-it("should pre-select the only available procDef and it's latest version", async () => {
-  const node = await mount(<Analysis />);
-  await node.update();
-
-  expect(node.state().config.processDefinitionKey).toBe('key');
-  expect(node.state().config.processDefinitionVersion).toBe(2);
-});
-
 it('should show a warning message when there are incompatible filters', async () => {
   incompatibleFilters.mockReturnValue(true);
   const node = await mount(<Analysis />);

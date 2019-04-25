@@ -10,7 +10,7 @@ import AnalysisControlPanel from './AnalysisControlPanel';
 import {BPMNDiagram, Message} from 'components';
 
 import {loadFrequencyData} from './service';
-import {loadDefinitions, incompatibleFilters, loadProcessDefinitionXml} from 'services';
+import {incompatibleFilters, loadProcessDefinitionXml} from 'services';
 import DiagramBehavior from './DiagramBehavior';
 import Statistics from './Statistics';
 
@@ -34,23 +34,6 @@ export default class Analysis extends React.Component {
       xml: null
     };
   }
-
-  componentDidMount = async () => {
-    const availableDefinitions = await loadDefinitions('process');
-    if (availableDefinitions.length === 1) {
-      const theOnlyKey = availableDefinitions[0].key;
-      const latestVersion = availableDefinitions[0].versions[0].version;
-
-      this.setState({
-        config: {
-          processDefinitionKey: theOnlyKey,
-          processDefinitionVersion: latestVersion,
-          filter: []
-        },
-        xml: await loadProcessDefinitionXml(theOnlyKey, latestVersion)
-      });
-    }
-  };
 
   render() {
     const {xml, config, hoveredControl, hoveredNode, gateway, endEvent, data} = this.state;
