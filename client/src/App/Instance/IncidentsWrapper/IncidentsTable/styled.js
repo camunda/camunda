@@ -80,6 +80,9 @@ export const FirstTH = themed(styled(TH)`
 
 export const IncidentTR = themed(styled(TR)`
   cursor: pointer;
+  transition: background-color 200ms, opacity 200ms;
+  opacity: ${({theme, isSelected}) =>
+    theme === 'light' && !isSelected ? 0.9 : 1};
 
   &:nth-child(odd) {
     background-color: ${themeStyle({
@@ -112,6 +115,7 @@ export const IncidentTR = themed(styled(TR)`
         })
       );
     }};
+    transition: background-color 150ms ease-out;
   }
 `);
 
