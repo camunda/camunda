@@ -4,5 +4,5 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default as DashboardView} from './DashboardView';
+export {default as DashboardRenderer} from './DashboardRenderer';
 export {DashboardObject} from './DashboardObject';

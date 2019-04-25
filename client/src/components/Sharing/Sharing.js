@@ -7,7 +7,14 @@
 import React from 'react';
 
 import './Sharing.scss';
-import {ReportRenderer, DashboardView, Icon, Button, LoadingIndicator, ErrorPage} from 'components';
+import {
+  ReportRenderer,
+  DashboardRenderer,
+  Icon,
+  Button,
+  LoadingIndicator,
+  ErrorPage
+} from 'components';
 import {Link} from 'react-router-dom';
 import {evaluateEntity, createLoadReportCallback} from './service';
 
@@ -45,7 +52,7 @@ export default class Sharing extends React.Component {
       return <ReportRenderer report={this.state.evaluationResult} isExternal />;
     } else {
       return (
-        <DashboardView
+        <DashboardRenderer
           loadReport={createLoadReportCallback(this.getId())}
           reports={this.state.evaluationResult.reports}
           disableNameLink

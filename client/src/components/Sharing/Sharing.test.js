@@ -107,7 +107,7 @@ it('should have dashboard if everything is fine', () => {
     evaluationResult: {reportShares: 'foo'}
   });
 
-  expect(node.find('DashboardView')).toBePresent();
+  expect(node.find('DashboardRenderer')).toBePresent();
 });
 
 it('should retrieve dashboard for the given id', () => {

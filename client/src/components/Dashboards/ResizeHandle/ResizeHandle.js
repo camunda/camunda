@@ -15,7 +15,7 @@ export default class ResizeHandle extends React.Component {
   }
 
   componentDidMount() {
-    this.dashboard = this.resizeHandle.closest('.DashboardView');
+    this.dashboard = this.resizeHandle.closest('.DashboardRenderer');
     this.dropShadow = document.createElement('div');
     this.dropShadow.classList.add('ResizeHandle__dropShadow');
 

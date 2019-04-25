@@ -1,0 +1,20 @@
+.dark {
+  .fullscreen {
+    background-color: #222;
+  }
+}
+
+.fullscreen {
+  background-color: white;
+  transition: background-color 0.3s;
+}
+
+.fullscreen-enabled {
+  overflow: auto;
+}
+
+.DashboardView {
+  &.fullscreen {
+    padding: 20px;
+  }
+}

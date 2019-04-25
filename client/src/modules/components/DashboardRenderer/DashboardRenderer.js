@@ -9,16 +9,16 @@ import React from 'react';
 import {DashboardReport} from './DashboardReport';
 import {DashboardObject} from './DashboardObject';
 
-import './DashboardView.scss';
+import './DashboardRenderer.scss';
 
 const columns = 18;
 const tileAspectRatio = 1;
 const tileMargin = 8;
 
-export default class DashboardView extends React.Component {
+export default class DashboardRenderer extends React.Component {
   render() {
     return (
-      <div className="DashboardView" ref={node => (this.container = node)}>
+      <div className="DashboardRenderer" ref={node => (this.container = node)}>
         {this.state &&
           this.props.reports.map((report, idx) => (
             <DashboardObject

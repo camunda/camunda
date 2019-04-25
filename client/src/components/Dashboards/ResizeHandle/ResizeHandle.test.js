@@ -44,7 +44,7 @@ it('should call the resizeStart callback when starting to drag', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div className="DashboardView">
+      <div className="DashboardRenderer">
         <div className="DashboardObject">
           <ResizeHandle onResizeStart={spy} />
         </div>
@@ -64,7 +64,7 @@ it('should add dragging CSS class to surrounding dashboard object', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div className="DashboardView">
+      <div className="DashboardRenderer">
         <div className="DashboardObject">
           <ResizeHandle onResizeStart={spy} />
         </div>
@@ -84,7 +84,7 @@ it('should update the width and height of the report when dragging', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div className="DashboardView">
+      <div className="DashboardRenderer">
         <div
           className="DashboardObject"
           style={{
@@ -123,7 +123,7 @@ it('should update the width and height of the report when scrolling', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div className="DashboardView">
+      <div className="DashboardRenderer">
         <div
           className="DashboardObject"
           style={{
@@ -166,7 +166,7 @@ it('should call the update report callback on drop', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div className="DashboardView">
+      <div className="DashboardRenderer">
         <div
           className="DashboardObject"
           style={{
@@ -215,7 +215,7 @@ it('should call the dragEnd callback on drop', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div className="DashboardView">
+      <div className="DashboardRenderer">
         <div
           className="DashboardObject"
           style={{
@@ -258,7 +258,7 @@ it('should not update the report when it is dropped somewhere where is no space'
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div className="DashboardView">
+      <div className="DashboardRenderer">
         <div
           className="DashboardObject"
           style={{
@@ -313,7 +313,7 @@ it('should create a drop shadow', () => {
   const spy = jest.fn();
   const node = mount(
     <main>
-      <div className="DashboardView">
+      <div className="DashboardRenderer">
         <div className="DashboardObject">
           <ResizeHandle onDragStart={spy} />
         </div>
@@ -327,7 +327,7 @@ it('should create a drop shadow', () => {
 it('should update the dropshadow on drag', () => {
   const node = mount(
     <main>
-      <div className="DashboardView">
+      <div className="DashboardRenderer">
         <div
           className="DashboardObject"
           style={{

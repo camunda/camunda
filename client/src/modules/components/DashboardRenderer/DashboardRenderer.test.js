@@ -8,7 +8,7 @@ import React from 'react';
 
 import {mount} from 'enzyme';
 
-import DashboardView from './DashboardView';
+import DashboardRenderer from './DashboardRenderer';
 
 jest.mock('./DashboardReport', () => {
   return {DashboardReport: ({report}) => <div>Report {report.id}</div>};
@@ -36,7 +36,7 @@ const reports = [
 ];
 
 it('should render a Dashboard Report for every Report in the props', () => {
-  const node = mount(<DashboardView reports={reports} />);
+  const node = mount(<DashboardRenderer reports={reports} />);
 
   expect(node).toIncludeText('Report 1');
   expect(node).toIncludeText('Report 2');
@@ -47,9 +47,9 @@ it('should render additional child components', () => {
   const AdditionalContent = () => <div>Additional Content</div>;
 
   const node = mount(
-    <DashboardView reports={reports}>
+    <DashboardRenderer reports={reports}>
       <AdditionalContent />
-    </DashboardView>
+    </DashboardRenderer>
   );
 
   expect(node).toIncludeText('Additional Content');
@@ -59,9 +59,9 @@ it('should provide child components with the container, tileDimensions and repor
   const PropertyPrinter = props => <div>{Object.keys(props)}</div>;
 
   const node = mount(
-    <DashboardView reports={reports}>
+    <DashboardRenderer reports={reports}>
       <PropertyPrinter />
-    </DashboardView>
+    </DashboardRenderer>
   );
 
   expect(node).toIncludeText('container');

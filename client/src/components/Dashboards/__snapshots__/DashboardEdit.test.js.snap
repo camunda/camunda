@@ -1,0 +1,19 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should editing report addons 1`] = `
+Array [
+  <DragBehavior
+    onDragEnd={[Function]}
+    onDragStart={[Function]}
+    updateReport={[Function]}
+  />,
+  <DeleteButton
+    deleteReport={[Function]}
+  />,
+  <ResizeHandle
+    onResizeEnd={[Function]}
+    onResizeStart={[Function]}
+    updateReport={[Function]}
+  />,
+]
+`;

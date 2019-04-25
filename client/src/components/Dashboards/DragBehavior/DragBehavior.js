@@ -22,7 +22,7 @@ export default class DragBehavior extends React.Component {
   }
 
   componentDidMount() {
-    this.dashboard = this.dragBehaviorNode.closest('.DashboardView');
+    this.dashboard = this.dragBehaviorNode.closest('.DashboardRenderer');
     this.dropShadow = document.createElement('div');
     this.dropShadow.classList.add('DragBehavior__dropShadow');
 
