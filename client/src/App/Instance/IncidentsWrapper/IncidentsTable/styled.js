@@ -6,7 +6,7 @@
 
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
-import {default as TransitionComponent} from 'modules/components/Transition';
+import {Transition as TransitionComponent} from 'modules/components/Transition';
 
 import Table from 'modules/components/Table';
 const {TH, TR} = Table;
@@ -157,5 +157,25 @@ export const Transition = themed(styled(TransitionComponent)`
   &.transition-enter-active {
     opacity: 1;
     transition: opacity ${({timeout}) => timeout.enter + 'ms'};
+  }
+
+  &.transition-exit > td > div {
+    height: 0px;
+    overflow: hidden;
+    border-width: 0px;
+    background-color: transparent;
+  }
+
+  &.transition-exit-active {
+    height: 0px;
+    overflow: hidden;
+    background-color: transparent;
+    border-width: 0px;
+    transition: all ${({timeout}) => timeout.exit + 'ms'};
+  }
+
+  &.transition-exit-done {
+    border-width: 0px;
+    background-color: transparent;
   }
 `);

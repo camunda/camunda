@@ -13,7 +13,7 @@ import {IncidentAction} from 'modules/components/Actions';
 import ColumnHeader from '../../../Instances/ListView/List/ColumnHeader';
 import Modal from 'modules/components/Modal';
 import {formatDate} from 'modules/utils/date';
-import {TransitionGroup} from 'react-transition-group';
+import {TransitionGroup} from 'modules/components/Transition';
 
 import * as Styled from './styled';
 const {THead, TBody, TH, TR, TD} = Table;
@@ -170,9 +170,15 @@ export default class IncidentsTable extends React.Component {
                           {incident.errorType}
                         </Styled.FirstCell>
                       </TD>
-                      <TD>{incident.flowNodeName}</TD>
-                      <TD>{incident.jobId || '--'}</TD>
-                      <TD>{formatDate(incident.creationTime)}</TD>
+                      <TD>
+                        <div>{incident.flowNodeName}</div>
+                      </TD>
+                      <TD>
+                        <div>{incident.jobId || '--'}</div>
+                      </TD>
+                      <TD>
+                        <div>{formatDate(incident.creationTime)}</div>
+                      </TD>
                       <TD>
                         <Styled.Flex>
                           <Styled.ErrorMessageCell>
