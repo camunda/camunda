@@ -6,7 +6,7 @@
 
 import React, {Children} from 'react';
 import PropTypes from 'prop-types';
-import {CSSTransition} from 'react-transition-group';
+import {CSSTransition, TransitionGroup} from 'react-transition-group';
 
 function Transition(props) {
   return (
@@ -22,4 +22,4 @@ Transition.propTypes = {
   children: PropTypes.node.isRequired
 };
 
-export default Transition;
+export {Transition, TransitionGroup};

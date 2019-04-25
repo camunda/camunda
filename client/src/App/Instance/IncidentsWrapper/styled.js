@@ -7,7 +7,7 @@
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-import {default as TransitionComponent} from 'modules/components/Transition';
+import {Transition as TransitionComponent} from 'modules/components/Transition';
 
 const borderColor = themeStyle({
   dark: Colors.uiDark04,
