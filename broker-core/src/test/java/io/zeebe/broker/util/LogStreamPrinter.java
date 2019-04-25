@@ -114,6 +114,8 @@ public class LogStreamPrinter {
   private static void writeRecordHeader(final LoggedEvent event, final StringBuilder sb) {
     sb.append("Position: ");
     sb.append(event.getPosition());
+    sb.append(" Key: ");
+    sb.append(event.getKey());
   }
 
   private static void writeWorkflowInstanceBody(
