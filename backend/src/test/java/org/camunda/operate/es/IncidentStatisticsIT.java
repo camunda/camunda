@@ -14,7 +14,6 @@ import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
-import org.camunda.operate.es.reader.WorkflowReader;
 import org.camunda.operate.rest.dto.incidents.IncidentByWorkflowStatisticsDto;
 import org.camunda.operate.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import org.camunda.operate.rest.dto.incidents.IncidentsByWorkflowGroupStatisticsDto;
@@ -25,7 +24,6 @@ import org.camunda.operate.util.TestUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -55,16 +53,13 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
   @Rule
   public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
 
-  @Autowired
-  private WorkflowReader workflowReader;
-
   private MockMvc mockMvc;
 
   @Before
   public void starting() {
     this.mockMvc = mockMvcTestRule.getMockMvc();
   }
-
+ 
   @Test
   public void testIncidentStatisticsByError() throws Exception {
     createData();

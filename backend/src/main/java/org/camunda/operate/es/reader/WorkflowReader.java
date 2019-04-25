@@ -176,6 +176,40 @@ public class WorkflowReader extends AbstractReader {
       throw new OperateRuntimeException(message, e);
     }
   }
+  
+  /**
+   * Returns up to maxSize WorkflowEntities only filled with the given field names.
+   * @return Map of id -> WorkflowEntity
+   */
+  public Map<String, WorkflowEntity> getWorkflowsWithFields(int maxSize,String ...fields) {
+    final Map<String, WorkflowEntity> map = new HashMap<>();
+
+    final SearchRequest searchRequest = new SearchRequest(workflowType.getAlias())
+      .source(new SearchSourceBuilder()
+          .size(maxSize)
+          .fetchSource(fields,null));
+
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      response.getHits().forEach( hit -> {
+        final WorkflowEntity entity = fromSearchHit(hit.getSourceAsString());
+        map.put(entity.getId(), entity);
+      });
+      return map;
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining workflows: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+  
+  /**
+   * Returns up to 1000 WorkflowEntities only filled with the given field names.
+   * @return Map of id -> WorkflowEntity
+   */
+  public Map<String, WorkflowEntity> getWorkflowsWithFields(String ...fields){
+    return getWorkflowsWithFields(1000, fields);
+  }
 
   private List<WorkflowEntity> scroll(SearchRequest searchRequest) throws IOException {
     return ElasticsearchUtil.scroll(searchRequest, WorkflowEntity.class, objectMapper, esClient);

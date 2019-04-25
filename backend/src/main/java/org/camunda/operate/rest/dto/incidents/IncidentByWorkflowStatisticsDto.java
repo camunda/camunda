@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.rest.dto.incidents;
 
-public class IncidentByWorkflowStatisticsDto implements Comparable {
+public class IncidentByWorkflowStatisticsDto implements Comparable<IncidentByWorkflowStatisticsDto> {
 
   private String workflowId;
 
@@ -129,14 +129,13 @@ public class IncidentByWorkflowStatisticsDto implements Comparable {
   }
 
   @Override
-  public int compareTo(Object o) {
-    if (o == null || ! (o instanceof IncidentByWorkflowStatisticsDto)){
+  public int compareTo(IncidentByWorkflowStatisticsDto other) {
+    if (other == null){
       return 1;
     }
-    final IncidentByWorkflowStatisticsDto stat = (IncidentByWorkflowStatisticsDto) o;
-    int compare = Long.compare(stat.getInstancesWithActiveIncidentsCount(), this.getInstancesWithActiveIncidentsCount());
+    int compare = Long.compare(other.getInstancesWithActiveIncidentsCount(), this.getInstancesWithActiveIncidentsCount());
     if (compare == 0) {
-      compare = this.getWorkflowId().compareTo(stat.getWorkflowId());
+      compare = this.getWorkflowId().compareTo(other.getWorkflowId());
     }
     return compare;
   }
