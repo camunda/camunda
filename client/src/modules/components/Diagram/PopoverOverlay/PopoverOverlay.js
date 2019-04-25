@@ -26,6 +26,14 @@ export default class PopoverOverlay extends React.Component {
     this.setState({isModalVisibile: true});
   };
 
+  renderBeautifiedMetadata = () => {
+    return JSON.stringify(this.props.metadata.data, null, '\t')
+      .replace(/\\n/g, '\n\t\t')
+      .replace(/\\t/g, '\t')
+      .split('\n')
+      .map((line, idx) => <Styled.CodeLine key={idx}>{line}</Styled.CodeLine>);
+  };
+
   renderModal = () => {
     const {metadata, selectedFlowNodeName} = this.props;
 
@@ -39,13 +47,7 @@ export default class PopoverOverlay extends React.Component {
         <Styled.ModalBody>
           <pre>
             <Styled.LinesSeparator />
-            <code className="language-json">
-              {JSON.stringify(metadata.data, null, '\t')
-                .split('\n')
-                .map((line, idx) => (
-                  <Styled.CodeLine key={idx}>{line}</Styled.CodeLine>
-                ))}
-            </code>
+            <code>{this.renderBeautifiedMetadata()}</code>
           </pre>
         </Styled.ModalBody>
         <Modal.Footer>

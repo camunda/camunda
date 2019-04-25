@@ -251,6 +251,7 @@ export const ModalBody = themed(styled(Modal.Body)`
   padding: 0;
   position: relative;
   counter-reset: line;
+  overflow: auto;
 
   & pre {
     margin: 0;
@@ -259,27 +260,31 @@ export const ModalBody = themed(styled(Modal.Body)`
 
 export const CodeLine = themed(styled.p`
   margin: 3px;
+  margin-left: 0;
   line-height: 14px;
   font-family: IBMPlexMono;
   font-size: 14px;
 
   &:before {
+    box-sizing: border-box;
+    text-align: right;
     counter-increment: line;
     content: counter(line);
-    padding-left: 18px;
-    padding-right: 9px;
-    opacity: 0.5;
     color: ${themeStyle({
       dark: '#ffffff',
       light: '#000000'
     })};
+    display: inline-block;
+    width: 35px;
+    padding-right: 11px;
+    -webkit-user-select: none;
   }
 `);
 
 export const LinesSeparator = themed(styled.span`
   position: absolute;
   top: 0;
-  left: 34px;
+  left: 33px;
   height: 100%;
   width: 1px;
   background-color: ${themeStyle({
