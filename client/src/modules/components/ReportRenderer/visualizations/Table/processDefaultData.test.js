@@ -29,7 +29,7 @@ const report = {
     visualization: 'table'
   },
   result: {
-    data: [{key: 'a', value: 1}, {key: 'b', value: 2}, {key: 'c', value: 3}],
+    data: [{key: 'a', value: 1, label: 'a name'}, {key: 'b', value: 2}, {key: 'c', value: 3}],
     processInstanceCount: 5
   }
 };
@@ -37,15 +37,12 @@ const report = {
 const props = {
   mightFail: jest.fn().mockImplementation((a, b) => b(a)),
   error: '',
-  flowNodeNames: {
-    a: 'a'
-  },
   formatter: v => v,
   report
 };
 
 it('should display data for key-value pairs', async () => {
-  expect(processDefaultData(props).body).toEqual([['a', 1], ['b', 2], ['c', 3]]);
+  expect(processDefaultData(props).body).toEqual([['a name', 1], ['b', 2], ['c', 3]]);
 });
 
 it('should format data according to the provided formatter', async () => {
@@ -53,7 +50,7 @@ it('should format data according to the provided formatter', async () => {
     ...props,
     formatter: v => 2 * v
   };
-  expect(processDefaultData(newProps).body).toEqual([['a', 2], ['b', 4], ['c', 6]]);
+  expect(processDefaultData(newProps).body).toEqual([['a name', 2], ['b', 4], ['c', 6]]);
 });
 
 const newProps = {
@@ -75,7 +72,7 @@ it('should not include absolute values if if it is hidden in the configuration',
   getRelativeValue.mockReturnValue('12.3%');
 
   expect(processDefaultData(newProps).body).toEqual([
-    ['a', '12.3%'],
+    ['a name', '12.3%'],
     ['b', '12.3%'],
     ['c', '12.3%']
   ]);

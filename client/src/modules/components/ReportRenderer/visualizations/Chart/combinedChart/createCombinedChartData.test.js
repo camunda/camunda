@@ -16,8 +16,24 @@ jest.mock('../../service', () => {
 
 it('should return correct chart data object for a combined report', () => {
   const resultData = {
-    reportA: {name: 'Report A', result: {data: [{key: 'foo', value: 123}, {key: 'bar', value: 5}]}},
-    reportB: {name: 'Report B', result: {data: [{key: 'foo', value: 1}, {key: 'dar', value: 3}]}}
+    reportA: {
+      name: 'Report A',
+      result: {
+        data: [
+          {key: 'foo', value: 123, label: 'Flownode Foo'},
+          {key: 'bar', value: 5, label: 'Barrrr'}
+        ]
+      }
+    },
+    reportB: {
+      name: 'Report B',
+      result: {
+        data: [
+          {key: 'foo', value: 1, label: 'Flownode Foo'},
+          {key: 'dar', value: 3, label: 'Flownode DAR'}
+        ]
+      }
+    }
   };
 
   uniteResults.mockClear();
@@ -38,7 +54,6 @@ it('should return correct chart data object for a combined report', () => {
       },
       combined: true
     },
-    flowNodeNames: {foo: 'Flownode Foo', bar: 'Barrrr', dar: 'Flownode DAR'},
     targetValue: false,
     theme: 'light'
   });

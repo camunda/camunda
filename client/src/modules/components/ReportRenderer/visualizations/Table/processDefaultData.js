@@ -9,7 +9,7 @@ import {getRelativeValue} from '../service';
 
 const {formatReportResult} = formatters;
 
-export default function processDefaultData({formatter = v => v, report, flowNodeNames = {}}) {
+export default function processDefaultData({formatter = v => v, report}) {
   const {data, result, reportType} = report;
   const {
     configuration: {hideAbsoluteValue, hideRelativeValue, xml},
@@ -39,8 +39,8 @@ export default function processDefaultData({formatter = v => v, report, flowNode
   // normal two-dimensional data
   return {
     head: [...labels, ...(displayRelativeValue ? ['Relative Frequency'] : [])],
-    body: formattedResult.map(({key, value}) => [
-      flowNodeNames[key] || key,
+    body: formattedResult.map(({label, key, value}) => [
+      label || key,
       ...(displayAbsoluteValue ? [formatter(value)] : []),
       ...(displayRelativeValue ? [getRelativeValue(value, instanceCount)] : [])
     ])

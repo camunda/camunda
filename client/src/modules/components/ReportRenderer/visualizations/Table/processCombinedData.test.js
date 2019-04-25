@@ -58,9 +58,6 @@ const combinedReport = {
 const props = {
   mightFail: jest.fn().mockImplementation((a, b) => b(a)),
   error: '',
-  flowNodeNames: {
-    a: 'a'
-  },
   fomatter: v => v,
   report: combinedReport
 };

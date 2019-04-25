@@ -6,7 +6,6 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-import {getFlowNodeNames} from 'services';
 
 import CombinedReportRendererWithErrorHandling from './CombinedReportRenderer';
 import {Chart, Table} from './visualizations';
@@ -27,8 +26,7 @@ jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
     ...rest,
-    formatters: {formatReportResult: (data, result) => result},
-    getFlowNodeNames: jest.fn().mockReturnValue({a: 'Flownode A', b: 'Flownode B'})
+    formatters: {formatReportResult: (data, result) => result}
   };
 });
 
@@ -142,28 +140,4 @@ it('should process the result of every report it combined', () => {
   expect(processResult).toHaveBeenCalledWith(reportA);
   expect(processResult).toHaveBeenCalledWith(reportB);
   expect(processResult).toHaveBeenCalledWith(reportC);
-});
-
-it('should load the flow node names of all processes involved', () => {
-  getFlowNodeNames.mockClear();
-
-  const reportB = {...reportA};
-  reportB.data.processDefinitionKey = 'keyForB';
-
-  const report = {...CombinedReport};
-  report.result = {
-    data: {a: reportA, b: reportB}
-  };
-
-  shallow(<CombinedReportRenderer mightFail={mightFail} report={report} />);
-
-  expect(getFlowNodeNames).toHaveBeenCalledTimes(2);
-  expect(getFlowNodeNames).toHaveBeenCalledWith(
-    reportA.data.processDefinitionKey,
-    reportA.data.processDefinitionVersion
-  );
-  expect(getFlowNodeNames).toHaveBeenCalledWith(
-    reportB.data.processDefinitionKey,
-    reportB.data.processDefinitionVersion
-  );
 });

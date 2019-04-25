@@ -12,20 +12,6 @@ import {Number, Table} from './visualizations';
 
 import {processResult} from './service';
 
-import {getFlowNodeNames} from 'services';
-
-jest.mock('services', () => {
-  const rest = jest.requireActual('services');
-
-  return {
-    ...rest,
-    getFlowNodeNames: jest.fn().mockReturnValue({
-      a: 'foo',
-      b: 'bar'
-    })
-  };
-});
-
 jest.mock('./service', () => {
   return {
     isEmpty: str => !str,
@@ -52,12 +38,6 @@ const report = {
   },
   result: {data: 1234}
 };
-
-it('should call getFlowNodeNames on mount', () => {
-  shallow(<ProcessReportRenderer report={report} type="process" />);
-
-  expect(getFlowNodeNames).toHaveBeenCalled();
-});
 
 it('should display a number if visualization is number', () => {
   const node = shallow(<ProcessReportRenderer report={report} />);
@@ -109,7 +89,7 @@ it('should pass the report to the visualization component', () => {
 });
 
 it('should process the report result', () => {
-  const node = shallow(<ProcessReportRenderer report={exampleDurationReport} />);
+  shallow(<ProcessReportRenderer report={exampleDurationReport} />);
 
   expect(processResult).toHaveBeenCalledWith(exampleDurationReport);
 });

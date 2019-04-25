@@ -50,9 +50,6 @@ const Table = WrappedTable.WrappedComponent;
 const props = {
   mightFail: jest.fn().mockImplementation((a, b) => b(a)),
   error: '',
-  flowNodeNames: {
-    a: 'a'
-  },
   report
 };
 

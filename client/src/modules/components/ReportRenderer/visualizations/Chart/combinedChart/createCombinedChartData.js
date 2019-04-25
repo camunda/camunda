@@ -30,7 +30,7 @@ export default function createCombinedChartData(props) {
   return {labels, datasets};
 }
 
-export function extractCombinedData({report, theme, targetValue, flowNodeNames}) {
+export function extractCombinedData({report, theme, targetValue}) {
   const {result, data: combinedReportData} = report;
 
   const data = {...Object.values(result.data)[0].data, ...combinedReportData};
@@ -39,7 +39,16 @@ export function extractCombinedData({report, theme, targetValue, flowNodeNames})
 
   const isDark = theme === 'dark';
 
-  let labels = [...new Set(resultArr.flat(2).map(({key}) => key))];
+  const flowNodeNames = {};
+
+  let labels = [
+    ...new Set(
+      resultArr.flat(2).map(({key, label}) => {
+        flowNodeNames[key] = label;
+        return key;
+      })
+    )
+  ];
 
   const unitedResults = uniteResults(resultArr, labels);
 

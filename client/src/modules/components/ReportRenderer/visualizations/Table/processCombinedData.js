@@ -7,7 +7,7 @@
 import {getFormattedLabels, getBodyRows, getCombinedTableProps} from './service';
 import {uniteResults} from '../service';
 
-export default function processCombinedData({formatter, report, flowNodeNames = {}}) {
+export default function processCombinedData({formatter, report}) {
   const {labels, reportsNames, combinedResult, processInstanceCount} = getCombinedTableProps(
     report.result.data,
     report.data.reports
@@ -30,8 +30,16 @@ export default function processCombinedData({formatter, report, flowNodeNames = 
     displayAbsoluteValue
   );
 
-  // get all unique keys of results of multiple reports
-  const allKeys = [...new Set(combinedResult.flat(2).map(({key}) => key))];
+  const flowNodeNames = {};
+  // get all unique keys of results of multiple reports and build flowNodesNames hash
+  const allKeys = [
+    ...new Set(
+      combinedResult.flat(2).map(({key, label}) => {
+        flowNodeNames[key] = label;
+        return key;
+      })
+    )
+  ];
 
   // make all hash tables look exactly the same by filling empty keys with empty string
   const unitedResults = uniteResults(combinedResult, allKeys);

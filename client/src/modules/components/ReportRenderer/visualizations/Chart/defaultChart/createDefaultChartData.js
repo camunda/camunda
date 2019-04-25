@@ -29,7 +29,7 @@ export default function createDefaultChartData(props) {
   return {labels, datasets};
 }
 
-export function extractDefaultChartData({report, theme, targetValue, flowNodeNames}) {
+export function extractDefaultChartData({report, theme, targetValue}) {
   const {result, data} = report;
   const isDark = theme === 'dark';
   const {
@@ -40,11 +40,7 @@ export function extractDefaultChartData({report, theme, targetValue, flowNodeNam
   const formattedResult = formatReportResult(data, result.data);
   formattedResult.reverse();
 
-  let labels = formattedResult.map(({key}) => key);
-
-  if (data.groupBy.type === 'flowNodes') {
-    labels = labels.map(key => flowNodeNames[key] || key);
-  }
+  let labels = formattedResult.map(({key, label}) => label || key);
 
   return {
     labels,

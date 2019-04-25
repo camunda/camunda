@@ -5,8 +5,6 @@
  */
 
 import React from 'react';
-import {getFlowNodeNames} from 'services';
-import update from 'immutability-helper';
 import {withErrorHandling} from 'HOC';
 
 import {getFormatter, processResult as processSingleReportResult} from './service';
@@ -28,40 +26,6 @@ const getComponent = visualization => {
 
 export default withErrorHandling(
   class CombinedReportRenderer extends React.Component {
-    state = {
-      flowNodeNames: {}
-    };
-
-    componentDidMount() {
-      this.loadAllFlowNodeNames();
-    }
-
-    componentDidUpdate(prevProps) {
-      if (prevProps.report.result !== this.props.report.result) {
-        this.loadAllFlowNodeNames();
-      }
-    }
-
-    loadAllFlowNodeNames = () => {
-      const {result} = this.props.report;
-      if (result && typeof result === 'object') {
-        Object.values(result.data).forEach(
-          ({data: {processDefinitionKey, processDefinitionVersion}}) =>
-            this.loadFlowNodeNames(processDefinitionKey, processDefinitionVersion)
-        );
-      }
-    };
-
-    loadFlowNodeNames = async (key, version) => {
-      this.props.mightFail(getFlowNodeNames(key, version), flowNodeNames =>
-        this.setState(
-          update(this.state, {
-            flowNodeNames: {$merge: flowNodeNames}
-          })
-        )
-      );
-    };
-
     render() {
       const {result} = this.props.report;
       if (result && typeof result === 'object' && Object.keys(result.data).length) {
@@ -78,7 +42,6 @@ export default withErrorHandling(
             <Component
               {...this.props}
               report={processedReport}
-              flowNodeNames={this.state.flowNodeNames}
               formatter={getFormatter(view.property)}
             />
           </div>
