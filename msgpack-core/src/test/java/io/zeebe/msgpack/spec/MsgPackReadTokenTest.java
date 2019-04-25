@@ -218,7 +218,13 @@ public class MsgPackReadTokenTest {
             given((b) -> b.add(0xe0)),
             INTEGER,
             doAssert((t) -> assertThat(t.getIntegerValue()).isEqualTo(-32))
-          }
+          },
+          {
+            "zero length fixstr",
+            given((b) -> b.add(0xa0)),
+            STRING,
+            doAssert((t) -> assertThatBuffer(t.getValueBuffer()).hasCapacity(0))
+          },
         });
   }
 

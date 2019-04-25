@@ -17,6 +17,7 @@ package io.zeebe.msgpack.spec;
 
 import static io.zeebe.msgpack.spec.MsgPackCodes.ARRAY32;
 import static io.zeebe.msgpack.spec.MsgPackCodes.BIN32;
+import static io.zeebe.msgpack.spec.MsgPackCodes.FIXSTR_PREFIX;
 import static io.zeebe.msgpack.spec.MsgPackCodes.MAP32;
 import static io.zeebe.msgpack.spec.MsgPackCodes.STR32;
 import static io.zeebe.msgpack.spec.MsgPackCodes.UINT64;
@@ -37,7 +38,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class MsgPackReadingBoundaryCheckingExceptionTest {
 
-  protected static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG =
+  private static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG =
       "Negative value should not be accepted by size value and unsigned 64bit integer";
 
   @Rule public ExpectedException exception = ExpectedException.none();
@@ -48,19 +49,23 @@ public class MsgPackReadingBoundaryCheckingExceptionTest {
         new Object[][] {
           {
             new byte[] {(byte) ARRAY32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
-            codeUnderTest((r) -> r.readArrayHeader())
+            codeUnderTest((r) -> r.readArrayHeader()),
+            NEGATIVE_BUF_SIZE_EXCEPTION_MSG
           },
           {
             new byte[] {(byte) BIN32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
-            codeUnderTest((r) -> r.readBinaryLength())
+            codeUnderTest((r) -> r.readBinaryLength()),
+            NEGATIVE_BUF_SIZE_EXCEPTION_MSG
           },
           {
             new byte[] {(byte) MAP32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
-            codeUnderTest((r) -> r.readMapHeader())
+            codeUnderTest((r) -> r.readMapHeader()),
+            NEGATIVE_BUF_SIZE_EXCEPTION_MSG
           },
           {
             new byte[] {(byte) STR32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
-            codeUnderTest((r) -> r.readStringLength())
+            codeUnderTest((r) -> r.readStringLength()),
+            NEGATIVE_BUF_SIZE_EXCEPTION_MSG
           },
           {
             new byte[] {
@@ -74,8 +79,14 @@ public class MsgPackReadingBoundaryCheckingExceptionTest {
               (byte) 0xff,
               (byte) 0xff
             },
-            codeUnderTest((r) -> r.readInteger())
-          }
+            codeUnderTest((r) -> r.readInteger()),
+            NEGATIVE_BUF_SIZE_EXCEPTION_MSG
+          },
+          {
+            new byte[] {(byte) FIXSTR_PREFIX | (byte) 0x01},
+            codeUnderTest((r) -> r.readToken()),
+            "Reading 1 bytes past buffer capacity(1) in range [1:2]"
+          },
         });
   }
 
@@ -84,6 +95,9 @@ public class MsgPackReadingBoundaryCheckingExceptionTest {
 
   @Parameter(1)
   public Consumer<MsgPackReader> codeUnderTest;
+
+  @Parameter(2)
+  public String exceptionMessage;
 
   protected MsgPackReader reader;
 
@@ -100,7 +114,7 @@ public class MsgPackReadingBoundaryCheckingExceptionTest {
 
     // then
     exception.expect(MsgpackReaderException.class);
-    exception.expectMessage(NEGATIVE_BUF_SIZE_EXCEPTION_MSG);
+    exception.expectMessage(exceptionMessage);
 
     // when
     codeUnderTest.accept(reader);

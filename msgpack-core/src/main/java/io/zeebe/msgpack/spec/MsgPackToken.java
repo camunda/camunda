@@ -62,7 +62,17 @@ public class MsgPackToken {
   }
 
   public void setValue(DirectBuffer buffer, int offset, int length) {
-    this.valueBuffer.wrap(buffer, offset, length);
+    if (length == 0) {
+      valueBuffer.wrap(0, 0);
+    } else if (offset + length <= buffer.capacity()) {
+      this.valueBuffer.wrap(buffer, offset, length);
+    } else {
+      final int result = offset + length;
+      throw new MsgpackReaderException(
+          String.format(
+              "Reading %d bytes past buffer capacity(%d) in range [%d:%d]",
+              result - buffer.capacity(), buffer.capacity(), offset, result));
+    }
   }
 
   public void setValue(double value) {

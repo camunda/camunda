@@ -188,7 +188,12 @@ public class MsgPackReadingTest {
             "negative fixint",
             given((b) -> b.add(0xe0)),
             doAssert((r) -> assertThat(r.readInteger()).isEqualTo(-32))
-          }
+          },
+          {
+            "zero length fixstr",
+            given((b) -> b.add(0xa0)),
+            doAssert((r) -> assertThat(r.readStringLength()).isEqualTo(0))
+          },
         });
   }
 
