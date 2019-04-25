@@ -102,10 +102,15 @@ export const IncidentTR = themed(styled(TR)`
   }
 
   &:hover {
-    background-color: ${themeStyle({
-      dark: Colors.darkTreeHover,
-      light: Colors.lightButton05
-    })};
+    background-color: ${({isSelected}) => {
+      return (
+        !isSelected &&
+        themeStyle({
+          dark: Colors.darkTreeHover,
+          light: Colors.lightButton05
+        })
+      );
+    }};
   }
 `);
 
