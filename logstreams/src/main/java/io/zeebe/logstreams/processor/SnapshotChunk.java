@@ -26,6 +26,9 @@ public interface SnapshotChunk {
   /** @return the name of the current chunk (e.g. file name) */
   String getChunkName();
 
+  /** @return the checksum of the content, can be use to verify the integrity of the content */
+  long getChecksum();
+
   /** @return the content of the current chunk */
   byte[] getContent();
 }

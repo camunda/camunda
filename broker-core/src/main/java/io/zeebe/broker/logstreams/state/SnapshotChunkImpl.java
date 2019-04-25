@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.logstreams.state;
 
+import static io.zeebe.clustering.management.SnapshotChunkDecoder.checksumNullValue;
 import static io.zeebe.clustering.management.SnapshotChunkDecoder.snapshotPositionNullValue;
 import static io.zeebe.clustering.management.SnapshotChunkDecoder.totalCountNullValue;
 import static io.zeebe.clustering.management.SnapshotChunkEncoder.chunkNameHeaderLength;
@@ -41,6 +42,7 @@ public class SnapshotChunkImpl
   private long snapshotPosition;
   private int totalCount;
   private String chunkName;
+  private long checksum;
 
   private final DirectBuffer content = new UnsafeBuffer(0, 0);
 
@@ -50,6 +52,7 @@ public class SnapshotChunkImpl
     snapshotPosition = chunk.getSnapshotPosition();
     totalCount = chunk.getTotalCount();
     chunkName = chunk.getChunkName();
+    checksum = chunk.getChecksum();
     content.wrap(chunk.getContent());
   }
 
@@ -80,6 +83,7 @@ public class SnapshotChunkImpl
         .snapshotPosition(snapshotPosition)
         .totalCount(totalCount)
         .chunkName(chunkName)
+        .checksum(checksum)
         .putContent(content, 0, content.capacity());
   }
 
@@ -90,6 +94,7 @@ public class SnapshotChunkImpl
     snapshotPosition = decoder.snapshotPosition();
     totalCount = decoder.totalCount();
     chunkName = decoder.chunkName();
+    checksum = decoder.checksum();
     decoder.wrapContent(content);
   }
 
@@ -99,6 +104,7 @@ public class SnapshotChunkImpl
 
     snapshotPosition = snapshotPositionNullValue();
     totalCount = totalCountNullValue();
+    checksum = checksumNullValue();
 
     chunkName = "";
     content.wrap(0, 0);
@@ -117,6 +123,11 @@ public class SnapshotChunkImpl
   @Override
   public String getChunkName() {
     return chunkName;
+  }
+
+  @Override
+  public long getChecksum() {
+    return checksum;
   }
 
   @Override

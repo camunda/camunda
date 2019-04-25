@@ -18,6 +18,7 @@ package io.zeebe.logstreams.state;
 import io.zeebe.logstreams.impl.Loggers;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -65,6 +66,15 @@ public class StateStorage {
     final String path = String.format("%s-%s", position, TEMP_SNAPSHOT_DIRECTORY);
 
     return new File(snapshotsDirectory, path);
+  }
+
+  public boolean existSnapshot(long snapshotPosition) {
+    final File[] files = snapshotsDirectory.listFiles();
+    if (files != null && files.length > 0) {
+      final String snapshotDirName = Long.toString(snapshotPosition);
+      return Arrays.stream(files).anyMatch(f -> f.getName().equalsIgnoreCase(snapshotDirName));
+    }
+    return false;
   }
 
   public File getSnapshotDirectoryFor(long position) {

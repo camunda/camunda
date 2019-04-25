@@ -26,6 +26,7 @@ import io.zeebe.broker.logstreams.ZbStreamProcessorService;
 import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.broker.logstreams.state.StateReplication;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.logstreams.state.StateSnapshotController;
@@ -39,6 +40,7 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 public class Partition implements Service<Partition> {
   public static final String PARTITION_NAME_FORMAT = "raft-atomix-partition-%d";
   private final ClusterEventService eventService;
+  private final BrokerCfg brokerCfg;
   private StateReplication processorStateReplication;
   private StateReplication exporterStateReplication;
 
@@ -57,7 +59,12 @@ public class Partition implements Service<Partition> {
   private SnapshotController exporterSnapshotController;
   private StateSnapshotController processorSnapshotController;
 
-  public Partition(ClusterEventService eventService, final int partitionId, final RaftState state) {
+  public Partition(
+      BrokerCfg brokerCfg,
+      ClusterEventService eventService,
+      final int partitionId,
+      final RaftState state) {
+    this.brokerCfg = brokerCfg;
     this.partitionId = partitionId;
     this.state = state;
     this.eventService = eventService;
@@ -77,7 +84,8 @@ public class Partition implements Service<Partition> {
         new StateSnapshotController(
             DefaultZeebeDbFactory.defaultFactory(ExporterColumnFamilies.class),
             exporterStateStorage,
-            exporterStateReplication);
+            exporterStateReplication,
+            brokerCfg.getData().getMaxSnapshots());
 
     final String streamProcessorName = ZbStreamProcessorService.PROCESSOR_NAME;
     final StateStorage stateStorage = stateStorageFactory.create(partitionId, streamProcessorName);
@@ -85,7 +93,10 @@ public class Partition implements Service<Partition> {
         new StateReplication(eventService, partitionId, streamProcessorName);
     processorSnapshotController =
         new StateSnapshotController(
-            DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, stateStorage, processorStateReplication);
+            DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+            stateStorage,
+            processorStateReplication,
+            brokerCfg.getData().getMaxSnapshots());
 
     if (state == RaftState.FOLLOWER) {
       processorSnapshotController.consumeReplicatedSnapshots();

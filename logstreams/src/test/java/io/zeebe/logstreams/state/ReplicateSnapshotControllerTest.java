@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.zip.CRC32;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,6 +46,7 @@ public class ReplicateSnapshotControllerTest {
   private StateSnapshotController replicatorSnapshotController;
   private StateSnapshotController receiverSnapshotController;
   private Replicator replicator;
+  private StateStorage receiverStorage;
 
   @Before
   public void setup() throws IOException {
@@ -54,16 +56,18 @@ public class ReplicateSnapshotControllerTest {
 
     final File receiverRuntimeDirectory = tempFolderRule.newFolder("runtime-receiver");
     final File receiverSnapshotsDirectory = tempFolderRule.newFolder("snapshots-receiver");
-    final StateStorage receiverStorage =
-        new StateStorage(receiverRuntimeDirectory, receiverSnapshotsDirectory);
+    receiverStorage = new StateStorage(receiverRuntimeDirectory, receiverSnapshotsDirectory);
 
     replicator = new Replicator();
     replicatorSnapshotController =
         new StateSnapshotController(
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage, replicator);
+            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage, replicator, 1);
     receiverSnapshotController =
         new StateSnapshotController(
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), receiverStorage, replicator);
+            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
+            receiverStorage,
+            replicator,
+            1);
 
     autoCloseableRule.manage(replicatorSnapshotController);
     autoCloseableRule.manage(receiverSnapshotController);
@@ -93,6 +97,26 @@ public class ReplicateSnapshotControllerTest {
     assertThat(replicatedChunks)
         .extracting(SnapshotChunk::getSnapshotPosition, SnapshotChunk::getTotalCount)
         .containsOnly(tuple(1L, totalCount));
+  }
+
+  @Test
+  public void shouldContainChecksumPerChunk() {
+    // given
+    replicatorSnapshotController.takeSnapshot(1);
+
+    // when
+    replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
+
+    // then
+    final List<SnapshotChunk> replicatedChunks = replicator.replicatedChunks;
+    assertThat(replicatedChunks.size()).isGreaterThan(0);
+
+    replicatedChunks.forEach(
+        chunk -> {
+          final CRC32 crc32 = new CRC32();
+          crc32.update(chunk.getContent());
+          assertThat(chunk.getChecksum()).isEqualTo(crc32.getValue());
+        });
   }
 
   @Test
@@ -145,6 +169,30 @@ public class ReplicateSnapshotControllerTest {
     wrapper.wrap(receiverSnapshotController.openDb());
     final int valueFromSnapshot = wrapper.getInt(KEY);
     assertThat(valueFromSnapshot).isEqualTo(VALUE);
+  }
+
+  @Test
+  public void shouldEnsureMaxSnapshotCount() throws Exception {
+    // given
+    receiverSnapshotController.consumeReplicatedSnapshots();
+    replicatorSnapshotController.takeSnapshot(1);
+    replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
+    replicatorSnapshotController.takeSnapshot(2);
+
+    // when
+    replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
+
+    // then
+    final RocksDBWrapper wrapper = new RocksDBWrapper();
+    final long recoveredSnapshot = receiverSnapshotController.recover();
+    assertThat(recoveredSnapshot).isEqualTo(2);
+
+    wrapper.wrap(receiverSnapshotController.openDb());
+    final int valueFromSnapshot = wrapper.getInt(KEY);
+    assertThat(valueFromSnapshot).isEqualTo(VALUE);
+
+    assertThat(receiverStorage.existSnapshot(1)).isFalse();
+    assertThat(receiverStorage.existSnapshot(2)).isTrue();
   }
 
   private final class Replicator implements SnapshotReplication {

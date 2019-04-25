@@ -186,7 +186,8 @@ public class ClientApiMessageHandlerTest {
     messageHandler = new ClientApiMessageHandler();
 
     final Partition partition =
-        new Partition(mock(ClusterEventService.class), LOG_STREAM_PARTITION_ID, RaftState.LEADER) {
+        new Partition(
+            null, mock(ClusterEventService.class), LOG_STREAM_PARTITION_ID, RaftState.LEADER) {
           @Override
           public LogStream getLogStream() {
             return logStream;

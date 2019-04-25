@@ -32,7 +32,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.Adler32;
+import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
 import org.junit.Before;
 import org.junit.Rule;
@@ -143,7 +143,7 @@ public class SnapshotReplicationTest {
 
   private long createCheckSumForFile(File snapshotFile) {
     try (CheckedInputStream checkedInputStream =
-        new CheckedInputStream(Files.newInputStream(snapshotFile.toPath()), new Adler32())) {
+        new CheckedInputStream(Files.newInputStream(snapshotFile.toPath()), new CRC32())) {
       while (checkedInputStream.skip(512) > 0) {}
 
       return checkedInputStream.getChecksum().getValue();
