@@ -524,8 +524,8 @@ public class TestStreams {
     }
 
     @Override
-    public long getPositionToRecoveryFrom() {
-      return wrappedProcessor.getPositionToRecoveryFrom();
+    public long getPositionToRecoverFrom() {
+      return wrappedProcessor.getPositionToRecoverFrom();
     }
 
     @Override

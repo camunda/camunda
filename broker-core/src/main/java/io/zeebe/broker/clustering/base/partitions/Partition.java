@@ -21,12 +21,15 @@ import static io.zeebe.broker.exporter.ExporterManagerService.EXPORTER_PROCESSOR
 import static io.zeebe.broker.exporter.ExporterManagerService.PROCESSOR_NAME;
 
 import io.atomix.cluster.messaging.ClusterEventService;
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.exporter.stream.ExporterColumnFamilies;
+import io.zeebe.broker.exporter.stream.ExporterStreamProcessorState;
 import io.zeebe.broker.logstreams.ZbStreamProcessorService;
 import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.broker.logstreams.state.StateReplication;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.SnapshotReplication;
 import io.zeebe.logstreams.spi.SnapshotController;
@@ -37,10 +40,12 @@ import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import org.slf4j.Logger;
 
 /** Service representing a partition. */
 public class Partition implements Service<Partition> {
   public static final String PARTITION_NAME_FORMAT = "raft-atomix-partition-%d";
+  public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
   private final ClusterEventService eventService;
   private final BrokerCfg brokerCfg;
   private SnapshotReplication processorStateReplication;
@@ -52,9 +57,7 @@ public class Partition implements Service<Partition> {
 
   private final Injector<LogStream> logStreamInjector = new Injector<>();
   private final Injector<StateStorageFactory> stateStorageFactoryInjector = new Injector<>();
-
   private final int partitionId;
-
   private final RaftState state;
 
   private LogStream logStream;
@@ -99,6 +102,7 @@ public class Partition implements Service<Partition> {
         noReplication
             ? new NoneSnapshotReplication()
             : new StateReplication(eventService, partitionId, streamProcessorName);
+
     processorSnapshotController =
         new StateSnapshotController(
             DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
@@ -107,9 +111,46 @@ public class Partition implements Service<Partition> {
             brokerCfg.getData().getMaxSnapshots());
 
     if (state == RaftState.FOLLOWER) {
-      processorSnapshotController.consumeReplicatedSnapshots();
-      exporterSnapshotController.consumeReplicatedSnapshots();
+      logStream.setExporterPositionSupplier(this::getLowestReplicatedExportedPosition);
+
+      processorSnapshotController.consumeReplicatedSnapshots(logStream::delete);
+      exporterSnapshotController.consumeReplicatedSnapshots(pos -> {});
     }
+  }
+
+  private long getLowestReplicatedExportedPosition() {
+    try {
+      if (exporterSnapshotController.getValidSnapshotsCount() > 0) {
+        exporterSnapshotController.recover();
+        final ZeebeDb zeebeDb = exporterSnapshotController.openDb();
+        final ExporterStreamProcessorState exporterState =
+            new ExporterStreamProcessorState(zeebeDb, zeebeDb.createContext());
+
+        final long lowestPosition = exporterState.getLowestPosition();
+
+        LOG.debug(
+            "The lowest exported position at follower {} is {}.",
+            brokerCfg.getCluster().getNodeId(),
+            lowestPosition);
+        return lowestPosition;
+      } else {
+        LOG.info(
+            "Follower {} has no exporter snapshot so it can't delete data.",
+            brokerCfg.getCluster().getNodeId());
+      }
+    } catch (Exception e) {
+      LOG.error(
+          "Unexpected error occurred while obtaining the lowest exported position at a follower.",
+          e);
+    } finally {
+      try {
+        exporterSnapshotController.close();
+      } catch (Exception e) {
+        LOG.error("Unexpected error occurred while closing the DB.", e);
+      }
+    }
+
+    return -1;
   }
 
   @Override

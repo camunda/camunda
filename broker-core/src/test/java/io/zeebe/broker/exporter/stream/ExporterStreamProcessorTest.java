@@ -19,7 +19,11 @@ package io.zeebe.broker.exporter.stream;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -34,7 +38,11 @@ import io.zeebe.exporter.api.record.Record;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -324,6 +332,33 @@ public class ExporterStreamProcessorTest {
     // then
     assertThat(state.getPosition(EXPORTER_ID_1)).isEqualTo(eventPosition);
     assertThat(state.getPosition(EXPORTER_ID_2)).isEqualTo(ExporterRecord.POSITION_UNKNOWN);
+  }
+
+  @Test
+  public void shouldRecoverFromStartWithNonUpdatingExporter() {
+    // given
+    final StreamProcessorControl control = startStreamProcessor(exporterDescriptors);
+    final long eventPosition = writeEvent();
+
+    waitUntil(() -> exporters.get(0).getExportedRecords().size() == 1);
+    waitUntil(() -> exporters.get(1).getExportedRecords().size() == 1);
+
+    exporters.get(1).getController().updateLastExportedRecordPosition(eventPosition);
+
+    // when
+    control.close();
+    exporters.get(0).getExportedRecords().clear();
+    exporters.get(1).getExportedRecords().clear();
+
+    control.blockAfterEvent(e -> e.getPosition() == eventPosition);
+    control.start();
+    waitUntil(control::isBlocked);
+
+    // then
+    assertThat(exporters.get(0).getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactly(eventPosition);
+    assertThat(exporters.get(1).getExportedRecords()).isEmpty();
   }
 
   private long writeEvent() {

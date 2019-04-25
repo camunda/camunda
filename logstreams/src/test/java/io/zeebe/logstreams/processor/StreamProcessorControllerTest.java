@@ -497,7 +497,7 @@ public class StreamProcessorControllerTest {
 
     // when
     changeRecordingStreamProcessor =
-        (processor) -> doReturn(-1L).when(processor).getPositionToRecoveryFrom();
+        (processor) -> doReturn(-1L).when(processor).getPositionToRecoverFrom();
     streamProcessorController.openAsync().join();
     final long secondEventPosition = writeEventAndWaitUntilProcessed(EVENT_2);
 

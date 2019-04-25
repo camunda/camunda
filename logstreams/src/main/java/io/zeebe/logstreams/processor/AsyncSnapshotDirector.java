@@ -222,7 +222,7 @@ public class AsyncSnapshotDirector extends Actor {
         try {
           snapshotController.ensureMaxSnapshotCount(maxSnapshots);
           if (snapshotController.getValidSnapshotsCount() == maxSnapshots) {
-            oldDataRemover.accept(lowerBoundSnapshotPosition);
+            oldDataRemover.accept(snapshotController.getPositionToDelete(maxSnapshots));
           }
 
         } catch (Exception ex) {

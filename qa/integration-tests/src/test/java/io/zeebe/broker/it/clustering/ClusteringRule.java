@@ -48,6 +48,7 @@ import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.FileUtil;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -88,6 +89,7 @@ public class ClusteringRule extends ExternalResource {
   private final Map<Integer, File> brokerBases;
   private final List<Integer> partitionIds;
   private final String clusterName;
+  private final ControlledActorClock controlledClock = new ControlledActorClock();
   // cluster
   private ZeebeClient client;
   private Gateway gateway;
@@ -197,7 +199,7 @@ public class ClusteringRule extends ExternalResource {
   private Broker createBroker(int nodeId) {
     final File brokerBase = getBrokerBase(nodeId);
     final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
-    final Broker broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), null);
+    final Broker broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), controlledClock);
     closables.manage(broker);
     return broker;
   }
@@ -536,6 +538,10 @@ public class ClusteringRule extends ExternalResource {
 
   public ZeebeClient getClient() {
     return client;
+  }
+
+  public ControlledActorClock getClock() {
+    return controlledClock;
   }
 
   public List<Integer> getPartitionIds() {

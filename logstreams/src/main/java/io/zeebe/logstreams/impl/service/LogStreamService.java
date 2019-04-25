@@ -238,8 +238,8 @@ public class LogStreamService implements LogStream, Service<LogStream> {
       return;
     }
 
-    final long minExportedPosition = exporterPositionSupplier.get();
-    position = Math.min(position, minExportedPosition);
+    final long lowestExportedPosition = exporterPositionSupplier.get();
+    position = Math.min(position, lowestExportedPosition);
 
     final long blockAddress = logBlockIndex.lookupBlockAddress(logBlockIndexContext, position);
 

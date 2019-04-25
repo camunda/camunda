@@ -103,18 +103,17 @@ public class ExporterStreamProcessor implements StreamProcessor {
   }
 
   @Override
-  public long getPositionToRecoveryFrom() {
-    return containers.stream()
-        .map(ExporterContainer::getId)
-        .mapToLong(state::getPosition)
-        .min()
-        .orElse(-1);
+  public long getPositionToRecoverFrom() {
+    return state.getLowestPosition();
   }
 
   @Override
   public void onRecovered() {
     for (final ExporterContainer container : containers) {
       container.position = state.getPosition(container.getId());
+      if (container.position == ExporterStreamProcessorState.VALUE_NOT_FOUND) {
+        state.setPosition(container.getId(), -1L);
+      }
       container.exporter.open(container);
     }
 
@@ -149,7 +148,6 @@ public class ExporterStreamProcessor implements StreamProcessor {
   }
 
   private class ExporterContainer implements Controller {
-
     private final ExporterContext context;
     private final Exporter exporter;
     private long position;

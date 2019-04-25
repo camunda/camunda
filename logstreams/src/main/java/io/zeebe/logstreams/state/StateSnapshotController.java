@@ -59,7 +59,8 @@ public class StateSnapshotController implements SnapshotController {
               } catch (IOException ioe) {
                 LOG.error("Unexpected error occurred on ensuring max snapshot count.", ioe);
               }
-            });
+            },
+            () -> getPositionToDelete(maxSnapshots));
   }
 
   @Override
@@ -129,8 +130,8 @@ public class StateSnapshotController implements SnapshotController {
     }
   }
 
-  public void consumeReplicatedSnapshots() {
-    replicationController.consumeReplicatedSnapshots();
+  public void consumeReplicatedSnapshots(Consumer<Long> dataDeleteCallback) {
+    replicationController.consumeReplicatedSnapshots(dataDeleteCallback);
   }
 
   @Override
@@ -242,6 +243,15 @@ public class StateSnapshotController implements SnapshotController {
       FileUtil.deleteFolder(notCompletedSnapshot.toPath());
       LOG.debug("Delete not completed (orphaned) snapshot {}", notCompletedSnapshot);
     }
+  }
+
+  @Override
+  public long getPositionToDelete(int maxSnapshotCount) {
+    return storage.listByPositionDesc().stream()
+        .skip(maxSnapshotCount - 1)
+        .findFirst()
+        .map(f -> Long.parseLong(f.getName()))
+        .orElse(-1L);
   }
 
   @Override

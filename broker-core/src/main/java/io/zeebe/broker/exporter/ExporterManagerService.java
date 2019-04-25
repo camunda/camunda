@@ -111,8 +111,7 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
                         exporterRepository.getExporters().values());
                 partition
                     .getLogStream()
-                    .setExporterPositionSupplier(
-                        exporterStreamProcessor::getPositionToRecoveryFrom);
+                    .setExporterPositionSupplier(exporterStreamProcessor::getPositionToRecoverFrom);
                 return exporterStreamProcessor;
               })
           .deleteDataOnSnapshot(false)

@@ -17,7 +17,13 @@ package io.zeebe.logstreams.processor;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
@@ -214,7 +220,7 @@ public class AsyncSnapshotingTest {
     verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(32);
 
     // then
-    verify(mockDeleteCallback, TIMEOUT).noop(eq(32L));
+    verify(mockDeleteCallback, TIMEOUT).noop(eq(25L));
   }
 
   @Test

@@ -50,7 +50,7 @@ public interface SnapshotController extends AutoCloseable {
   void replicateLatestSnapshot(Consumer<Runnable> executor);
 
   /** Registers to consumes replicated snapshots. */
-  void consumeReplicatedSnapshots();
+  void consumeReplicatedSnapshots(Consumer<Long> dataDeleteCallback);
 
   /**
    * Recovers the state from the latest snapshot and returns the lower bound snapshot position.
@@ -67,6 +67,16 @@ public interface SnapshotController extends AutoCloseable {
    * @param maxSnapshotCount the maximum count of snapshots which should be kept
    */
   void ensureMaxSnapshotCount(int maxSnapshotCount) throws Exception;
+
+  /**
+   * Returns the highest position that is considered to be safe to delete, which is the position of
+   * the oldest of the required snapshots. If maxSnapshotCount hasn't been reached, returns -1,
+   * since it's not safe to delete data.
+   *
+   * @param maxSnapshotCount the required number of snapshots
+   * @return the position to delete
+   */
+  long getPositionToDelete(int maxSnapshotCount);
 
   /**
    * Returns the current number of valid snapshots.

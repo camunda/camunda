@@ -60,7 +60,7 @@ public interface StreamProcessor {
    *
    * @return the last successful processed event position from the state
    */
-  default long getPositionToRecoveryFrom() {
+  default long getPositionToRecoverFrom() {
     return NO_EVENTS_PROCESSED;
   }
 
