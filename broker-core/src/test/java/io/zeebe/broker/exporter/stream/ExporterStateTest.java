@@ -17,20 +17,15 @@
  */
 package io.zeebe.broker.exporter.stream;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
 import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import org.agrona.DirectBuffer;
-import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,7 +33,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class ExporterStreamProcessorStateTest {
+public class ExporterStateTest {
 
   private final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -168,33 +163,5 @@ public class ExporterStreamProcessorStateTest {
 
     // then
     assertThat(positions).hasSize(2).contains(entry("e1", 1L), entry("e2", 2L));
-  }
-
-  @Test
-  public void shouldWriteOutRecordOfAllExportersAndTheirPositions() {
-    // given
-    final Map<DirectBuffer, Long> positions = new HashMap<>();
-
-    positions.put(wrapString("exporter1"), 123L);
-    positions.put(wrapString("exporter2"), 2L);
-    positions.put(wrapString("exporter3"), 12034L);
-    positions.put(wrapString("exporter4"), Long.MAX_VALUE);
-
-    for (final Entry<DirectBuffer, Long> entry : positions.entrySet()) {
-      state.setPosition(entry.getKey(), entry.getValue());
-    }
-
-    // when
-    final ExporterRecord record = state.newExporterRecord();
-
-    // then
-    for (final Entry<DirectBuffer, Long> entry : positions.entrySet()) {
-      final ExporterPosition expected = new ExporterPosition();
-      expected.setPosition(entry.getValue());
-      expected.setId(entry.getKey());
-
-      assertThat(record.getPositions())
-          .haveExactly(1, new Condition<>(r -> r.equals(expected), expected.toString()));
-    }
   }
 }

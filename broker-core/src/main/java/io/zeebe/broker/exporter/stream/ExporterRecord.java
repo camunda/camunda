@@ -22,7 +22,6 @@ import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.value.ValueArray;
-import java.util.Objects;
 import org.agrona.DirectBuffer;
 
 public class ExporterRecord extends UnpackedObject {
@@ -75,26 +74,6 @@ public class ExporterRecord extends UnpackedObject {
     public ExporterPosition setPosition(final long position) {
       positionProperty.setValue(position);
       return this;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-
-      if (!(o instanceof ExporterPosition)) {
-        return false;
-      }
-
-      final ExporterPosition that = (ExporterPosition) o;
-      return Objects.equals(getId(), that.getId())
-          && Objects.equals(getPosition(), that.getPosition());
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(getId(), getPosition());
     }
   }
 }
