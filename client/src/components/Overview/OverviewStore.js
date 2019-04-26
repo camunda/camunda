@@ -17,6 +17,9 @@ import {
   toggleEntityCollection
 } from 'services';
 import {withErrorHandling} from 'HOC';
+
+import {addNotification} from 'notifications';
+
 const OverviewContext = React.createContext();
 
 class OverviewStore extends Component {
@@ -33,20 +36,25 @@ class OverviewStore extends Component {
     searchQuery: ''
   };
 
-  async componentDidMount() {
-    await this.loadData();
+  componentDidMount() {
+    this.loadData();
   }
 
-  loadData = async () => {
+  showError = async error => {
+    addNotification({type: 'error', text: (await error.json()).errorMessage});
+  };
+
+  loadData = () => {
     this.props.mightFail(
-      await Promise.all([
+      Promise.all([
         loadEntities('collection', 'created'),
         loadEntities('report', 'lastModified'),
         loadEntities('dashboard', 'lastModified')
       ]),
       ([collections, reports, dashboards]) => {
         this.setState({collections, reports, dashboards, loading: false});
-      }
+      },
+      this.showError
     );
   };
 
@@ -54,53 +62,67 @@ class OverviewStore extends Component {
     this.setState({searchQuery});
   };
 
-  createCombinedReport = async () =>
-    this.setState({
-      redirect:
-        '/report/' + (await createEntity('report', null, {combined: true, reportType: 'process'}))
-    });
-  createProcessReport = async () =>
-    this.setState({
-      redirect:
-        '/report/' + (await createEntity('report', null, {combined: false, reportType: 'process'}))
-    });
-  createDecisionReport = async () =>
-    this.setState({
-      redirect:
-        '/report/' + (await createEntity('report', null, {combined: false, reportType: 'decision'}))
-    });
+  createReport = config => () =>
+    this.props.mightFail(
+      createEntity('report', null, config),
+      id => this.setState({redirect: '/report/' + id}),
+      this.showError
+    );
 
-  createDashboard = async () =>
-    this.setState({redirect: '/dashboard/' + (await createEntity('dashboard'))});
+  createCombinedReport = this.createReport({combined: true, reportType: 'process'});
+  createProcessReport = this.createReport({combined: false, reportType: 'process'});
+  createDecisionReport = this.createReport({combined: false, reportType: 'decision'});
 
-  updateOrCreateCollection = async collection => {
-    const editCollection = this.state.updating;
-    if (editCollection.id) {
-      await updateEntity('collection', editCollection.id, collection);
-    } else {
-      await createEntity('collection', collection);
-    }
+  createDashboard = () =>
+    this.props.mightFail(
+      createEntity('dashboard'),
+      id => this.setState({redirect: '/dashboard/' + id}),
+      this.showError
+    );
+
+  finishCollectionUpdate = () => {
     this.setState({updating: null});
 
     this.loadData();
   };
 
-  deleteEntity = async () => {
+  updateOrCreateCollection = collection => {
+    const editCollection = this.state.updating;
+    if (editCollection.id) {
+      this.props.mightFail(
+        updateEntity('collection', editCollection.id, collection),
+        this.finishCollectionUpdate,
+        this.showError
+      );
+    } else {
+      this.props.mightFail(
+        updateEntity('collection', collection),
+        this.finishCollectionUpdate,
+        this.showError
+      );
+    }
+  };
+
+  deleteEntity = () => {
     const {type, entity} = this.state.deleting;
 
     this.setState({deleteLoading: true});
 
-    await deleteEntity(type, entity.id);
-
-    this.setState({
-      deleting: false,
-      deleteLoading: false,
-      conflicts: []
-    });
-    this.loadData();
+    this.props.mightFail(
+      deleteEntity(type, entity.id),
+      () => {
+        this.setState({
+          deleting: false,
+          deleteLoading: false,
+          conflicts: []
+        });
+        this.loadData();
+      },
+      this.showError
+    );
   };
 
-  duplicateEntity = (type, entity, collection) => async evt => {
+  duplicateEntity = (type, entity, collection) => evt => {
     evt.target.blur();
 
     const copy = {
@@ -108,27 +130,37 @@ class OverviewStore extends Component {
       name: entity.name + ' - Copy'
     };
 
-    let id;
-    if (type === 'report') {
-      id = await createEntity(type, copy, {combined: copy.combined, reportType: copy.reportType});
-    } else {
-      id = await createEntity(type, copy);
-    }
+    const applyCollections = id => {
+      if (collection) {
+        toggleEntityCollection(this.loadData)({id}, collection, false);
+      } else {
+        this.loadData();
+      }
+    };
 
-    if (collection) {
-      toggleEntityCollection(this.loadData)({id}, collection, false);
+    if (type === 'report') {
+      this.props.mightFail(
+        createEntity(type, copy, {combined: copy.combined, reportType: copy.reportType}),
+        applyCollections,
+        this.showError
+      );
     } else {
-      this.loadData();
+      this.props.mightFail(createEntity(type, copy), applyCollections, this.showError);
     }
   };
 
   setCollectionToUpdate = updating => this.setState({updating});
 
-  showDeleteModalFor = deleting => async () => {
+  showDeleteModalFor = deleting => () => {
     this.setState({deleting, deleteLoading: true});
     if (deleting.type !== 'collection') {
-      const {conflictedItems} = await checkDeleteConflict(deleting.entity.id, deleting.type);
-      this.setState({conflicts: conflictedItems});
+      this.props.mightFail(
+        checkDeleteConflict(deleting.entity.id, deleting.type),
+        ({conflictedItems}) => {
+          this.setState({conflicts: conflictedItems, deleteLoading: false});
+        },
+        this.showError
+      );
     }
     this.setState({deleteLoading: false});
   };
@@ -172,8 +204,7 @@ class OverviewStore extends Component {
       toggleEntityCollection: toggleEntityCollection(this.loadData),
       filter,
       store: state,
-      entitiesCollections,
-      error: this.props.error
+      entitiesCollections
     };
 
     return (

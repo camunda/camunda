@@ -6,6 +6,9 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+
+import {addNotification} from 'notifications';
+
 import {StoreProvider} from './OverviewStore';
 import {checkDeleteConflict, toggleEntityCollection, loadEntities, createEntity} from 'services';
 
@@ -23,10 +26,12 @@ jest.mock('services', () => {
   };
 });
 
+jest.mock('notifications', () => ({addNotification: jest.fn()}));
+
 const OverviewStore = StoreProvider.WrappedComponent;
 
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+  mightFail: jest.fn().mockImplementation(async (promise, cb) => cb(await promise))
 };
 
 const processReport = {
@@ -146,4 +151,18 @@ it('should duplicate dashboards', () => {
     ...dashboard,
     name: dashboard.name + ' - Copy'
   });
+});
+
+it('should display an error notification if request goes wrong', async () => {
+  const node = shallow(
+    <OverviewStore
+      mightFail={(promise, cb, fail) =>
+        fail({json: () => ({errorMessage: 'Something went wrong'})})
+      }
+    />
+  );
+
+  await node.instance().createDashboard();
+
+  expect(addNotification).toHaveBeenCalledWith({type: 'error', text: 'Something went wrong'});
 });

@@ -49,12 +49,6 @@ it('should invoke createProcessReport when clicking create button', async () => 
     .simulate('click');
 });
 
-it('should display error messages', async () => {
-  const node = shallow(<Overview {...props} error="Something went wrong" />);
-
-  expect(node.find('Message')).toBePresent();
-});
-
 it('Should invoke filter function on search input change', () => {
   const node = shallow(<Overview {...props} />);
 

@@ -9,15 +9,7 @@ import './Overview.scss';
 import Reports from './Reports';
 import Dashboards from './Dashboards';
 import Collections from './Collections';
-import {
-  Input,
-  ConfirmationModal,
-  Button,
-  Dropdown,
-  Icon,
-  Message,
-  LoadingIndicator
-} from 'components';
+import {Input, ConfirmationModal, Button, Dropdown, Icon, LoadingIndicator} from 'components';
 import {StoreProvider, withStore} from './OverviewStore';
 
 function Overview({store: {loading, deleting, conflicts, deleteLoading, searchQuery}, ...props}) {
@@ -25,13 +17,8 @@ function Overview({store: {loading, deleting, conflicts, deleteLoading, searchQu
     return <LoadingIndicator />;
   }
 
-  const error = props.error && (
-    <Message type="error">{props.error.errorMessage || props.error.statusText}</Message>
-  );
-
   return (
     <div className="Overview">
-      {error}
       <div className="fixed">
         <div className="header">
           <div className="searchContainer">
