@@ -6,7 +6,8 @@
 
 import styled, {css} from 'styled-components';
 import {themed, themeStyle, Colors, Animations} from 'modules/theme';
-import {TransitionGroup as TransitionGroupComponent} from 'react-transition-group';
+
+import {Transition as TransitionComponent} from 'modules/components/Transition';
 
 import ContextualMessage from 'modules/components/ContextualMessage';
 
@@ -17,7 +18,7 @@ const themedWith = (dark, light) => {
   });
 };
 
-const addSelectionTransitionStyles = css`
+export const Transition = themed(styled(TransitionComponent)`
   &.transition-enter {
     opacity: 0;
   }
@@ -47,9 +48,9 @@ const addSelectionTransitionStyles = css`
     opacity: 0;
     max-height: 0px;
   }
-`;
+`);
 
-export const TransitionGroup = styled(TransitionGroupComponent)`
+export const Ul = styled.ul`
   padding-left: 35px;
   margin: 0px;
   overflow: auto;
@@ -62,7 +63,6 @@ export const Li = styled.li`
   &:first-child {
     margin-top: 20px;
   }
-  ${addSelectionTransitionStyles};
 `;
 
 export const MessageWrapper = styled.div`
@@ -93,5 +93,4 @@ export const NoSelectionWrapper = themed(styled.div`
 
   text-align: center;
   font-size: 13px;
-  ${addSelectionTransitionStyles};
 `);

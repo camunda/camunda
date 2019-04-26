@@ -6,7 +6,6 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {CSSTransition} from 'react-transition-group';
 
 import Selection from 'modules/components/Selection';
 import {withSelection} from 'modules/contexts/SelectionContext';
@@ -16,6 +15,8 @@ import {getSelectionById} from 'modules/utils/selection';
 import {applyBatchOperation} from 'modules/api/instances';
 import {NO_SELECTIONS_MESSAGE} from './constants';
 import {MESSAGES_TYPE, OPERATION_TYPE} from 'modules/constants';
+
+import {TransitionGroup} from 'modules/components/Transition';
 
 import * as Styled from './styled.js';
 
@@ -89,61 +90,69 @@ class SelectionList extends React.Component {
   };
 
   render() {
-    const timeout = 200;
     const {
       selections,
       openSelection,
       onToggleSelection,
       onDeleteSelection
     } = this.props;
+
+    const noTimeout = {enter: 0, exit: 0};
     return (
       <React.Fragment>
-        {selections.length === 10 && (
-          <Styled.MessageWrapper>
-            <Styled.SelectionMessage type={MESSAGES_TYPE.DROP_SELECTION} />
-          </Styled.MessageWrapper>
-        )}
-        <Styled.TransitionGroup component={'ul'}>
-          {selections.length ? (
-            selections.map(selection => {
-              const {selectionId, instancesMap, totalCount} = selection;
+        <Styled.Ul>
+          <TransitionGroup component={null}>
+            {selections.length === 10 && (
+              <Styled.Transition timeout={noTimeout}>
+                <Styled.MessageWrapper>
+                  <Styled.SelectionMessage
+                    type={MESSAGES_TYPE.DROP_SELECTION}
+                  />
+                </Styled.MessageWrapper>
+              </Styled.Transition>
+            )}
+            {selections.length ? (
+              selections.map(selection => {
+                const {selectionId, instancesMap, totalCount} = selection;
+                const isOpen = openSelection === selectionId;
+                const timeout = {
+                  enter: -instancesMap.size * 20 + 600,
+                  exit: 100
+                };
 
-              return (
-                <CSSTransition
-                  key={selectionId}
-                  classNames="transition"
-                  timeout={timeout}
-                >
-                  <Styled.Li
+                return (
+                  <Styled.Transition
                     key={selectionId}
                     timeout={timeout}
-                    data-test="selection-list-item"
+                    exit={
+                      !(selections.length === 1 || selections.length === 10)
+                    }
                   >
-                    <Selection
-                      isOpen={openSelection === selectionId}
-                      selectionId={selectionId}
-                      instances={instancesMap}
-                      instanceCount={totalCount}
-                      onRetry={() => this.handleRetrySelection(selectionId)}
-                      onCancel={() => this.handleCancelSelection(selectionId)}
-                      onToggle={() => onToggleSelection(selectionId)}
-                      onDelete={() => onDeleteSelection(selectionId)}
-                    />
-                  </Styled.Li>
-                </CSSTransition>
-              );
-            })
-          ) : (
-            <CSSTransition classNames="transition" timeout={timeout}>
-              <Styled.NoSelectionWrapper
-                data-test="empty-selection-list-message"
-                timeout={timeout}
-              >
-                {NO_SELECTIONS_MESSAGE}
-              </Styled.NoSelectionWrapper>
-            </CSSTransition>
-          )}
-        </Styled.TransitionGroup>
+                    <Styled.Li data-test="selection-list-item">
+                      <Selection
+                        key={selectionId}
+                        isOpen={isOpen}
+                        selectionId={selectionId}
+                        instances={instancesMap}
+                        instanceCount={totalCount}
+                        onRetry={() => this.handleRetrySelection(selectionId)}
+                        onCancel={() => this.handleCancelSelection(selectionId)}
+                        onToggle={() => onToggleSelection(selectionId)}
+                        onDelete={() => onDeleteSelection(selectionId)}
+                      />
+                    </Styled.Li>
+                  </Styled.Transition>
+                );
+              })
+            ) : (
+              <Styled.Transition timeout={noTimeout}>
+                <Styled.NoSelectionWrapper data-test="empty-selection-list-message">
+                  {NO_SELECTIONS_MESSAGE}
+                </Styled.NoSelectionWrapper>
+              </Styled.Transition>
+            )}
+          </TransitionGroup>
+        </Styled.Ul>
       </React.Fragment>
     );
   }

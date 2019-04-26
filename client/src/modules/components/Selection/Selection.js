@@ -9,6 +9,7 @@ import PropTypes from 'prop-types';
 import {CSSTransition} from 'react-transition-group';
 import StateIcon from 'modules/components/StateIcon';
 import Dropdown from 'modules/components/Dropdown';
+import {TransitionGroup} from 'modules/components/Transition';
 
 import {OPERATION_STATE, OPERATION_TYPE} from 'modules/constants';
 import {getWorkflowName, getLatestOperation} from 'modules/utils/instance';
@@ -143,40 +144,43 @@ export default class Selection extends React.Component {
     const timeout = 800;
 
     return (
-      <Styled.TransitionGroup component={'ul'}>
-        {instances.map(([_, instanceDetails], index) => {
-          const {type, state} = getLatestOperation(instanceDetails.operations);
-          return (
-            <CSSTransition
-              data-test="addInstanceTransition"
-              classNames="transition"
-              key={index}
-              timeout={timeout}
-            >
-              <Styled.Li key={index} timeout={timeout}>
-                <Styled.StatusCell>
-                  <StateIcon state={instanceDetails.state} />
-                </Styled.StatusCell>
-                <Styled.NameCell>
-                  {getWorkflowName(instanceDetails)}
-                </Styled.NameCell>
-                <Styled.IdCell>{instanceDetails.id}</Styled.IdCell>
-                <Styled.ActionStatusCell>
-                  <Styled.InstanceActionStatus
-                    instance={instanceDetails}
-                    operationState={
-                      this.state.isOperationStarted
-                        ? OPERATION_STATE.SCHEDULED
-                        : state
-                    }
-                    operationType={type}
-                  />
-                </Styled.ActionStatusCell>
-              </Styled.Li>
-            </CSSTransition>
-          );
-        })}
-      </Styled.TransitionGroup>
+      <Styled.Ul>
+        <TransitionGroup component={null}>
+          {instances.map(([_, instanceDetails], index) => {
+            const {type, state} = getLatestOperation(
+              instanceDetails.operations
+            );
+            return (
+              <Styled.AddInstanceTransition
+                data-test="addInstanceTransition"
+                key={index}
+                timeout={timeout}
+              >
+                <Styled.Li>
+                  <Styled.StatusCell>
+                    <StateIcon state={instanceDetails.state} />
+                  </Styled.StatusCell>
+                  <Styled.NameCell>
+                    {getWorkflowName(instanceDetails)}
+                  </Styled.NameCell>
+                  <Styled.IdCell>{instanceDetails.id}</Styled.IdCell>
+                  <Styled.ActionStatusCell>
+                    <Styled.InstanceActionStatus
+                      instance={instanceDetails}
+                      operationState={
+                        this.state.isOperationStarted
+                          ? OPERATION_STATE.SCHEDULED
+                          : state
+                      }
+                      operationType={type}
+                    />
+                  </Styled.ActionStatusCell>
+                </Styled.Li>
+              </Styled.AddInstanceTransition>
+            );
+          })}
+        </TransitionGroup>
+      </Styled.Ul>
     );
   };
 
@@ -197,28 +201,25 @@ export default class Selection extends React.Component {
 
   render() {
     const idString = `selection-${this.props.selectionId}`;
-    const timeout = {enter: 200, exit: 100};
     return (
       <Styled.Dl role="presentation">
         {this.renderHeader(idString)}
-        <CSSTransition
+        <Styled.OpenSelectionTransition
           data-test="openSelectionTransition"
-          classNames="transition"
           in={this.props.isOpen}
-          timeout={timeout}
+          timeout={{enter: 200, exit: 100}}
           mountOnEnter
           unmountOnExit
         >
           <Styled.Dd
             role="region"
             id={idString}
-            timeout={timeout}
             aria-labelledby={`${idString}-toggle`}
           >
             {this.renderBody(idString)}
             {this.renderFooter()}
           </Styled.Dd>
-        </CSSTransition>
+        </Styled.OpenSelectionTransition>
       </Styled.Dl>
     );
   }

@@ -6,7 +6,7 @@
 
 import styled, {css} from 'styled-components';
 import {themed, themeStyle, Colors, Animations} from 'modules/theme';
-import {TransitionGroup as TransGroup} from 'react-transition-group';
+import {Transition as TransitionComponent} from 'modules/components/Transition';
 
 import ActionStatus from 'modules/components/ActionStatus';
 
@@ -34,12 +34,12 @@ export const Dl = styled.dl`
   width: 442px;
 `;
 
-export const TransitionGroup = styled(TransGroup)`
+export const Ul = styled.ul`
   display: flex;
   flex-direction: column-reverse;
 `;
 
-const openSelectionTransitionStyle = css`
+export const OpenSelectionTransition = themed(styled(TransitionComponent)`
   &.transition-enter {
     opacity: 0;
   }
@@ -50,10 +50,10 @@ const openSelectionTransitionStyle = css`
     animation-name: ${Animations.fold(0, 474)};
     animation-duration: ${({timeout}) => timeout.enter + 'ms'};
   }
-  &.transition-enter-done {
+  /* &.transition-enter-done {
     opacity: 1;
     transition: opacity ${({timeout}) => timeout.enter + 'ms'};
-  }
+  } */
   &.transition-exit {
     opacity: 0;
     transition: opacity ${({timeout}) => timeout.exit + 'ms'};
@@ -65,17 +65,28 @@ const openSelectionTransitionStyle = css`
     animation-name: ${Animations.fold(474, 0)};
     animation-duration: ${({timeout}) => timeout.exit + 'ms'};
   }
-  &.transition-exit-done {
+  /* &.transition-exit-done {
     opacity: 0;
     max-height: 0px;
+  } */
+`);
+
+export const AddInstanceTransition = themed(styled(TransitionComponent)`
+  &.transition-enter {
+    opacity: 0;
   }
-`;
+  &.transition-enter-active {
+    opacity: 1;
+    transition: opacity ${({timeout}) => timeout + 'ms'};
+  }
+  &.transition-enter-done {
+    opacity: 1;
+  }
+`);
 
 export const Dd = styled.dd`
   padding: 0;
   margin: 0;
-
-  ${openSelectionTransitionStyle};
 `;
 
 const hoverSelector = () => {
@@ -227,14 +238,9 @@ export const Li = themed(styled.li`
   display: flex;
   align-items: center;
   height: 31px;
-  /* padding-left: 10px; */
+
   color: ${themedWith('#ffffff', Colors.uiDark04)};
   font-size: 13px;
-
-  ${addInstanceTransitionStyles};
-
-  /* opacity: 1; */
-
   & * {
     top: 1px;
   }
