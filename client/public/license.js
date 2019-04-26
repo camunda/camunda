@@ -1,3 +1,9 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
 document.querySelector('form').addEventListener('submit', function(event) {
   event.preventDefault();
 
@@ -74,7 +80,7 @@ request.send();
 const versionRequest = new XMLHttpRequest();
 versionRequest.open('GET', 'api/meta/version');
 versionRequest.send();
-const footerInfo = document.getElementById('footerInfo');
+const footerInfo = document.querySelector('footer');
 
 versionRequest.addEventListener('readystatechange', function(event) {
   if (event.target.readyState === 4) {
