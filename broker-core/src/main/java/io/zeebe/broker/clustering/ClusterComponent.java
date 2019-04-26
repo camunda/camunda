@@ -26,13 +26,9 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.GATEW
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.PARTITIONS_BOOTSTRAP_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_CONFIGURATION_MANAGER;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.REMOTE_ADDRESS_MANAGER_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE;
-import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 
 import io.zeebe.broker.clustering.base.EmbeddedGatewayService;
-import io.zeebe.broker.clustering.base.connections.RemoteAddressManager;
 import io.zeebe.broker.clustering.base.gossip.AtomixJoinService;
 import io.zeebe.broker.clustering.base.gossip.AtomixService;
 import io.zeebe.broker.clustering.base.gossip.DistributedLogService;
@@ -67,11 +63,7 @@ public class ClusterComponent implements Component {
 
     final NodeInfo localMember =
         new NodeInfo(
-            brokerConfig.getCluster().getNodeId(),
-            networkCfg.getClient().toSocketAddress(),
-            networkCfg.getManagement().toSocketAddress(),
-            networkCfg.getReplication().toSocketAddress(),
-            networkCfg.getSubscription().toSocketAddress());
+            brokerConfig.getCluster().getNodeId(), networkCfg.getClient().toSocketAddress());
 
     /* A hack so that DistributedLogstream primitive can create logstream services using this serviceContainer */
     LogstreamConfig.putServiceContainer(
@@ -87,15 +79,6 @@ public class ClusterComponent implements Component {
             LEADER_PARTITION_GROUP_NAME, topologyManagerService.getLeaderInstallReference())
         .groupReference(
             FOLLOWER_PARTITION_GROUP_NAME, topologyManagerService.getFollowerInstallReference())
-        .install();
-
-    final RemoteAddressManager remoteAddressManager = new RemoteAddressManager();
-    baseLayerInstall
-        .createService(REMOTE_ADDRESS_MANAGER_SERVICE, remoteAddressManager)
-        .dependency(TOPOLOGY_MANAGER_SERVICE, remoteAddressManager.getTopologyManagerInjector())
-        .dependency(
-            clientTransport(MANAGEMENT_API_CLIENT_NAME),
-            remoteAddressManager.getManagementClientTransportInjector())
         .install();
 
     if (brokerConfig.getGateway().isEnable()) {

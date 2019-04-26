@@ -41,9 +41,6 @@ public class BrokerInfo {
 
   public static final String PROPERTY_NAME = "brokerInfo";
   public static final String CLIENT_API_PROPERTY = "client";
-  public static final String MANAGEMENT_API_PROPERTY = "management";
-  public static final String REPLICATION_API_PROPERTY = "replication";
-  public static final String SUBSCRIPTION_API_PROPERTY = "subscription";
 
   // static configurations
   private int nodeId;
