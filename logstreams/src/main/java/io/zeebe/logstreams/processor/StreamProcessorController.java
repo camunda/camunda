@@ -270,6 +270,11 @@ public class StreamProcessorController extends Actor {
     }
   }
 
+  @Override
+  protected void onActorClosed() {
+    LOG.debug("Closed stream processor controller {}.", getName());
+  }
+
   private void onFailure() {
     phase = Phase.FAILED;
 

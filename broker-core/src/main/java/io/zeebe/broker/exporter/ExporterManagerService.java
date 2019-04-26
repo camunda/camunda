@@ -127,8 +127,13 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
       snapshotController.takeSnapshot(snapshotPosition + 1);
 
     } catch (Exception e) {
-      e.printStackTrace();
       LOG.error("Failed to remove exporters from state", e);
+    } finally {
+      try {
+        snapshotController.close();
+      } catch (Exception e) {
+        LOG.error("Unexpected exception happened on closing snapshot controller.", e);
+      }
     }
   }
 

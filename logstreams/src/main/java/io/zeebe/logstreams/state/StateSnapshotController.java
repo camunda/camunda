@@ -241,7 +241,9 @@ public class StateSnapshotController implements SnapshotController {
   @Override
   public ZeebeDb openDb() {
     if (db == null) {
-      db = zeebeDbFactory.createDb(storage.getRuntimeDirectory());
+      final File runtimeDirectory = storage.getRuntimeDirectory();
+      db = zeebeDbFactory.createDb(runtimeDirectory);
+      LOG.debug("Opened database from '{}'.", runtimeDirectory.toPath());
     }
 
     return db;
@@ -275,6 +277,8 @@ public class StateSnapshotController implements SnapshotController {
   public void close() throws Exception {
     if (db != null) {
       db.close();
+      final File runtimeDirectory = storage.getRuntimeDirectory();
+      LOG.debug("Closed database from '{}'.", runtimeDirectory.toPath());
       db = null;
     }
   }
