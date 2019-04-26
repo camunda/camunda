@@ -5,13 +5,18 @@
  */
 
 import React from 'react';
-import {mount, shallow} from 'enzyme';
+import {mount} from 'enzyme';
 
 import ThemedBPMNDiagram from './BPMNDiagram';
 import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
 import Viewer from 'bpmn-js/lib/Viewer';
 
-const {WrappedComponent: BPMNDiagram} = ThemedBPMNDiagram;
+const {WrappedComponent: BPMNDiagramWithErrorHandling} = ThemedBPMNDiagram;
+const {WrappedComponent: BPMNDiagram} = BPMNDiagramWithErrorHandling;
+
+const props = {
+  mightFail: jest.fn().mockImplementation(async (data, cb) => cb(await data))
+};
 
 // since jest does not offer an out of the box way to flush promises:
 // https://github.com/facebook/jest/issues/2157
@@ -87,18 +92,10 @@ jest.mock('bpmn-js/lib/Viewer', () => {
   };
 });
 
-jest.mock('components', () => {
-  return {
-    LoadingIndicator: () => <div>LoadingIndicator</div>,
-    Button: props => <button {...props}>props.children</button>,
-    Icon: () => <span className="icon" />
-  };
-});
-
 const diagramXml = 'some diagram XML';
 
 it('should create a Viewer', async () => {
-  const node = mount(shallow(<BPMNDiagram />).get(0));
+  const node = mount(<BPMNDiagram {...props} />);
 
   await flushPromises();
 
@@ -106,16 +103,14 @@ it('should create a Viewer', async () => {
 });
 
 it('should create a Viewer without Navigation if Navigation is disabled', async () => {
-  const node = mount(shallow(<BPMNDiagram disableNavigation />).get(0));
+  const node = mount(<BPMNDiagram {...props} disableNavigation />);
 
   await flushPromises();
 
   expect(node.instance().viewer).toBeInstanceOf(Viewer);
 });
-
 it('should import the provided xml', async () => {
-  const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
-
+  const node = mount(<BPMNDiagram {...props} xml={diagramXml} />);
   await flushPromises();
 
   expect(node.instance().viewer.importXML).toHaveBeenCalled();
@@ -123,7 +118,7 @@ it('should import the provided xml', async () => {
 });
 
 it('should import an updated xml', async () => {
-  const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
+  const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
 
   node.setProps({xml: 'some other xml'});
 
@@ -133,7 +128,7 @@ it('should import an updated xml', async () => {
 });
 
 it('should resize the diagram to fit the container initially', async () => {
-  const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
+  const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
 
   await flushPromises();
 
@@ -142,11 +137,9 @@ it('should resize the diagram to fit the container initially', async () => {
 
 it('should not render children when diagram is not loaded', async () => {
   const node = mount(
-    shallow(
-      <BPMNDiagram xml={diagramXml}>
-        <p>Additional Content</p>
-      </BPMNDiagram>
-    ).get(0)
+    <BPMNDiagram {...props} xml={diagramXml}>
+      <p>Additional Content</p>
+    </BPMNDiagram>
   );
 
   await flushPromises();
@@ -158,11 +151,9 @@ it('should not render children when diagram is not loaded', async () => {
 
 it('should render children when diagram is renderd', async () => {
   const node = mount(
-    shallow(
-      <BPMNDiagram xml={diagramXml}>
-        <p>Additional Content</p>
-      </BPMNDiagram>
-    ).get(0)
+    <BPMNDiagram {...props} xml={diagramXml}>
+      <p>Additional Content</p>
+    </BPMNDiagram>
   );
 
   await flushPromises();
@@ -172,11 +163,9 @@ it('should render children when diagram is renderd', async () => {
 
 it('should pass viewer instance to children', async () => {
   const node = mount(
-    shallow(
-      <BPMNDiagram xml={diagramXml}>
-        <p>Additional Content</p>
-      </BPMNDiagram>
-    ).get(0)
+    <BPMNDiagram {...props} xml={diagramXml}>
+      <p>Additional Content</p>
+    </BPMNDiagram>
   );
 
   await flushPromises();
@@ -188,11 +177,9 @@ it('should pass viewer instance to children', async () => {
 
 it('should register an Mutation Observer if its on a Dashboard', () => {
   mount(
-    shallow(
-      <div className="DashboardObject">
-        <BPMNDiagram xml={diagramXml} />
-      </div>
-    ).get(0)
+    <div className="DashboardObject">
+      <BPMNDiagram {...props} xml={diagramXml} />
+    </div>
   );
 
   // we can maybe have some meaningful assertion here once jsdom supports MutationObservers:
@@ -201,11 +188,9 @@ it('should register an Mutation Observer if its on a Dashboard', () => {
 
 it('should re-use viewer instances', async () => {
   const node1 = mount(
-    shallow(
-      <BPMNDiagram xml={diagramXml}>
-        <p>Additional Content</p>
-      </BPMNDiagram>
-    ).get(0)
+    <BPMNDiagram {...props} xml={diagramXml}>
+      <p>Additional Content</p>
+    </BPMNDiagram>
   );
 
   await flushPromises();
@@ -214,11 +199,9 @@ it('should re-use viewer instances', async () => {
   node1.unmount();
 
   const node2 = mount(
-    shallow(
-      <BPMNDiagram xml={diagramXml}>
-        <p>Additional Content</p>
-      </BPMNDiagram>
-    ).get(0)
+    <BPMNDiagram {...props} xml={diagramXml}>
+      <p>Additional Content</p>
+    </BPMNDiagram>
   );
 
   await flushPromises();
@@ -229,13 +212,13 @@ it('should re-use viewer instances', async () => {
 });
 
 it('should show a loading indicator while loading', () => {
-  const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
+  const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
 
-  expect(node).toIncludeText('LoadingIndicator');
+  expect(node.find('LoadingIndicator')).toBePresent();
 });
 
 it('should show diagram zoom and reset controls', async () => {
-  const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
+  const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
 
   await flushPromises();
 
@@ -245,7 +228,7 @@ it('should show diagram zoom and reset controls', async () => {
 });
 
 it('should trigger diagram zoom when zoom function is called', async () => {
-  const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
+  const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
 
   await flushPromises();
 
@@ -256,7 +239,7 @@ it('should trigger diagram zoom when zoom function is called', async () => {
 });
 
 it('should reset the canvas zoom to viewport when fit diagram function is called', async () => {
-  const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
+  const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
 
   await flushPromises();
 
