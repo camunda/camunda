@@ -1,0 +1,39 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package org.camunda.operate.util;
+
+import static org.assertj.core.api.Assertions.*;
+
+import java.util.Map;
+
+import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.junit.Test;
+
+public class CollectionUtilTest {
+
+  @Test
+  public void testAsMapOneEntry() {
+    Map<String,Object> result = CollectionUtil.asMap("key1","value1");
+    assertThat(result).hasSize(1);
+    assertThat(result).containsEntry("key1", "value1");
+  }
+  
+  @Test
+  public void testAsMapManyEntries() {
+    Map<String,Object> result = CollectionUtil.asMap("key1","value1","key2","value2","key3","value3");
+    assertThat(result).hasSize(3);
+    assertThat(result).containsEntry("key2", "value2");
+    assertThat(result).containsEntry("key3", "value3");
+  }
+  
+  @Test
+  public void testAsMapException() {
+    assertThatExceptionOfType(OperateRuntimeException.class).isThrownBy(() -> CollectionUtil.asMap((Object[])null)); 
+    assertThatExceptionOfType(OperateRuntimeException.class).isThrownBy(() -> CollectionUtil.asMap("key1"));
+    assertThatExceptionOfType(OperateRuntimeException.class).isThrownBy(() -> CollectionUtil.asMap("key1","value1","key2")); 
+  }
+
+}
