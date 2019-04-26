@@ -315,8 +315,8 @@ export default class Instance extends Component {
     };
   };
 
-  modifyElements = (arrayOfObjects, modifier) =>
-    arrayOfObjects.map(object => (modifier ? modifier(object) : object));
+  addFLowNodeNames = incidents =>
+    incidents.map(incident => this.addFlowNodeName(incident));
 
   mapify = (arrayOfObjects, uniqueKey, modifier) =>
     arrayOfObjects.reduce((acc, object) => {
@@ -445,10 +445,7 @@ export default class Instance extends Component {
             >
               {this.state.instance.state === 'INCIDENT' && (
                 <IncidentsWrapper
-                  incidents={this.modifyElements(
-                    incidents.incidents,
-                    this.addFlowNodeName
-                  )}
+                  incidents={this.addFLowNodeNames(incidents.incidents)}
                   incidentsCount={this.state.incidents.count}
                   instance={this.state.instance}
                   forceSpinner={this.state.forceIncidentsSpinner}
