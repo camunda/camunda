@@ -143,22 +143,6 @@ function IncidentsWrapper(props) {
     sorting.sortOrder
   );
 
-  const onEnter = () => {
-    setIsInTransition(true);
-  };
-
-  const onEntered = () => {
-    setIsInTransition(false);
-  };
-
-  const onExit = () => {
-    setIsInTransition(true);
-  };
-
-  const onExited = () => {
-    setIsInTransition(false);
-  };
-
   return (
     <>
       <IncidentsBar
@@ -169,10 +153,10 @@ function IncidentsWrapper(props) {
       />
       <Styled.Transition
         in={isOpen}
-        onEnter={onEnter}
-        onEntered={onEntered}
-        onExit={onExit}
-        onExited={onExited}
+        onEnter={() => setIsInTransition(true)}
+        onEntered={() => setIsInTransition(false)}
+        onExit={() => setIsInTransition(true)}
+        onExited={() => setIsInTransition(false)}
         mountOnEnter
         unmountOnExit
         timeout={400}
