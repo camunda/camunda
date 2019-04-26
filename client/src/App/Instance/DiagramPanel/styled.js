@@ -4,19 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {default as SplitPaneComponent} from 'modules/components/SplitPane';
 import StateIconDefault from 'modules/components/StateIcon';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-export const SplitPane = themed(styled(SplitPaneComponent.Pane)`
-  border-top: none;
-  background-color: ${themeStyle({
-    dark: Colors.uiDark02,
-    light: Colors.uiLight04
-  })};
-
+const pseudoBorder = css`
   /* Border with individual z-index to be layered above child */
   &:before {
     position: absolute;
@@ -32,6 +26,15 @@ export const SplitPane = themed(styled(SplitPaneComponent.Pane)`
         light: Colors.uiLight05
       })};
   }
+`;
+
+export const SplitPane = themed(styled(SplitPaneComponent.Pane)`
+  border-top: none;
+  background-color: ${themeStyle({
+    dark: Colors.uiDark02,
+    light: Colors.uiLight04
+  })};
+  ${pseudoBorder}
 `);
 
 export const SplitPaneHeader = styled(SplitPaneComponent.Pane.Header)`
@@ -65,22 +68,7 @@ export const ActionsWrapper = styled.div`
 export const SplitPaneBody = themed(styled(SplitPaneComponent.Pane.Body)`
   position: relative;
   border: none;
-
-  /* Border with individual z-index to be layered above child */
-  &:before {
-    position: absolute;
-    content: '';
-    height: 1px;
-    width: 100%;
-    z-index: 5;
-    top: 0px;
-    left: 0px;
-    border-top: solid 1px
-      ${themeStyle({
-        dark: Colors.uiDark04,
-        light: Colors.uiLight05
-      })};
-  }
+  ${pseudoBorder}
 `);
 
 export const StateIcon = styled(StateIconDefault)`
