@@ -56,7 +56,7 @@
     <version.netty>4.1.34.Final</version.netty>
     <version.objenesis>3.0.1</version.objenesis>
     <version.protobuf>3.7.1</version.protobuf>
-    <version.rocksdbjni>5.17.2</version.rocksdbjni>
+    <version.rocksdbjni>6.0.1</version.rocksdbjni>
     <version.sbe>1.12.4</version.sbe>
     <version.scala-parser>1.0.6</version.scala-parser>
     <version.scala>2.12.8</version.scala>
