@@ -22,7 +22,7 @@ export const Transition = themed(styled(TransitionComponent)`
   &.transition-enter-active {
     border-bottom: 1px solid ${borderColor};
     top: 0%;
-    transition: top ${({timeout}) => timeout.enter + 'ms'};
+    transition: top ${({timeout}) => timeout + 'ms'};
   }
   &.transition-exit {
     top: 0%;
@@ -31,6 +31,6 @@ export const Transition = themed(styled(TransitionComponent)`
   &.transition-exit-active {
     top: -100%;
     border-bottom: 1px solid ${borderColor};
-    transition: top ${({timeout}) => timeout.exit + 'ms'};
+    transition: top ${({timeout}) => timeout + 'ms'};
   }
 `);

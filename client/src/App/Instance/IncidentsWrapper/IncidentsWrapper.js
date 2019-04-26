@@ -175,7 +175,7 @@ function IncidentsWrapper(props) {
         onExited={onExited}
         mountOnEnter
         unmountOnExit
-        timeout={{enter: 400, exit: 400}}
+        timeout={400}
       >
         <IncidentsOverlay>
           <IncidentsFilter

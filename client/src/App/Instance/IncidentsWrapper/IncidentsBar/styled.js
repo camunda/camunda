@@ -35,7 +35,7 @@ export const Transition = themed(styled(TransitionComponent)`
   }
   &.transition-enter-active {
     transform: none;
-    transition: transform ${({timeout}) => timeout.enter + 'ms'};
+    transition: transform ${({timeout}) => timeout + 'ms'};
   }
 
   &.transition-enter-done {
@@ -47,7 +47,7 @@ export const Transition = themed(styled(TransitionComponent)`
   }
   &.transition-exit-active {
     transform: rotate(-90deg);
-    transition: transform ${({timeout}) => timeout.exit + 'ms'};
+    transition: transform ${({timeout}) => timeout + 'ms'};
   }
 `);
 

@@ -20,7 +20,7 @@ export default function IncidentsBar({id, count, onClick, isArrowFlipped}) {
 
   return (
     <Styled.IncidentsBar onClick={onClick} title={title}>
-      <Styled.Transition in={isArrowFlipped} timeout={{enter: 400, exit: 400}}>
+      <Styled.Transition in={isArrowFlipped} timeout={400}>
         <Styled.Arrow />
       </Styled.Transition>
 
