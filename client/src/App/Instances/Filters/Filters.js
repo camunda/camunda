@@ -153,7 +153,17 @@ export default class Filters extends React.Component {
     return sortBy(flowNodes, flowNode => flowNode.label.toLowerCase());
   };
 
-  sortAndModify = (bpmnElements, ...modifiers) => {
+  addValueAndLabel = bpmnElement => {
+    return {
+      ...bpmnElement,
+      value: bpmnElement.id,
+      label: bpmnElement.name
+        ? bpmnElement.name
+        : 'Unnamed' + bpmnElement.$type.split(':')[1].replace(/([A-Z])/g, ' $1')
+    };
+  };
+
+  sortAndModify = bpmnElements => {
     if (bpmnElements.length < 1) {
       return [];
     }
@@ -162,7 +172,7 @@ export default class Filters extends React.Component {
     const unnamed = [];
 
     bpmnElements.forEach(bpmnElement => {
-      const enhancedElement = this.modifierIterator(bpmnElement, 0, modifiers);
+      const enhancedElement = this.addValueAndLabel(bpmnElement);
 
       if (enhancedElement.name) {
         named.push(enhancedElement);
@@ -175,38 +185,6 @@ export default class Filters extends React.Component {
       ...this.sortByFlowNodeLabel(named),
       ...this.sortByFlowNodeLabel(unnamed)
     ];
-  };
-
-  addLabelModifier = bpmnElement => {
-    return {
-      ...bpmnElement,
-      label: bpmnElement.name
-        ? bpmnElement.name
-        : 'Unnamed' + bpmnElement.$type.split(':')[1].replace(/([A-Z])/g, ' $1')
-    };
-  };
-
-  addValueModifier = bpmnElement => {
-    return {
-      ...bpmnElement,
-      value: bpmnElement.id
-    };
-  };
-
-  modifierIterator = (object, currentModifierIndex, modifiers) => {
-    const modifierFunction = modifiers[currentModifierIndex];
-    const modifiedObject = modifierFunction(object);
-
-    currentModifierIndex++;
-
-    while (currentModifierIndex < modifiers.length) {
-      return this.modifierIterator(
-        modifiedObject,
-        currentModifierIndex,
-        modifiers
-      );
-    }
-    return modifiedObject;
   };
 
   render() {
@@ -318,9 +296,7 @@ export default class Filters extends React.Component {
                       name="activityId"
                       placeholder="Flow Node"
                       options={this.sortAndModify(
-                        this.props.selectableFlowNodes,
-                        this.addLabelModifier,
-                        this.addValueModifier
+                        this.props.selectableFlowNodes
                       )}
                       onChange={this.handleFieldChange}
                     />
