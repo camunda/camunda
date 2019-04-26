@@ -34,6 +34,7 @@ import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import java.util.List;
 import org.slf4j.Logger;
 
@@ -54,6 +55,7 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
   private final ExporterRepository exporterRepository;
 
   private StreamProcessorServiceFactory streamProcessorServiceFactory;
+  private Partition partition;
 
   public ExporterManagerService(List<ExporterCfg> exporterCfgs) {
     this.exporterCfgs = exporterCfgs;
@@ -78,11 +80,20 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
     }
   }
 
+  @Override
+  public void stop(final ServiceStopContext stopContext) {
+    if (partition != null) {
+      partition.getLogStream().setExporterPositionSupplier(null);
+    }
+  }
+
   private void startExporter(ServiceName<Partition> partitionName, Partition partition) {
     final SnapshotController snapshotController = partition.getExporterSnapshotController();
+    this.partition = partition;
 
     if (exporterRepository.getExporters().isEmpty()) {
       clearExporterState(snapshotController);
+      partition.getLogStream().setExporterPositionSupplier(() -> Long.MAX_VALUE);
 
     } else {
       streamProcessorServiceFactory
@@ -91,12 +102,20 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
           .processorName(PROCESSOR_NAME)
           .snapshotController(snapshotController)
           .streamProcessorFactory(
-              (zeebeDb, dbContext) ->
-                  new ExporterStreamProcessor(
-                      zeebeDb,
-                      dbContext,
-                      partition.getPartitionId(),
-                      exporterRepository.getExporters().values()))
+              (zeebeDb, dbContext) -> {
+                final ExporterStreamProcessor exporterStreamProcessor =
+                    new ExporterStreamProcessor(
+                        zeebeDb,
+                        dbContext,
+                        partition.getPartitionId(),
+                        exporterRepository.getExporters().values());
+                partition
+                    .getLogStream()
+                    .setExporterPositionSupplier(
+                        exporterStreamProcessor::getPositionToRecoveryFrom);
+                return exporterStreamProcessor;
+              })
+          .deleteDataOnSnapshot(false)
           .build();
     }
   }

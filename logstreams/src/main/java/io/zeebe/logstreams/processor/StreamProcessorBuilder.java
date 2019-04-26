@@ -52,6 +52,7 @@ public class StreamProcessorBuilder {
   private List<ServiceName<?>> additionalDependencies;
   private StreamProcessorFactory streamProcessorFactory;
   private int maxSnapshots;
+  private boolean deleteDataOnSnapshot;
 
   public StreamProcessorBuilder(int id, String name) {
     this.id = id;
@@ -103,6 +104,11 @@ public class StreamProcessorBuilder {
 
   public StreamProcessorBuilder serviceContainer(ServiceContainer serviceContainer) {
     this.serviceContainer = serviceContainer;
+    return this;
+  }
+
+  public StreamProcessorBuilder deleteDataOnSnapshot(final boolean deleteData) {
+    this.deleteDataOnSnapshot = deleteData;
     return this;
   }
 
@@ -160,6 +166,7 @@ public class StreamProcessorBuilder {
     ctx.setSnapshotPeriod(snapshotPeriod);
     ctx.setMaxSnapshots(maxSnapshots);
     ctx.setSnapshotController(snapshotController);
+    ctx.setDeleteDataOnSnapshot(deleteDataOnSnapshot);
 
     logStreamReader = new BufferedLogStreamReader();
     ctx.setLogStreamReader(logStreamReader);

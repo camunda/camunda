@@ -97,7 +97,7 @@ public class DistributedLogRule extends ExternalResource {
 
     final StorageConfigurationManager config =
         new StorageConfigurationManager(
-            Collections.singletonList(rootDirectory.toAbsolutePath().toString()), "512M");
+            Collections.singletonList(rootDirectory.toAbsolutePath().toString()), "512M", "4M");
 
     LogstreamConfig.putConfig(memberId, config);
     LogstreamConfig.putServiceContainer(memberId, serviceContainer);

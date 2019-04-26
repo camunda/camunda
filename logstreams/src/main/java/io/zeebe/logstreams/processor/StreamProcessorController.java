@@ -40,6 +40,7 @@ public class StreamProcessorController extends Actor {
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover with processor '%s'.";
 
   private final StreamProcessorFactory streamProcessorFactory;
+  private final boolean deleteDataOnSnapshot;
   private StreamProcessor streamProcessor;
   private final StreamProcessorContext streamProcessorContext;
   private final SnapshotController snapshotController;
@@ -80,6 +81,7 @@ public class StreamProcessorController extends Actor {
     this.logStreamReader = context.getLogStreamReader();
     this.logStreamWriter = context.getLogStreamWriter();
     this.maxSnapshots = context.getMaxSnapshots();
+    this.deleteDataOnSnapshot = context.getDeleteDataOnSnapshot();
   }
 
   @Override
@@ -200,7 +202,8 @@ public class StreamProcessorController extends Actor {
             logStream::removeOnCommitPositionUpdatedCondition,
             logStream::getCommitPosition,
             metrics,
-            maxSnapshots);
+            maxSnapshots,
+            deleteDataOnSnapshot ? logStream::delete : pos -> {});
 
     actorScheduler.submitActor(asyncSnapshotDirector);
 

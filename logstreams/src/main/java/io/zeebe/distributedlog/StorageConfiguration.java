@@ -43,6 +43,7 @@ public class StorageConfiguration {
   private final File blockIndexDirectory;
   private int partitionId;
   private long logSegmentSize;
+  private long indexBlockSize;
 
   public StorageConfiguration(
       final File metaFile,
@@ -81,6 +82,14 @@ public class StorageConfiguration {
 
   public long getLogSegmentSize() {
     return logSegmentSize;
+  }
+
+  public void setIndexBlockSize(final long indexBlockSize) {
+    this.indexBlockSize = indexBlockSize;
+  }
+
+  public long getIndexBlockSize() {
+    return indexBlockSize;
   }
 
   public File getSnapshotsDirectory() {

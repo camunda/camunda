@@ -57,7 +57,8 @@ public class RaftPersistentConfigurationManagerService
     service =
         new StorageConfigurationManager(
             configuration.getData().getDirectories(),
-            configuration.getData().getDefaultLogSegmentSize());
+            configuration.getData().getDefaultLogSegmentSize(),
+            configuration.getData().getIndexBlockSize());
 
     /* A temp solution so that DistributedLogstream primitive can create logs in this directory */
     LogstreamConfig.putConfig(String.valueOf(configuration.getCluster().getNodeId()), service);

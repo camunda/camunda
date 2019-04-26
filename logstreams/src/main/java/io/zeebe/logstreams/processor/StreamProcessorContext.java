@@ -43,6 +43,7 @@ public class StreamProcessorContext {
   private Runnable suspendRunnable;
   private Runnable resumeRunnable;
   private int maxSnapshots;
+  private boolean deleteDataOnSnapshot;
 
   public LogStream getLogStream() {
     return logStream;
@@ -164,5 +165,13 @@ public class StreamProcessorContext {
 
   public int getMaxSnapshots() {
     return maxSnapshots;
+  }
+
+  public void setDeleteDataOnSnapshot(final boolean deleteDataOnSnapshot) {
+    this.deleteDataOnSnapshot = deleteDataOnSnapshot;
+  }
+
+  public boolean getDeleteDataOnSnapshot() {
+    return deleteDataOnSnapshot;
   }
 }
