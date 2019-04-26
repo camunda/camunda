@@ -5,3 +5,4 @@
  */
 
 export {default as ReportRenderer} from './ReportRenderer';
+export {default as NoDataNotice} from './NoDataNotice';

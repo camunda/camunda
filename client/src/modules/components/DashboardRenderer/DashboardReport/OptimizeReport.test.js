@@ -12,29 +12,6 @@ import ThemedOptimizeReport from './OptimizeReport';
 const {WrappedComponent: OptimizeReportWithErrorHandling} = ThemedOptimizeReport;
 const {WrappedComponent: OptimizeReport} = OptimizeReportWithErrorHandling;
 
-jest.mock('react-router-dom', () => {
-  return {
-    Link: ({children, to, onClick, id}) => {
-      return (
-        <a id={id} href={to} onClick={onClick}>
-          {children}
-        </a>
-      );
-    }
-  };
-});
-
-jest.mock('components', () => {
-  return {
-    ReportRenderer: () => <div>ReportRenderer</div>,
-    LoadingIndicator: props => (
-      <div className="sk-circle" {...props}>
-        Loading...
-      </div>
-    )
-  };
-});
-
 const loadReport = jest.fn();
 
 const props = {
@@ -92,14 +69,19 @@ it('should not provide a link to the report when link is disabled', async () => 
   expect(node).toIncludeText('Report Name');
 });
 
-it('should display the name of a failing report', async () => {
+it('should display the name of a failing report and the error message', async () => {
   loadReport.mockReturnValue({
-    errorMessage: 'Is failing',
-    reportDefinition: {name: 'Failing Name'}
+    json: () => ({
+      errorMessage: 'Is failing',
+      reportDefinition: {name: 'Failing Name'}
+    })
   });
-  const node = shallow(<OptimizeReport {...props} disableNameLink />);
+  const node = shallow(
+    <OptimizeReport {...props} mightFail={(data, success, fail) => fail(data)} disableNameLink />
+  );
 
   await node.instance().loadReport();
 
   expect(node).toIncludeText('Failing Name');
+  expect(node.find('NoDataNotice').prop('children')).toBe('Is failing');
 });

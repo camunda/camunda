@@ -8,7 +8,7 @@ import React from 'react';
 
 import classnames from 'classnames';
 
-import {ReportRenderer, LoadingIndicator} from 'components';
+import {ReportRenderer, LoadingIndicator, NoDataNotice} from 'components';
 import {Link} from 'react-router-dom';
 import {withErrorHandling} from 'HOC';
 
@@ -23,7 +23,9 @@ export default themed(
         super(props);
 
         this.state = {
-          data: undefined
+          loading: true,
+          data: undefined,
+          error: null
         };
       }
 
@@ -36,23 +38,21 @@ export default themed(
           this.props.loadReport(this.props.report.id),
           response => {
             this.setState({
+              loading: false,
               data: response
             });
           },
           async e => {
-            const report = (await e.json()).reportDefinition;
-            if (report) {
-              this.setState({data: report});
-            }
-            return;
+            const {errorMessage, reportDefinition} = await e.json();
+            this.setState({loading: false, data: reportDefinition, error: errorMessage});
           }
         );
       };
 
       getName = () => {
-        const {name, reportDefinition} = this.state.data;
-
-        return name || (reportDefinition && reportDefinition.name);
+        if (this.state.data) {
+          return this.state.data.name;
+        }
       };
 
       exitDarkmode = () => {
@@ -62,7 +62,9 @@ export default themed(
       };
 
       render() {
-        if (!this.state.data) {
+        const {loading, data, error} = this.state;
+
+        if (loading) {
           return <LoadingIndicator />;
         }
 
@@ -88,11 +90,15 @@ export default themed(
                 'OptimizeReport__visualization--unscrollable': disableReportScrolling
               })}
             >
-              <ReportRenderer
-                disableReportScrolling={disableReportScrolling}
-                report={this.state.data}
-                isExternal
-              />
+              {error ? (
+                <NoDataNotice>{error}</NoDataNotice>
+              ) : (
+                <ReportRenderer
+                  disableReportScrolling={disableReportScrolling}
+                  report={data}
+                  isExternal
+                />
+              )}
             </div>
             {children({loadReportData: this.loadReport})}
           </div>

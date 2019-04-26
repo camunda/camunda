@@ -15,7 +15,7 @@ export {ButtonGroup} from './ButtonGroup';
 export {BPMNDiagram, ClickBehavior} from './BPMNDiagram';
 export {ControlGroup} from './ControlGroup';
 export {CopyToClipboard} from './CopyToClipboard';
-export {ReportRenderer} from './ReportRenderer';
+export {ReportRenderer, NoDataNotice} from './ReportRenderer';
 export {ErrorBoundary} from './ErrorBoundary';
 export {Logo} from './Logo';
 export {Icon} from './Icon';
