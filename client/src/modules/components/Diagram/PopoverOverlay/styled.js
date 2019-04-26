@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled, {css, createGlobalStyle} from 'styled-components';
 import {POPOVER_SIDE} from 'modules/constants';
 
 import Modal from 'modules/components/Modal';
@@ -134,30 +134,6 @@ const arrowStyle = ({side}) => {
   }
 };
 
-const transformStyle = ({side}) => {
-  if (side === 'RIGHT') {
-    return css`
-      transform: translate(0, calc(-6px - 50%));
-    `;
-  }
-
-  if (side === 'BOTTOM') {
-    return css`
-      transform: translate(calc(-6px - 50%), 0);
-    `;
-  }
-
-  if (side === 'LEFT') {
-    return css`
-      transform: translate(-100%, calc(-6px - 50%));
-    `;
-  }
-
-  return css`
-    transform: translate(calc(-6px - 50%), -100%);
-  `;
-};
-
 export const Popover = styled.div`
   ${arrowStyle}
 
@@ -188,8 +164,34 @@ export const Popover = styled.div`
 
   padding: 11px;
   padding-top: 12px;
+`;
 
-  ${transformStyle}
+export const PopoverOverlayStyle = createGlobalStyle`
+    .djs-overlay.djs-overlay-popover {
+      ${({side}) => {
+        if (side === 'RIGHT') {
+          return css`
+            transform: translate(0, calc(-6px - 50%));
+          `;
+        }
+
+        if (side === 'BOTTOM') {
+          return css`
+            transform: translate(calc(-6px - 50%), 0);
+          `;
+        }
+
+        if (side === 'LEFT') {
+          return css`
+            transform: translate(-100%, calc(-6px - 50%));
+          `;
+        }
+
+        return css`
+          transform: translate(calc(-6px - 50%), -100%);
+        `;
+      }}
+    }
 `;
 
 export const PeterCaseSummaryHeader = styled.div`
