@@ -421,11 +421,11 @@ public class StreamProcessorControllerTest {
     }
 
     // then
-    verify(snapshotController, timeout(5000).times(5)).moveValidSnapshot(anyLong());
-    verify(snapshotController, timeout(5000).times(5)).ensureMaxSnapshotCount(3);
+    verify(snapshotController, timeout(5000).atLeast(4)).moveValidSnapshot(anyLong());
+    verify(snapshotController, timeout(5000).atLeast(4)).ensureMaxSnapshotCount(3);
 
+    waitUntil(() -> stateStorage.list().size() == 3);
     assertThat(stateStorage.listByPositionAsc()).hasSize(3);
-    assertThat(stateStorage.list()).hasSize(3);
   }
 
   @Test
