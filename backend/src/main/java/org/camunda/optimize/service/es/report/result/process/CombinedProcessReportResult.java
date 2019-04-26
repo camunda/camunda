@@ -13,7 +13,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration
+  .ProcessDurationReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.slf4j.Logger;
@@ -31,7 +33,7 @@ import java.util.stream.IntStream;
 
 
 public class CombinedProcessReportResult
-  extends ReportEvaluationResult<CombinedProcessReportResultDto, CombinedReportDefinitionDto> {
+  extends ReportEvaluationResult<CombinedProcessReportResultDto<?>, CombinedReportDefinitionDto> {
 
   private final static Logger logger = LoggerFactory.getLogger(CombinedProcessReportResult.class);
 
@@ -42,73 +44,69 @@ public class CombinedProcessReportResult
 
   @Override
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final Set<String> excludedColumns) {
-    final Optional<ReportEvaluationResult<ProcessReportResultDto, SingleProcessReportDefinitionDto>> firstResultOptional =
-      (Optional<ReportEvaluationResult<ProcessReportResultDto, SingleProcessReportDefinitionDto>>)
-        reportResult.getData()
-          .values()
-          .stream()
-          .findFirst();
-    final List<String[]> csvStrings;
-    if (firstResultOptional.isPresent()) {
-      final ProcessReportResultDto firstResult = firstResultOptional.get().getResultAsDto();
-      csvStrings = mapCombinedReportResultsToCsvList(limit, offset, firstResult);
-    } else {
-      logger.debug("No reports to evaluate are available in the combined report. Returning empty csv instead.");
-      csvStrings = Collections.singletonList(new String[]{});
-    }
-    return csvStrings;
+    Optional<ResultType> resultType = reportResult.getSingleReportResultType();
+    return resultType.map(r -> mapCombinedReportResultsToCsvList(limit, offset, r))
+      .orElseGet(() -> {
+        logger.debug("No reports to evaluate are available in the combined report. Returning empty csv instead.");
+        return Collections.singletonList(new String[]{});
+      });
   }
 
   private List<String[]> mapCombinedReportResultsToCsvList(final Integer limit, final Integer offset,
-                                                           final ProcessReportResultDto firstResult) {
+                                                           final ResultType resultType) {
     final List<String[]> csvStrings;
-    if (firstResult instanceof ProcessCountReportMapResultDto) {
-      csvStrings = mapCombinedReportResultsToCsvList(
-        limit,
-        offset,
-        (CombinedProcessReportResultDto<ProcessCountReportMapResultDto>) reportResult,
-        r -> new String[]{r.getReportDefinition().getName(), "", ""},
-        evaluationResult -> new SingleProcessMapReportResult(
-          evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
-        )
-      );
-    } else if (firstResult instanceof ProcessDurationReportMapResultDto) {
-      csvStrings = mapCombinedReportResultsToCsvList(
-        limit,
-        offset,
-        (CombinedProcessReportResultDto<ProcessDurationReportMapResultDto>) reportResult,
-        r -> new String[]{r.getReportDefinition().getName(), "", "", "", "", ""},
-        evaluationResult -> new SingleProcessMapDurationReportResult(
-          evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
-        )
-      );
-    } else if (firstResult instanceof ProcessReportNumberResultDto) {
-      csvStrings = mapCombinedReportResultsToCsvList(
-        1,
-        0,
-        (CombinedProcessReportResultDto<ProcessReportNumberResultDto>) reportResult,
-        r -> new String[]{r.getReportDefinition().getName(), ""},
-        evaluationResult -> new SingleProcessNumberReportResult(
-          evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
-        )
-      );
-    } else if (firstResult instanceof ProcessDurationReportNumberResultDto) {
-      csvStrings = mapCombinedReportResultsToCsvList(
-        1,
-        0,
-        (CombinedProcessReportResultDto<ProcessDurationReportNumberResultDto>) reportResult,
-        r -> new String[]{r.getReportDefinition().getName(), "", "", "", ""},
-        evaluationResult -> new SingleProcessNumberDurationReportResult(
-          evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
-        )
-      );
-    } else {
-      String message = String.format(
-        "Unsupported report type [%s] in combined report",
-        firstResult.getClass().getSimpleName()
-      );
-      logger.error(message);
-      throw new RuntimeException(message);
+    switch (resultType) {
+      case FREQUENCY_MAP:
+        csvStrings = mapCombinedReportResultsToCsvList(
+          limit,
+          offset,
+          (CombinedProcessReportResultDto<ProcessCountReportMapResultDto>) reportResult,
+          r -> new String[]{r.getReportDefinition().getName(), "", ""},
+          evaluationResult -> new SingleProcessMapReportResult(
+            evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
+          )
+        );
+        break;
+      case DURATION_MAP:
+        csvStrings = mapCombinedReportResultsToCsvList(
+          limit,
+          offset,
+          (CombinedProcessReportResultDto<ProcessDurationReportMapResultDto>) reportResult,
+          r -> new String[]{r.getReportDefinition().getName(), "", "", "", "", ""},
+          evaluationResult -> new SingleProcessMapDurationReportResult(
+            evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
+          )
+        );
+        break;
+      case FREQUENCY_NUMBER:
+        csvStrings = mapCombinedReportResultsToCsvList(
+          1,
+          0,
+          (CombinedProcessReportResultDto<ProcessReportNumberResultDto>) reportResult,
+          r -> new String[]{r.getReportDefinition().getName(), ""},
+          evaluationResult -> new SingleProcessNumberReportResult(
+            evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
+          )
+        );
+        break;
+      case DURATION_NUMBER:
+        csvStrings = mapCombinedReportResultsToCsvList(
+          1,
+          0,
+          (CombinedProcessReportResultDto<ProcessDurationReportNumberResultDto>) reportResult,
+          r -> new String[]{r.getReportDefinition().getName(), "", "", "", ""},
+          evaluationResult -> new SingleProcessNumberDurationReportResult(
+            evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
+          )
+        );
+        break;
+      default:
+        String message = String.format(
+          "Unsupported report type [%s] in combined report",
+          resultType.getClass().getSimpleName()
+        );
+        logger.error(message);
+        throw new RuntimeException(message);
     }
     return csvStrings;
   }

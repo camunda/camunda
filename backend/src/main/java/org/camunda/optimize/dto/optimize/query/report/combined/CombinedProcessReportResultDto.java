@@ -13,16 +13,21 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 
 public class CombinedProcessReportResultDto<RESULT extends ProcessReportResultDto> implements ReportResultDto {
 
-  @Getter @Setter protected Map<String, ReportEvaluationResult<RESULT, SingleProcessReportDefinitionDto>> data;
+  @Getter
+  @Setter
+  protected Map<String, ReportEvaluationResult<RESULT, SingleProcessReportDefinitionDto>> data;
 
   protected CombinedProcessReportResultDto() {
   }
 
-  public CombinedProcessReportResultDto(final Map<String, ReportEvaluationResult<RESULT, SingleProcessReportDefinitionDto>> data) {
+  public CombinedProcessReportResultDto(final Map<String, ReportEvaluationResult<RESULT,
+    SingleProcessReportDefinitionDto>> data) {
     this.data = data;
   }
 
@@ -30,5 +35,9 @@ public class CombinedProcessReportResultDto<RESULT extends ProcessReportResultDt
   public ResultType getType() {
     // type is in single results
     return null;
+  }
+
+  public Optional<ResultType> getSingleReportResultType() {
+    return data.values().stream().findFirst().map(ReportEvaluationResult::getResultAsDto).map(ReportResultDto::getType);
   }
 }
