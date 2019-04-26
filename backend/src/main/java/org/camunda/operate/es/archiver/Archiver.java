@@ -10,17 +10,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
-import org.camunda.operate.es.schema.templates.EventTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
-import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -64,18 +60,6 @@ public class Archiver extends Thread {
 
   @Autowired
   private ListViewTemplate workflowInstanceTemplate;
-
-  @Autowired
-  private EventTemplate eventTemplate;
-
-  @Autowired
-  private ListViewTemplate listViewTemplate;
-
-  @Autowired
-  private OperationTemplate operationTemplate;
-
-  @Autowired
-  private ActivityInstanceTemplate activityInstanceTemplate;
 
   @Autowired
   private List<WorkflowInstanceDependant> workflowInstanceDependantTemplates;

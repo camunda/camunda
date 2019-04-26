@@ -98,9 +98,6 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private ListViewTemplate workflowInstanceTemplate;
 
   @Autowired
-  private ListViewTemplate listViewTemplate;
-
-  @Autowired
   private BatchOperationWriter batchOperationWriter;
 
   @Autowired

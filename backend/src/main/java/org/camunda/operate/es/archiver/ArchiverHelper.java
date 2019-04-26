@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.util.List;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.ReindexException;
-import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -30,9 +29,6 @@ public class ArchiverHelper {
 
   @Autowired
   private RestHighLevelClient esClient;
-
-  @Autowired
-  private OperateProperties operateProperties;
 
   public void moveDocuments(String sourceIndexName, String idFieldName, String finishDate, List<String> workflowInstanceIds) throws ReindexException {
 

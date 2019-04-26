@@ -5,8 +5,6 @@
  */
 package org.camunda.operate.property;
 
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
-
 public class OperateElasticsearchProperties extends ElasticsearchProperties {
 
   public static final String DEFAULT_INDEX_PREFIX = "operate";
