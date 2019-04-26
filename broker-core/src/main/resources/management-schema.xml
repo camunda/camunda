@@ -58,8 +58,9 @@
   <sbe:message name="SnapshotChunk" id="15">
     <field name="snapshotPosition" id="0" type="uint64"/>
     <field name="totalCount" id="1" type="int32"/>
-    <data name="chunkName" id="2" type="varDataEncoding"/>
-    <data name="content" id="3" type="blob"/>
+    <field name="checksum" id="2" type="uint64"/>
+    <data name="chunkName" id="3" type="varDataEncoding"/>
+    <data name="content" id="4" type="blob"/>
   </sbe:message>
 
 </sbe:messageSchema>
