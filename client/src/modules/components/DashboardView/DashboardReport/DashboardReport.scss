@@ -4,11 +4,11 @@
   flex-grow: 1;
 
   .BPMNDiagram {
-    .controls {
+    .ZoomControls {
       display: none;
     }
 
-    &:hover .controls {
+    &:hover .ZoomControls {
       display: block;
     }
   }

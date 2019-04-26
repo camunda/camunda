@@ -241,28 +241,28 @@ it('should show diagram zoom and reset controls', async () => {
 
   node.setState({loaded: true});
 
-  expect(node.find('.controls')).toBePresent();
+  expect(node.find('ZoomControls')).toBePresent();
 });
 
-it('should trigger diagram zoom on zoom button click', async () => {
+it('should trigger diagram zoom when zoom function is called', async () => {
   const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
 
   await flushPromises();
 
   node.setState({loaded: true});
-  node.find('button.zoomIn').simulate('click');
+  node.instance().zoom(5);
 
-  expect(node.instance().viewer.zoomScroll.stepZoom).toHaveBeenCalled();
+  expect(node.instance().viewer.zoomScroll.stepZoom).toHaveBeenCalledWith(5);
 });
 
-it('should reset diagram canvas view when clicking reset button', async () => {
+it('should reset the canvas zoom to viewport when fit diagram function is called', async () => {
   const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
 
   await flushPromises();
 
-  node.instance().fitDiagram = jest.fn();
-
   node.setState({loaded: true});
+
+  node.instance().fitDiagram();
 
   expect(node.instance().viewer.canvas.zoom).toHaveBeenCalledWith('fit-viewport', 'auto');
 });
