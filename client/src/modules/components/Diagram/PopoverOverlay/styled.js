@@ -168,6 +168,7 @@ export const Popover = styled.div`
 
 export const PopoverOverlayStyle = createGlobalStyle`
     .djs-overlay.djs-overlay-popover {
+      z-index: 2;
       ${({side}) => {
         if (side === 'RIGHT') {
           return css`
