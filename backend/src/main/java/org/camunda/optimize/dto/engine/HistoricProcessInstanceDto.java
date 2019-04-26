@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
@@ -33,5 +34,9 @@ public class HistoricProcessInstanceDto implements EngineDto {
 
   public String getProcessDefinitionVersionAsString() {
     return processDefinitionVersion != null ? processDefinitionVersion.toString() : null;
+  }
+
+  public Optional<String> getTenantId() {
+    return Optional.ofNullable(tenantId);
   }
 }

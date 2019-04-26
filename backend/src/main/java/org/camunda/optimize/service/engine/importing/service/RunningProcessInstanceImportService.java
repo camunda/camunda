@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.engine.importing.service;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -12,33 +14,21 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningProcessInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@AllArgsConstructor
+@Slf4j
 public class RunningProcessInstanceImportService implements ImportService<HistoricProcessInstanceDto> {
-
-  protected Logger logger = LoggerFactory.getLogger(getClass());
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
   private RunningProcessInstanceWriter runningProcessInstanceWriter;
 
-  public RunningProcessInstanceImportService(
-    RunningProcessInstanceWriter runningProcessInstanceWriter,
-    ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-    EngineContext engineContext
-  ) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-    this.engineContext = engineContext;
-    this.runningProcessInstanceWriter = runningProcessInstanceWriter;
-  }
-
   @Override
   public void executeImport(List<HistoricProcessInstanceDto> pageOfEngineEntities, Runnable callback) {
-    logger.trace("Importing entities from engine...");
+    log.trace("Importing entities from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
@@ -81,7 +71,7 @@ public class RunningProcessInstanceImportService implements ImportService<Histor
       null,
       engineEntity.getState(),
       engineContext.getEngineAlias(),
-      engineEntity.getTenantId()
+      engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
     );
     return processInstanceDto;
   }

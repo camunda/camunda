@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.engine.importing.service;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -12,33 +14,22 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedProcessInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@AllArgsConstructor
+@Slf4j
 public class CompletedProcessInstanceImportService implements ImportService<HistoricProcessInstanceDto> {
-
-  protected Logger logger = LoggerFactory.getLogger(getClass());
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
   private CompletedProcessInstanceWriter completedProcessInstanceWriter;
 
-  public CompletedProcessInstanceImportService(CompletedProcessInstanceWriter completedProcessInstanceWriter,
-                                               ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                               EngineContext engineContext
-  ) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-    this.engineContext = engineContext;
-    this.completedProcessInstanceWriter = completedProcessInstanceWriter;
-  }
-
   @Override
   public void executeImport(List<HistoricProcessInstanceDto> pageOfEngineEntities, Runnable callback) {
-    logger.trace("Importing entities from engine...");
+    log.trace("Importing entities from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
@@ -53,8 +44,7 @@ public class CompletedProcessInstanceImportService implements ImportService<Hist
     elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 
-  private List<ProcessInstanceDto> mapEngineEntitiesToOptimizeEntities(List<HistoricProcessInstanceDto>
-                                                                         engineEntities) {
+  private List<ProcessInstanceDto> mapEngineEntitiesToOptimizeEntities(List<HistoricProcessInstanceDto> engineEntities) {
     return engineEntities
       .stream().map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toList());
@@ -80,7 +70,7 @@ public class CompletedProcessInstanceImportService implements ImportService<Hist
       engineEntity.getStartTime().until(engineEntity.getEndTime(), ChronoUnit.MILLIS),
       engineEntity.getState(),
       engineContext.getEngineAlias(),
-      engineEntity.getTenantId()
+      engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
     );
     return processInstanceDto;
   }

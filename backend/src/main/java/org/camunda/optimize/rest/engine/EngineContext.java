@@ -17,6 +17,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_ENDPOINT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.GROUP_ENDPOINT;
@@ -45,6 +46,10 @@ public class EngineContext {
 
   public String getEngineAlias() {
     return engineAlias;
+  }
+
+  public Optional<String> getDefaultTenantId() {
+    return configurationService.getEngineDefaultTenantIdOfCustomEngine(engineAlias);
   }
 
   public List<GroupDto> getAllGroupsOfUser(String userId) {

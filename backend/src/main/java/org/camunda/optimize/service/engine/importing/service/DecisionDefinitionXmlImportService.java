@@ -67,8 +67,7 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
     final DecisionDefinitionOptimizeDto optimizeDto = new DecisionDefinitionOptimizeDto(
       engineEntity.getId(),
       engineEntity.getDmnXml(),
-      engineContext.getEngineAlias(),
-      engineEntity.getTenantId()
+      engineContext.getEngineAlias()
     );
     return optimizeDto;
   }

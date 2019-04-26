@@ -61,7 +61,6 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
         log.debug("Required Decision Definition not imported yet, skipping current decision instance import cycle.", e);
       }
     }
-
   }
 
   private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
@@ -111,7 +110,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
         .map(HistoricDecisionOutputInstanceDto::getRuleId)
         .collect(Collectors.toSet()),
       engineContext.getEngineAlias(),
-      engineEntity.getTenantId()
+      engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
     );
     return decisionInstanceDto;
   }
@@ -176,8 +175,8 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     );
   }
 
-  private String resolveDecisionDefinitionVersion(final HistoricDecisionInstanceDto engineEntity) throws
-                                                                                                  OptimizeDecisionDefinitionFetchException {
+  private String resolveDecisionDefinitionVersion(final HistoricDecisionInstanceDto engineEntity)
+    throws OptimizeDecisionDefinitionFetchException {
     return decisionDefinitionVersionResolverService
       .getVersionForDecisionDefinitionId(engineEntity.getDecisionDefinitionId())
       .orElseThrow(() -> {
@@ -203,7 +202,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
       decisionInstanceDto.getDecisionDefinitionId(),
       decisionInstanceDto.getId(),
       engineContext.getEngineAlias(),
-      decisionInstanceDto.getTenantId()
+      decisionInstanceDto.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
     );
   }
 
@@ -224,7 +223,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
       decisionInstanceDto.getDecisionDefinitionId(),
       decisionInstanceDto.getId(),
       engineContext.getEngineAlias(),
-      decisionInstanceDto.getTenantId()
+      decisionInstanceDto.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
     );
   }
 

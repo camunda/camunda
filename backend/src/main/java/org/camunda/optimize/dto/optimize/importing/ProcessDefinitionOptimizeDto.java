@@ -38,11 +38,10 @@ public class ProcessDefinitionOptimizeDto implements KeyDefinitionOptimizeDto {
     this.tenantId = tenantId;
   }
 
-  public ProcessDefinitionOptimizeDto(final String id, final String engine, final String tenantId,
+  public ProcessDefinitionOptimizeDto(final String id, final String engine,
                                       final String bpmn20Xml, final Map<String, String> flowNodeNames) {
     this.id = id;
     this.engine = engine;
-    this.tenantId = tenantId;
     this.bpmn20Xml = bpmn20Xml;
     this.flowNodeNames = flowNodeNames;
   }

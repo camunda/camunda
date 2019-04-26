@@ -6,12 +6,12 @@
 package org.camunda.optimize.dto.engine;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
@@ -38,4 +38,8 @@ public class HistoricDecisionInstanceDto implements EngineDto {
   private String decisionRequirementsDefinitionId;
   private String decisionRequirementsDefinitionKey;
   private String tenantId;
+
+  public Optional<String> getTenantId() {
+    return Optional.ofNullable(tenantId);
+  }
 }

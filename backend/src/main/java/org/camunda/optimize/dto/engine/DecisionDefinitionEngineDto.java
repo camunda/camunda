@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Optional;
 
 @Data
 public class DecisionDefinitionEngineDto implements Serializable,EngineDto {
@@ -29,5 +30,9 @@ public class DecisionDefinitionEngineDto implements Serializable,EngineDto {
   @JsonIgnore
   public String getVersionAsString() {
     return String.valueOf(version);
+  }
+
+  public Optional<String> getTenantId() {
+    return Optional.ofNullable(tenantId);
   }
 }

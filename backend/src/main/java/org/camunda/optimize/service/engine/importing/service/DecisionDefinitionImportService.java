@@ -72,7 +72,7 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
       String.valueOf(engineDto.getVersion()),
       engineDto.getName(),
       engineContext.getEngineAlias(),
-      engineDto.getTenantId()
+      engineDto.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
     );
     return optimizeDto;
   }

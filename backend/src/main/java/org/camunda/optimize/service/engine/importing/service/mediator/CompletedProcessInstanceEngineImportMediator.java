@@ -39,7 +39,7 @@ public class CompletedProcessInstanceEngineImportMediator
     importIndexHandler = provider.getCompletedProcessInstanceImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanFactory.getBean(CompletedProcessInstanceFetcher.class, engineContext);
     importService = new CompletedProcessInstanceImportService(
-      completedProcessInstanceWriter, elasticsearchImportJobExecutor, engineContext
+      elasticsearchImportJobExecutor, engineContext, completedProcessInstanceWriter
     );
   }
 

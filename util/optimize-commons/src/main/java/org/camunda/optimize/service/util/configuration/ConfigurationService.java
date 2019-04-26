@@ -66,6 +66,10 @@ public class ConfigurationService {
   private static final String[] DEFAULT_DEPRECATED_CONFIG_LOCATIONS = {"deprecated-config.yaml"};
   private static final String ERROR_NO_ENGINE_WITH_ALIAS = "No Engine configured with alias ";
   private static final Pattern VARIABLE_PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{([a-zA-Z_]+[a-zA-Z0-9_]*)\\}");
+  // @formatter:off
+  private static final TypeRef<HashMap<String, EngineConfiguration>> ENGINES_MAP_TYPEREF =
+    new TypeRef<HashMap<String, EngineConfiguration>>() {};
+  // @formatter:on
 
   private ReadContext configJsonContext;
   private Map<String, String> deprecatedConfigKeys;
@@ -375,13 +379,7 @@ public class ConfigurationService {
 
   public Map<String, EngineConfiguration> getConfiguredEngines() {
     if (configuredEngines == null) {
-      TypeRef<HashMap<String, EngineConfiguration>> typeRef = new TypeRef<HashMap<String, EngineConfiguration>>() {
-      };
-      configuredEngines = configJsonContext.read(ConfigurationServiceConstants.CONFIGURED_ENGINES, typeRef);
-      configuredEngines.forEach((k, v) -> {
-        v.setRest(cutTrailingSlash(v.getRest()));
-        v.getWebapps().setEndpoint(cutTrailingSlash(v.getWebapps().getEndpoint()));
-      });
+      configuredEngines = configJsonContext.read(ConfigurationServiceConstants.CONFIGURED_ENGINES, ENGINES_MAP_TYPEREF);
     }
     return configuredEngines;
   }
@@ -824,6 +822,12 @@ public class ConfigurationService {
 
   public String getProcessDefinitionXmlEndpoint(String processDefinitionId) {
     return getProcessDefinitionEndpoint() + "/" + processDefinitionId + getProcessDefinitionXmlEndpoint();
+  }
+
+  public Optional<String> getEngineDefaultTenantIdOfCustomEngine(String engineAlias) {
+    return getEngineConfiguration(engineAlias)
+      .map(EngineConfiguration::getDefaultTenantId)
+      .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
   }
 
   public String getEngineRestApiEndpointOfCustomEngine(String engineAlias) {

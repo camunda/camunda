@@ -53,7 +53,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertTrue;
 
-
 public class ProcessImportIT extends AbstractImportIT {
 
   protected static final Set<String> PROCESS_INSTANCE_NULLABLE_FIELDS =
@@ -118,6 +117,43 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
+  public void processDefinitionDefaultEngineTenantIdIsApplied() throws IOException {
+    //given
+    final String tenantId = "reallyAwesomeTenantId";
+    getDefaultEngineConfiguration().setDefaultTenantId(tenantId);
+    deployAndStartSimpleServiceTask();
+
+    //when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //then
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_DEF_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    final SearchHit hit = idsResp.getHits().getHits()[0];
+    assertThat(hit.getSourceAsMap().get(ProcessDefinitionType.TENANT_ID), is(tenantId));
+  }
+
+  @Test
+  public void processDefinitionEngineTenantIdIsPreferredOverDefaultTenantId() throws IOException {
+    //given
+    final String defaultTenantId = "reallyAwesomeTenantId";
+    final String expectedTenantId = "evenMoreAwesomeTenantId";
+    getDefaultEngineConfiguration().setDefaultTenantId(defaultTenantId);
+    deployProcessDefinitionWithTenant(expectedTenantId);
+
+    //when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //then
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_DEF_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    final SearchHit hit = idsResp.getHits().getHits()[0];
+    assertThat(hit.getSourceAsMap().get(ProcessDefinitionType.TENANT_ID), is(expectedTenantId));
+  }
+
+  @Test
   public void allProcessInstanceDataIsAvailable() throws IOException {
     //given
     deployAndStartSimpleServiceTask();
@@ -145,6 +181,43 @@ public class ProcessImportIT extends AbstractImportIT {
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessInstanceType.TENANT_ID), is(tenantId));
+  }
+
+  @Test
+  public void processInstanceDefaultEngineTenantIdIsApplied() throws IOException {
+    //given
+    final String tenantId = "reallyAwesomeTenantId";
+    getDefaultEngineConfiguration().setDefaultTenantId(tenantId);
+    deployAndStartSimpleServiceTask();
+
+    //when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //then
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    final SearchHit hit = idsResp.getHits().getHits()[0];
+    assertThat(hit.getSourceAsMap().get(ProcessInstanceType.TENANT_ID), is(tenantId));
+  }
+
+  @Test
+  public void processInstanceEngineTenantIdIsPreferredOverDefaultTenantId() throws IOException {
+    //given
+    final String defaultTenantId = "reallyAwesomeTenantId";
+    final String expectedTenantId = "evenMoreAwesomeTenantId";
+    getDefaultEngineConfiguration().setDefaultTenantId(defaultTenantId);
+    deployAndStartSimpleServiceTaskWithTenant(expectedTenantId);
+
+    //when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //then
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    final SearchHit hit = idsResp.getHits().getHits()[0];
+    assertThat(hit.getSourceAsMap().get(ProcessInstanceType.TENANT_ID), is(expectedTenantId));
   }
 
   @Test

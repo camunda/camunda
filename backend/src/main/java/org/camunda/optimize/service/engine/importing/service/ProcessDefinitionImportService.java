@@ -71,7 +71,7 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
       String.valueOf(engineEntity.getVersion()),
       engineEntity.getName(),
       engineContext.getEngineAlias(),
-      engineEntity.getTenantId()
+      engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
     );
     return optimizeDto;
   }

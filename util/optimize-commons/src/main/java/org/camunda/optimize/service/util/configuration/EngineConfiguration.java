@@ -5,57 +5,27 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
+import lombok.Data;
+
+import java.util.Optional;
+
+@Data
 public class EngineConfiguration {
 
   private String name;
+  private String defaultTenantId;
   private String rest;
   private EngineWebappsConfiguration webapps;
   private boolean importEnabled = true;
 
   private EngineAuthenticationConfiguration authentication;
 
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getRest() {
-    return rest;
+  public Optional<String> getDefaultTenantId() {
+    return Optional.ofNullable(defaultTenantId);
   }
 
   public void setRest(String rest) {
-    rest = removeTrailingSlashes(rest);
-    this.rest = rest;
+    this.rest = ConfigurationUtil.cutTrailingSlash(rest);
   }
 
-  private String removeTrailingSlashes(String str) {
-    return str.replaceAll("/$", "");
-  }
-
-  public EngineAuthenticationConfiguration getAuthentication() {
-    return authentication;
-  }
-
-  public void setAuthentication(EngineAuthenticationConfiguration authentication) {
-    this.authentication = authentication;
-  }
-
-  public EngineWebappsConfiguration getWebapps() {
-    return webapps;
-  }
-
-  public void setWebapps(EngineWebappsConfiguration webapps) {
-    this.webapps = webapps;
-  }
-
-  public boolean isImportEnabled() {
-    return importEnabled;
-  }
-
-  public void setImportEnabled(final boolean importEnabled) {
-    this.importEnabled = importEnabled;
-  }
 }

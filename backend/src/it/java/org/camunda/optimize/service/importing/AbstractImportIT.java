@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing;
 
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -94,5 +96,11 @@ public abstract class AbstractImportIT {
       .source(searchSourceBuilder);
 
     return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+  }
+
+  protected EngineConfiguration getDefaultEngineConfiguration() {
+    return embeddedOptimizeRule.getConfigurationService()
+      .getEngineConfiguration("1")
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Missing default engine configuration"));
   }
 }

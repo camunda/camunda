@@ -74,7 +74,6 @@ public class ProcessDefinitionXmlImportService implements ImportService<ProcessD
     final ProcessDefinitionOptimizeDto optimizeDto = new ProcessDefinitionOptimizeDto(
       engineEntity.getId(),
       engineContext.getEngineAlias(),
-      engineEntity.getTenantId(),
       engineEntity.getBpmn20Xml(),
       constructFlowNodeNames(engineEntity.getBpmn20Xml())
     );

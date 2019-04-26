@@ -42,8 +42,6 @@ import static org.hamcrest.Matchers.lessThan;
 
 public class DecisionImportIT extends AbstractImportIT {
 
-  protected static final Set<String> DECISION_INSTANCE_NULLABLE_FIELDS =
-    Collections.singleton(DecisionInstanceType.TENANT_ID);
   protected static final Set<String> DECISION_DEFINITION_NULLABLE_FIELDS =
     Collections.singleton(DecisionDefinitionType.TENANT_ID);
 
@@ -68,6 +66,20 @@ public class DecisionImportIT extends AbstractImportIT {
   }
 
   @Test
+  public void allDecisionDefinitionFieldDataIsAvailable() throws IOException {
+    //given
+    engineRule.deployDecisionDefinition();
+    engineRule.deployDecisionDefinition();
+
+    //when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //then
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_TYPE, 2L, DECISION_DEFINITION_NULLABLE_FIELDS);
+  }
+
+  @Test
   public void decisionDefinitionTenantIdIsImportedIfPresent() throws IOException {
     //given
     final String tenantId = "reallyAwesomeTenantId";
@@ -85,9 +97,10 @@ public class DecisionImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void allDecisionDefinitionFieldDataIsAvailable() throws IOException {
+  public void decisionDefinitionDefaultEngineTenantIdIsApplied() throws IOException {
     //given
-    engineRule.deployDecisionDefinition();
+    final String tenantId = "reallyAwesomeTenantId";
+    getDefaultEngineConfiguration().setDefaultTenantId(tenantId);
     engineRule.deployDecisionDefinition();
 
     //when
@@ -95,9 +108,30 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_TYPE, 2L, DECISION_DEFINITION_NULLABLE_FIELDS);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_DEFINITION_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    final SearchHit hit = idsResp.getHits().getHits()[0];
+    assertThat(hit.getSourceAsMap().get(DecisionDefinitionType.TENANT_ID), is(tenantId));
   }
 
+  @Test
+  public void decisionDefinitionEngineTenantIdIsPreferredOverDefaultTenantId() throws IOException {
+    //given
+    final String defaultTenantId = "reallyAwesomeTenantId";
+    final String expectedTenantId = "evenMoreAwesomeTenantId";
+    getDefaultEngineConfiguration().setDefaultTenantId(defaultTenantId);
+    engineRule.deployDecisionDefinitionWithTenant(expectedTenantId);
+
+    //when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //then
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_DEFINITION_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    final SearchHit hit = idsResp.getHits().getHits()[0];
+    assertThat(hit.getSourceAsMap().get(DecisionDefinitionType.TENANT_ID), is(expectedTenantId));
+  }
 
   @Test
   public void decisionInstanceFieldDataIsAvailable() throws IOException {
@@ -132,6 +166,44 @@ public class DecisionImportIT extends AbstractImportIT {
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(DecisionInstanceType.TENANT_ID), is(tenantId));
+  }
+
+  @Test
+  public void decisionInstanceDefaultEngineTenantIdIsApplied() throws IOException {
+    //given
+    final String tenantId = "reallyAwesomeTenantId";
+    getDefaultEngineConfiguration().setDefaultTenantId(tenantId);
+    engineRule.deployAndStartDecisionDefinition();
+
+    //when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //then
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    final SearchHit hit = idsResp.getHits().getHits()[0];
+    assertThat(hit.getSourceAsMap().get(DecisionInstanceType.TENANT_ID), is(tenantId));
+  }
+
+  @Test
+  public void decisionInstanceEngineTenantIdIsPreferredOverDefaultTenantId() throws IOException {
+    //given
+    final String defaultTenantId = "reallyAwesomeTenantId";
+    final String expectedTenantId = "evenMoreAwesomeTenantId";
+    getDefaultEngineConfiguration().setDefaultTenantId(defaultTenantId);
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinitionWithTenant(expectedTenantId);
+    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
+
+    //when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //then
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    final SearchHit hit = idsResp.getHits().getHits()[0];
+    assertThat(hit.getSourceAsMap().get(DecisionInstanceType.TENANT_ID), is(expectedTenantId));
   }
 
   @Test

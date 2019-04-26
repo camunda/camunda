@@ -36,11 +36,9 @@ public class DecisionDefinitionOptimizeDto implements KeyDefinitionOptimizeDto  
 
   public DecisionDefinitionOptimizeDto(final String id,
                                        final String dmn10Xml,
-                                       final String engine,
-                                       final String tenantId) {
+                                       final String engine) {
     this.id = id;
     this.dmn10Xml = dmn10Xml;
     this.engine = engine;
-    this.tenantId = tenantId;
   }
 }

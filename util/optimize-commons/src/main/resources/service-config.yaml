@@ -43,8 +43,12 @@ engines:
   # An alias of the engine, which will be used for internal purposes like
   # logging and displaying which data belong to which engine.
   'camunda-bpm':
-    #The name of the engine that will be used to import data.
+    # The process engines name on the platform, this is the unique engine identifier on the platforms REST API.
     name: default
+    # A default tenantId to the be injected on data from this engine where no tenant is configured in the engine itself.
+    # This property is only relevant in the context of a `One Process Engine Per Tenant`.
+    # For details consult the Multi-Tenancy documentation.
+    defaultTenantId: null
     #A base URL that will be used for connections to the Camunda Engine REST API.
     rest: 'http://localhost:8080/engine-rest'
     # Determines whether this instance of Optimize should import definition & historical data from this engine.
