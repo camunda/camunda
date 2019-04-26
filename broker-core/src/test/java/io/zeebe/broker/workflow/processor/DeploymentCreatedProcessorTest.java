@@ -120,6 +120,8 @@ public class DeploymentCreatedProcessorTest {
 
     // when
     writeMessageStartRecord(3, 1);
+    waitUntil(
+        () -> rule.events().onlyDeploymentRecords().withIntent(DeploymentIntent.CREATED).exists());
     writeNoneStartRecord(7, 2);
 
     // then
