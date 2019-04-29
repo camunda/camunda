@@ -28,7 +28,6 @@ public class EngineVersionChecker {
   private static final Logger logger = LoggerFactory.getLogger(EngineVersionChecker.class);
 
   static {
-    supportedEngines.add("7.8.13");
     supportedEngines.add("7.9.7");
     supportedEngines.add("7.10.0");
     supportedEngines.add("7.11.0");

@@ -245,7 +245,6 @@ plugin:
 serialization:
   # Define a custom date format that should be used for
   # fetching date data from the engine(should be the same as in the engine)
-  # Please note that engine prior to 7.8 use yyyy-MM-dd'T'HH:mm:ss as default date format
   engineDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
 
 alerting:

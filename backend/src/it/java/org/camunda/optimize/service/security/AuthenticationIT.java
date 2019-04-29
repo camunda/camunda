@@ -19,6 +19,7 @@ import javax.ws.rs.core.Response;
 
 import static org.camunda.optimize.service.security.AuthCookieService.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -46,22 +47,21 @@ public class AuthenticationIT {
     assertThat(response.getStatus(), is(200));
   }
 
-  //comment in back after stopping support of engine 7.8
-//  @Test
-//  public void authenticateLockedUser() {
-//    //given
-//    engineRule.addUser("kermit", "kermit");
-//    engineRule.grantUserOptimizeAccess("kermit");
-//
-//    //when
-//    embeddedOptimizeRule.authenticateUserRequest("kermit", "wrongPassword");
-//    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
-//
-//    //then
-//    assertThat(response.getStatus(),is(401));
-//    String errorMessage = response.readEntity(String.class);
-//    assertThat(errorMessage, containsString("The user with id 'kermit' is locked."));
-//  }
+  @Test
+  public void authenticateLockedUser() {
+    //given
+    engineRule.addUser("kermit", "kermit");
+    engineRule.grantUserOptimizeAccess("kermit");
+
+    //when
+    embeddedOptimizeRule.authenticateUserRequest("kermit", "wrongPassword");
+    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
+
+    //then
+    assertThat(response.getStatus(),is(401));
+    String errorMessage = response.readEntity(String.class);
+    assertThat(errorMessage, containsString("The user with id 'kermit' is locked."));
+  }
 
   @Test
   public void authenticateUnknownUser() {

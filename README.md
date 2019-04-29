@@ -78,14 +78,7 @@ You can use your LDAP credentials to continue the authentication.
 Optimize supports multiple versions of CamBpm. It is possible to use these
 versions by specifying different maven profiles. In particular you can
 have a look at the root pom.xml files. It contains a profile for every
-version that Optimize supports (e.s. engine-latest, engine-7.9,
-engine-7.8)It is possible to use these versions by specifying different
-maven profiles. In particular you can have a look at the root pom.xml
-files. It contains a profile for every version that Optimize supports
-(e.s. engine-latest, engine-7.9, engine-7.8)It is possible to use these
-versions by specifying different maven profiles. In particular you can
-have a look at the root pom.xml files. It contains a profile for every
-version that Optimize supports (e.s. engine-latest, engine-7.9, engine-7.8).
+version that Optimize supports (e.s. engine-latest, engine-7.9).
 
 ## Running integration tests locally
 

@@ -72,7 +72,7 @@
 
             <webResources>
               <resource>
-                <directory>src/main/runtime/${web.xml}</directory>
+                <directory>src/main/runtime/latest</directory>
               </resource>
             </webResources>
 

@@ -81,7 +81,6 @@
       </activation>
       <properties>
         <camunda.engine.version>7.10.0</camunda.engine.version>
-        <web.xml>latest</web.xml>
       </properties>
     </profile>
 
@@ -89,15 +88,6 @@
       <id>engine-7.9</id>
       <properties>
         <camunda.engine.version>7.9.7</camunda.engine.version>
-        <web.xml>latest</web.xml>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>engine-7.8</id>
-      <properties>
-        <camunda.engine.version>7.8.13</camunda.engine.version>
-        <web.xml>7.8</web.xml>
       </properties>
     </profile>
 

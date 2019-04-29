@@ -369,27 +369,6 @@ pipeline {
             }
           }
         }
-        stage('IT 7.8') {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build-it-7.8_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml integrationTestPodSpec('7.8.13')
-            }
-          }
-          steps {
-            retry(2) {
-              unstash name: "optimize-stash-client"
-              integrationTestSteps('7.8')
-            }
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
       }
     }
     stage('Deploy') {
