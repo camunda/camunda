@@ -39,28 +39,30 @@ import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class PublishMessageTest {
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
+  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
+  private static final ClientApiRule API_RULE = new ClientApiRule(BROKER_RULE::getAtomix);
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @ClassRule
+  public static final RuleChain RULE_CHAIN = RuleChain.outerRule(BROKER_RULE).around(API_RULE);
+
   private PartitionTestClient testClient;
 
   @Before
   public void setup() {
-    testClient = apiRule.partitionClient();
+    testClient = API_RULE.partitionClient();
   }
 
   @Test
   public void shouldPublishMessage() {
 
     final ExecuteCommandResponse response =
-        apiRule
+        API_RULE
             .createCmdRequest()
             .type(ValueType.MESSAGE, PUBLISH)
             .command()
@@ -81,7 +83,11 @@ public class PublishMessageTest {
             entry("messageId", ""));
 
     final Record<MessageRecordValue> publishedEvent =
-        testClient.receiveFirstMessageEvent(MessageIntent.PUBLISHED);
+        testClient
+            .receiveMessages()
+            .withRecordKey(response.getKey())
+            .withIntent(MessageIntent.PUBLISHED)
+            .getFirst();
     assertThat(publishedEvent.getKey()).isEqualTo(response.getKey());
     assertThat(MsgPackUtil.asMsgPackReturnArray(publishedEvent.getValue().getVariables()))
         .isEqualTo(EMTPY_OBJECT);
@@ -97,7 +103,7 @@ public class PublishMessageTest {
   public void shouldPublishMessageWithVariables() {
 
     final ExecuteCommandResponse response =
-        apiRule
+        API_RULE
             .createCmdRequest()
             .type(ValueType.MESSAGE, PUBLISH)
             .command()
@@ -117,7 +123,7 @@ public class PublishMessageTest {
   public void shouldPublishMessageWithMessageId() {
 
     final ExecuteCommandResponse response =
-        apiRule
+        API_RULE
             .createCmdRequest()
             .type(ValueType.MESSAGE, PUBLISH)
             .command()
@@ -136,7 +142,7 @@ public class PublishMessageTest {
   public void shouldPublishMessageWithZeroTTL() {
 
     final ExecuteCommandResponse response =
-        apiRule
+        API_RULE
             .createCmdRequest()
             .type(ValueType.MESSAGE, PUBLISH)
             .command()
@@ -154,7 +160,7 @@ public class PublishMessageTest {
   public void shouldPublishMessageWithNegativeTTL() {
 
     final ExecuteCommandResponse response =
-        apiRule
+        API_RULE
             .createCmdRequest()
             .type(ValueType.MESSAGE, PUBLISH)
             .command()
@@ -211,7 +217,7 @@ public class PublishMessageTest {
   @Test
   public void shouldPublishSameMessageWithoutId() {
 
-    apiRule
+    API_RULE
         .createCmdRequest()
         .type(ValueType.MESSAGE, PUBLISH)
         .command()
@@ -222,7 +228,7 @@ public class PublishMessageTest {
         .sendAndAwait();
 
     final ExecuteCommandResponse response =
-        apiRule
+        API_RULE
             .createCmdRequest()
             .type(ValueType.MESSAGE, PUBLISH)
             .command()
@@ -246,7 +252,12 @@ public class PublishMessageTest {
     assertThat(response.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
 
     final Record<MessageRecordValue> rejection =
-        testClient.receiveMessages().onlyCommandRejections().withIntent(PUBLISH).getFirst();
+        testClient
+            .receiveMessages()
+            .onlyCommandRejections()
+            .withRecordKey(response.getKey())
+            .withIntent(PUBLISH)
+            .getFirst();
 
     assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
   }
@@ -257,7 +268,7 @@ public class PublishMessageTest {
     final long timeToLive = 100;
 
     final ExecuteCommandResponse response =
-        apiRule
+        API_RULE
             .createCmdRequest()
             .type(ValueType.MESSAGE, PUBLISH)
             .command()
@@ -268,15 +279,19 @@ public class PublishMessageTest {
             .sendAndAwait();
 
     // when
-    final PartitionTestClient testClient = apiRule.partitionClient();
+    final PartitionTestClient testClient = API_RULE.partitionClient();
 
-    brokerRule
+    BROKER_RULE
         .getClock()
         .addTime(MessageObserver.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL.plusMillis(timeToLive));
 
     // then
     final Record<MessageRecordValue> deletedEvent =
-        testClient.receiveFirstMessageEvent(MessageIntent.DELETED);
+        testClient
+            .receiveMessages()
+            .withIntent(MessageIntent.DELETED)
+            .withRecordKey(response.getKey())
+            .getFirst();
     assertThat(deletedEvent.getKey()).isEqualTo(response.getKey());
     assertThat(MsgPackUtil.asMsgPackReturnArray(deletedEvent.getValue().getVariables()))
         .isEqualTo(EMTPY_OBJECT);
@@ -292,7 +307,7 @@ public class PublishMessageTest {
   public void shouldDeleteMessageImmediatelyWithZeroTTL() {
     // given
     final ExecuteCommandResponse response =
-        apiRule
+        API_RULE
             .createCmdRequest()
             .type(ValueType.MESSAGE, PUBLISH)
             .command()
@@ -303,11 +318,15 @@ public class PublishMessageTest {
             .sendAndAwait();
 
     // when
-    brokerRule.getClock().addTime(MessageObserver.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL);
+    BROKER_RULE.getClock().addTime(MessageObserver.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL);
 
     // then
     final Record<MessageRecordValue> deletedEvent =
-        testClient.receiveFirstMessageEvent(MessageIntent.DELETED);
+        testClient
+            .receiveMessages()
+            .withIntent(MessageIntent.DELETED)
+            .withRecordKey(response.getKey())
+            .getFirst();
 
     assertThat(deletedEvent.getKey()).isEqualTo(response.getKey());
     assertThat(MsgPackUtil.asMsgPackReturnArray(deletedEvent.getValue().getVariables()))
@@ -324,7 +343,7 @@ public class PublishMessageTest {
   public void shouldFailToPublishMessageWithoutName() {
 
     final ExecuteCommandRequestBuilder request =
-        apiRule
+        API_RULE
             .createCmdRequest()
             .type(ValueType.MESSAGE, PUBLISH)
             .command()
@@ -340,7 +359,7 @@ public class PublishMessageTest {
   public void shouldFailToPublishMessageWithoutCorrelationKey() {
 
     final ExecuteCommandRequestBuilder request =
-        apiRule
+        API_RULE
             .createCmdRequest()
             .type(ValueType.MESSAGE, PUBLISH)
             .command()
@@ -356,7 +375,7 @@ public class PublishMessageTest {
   public void shouldFailToPublishMessageWithoutTimeToLive() {
 
     final ExecuteCommandRequestBuilder request =
-        apiRule
+        API_RULE
             .createCmdRequest()
             .type(ValueType.MESSAGE, PUBLISH)
             .command()
@@ -371,7 +390,7 @@ public class PublishMessageTest {
   private ExecuteCommandResponse publishMessage(
       final String name, final String correlationKey, final String messageId) {
 
-    return apiRule
+    return API_RULE
         .createCmdRequest()
         .type(ValueType.MESSAGE, PUBLISH)
         .command()
