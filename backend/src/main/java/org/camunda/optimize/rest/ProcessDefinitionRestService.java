@@ -7,6 +7,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
+import org.camunda.optimize.rest.providers.CacheRequest;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.security.SessionService;
@@ -80,6 +81,7 @@ public class ProcessDefinitionRestService {
   @GET
   @Produces(value = {MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
   @Path("/xml")
+  @CacheRequest
   public String getProcessDefinitionXml(
     @Context ContainerRequestContext requestContext,
     @QueryParam("processDefinitionKey") String processDefinitionKey,

@@ -26,16 +26,16 @@ public class MetadataRestServiceIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
   public void getOptimizeVersion() {
     // when
     OptimizeVersionDto optimizeVersionDto =
-        embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetOptimizeVersionRequest()
-            .execute(OptimizeVersionDto.class, 200);
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetOptimizeVersionRequest()
+        .execute(OptimizeVersionDto.class, 200);
 
     // then
     assertThat(optimizeVersionDto.getOptimizeVersion(), is(Version.RAW_VERSION));

@@ -68,7 +68,7 @@ public class NoCachingIT {
   public void restApiCallResponseContainsNoCacheHeader() {
     // when
     Response response =
-      embeddedOptimizeRule.getRequestExecutor().buildGetOptimizeVersionRequest().execute();
+      embeddedOptimizeRule.getRequestExecutor().buildCheckImportStatusRequest().execute();
 
     // then
     assertThat(response.getHeaderString(HttpHeaders.CACHE_CONTROL), is(NO_STORE));

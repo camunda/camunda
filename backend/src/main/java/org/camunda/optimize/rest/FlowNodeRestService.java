@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
+import org.camunda.optimize.rest.providers.CacheRequest;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ public class FlowNodeRestService {
   @Path("/flowNodeNames")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
+  @CacheRequest
   public FlowNodeNamesResponseDto getFlowNodeNames(final FlowNodeIdsToNamesRequestDto request) {
     final FlowNodeNamesResponseDto result = new FlowNodeNamesResponseDto();
     final Optional<ProcessDefinitionOptimizeDto> processDefinitionXmlDto = processDefinitionReader
