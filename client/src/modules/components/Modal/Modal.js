@@ -14,6 +14,8 @@ export default class Modal extends React.Component {
   constructor(props) {
     super(props);
     this.el = document.createElement('div');
+    this.focusTrap = React.createRef();
+    this.container = React.createRef();
   }
 
   componentDidMount() {
@@ -31,24 +33,41 @@ export default class Modal extends React.Component {
     window.removeEventListener('keydown', this.handleKeyPress);
   }
 
-  storeContainer = node => {
-    this.container = node;
-  };
-
   fixPositioning = () => {
-    if (this.container) {
+    const container = this.container.current;
+    if (container) {
       const windowHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
       const margin = 30; // already set top  (15 px) + bottom  (15 px) margin
-      let topMargin = (windowHeight - this.container.clientHeight) / 2 - margin;
+      let topMargin = (windowHeight - container.clientHeight) / 2 - margin;
       topMargin = Math.max(topMargin, 0);
-      this.container.style.marginTop = topMargin + 'px';
-      this.container.style.marginLeft = -this.container.clientWidth / 2 + 'px';
+      container.style.marginTop = topMargin + 'px';
+      container.style.marginLeft = -container.clientWidth / 2 + 'px';
     }
   };
 
   setFocus = () => {
-    if (this.container && this.props.open) {
-      this.container.focus();
+    const container = this.container.current;
+    if (container && this.props.open) {
+      // focus the first text input if present
+      const textInput = container.querySelector('input[type="text"]');
+      if (textInput) {
+        return textInput.focus();
+      }
+
+      // focus the first primary button if present
+      const primaryButton = container.querySelector('.Button--primary');
+      if (primaryButton) {
+        return primaryButton.focus();
+      }
+
+      // focus just anything you can find
+      const anything = container.querySelector('input, button, textarea, select');
+      if (anything) {
+        return anything.focus();
+      }
+
+      // give up
+      container.focus();
     }
   };
 
@@ -80,18 +99,21 @@ export default class Modal extends React.Component {
 
     if (open) {
       return ReactDOM.createPortal(
-        <div className="Modal" onClick={this.onBackdropClick}>
+        <div className="Modal" role="dialog" onClick={this.onBackdropClick}>
           <div className="Modal__scroll-container">
+            <div tabIndex="0" onFocus={() => this.focusTrap.current.focus()} />
             <div
               className={classnames('Modal__content-container', this.props.className, {
                 ['Modal__content-container--' + this.props.size]: this.props.size
               })}
               tabIndex="-1"
-              ref={this.storeContainer}
+              ref={this.container}
               onClick={this.catchClick}
             >
               {children}
             </div>
+            <div tabIndex="-1" ref={this.focusTrap} />
+            <div tabIndex="0" onFocus={() => this.container.current.focus()} />
           </div>
         </div>,
         this.el

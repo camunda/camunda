@@ -71,6 +71,27 @@ it('should call the onConfirm function when enter is pressed', () => {
   expect(spy).not.toHaveBeenCalled();
 });
 
+it('should automatically focus focusable element in modal', () => {
+  mount(
+    <Modal open>
+      <button className="focusBtn" />
+    </Modal>
+  );
+
+  expect(document.activeElement.getAttribute('class')).toBe('focusBtn');
+});
+
+it('should trap focus', () => {
+  const node = mount(<Modal open />);
+
+  node
+    .find('.Modal__scroll-container div')
+    .last()
+    .simulate('focus');
+
+  expect(document.activeElement.getAttribute('class')).toBe('Modal__content-container');
+});
+
 describe('Header', () => {
   it('should render children', () => {
     const node = mount(
