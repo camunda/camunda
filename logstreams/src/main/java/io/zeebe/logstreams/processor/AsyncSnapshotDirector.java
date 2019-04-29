@@ -44,7 +44,7 @@ public class AsyncSnapshotDirector extends Actor {
       "Unexpected exception occurred on moving valid snapshot.";
 
   private static final String LOG_MSG_ENFORCE_SNAPSHOT =
-      "Enforce snapshot creation for last written position {} with commit position {}.";
+      "Enforce snapshot creation. Last successful processed position is {}.";
   private static final String ERROR_MSG_ENFORCED_SNAPSHOT =
       "Unexpected exception occured on creating snapshot, was enforced to do so.";
 
@@ -71,7 +71,8 @@ public class AsyncSnapshotDirector extends Actor {
   private long lastWrittenEventPosition = INITIAL_POSITION;
   private boolean pendingSnapshot;
   private long lowerBoundSnapshotPosition;
-  private long lastValidSnapshot;
+
+  private long lastValidSnapshotPosition;
 
   AsyncSnapshotDirector(
       String name,
@@ -106,6 +107,11 @@ public class AsyncSnapshotDirector extends Actor {
 
     commitCondition = actor.onCondition(getConditionNameForPosition(), this::onCommitCheck);
     conditionRegistration.accept(commitCondition);
+
+    lastValidSnapshotPosition = snapshotController.getLastValidSnapshotPosition();
+    LOG.debug(
+        "The position of the last valid snapshot is '{}'. Taking snapshots beyond this position.",
+        lastValidSnapshotPosition);
   }
 
   @Override
@@ -122,15 +128,20 @@ public class AsyncSnapshotDirector extends Actor {
     conditionCheckOut.accept(commitCondition);
   }
 
-  ActorFuture<Void> enforceSnapshotCreation(
-      final long lastWrittenPosition, final long commitPosition) {
+  public ActorFuture<Void> enforceSnapshotCreation(
+      final long lastWrittenPosition, final long lastProcessedPosition) {
     final ActorFuture<Void> snapshotCreation = new CompletableActorFuture<>();
     actor.call(
         () -> {
-          if (lastWrittenPosition <= commitPosition) {
-            LOG.debug(LOG_MSG_ENFORCE_SNAPSHOT, lastWrittenPosition, commitPosition);
+          final long commitPosition = commitPositionSupplier.getAsLong();
+
+          if (!pendingSnapshot
+              && commitPosition >= lastWrittenPosition
+              && lastProcessedPosition > lastValidSnapshotPosition) {
+
+            LOG.debug(LOG_MSG_ENFORCE_SNAPSHOT, lastProcessedPosition);
             try {
-              createSnapshot(() -> snapshotController.takeSnapshot(commitPosition));
+              createSnapshot(() -> snapshotController.takeSnapshot(lastProcessedPosition));
             } catch (Exception ex) {
               LOG.error(ERROR_MSG_ENFORCED_SNAPSHOT, ex);
             }
@@ -150,13 +161,13 @@ public class AsyncSnapshotDirector extends Actor {
         lastProcessedPosition,
         (lowerBoundSnapshotPosition, error) -> {
           if (error == null) {
-            if (lowerBoundSnapshotPosition > lastValidSnapshot) {
+            if (lowerBoundSnapshotPosition > lastValidSnapshotPosition) {
               this.lowerBoundSnapshotPosition = lowerBoundSnapshotPosition;
               takeSnapshot();
             } else {
               LOG.debug(
                   "No changes since last snapshot we will skip snapshot creation. Last valid snapshot position {}, new lower bound position {}",
-                  lastValidSnapshot,
+                  lastValidSnapshotPosition,
                   lowerBoundSnapshotPosition);
             }
 
@@ -205,7 +216,7 @@ public class AsyncSnapshotDirector extends Actor {
     if (pendingSnapshot && currentCommitPosition >= lastWrittenEventPosition) {
       try {
 
-        lastValidSnapshot = lowerBoundSnapshotPosition;
+        lastValidSnapshotPosition = lowerBoundSnapshotPosition;
         snapshotController.moveValidSnapshot(lowerBoundSnapshotPosition);
 
         try {

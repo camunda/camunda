@@ -17,12 +17,7 @@ package io.zeebe.logstreams.processor;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
@@ -45,9 +40,11 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import org.mockito.verification.VerificationWithTimeout;
 
 public class AsyncSnapshotingTest {
-  private static final long TIMEOUT = 2_000L;
+
+  private static final VerificationWithTimeout TIMEOUT = timeout(2000L);
   private static final int MAX_SNAPSHOTS = 2;
 
   private final TemporaryFolder tempFolderRule = new TemporaryFolder();
@@ -61,7 +58,8 @@ public class AsyncSnapshotingTest {
   private StateSnapshotController snapshotController;
   private LogStream logStream;
   private AsyncSnapshotDirector asyncSnapshotDirector;
-  private Supplier<ActorFuture<Long>> positionSupplier;
+  private Supplier<ActorFuture<Long>> lastProcessedEventPositionSupplier;
+  private Supplier<ActorFuture<Long>> lastWrittenEventPositionSupplier;
   private NoopConsumer mockDeleteCallback;
 
   @Before
@@ -81,31 +79,34 @@ public class AsyncSnapshotingTest {
     logStream = spy(logStreamRule.getLogStream());
     final ActorScheduler actorScheduler = logStreamRule.getActorScheduler();
 
-    positionSupplier = mock(Supplier.class);
-    when(positionSupplier.get())
+    lastProcessedEventPositionSupplier = mock(Supplier.class);
+    when(lastProcessedEventPositionSupplier.get())
         .thenReturn(CompletableActorFuture.completed(25L))
         .thenReturn(CompletableActorFuture.completed(32L));
 
-    final Supplier<ActorFuture<Long>> writtenSupplier = mock(Supplier.class);
-    when(writtenSupplier.get())
+    lastWrittenEventPositionSupplier = mock(Supplier.class);
+    when(lastWrittenEventPositionSupplier.get())
         .thenReturn(CompletableActorFuture.completed(99L), CompletableActorFuture.completed(100L));
 
     mockDeleteCallback = mock(NoopConsumer.class);
 
-    asyncSnapshotDirector =
-        new AsyncSnapshotDirector(
-            "processor-1",
-            Duration.ofSeconds(15),
-            positionSupplier,
-            writtenSupplier,
-            snapshotController,
-            actorCondition -> logStream.registerOnCommitPositionUpdatedCondition(actorCondition),
-            actorCondition -> logStream.removeOnCommitPositionUpdatedCondition(actorCondition),
-            () -> logStream.getCommitPosition(),
-            mock(StreamProcessorMetrics.class),
-            MAX_SNAPSHOTS,
-            mockDeleteCallback::noop);
+    asyncSnapshotDirector = createAsyncSnapshotDirector();
     actorScheduler.submitActor(asyncSnapshotDirector).join();
+  }
+
+  private AsyncSnapshotDirector createAsyncSnapshotDirector() {
+    return new AsyncSnapshotDirector(
+        "processor-1",
+        Duration.ofSeconds(15),
+        lastProcessedEventPositionSupplier,
+        lastWrittenEventPositionSupplier,
+        snapshotController,
+        actorCondition -> logStream.registerOnCommitPositionUpdatedCondition(actorCondition),
+        actorCondition -> logStream.removeOnCommitPositionUpdatedCondition(actorCondition),
+        () -> logStream.getCommitPosition(),
+        mock(StreamProcessorMetrics.class),
+        MAX_SNAPSHOTS,
+        mockDeleteCallback::noop);
   }
 
   @Test
@@ -117,11 +118,9 @@ public class AsyncSnapshotingTest {
 
     // then
     final InOrder inOrder = Mockito.inOrder(snapshotController, logStream);
-    inOrder
-        .verify(logStream, timeout(TIMEOUT).times(1))
-        .registerOnCommitPositionUpdatedCondition(any());
-    inOrder.verify(snapshotController, timeout(TIMEOUT).times(1)).takeTempSnapshot();
-    inOrder.verify(logStream, timeout(TIMEOUT).times(2)).getCommitPosition();
+    inOrder.verify(logStream, TIMEOUT.times(1)).registerOnCommitPositionUpdatedCondition(any());
+    inOrder.verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
+    inOrder.verify(logStream, TIMEOUT.times(2)).getCommitPosition();
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -135,38 +134,12 @@ public class AsyncSnapshotingTest {
 
     // then
     final InOrder inOrder = Mockito.inOrder(snapshotController);
-    inOrder.verify(snapshotController, timeout(TIMEOUT).times(1)).takeTempSnapshot();
-    inOrder.verify(snapshotController, timeout(TIMEOUT).times(1)).moveValidSnapshot(25);
+    inOrder.verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
+    inOrder.verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(25);
 
-    inOrder
-        .verify(snapshotController, timeout(TIMEOUT).times(1))
-        .ensureMaxSnapshotCount(MAX_SNAPSHOTS);
-    inOrder.verify(snapshotController, timeout(TIMEOUT).times(1)).getValidSnapshotsCount();
-    inOrder.verify(snapshotController, timeout(TIMEOUT).times(1)).replicateLatestSnapshot(any());
-    inOrder.verifyNoMoreInteractions();
-  }
-
-  @Test
-  public void shouldNotTakeSameSnapshotTwice() throws Exception {
-    // given
-    when(positionSupplier.get()).thenReturn(CompletableActorFuture.completed(25L));
-    logStreamRule.getClock().addTime(Duration.ofMinutes(1));
-    logStreamRule.setCommitPosition(100L);
-    verify(snapshotController, timeout(TIMEOUT).times(1)).moveValidSnapshot(25);
-    verify(positionSupplier, timeout(TIMEOUT).times(1)).get();
-
-    // when
-    logStreamRule.getClock().addTime(Duration.ofMinutes(1));
-    verify(positionSupplier, timeout(TIMEOUT).times(2)).get();
-
-    // then
-    final InOrder inOrder = Mockito.inOrder(snapshotController);
-    inOrder.verify(snapshotController, timeout(TIMEOUT).times(1)).takeTempSnapshot();
-    inOrder.verify(snapshotController, timeout(TIMEOUT).times(1)).moveValidSnapshot(25);
-    inOrder
-        .verify(snapshotController, timeout(TIMEOUT).times(1))
-        .ensureMaxSnapshotCount(MAX_SNAPSHOTS);
-    inOrder.verify(snapshotController, timeout(TIMEOUT).times(1)).replicateLatestSnapshot(any());
+    inOrder.verify(snapshotController, TIMEOUT.times(1)).ensureMaxSnapshotCount(MAX_SNAPSHOTS);
+    inOrder.verify(snapshotController, TIMEOUT.times(1)).getValidSnapshotsCount();
+    inOrder.verify(snapshotController, TIMEOUT.times(1)).replicateLatestSnapshot(any());
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -178,37 +151,35 @@ public class AsyncSnapshotingTest {
 
     logStreamRule.getClock().addTime(Duration.ofMinutes(1));
 
-    verify(snapshotController, timeout(TIMEOUT).times(1)).takeTempSnapshot();
+    verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
     logStreamRule.setCommitPosition(99L);
-    verify(snapshotController, timeout(TIMEOUT).times(1)).moveValidSnapshot(25);
-    verify(snapshotController, timeout(TIMEOUT).times(1)).replicateLatestSnapshot(any());
+    verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(25);
+    verify(snapshotController, TIMEOUT.times(1)).replicateLatestSnapshot(any());
 
     // when
     logStreamRule.getClock().addTime(Duration.ofMinutes(1));
-    verify(snapshotController, timeout(TIMEOUT).times(1)).takeTempSnapshot();
+    verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
     logStreamRule.setCommitPosition(100L);
 
     // then
-    verify(snapshotController, timeout(TIMEOUT).times(1)).moveValidSnapshot(32);
-    verify(snapshotController, timeout(TIMEOUT).times(2)).replicateLatestSnapshot(any());
+    verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(32);
+    verify(snapshotController, TIMEOUT.times(2)).replicateLatestSnapshot(any());
   }
 
   @Test
   public void shouldNotTakeMoreThenOneSnapshot() {
     // given
     logStreamRule.getClock().addTime(Duration.ofMinutes(1));
-    verify(snapshotController, timeout(TIMEOUT).times(1)).takeTempSnapshot();
+    verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
 
     // when
     logStreamRule.getClock().addTime(Duration.ofMinutes(1));
 
     // then
     final InOrder inOrder = Mockito.inOrder(snapshotController, logStream);
-    inOrder
-        .verify(logStream, timeout(TIMEOUT).times(1))
-        .registerOnCommitPositionUpdatedCondition(any());
-    inOrder.verify(snapshotController, timeout(TIMEOUT).times(1)).takeTempSnapshot();
-    inOrder.verify(logStream, timeout(TIMEOUT).times(2)).getCommitPosition();
+    inOrder.verify(logStream, TIMEOUT.times(1)).registerOnCommitPositionUpdatedCondition(any());
+    inOrder.verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
+    inOrder.verify(logStream, TIMEOUT.times(2)).getCommitPosition();
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -216,34 +187,176 @@ public class AsyncSnapshotingTest {
   public void shouldTakeSnapshotsOneByOne() throws Exception {
     // given
     logStreamRule.getClock().addTime(Duration.ofMinutes(1));
-    verify(snapshotController, timeout(TIMEOUT).times(1)).takeTempSnapshot();
+    verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
     logStreamRule.setCommitPosition(99L);
-    verify(snapshotController, timeout(TIMEOUT).times(1)).moveValidSnapshot(25);
+    verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(25);
 
     // when
     logStreamRule.getClock().addTime(Duration.ofMinutes(1));
-    verify(snapshotController, timeout(TIMEOUT).times(1)).takeTempSnapshot();
+    verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
     logStreamRule.setCommitPosition(100L);
 
     // then
-    verify(snapshotController, timeout(500).times(1)).moveValidSnapshot(32);
+    verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(32);
   }
 
   @Test
   public void shouldInvokeDataDeleteCallbackOnMaxSnapshots() throws IOException {
     // when
     logStreamRule.getClock().addTime(Duration.ofMinutes(1));
-    verify(snapshotController, timeout(500).times(1)).takeTempSnapshot();
+    verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
     logStreamRule.setCommitPosition(99L);
-    verify(snapshotController, timeout(500).times(1)).moveValidSnapshot(25);
+    verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(25);
 
     logStreamRule.getClock().addTime(Duration.ofMinutes(1));
-    verify(snapshotController, timeout(500).times(1)).takeTempSnapshot();
+    verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
     logStreamRule.setCommitPosition(100L);
-    verify(snapshotController, timeout(500).times(1)).moveValidSnapshot(32);
+    verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(32);
 
     // then
-    verify(mockDeleteCallback, timeout(500)).noop(eq(32L));
+    verify(mockDeleteCallback, TIMEOUT).noop(eq(32L));
+  }
+
+  @Test
+  public void shouldNotTakeSameSnapshotTwice() throws Exception {
+    // given
+    final long lastProcessedPosition = 25L;
+    final long lastWrittenPosition = 26L;
+    final long commitPosition = 100L;
+
+    when(lastProcessedEventPositionSupplier.get())
+        .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
+    when(lastWrittenEventPositionSupplier.get())
+        .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
+    logStreamRule.setCommitPosition(commitPosition);
+
+    logStreamRule.getClock().addTime(Duration.ofMinutes(1));
+
+    final InOrder inOrder = Mockito.inOrder(snapshotController, lastProcessedEventPositionSupplier);
+    inOrder.verify(lastProcessedEventPositionSupplier, TIMEOUT).get();
+    inOrder.verify(snapshotController, TIMEOUT).takeTempSnapshot();
+    inOrder.verify(snapshotController, TIMEOUT).moveValidSnapshot(lastProcessedPosition);
+    inOrder.verify(snapshotController, TIMEOUT).ensureMaxSnapshotCount(MAX_SNAPSHOTS);
+    inOrder.verify(snapshotController, TIMEOUT).replicateLatestSnapshot(any());
+
+    // when
+    logStreamRule.getClock().addTime(Duration.ofMinutes(1));
+
+    // then
+    inOrder.verify(lastProcessedEventPositionSupplier, TIMEOUT).get();
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldEnforceSnapshotCreation() throws Exception {
+    // given
+    long lastProcessedPosition = 25L;
+    long lastWrittenPosition = 26L;
+    final long commitPosition = 100L;
+
+    when(lastProcessedEventPositionSupplier.get())
+        .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
+    when(lastWrittenEventPositionSupplier.get())
+        .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
+    logStreamRule.setCommitPosition(commitPosition);
+
+    logStreamRule.getClock().addTime(Duration.ofMinutes(1));
+    verify(snapshotController, TIMEOUT).moveValidSnapshot(lastProcessedPosition);
+
+    // when
+    lastProcessedPosition = 26L;
+    lastWrittenPosition = 27L;
+
+    asyncSnapshotDirector
+        .enforceSnapshotCreation(lastWrittenPosition, lastProcessedPosition)
+        .join();
+
+    // then
+    verify(snapshotController, TIMEOUT.times(1)).takeSnapshot(lastProcessedPosition);
+  }
+
+  @Test
+  public void shouldNotEnforceSnapshotCreationIfExists() throws Exception {
+    // given
+    final long lastProcessedPosition = 25L;
+    final long lastWrittenPosition = 26L;
+    final long commitPosition = 100L;
+
+    when(lastProcessedEventPositionSupplier.get())
+        .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
+    when(lastWrittenEventPositionSupplier.get())
+        .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
+    logStreamRule.setCommitPosition(commitPosition);
+
+    logStreamRule.getClock().addTime(Duration.ofMinutes(1));
+    verify(snapshotController, TIMEOUT).moveValidSnapshot(lastProcessedPosition);
+
+    // when
+    asyncSnapshotDirector
+        .enforceSnapshotCreation(lastWrittenPosition, lastProcessedPosition)
+        .join();
+
+    // then
+    verify(snapshotController, never()).takeSnapshot(lastProcessedPosition);
+  }
+
+  @Test
+  public void shouldNotEnforceSnapshotCreationIfNotCommitted() throws Exception {
+    // given
+    final long lastProcessedPosition = 25L;
+    final long lastWrittenPosition = 101L;
+    final long commitPosition = 100L;
+
+    when(lastProcessedEventPositionSupplier.get())
+        .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
+    when(lastWrittenEventPositionSupplier.get())
+        .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
+    logStreamRule.setCommitPosition(commitPosition);
+
+    // when
+    asyncSnapshotDirector
+        .enforceSnapshotCreation(lastWrittenPosition, lastProcessedPosition)
+        .join();
+
+    // then
+    verify(snapshotController, never()).takeSnapshot(lastProcessedPosition);
+  }
+
+  @Test
+  public void shouldNotTakeSnapshotIfExistsAfterRestart() throws IOException {
+    // given
+    final long lastProcessedPosition = 25L;
+    final long lastWrittenPosition = lastProcessedPosition;
+    final long commitPosition = 100L;
+
+    when(lastProcessedEventPositionSupplier.get())
+        .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
+    when(lastWrittenEventPositionSupplier.get())
+        .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
+    logStreamRule.setCommitPosition(commitPosition);
+
+    logStreamRule.getClock().addTime(Duration.ofMinutes(1));
+
+    // when
+    final InOrder inOrder = Mockito.inOrder(snapshotController, lastProcessedEventPositionSupplier);
+    inOrder.verify(snapshotController, TIMEOUT).getLastValidSnapshotPosition();
+    inOrder.verify(lastProcessedEventPositionSupplier, TIMEOUT).get();
+    inOrder.verify(snapshotController, TIMEOUT).takeTempSnapshot();
+    inOrder.verify(snapshotController, TIMEOUT).moveValidSnapshot(lastProcessedPosition);
+    inOrder.verify(snapshotController, TIMEOUT).ensureMaxSnapshotCount(MAX_SNAPSHOTS);
+    inOrder.verify(snapshotController, TIMEOUT).replicateLatestSnapshot(any());
+
+    asyncSnapshotDirector.close();
+
+    asyncSnapshotDirector = createAsyncSnapshotDirector();
+    logStreamRule.getActorScheduler().submitActor(asyncSnapshotDirector).join();
+
+    logStreamRule.getClock().addTime(Duration.ofMinutes(1));
+
+    // then
+    inOrder.verify(snapshotController, TIMEOUT).getLastValidSnapshotPosition();
+    inOrder.verify(lastProcessedEventPositionSupplier, TIMEOUT).get();
+    inOrder.verifyNoMoreInteractions();
   }
 
   public class NoopConsumer {
