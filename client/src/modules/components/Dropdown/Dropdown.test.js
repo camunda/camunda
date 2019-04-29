@@ -37,6 +37,34 @@ function setupRefs(node) {
   };
 }
 
+function simulateDropdown(
+  node,
+  {oneItemHeight, buttonPosition, menuHeight, menuPosition, footerTop, headerBottom, buttonHeight}
+) {
+  node.instance().container = {
+    querySelector: () => ({
+      offsetHeight: buttonHeight,
+      getBoundingClientRect: () => buttonPosition
+    })
+  };
+
+  node.instance().menuContainer = {
+    current: {
+      clientHeight: menuHeight,
+      querySelector: () => ({clientHeight: oneItemHeight}),
+      getBoundingClientRect: () => menuPosition
+    }
+  };
+
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({top: footerTop})
+  };
+
+  node.instance().headerRef = {
+    getBoundingClientRect: () => ({bottom: headerBottom})
+  };
+}
+
 it('should render without crashing', () => {
   mount(<Dropdown />);
 });
@@ -295,22 +323,30 @@ it('should open a submenu when pressing the right arrow on a submenu entry', () 
 it('should add scrollable class when there is no enough space to show all items', () => {
   const node = mount(
     <Dropdown>
-      <Dropdown.Option>foo</Dropdown.Option>
+      <Dropdown.Option>1</Dropdown.Option>
+      <Dropdown.Option>2</Dropdown.Option>
+      <Dropdown.Option>3</Dropdown.Option>
+      <Dropdown.Option>4</Dropdown.Option>
+      <Dropdown.Option>5</Dropdown.Option>
+      <Dropdown.Option>6</Dropdown.Option>
     </Dropdown>
   );
 
-  node.instance().footerRef = {
-    getBoundingClientRect: () => ({top: -1})
-  };
-  node.instance().headerRef = {
-    getBoundingClientRect: () => ({})
+  const specs = {
+    oneItemHeight: 30,
+    buttonPosition: {bottom: 0},
+    menuHeight: 160,
+    menuPosition: {top: 0},
+    footerTop: 150,
+    headerBottom: 0
   };
 
-  node.instance().options = [{clientHeight: 30}];
+  simulateDropdown(node, specs);
 
   node.instance().calculateMenuStyle(true);
   node.update();
 
+  expect(node.state().listStyles.height).toBe(specs.footerTop - 10);
   expect(node.find('.menu > ul').first()).toHaveClassName('scrollable');
 });
 
@@ -325,37 +361,25 @@ it('flip dropdown vertically when there is no enough space for four items', () =
     </Dropdown>
   );
 
-  node.instance().options = [{clientHeight: 30}];
-
-  node.instance().container = {
-    querySelector: () => ({
-      offsetHeight: 'buttonHeight',
-      getBoundingClientRect: () => ({bottom: 50})
-    })
+  const specs = {
+    oneItemHeight: 30,
+    buttonPosition: {bottom: 50},
+    menuHeight: 70,
+    menuPosition: {top: 53},
+    footerTop: 110,
+    headerBottom: 0,
+    buttonHeight: 50
   };
 
-  node.instance().menuContainer = {
-    current: {
-      clientHeight: 70,
-      querySelector: () => ({clientHeight: 30})
-    }
-  };
-
-  node.instance().footerRef = {
-    getBoundingClientRect: () => ({top: 110})
-  };
-
-  node.instance().headerRef = {
-    getBoundingClientRect: () => ({})
-  };
+  simulateDropdown(node, specs);
 
   node.instance().calculateMenuStyle(true);
   node.update();
 
-  expect(node.state().menuStyle.bottom).toBe('buttonHeight');
+  expect(node.state().menuStyle.bottom).toBe(specs.buttonHeight);
 });
 
-it('should not add scrollable class when the item is flipped and there is no enough space below the item', () => {
+it('should not add scrollable class when the item is flipped and there is enough space above the item', () => {
   const node = mount(
     <Dropdown>
       <Dropdown.Option>1</Dropdown.Option>
@@ -366,29 +390,14 @@ it('should not add scrollable class when the item is flipped and there is no eno
     </Dropdown>
   );
 
-  node.instance().options = [{clientHeight: 30}];
-
-  node.instance().container = {
-    querySelector: () => ({
-      offsetHeight: 'buttonHeight',
-      getBoundingClientRect: () => ({bottom: 535, top: 500})
-    })
-  };
-
-  node.instance().menuContainer = {
-    current: {
-      clientHeight: 400,
-      querySelector: () => ({clientHeight: 30})
-    }
-  };
-
-  node.instance().footerRef = {
-    getBoundingClientRect: () => ({top: 550})
-  };
-
-  node.instance().headerRef = {
-    getBoundingClientRect: () => ({bottom: 10})
-  };
+  simulateDropdown(node, {
+    oneItemHeight: 30,
+    buttonPosition: {top: 500, bottom: 535},
+    menuHeight: 400,
+    menuPosition: {top: 503},
+    footerTop: 550,
+    headerBottom: 10
+  });
 
   node.instance().calculateMenuStyle(true);
   node.update();
