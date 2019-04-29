@@ -8,6 +8,7 @@ import React, {createRef, useState, useEffect} from 'react';
 import PropTypes from 'prop-types';
 
 import ActionStatus from 'modules/components/ActionStatus/ActionStatus.js';
+import {isValidJSON} from 'modules/utils';
 
 import {EMPTY_PLACEHOLDER, NULL_PLACEHOLDER} from './constants';
 import * as Styled from './styled';
@@ -104,7 +105,7 @@ export default function Variables({
                     <Styled.EditButton
                       data-test="save-var-btn"
                       title="Update variable"
-                      disabled={!value}
+                      disabled={!value || !isValidJSON(value)}
                       onClick={saveVariable}
                     >
                       <Styled.CheckIcon />
