@@ -24,10 +24,11 @@ export default class DefinitionSelection extends React.Component {
   }
 
   componentDidMount = async () => {
-    const availableDefinitions = await loadDefinitions(this.props.type);
-
     this.setState({
-      availableDefinitions,
+      availableDefinitions: (await loadDefinitions(this.props.type)).map(entry => ({
+        ...entry,
+        id: entry.key
+      })),
       loaded: true
     });
   };

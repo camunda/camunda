@@ -92,6 +92,7 @@ it('should set key and version, if process definition is already available', asy
 
   expect(node.find('.name')).toHaveProp('initialValue', {
     key: 'foo',
+    id: 'foo',
     versions: [
       {id: 'procdef2', key: 'foo', version: '2'},
       {id: 'procdef1', key: 'foo', version: '1'}
@@ -161,4 +162,23 @@ it('should show a note if the selected ProcDef version is ALL', async () => {
   );
 
   expect(node.find('.warning')).toBePresent();
+});
+
+it('should pass an id for every entry to the typeahead', async () => {
+  loadDefinitions.mockReturnValueOnce([
+    {
+      key: 'foo',
+      versions: [{id: 'procdef', key: 'foo', version: '2', name: 'A'}]
+    },
+    {
+      key: 'bar',
+      versions: [{id: 'anotherProcDef', key: 'bar', version: '1', name: 'A'}]
+    }
+  ]);
+
+  const node = await shallow(<DefinitionSelection {...props} />);
+
+  const values = node.find('Typeahead').prop('values');
+  expect(values[0].id).toBe('foo');
+  expect(values[1].id).toBe('bar');
 });
