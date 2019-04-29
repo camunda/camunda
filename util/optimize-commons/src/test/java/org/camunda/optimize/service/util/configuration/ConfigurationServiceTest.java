@@ -21,6 +21,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -46,7 +47,7 @@ public class ConfigurationServiceTest {
   @Test
   public void getTokenLifeTimeMinutes() {
     ConfigurationService underTest = new ConfigurationService();
-    assertThat(underTest.getTokenLifeTimeMinutes(), is(15));
+    assertThat(underTest.getTokenLifeTimeMinutes(), is(60));
   }
 
   @Test
@@ -99,7 +100,7 @@ public class ConfigurationServiceTest {
       Optional<Integer> containerHttpPort = underTest.getContainerHttpPort();
 
       // then
-      assertTrue(!containerHttpPort.isPresent());
+      assertFalse(containerHttpPort.isPresent());
     }
   }
 
