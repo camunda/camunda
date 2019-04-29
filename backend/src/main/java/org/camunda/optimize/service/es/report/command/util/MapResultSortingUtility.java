@@ -68,7 +68,7 @@ public class MapResultSortingUtility {
     switch (sortBy) {
       default:
       case SortingDto.SORT_BY_KEY:
-        comparator = Comparator.comparing(MapResultEntryDto::getKey);
+        comparator = Comparator.comparing(entry -> entry.getKey().toLowerCase());
         break;
       case SortingDto.SORT_BY_VALUE:
         comparator = Comparator.comparing(t -> {
@@ -83,7 +83,7 @@ public class MapResultSortingUtility {
         });
         break;
       case SortingDto.SORT_BY_LABEL:
-        comparator = Comparator.comparing(entry -> entry.getLabel().orElse(""));
+        comparator = Comparator.comparing(entry -> entry.getLabel().toLowerCase());
         break;
     }
 

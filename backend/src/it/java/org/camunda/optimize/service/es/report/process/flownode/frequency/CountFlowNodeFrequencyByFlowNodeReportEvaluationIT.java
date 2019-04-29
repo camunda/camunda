@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
-import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
 import static org.hamcrest.CoreMatchers.is;
@@ -47,7 +46,6 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
 
-  public static final String LABEL_SUFFIX = "_label";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -63,7 +61,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
     //given
     deployAndStartSimpleServiceTaskProcess();
-    ProcessInstanceEngineDto latestProcess = deployProcessWithTwoTasksAndLabels();
+    ProcessInstanceEngineDto latestProcess = deployProcessWithTwoTasks();
     assertThat(latestProcess.getProcessDefinitionVersion(), Is.is("2"));
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -85,7 +83,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
     //given
-    deployProcessWithTwoTasksAndLabels();
+    deployProcessWithTwoTasks();
     ProcessInstanceEngineDto latestProcess = deployAndStartSimpleServiceTaskProcess();
     assertThat(latestProcess.getProcessDefinitionVersion(), Is.is("2"));
 
@@ -331,7 +329,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   @Test
   public void testCustomOrderOnResultKeyIsApplied() {
     // given
-    final ProcessInstanceEngineDto processInstanceDto = deployProcessWithTwoTasksAndLabels();
+    final ProcessInstanceEngineDto processInstanceDto = deployProcessWithTwoTasks();
     deployAndStartSimpleServiceTaskProcess();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -352,35 +350,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
       resultKeys,
       // expect ascending order
       contains(resultKeys.stream().sorted(Comparator.naturalOrder()).toArray())
-    );
-  }
-
-  @Test
-  public void testCustomOrderOnResultLabelIsApplied() {
-    // given
-    final ProcessInstanceEngineDto processInstanceDto = deployProcessWithTwoTasksAndLabels();
-    deployAndStartSimpleServiceTaskProcess();
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    final ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
-      processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
-    );
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    final ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
-
-    // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
-    assertThat(resultData.size(), is(4));
-    final List<String> resultLabels = resultData.stream()
-      .map(entry -> entry.getLabel().orElse(""))
-      .collect(Collectors.toList());
-    assertThat(
-      resultLabels,
-      // expect ascending order
-      contains(resultLabels.stream().sorted(Comparator.naturalOrder()).toArray())
     );
   }
 
@@ -541,21 +510,17 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     return deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
   }
 
-  private ProcessInstanceEngineDto deployProcessWithTwoTasksAndLabels() {
+  private ProcessInstanceEngineDto deployProcessWithTwoTasks() {
     // @formatter:off
 
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent("start")
-        .name("start" + LABEL_SUFFIX)
       .serviceTask(CountFlowNodeFrequencyByFlowNodeReportEvaluationIT.TEST_ACTIVITY)
-        .name(CountFlowNodeFrequencyByFlowNodeReportEvaluationIT.TEST_ACTIVITY + LABEL_SUFFIX)
         .camundaExpression("${true}")
       .serviceTask(TEST_ACTIVITY_2)
-        .name(TEST_ACTIVITY_2 + LABEL_SUFFIX)
         .camundaExpression("${true}")
       .endEvent("end")
-        .name(null)
       .done();
     return engineRule.deployAndStartProcess(modelInstance);
   }

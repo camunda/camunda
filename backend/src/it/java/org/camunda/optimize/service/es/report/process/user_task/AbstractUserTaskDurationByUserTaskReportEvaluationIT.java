@@ -264,7 +264,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
     assertThat(resultData.size(), is(2));
     final List<String> resultLabels = resultData.stream()
-      .map(entry -> entry.getLabel().orElse(""))
+      .map(MapResultEntryDto::getLabel)
       .collect(Collectors.toList());
     assertThat(
       resultLabels,

@@ -8,23 +8,25 @@ package org.camunda.optimize.dto.optimize.query.report.single.result;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Optional;
+import javax.validation.constraints.NotNull;
 
 public class MapResultEntryDto<T> {
 
-  @Getter @Setter private String key;
+  // @formatter:off
+  @NotNull @Getter @Setter private String key;
   @Getter @Setter private T value;
   @Setter private String label;
+  // @formatter:on
 
   protected MapResultEntryDto() {
   }
 
-  public MapResultEntryDto(final String key, final T value) {
+  public MapResultEntryDto(@NotNull final String key, final T value) {
     this.key = key;
     this.value = value;
   }
 
-  public Optional<String> getLabel() {
-    return Optional.ofNullable(label);
+  public String getLabel() {
+    return label != null && !label.isEmpty() ? label : key;
   }
 }

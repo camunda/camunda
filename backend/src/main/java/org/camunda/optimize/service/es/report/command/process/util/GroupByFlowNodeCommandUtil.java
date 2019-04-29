@@ -13,8 +13,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -22,7 +20,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class GroupByFlowNodeCommandUtil {
-  private static final Logger logger = LoggerFactory.getLogger(GroupByFlowNodeCommandUtil.class);
 
   private GroupByFlowNodeCommandUtil() {
   }
