@@ -16,6 +16,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessD
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningActivityInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningProcessInstanceImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.TenantImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.UserOperationLogInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableUpdateInstanceImportIndexHandler;
 import org.springframework.beans.factory.BeanFactory;
@@ -211,6 +212,16 @@ public class ImportIndexHandlerProvider {
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
       result = engineImportIndexHandlerProvider.getDecisionInstanceImportIndexHandler();
+    }
+    return result;
+  }
+
+  public TenantImportIndexHandler getTenantImportIndexHandler(String engineAlias) {
+    final EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap
+      .get(engineAlias);
+    TenantImportIndexHandler result = null;
+    if (engineImportIndexHandlerProvider != null) {
+      result = engineImportIndexHandlerProvider.getTenantImportIndexHandler();
     }
     return result;
   }

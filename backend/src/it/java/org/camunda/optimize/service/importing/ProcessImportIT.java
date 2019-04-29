@@ -50,7 +50,6 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertTrue;
 
 public class ProcessImportIT extends AbstractImportIT {
@@ -120,7 +119,7 @@ public class ProcessImportIT extends AbstractImportIT {
   public void processDefinitionDefaultEngineTenantIdIsApplied() throws IOException {
     //given
     final String tenantId = "reallyAwesomeTenantId";
-    getDefaultEngineConfiguration().setDefaultTenantId(tenantId);
+    embeddedOptimizeRule.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
     deployAndStartSimpleServiceTask();
 
     //when
@@ -139,7 +138,7 @@ public class ProcessImportIT extends AbstractImportIT {
     //given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
-    getDefaultEngineConfiguration().setDefaultTenantId(defaultTenantId);
+    embeddedOptimizeRule.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
     deployProcessDefinitionWithTenant(expectedTenantId);
 
     //when
@@ -187,7 +186,7 @@ public class ProcessImportIT extends AbstractImportIT {
   public void processInstanceDefaultEngineTenantIdIsApplied() throws IOException {
     //given
     final String tenantId = "reallyAwesomeTenantId";
-    getDefaultEngineConfiguration().setDefaultTenantId(tenantId);
+    embeddedOptimizeRule.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
     deployAndStartSimpleServiceTask();
 
     //when
@@ -206,7 +205,7 @@ public class ProcessImportIT extends AbstractImportIT {
     //given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
-    getDefaultEngineConfiguration().setDefaultTenantId(defaultTenantId);
+    embeddedOptimizeRule.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
     deployAndStartSimpleServiceTaskWithTenant(expectedTenantId);
 
     //when
@@ -317,22 +316,6 @@ public class ProcessImportIT extends AbstractImportIT {
       idsResp.getHits().getAt(0).getSourceAsMap().get(ProcessInstanceType.STATE),
       is(CanceledInstancesOnlyQueryFilter.EXTERNALLY_TERMINATED)
     );
-  }
-
-  private ProcessInstanceEngineDto deployAndStartUserTaskProcess() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .startEvent()
-      .userTask()
-      .endEvent()
-      .done();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("aVariable", "aStringVariable");
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
-  }
-
-  private void createStartAndCancelUserTaskProcess() {
-    ProcessInstanceEngineDto processInstance = deployAndStartUserTaskProcess();
-    engineRule.externallyTerminateProcessInstance(processInstance.getId());
   }
 
   @Test
@@ -484,116 +467,6 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void importIndexIsZeroIfNothingIsImportedYet() {
-    // when
-    List<Long> indexes = embeddedOptimizeRule.getImportIndexes();
-
-    // then
-    for (Long index : indexes) {
-      assertThat(index, is(0L));
-    }
-  }
-
-  @Test
-  public void indexLastTimestampIsEqualEvenAfterReset() throws InterruptedException {
-    // given
-    final int currentTimeBackOff = 1000;
-    embeddedOptimizeRule.getConfigurationService().setCurrentTimeBackoffMilliseconds(currentTimeBackOff);
-    deployAndStartSimpleServiceTask();
-    deployAndStartSimpleServiceTask();
-
-    // sleep in order to avoid the timestamp import backoff window that modifies the latestTimestamp stored
-    Thread.sleep(currentTimeBackOff);
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-    List<Long> firstRoundIndexes = embeddedOptimizeRule.getImportIndexes();
-
-    // then
-    embeddedOptimizeRule.resetImportStartIndexes();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-    List<Long> secondsRoundIndexes = embeddedOptimizeRule.getImportIndexes();
-
-    // then
-    for (int i = 0; i < firstRoundIndexes.size(); i++) {
-      assertThat(firstRoundIndexes.get(i), is(secondsRoundIndexes.get(i)));
-    }
-  }
-
-  @Test
-  public void latestImportIndexAfterRestartOfOptimize() throws Exception {
-    // given
-    deployAndStartUserTaskProcess();
-    // we need finished ones
-    engineRule.finishAllUserTasks();
-    // as well as running
-    deployAndStartUserTaskProcess();
-    deployAndStartSimpleServiceTask();
-    engineRule.deployAndStartDecisionDefinition();
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    embeddedOptimizeRule.stopOptimize();
-    embeddedOptimizeRule.startOptimize();
-    List<Long> indexes = embeddedOptimizeRule.getImportIndexes();
-
-    // then
-    for (Long index : indexes) {
-      assertThat(index, greaterThan(0L));
-    }
-  }
-
-  @Test
-  public void indexAfterRestartOfOptimizeHasCorrectProcessDefinitionsToImport() throws Exception {
-    // given
-    deployAndStartSimpleServiceTask();
-    deployAndStartSimpleServiceTask();
-    deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-    List<Long> firstRoundIndexes = embeddedOptimizeRule.getImportIndexes();
-
-    // when
-    embeddedOptimizeRule.stopOptimize();
-    embeddedOptimizeRule.startOptimize();
-    List<Long> secondsRoundIndexes = embeddedOptimizeRule.getImportIndexes();
-
-    // then
-    for (int i = 0; i < firstRoundIndexes.size(); i++) {
-      assertThat(firstRoundIndexes.get(i), is(secondsRoundIndexes.get(i)));
-    }
-  }
-
-  @Test
-  public void afterRestartOfOptimizeAlsoNewDataIsImported() throws Exception {
-    // given
-    deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-    List<Long> firstRoundIndexes = embeddedOptimizeRule.getImportIndexes();
-
-    // and
-    deployAndStartSimpleServiceTask();
-
-    // when
-    embeddedOptimizeRule.stopOptimize();
-    embeddedOptimizeRule.startOptimize();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-    List<Long> secondsRoundIndexes = embeddedOptimizeRule.getImportIndexes();
-
-    // then
-    for (int i = 0; i < firstRoundIndexes.size(); i++) {
-      assertThat(firstRoundIndexes.get(i), lessThanOrEqualTo(secondsRoundIndexes.get(i)));
-    }
-  }
-
-  @Test
   public void afterRestartOfOptimizeOnlyNewActivitiesAreImported() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
@@ -608,26 +481,6 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertThat(getImportedActivityCount(), is(3L));
-  }
-
-  @Test
-  public void itIsPossibleToResetTheImportIndex() throws Exception {
-    // given
-    deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeRule.resetImportStartIndexes();
-    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    embeddedOptimizeRule.stopOptimize();
-    embeddedOptimizeRule.startOptimize();
-    List<Long> indexes = embeddedOptimizeRule.getImportIndexes();
-
-    // then
-    for (Long index : indexes) {
-      assertThat(index, is(0L));
-    }
   }
 
   @Test
@@ -646,6 +499,11 @@ public class ProcessImportIT extends AbstractImportIT {
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(PROC_INSTANCE_TYPE, 2L, PROCESS_INSTANCE_NULLABLE_FIELDS);
     embeddedOptimizeRule.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(originalMaxPageSize);
+  }
+
+  private void createStartAndCancelUserTaskProcess() {
+    ProcessInstanceEngineDto processInstance = deployAndStartUserTaskProcess();
+    engineRule.externallyTerminateProcessInstance(processInstance.getId());
   }
 
   private Long getImportedActivityCount() throws IOException {
@@ -695,27 +553,6 @@ public class ProcessImportIT extends AbstractImportIT {
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskWithTenant(String tenantId) {
     final ProcessDefinitionEngineDto processDefinitionEngineDto = deployProcessDefinitionWithTenant(tenantId);
     return engineRule.startProcessInstance(processDefinitionEngineDto.getId());
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTask() {
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("aVariable", "aStringVariables");
-    return deployAndStartSimpleServiceTaskWithVariables(variables);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
-    BpmnModelInstance processModel = createSimpleProcessDefinition();
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
-  }
-
-  private BpmnModelInstance createSimpleProcessDefinition() {
-    return Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
   }
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstances() {

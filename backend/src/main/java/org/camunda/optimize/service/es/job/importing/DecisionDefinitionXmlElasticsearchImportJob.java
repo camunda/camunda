@@ -16,7 +16,7 @@ public class DecisionDefinitionXmlElasticsearchImportJob extends ElasticsearchIm
   private DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
 
   public DecisionDefinitionXmlElasticsearchImportJob(final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter) {
-    super(() -> {});
+    super();
     this.decisionDefinitionXmlWriter = decisionDefinitionXmlWriter;
   }
 

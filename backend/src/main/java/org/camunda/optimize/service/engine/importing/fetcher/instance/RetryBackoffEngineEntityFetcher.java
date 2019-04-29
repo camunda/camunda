@@ -15,8 +15,7 @@ import javax.ws.rs.ClientErrorException;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto>
-    extends EngineEntityFetcher {
+public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto> extends EngineEntityFetcher {
 
   @Autowired
   private BackoffCalculator backoffCalculator;
@@ -81,8 +80,8 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto>
 
   private void logDebugSleepInformation(long sleepTime) {
     logger.debug(
-            "Sleeping for [{}] ms and retrying the fetching of the entities afterwards.",
-            sleepTime
+      "Sleeping for [{}] ms and retrying the fetching of the entities afterwards.",
+      sleepTime
     );
   }
 

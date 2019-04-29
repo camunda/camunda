@@ -32,10 +32,14 @@ engines:
   'camunda-bpm':
     # The process engines name on the platform, this is the unique engine identifier on the platforms REST API.
     name: default
-    # A default tenantId to the be injected on data from this engine where no tenant is configured in the engine itself.
+    # A default tenant to the be injected on data from this engine where no tenant is configured in the engine itself.
     # This property is only relevant in the context of a `One Process Engine Per Tenant`.
     # For details consult the Multi-Tenancy documentation.
-    defaultTenantId: null
+    defaultTenant:
+      # the id used for this default tenant on persisted entities
+      id: null
+      # the name used for this tenant when displayed in the UI
+      name: null
     # A base URL that will be used for connections to the Camunda Engine REST API.
     rest: 'http://localhost:8080/engine-rest'
     # Determines whether this instance of Optimize should import definition & historical data from this engine.
@@ -46,7 +50,7 @@ engines:
       # of the user and password.
       # Also note, when enabled, it is required that the user has
       # * READ & READ_HISTORY permission on the Process and Decision Definition resources
-      # * READ permission on the Authorization, Group and User resources
+      # * READ permission on the Authorization, Group, User & Tenant resources
       # to enable users to log in and Optimize to import the engine data.
       enabled: false
       #When basic authentication is enabled, this password is used to

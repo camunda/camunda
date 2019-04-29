@@ -100,7 +100,7 @@ public class DecisionImportIT extends AbstractImportIT {
   public void decisionDefinitionDefaultEngineTenantIdIsApplied() throws IOException {
     //given
     final String tenantId = "reallyAwesomeTenantId";
-    getDefaultEngineConfiguration().setDefaultTenantId(tenantId);
+    embeddedOptimizeRule.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
     engineRule.deployDecisionDefinition();
 
     //when
@@ -119,7 +119,7 @@ public class DecisionImportIT extends AbstractImportIT {
     //given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
-    getDefaultEngineConfiguration().setDefaultTenantId(defaultTenantId);
+    embeddedOptimizeRule.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
     engineRule.deployDecisionDefinitionWithTenant(expectedTenantId);
 
     //when
@@ -172,7 +172,7 @@ public class DecisionImportIT extends AbstractImportIT {
   public void decisionInstanceDefaultEngineTenantIdIsApplied() throws IOException {
     //given
     final String tenantId = "reallyAwesomeTenantId";
-    getDefaultEngineConfiguration().setDefaultTenantId(tenantId);
+    embeddedOptimizeRule.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
     engineRule.deployAndStartDecisionDefinition();
 
     //when
@@ -191,7 +191,7 @@ public class DecisionImportIT extends AbstractImportIT {
     //given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
-    getDefaultEngineConfiguration().setDefaultTenantId(defaultTenantId);
+    embeddedOptimizeRule.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
     final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinitionWithTenant(expectedTenantId);
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
 

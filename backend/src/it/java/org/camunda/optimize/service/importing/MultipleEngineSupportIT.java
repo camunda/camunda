@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -20,6 +21,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -29,11 +31,13 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
@@ -44,8 +48,11 @@ import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedIm
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_OF_LAST_ENTITY;
 import static org.camunda.optimize.service.security.EngineAuthenticationProvider.CONNECTION_WAS_REFUSED_ERROR;
 import static org.camunda.optimize.service.security.EngineAuthenticationProvider.INVALID_CREDENTIALS_ERROR_MESSAGE;
+import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -205,6 +212,36 @@ public class MultipleEngineSupportIT {
     allowedProcessDefinitionKeys.add("TestProcess2");
 
     assertImportResults(searchResponse, allowedProcessDefinitionKeys);
+  }
+
+  @Test
+  public void allTenantsAreImported() {
+    // given
+    final String firstTenantId = "tenantId1";
+    final String tenantName = "My New Tenant";
+    final String secondTenantId = "tenantId2";
+    addSecondEngineToConfiguration();
+    defaultEngineRule.createTenant(firstTenantId, tenantName);
+    secondEngineRule.createTenant(firstTenantId, tenantName);
+    secondEngineRule.createTenant(secondTenantId, tenantName);
+
+    // when
+    embeddedOptimizeRule.updateImportIndex();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // then
+    final SearchResponse idsResp = elasticSearchRule.getSearchResponseForAllDocumentsOfType(TENANT_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), CoreMatchers.is(2L));
+    final Map<Object, List<Map<String, Object>>> tenantsByEngine = Arrays.stream(idsResp.getHits().getHits())
+      .map(SearchHit::getSourceAsMap)
+      .collect(Collectors.groupingBy(o -> o.get(TenantDto.Fields.engine.name())));
+    assertThat(tenantsByEngine.keySet(), containsInAnyOrder(DEFAULT_ENGINE_ALIAS, SECOND_ENGINE_ALIAS));
+    assertThat(tenantsByEngine.get(DEFAULT_ENGINE_ALIAS).size(), is(1));
+    assertThat(tenantsByEngine.get(DEFAULT_ENGINE_ALIAS).get(0).get(TenantDto.Fields.id.name()), is(firstTenantId));
+    assertThat(tenantsByEngine.get(SECOND_ENGINE_ALIAS).size(), is(1));
+    assertThat(tenantsByEngine.get(SECOND_ENGINE_ALIAS).get(0).get(TenantDto.Fields.id.name()), is(secondTenantId));
   }
 
   @Test

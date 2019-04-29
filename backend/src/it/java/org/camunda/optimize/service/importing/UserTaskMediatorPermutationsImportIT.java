@@ -25,11 +25,8 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,9 +41,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -111,7 +106,7 @@ public class UserTaskMediatorPermutationsImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    final SearchResponse idsResp = elasticSearchRule.getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
@@ -183,19 +178,5 @@ public class UserTaskMediatorPermutationsImportIT {
       .done();
     return engineRule.deployAndStartProcess(processModel);
   }
-
-  private SearchResponse getSearchResponseForAllDocumentsOfType(final String elasticsearchType) throws IOException {
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(matchAllQuery())
-      .size(100);
-
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(elasticsearchType))
-      .types(elasticsearchType)
-      .source(searchSourceBuilder);
-
-    return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
-  }
-
 
 }

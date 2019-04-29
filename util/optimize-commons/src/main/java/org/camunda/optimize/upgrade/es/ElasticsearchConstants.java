@@ -34,6 +34,7 @@ public class ElasticsearchConstants {
   public static final String TIMESTAMP_BASED_IMPORT_INDEX_TYPE = "timestamp-based-import-index";
   public static final String METADATA_TYPE = "metadata";
   public static final String TERMINATED_USER_SESSION_TYPE = "terminated-user-session";
+  public static final String TENANT_TYPE = "tenant";
 
   public static final String METADATA_TYPE_SCHEMA_VERSION = "schemaVersion";
 }

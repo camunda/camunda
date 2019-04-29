@@ -16,7 +16,7 @@ public class DecisionDefinitionElasticsearchImportJob extends ElasticsearchImpor
   private DecisionDefinitionWriter decisionDefinitionWriter;
 
   public DecisionDefinitionElasticsearchImportJob(DecisionDefinitionWriter decisionDefinitionWriter) {
-    super(() -> {});
+    super();
     this.decisionDefinitionWriter = decisionDefinitionWriter;
   }
 

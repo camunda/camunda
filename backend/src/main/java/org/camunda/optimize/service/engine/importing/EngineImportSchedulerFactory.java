@@ -20,6 +20,7 @@ import org.camunda.optimize.service.engine.importing.service.mediator.ProcessDef
 import org.camunda.optimize.service.engine.importing.service.mediator.RunningActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.RunningProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
+import org.camunda.optimize.service.engine.importing.service.mediator.TenantImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.UserOperationLogEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.VariableUpdateEngineImportMediator;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -85,6 +86,11 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
   private List<EngineImportMediator> createMediatorList(EngineContext engineContext) {
     List<EngineImportMediator> mediators = new ArrayList<>();
     importIndexHandlerProvider.init(engineContext);
+
+    // tenant import first
+    mediators.add(
+      beanFactory.getBean(TenantImportMediator.class, engineContext)
+    );
 
     // definition imports come first in line,
     mediators.add(

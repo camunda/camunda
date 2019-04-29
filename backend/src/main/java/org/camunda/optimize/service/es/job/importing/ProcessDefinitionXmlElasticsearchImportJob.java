@@ -16,7 +16,7 @@ public class ProcessDefinitionXmlElasticsearchImportJob extends ElasticsearchImp
   private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
   public ProcessDefinitionXmlElasticsearchImportJob(ProcessDefinitionXmlWriter processDefinitionXmlWriter) {
-    super(() -> {});
+    super();
     this.processDefinitionXmlWriter = processDefinitionXmlWriter;
   }
 

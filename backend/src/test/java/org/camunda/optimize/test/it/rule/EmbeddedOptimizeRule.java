@@ -9,8 +9,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
 import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
@@ -29,6 +31,7 @@ import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.util.SynchronizationElasticsearchImportJob;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.rules.TestWatcher;
@@ -56,6 +59,8 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
  * Helper rule to start embedded jetty with Camunda Optimize on bord.
  */
 public class EmbeddedOptimizeRule extends TestWatcher {
+
+  public static final String DEFAULT_ENGINE_ALIAS = "1";
 
   private String context = null;
   private Logger logger = LoggerFactory.getLogger(EmbeddedOptimizeRule.class);
@@ -161,6 +166,12 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   private List<EngineContext> getConfiguredEngines() {
     return getApplicationContext().getBean(EngineContextFactory.class).getConfiguredEngines();
+  }
+
+  public EngineConfiguration getDefaultEngineConfiguration() {
+    return getConfigurationService()
+      .getEngineConfiguration(DEFAULT_ENGINE_ALIAS)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Missing default engine configuration"));
   }
 
   public void makeSureAllScheduledJobsAreFinished() {
@@ -371,7 +382,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     }
   }
 
-  private ImportIndexHandlerProvider getIndexProvider() {
+  public ImportIndexHandlerProvider getIndexProvider() {
     return getApplicationContext().getBean(ImportIndexHandlerProvider.class);
   }
 
@@ -383,6 +394,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getApplicationContext().getBean(DefinitionAuthorizationService.class);
   }
 
+  public TenantService getTenantService() {
+    return getApplicationContext().getBean(TenantService.class);
+  }
 
   public ElasticSearchSchemaManager getElasticSearchSchemaManager() {
     return getApplicationContext().getBean(ElasticSearchSchemaManager.class);

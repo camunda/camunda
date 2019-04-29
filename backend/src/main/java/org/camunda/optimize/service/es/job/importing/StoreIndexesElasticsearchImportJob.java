@@ -18,8 +18,7 @@ public class StoreIndexesElasticsearchImportJob extends ElasticsearchImportJob<F
   private CombinedImportIndexesDto indexesToStore;
 
   public StoreIndexesElasticsearchImportJob(ImportIndexWriter importIndexWriter, CombinedImportIndexesDto indexesToStore) {
-
-    super(() -> {});
+    super();
     this.importIndexWriter = importIndexWriter;
     this.indexesToStore = indexesToStore;
   }

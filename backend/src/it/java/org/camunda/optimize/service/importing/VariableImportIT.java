@@ -50,13 +50,7 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void variableImportWorks() {
     //given
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-        .startEvent()
-        .serviceTask()
-          .camundaExpression("${true}")
-        .endEvent()
-      .done();
+    BpmnModelInstance processModel = createSimpleProcessDefinition();
 
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto =
@@ -314,17 +308,6 @@ public class VariableImportIT extends AbstractImportIT {
 
     //then
     assertThat(variableValues.size(), is(0));
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-        .startEvent()
-        .serviceTask()
-          .camundaExpression("${true}")
-        .endEvent()
-      .done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstances() throws IOException {

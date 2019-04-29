@@ -1,0 +1,65 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package org.camunda.optimize.service.es.reader;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.persistence.TenantDto;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
+
+@AllArgsConstructor
+@Component
+@Slf4j
+public class TenantReader {
+
+  private final RestHighLevelClient esClient;
+  private final ConfigurationService configurationService;
+  private final ObjectMapper objectMapper;
+
+  public Set<TenantDto> getTenants() {
+    log.debug("Fetching all available tenants");
+
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(QueryBuilders.matchAllQuery())
+      .size(LIST_FETCH_LIMIT);
+    final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(TENANT_TYPE))
+      .source(searchSourceBuilder)
+      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+
+    SearchResponse scrollResp;
+    try {
+      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Was not able to retrieve tenants!", e);
+    }
+
+    return new HashSet<>(ElasticsearchHelper.retrieveAllScrollResults(
+      scrollResp,
+      TenantDto.class,
+      objectMapper,
+      esClient,
+      configurationService.getElasticsearchScrollTimeout()
+    ));
+  }
+}

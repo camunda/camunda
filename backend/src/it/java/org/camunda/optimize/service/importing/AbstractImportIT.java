@@ -5,8 +5,9 @@
  */
 package org.camunda.optimize.service.importing;
 
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.util.configuration.EngineConfiguration;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -21,6 +22,7 @@ import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -98,9 +100,39 @@ public abstract class AbstractImportIT {
     return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
-  protected EngineConfiguration getDefaultEngineConfiguration() {
-    return embeddedOptimizeRule.getConfigurationService()
-      .getEngineConfiguration("1")
-      .orElseThrow(() -> new OptimizeIntegrationTestException("Missing default engine configuration"));
+  protected ProcessInstanceEngineDto deployAndStartSimpleServiceTask() {
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("aVariable", "aStringVariables");
+    return deployAndStartSimpleServiceTaskWithVariables(variables);
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
+    BpmnModelInstance processModel = createSimpleProcessDefinition();
+    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
+  }
+
+  protected BpmnModelInstance createSimpleProcessDefinition() {
+    // @formatter:off
+    return Bpmn.createExecutableProcess("aProcess")
+      .name("aProcessName")
+      .startEvent()
+      .serviceTask()
+        .camundaExpression("${true}")
+      .endEvent()
+      .done();
+    // @formatter:on
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartUserTaskProcess() {
+    // @formatter:off
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .startEvent()
+      .userTask()
+      .endEvent()
+      .done();
+    // @formatter:on
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("aVariable", "aStringVariable");
+    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 }

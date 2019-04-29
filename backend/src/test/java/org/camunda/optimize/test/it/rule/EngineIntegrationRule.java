@@ -39,6 +39,7 @@ import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
+import org.camunda.optimize.dto.engine.TenantEngineDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.GroupDto;
@@ -513,7 +514,6 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
 
-
   public ProcessInstanceEngineDto deployAndStartProcess(BpmnModelInstance bpmnModelInstance) {
     return deployAndStartProcessWithVariables(bpmnModelInstance, new HashMap<>());
   }
@@ -871,6 +871,46 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
+  public void createTenant(final String id, final String name) {
+    final TenantEngineDto tenantDto = new TenantEngineDto();
+    tenantDto.setId(id);
+    tenantDto.setName(name);
+
+    try {
+      CloseableHttpClient client = getHttpClient();
+      HttpPost httpPost = new HttpPost(getEngineUrl() + "/tenant/create");
+      httpPost.addHeader("Content-Type", "application/json");
+      httpPost.setEntity(new StringEntity(objectMapper.writeValueAsString(tenantDto), ContentType.APPLICATION_JSON));
+      try (CloseableHttpResponse response = client.execute(httpPost)) {
+        if (response.getStatusLine().getStatusCode() != 204) {
+          throw new OptimizeIntegrationTestException("Wrong status code when trying to create tenant!");
+        }
+      }
+    } catch (Exception e) {
+      throw new OptimizeIntegrationTestException("error creating tenant", e);
+    }
+  }
+
+  public void updateTenant(final String id, final String name) {
+    final TenantEngineDto tenantDto = new TenantEngineDto();
+    tenantDto.setId(id);
+    tenantDto.setName(name);
+
+    try {
+      CloseableHttpClient client = getHttpClient();
+      HttpPut httpPut = new HttpPut(getEngineUrl() + "/tenant/" + id);
+      httpPut.addHeader("Content-Type", "application/json");
+      httpPut.setEntity(new StringEntity(objectMapper.writeValueAsString(tenantDto), ContentType.APPLICATION_JSON));
+      try (CloseableHttpResponse response = client.execute(httpPut)) {
+        if (response.getStatusLine().getStatusCode() != 204) {
+          throw new OptimizeIntegrationTestException("Wrong status code when trying to update tenant!");
+        }
+      }
+    } catch (Exception e) {
+      throw new OptimizeIntegrationTestException("error updating tenant", e);
+    }
+  }
+
   public void addUser(String username, String password) {
     UserDto userDto = constructDemoUserDto(username, password);
     try {
@@ -1038,7 +1078,8 @@ public class EngineIntegrationRule extends TestWatcher {
     return getDecisionDefinitionByDeployment(deploymentDto);
   }
 
-  private DeploymentDto deployDecisionDefinition(DmnModelInstance dmnModelInstance, CloseableHttpClient client, String tenantId) {
+  private DeploymentDto deployDecisionDefinition(DmnModelInstance dmnModelInstance, CloseableHttpClient client,
+                                                 String tenantId) {
     String decisionDefinition = Dmn.convertToString(dmnModelInstance);
     HttpPost deploymentRequest = createDeploymentRequest(decisionDefinition, "test.dmn", tenantId);
     DeploymentDto deployment = new DeploymentDto();

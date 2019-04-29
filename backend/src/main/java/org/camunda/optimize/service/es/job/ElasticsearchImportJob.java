@@ -25,6 +25,12 @@ public abstract class ElasticsearchImportJob<OPT extends OptimizeDto> implements
 
   protected List<OPT> newOptimizeEntities = Collections.emptyList();
 
+  protected ElasticsearchImportJob() {
+    // @formatter:off
+    this(() -> { });
+    // @formatter:on
+  }
+
   protected ElasticsearchImportJob(Runnable callback) {
     this.callback = callback;
   }

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
@@ -198,6 +199,20 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     request.settings(settings);
 
     esClient.indices().putSettings(request, RequestOptions.DEFAULT);
+  }
+
+  @SneakyThrows
+  public SearchResponse getSearchResponseForAllDocumentsOfType(final String elasticsearchType) {
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(matchAllQuery())
+      .size(100);
+
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(getOptimizeIndexAliasForType(elasticsearchType))
+      .types(elasticsearchType)
+      .source(searchSourceBuilder);
+
+    return esClient.search(searchRequest, RequestOptions.DEFAULT);
   }
 
   public Integer getDocumentCountOf(final String elasticsearchType) {

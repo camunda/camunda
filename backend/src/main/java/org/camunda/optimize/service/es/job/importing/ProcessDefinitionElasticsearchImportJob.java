@@ -16,7 +16,7 @@ public class ProcessDefinitionElasticsearchImportJob extends ElasticsearchImport
   private ProcessDefinitionWriter processDefinitionWriter;
 
   public ProcessDefinitionElasticsearchImportJob(ProcessDefinitionWriter processDefinitionWriter) {
-    super(() -> {});
+    super();
     this.processDefinitionWriter = processDefinitionWriter;
   }
 

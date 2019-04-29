@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.util.Optional;
@@ -13,15 +14,21 @@ import java.util.Optional;
 public class EngineConfiguration {
 
   private String name;
-  private String defaultTenantId;
+  private DefaultTenant defaultTenant = new DefaultTenant();
   private String rest;
   private EngineWebappsConfiguration webapps;
   private boolean importEnabled = true;
 
   private EngineAuthenticationConfiguration authentication;
 
+  @JsonIgnore
   public Optional<String> getDefaultTenantId() {
-    return Optional.ofNullable(defaultTenantId);
+    return Optional.ofNullable(defaultTenant).map(DefaultTenant::getId);
+  }
+
+  @JsonIgnore
+  public Optional<String> getDefaultTenantName() {
+    return Optional.ofNullable(defaultTenant).map(DefaultTenant::getName);
   }
 
   public void setRest(String rest) {
