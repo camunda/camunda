@@ -14,7 +14,6 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
@@ -321,19 +320,34 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
     assertThat(resultData.size(), is(5));
 
-    assertThat(resultData.get(0).getKey(), is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS)));
+    assertThat(
+      resultData.get(0).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
+    );
     assertThat(resultData.get(0).getValue(), is(new AggregationResultDto(1000L, 1000L, 1000L, 1000L)));
 
-    assertThat(resultData.get(1).getKey(), is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS)));
+    assertThat(
+      resultData.get(1).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
+    );
     assertThat(resultData.get(1).getValue(), is(new AggregationResultDto(0L, 0L, 0L, 0L)));
 
-    assertThat(resultData.get(2).getKey(), is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS)));
+    assertThat(
+      resultData.get(2).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
+    );
     assertThat(resultData.get(2).getValue(), is(new AggregationResultDto(2000L, 2000L, 2000L, 2000L)));
 
-    assertThat(resultData.get(3).getKey(), is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS)));
+    assertThat(
+      resultData.get(3).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
+    );
     assertThat(resultData.get(3).getValue(), is(new AggregationResultDto(0L, 0L, 0L, 0L)));
 
-    assertThat(resultData.get(4).getKey(), is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS)));
+    assertThat(
+      resultData.get(4).getKey(),
+      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
+    );
     assertThat(resultData.get(4).getValue(), is(new AggregationResultDto(0L, 0L, 0L, 0L)));
   }
 
@@ -1091,10 +1105,10 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     return id;
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest(id, updatedReport)
+      .buildUpdateSingleProcessReportRequest(id, updatedReport)
       .execute();
 
     assertThat(response.getStatus(), is(204));

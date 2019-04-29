@@ -9,7 +9,6 @@ import org.apache.commons.io.IOUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -125,10 +124,10 @@ public class ProcessExportServiceIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule)
-      .around(engineRule)
-      .around(embeddedOptimizeRule)
-      .around(engineDatabaseRule);
+    .outerRule(elasticSearchRule)
+    .around(engineRule)
+    .around(embeddedOptimizeRule)
+    .around(engineDatabaseRule);
 
   public ProcessExportServiceIT(ProcessReportDataDto currentReport, String expectedCSV, String testName) {
     this.currentReport = currentReport;
@@ -149,9 +148,9 @@ public class ProcessExportServiceIT {
 
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCsvExportRequest(reportId, "my_file.csv")
-            .execute();
+      .getRequestExecutor()
+      .buildCsvExportRequest(reportId, "my_file.csv")
+      .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -173,9 +172,9 @@ public class ProcessExportServiceIT {
     Path path = Paths.get(this.getClass().getResource(expectedCSV).getPath());
     byte[] expectedContent = Files.readAllBytes(path);
     String stringExpected = new String(expectedContent);
-    stringExpected  = stringExpected.
+    stringExpected = stringExpected.
       replace("${PI_ID}", processInstance.getId());
-    stringExpected  = stringExpected.
+    stringExpected = stringExpected.
       replace("${PD_ID}", processInstance.getDefinitionId());
     return stringExpected;
   }
@@ -195,21 +194,21 @@ public class ProcessExportServiceIT {
     return id;
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildUpdateReportRequest(id, updatedReport)
-            .execute();
+      .getRequestExecutor()
+      .buildUpdateSingleProcessReportRequest(id, updatedReport)
+      .execute();
 
     assertThat(response.getStatus(), is(204));
   }
 
   private String createNewReportHelper() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateSingleProcessReportRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcess() throws Exception {
@@ -227,10 +226,10 @@ public class ProcessExportServiceIT {
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-        .name("aProcessName")
-        .startEvent(START)
-        .endEvent(END)
-        .done();
+      .name("aProcessName")
+      .startEvent(START)
+      .endEvent(END)
+      .done();
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 }

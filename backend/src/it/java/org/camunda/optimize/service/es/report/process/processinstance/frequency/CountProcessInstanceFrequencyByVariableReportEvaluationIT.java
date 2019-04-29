@@ -10,7 +10,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -36,7 +35,6 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -77,10 +75,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
-        processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion(),
       "foo",
-        VariableType.STRING
+      VariableType.STRING
     );
     ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
@@ -112,10 +110,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
     String reportId = createAndStoreDefaultReportDefinition(
-        processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
       "foo",
-        VariableType.STRING
+      VariableType.STRING
     );
 
     // when
@@ -153,10 +151,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
-        processInstanceDto.getProcessDefinitionKey(),
-        ALL_VERSIONS,
+      processInstanceDto.getProcessDefinitionKey(),
+      ALL_VERSIONS,
       "foo",
-        VariableType.STRING
+      VariableType.STRING
     );
     ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
@@ -185,10 +183,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
-        processInstanceDto.getProcessDefinitionKey(),
-        processInstanceDto.getProcessDefinitionVersion(),
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
       "foo",
-        VariableType.STRING
+      VariableType.STRING
     );
     ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
@@ -217,10 +215,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
-        processInstanceDto.getProcessDefinitionKey(),
-        processInstanceDto.getProcessDefinitionVersion(),
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
       "foo",
-        VariableType.STRING
+      VariableType.STRING
     );
     ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
@@ -361,10 +359,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
-        processInstanceDto.getProcessDefinitionKey(),
-        processInstanceDto.getProcessDefinitionVersion(),
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
       "foo",
-        VariableType.STRING
+      VariableType.STRING
     );
     ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
@@ -392,10 +390,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
-        processInstanceDto.getProcessDefinitionKey(),
-        processInstanceDto.getProcessDefinitionVersion(),
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
       "foo1",
-        VariableType.STRING
+      VariableType.STRING
     );
     ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateReport(reportData);
 
@@ -443,7 +441,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
       assertThat(resultData.size(), is(1));
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
-        String dateAsString = embeddedOptimizeRule.getDateTimeFormatter().format(temporal.atZoneSimilarLocal(ZoneId.systemDefault()));
+        String dateAsString = embeddedOptimizeRule.getDateTimeFormatter()
+          .format(temporal.atZoneSimilarLocal(ZoneId.systemDefault()));
         assertThat(resultData.get(0).getKey(), is(dateAsString));
         assertThat(resultData.get(0).getValue(), is(1L));
       } else {
@@ -477,10 +476,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
-        processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion(),
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion(),
       "foo",
-        VariableType.STRING
+      VariableType.STRING
     );
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedStartDate()
@@ -508,10 +507,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
   public void optimizeExceptionOnViewEntityIsNull() {
     // given
     ProcessReportDataDto dataDto = createCountProcessInstanceFrequencyGroupByVariable(
-        "123",
-        "1",
+      "123",
+      "1",
       "foo",
-        VariableType.STRING
+      VariableType.STRING
     );
     dataDto.getView().setEntity(null);
 
@@ -526,10 +525,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     ProcessReportDataDto dataDto = createCountProcessInstanceFrequencyGroupByVariable(
-        "123",
-        "1",
+      "123",
+      "1",
       "foo",
-        VariableType.STRING
+      VariableType.STRING
     );
     dataDto.getView().setProperty(null);
 
@@ -544,10 +543,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
     ProcessReportDataDto dataDto = createCountProcessInstanceFrequencyGroupByVariable(
-        "123",
-        "1",
+      "123",
+      "1",
       "foo",
-        VariableType.STRING
+      VariableType.STRING
     );
     dataDto.getGroupBy().setType(null);
 
@@ -562,10 +561,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
   public void optimizeExceptionOnGroupByValueNameIsNull() {
     // given
     ProcessReportDataDto dataDto = createCountProcessInstanceFrequencyGroupByVariable(
-        "123",
-        "1",
+      "123",
+      "1",
       "foo",
-        VariableType.STRING
+      VariableType.STRING
     );
     VariableGroupByDto groupByDto = (VariableGroupByDto) dataDto.getGroupBy();
     groupByDto.getValue().setName(null);
@@ -581,10 +580,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
   public void optimizeExceptionOnGroupByValueTypeIsNull() {
     // given
     ProcessReportDataDto dataDto = createCountProcessInstanceFrequencyGroupByVariable(
-        "123",
-        "1",
+      "123",
+      "1",
       "foo",
-        VariableType.STRING
+      VariableType.STRING
     );
     VariableGroupByDto groupByDto = (VariableGroupByDto) dataDto.getGroupBy();
     groupByDto.getValue().setType(null);
@@ -603,7 +602,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
   private List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(int number, Map<String, Object> variables) {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
     return IntStream.range(0, number)
-      .mapToObj( i -> {
+      .mapToObj(i -> {
         ProcessInstanceEngineDto processInstanceEngineDto =
           engineRule.startProcessInstance(processDefinition.getId(), variables);
         processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
@@ -624,7 +623,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     return engineRule.deployProcessAndGetProcessDefinition(processModel);
   }
 
-  private ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>  evaluateReportById(String reportId) {
+  private ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluateReportById(String reportId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId)
@@ -644,9 +643,9 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
   private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateSingleUnsavedReportRequest(reportData)
-            .execute();
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      .execute();
   }
 
 
@@ -670,10 +669,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     return id;
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest(id, updatedReport)
+      .buildUpdateSingleProcessReportRequest(id, updatedReport)
       .execute();
 
     assertThat(response.getStatus(), is(204));

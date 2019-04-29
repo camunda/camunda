@@ -16,7 +16,6 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -173,7 +172,7 @@ public abstract class AbstractAlertIT {
     report.setOwner("something");
 
     String id = createNewDecisionReport();
-    updateReport(id, report);
+    updateSingleDecisionReport(id, report);
     return id;
   }
 
@@ -231,11 +230,11 @@ public abstract class AbstractAlertIT {
 
   protected String createAndStoreNumberReport(ProcessDefinitionEngineDto processDefinition) {
     String id = createNewProcessReport();
-    ReportDefinitionDto report = getReportDefinitionDto(
+    SingleProcessReportDefinitionDto report = getReportDefinitionDto(
       processDefinition.getKey(),
       String.valueOf(processDefinition.getVersion())
     );
-    updateReport(id, report);
+    updateSingleProcessReport(id, report);
     return id;
   }
 
@@ -261,10 +260,18 @@ public abstract class AbstractAlertIT {
     return report;
   }
 
-  protected void updateReport(String id, ReportDefinitionDto updatedReport) {
+  protected void updateSingleDecisionReport(String id, SingleDecisionReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest(id, updatedReport, true)
+      .buildUpdateSingleDecisionReportRequest(id, updatedReport, true)
+      .execute();
+    assertThat(response.getStatus(), is(204));
+  }
+
+  protected void updateSingleProcessReport(String id, SingleProcessReportDefinitionDto updatedReport) {
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateSingleProcessReportRequest(id, updatedReport, true)
       .execute();
     assertThat(response.getStatus(), is(204));
   }
@@ -293,9 +300,9 @@ public abstract class AbstractAlertIT {
 
   private String createAndStoreDurationNumberReport(String processDefinitionKey, String processDefinitionVersion) {
     String id = createNewProcessReport();
-    ReportDefinitionDto report =
+    SingleProcessReportDefinitionDto report =
       getDurationReportDefinitionDto(processDefinitionKey, processDefinitionVersion);
-    updateReport(id, report);
+    updateSingleProcessReport(id, report);
     return id;
   }
 

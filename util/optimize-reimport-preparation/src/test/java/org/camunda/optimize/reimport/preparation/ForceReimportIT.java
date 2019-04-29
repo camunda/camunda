@@ -72,11 +72,11 @@ public class ForceReimportIT {
     String reportId = createAndStoreNumberReport(processDefinitionEngineDto);
     AlertCreationDto alert = setupBasicAlert(reportId);
     embeddedOptimizeRule
-            .getRequestExecutor().buildCreateAlertRequest(alert).execute();
+      .getRequestExecutor().buildCreateAlertRequest(alert).execute();
     embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateDashboardRequest()
-            .execute(IdDto.class, 200);
+      .getRequestExecutor()
+      .buildCreateDashboardRequest()
+      .execute(IdDto.class, 200);
     addLicense();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -150,9 +150,9 @@ public class ForceReimportIT {
 
   private List<AlertDefinitionDto> getAllAlerts() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetAllAlertsRequest()
-            .executeAndReturnList(AlertDefinitionDto.class, 200);
+      .getRequestExecutor()
+      .buildGetAllAlertsRequest()
+      .executeAndReturnList(AlertDefinitionDto.class, 200);
   }
 
   private String readFileToString() throws IOException, URISyntaxException {
@@ -166,8 +166,8 @@ public class ForceReimportIT {
     String license = readFileToString();
 
     embeddedOptimizeRule.getRequestExecutor()
-            .buildValidateAndStoreLicenseRequest(license)
-            .execute();
+      .buildValidateAndStoreLicenseRequest(license)
+      .execute();
   }
 
   private AlertCreationDto setupBasicAlert(String reportId) {
@@ -179,15 +179,15 @@ public class ForceReimportIT {
 
   private String createNewReportHelper() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateSingleProcessReportRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private String createAndStoreNumberReport(ProcessDefinitionEngineDto processDefinition) {
     String id = createNewReportHelper();
-    ReportDefinitionDto report = getReportDefinitionDto(
+    SingleProcessReportDefinitionDto report = getReportDefinitionDto(
       processDefinition.getKey(),
       String.valueOf(processDefinition.getVersion())
     );
@@ -195,11 +195,11 @@ public class ForceReimportIT {
     return id;
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildUpdateReportRequest(id, updatedReport)
-            .execute();
+      .getRequestExecutor()
+      .buildUpdateSingleProcessReportRequest(id, updatedReport)
+      .execute();
     assertThat(response.getStatus(), is(204));
   }
 
@@ -208,9 +208,12 @@ public class ForceReimportIT {
   }
 
   private SingleProcessReportDefinitionDto getReportDefinitionDto(String processDefinitionKey,
-                                                           String processDefinitionVersion) {
+                                                                  String processDefinitionVersion) {
     ProcessReportDataDto reportData =
-      ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNoneAsNumber(processDefinitionKey, processDefinitionVersion);
+      ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNoneAsNumber(
+        processDefinitionKey,
+        processDefinitionVersion
+      );
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");
@@ -245,10 +248,10 @@ public class ForceReimportIT {
 
   private List<DashboardDefinitionDto> getAllDashboardsWithQueryParam(Map<String, Object> queryParams) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .addQueryParams(queryParams)
-            .buildGetAllDashboardsRequest()
-            .executeAndReturnList(DashboardDefinitionDto.class, 200);
+      .getRequestExecutor()
+      .addQueryParams(queryParams)
+      .buildGetAllDashboardsRequest()
+      .executeAndReturnList(DashboardDefinitionDto.class, 200);
   }
 
 
@@ -262,10 +265,10 @@ public class ForceReimportIT {
 
   private List<ReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetAllReportsRequest()
-            .addQueryParams(queryParams)
-            .executeAndReturnList(ReportDefinitionDto.class, 200);
+      .getRequestExecutor()
+      .buildGetAllReportsRequest()
+      .addQueryParams(queryParams)
+      .executeAndReturnList(ReportDefinitionDto.class, 200);
   }
 
   private ProcessDefinitionEngineDto deployAndStartSimpleServiceTask() {

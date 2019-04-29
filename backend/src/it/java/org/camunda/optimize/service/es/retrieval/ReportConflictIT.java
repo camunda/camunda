@@ -87,7 +87,11 @@ public class ReportConflictIT {
       firstSingleReport.getData().getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
     ));
-    ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(firstSingleReportId, reportUpdate, force);
+    ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(
+      firstSingleReportId,
+      reportUpdate,
+      force
+    );
 
     // then
     checkConflictedItems(conflictResponseDto, ConflictedItemType.COMBINED_REPORT, expectedConflictedItemIds);
@@ -136,8 +140,6 @@ public class ReportConflictIT {
     String[] expectedConflictedItemIds = new String[]{alertForReport};
 
     // when
-    final SingleDecisionReportDefinitionDto singleReport =
-      (SingleDecisionReportDefinitionDto) getReport(reportId);
     final SingleDecisionReportDefinitionDto reportUpdate = new SingleDecisionReportDefinitionDto();
     reportData = DecisionReportDataBuilder.create()
       .setReportDataType(DecisionReportDataType.RAW_DATA)
@@ -176,7 +178,7 @@ public class ReportConflictIT {
     String combinedReportId = createNewCombinedReport(firstSingleReportId, secondSingleReportId);
     String collectionId = createNewCollectionAndAddReport(combinedReportId);
     String[] expectedConflictedItemIds = {collectionId};
-    
+
     // when
     ConflictResponseDto conflictResponseDto = getReportDeleteConflicts(combinedReportId);
 
@@ -452,7 +454,7 @@ public class ReportConflictIT {
 
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
     report.setData(createCombinedReport(singleReportIds));
-    updateReport(reportId, report);
+    updateCombinedProcessReport(reportId, report);
     return reportId;
   }
 
@@ -498,7 +500,7 @@ public class ReportConflictIT {
     report.setCreated(someDate);
     report.setLastModified(someDate);
     report.setOwner(RANDOM_STRING);
-    updateReport(id, report);
+    updateSingleProcessReport(id, report);
     return id;
   }
 
@@ -513,7 +515,7 @@ public class ReportConflictIT {
     report.setCreated(someDate);
     report.setLastModified(someDate);
     report.setOwner(RANDOM_STRING);
-    updateReport(id, report);
+    updateSingleDecisionReport(id, report);
     return id;
   }
 
@@ -525,21 +527,48 @@ public class ReportConflictIT {
 
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+  private void updateSingleProcessReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest(id, updatedReport)
+      .buildUpdateSingleProcessReportRequest(id, updatedReport)
+      .execute();
+
+    assertThat(response.getStatus(), is(204));
+  }
+
+  private void updateSingleDecisionReport(String id, SingleDecisionReportDefinitionDto updatedReport) {
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateSingleDecisionReportRequest(id, updatedReport)
+      .execute();
+
+    assertThat(response.getStatus(), is(204));
+  }
+
+  private void updateCombinedProcessReport(String id, CombinedReportDefinitionDto updatedReport) {
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateCombinedProcessReportRequest(id, updatedReport)
       .execute();
 
     assertThat(response.getStatus(), is(204));
   }
 
   private ConflictResponseDto updateReportFailWithConflict(String id,
-                                                           ReportDefinitionDto updatedReport,
+                                                           SingleProcessReportDefinitionDto updatedReport,
                                                            Boolean force) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest(id, updatedReport, force)
+      .buildUpdateSingleProcessReportRequest(id, updatedReport, force)
+      .execute(ConflictResponseDto.class, 409);
+  }
+
+  private ConflictResponseDto updateReportFailWithConflict(String id,
+                                                           SingleDecisionReportDefinitionDto updatedReport,
+                                                           Boolean force) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateSingleDecisionReportRequest(id, updatedReport, force)
       .execute(ConflictResponseDto.class, 409);
   }
 

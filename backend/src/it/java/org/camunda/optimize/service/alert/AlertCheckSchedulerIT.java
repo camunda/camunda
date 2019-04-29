@@ -83,7 +83,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     SingleProcessReportDefinitionDto report = getReportDefinitionDto(processDefinition);
     report.getData().setGroupBy(new FlowNodesGroupByDto());
     report.getData().setVisualization(ProcessVisualization.HEAT);
-    updateReport(simpleAlert.getReportId(), report);
+    updateSingleProcessReport(simpleAlert.getReportId(), report);
 
     // then
     // scheduler does not contain any triggers
@@ -336,10 +336,11 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
     Instant nextFireTime = getNextFireTime(trigger).truncatedTo(ChronoUnit.MINUTES);
 
-    assertThat(nextFireTime,
-               is(now.truncatedTo(ChronoUnit.MINUTES)
-                    .plus(intervalValue, ChronoUnit.MINUTES)
-                    .truncatedTo(ChronoUnit.MINUTES))
+    assertThat(
+      nextFireTime,
+      is(now.truncatedTo(ChronoUnit.MINUTES)
+           .plus(intervalValue, ChronoUnit.MINUTES)
+           .truncatedTo(ChronoUnit.MINUTES))
     );
   }
 
@@ -396,7 +397,6 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
       is(Instant.now().plus(intervalValue * 7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS))
     );
   }
-
 
 
   private Instant getNextFireTime(Trigger cronTrigger) {

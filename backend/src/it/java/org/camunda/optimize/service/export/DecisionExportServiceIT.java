@@ -176,10 +176,10 @@ public class DecisionExportServiceIT {
     return id;
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+  private void updateReport(String id, SingleDecisionReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
             .getRequestExecutor()
-            .buildUpdateReportRequest(id, updatedReport)
+            .buildUpdateSingleDecisionReportRequest(id, updatedReport)
             .execute();
 
     assertThat(response.getStatus(), is(204));

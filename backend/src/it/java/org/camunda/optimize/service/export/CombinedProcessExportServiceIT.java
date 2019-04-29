@@ -93,9 +93,9 @@ public class CombinedProcessExportServiceIT {
   public void combinedDurationMapReportHasExpectedValue() throws Exception {
     //given
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
-    engineDatabaseRule.changeActivityDuration(processInstance1.getId(),0 );
+    engineDatabaseRule.changeActivityDuration(processInstance1.getId(), 0);
     ProcessInstanceEngineDto processInstance2 = deployAndStartSimpleProcessWith2FlowNodes();
-    engineDatabaseRule.changeActivityDuration(processInstance2.getId(),0 );
+    engineDatabaseRule.changeActivityDuration(processInstance2.getId(), 0);
     String singleReportId1 = createNewSingleDurationMapReport(processInstance1);
     String singleReportId2 = createNewSingleDurationMapReport(processInstance2);
     String combinedReportId = createNewCombinedReport(singleReportId1, singleReportId2);
@@ -263,21 +263,22 @@ public class CombinedProcessExportServiceIT {
     return new String(expectedContent);
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+  private void updateSingleProcessReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest(id, updatedReport)
+      .buildUpdateSingleProcessReportRequest(id, updatedReport)
       .execute();
 
     assertThat(response.getStatus(), is(204));
   }
 
-  private String createNewReportHelper() {
-    return embeddedOptimizeRule
+  private void updateCombinedProcessReport(String id, CombinedReportDefinitionDto updatedReport) {
+    Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, 200)
-      .getId();
+      .buildUpdateCombinedProcessReportRequest(id, updatedReport)
+      .execute();
+
+    assertThat(response.getStatus(), is(204));
   }
 
   private String createNewCombinedReport() {
@@ -307,7 +308,7 @@ public class CombinedProcessExportServiceIT {
     SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
     definitionDto.setName("FooName");
     definitionDto.setData(data);
-    updateReport(singleReportId, definitionDto);
+    updateSingleProcessReport(singleReportId, definitionDto);
     return singleReportId;
   }
 
@@ -318,7 +319,7 @@ public class CombinedProcessExportServiceIT {
     );
     SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
     definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
-    updateReport(singleReportId, definitionDto);
+    updateSingleProcessReport(singleReportId, definitionDto);
     return singleReportId;
   }
 
@@ -329,7 +330,7 @@ public class CombinedProcessExportServiceIT {
     );
     SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
     definitionDto.setData(processInstanceDurationGroupByNone);
-    updateReport(singleReportId, definitionDto);
+    updateSingleProcessReport(singleReportId, definitionDto);
     return singleReportId;
   }
 
@@ -343,7 +344,7 @@ public class CombinedProcessExportServiceIT {
 
   private String createNewCombinedReport(CombinedReportDefinitionDto report) {
     String reportId = createNewCombinedReport();
-    updateReport(reportId, report);
+    updateCombinedProcessReport(reportId, report);
     return reportId;
   }
 

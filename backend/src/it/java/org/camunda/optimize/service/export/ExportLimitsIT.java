@@ -10,7 +10,6 @@ import org.apache.commons.io.IOUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -46,9 +45,9 @@ public class ExportLimitsIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule)
-      .around(engineRule)
-      .around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule)
+    .around(engineRule)
+    .around(embeddedOptimizeRule);
 
 
   @Test
@@ -56,8 +55,8 @@ public class ExportLimitsIT {
     String token = embeddedOptimizeRule.getAuthenticationToken();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     String reportId = createAndStoreDefaultReportDefinition(
-        processInstance.getProcessDefinitionKey(),
-        ALL_VERSIONS
+      processInstance.getProcessDefinitionKey(),
+      ALL_VERSIONS
     );
     deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
@@ -70,9 +69,9 @@ public class ExportLimitsIT {
 
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCsvExportRequest(reportId, "my_file.csv")
-            .execute();
+      .getRequestExecutor()
+      .buildCsvExportRequest(reportId, "my_file.csv")
+      .execute();
 
 
     assertThat(response.getStatus(), is(200));
@@ -92,8 +91,8 @@ public class ExportLimitsIT {
     String token = embeddedOptimizeRule.getAuthenticationToken();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     String reportId = createAndStoreDefaultReportDefinition(
-        processInstance.getProcessDefinitionKey(),
-        ALL_VERSIONS
+      processInstance.getProcessDefinitionKey(),
+      ALL_VERSIONS
     );
     deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
@@ -106,9 +105,9 @@ public class ExportLimitsIT {
 
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCsvExportRequest(reportId, "my_file.csv")
-            .execute();
+      .getRequestExecutor()
+      .buildCsvExportRequest(reportId, "my_file.csv")
+      .execute();
 
 
     assertThat(response.getStatus(), is(200));
@@ -127,8 +126,8 @@ public class ExportLimitsIT {
     String token = embeddedOptimizeRule.getAuthenticationToken();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     String reportId = createAndStoreDefaultReportDefinition(
-        processInstance.getProcessDefinitionKey(),
-        ALL_VERSIONS
+      processInstance.getProcessDefinitionKey(),
+      ALL_VERSIONS
     );
     deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
@@ -141,9 +140,9 @@ public class ExportLimitsIT {
 
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCsvExportRequest(reportId, "my_file.csv")
-            .execute();
+      .getRequestExecutor()
+      .buildCsvExportRequest(reportId, "my_file.csv")
+      .execute();
 
     assertThat(response.getStatus(), is(200));
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -159,7 +158,10 @@ public class ExportLimitsIT {
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey,
                                                        String processDefinitionVersion) {
     String id = createNewReportHelper();
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
+      processDefinitionKey,
+      processDefinitionVersion
+    );
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");
@@ -173,12 +175,12 @@ public class ExportLimitsIT {
     return id;
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     Response response =
-        embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildUpdateReportRequest(id, updatedReport)
-            .execute();
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildUpdateSingleProcessReportRequest(id, updatedReport)
+        .execute();
 
     assertThat(response.getStatus(), is(204));
   }
@@ -186,10 +188,10 @@ public class ExportLimitsIT {
 
   protected String createNewReportHelper() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateSingleProcessReportRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcess() {
@@ -198,10 +200,10 @@ public class ExportLimitsIT {
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-        .name("aProcessName")
-        .startEvent()
-        .endEvent()
-        .done();
+      .name("aProcessName")
+      .startEvent()
+      .endEvent()
+      .done();
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 }

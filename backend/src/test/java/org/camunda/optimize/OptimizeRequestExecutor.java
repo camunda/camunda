@@ -237,36 +237,67 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildUpdateReportRequest(String id, ReportDefinitionDto entity) {
-    return buildUpdateReportRequest(id, entity, null);
+  public OptimizeRequestExecutor buildUpdateSingleProcessReportRequest(String id,
+                                                                       SingleProcessReportDefinitionDto entity) {
+    return buildUpdateSingleProcessReportRequest(id, entity, null);
   }
 
-  public OptimizeRequestExecutor buildUpdateReportRequest(String id, ReportDefinitionDto entity, Boolean force) {
-    this.path = "report" + "/" + id;
+  public OptimizeRequestExecutor buildUpdateSingleProcessReportRequest(String id,
+                                                                       SingleProcessReportDefinitionDto entity,
+                                                                       Boolean force) {
+    this.path = "report/process/single/" + id;
     this.body = getBody(entity);
     this.requestType = PUT;
     Optional.ofNullable(force).ifPresent(value -> addSingleQueryParam("force", value));
     return this;
   }
 
+  public OptimizeRequestExecutor buildUpdateSingleDecisionReportRequest(String id,
+                                                                        SingleDecisionReportDefinitionDto entity) {
+    return buildUpdateSingleDecisionReportRequest(id, entity, null);
+  }
+
+  public OptimizeRequestExecutor buildUpdateSingleDecisionReportRequest(String id,
+                                                                        SingleDecisionReportDefinitionDto entity,
+                                                                        Boolean force) {
+    this.path = "report/decision/single/" + id;
+    this.body = getBody(entity);
+    this.requestType = PUT;
+    Optional.ofNullable(force).ifPresent(value -> addSingleQueryParam("force", value));
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildUpdateCombinedProcessReportRequest(String id,
+                                                                         CombinedReportDefinitionDto entity) {
+    return buildUpdateCombinedProcessReportRequest(id, entity, null);
+  }
+
+  public OptimizeRequestExecutor buildUpdateCombinedProcessReportRequest(String id,
+                                                                         CombinedReportDefinitionDto entity,
+                                                                         Boolean force) {
+    this.path = "report/process/combined/" + id;
+    this.body = getBody(entity);
+    this.requestType = PUT;
+    Optional.ofNullable(force).ifPresent(value -> addSingleQueryParam("force", value));
+    return this;
+  }
+
+
   public OptimizeRequestExecutor buildCreateSingleProcessReportRequest() {
-    this.path = "report";
+    this.path = "report/process/single";
     this.requestType = POST;
-    this.body = getBody(new SingleProcessReportDefinitionDto());
     return this;
   }
 
   public OptimizeRequestExecutor buildCreateSingleDecisionReportRequest() {
-    this.path = "report";
+    this.path = "report/decision/single";
     this.requestType = POST;
-    this.body = getBody(new SingleDecisionReportDefinitionDto());
     return this;
   }
 
   public OptimizeRequestExecutor buildCreateCombinedReportRequest() {
-    this.path = "report";
+    this.path = "report/process/combined";
     this.requestType = POST;
-    this.body = getBody(new CombinedReportDefinitionDto());
     return this;
   }
 

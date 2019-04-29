@@ -106,7 +106,7 @@ public class ReportRestServiceIT {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .withoutAuthentication()
-      .buildUpdateReportRequest("1", null)
+      .buildUpdateSingleProcessReportRequest("1", null)
       .execute();
 
     // then
@@ -118,7 +118,7 @@ public class ReportRestServiceIT {
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest("nonExistingId", constructProcessReportWithFakePD())
+      .buildUpdateSingleProcessReportRequest("nonExistingId", constructProcessReportWithFakePD())
       .execute();
 
     // then the status code is not authorized
@@ -132,17 +132,24 @@ public class ReportRestServiceIT {
     String id = addEmptyReportToOptimize(reportType);
 
     // when
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateReportRequest(id, constructReportWithFakeDefinition(reportType))
-      .execute();
+    Response response = updateReportRequest(id, reportType);
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
   }
 
-  private ReportDefinitionDto constructReportWithFakeDefinition(final ReportType reportType) {
-    return ReportType.PROCESS.equals(reportType) ? constructProcessReportWithFakePD() : constructDecisionReportWithFakeDD();
+  private Response updateReportRequest(final String id, final ReportType reportType) {
+    if (ReportType.PROCESS.equals(reportType)) {
+      return embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildUpdateSingleProcessReportRequest(id, constructProcessReportWithFakePD())
+        .execute();
+    } else {
+      return embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildUpdateSingleDecisionReportRequest(id, constructDecisionReportWithFakeDD())
+        .execute();
+    }
   }
 
   private SingleProcessReportDefinitionDto constructProcessReportWithFakePD() {
@@ -474,7 +481,7 @@ public class ReportRestServiceIT {
     report.setCreated(someDate);
     report.setLastModified(someDate);
     report.setOwner(RANDOM_STRING);
-    updateReport(id, report);
+    updateSingleProcessReport(id, report);
     return id;
   }
 
@@ -489,14 +496,23 @@ public class ReportRestServiceIT {
     report.setCreated(someDate);
     report.setLastModified(someDate);
     report.setOwner(RANDOM_STRING);
-    updateReport(id, report);
+    updateSingleDecisionReport(id, report);
     return id;
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+  private void updateSingleProcessReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest(id, updatedReport)
+      .buildUpdateSingleProcessReportRequest(id, updatedReport)
+      .execute();
+
+    assertThat(response.getStatus(), is(204));
+  }
+
+  private void updateSingleDecisionReport(String id, SingleDecisionReportDefinitionDto updatedReport) {
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateSingleDecisionReportRequest(id, updatedReport)
       .execute();
 
     assertThat(response.getStatus(), is(204));

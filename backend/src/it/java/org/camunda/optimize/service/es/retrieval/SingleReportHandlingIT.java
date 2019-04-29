@@ -179,7 +179,7 @@ public class SingleReportHandlingIT {
     report.setOwner("NewOwner");
 
     // when
-    updateReport(id, report);
+    updateSingleProcessReport(id, report);
     List<ReportDefinitionDto> reports = getAllReports();
 
     // then
@@ -216,11 +216,11 @@ public class SingleReportHandlingIT {
     report.setLastModifier("shouldNotBeUpdatedManually");
     report.setName("MyReport");
     report.setOwner("NewOwner");
-    updateReport(id, report);
+    updateSingleProcessReport(id, report);
 
     // when
     configuration.getHeatmapTargetValue().setValues(new HashMap<>());
-    updateReport(id, report);
+    updateSingleProcessReport(id, report);
     final List<ReportDefinitionDto> reports = getAllReports();
 
     // then
@@ -249,10 +249,10 @@ public class SingleReportHandlingIT {
 
     SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
     report.setData(expectedReportData);
-    updateReport(id, report);
+    updateSingleDecisionReport(id, report);
 
     // when
-    updateReport(id, report);
+    updateSingleDecisionReport(id, report);
     List<ReportDefinitionDto> reports = getAllReports();
 
     // then
@@ -272,7 +272,7 @@ public class SingleReportHandlingIT {
     updatedReport.setData(new ProcessReportDataDto());
 
     //when
-    Response updateReportResponse = getUpdateReportResponse(id, updatedReport);
+    Response updateReportResponse = getUpdateSingleProcessReportResponse(id, updatedReport);
 
     //then
     assertThat(updateReportResponse.getStatus(), is(204));
@@ -281,7 +281,7 @@ public class SingleReportHandlingIT {
     ProcessReportDataDto data = new ProcessReportDataDto();
     data.setProcessDefinitionVersion("BLAH");
     updatedReport.setData(data);
-    updateReportResponse = getUpdateReportResponse(id, updatedReport);
+    updateReportResponse = getUpdateSingleProcessReportResponse(id, updatedReport);
 
     //then
     assertThat(updateReportResponse.getStatus(), is(204));
@@ -290,7 +290,7 @@ public class SingleReportHandlingIT {
     data = new ProcessReportDataDto();
     data.setProcessDefinitionKey("BLAH");
     updatedReport.setData(data);
-    updateReportResponse = getUpdateReportResponse(id, updatedReport);
+    updateReportResponse = getUpdateSingleProcessReportResponse(id, updatedReport);
 
     //then
     assertThat(updateReportResponse.getStatus(), is(204));
@@ -300,7 +300,7 @@ public class SingleReportHandlingIT {
     data.setProcessDefinitionKey("BLAH");
     data.setProcessDefinitionVersion("BLAH");
     updatedReport.setData(data);
-    updateReportResponse = getUpdateReportResponse(id, updatedReport);
+    updateReportResponse = getUpdateSingleProcessReportResponse(id, updatedReport);
 
     //then
     assertThat(updateReportResponse.getStatus(), is(204));
@@ -314,7 +314,8 @@ public class SingleReportHandlingIT {
     reportData.setProcessDefinitionKey("procdef");
     reportData.setProcessDefinitionVersion("123");
 
-    reportData.getFilter().addAll(ProcessFilterBuilder.filter().fixedStartDate().start(null).end(null).add().buildList());
+    reportData.getFilter()
+      .addAll(ProcessFilterBuilder.filter().fixedStartDate().start(null).end(null).add().buildList());
     reportData.getFilter().addAll(createVariableFilter());
     reportData.getFilter().addAll(createExecutedFlowNodeFilter());
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
@@ -328,7 +329,7 @@ public class SingleReportHandlingIT {
     report.setOwner("NewOwner");
 
     // when
-    updateReport(id, report);
+    updateSingleProcessReport(id, report);
     List<ReportDefinitionDto> reports = getAllReports();
 
     // then
@@ -363,10 +364,10 @@ public class SingleReportHandlingIT {
   public void doNotUpdateNullFieldsInReport() {
     // given
     String id = createNewReport();
-    ReportDefinitionDto report = constructReportWithFakePD();
+    SingleProcessReportDefinitionDto report = constructSingleProcessReportWithFakePD();
 
     // when
-    updateReport(id, report);
+    updateSingleProcessReport(id, report);
     List<ReportDefinitionDto> reports = getAllReports();
 
     // then
@@ -391,7 +392,7 @@ public class SingleReportHandlingIT {
     report.setName("name");
     OffsetDateTime now = OffsetDateTime.now();
     report.setOwner("owner");
-    updateReport(reportId, report);
+    updateSingleProcessReport(reportId, report);
 
     // when
     ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = evaluateRawDataReportById(reportId);
@@ -433,11 +434,11 @@ public class SingleReportHandlingIT {
     String id3 = createNewReport();
     shiftTimeByOneSecond();
 
-    ReportDefinitionDto updatedReport = constructReportWithFakePD();
+    SingleProcessReportDefinitionDto updatedReport = constructSingleProcessReportWithFakePD();
     updatedReport.setName("B");
-    updateReport(id1, updatedReport);
+    updateSingleProcessReport(id1, updatedReport);
     updatedReport.setName("A");
-    updateReport(id2, updatedReport);
+    updateSingleProcessReport(id2, updatedReport);
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -470,7 +471,7 @@ public class SingleReportHandlingIT {
     shiftTimeByOneSecond();
     String id3 = createNewReport();
     shiftTimeByOneSecond();
-    updateReport(id1, constructReportWithFakePD());
+    updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -502,7 +503,7 @@ public class SingleReportHandlingIT {
     shiftTimeByOneSecond();
     String id3 = createNewReport();
     shiftTimeByOneSecond();
-    updateReport(id1, constructReportWithFakePD());
+    updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -526,7 +527,7 @@ public class SingleReportHandlingIT {
     shiftTimeByOneSecond();
     String id3 = createNewReport();
     shiftTimeByOneSecond();
-    updateReport(id1, constructReportWithFakePD());
+    updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -540,7 +541,7 @@ public class SingleReportHandlingIT {
     assertThat(reports.get(1).getId(), is(id2));
   }
 
-  private ReportDefinitionDto constructReportWithFakePD() {
+  private SingleProcessReportDefinitionDto constructSingleProcessReportWithFakePD() {
     SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
     ProcessReportDataDto data = new ProcessReportDataDto();
     data.setProcessDefinitionVersion("FAKE");
@@ -558,7 +559,7 @@ public class SingleReportHandlingIT {
     shiftTimeByOneSecond();
     String id3 = createNewReport();
     shiftTimeByOneSecond();
-    updateReport(id1, constructReportWithFakePD());
+    updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -581,7 +582,7 @@ public class SingleReportHandlingIT {
     shiftTimeByOneSecond();
     String id3 = createNewReport();
     shiftTimeByOneSecond();
-    updateReport(id1, constructReportWithFakePD());
+    updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
 
     // when
     Map<String, Object> queryParam = new HashMap<>();
@@ -608,15 +609,27 @@ public class SingleReportHandlingIT {
       .getId();
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    Response response = getUpdateReportResponse(id, updatedReport);
+  private void updateSingleProcessReport(String id, SingleProcessReportDefinitionDto updatedReport) {
+    Response response = getUpdateSingleProcessReportResponse(id, updatedReport);
     assertThat(response.getStatus(), is(204));
   }
 
-  private Response getUpdateReportResponse(String id, ReportDefinitionDto updatedReport) {
+  private void updateSingleDecisionReport(String id, SingleDecisionReportDefinitionDto updatedReport) {
+    Response response = getUpdateSingleDecisionReportResponse(id, updatedReport);
+    assertThat(response.getStatus(), is(204));
+  }
+
+  private Response getUpdateSingleProcessReportResponse(String id, SingleProcessReportDefinitionDto updatedReport) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest(id, updatedReport)
+      .buildUpdateSingleProcessReportRequest(id, updatedReport)
+      .execute();
+  }
+
+  private Response getUpdateSingleDecisionReportResponse(String id, SingleDecisionReportDefinitionDto updatedReport) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateSingleDecisionReportRequest(id, updatedReport)
       .execute();
   }
 

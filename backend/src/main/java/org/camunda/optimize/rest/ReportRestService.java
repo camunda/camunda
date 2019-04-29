@@ -54,53 +54,103 @@ public class ReportRestService {
     this.sessionService = sessionService;
   }
 
+
   /**
-   * Creates an empty new report.
+   * Creates an empty new single process report.
    *
    * @return the id of the report
    */
   @POST
+  @Path("/process/single/")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createNewReport(@Context ContainerRequestContext requestContext,
-                               @NotNull ReportDefinitionDto reportDefinitionDto) {
+  public IdDto createNewSingleProcessReport(@Context ContainerRequestContext requestContext) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    if (reportDefinitionDto instanceof SingleProcessReportDefinitionDto) {
-      return reportService.createNewSingleProcessReport(userId);
-    } else if (reportDefinitionDto instanceof SingleDecisionReportDefinitionDto) {
-      return reportService.createNewSingleDecisionReport(userId);
-    } else {
-      return reportService.createNewCombinedProcessReport(userId);
-    }
+    return reportService.createNewSingleProcessReport(userId);
   }
 
   /**
-   * Updates the given fields of a report to the given id.
+   * Creates an empty new single decision report.
+   *
+   * @return the id of the report
    */
-  @PUT
-  @Path("/{id}")
+  @POST
+  @Path("/decision/single/")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateReport(@Context ContainerRequestContext requestContext,
-                           @PathParam("id") String reportId,
-                           @QueryParam("force") boolean force,
-                           @NotNull ReportDefinitionDto updatedReport) throws OptimizeException {
+  public IdDto createNewSingleDecisionReport(@Context ContainerRequestContext requestContext) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return reportService.createNewSingleDecisionReport(userId);
+  }
+
+  /**
+   * Creates an empty new combined process report.
+   *
+   * @return the id of the report
+   */
+  @POST
+  @Path("/process/combined/")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public IdDto createNewCombinedProcessReport(@Context ContainerRequestContext requestContext) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return reportService.createNewCombinedProcessReport(userId);
+  }
+
+  /**
+   * Updates the given fields of a single process report to the given id.
+   */
+  @PUT
+  @Path("/process/single/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void updateSingleProcessReport(@Context ContainerRequestContext requestContext,
+                                        @PathParam("id") String reportId,
+                                        @QueryParam("force") boolean force,
+                                        @NotNull SingleProcessReportDefinitionDto updatedReport) throws
+                                                                                                 OptimizeException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
     updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
-    if (updatedReport instanceof SingleProcessReportDefinitionDto) {
-      final SingleProcessReportDefinitionDto singleReportUpdate =
-        (SingleProcessReportDefinitionDto) updatedReport;
-      reportService.updateSingleProcessReportWithAuthorizationCheck(reportId, singleReportUpdate, userId, force);
-    } else if (updatedReport instanceof SingleDecisionReportDefinitionDto) {
-      final SingleDecisionReportDefinitionDto singleReportUpdate =
-        (SingleDecisionReportDefinitionDto) updatedReport;
-      reportService.updateSingleDecisionReportWithAuthorizationCheck(reportId, singleReportUpdate, userId, force);
-    } else {
-      final CombinedReportDefinitionDto combinedReportUpdate = (CombinedReportDefinitionDto) updatedReport;
-      reportService.updateCombinedProcessReportWithAuthorizationCheck(reportId, combinedReportUpdate);
-    }
+    reportService.updateSingleProcessReportWithAuthorizationCheck(reportId, updatedReport, userId, force);
+  }
+
+  /**
+   * Updates the given fields of a single decision report to the given id.
+   */
+  @PUT
+  @Path("/decision/single/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void updateSingleDecisionReport(@Context ContainerRequestContext requestContext,
+                                         @PathParam("id") String reportId,
+                                         @QueryParam("force") boolean force,
+                                         @NotNull SingleDecisionReportDefinitionDto updatedReport) throws
+                                                                                                   OptimizeException {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    updatedReport.setId(reportId);
+    updatedReport.setLastModifier(userId);
+    updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
+    reportService.updateSingleDecisionReportWithAuthorizationCheck(reportId, updatedReport, userId, force);
+  }
+
+  /**
+   * Updates the given fields of a combined process report to the given id.
+   */
+  @PUT
+  @Path("/process/combined/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void updateCombinedProcessReport(@Context ContainerRequestContext requestContext,
+                                          @PathParam("id") String reportId,
+                                          @QueryParam("force") boolean force,
+                                          @NotNull CombinedReportDefinitionDto updatedReport) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    updatedReport.setId(reportId);
+    updatedReport.setLastModifier(userId);
+    updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
+    reportService.updateCombinedProcessReportWithAuthorizationCheck(reportId, updatedReport);
   }
 
   /**
@@ -190,7 +240,6 @@ public class ReportRestService {
     );
     return ReportEvaluationResultMapper.mapToEvaluationResultDto(reportEvaluationResult);
   }
-
 
 
 }

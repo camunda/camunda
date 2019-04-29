@@ -34,10 +34,10 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule)
-      .around(engineRule)
-      .around(embeddedOptimizeRule)
-      .around(engineDatabaseRule);
+    .outerRule(elasticSearchRule)
+    .around(engineRule)
+    .around(embeddedOptimizeRule)
+    .around(engineDatabaseRule);
 
   @Before
   public void cleanUp() throws Exception {
@@ -54,9 +54,9 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
     //when
     embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildDeleteAlertRequest(id)
-            .execute();
+      .getRequestExecutor()
+      .buildDeleteAlertRequest(id)
+      .execute();
 
     //then
     assertThat(
@@ -74,9 +74,9 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
     //when
     embeddedOptimizeRule
-            .getRequestExecutor()
+      .getRequestExecutor()
       .buildDeleteReportRequest(simpleAlert.getReportId(), true)
-            .execute();
+      .execute();
     //then
     assertThat(
       embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
@@ -102,9 +102,9 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
   private List<AlertDefinitionDto> getAllAlerts() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetAllAlertsRequest()
-            .executeAndReturnList(AlertDefinitionDto.class, 200);
+      .getRequestExecutor()
+      .buildGetAllAlertsRequest()
+      .executeAndReturnList(AlertDefinitionDto.class, 200);
   }
 
   @Test
@@ -138,7 +138,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     );
     report.getData().setGroupBy(new FlowNodesGroupByDto());
     report.getData().setVisualization(ProcessVisualization.HEAT);
-    updateReport(simpleAlert.getReportId(), report);
+    updateSingleProcessReport(simpleAlert.getReportId(), report);
 
     //then
     assertThat(
@@ -158,7 +158,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     // when
     String reportId =
       createAndStoreDurationNumberReport(processInstance);
-    AlertCreationDto simpleAlert = createSimpleAlert(reportId, 10,"Seconds");
+    AlertCreationDto simpleAlert = createSimpleAlert(reportId, 10, "Seconds");
     AlertInterval reminderInterval = new AlertInterval();
     reminderInterval.setValue(1);
     reminderInterval.setUnit("Minutes");
@@ -171,8 +171,8 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     triggerAndCompleteCheckJob(id);
 
     assertThat(
-        embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
-        is(greaterThanOrEqualTo(2))
+      embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      is(greaterThanOrEqualTo(2))
     );
     //when
     engineRule.startProcessInstance(processInstance.getDefinitionId());
@@ -205,9 +205,9 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     simpleAlert.getCheckInterval().setValue(30);
 
     embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildUpdateAlertRequest(id, simpleAlert)
-            .execute();
+      .getRequestExecutor()
+      .buildUpdateAlertRequest(id, simpleAlert)
+      .execute();
 
     //then
     assertThat(
@@ -232,10 +232,10 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
     // when
     String id = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateAlertRequest(simpleAlert)
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateAlertRequest(simpleAlert)
+      .execute(IdDto.class, 200)
+      .getId();
 
     triggerAndCompleteCheckJob(id);
 
@@ -257,10 +257,10 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
     // when
     String id = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateAlertRequest(simpleAlert)
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateAlertRequest(simpleAlert)
+      .execute(IdDto.class, 200)
+      .getId();
 
     triggerAndCompleteCheckJob(id);
 

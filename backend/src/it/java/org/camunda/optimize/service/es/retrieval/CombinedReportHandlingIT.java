@@ -183,7 +183,7 @@ public class CombinedReportHandlingIT {
     String combinedReportId = createNewCombinedReport();
     CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
     combinedReport.setData(createCombinedReport(numberReportId, rawReportId));
-    Response response = getUpdateReportResponse(combinedReportId, combinedReport, true);
+    Response response = getUpdateCombinedProcessReportResponse(combinedReportId, combinedReport, true);
 
     // then
     assertThat(response.getStatus(), is(500));
@@ -209,13 +209,22 @@ public class CombinedReportHandlingIT {
     assertThat(result.getReportDefinition().getId(), is(reportId));
     assertThat(result.getReportDefinition().getName(), is("name"));
     assertThat(result.getReportDefinition().getOwner(), is("owner"));
-    assertThat(result.getReportDefinition().getCreated().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
+    assertThat(
+      result.getReportDefinition().getCreated().truncatedTo(ChronoUnit.DAYS),
+      is(now.truncatedTo(ChronoUnit.DAYS))
+    );
     assertThat(result.getReportDefinition().getLastModifier(), is(DEFAULT_USERNAME));
-    assertThat(result.getReportDefinition().getLastModified().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
+    assertThat(
+      result.getReportDefinition().getLastModified().truncatedTo(ChronoUnit.DAYS),
+      is(now.truncatedTo(ChronoUnit.DAYS))
+    );
     assertThat(result.getResult().getData(), is(notNullValue()));
     assertThat(result.getReportDefinition().getData().getReportIds().size(), is(1));
     assertThat(result.getReportDefinition().getData().getReportIds().get(0), is(singleReportId));
-    assertThat(result.getReportDefinition().getData().getConfiguration(), equalTo(new CombinedReportConfigurationDto()));
+    assertThat(
+      result.getReportDefinition().getData().getConfiguration(),
+      equalTo(new CombinedReportConfigurationDto())
+    );
   }
 
   @Test
@@ -252,7 +261,8 @@ public class CombinedReportHandlingIT {
 
     // then
     assertThat(result.getReportDefinition().getId(), is(reportId));
-    Map<String, ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>> resultMap = result.getResult().getData();
+    Map<String, ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>> resultMap = result.getResult()
+      .getData();
     assertThat(resultMap.size(), is(2));
     List<MapResultEntryDto<Long>> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
     assertThat(flowNodeToCount.size(), is(3));
@@ -279,9 +289,13 @@ public class CombinedReportHandlingIT {
     Map<String, ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(2));
-    List<MapResultEntryDto<AggregationResultDto>> userTaskCount1 = resultMap.get(totalDurationReportId).getResult().getData();
+    List<MapResultEntryDto<AggregationResultDto>> userTaskCount1 = resultMap.get(totalDurationReportId)
+      .getResult()
+      .getData();
     assertThat(userTaskCount1.size(), is(1));
-    List<MapResultEntryDto<AggregationResultDto>> userTaskCount2 = resultMap.get(idleDurationReportId).getResult().getData();
+    List<MapResultEntryDto<AggregationResultDto>> userTaskCount2 = resultMap.get(idleDurationReportId)
+      .getResult()
+      .getData();
     assertThat(userTaskCount2.size(), is(1));
   }
 
@@ -304,9 +318,13 @@ public class CombinedReportHandlingIT {
     Map<String, ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(2));
-    List<MapResultEntryDto<AggregationResultDto>> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId).getResult().getData();
+    List<MapResultEntryDto<AggregationResultDto>> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId)
+      .getResult()
+      .getData();
     assertThat(userTaskCount1.size(), is(1));
-    List<MapResultEntryDto<AggregationResultDto>> userTaskCount2 = resultMap.get(flowNodeDurationReportId).getResult().getData();
+    List<MapResultEntryDto<AggregationResultDto>> userTaskCount2 = resultMap.get(flowNodeDurationReportId)
+      .getResult()
+      .getData();
     assertThat(userTaskCount2.size(), is(3));
   }
 
@@ -866,19 +884,37 @@ public class CombinedReportHandlingIT {
       .getId();
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     updateReport(id, updatedReport, null);
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport, Boolean force) {
-    Response response = getUpdateReportResponse(id, updatedReport, force);
+  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport, Boolean force) {
+    Response response = getUpdateSingleProcessReportResponse(id, updatedReport, force);
     assertThat(response.getStatus(), is(204));
   }
 
-  private Response getUpdateReportResponse(String id, ReportDefinitionDto updatedReport, Boolean force) {
+  private void updateReport(String id, CombinedReportDefinitionDto updatedReport) {
+    updateReport(id, updatedReport, null);
+  }
+
+  private void updateReport(String id, CombinedReportDefinitionDto updatedReport, Boolean force) {
+    Response response = getUpdateCombinedProcessReportResponse(id, updatedReport, force);
+    assertThat(response.getStatus(), is(204));
+  }
+
+  private Response getUpdateSingleProcessReportResponse(String id, SingleProcessReportDefinitionDto updatedReport,
+                                                        Boolean force) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest(id, updatedReport, force)
+      .buildUpdateSingleProcessReportRequest(id, updatedReport, force)
+      .execute();
+  }
+
+  private Response getUpdateCombinedProcessReportResponse(String id, CombinedReportDefinitionDto updatedReport,
+                                                          Boolean force) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateCombinedProcessReportRequest(id, updatedReport, force)
       .execute();
   }
 

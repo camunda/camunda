@@ -846,10 +846,10 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     return id;
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest(id, updatedReport)
+      .buildUpdateSingleProcessReportRequest(id, updatedReport)
       .execute();
 
     assertThat(response.getStatus(), is(204));

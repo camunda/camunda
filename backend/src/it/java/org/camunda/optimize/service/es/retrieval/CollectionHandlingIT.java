@@ -162,7 +162,7 @@ public class CollectionHandlingIT {
 
     // when
     addEntitiesToCollection(ImmutableList.of(reportId1, dashboardId, reportId2), collectionId);
-    updateReport(reportId1, new SingleProcessReportDefinitionDto() );
+    updateReport(reportId1, new SingleProcessReportDefinitionDto());
 
     // then
     List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
@@ -373,15 +373,15 @@ public class CollectionHandlingIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     Response response = getUpdateReportResponse(id, updatedReport);
     assertThat(response.getStatus(), is(204));
   }
 
-  private Response getUpdateReportResponse(String id, ReportDefinitionDto updatedReport) {
+  private Response getUpdateReportResponse(String id, SingleProcessReportDefinitionDto updatedReport) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest(id, updatedReport)
+      .buildUpdateSingleProcessReportRequest(id, updatedReport)
       .execute();
   }
 

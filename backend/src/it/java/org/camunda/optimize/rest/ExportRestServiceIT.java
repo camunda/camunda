@@ -10,7 +10,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -198,7 +197,7 @@ public class ExportRestServiceIT {
     report.setCreated(someDate);
     report.setLastModified(someDate);
     report.setOwner("something");
-    updateReport(id, report);
+    updateSingleProcessReport(id, report);
     return id;
   }
 
@@ -213,7 +212,7 @@ public class ExportRestServiceIT {
     report.setCreated(someDate);
     report.setLastModified(someDate);
     report.setOwner("something");
-    updateReport(id, report);
+    updateSingleDecisionReport(id, report);
     return id;
   }
 
@@ -225,14 +224,21 @@ public class ExportRestServiceIT {
       .getId();
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+  private void updateSingleProcessReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest(id, updatedReport)
+      .buildUpdateSingleProcessReportRequest(id, updatedReport)
       .execute();
     assertThat(response.getStatus(), is(204));
   }
 
+  private void updateSingleDecisionReport(String id, SingleDecisionReportDefinitionDto updatedReport) {
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateSingleDecisionReportRequest(id, updatedReport)
+      .execute();
+    assertThat(response.getStatus(), is(204));
+  }
 
   private String createNewProcessReport() {
     return embeddedOptimizeRule

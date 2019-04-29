@@ -139,13 +139,13 @@ public class ReportAuthorizationIT {
 
     String reportId = createReportForDefinition(getDefinitionKey(definitionResourceType));
 
-    ReportDefinitionDto updatedReport = createReportUpdate();
+    SingleProcessReportDefinitionDto updatedReport = createReportUpdate();
 
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildUpdateReportRequest(reportId, updatedReport)
+      .buildUpdateSingleProcessReportRequest(reportId, updatedReport)
       .execute();
 
     // then
@@ -245,7 +245,8 @@ public class ReportAuthorizationIT {
       .getRequestExecutor()
       .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute(new TypeReference<CombinedReportEvaluationResultDto<ProcessCountReportMapResultDto>>() {})
+      .execute(new TypeReference<CombinedReportEvaluationResultDto<ProcessCountReportMapResultDto>>() {
+      })
       .getResult();
 
     // then
@@ -310,7 +311,7 @@ public class ReportAuthorizationIT {
     engineRule.deployAndStartDecisionDefinition(modelInstance);
   }
 
-  public ReportDefinitionDto createReportUpdate() {
+  public SingleProcessReportDefinitionDto createReportUpdate() {
     ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setProcessDefinitionKey("procdef");
     reportData.setProcessDefinitionVersion("123");
@@ -323,7 +324,7 @@ public class ReportAuthorizationIT {
 
   private String createReportForDefinition(String definitionKey) {
     String id = createNewReport();
-    ReportDefinitionDto definition = constructReportWithDefinition(definitionKey);
+    SingleProcessReportDefinitionDto definition = constructReportWithDefinition(definitionKey);
     updateReport(id, definition);
     return id;
   }
@@ -336,7 +337,7 @@ public class ReportAuthorizationIT {
       .getId();
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     Response response = getUpdateReportResponse(id, updatedReport);
     assertThat(response.getStatus(), is(204));
   }
@@ -348,10 +349,10 @@ public class ReportAuthorizationIT {
     return reportDefinitionDto;
   }
 
-  private Response getUpdateReportResponse(String id, ReportDefinitionDto updatedReport) {
+  private Response getUpdateReportResponse(String id, SingleProcessReportDefinitionDto updatedReport) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest(id, updatedReport)
+      .buildUpdateSingleProcessReportRequest(id, updatedReport)
       .execute();
   }
 

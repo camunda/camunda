@@ -65,7 +65,8 @@ public abstract class AbstractSharingIT {
     ProcessReportDataDto reportData =
       ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion());
+        processInstance.getProcessDefinitionVersion()
+      );
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     updateReport(reportId, report);
@@ -99,27 +100,27 @@ public abstract class AbstractSharingIT {
   private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(String definitionKey,
                                                                             Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess(definitionKey)
-        .name("aProcessName")
-          .startEvent()
-          .endEvent()
-        .done();
+      .name("aProcessName")
+      .startEvent()
+      .endEvent()
+      .done();
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  protected void updateReport(String id, ReportDefinitionDto updatedReport) {
+  protected void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildUpdateReportRequest(id, updatedReport)
-            .execute();
+      .getRequestExecutor()
+      .buildUpdateSingleProcessReportRequest(id, updatedReport)
+      .execute();
     assertThat(response.getStatus(), is(204));
   }
 
   protected String createNewReport() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateSingleProcessReportRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   protected String createDashboardWithReport(String reportId) {
@@ -155,17 +156,17 @@ public abstract class AbstractSharingIT {
 
   protected String addEmptyDashboardToOptimize() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateDashboardRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateDashboardRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   Response updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildUpdateDashboardRequest(id, updatedDashboard)
-            .execute();
+      .getRequestExecutor()
+      .buildUpdateDashboardRequest(id, updatedDashboard)
+      .execute();
   }
 
   protected String addShareForDashboard(String dashboardId) {
@@ -177,16 +178,16 @@ public abstract class AbstractSharingIT {
 
   protected Response createReportShareResponse(ReportShareDto share) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildShareReportRequest(share)
-            .execute();
+      .getRequestExecutor()
+      .buildShareReportRequest(share)
+      .execute();
   }
 
   protected Response createDashboardShareResponse(DashboardShareDto share) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildShareDashboardRequest(share)
-            .execute();
+      .getRequestExecutor()
+      .buildShareDashboardRequest(share)
+      .execute();
   }
 
   ReportShareDto createReportShare() {
@@ -214,9 +215,9 @@ public abstract class AbstractSharingIT {
 
   private Response findShareForReport(String reportId) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildFindShareForReportRequest(reportId)
-            .execute();
+      .getRequestExecutor()
+      .buildFindShareForReportRequest(reportId)
+      .execute();
   }
 
   protected ReportShareDto getShareForReport(String reportId) {
