@@ -156,8 +156,8 @@ export const Textarea = styled(BasicTextarea)`
 export const EditButtonsTD = styled.td`
   display: flex;
   justify-content: flex-end;
-  padding: 2px 20px;
-  padding-top: 7px;
+  padding: 2px 21px;
+  padding-top: 11.2px;
 `;
 
 export const EditInputTD = styled.td`
@@ -175,7 +175,8 @@ export const EditInputTD = styled.td`
 
 export const EditButton = styled.button`
   margin: 0;
-  margin-left: 13px;
+  padding: 0;
+  margin-left: 15px;
   background: transparent;
   border: none;
 
