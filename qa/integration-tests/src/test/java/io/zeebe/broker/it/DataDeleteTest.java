@@ -21,13 +21,12 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.spi.Exporter;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.test.util.TestUtil;
 import java.io.File;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -39,9 +38,6 @@ import org.junit.rules.Timeout;
 public class DataDeleteTest {
   private static final int MAX_SNAPSHOTS = 1;
   private static final String SNAPSHOT_PERIOD = "30s";
-  private static final String PROCESS = "process";
-  private static final BpmnModelInstance WORKFLOW =
-      Bpmn.createExecutableProcess(PROCESS).startEvent("start").endEvent("end").done();
 
   public EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(
@@ -52,11 +48,13 @@ public class DataDeleteTest {
             data.setDefaultLogSegmentSize("8k");
             data.setIndexBlockSize("2K");
 
-            final List<ExporterCfg> exporters = brokerCfg.getExporters();
             final ExporterCfg exporterCfg = new ExporterCfg();
             exporterCfg.setClassName(TestExporter.class.getName());
             exporterCfg.setId("data-delete-test-exporter");
-            exporters.add(exporterCfg);
+
+            // overwrites RecordingExporter on purpose because since it doesn't update its position
+            // we wouldn't be able to delete data
+            brokerCfg.setExporters(Collections.singletonList(exporterCfg));
           });
   public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
@@ -69,9 +67,7 @@ public class DataDeleteTest {
     final String rootPath = brokerRule.getBrokerCfg().getData().getDirectories().get(0);
     final String snapshotDirPath = rootPath + "/partition-1/state/1_zb-stream-processor/snapshots";
     final String segmentsDirPath = rootPath + "/partition-1/segments";
-    brokerRule.getClock().pinCurrentTime();
 
-    final long workflowKey = clientRule.deployWorkflow(WORKFLOW);
     final File segmentsDir = new File(segmentsDirPath);
     int messagesSent = 0;
 
@@ -80,7 +76,7 @@ public class DataDeleteTest {
           .getClient()
           .newPublishMessageCommand()
           .messageName("msg")
-          .correlationKey("c")
+          .correlationKey("key")
           .send()
           .join();
       ++messagesSent;
@@ -108,8 +104,8 @@ public class DataDeleteTest {
   }
 
   public static class TestExporter implements Exporter {
-    private Controller controller;
     static List<Record> records = new CopyOnWriteArrayList<>();
+    private Controller controller;
 
     @Override
     public void export(final Record record) {
