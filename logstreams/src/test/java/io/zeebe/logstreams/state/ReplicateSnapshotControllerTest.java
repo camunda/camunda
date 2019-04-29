@@ -195,7 +195,7 @@ public class ReplicateSnapshotControllerTest {
     assertThat(receiverStorage.existSnapshot(2)).isTrue();
   }
 
-  private final class Replicator implements SnapshotReplication {
+  protected static final class Replicator implements SnapshotReplication {
 
     final List<SnapshotChunk> replicatedChunks = new ArrayList<>();
     private Consumer<SnapshotChunk> chunkConsumer;

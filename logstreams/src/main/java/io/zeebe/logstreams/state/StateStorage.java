@@ -15,24 +15,20 @@
  */
 package io.zeebe.logstreams.state;
 
-import io.zeebe.logstreams.impl.Loggers;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
 
 /** Handles how snapshots/databases are stored on the file system. */
 public class StateStorage {
 
-  private static final Logger LOG = Loggers.ROCKSDB_LOGGER;
-
   private static final String DEFAULT_RUNTIME_DIRECTORY = "runtime";
   private static final String DEFAULT_SNAPSHOTS_DIRECTORY = "snapshots";
-  static final String TEMP_SNAPSHOT_DIRECTORY = "tmp/";
+  static final String TMP_SNAPSHOT_DIRECTORY = "tmp/";
+  private static final String TMP_SUFFIX = "-tmp";
 
   private final File runtimeDirectory;
   private final File snapshotsDirectory;
@@ -51,7 +47,7 @@ public class StateStorage {
   }
 
   private void initTempSnapshotDirectory() {
-    tmpSnapshotDirectory = new File(snapshotsDirectory, TEMP_SNAPSHOT_DIRECTORY);
+    tmpSnapshotDirectory = new File(snapshotsDirectory, TMP_SNAPSHOT_DIRECTORY);
   }
 
   public File getRuntimeDirectory() {
@@ -63,7 +59,7 @@ public class StateStorage {
   }
 
   public File getTmpSnapshotDirectoryFor(String position) {
-    final String path = String.format("%s-%s", position, TEMP_SNAPSHOT_DIRECTORY);
+    final String path = String.format("%s-%s", position, TMP_SNAPSHOT_DIRECTORY);
 
     return new File(snapshotsDirectory, path);
   }
@@ -89,25 +85,15 @@ public class StateStorage {
 
   public List<File> list() {
     final File[] snapshotFolders = snapshotsDirectory.listFiles();
-    final List<File> snapshots = new ArrayList<>();
 
     if (snapshotFolders == null || snapshotFolders.length == 0) {
-      return snapshots;
+      return Collections.emptyList();
     }
 
-    for (final File folder : snapshotFolders) {
-      if (folder.isDirectory()) {
-        if (isNumber(folder.getName())) {
-          try {
-            snapshots.add(folder);
-          } catch (final Exception ex) {
-            LOG.warn("error listing snapshot {}", folder.getAbsolutePath(), ex);
-          }
-        }
-      }
-    }
-
-    return snapshots;
+    return Arrays.stream(snapshotFolders)
+        .filter(File::isDirectory)
+        .filter(f -> isNumber(f.getName()))
+        .collect(Collectors.toList());
   }
 
   private boolean isNumber(String name) {
@@ -129,5 +115,28 @@ public class StateStorage {
     final List<File> list = listByPositionAsc();
     Collections.reverse(list);
     return list;
+  }
+
+  private static String getPositionFromFileName(File file) {
+    return file.getName().split(TMP_SUFFIX)[0];
+  }
+
+  public List<File> findTmpDirectoriesBelowPosition(final long position) {
+    final File[] snapshotFolders = snapshotsDirectory.listFiles();
+
+    if (snapshotFolders == null || snapshotFolders.length == 0) {
+      return Collections.emptyList();
+    }
+
+    return Arrays.stream(snapshotFolders)
+        .filter(File::isDirectory)
+        .filter(f -> f.getName().endsWith(TMP_SUFFIX))
+        .filter(
+            f -> {
+              final String positionFromFileName = getPositionFromFileName(f);
+              return isNumber(positionFromFileName)
+                  && Long.parseLong(positionFromFileName) < position;
+            })
+        .collect(Collectors.toList());
   }
 }
