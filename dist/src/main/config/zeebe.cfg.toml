@@ -148,7 +148,7 @@
 # directories = [ "data" ]
 
 # The default size of data segments.
-# defaultSegmentSize = "512M"
+# defaultLogSegmentSize = "512M"
 
 # The size of block index segments.
 # indexBlockSize = "4M"
