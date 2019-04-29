@@ -28,15 +28,12 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.spi.Exporter;
-import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.intent.ExporterIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
@@ -45,13 +42,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ExporterStreamProcessor implements StreamProcessor {
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
 
   private final RecordMetadata rawMetadata = new RecordMetadata();
+
   private final List<ExporterContainer> containers;
   private final int partitionId;
 
@@ -110,10 +107,10 @@ public class ExporterStreamProcessor implements StreamProcessor {
     long lowestPosition = -1;
 
     for (final ExporterContainer container : containers) {
-      container.position = state.getPosition(container.getId());
+      final long exporterPosition = state.getPosition(container.getId());
 
-      if (lowestPosition == -1 || lowestPosition > container.position) {
-        lowestPosition = container.position;
+      if (lowestPosition == -1 || exporterPosition < lowestPosition) {
+        lowestPosition = exporterPosition;
       }
     }
     return lowestPosition;
@@ -122,6 +119,7 @@ public class ExporterStreamProcessor implements StreamProcessor {
   @Override
   public void onRecovered() {
     for (final ExporterContainer container : containers) {
+      container.position = state.getPosition(container.getId());
       container.exporter.open(container);
     }
 
@@ -155,12 +153,7 @@ public class ExporterStreamProcessor implements StreamProcessor {
     }
   }
 
-  private boolean shouldCommitPositions() {
-    return false;
-  }
-
   private class ExporterContainer implements Controller {
-    private static final String LOGGER_NAME_FORMAT = "io.zeebe.broker.exporter.%s";
 
     private final ExporterContext context;
     private final Exporter exporter;
@@ -169,8 +162,7 @@ public class ExporterStreamProcessor implements StreamProcessor {
     ExporterContainer(ExporterDescriptor descriptor) {
       context =
           new ExporterContext(
-              LoggerFactory.getLogger(String.format(LOGGER_NAME_FORMAT, descriptor.getId())),
-              descriptor.getConfiguration());
+              Loggers.getExporterLogger(descriptor.getId()), descriptor.getConfiguration());
       exporter = descriptor.newInstance();
     }
 
@@ -257,23 +249,6 @@ public class ExporterStreamProcessor implements StreamProcessor {
       }
 
       return true;
-    }
-
-    @Override
-    public long writeEvent(LogStreamRecordWriter writer) {
-      if (shouldCommitPositions()) {
-        final ExporterRecord record = state.newExporterRecord();
-
-        rawMetadata
-            .reset()
-            .recordType(RecordType.EVENT)
-            .valueType(ValueType.EXPORTER)
-            .intent(ExporterIntent.EXPORTED);
-
-        return writer.valueWriter(record).metadataWriter(rawMetadata).tryWrite();
-      }
-
-      return 0;
     }
   }
 }

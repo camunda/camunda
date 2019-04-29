@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.exporter.stream;
 
-import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
@@ -91,19 +90,6 @@ public class ExporterStreamProcessorState {
   private long getPosition() {
     final DbLong zbLong = exporterPositionColumnFamily.get(exporterId);
     return zbLong == null ? ExporterRecord.POSITION_UNKNOWN : zbLong.getValue();
-  }
-
-  public ExporterRecord newExporterRecord() {
-    final ExporterRecord record = new ExporterRecord();
-
-    exporterPositionColumnFamily.forEach(
-        (idOfExporter, currentPosition) -> {
-          final ExporterPosition position = record.getPositions().add();
-          position.setId(idOfExporter.toString());
-          position.setPosition(currentPosition.getValue());
-        });
-
-    return record;
   }
 
   public void visitPositions(BiConsumer<String, Long> consumer) {
