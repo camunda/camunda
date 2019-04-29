@@ -59,16 +59,15 @@ const colorStyle = ({color}) => {
 
     &:hover {
       background-color: ${Colors.primaryButton03};
-      color: #ffffff;
     }
+
     &:focus {
-      color: ${Colors.uiLight02};
       border-color: ${Colors.primaryButton01};
     }
+
     &:active {
-      background-color: ${Colors.primaryButton02};
+      background-color: ${Colors.primaryButton01};
       border-color: ${Colors.primaryButton02};
-      color: ${Colors.uiLight02};
     }
 
     &:disabled {
