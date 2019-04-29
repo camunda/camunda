@@ -166,3 +166,19 @@ it('should display an error notification if request goes wrong', async () => {
 
   expect(addNotification).toHaveBeenCalledWith({type: 'error', text: 'Something went wrong'});
 });
+
+it('should handle different error formats', async () => {
+  const node = shallow(
+    <OverviewStore mightFail={(promise, cb, fail) => fail('Something went wrong')} />
+  );
+
+  addNotification.mockClear();
+  await node.instance().createDashboard();
+  expect(addNotification).toHaveBeenCalledWith({type: 'error', text: 'Something went wrong'});
+
+  node.setProps({mightFail: (promise, cb, fail) => fail({message: 'Something went wrong'})});
+
+  addNotification.mockClear();
+  await node.instance().createDashboard();
+  expect(addNotification).toHaveBeenCalledWith({type: 'error', text: 'Something went wrong'});
+});

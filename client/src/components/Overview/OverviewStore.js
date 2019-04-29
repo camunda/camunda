@@ -41,7 +41,16 @@ class OverviewStore extends Component {
   }
 
   showError = async error => {
-    addNotification({type: 'error', text: (await error.json()).errorMessage});
+    let text = error;
+
+    if (typeof error.json === 'function') {
+      text = (await error.json()).errorMessage;
+    } else if (error.message) {
+      text = error.message;
+    }
+
+    addNotification({type: 'error', text});
+    this.setState({loading: false, deleteLoading: false});
   };
 
   loadData = () => {
@@ -96,7 +105,7 @@ class OverviewStore extends Component {
       );
     } else {
       this.props.mightFail(
-        updateEntity('collection', collection),
+        createEntity('collection', collection),
         this.finishCollectionUpdate,
         this.showError
       );
