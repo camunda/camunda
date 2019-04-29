@@ -78,7 +78,7 @@
     "lint-staged": "^7.2.0",
     "mock-socket": "^7.1.0",
     "node-sass": "^4.9.4",
-    "opn": "^5.4.0",
+    "opn": "^6.0.0",
     "prettier": "1.16.3",
     "react-scripts": "3.0.0",
     "request": "^2.83.0",
