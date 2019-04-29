@@ -38,7 +38,7 @@
 
   .fixed {
     top: 0px;
-    left: 0px;
+    max-width: inherit;
     width: 100%;
     position: fixed;
     padding-top: 48px;
