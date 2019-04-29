@@ -81,6 +81,16 @@ it('should automatically focus focusable element in modal', () => {
   expect(document.activeElement.getAttribute('class')).toBe('focusBtn');
 });
 
+it('should focus the modal container if all focusable elements are disabled', () => {
+  mount(
+    <Modal open>
+      <button className="focusBtn" disabled />
+    </Modal>
+  );
+
+  expect(document.activeElement.getAttribute('class')).toBe('Modal__content-container');
+});
+
 it('should trap focus', () => {
   const node = mount(<Modal open />);
 

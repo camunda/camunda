@@ -48,26 +48,22 @@ export default class Modal extends React.Component {
   setFocus = () => {
     const container = this.container.current;
     if (container && this.props.open) {
-      // focus the first text input if present
-      const textInput = container.querySelector('input[type="text"]');
-      if (textInput) {
-        return textInput.focus();
+      // focus the default element in the modal, in order:
+      // - the first text input
+      // - the first primary button
+      // - any focusable element
+      const defaultElement =
+        container.querySelector('input[type="text"]') ||
+        container.querySelector('.Button--primary') ||
+        container.querySelector('input, button, textarea, select');
+      if (defaultElement) {
+        defaultElement.focus();
       }
 
-      // focus the first primary button if present
-      const primaryButton = container.querySelector('.Button--primary');
-      if (primaryButton) {
-        return primaryButton.focus();
+      // safeguard in case there is no focusable element or the default element is disabled
+      if (!container.contains(document.activeElement)) {
+        container.focus();
       }
-
-      // focus just anything you can find
-      const anything = container.querySelector('input, button, textarea, select');
-      if (anything) {
-        return anything.focus();
-      }
-
-      // give up
-      container.focus();
     }
   };
 
