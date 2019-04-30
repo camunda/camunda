@@ -21,6 +21,7 @@ import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.processor.SnapshotChunk;
 import io.zeebe.logstreams.processor.SnapshotReplication;
+import io.zeebe.logstreams.state.ReplicateSnapshotControllerTest.Replicator;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
 import java.io.IOException;
@@ -39,19 +40,27 @@ public class FailingSnapshotChunkReplicationTest {
   private StateSnapshotController replicatorSnapshotController;
   private StateSnapshotController receiverSnapshotController;
   private StateStorage receiverStorage;
+  private StateStorage replicatorStorage;
 
   public void setup(SnapshotReplication replicator) throws IOException {
     final File runtimeDirectory = tempFolderRule.newFolder("runtime");
     final File snapshotsDirectory = tempFolderRule.newFolder("snapshots");
-    final StateStorage storage = new StateStorage(runtimeDirectory, snapshotsDirectory);
+    replicatorStorage = new StateStorage(runtimeDirectory, snapshotsDirectory);
 
     final File receiverRuntimeDirectory = tempFolderRule.newFolder("runtime-receiver");
     final File receiverSnapshotsDirectory = tempFolderRule.newFolder("snapshots-receiver");
     receiverStorage = new StateStorage(receiverRuntimeDirectory, receiverSnapshotsDirectory);
 
+    setupReplication(replicator);
+  }
+
+  private void setupReplication(SnapshotReplication replicator) {
     replicatorSnapshotController =
         new StateSnapshotController(
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage, replicator, 1);
+            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
+            replicatorStorage,
+            replicator,
+            1);
     receiverSnapshotController =
         new StateSnapshotController(
             ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
@@ -116,6 +125,37 @@ public class FailingSnapshotChunkReplicationTest {
                 .map(SnapshotChunk::getChunkName)
                 .toArray(String[]::new));
     assertThat(receiverStorage.existSnapshot(1)).isFalse();
+  }
+
+  @Test
+  public void shouldDeleteOrphanedSnapshots() throws Exception {
+    // given
+    final FlakyReplicator flakyReplicator = new FlakyReplicator();
+    setup(flakyReplicator);
+    receiverSnapshotController.consumeReplicatedSnapshots();
+    replicatorSnapshotController.takeSnapshot(1);
+    replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
+    replicatorSnapshotController.close();
+
+    final Replicator workingReplicator = new Replicator();
+    setupReplication(workingReplicator);
+    receiverSnapshotController.consumeReplicatedSnapshots();
+    replicatorSnapshotController.takeSnapshot(2);
+    replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
+
+    // when
+    replicatorSnapshotController.takeSnapshot(3);
+    replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
+
+    // then
+    final List<SnapshotChunk> replicatedChunks = workingReplicator.replicatedChunks;
+    assertThat(replicatedChunks.size()).isGreaterThan(0);
+
+    final File snapshotDirectory = receiverStorage.getTmpSnapshotDirectoryFor("1");
+    assertThat(snapshotDirectory).doesNotExist();
+    assertThat(receiverStorage.existSnapshot(1)).isFalse();
+    assertThat(receiverStorage.existSnapshot(2)).isFalse();
+    assertThat(receiverStorage.existSnapshot(3)).isTrue();
   }
 
   private final class FlakyReplicator implements SnapshotReplication {

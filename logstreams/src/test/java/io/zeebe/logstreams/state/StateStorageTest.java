@@ -70,7 +70,7 @@ public class StateStorageTest {
     // given
     createSnapshotDirectory("no");
     createSnapshotDirectory("bad");
-    createSnapshotDirectory(StateStorage.TEMP_SNAPSHOT_DIRECTORY);
+    createSnapshotDirectory(StateStorage.TMP_SNAPSHOT_DIRECTORY);
     createSnapshotDirectory("1");
     createSnapshotDirectory("0");
     final File[] expected =
@@ -87,6 +87,30 @@ public class StateStorageTest {
   }
 
   @Test
+  public void shouldFindAllTemporaryFoldersWhichAreBelowGivenPosition() {
+    // given
+    createSnapshotDirectory("no");
+    createSnapshotDirectory("bad");
+    createSnapshotDirectory(StateStorage.TMP_SNAPSHOT_DIRECTORY);
+    createSnapshotDirectory("121-tmp");
+    createSnapshotDirectory("not-tmp");
+    createSnapshotDirectory("3-tmp");
+    createSnapshotDirectory("3");
+    createSnapshotDirectory("310-tmp");
+    final File[] expected =
+        new File[] {
+          new File(storage.getSnapshotsDirectory(), "3-tmp"),
+          new File(storage.getSnapshotsDirectory(), "121-tmp")
+        };
+
+    // when
+    final List<File> valid = storage.findTmpDirectoriesBelowPosition(128L);
+
+    // then
+    assertThat(valid).containsExactlyInAnyOrder(expected);
+  }
+
+  @Test
   public void shouldListAllFoldersInOrder() {
     // given
     createSnapshotDirectory("no");
@@ -94,7 +118,7 @@ public class StateStorageTest {
     createSnapshotDirectory("bad");
     createSnapshotDirectory("256");
     createSnapshotDirectory("131");
-    createSnapshotDirectory(StateStorage.TEMP_SNAPSHOT_DIRECTORY);
+    createSnapshotDirectory(StateStorage.TMP_SNAPSHOT_DIRECTORY);
     createSnapshotDirectory("1");
     createSnapshotDirectory("0");
 

@@ -198,23 +198,49 @@ public class StateSnapshotController implements SnapshotController {
   public void ensureMaxSnapshotCount(int maxSnapshotCount) throws IOException {
     final List<File> snapshots = storage.listByPositionAsc();
     if (snapshots.size() > maxSnapshotCount) {
+      final int oldestValidSnapshotIndex = snapshots.size() - maxSnapshotCount;
       LOG.debug(
           "Ensure max snapshot count {}, will delete {} snapshot(s).",
           maxSnapshotCount,
-          snapshots.size() - maxSnapshotCount);
+          oldestValidSnapshotIndex);
 
-      final List<File> snapshotsToRemove =
-          snapshots.subList(0, snapshots.size() - maxSnapshotCount);
+      final List<File> snapshotsToRemove = snapshots.subList(0, oldestValidSnapshotIndex);
 
       for (final File snapshot : snapshotsToRemove) {
         FileUtil.deleteFolder(snapshot.toPath());
         LOG.debug("Purged snapshot {}", snapshot);
       }
+
+      cleanUpTemporarySnapshots(snapshots, oldestValidSnapshotIndex);
     } else {
       LOG.debug(
           "Tried to ensure max snapshot count {}, nothing to do snapshot count is {}.",
           maxSnapshotCount,
           snapshots.size());
+    }
+  }
+
+  /**
+   * Removes orphaned snapshots, where the replication was not completed successfully. Uses the
+   * oldest valid snapshot position to decide which snapshot can be removed.
+   *
+   * @param snapshots the list of valid snapshot directories
+   * @param oldestValidSnapshotIndex the index of the oldest valid snapshot
+   * @throws IOException can be thrown on deletion
+   */
+  private void cleanUpTemporarySnapshots(List<File> snapshots, int oldestValidSnapshotIndex)
+      throws IOException {
+    final File oldestValidSnapshot = snapshots.get(oldestValidSnapshotIndex);
+    final long oldestValidSnapshotPosition = Long.parseLong(oldestValidSnapshot.getName());
+    LOG.debug(
+        "Search for orphaned snapshots below oldest valid snapshot position {}",
+        oldestValidSnapshotPosition);
+
+    final List<File> tmpDirectoriesBelowPosition =
+        storage.findTmpDirectoriesBelowPosition(oldestValidSnapshotPosition);
+    for (final File notCompletedSnapshot : tmpDirectoriesBelowPosition) {
+      FileUtil.deleteFolder(notCompletedSnapshot.toPath());
+      LOG.debug("Delete not completed (orphaned) snapshot {}", notCompletedSnapshot);
     }
   }
 

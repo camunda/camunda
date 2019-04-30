@@ -158,6 +158,29 @@ public class StateSnapshotControllerTest {
   }
 
   @Test
+  public void shouldCleanUpOrphanedTmpSnapshots() throws Exception {
+    // given
+    snapshotController.openDb();
+    snapshotController.takeSnapshot(16);
+    snapshotController.takeSnapshot(2322);
+    snapshotController.takeSnapshot(131);
+    createSnapshotDirectory("18-tmp");
+    createSnapshotDirectory("1-tmp");
+    createSnapshotDirectory("132-tmp");
+
+    // when
+    snapshotController.ensureMaxSnapshotCount(2);
+
+    // then
+    assertThat(storage.getSnapshotsDirectory().listFiles())
+        .extracting(File::getName)
+        .containsOnly("2322", "131", "132-tmp");
+
+    final long latestLowerBound = snapshotController.recover();
+    assertThat(latestLowerBound).isEqualTo(2322);
+  }
+
+  @Test
   public void shouldRecoverFromLatestNotCorruptedSnapshot() throws Exception {
     // given two snapshots
     final RocksDBWrapper wrapper = new RocksDBWrapper();
@@ -210,5 +233,12 @@ public class StateSnapshotControllerTest {
     final File file = files[0];
 
     Files.write(file.toPath(), "<--corrupted-->".getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
+  }
+
+  private File createSnapshotDirectory(final String name) {
+    final File directory = new File(storage.getSnapshotsDirectory(), name);
+    directory.mkdir();
+
+    return directory;
   }
 }
