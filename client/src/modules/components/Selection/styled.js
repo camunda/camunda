@@ -50,10 +50,7 @@ export const OpenSelectionTransition = themed(styled(TransitionComponent)`
     animation-name: ${Animations.fold(0, 474)};
     animation-duration: ${({timeout}) => timeout.enter + 'ms'};
   }
-  /* &.transition-enter-done {
-    opacity: 1;
-    transition: opacity ${({timeout}) => timeout.enter + 'ms'};
-  } */
+
   &.transition-exit {
     opacity: 0;
     transition: opacity ${({timeout}) => timeout.exit + 'ms'};
@@ -65,10 +62,6 @@ export const OpenSelectionTransition = themed(styled(TransitionComponent)`
     animation-name: ${Animations.fold(474, 0)};
     animation-duration: ${({timeout}) => timeout.exit + 'ms'};
   }
-  /* &.transition-exit-done {
-    opacity: 0;
-    max-height: 0px;
-  } */
 `);
 
 export const AddInstanceTransition = themed(styled(TransitionComponent)`
@@ -219,19 +212,6 @@ export const BatchIcon = styled(Batch)`
 
 export const OptionLabel = styled.label`
   margin-left: 8px;
-`;
-
-const addInstanceTransitionStyles = css`
-  &.transition-enter {
-    opacity: 0;
-  }
-  &.transition-enter-active {
-    opacity: 1;
-    transition: opacity ${({timeout}) => timeout + 'ms'};
-  }
-  &.transition-enter-done {
-    opacity: 1;
-  }
 `;
 
 export const Li = themed(styled.li`

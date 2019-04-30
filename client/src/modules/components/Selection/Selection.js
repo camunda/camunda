@@ -6,7 +6,6 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {CSSTransition} from 'react-transition-group';
 import StateIcon from 'modules/components/StateIcon';
 import Dropdown from 'modules/components/Dropdown';
 import {TransitionGroup} from 'modules/components/Transition';
@@ -32,7 +31,8 @@ export default class Selection extends React.Component {
   };
 
   state = {
-    isOperationStarted: false
+    isOperationStarted: false,
+    showExitTransition: false
   };
 
   componentDidUpdate(prevProps, prevState) {
@@ -63,6 +63,14 @@ export default class Selection extends React.Component {
       isOperationStarted: true
     });
     this.operationsMap[optionType].action();
+  };
+
+  handleOnHeaderClick = () => {
+    if (this.props.isOpen) {
+      this.setState({showExitTransition: true});
+    }
+
+    this.props.onToggle();
   };
 
   renderLabel = type => {
@@ -112,14 +120,14 @@ export default class Selection extends React.Component {
   );
 
   renderHeader = idString => {
-    const {isOpen, selectionId, onToggle, instanceCount} = this.props;
+    const {isOpen, selectionId, instanceCount} = this.props;
     return (
       <Styled.Dt isOpen={isOpen}>
         {this.renderArrowIcon(isOpen)}
         <Styled.Heading role="heading">
           <Styled.SelectionToggle
             data-test="selection-toggle"
-            onClick={onToggle}
+            onClick={this.handleOnHeaderClick}
             isOpen={isOpen}
             id={`${idString}-toggle`}
             aria-expanded={isOpen}
@@ -201,6 +209,7 @@ export default class Selection extends React.Component {
 
   render() {
     const idString = `selection-${this.props.selectionId}`;
+
     return (
       <Styled.Dl role="presentation">
         {this.renderHeader(idString)}
@@ -208,6 +217,8 @@ export default class Selection extends React.Component {
           data-test="openSelectionTransition"
           in={this.props.isOpen}
           timeout={{enter: 200, exit: 100}}
+          exit={this.state.showExitTransition}
+          onExited={() => this.setState({showExitTransition: false})}
           mountOnEnter
           unmountOnExit
         >

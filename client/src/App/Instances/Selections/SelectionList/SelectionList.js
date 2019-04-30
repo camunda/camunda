@@ -37,6 +37,7 @@ class SelectionList extends React.Component {
     // we added here the code as a quick fix
     if (prevProps.selections !== this.props.selections) {
       const ids = this.getInstancesWithActiveOperation();
+
       Boolean(ids.length) && this.props.polling.addIds(ids);
     }
   }

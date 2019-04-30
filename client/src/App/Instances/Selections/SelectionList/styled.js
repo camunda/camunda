@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
 import {themed, themeStyle, Colors, Animations} from 'modules/theme';
 
 import {Transition as TransitionComponent} from 'modules/components/Transition';
