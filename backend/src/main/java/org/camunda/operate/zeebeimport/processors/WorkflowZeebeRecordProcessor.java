@@ -97,7 +97,7 @@ public class WorkflowZeebeRecordProcessor {
     logger.debug("Workflow: id {}, bpmnProcessId {}", workflowEntity.getId(), workflowEntity.getBpmnProcessId());
 
     try {
-      updateFieldsInInstancesFor(workflowEntity);
+      updateFieldsInInstancesFor(workflowEntity, bulkRequest);
 
       bulkRequest.add(new IndexRequest(workflowIndex.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowEntity.getId())
           .source(objectMapper.writeValueAsString(workflowEntity), XContentType.JSON)
@@ -108,7 +108,7 @@ public class WorkflowZeebeRecordProcessor {
     }
   }
 
-  private void updateFieldsInInstancesFor(final WorkflowEntity workflowEntity) throws PersistenceException {
+  private void updateFieldsInInstancesFor(final WorkflowEntity workflowEntity, BulkRequest bulkRequest) {
     List<String> workflowInstanceIds = workflowInstanceReader.queryWorkflowInstancesWithEmptyWorkflowVersion(workflowEntity.getId());
     for (String workflowInstanceId : workflowInstanceIds) {
       Map<String, Object> updateFields = new HashMap<>();
@@ -116,7 +116,7 @@ public class WorkflowZeebeRecordProcessor {
       updateFields.put(ListViewTemplate.WORKFLOW_VERSION, workflowEntity.getVersion());
       UpdateRequest updateRequest = new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
           .doc(updateFields);
-      ElasticsearchUtil.executeUpdate(esClient, updateRequest);
+      bulkRequest.add(updateRequest);
     }
   }
 
