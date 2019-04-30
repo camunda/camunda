@@ -19,17 +19,21 @@ jest.mock('react-router-dom', () => {
 });
 
 it('renders without crashing', () => {
-  shallow(<HeaderNavItem location={{pathname: '/foo'}} />);
+  shallow(<HeaderNavItem active="/foo" location={{pathname: '/foo'}} />);
 });
 
 it('should contain the provided name', () => {
-  const node = mount(<HeaderNavItem name="SectionName" location={{pathname: '/foo'}} />);
+  const node = mount(
+    <HeaderNavItem name="SectionName" active="/foo" location={{pathname: '/foo'}} />
+  );
 
   expect(node).toIncludeText('SectionName');
 });
 
 it('should contain a link to the provided destination', () => {
-  const node = mount(<HeaderNavItem linksTo="/section" location={{pathname: '/foo'}} />);
+  const node = mount(
+    <HeaderNavItem linksTo="/section" active="/foo" location={{pathname: '/foo'}} />
+  );
 
   expect(node.find('a')).toHaveProp('href', '/section');
 });

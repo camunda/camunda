@@ -8,7 +8,6 @@ exports[`displays the error message passed in props 1`] = `
     This link is not valid.
   </h1>
   <Link
-    replace={false}
     to="/"
   >
     Go to Dashboards & Reports…
