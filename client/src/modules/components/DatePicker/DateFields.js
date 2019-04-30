@@ -104,6 +104,8 @@ export default class DateFields extends React.PureComponent {
               onDateChange={this.onDateRangeChange}
               startDate={startDateObj}
               endDate={endDateObj}
+              // reinitialize the component when one of the date inputs changes
+              key={startDate + endDate}
             />
           </div>
         )}

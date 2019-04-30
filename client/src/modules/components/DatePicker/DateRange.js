@@ -32,9 +32,11 @@ export default class DateRange extends React.Component {
   constructor(props) {
     super(props);
 
+    const {startDate, endDate} = props;
+
     this.state = adjustRange({
-      startLink: this.props.startDate.clone(),
-      endLink: this.props.endDate.clone()
+      startLink: startDate.isValid() ? startDate.clone() : moment(),
+      endLink: endDate.isValid() ? endDate.clone() : moment()
     });
   }
 
@@ -87,13 +89,6 @@ export default class DateRange extends React.Component {
         prevButton: 'DateRange__calendarButton--hidden'
       };
     }
-  }
-
-  static getDerivedStateFromProps({startDate, endDate}) {
-    return {
-      startLink: startDate.isValid() ? startDate.clone() : moment(),
-      endLink: endDate.isValid() ? endDate.clone() : moment()
-    };
   }
 
   changeStartMonth = direction => this.changeMonth('startLink', direction);
