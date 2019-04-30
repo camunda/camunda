@@ -205,12 +205,6 @@ public class StreamProcessorRule implements TestRule {
               tempFolder, closeables, serviceContainerRule.get(), actorSchedulerRule.get());
       streams.createLogStream(STREAM_NAME, partitionId);
 
-      streams
-          .newRecord(
-              STREAM_NAME) // TODO: workaround for https://github.com/zeebe-io/zeebe/issues/478
-          .event(new UnpackedObject())
-          .write();
-
       streamEnvironment = new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), output);
     }
   }
