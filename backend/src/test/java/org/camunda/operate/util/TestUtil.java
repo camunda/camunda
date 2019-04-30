@@ -59,13 +59,13 @@ public abstract class TestUtil {
     if (workflowId != null) {
       workflowInstance.setWorkflowId(workflowId);
       workflowInstance.setBpmnProcessId("testProcess" + workflowId);
-      workflowInstance.setWorkflowName("Test process" + workflowId);
+      //no workflow name to test sorting
       workflowInstance.setWorkflowVersion(random.nextInt(10));
     } else {
       final int i = random.nextInt(10);
       workflowInstance.setWorkflowId(String.valueOf(i));
       workflowInstance.setBpmnProcessId("testProcess" + i);
-      workflowInstance.setWorkflowName("Test process" + i);
+      workflowInstance.setWorkflowName(UUID.randomUUID().toString());
       workflowInstance.setWorkflowVersion(i);
     }
     return workflowInstance;

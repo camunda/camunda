@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.camunda.operate.entities.ActivityState;
@@ -42,6 +43,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -72,6 +74,10 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private ActivityInstanceReader activityInstanceReader;
+
+  @Autowired
+  @Qualifier("activityIsActiveCheck")
+  private Predicate<Object[]> activityIsActiveCheck;
 
   private ZeebeClient zeebeClient;
 
@@ -124,13 +130,16 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   public void testCreateWorkflowInstanceWithEmptyWorkflowName() {
     // given a process with empty name
     String processId = "emptyNameProcess";
-    final String workflowId = deployWorkflow("emptyNameProcess.bpmn");
+    BpmnModelInstance model = Bpmn.createExecutableProcess(processId)
+        .startEvent()
+          .serviceTask("taskA")
+          .zeebeTaskType("taskA")
+        .endEvent().done();
+
+    final String workflowId = deployWorkflow(model,"emptyNameProcess.bpmn");
     
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    // when import in operate search
-    processAllEvents(1, ImportValueType.WORKFLOW_INSTANCE);
-    processAllEvents(1, ImportValueType.DEPLOYMENT);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
 
     // then it should returns the processId instead of an empty name 
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
