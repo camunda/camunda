@@ -124,9 +124,9 @@ pipeline {
 
     post {
         always {
-            // Retrigger the build if the node disconnected
+            // Retrigger the build if there were connection issues
             script {
-                if (nodeDisconnected()) {
+                if (connectionProblem()) {
                     build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
                 }
             }
@@ -134,6 +134,6 @@ pipeline {
     }
 }
 
-boolean nodeDisconnected() {
-  return currentBuild.rawBuild.getLog(500).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException).*/
+boolean connectionProblem() {
+  return currentBuild.rawBuild.getLog(500).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|Connection reset).*/
 }
