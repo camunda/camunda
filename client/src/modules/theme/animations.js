@@ -4,32 +4,42 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {keyframes} from 'styled-components';
+import styled, {keyframes} from 'styled-components';
+import {Transition as TransitionComponent} from 'modules/components/Transition';
+
+const foldKeyFrames = (minValue, maxValue) => keyframes`
+0% {
+  max-height: ${minValue.toString() + 'px'};
+}
+100% {
+  max-height: ${maxValue.toString() + 'px'}
+}`;
 
 const Animations = {
-  Spinner: keyframes`
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-`,
-  Selection: keyframes`
-  0% {
-    opacity: 0.3;
-  }
-  100% {
-    opacity: 1;
-  }
-`,
-  fold: (minValue, maxValue) => keyframes`
-  0% {
-    max-height: ${minValue.toString() + 'px'};
-  }
-  100% {
-    max-height: ${maxValue.toString() + 'px'}
-  }`
+  SelectionTransition: timeout => styled(TransitionComponent)`
+    &.transition-enter {
+      opacity: 0;
+    }
+    &.transition-enter-active {
+      opacity: 1;
+      transition: opacity ${({timeout}) => timeout.enter + 'ms'};
+      overflow: hidden;
+      animation-name: ${foldKeyFrames(0, 474)};
+      animation-duration: ${({timeout}) => timeout.enter + 'ms'};
+    }
+
+    &.transition-exit {
+      opacity: 0;
+      transition: opacity ${({timeout}) => timeout.exit + 'ms'};
+    }
+    &.transition-exit-active {
+      opacity: 0;
+      max-height: 0px;
+      overflow: hidden;
+      animation-name: ${foldKeyFrames(474, 0)};
+      animation-duration: ${({timeout}) => timeout.exit + 'ms'};
+    }
+  `
 };
 
 export default Animations;

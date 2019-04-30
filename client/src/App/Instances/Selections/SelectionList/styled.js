@@ -18,37 +18,9 @@ const themedWith = (dark, light) => {
   });
 };
 
-export const Transition = themed(styled(TransitionComponent)`
-  &.transition-enter {
-    opacity: 0;
-  }
-  &.transition-enter-active {
-    opacity: 1;
-    transition: opacity ${({timeout}) => timeout + 'ms'};
-    overflow: hidden;
-    animation-name: ${Animations.fold(0, 474)};
-    animation-duration: ${({timeout}) => timeout + 'ms'};
-  }
-  &.transition-enter-done {
-    opacity: 1;
-    transition: opacity ${({timeout}) => timeout + 'ms'};
-  }
-  &.transition-exit {
-    opacity: 0;
-    transition: opacity ${({timeout}) => timeout + 'ms'};
-  }
-  &.transition-exit-active {
-    opacity: 0;
-    max-height: 0px;
-    overflow: hidden;
-    animation-name: ${Animations.fold(474, 0)};
-    animation-duration: ${({timeout}) => timeout + 'ms'};
-  }
-  &.transition-exit-done {
-    opacity: 0;
-    max-height: 0px;
-  }
-`);
+export const Transition = Animations.SelectionTransition(
+  `${({timeout}) => timeout}`
+);
 
 export const Ul = styled.ul`
   padding-left: 35px;
@@ -68,7 +40,6 @@ export const Li = styled.li`
 export const MessageWrapper = styled.div`
   display: flex;
   justify-content: flex-end;
-  /* margin-top: 20px; */
   padding-right: 40px;
 `;
 

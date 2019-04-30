@@ -4,8 +4,17 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {Colors, Animations, themed, themeStyle} from 'modules/theme';
+import styled, {keyframes} from 'styled-components';
+import {Colors, themed, themeStyle} from 'modules/theme';
+
+const SpinnerKeyframe = keyframes`
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+`;
 
 export const Spinner = themed(styled.div`
   border-radius: 50%;
@@ -23,5 +32,5 @@ export const Spinner = themed(styled.div`
     })};
   border-right-color: transparent;
 
-  animation: ${Animations.Spinner} 0.65s infinite linear;
+  animation: ${SpinnerKeyframe} 0.65s infinite linear;
 `);

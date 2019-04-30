@@ -24,6 +24,7 @@ export default class Selection extends React.Component {
     selectionId: PropTypes.number.isRequired,
     instances: PropTypes.object.isRequired,
     instanceCount: PropTypes.number.isRequired,
+    transitionTimeOut: PropTypes.object.isRequired,
     onToggle: PropTypes.func.isRequired,
     onRetry: PropTypes.func.isRequired,
     onCancel: PropTypes.func.isRequired,
@@ -69,7 +70,6 @@ export default class Selection extends React.Component {
     if (this.props.isOpen) {
       this.setState({showExitTransition: true});
     }
-
     this.props.onToggle();
   };
 
@@ -195,6 +195,7 @@ export default class Selection extends React.Component {
   renderFooter = () => {
     const numberOfNotShownInstances =
       this.props.instanceCount - this.props.instances.size;
+
     return (
       <Styled.Footer>
         <Styled.MoreInstances>
@@ -208,15 +209,16 @@ export default class Selection extends React.Component {
   };
 
   render() {
-    const idString = `selection-${this.props.selectionId}`;
+    const {isOpen, selectionId, transitionTimeOut} = this.props;
+    const idString = `selection-${selectionId}`;
 
     return (
       <Styled.Dl role="presentation">
         {this.renderHeader(idString)}
         <Styled.OpenSelectionTransition
           data-test="openSelectionTransition"
-          in={this.props.isOpen}
-          timeout={{enter: 200, exit: 100}}
+          in={isOpen}
+          timeout={transitionTimeOut}
           exit={this.state.showExitTransition}
           onExited={() => this.setState({showExitTransition: false})}
           mountOnEnter

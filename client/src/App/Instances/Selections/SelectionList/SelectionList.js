@@ -90,6 +90,13 @@ class SelectionList extends React.Component {
     );
   };
 
+  getTransitionTimeOut = noOfInstances => {
+    return {
+      enter: -noOfInstances * 10 + 600,
+      exit: 100
+    };
+  };
+
   render() {
     const {
       selections,
@@ -135,6 +142,7 @@ class SelectionList extends React.Component {
                         isOpen={isOpen}
                         selectionId={selectionId}
                         instances={instancesMap}
+                        transitionTimeOut={timeout}
                         instanceCount={totalCount}
                         onRetry={() => this.handleRetrySelection(selectionId)}
                         onCancel={() => this.handleCancelSelection(selectionId)}

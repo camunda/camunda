@@ -39,30 +39,9 @@ export const Ul = styled.ul`
   flex-direction: column-reverse;
 `;
 
-export const OpenSelectionTransition = themed(styled(TransitionComponent)`
-  &.transition-enter {
-    opacity: 0;
-  }
-  &.transition-enter-active {
-    opacity: 1;
-    transition: opacity ${({timeout}) => timeout.enter + 'ms'};
-    overflow: hidden;
-    animation-name: ${Animations.fold(0, 474)};
-    animation-duration: ${({timeout}) => timeout.enter + 'ms'};
-  }
-
-  &.transition-exit {
-    opacity: 0;
-    transition: opacity ${({timeout}) => timeout.exit + 'ms'};
-  }
-  &.transition-exit-active {
-    opacity: 0;
-    max-height: 0px;
-    overflow: hidden;
-    animation-name: ${Animations.fold(474, 0)};
-    animation-duration: ${({timeout}) => timeout.exit + 'ms'};
-  }
-`);
+export const OpenSelectionTransition = Animations.SelectionTransition(
+  `${({timeout}) => timeout}`
+);
 
 export const AddInstanceTransition = themed(styled(TransitionComponent)`
   &.transition-enter {
