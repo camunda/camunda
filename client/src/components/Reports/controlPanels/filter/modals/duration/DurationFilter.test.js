@@ -54,7 +54,7 @@ jest.mock('components', () => {
 it('should contain a modal', () => {
   const node = mount(<DurationFilter />);
 
-  expect(node.find('#modal')).toBePresent();
+  expect(node.find('#modal')).toExist();
 });
 
 it('should contain a button to abort the filter creation', () => {
@@ -89,5 +89,5 @@ it('should have a create filter button', () => {
 
 it('should show a hint that only completed instances will be shown', () => {
   const node = mount(<DurationFilter />);
-  expect(node.find('Message')).toBePresent();
+  expect(node.find('Message')).toExist();
 });

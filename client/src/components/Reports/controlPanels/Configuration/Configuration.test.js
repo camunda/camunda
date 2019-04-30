@@ -55,12 +55,12 @@ it('should contain the Component from the visualizations based on the type', () 
     <Configuration report={{data: {configuration: {}}}} type="typeA" onChange={() => {}} />
   );
 
-  expect(node.find(typeA)).toBePresent();
+  expect(node.find(typeA)).toExist();
 
   node.setProps({type: 'typeB'});
 
-  expect(node.find(typeA)).not.toBePresent();
-  expect(node.find(typeB)).toBePresent();
+  expect(node.find(typeA)).not.toExist();
+  expect(node.find(typeB)).toExist();
 });
 
 it('should reset to defaults', () => {

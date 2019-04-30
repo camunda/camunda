@@ -165,7 +165,7 @@ it('should only display process part button if view is process instance duration
     />
   );
 
-  expect(node.find('ProcessPart')).toBePresent();
+  expect(node.find('ProcessPart')).toExist();
 
   node.setProps({
     report: {
@@ -174,7 +174,7 @@ it('should only display process part button if view is process instance duration
     }
   });
 
-  expect(node.find('ProcessPart')).not.toBePresent();
+  expect(node.find('ProcessPart')).not.toExist();
 });
 
 it('should only display target value button if view is flownode duration', () => {
@@ -191,13 +191,13 @@ it('should only display target value button if view is flownode duration', () =>
     />
   );
 
-  expect(node.find('TargetValueComparison')).toBePresent();
+  expect(node.find('TargetValueComparison')).toExist();
 
   node.setProps({
     report: {...report, data: {...report.data, view: {entity: 'flowNode', property: 'frequency'}}}
   });
 
-  expect(node.find('TargetValueComparison')).not.toBePresent();
+  expect(node.find('TargetValueComparison')).not.toExist();
 });
 
 it('should load the process definition xml when a new definition is selected', async () => {

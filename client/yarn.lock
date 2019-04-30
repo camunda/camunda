@@ -3847,9 +3847,9 @@ enzyme-adapter-utils@^1.11.0:
     prop-types "^15.7.2"
     semver "^5.6.0"
 
-enzyme-matchers@^4.2.0:
-  version "4.2.0"
-  resolved "https://registry.yarnpkg.com/enzyme-matchers/-/enzyme-matchers-4.2.0.tgz#38333883258da90e5414b5ac07d388aecb75227f"
+enzyme-matchers@^7.0.2:
+  version "7.0.2"
+  resolved "https://registry.yarnpkg.com/enzyme-matchers/-/enzyme-matchers-7.0.2.tgz#fe47f2cb54f8b0c5a3f0e515faf8131c188f613a"
   dependencies:
     circular-json-es6 "^2.0.1"
     deep-equal-ident "^1.1.1"
@@ -6104,6 +6104,12 @@ jest-each@^24.7.1:
     jest-util "^24.7.1"
     pretty-format "^24.7.0"
 
+jest-environment-enzyme@^7.0.2:
+  version "7.0.2"
+  resolved "https://registry.yarnpkg.com/jest-environment-enzyme/-/jest-environment-enzyme-7.0.2.tgz#7af83556e9a894d350d0dd4e561eaa33254e1daf"
+  dependencies:
+    jest-environment-jsdom "^24.0.0"
+
 jest-environment-jsdom-fourteen@0.1.0:
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/jest-environment-jsdom-fourteen/-/jest-environment-jsdom-fourteen-0.1.0.tgz#aad6393a9d4b565b69a609109bf469f62bf18ccc"
@@ -6112,7 +6118,7 @@ jest-environment-jsdom-fourteen@0.1.0:
     jest-util "^24.5.0"
     jsdom "^14.0.0"
 
-jest-environment-jsdom@^24.7.1:
+jest-environment-jsdom@^24.0.0, jest-environment-jsdom@^24.7.1:
   version "24.7.1"
   resolved "https://registry.yarnpkg.com/jest-environment-jsdom/-/jest-environment-jsdom-24.7.1.tgz#a40e004b4458ebeb8a98082df135fd501b9fbbd6"
   dependencies:
@@ -6133,12 +6139,13 @@ jest-environment-node@^24.7.1:
     jest-mock "^24.7.0"
     jest-util "^24.7.1"
 
-jest-enzyme@^4.0.1:
-  version "4.2.0"
-  resolved "https://registry.yarnpkg.com/jest-enzyme/-/jest-enzyme-4.2.0.tgz#d284506b6d87e072bf6d2786584970bb42ea5969"
+jest-enzyme@^7.0.2:
+  version "7.0.2"
+  resolved "https://registry.yarnpkg.com/jest-enzyme/-/jest-enzyme-7.0.2.tgz#706af4d713846d5cb78c24830cf3deed9bb029a1"
   dependencies:
-    enzyme-matchers "^4.2.0"
+    enzyme-matchers "^7.0.2"
     enzyme-to-json "^3.3.0"
+    jest-environment-enzyme "^7.0.2"
 
 jest-get-type@^22.1.0:
   version "22.4.3"

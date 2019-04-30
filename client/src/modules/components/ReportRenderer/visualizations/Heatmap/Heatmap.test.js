@@ -83,7 +83,7 @@ it('should display a loading indication while loading', () => {
     <Heatmap report={{...report, data: {...report.data, configuration: {xml: null}}}} />
   );
 
-  expect(node.find('LoadingIndicator')).toBePresent();
+  expect(node.find('LoadingIndicator')).toExist();
 });
 
 it('should display an error message if visualization is incompatible with data', () => {
@@ -106,7 +106,7 @@ it('should display a heatmap overlay', () => {
       .find('BPMNDiagram')
       .children()
       .find('HeatmapOverlay')
-  ).toBePresent();
+  ).toExist();
 });
 
 it('should convert the data to target value heat when target value mode is active', () => {

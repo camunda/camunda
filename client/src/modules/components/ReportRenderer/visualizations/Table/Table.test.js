@@ -109,7 +109,7 @@ it('should display an error message for a non-object result (single number)', as
     />
   );
 
-  expect(node.find('ReportBlankSlate')).toBePresent();
+  expect(node.find('ReportBlankSlate')).toExist();
   expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
 });
 
@@ -118,7 +118,7 @@ it('should display an error message if no data is provided', async () => {
     <Table {...props} report={{...report, result: null}} errorMessage="Error" formatter={v => v} />
   );
 
-  expect(node.find('ReportBlankSlate')).toBePresent();
+  expect(node.find('ReportBlankSlate')).toExist();
   expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
 });
 
@@ -140,7 +140,7 @@ it('should not display an error message if data is valid', async () => {
     />
   );
 
-  expect(node.find('ReportBlankSlate')).not.toBePresent();
+  expect(node.find('ReportBlankSlate')).not.toExist();
 });
 
 it('should set the correct parameters when updating sorting', () => {

@@ -40,7 +40,7 @@ it('should initially load data', () => {
 it('should display a loading indicator', () => {
   const node = shallow(<Sharing {...props} />);
 
-  expect(node.find('LoadingIndicator')).toBePresent();
+  expect(node.find('LoadingIndicator')).toExist();
 });
 
 it('should display an error message if evaluation was unsuccessful', () => {
@@ -52,7 +52,7 @@ it('should display an error message if evaluation was unsuccessful', () => {
     evaluationResult: null
   });
 
-  expect(node.find('ErrorPage')).toBePresent();
+  expect(node.find('ErrorPage')).toExist();
 });
 
 it('should display an error message if type is invalid', () => {
@@ -64,7 +64,7 @@ it('should display an error message if type is invalid', () => {
     evaluationResult: {name: 'foo'}
   });
 
-  expect(node.find('ErrorPage')).toBePresent();
+  expect(node.find('ErrorPage')).toExist();
 });
 
 it('should have report if everything is fine', () => {
@@ -76,7 +76,7 @@ it('should have report if everything is fine', () => {
     evaluationResult: {name: 'foo'}
   });
 
-  expect(node.find('ReportRenderer')).toBePresent();
+  expect(node.find('ReportRenderer')).toExist();
 });
 
 it('should retrieve report for the given id', () => {
@@ -107,7 +107,7 @@ it('should have dashboard if everything is fine', () => {
     evaluationResult: {reportShares: 'foo'}
   });
 
-  expect(node.find('DashboardRenderer')).toBePresent();
+  expect(node.find('DashboardRenderer')).toExist();
 });
 
 it('should retrieve dashboard for the given id', () => {
@@ -138,5 +138,5 @@ it('should render a button linking to view mode', () => {
     evaluationResult: {name: 'My dashboard name'}
   });
 
-  expect(node.find(Button)).toBePresent();
+  expect(node.find(Button)).toExist();
 });

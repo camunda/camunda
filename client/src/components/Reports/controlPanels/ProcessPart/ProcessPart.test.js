@@ -40,7 +40,7 @@ it('should display a button if no process part is set', () => {
 
   expect(
     node.findWhere(n => n.type() === 'button' && n.text() === 'Process Instance Part')
-  ).toBePresent();
+  ).toExist();
 });
 
 it('should not display the button is process part is set', () => {
@@ -48,7 +48,7 @@ it('should not display the button is process part is set', () => {
 
   expect(
     node.findWhere(n => n.type() === 'button' && n.text() === 'Process Instance Part')
-  ).not.toBePresent();
+  ).not.toExist();
 });
 
 it('should show a preview of the process part', () => {
@@ -84,7 +84,7 @@ it('should show the bpmn diagram', () => {
 
   node.find('.ProcessPart__current').simulate('click');
 
-  expect(node.find('BPMNDiagram')).toBePresent();
+  expect(node.find('BPMNDiagram')).toExist();
 });
 
 it('should show the id of the selected node if it does not have a name', () => {

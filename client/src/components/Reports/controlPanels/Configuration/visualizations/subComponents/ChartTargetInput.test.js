@@ -75,7 +75,7 @@ it('should display the current target values target', () => {
 it('should display select dateFormat dropdown when viewProperty equal duration', () => {
   const node = shallow(<ChartTargetInput {...validProps} />);
 
-  expect(node.find('Select')).toBePresent();
+  expect(node.find('Select')).toExist();
 });
 
 it('should hide select dateFormat dropdown when viewProperty is not equal duration', () => {
@@ -100,7 +100,7 @@ it('should hide select dateFormat dropdown when viewProperty is not equal durati
     }
   };
   const node = shallow(<ChartTargetInput {...newProps} />);
-  expect(node.find('Select')).not.toBePresent();
+  expect(node.find('Select')).not.toExist();
 });
 
 it('should invoke the onChange prop on button click', async () => {
@@ -137,7 +137,7 @@ it('should display select date format if combined report is duration report', as
   };
   const node = shallow(<ChartTargetInput {...combinedProps} />);
 
-  expect(node.find('Select')).toBePresent();
+  expect(node.find('Select')).toExist();
 });
 
 it('should include an error message when invalid target value is typed', () => {
@@ -157,5 +157,5 @@ it('should include an error message when invalid target value is typed', () => {
     }
   });
 
-  expect(node.find(ErrorMessage)).toBePresent();
+  expect(node.find(ErrorMessage)).toExist();
 });

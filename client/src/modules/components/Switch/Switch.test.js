@@ -20,7 +20,7 @@ it('should render without crashing', () => {
 it('renders an <input> element by default', () => {
   const node = mount(<Switch />);
 
-  expect(node).toHaveTagName('Switch');
+  expect(node).toHaveDisplayName('Switch');
 });
 
 it('should be checked/enabled if is set in the property', () => {

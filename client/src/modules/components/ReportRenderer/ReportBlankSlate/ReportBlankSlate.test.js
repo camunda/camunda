@@ -22,6 +22,6 @@ it('should render a message provided as a prop', () => {
 it('should should not render inner illustrations if report type is combined', () => {
   const node = mount(<ReportBlankSlate errorMessage="foo" isCombined />);
 
-  expect(node.find('.ReportBlankSlate__illustrationDropdown')).toBeEmpty();
-  expect(node.find('.ReportBlankSlate__diagramIllustrations')).toBeEmpty();
+  expect(node.find('.ReportBlankSlate__illustrationDropdown').exists()).toBeFalsy();
+  expect(node.find('.ReportBlankSlate__diagramIllustrations').exists()).toBeFalsy();
 });

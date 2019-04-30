@@ -214,7 +214,7 @@ it('should re-use viewer instances', async () => {
 it('should show a loading indicator while loading', () => {
   const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
 
-  expect(node.find('LoadingIndicator')).toBePresent();
+  expect(node.find('LoadingIndicator')).toExist();
 });
 
 it('should show diagram zoom and reset controls', async () => {
@@ -224,7 +224,7 @@ it('should show diagram zoom and reset controls', async () => {
 
   node.setState({loaded: true});
 
-  expect(node.find('ZoomControls')).toBePresent();
+  expect(node.find('ZoomControls')).toExist();
 });
 
 it('should trigger diagram zoom when zoom function is called', async () => {

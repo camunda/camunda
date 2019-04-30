@@ -34,13 +34,13 @@ const props = {
 it('should show no data indicator', () => {
   const node = shallow(<Dashboards {...props} store={{dashboards: [], searchQuery: ''}} />);
 
-  expect(node.find('NoEntities')).toBePresent();
+  expect(node.find('NoEntities')).toExist();
 });
 
 it('should contain a button to collapse the entities list', () => {
   const node = shallow(<Dashboards {...props} />);
 
-  expect(node.find('ToggleButton')).toBePresent();
+  expect(node.find('ToggleButton')).toExist();
 });
 
 it('should hide the list of entities when clicking the collapse buttons', () => {
@@ -53,7 +53,7 @@ it('should hide the list of entities when clicking the collapse buttons', () => 
 
   button.simulate('click');
 
-  expect(node.find('.entityList')).not.toBePresent();
+  expect(node.find('.entityList')).not.toExist();
 });
 
 it('should not show a button to show all entities if the number of entities is less than 5', () => {

@@ -33,7 +33,7 @@ it('should show a loading indicator', () => {
 
   const node = shallow(<ConfirmationModal {...props} />);
 
-  expect(node.find('LoadingIndicator')).toBePresent();
+  expect(node.find('LoadingIndicator')).toExist();
 });
 
 it('should show the name of the Entity to delete', () => {

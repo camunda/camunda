@@ -100,7 +100,7 @@ it('should render a chart if visualization is number', () => {
     />
   );
 
-  expect(node.find(Chart)).toBePresent();
+  expect(node.find(Chart)).toExist();
 });
 
 it('should instruct to select one or more reports if no reports are selected for combined reports', () => {

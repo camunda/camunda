@@ -32,7 +32,7 @@ jest.mock('components', () => {
 it('should contain a modal', () => {
   const node = mount(<NodeFilter />);
 
-  expect(node.find('#modal')).toBePresent();
+  expect(node.find('#modal')).toExist();
 });
 
 it('should display a diagram', () => {

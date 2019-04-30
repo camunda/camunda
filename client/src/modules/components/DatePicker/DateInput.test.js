@@ -15,7 +15,7 @@
 // it('should create a text input field', () => {
 //   const node = mount(<DateInput date={moment()} format="YYYY-MM-DD" />);
 
-//   expect(node.find('input')).toBePresent();
+//   expect(node.find('input')).toExist();
 // });
 
 // it('should have field with value equal to formated date', () => {

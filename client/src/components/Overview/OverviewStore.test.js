@@ -83,7 +83,7 @@ it('should redirect to new report edit page when creating new report', async () 
 
   await node.instance().createProcessReport();
 
-  expect(node.find('Redirect')).toBePresent();
+  expect(node.find('Redirect')).toExist();
   expect(node.find('Redirect').prop('to')).toBe('/report/newReport/edit?new');
 });
 
@@ -136,7 +136,7 @@ it('should redirect to new dashboard edit page', async () => {
   await node.instance().componentDidMount();
   await node.instance().createDashboard();
 
-  expect(node.find('Redirect')).toBePresent();
+  expect(node.find('Redirect')).toExist();
   expect(node.find('Redirect').prop('to')).toBe('/dashboard/newDashboard/edit?new');
 });
 

@@ -127,5 +127,5 @@ it('should show a warning message when there are incompatible filters', async ()
   incompatibleFilters.mockReturnValue(true);
   const node = await mount(<Analysis />);
   await node.update();
-  expect(node.find('Message')).toBePresent();
+  expect(node.find('Message')).toExist();
 });

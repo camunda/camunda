@@ -19,7 +19,7 @@ it('should render ColumnSelection for raw data views', () => {
     />
   );
 
-  expect(node.find('ColumnSelection')).toBePresent();
+  expect(node.find('ColumnSelection')).toExist();
 });
 
 it('should render relative abolute selection for count views', () => {
@@ -32,7 +32,7 @@ it('should render relative abolute selection for count views', () => {
     />
   );
 
-  expect(node.find('RelativeAbsoluteSelection')).toBePresent();
+  expect(node.find('RelativeAbsoluteSelection')).toExist();
 });
 
 it('should render GradientBarsSwitch for group by rules', () => {
@@ -45,5 +45,5 @@ it('should render GradientBarsSwitch for group by rules', () => {
     />
   );
 
-  expect(node.find('GradientBarsSwitch')).toBePresent();
+  expect(node.find('GradientBarsSwitch')).toExist();
 });

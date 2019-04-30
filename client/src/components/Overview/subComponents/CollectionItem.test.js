@@ -70,7 +70,7 @@ it('should invok setCollectionToUpdate on updating a collection', () => {
 it('should contain a button to collapse the entities list', () => {
   const node = shallow(<CollectionItem {...props} />);
 
-  expect(node.find('.ToggleCollapse')).toBePresent();
+  expect(node.find('.ToggleCollapse')).toExist();
 });
 
 it('should toggle expanded when clicking the collapse button', () => {
@@ -89,5 +89,5 @@ it('should render children component if item is opened', () => {
   );
 
   node.setState({expanded: true});
-  expect(node.find('.test')).toBePresent();
+  expect(node.find('.test')).toExist();
 });

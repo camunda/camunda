@@ -38,8 +38,8 @@ it('should have a switch for the precision setting', () => {
   const spy = jest.fn();
   const node = shallow(<NumberConfig {...props} onChange={spy} />);
 
-  expect(node.find('Switch')).toBePresent();
-  expect(node.find('.precision')).toBePresent();
+  expect(node.find('Switch')).toExist();
+  expect(node.find('.precision')).toExist();
 
   node
     .find('Switch')
@@ -63,13 +63,13 @@ it('should change the precision', () => {
 it('should contain a target input for count property', () => {
   const node = shallow(<NumberConfig {...props} />);
 
-  expect(node.find('CountTargetInput')).toBePresent();
+  expect(node.find('CountTargetInput')).toExist();
 });
 
 it('should contain a target input for duration property', () => {
   props.report.data.view.property = 'duration';
   const node = shallow(<NumberConfig {...props} />);
 
-  expect(node.find('CountTargetInput')).not.toBePresent();
-  expect(node.find('DurationTargetInput')).toBePresent();
+  expect(node.find('CountTargetInput')).not.toExist();
+  expect(node.find('DurationTargetInput')).toExist();
 });

@@ -24,6 +24,6 @@ it('should expose a global addNotifications method', () => {
 
   addNotification('Sample Notification');
 
-  expect(node.find('Notification')).toBePresent();
+  expect(node.find('Notification')).toExist();
   expect(node.find('Notification').prop('config').text).toBe('Sample Notification');
 });

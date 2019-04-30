@@ -64,14 +64,14 @@ const props = {
 it('should show no data indicator', () => {
   const node = shallow(<Collections {...props} store={{collections: [], searchQuery: ''}} />);
 
-  expect(node.find('.collectionBlankSlate')).toBePresent();
+  expect(node.find('.collectionBlankSlate')).toExist();
 });
 
 it('should show the list of entities when entity has open state', () => {
   const node = shallow(<Collections {...props} />);
   node.setState({[collection.id]: true});
 
-  expect(node.find('.entityList')).toBePresent();
+  expect(node.find('.entityList')).toExist();
 });
 
 it('should not show a button to show all reports if the number of reports is less than 5', () => {
@@ -105,8 +105,8 @@ it('should render dashboard and report list items', () => {
   const node = shallow(<Collections {...props} />);
   node.setState({[collection.id]: true});
 
-  expect(node.find(ReportItem)).toBePresent();
-  expect(node.find(DashboardItem)).toBePresent();
+  expect(node.find(ReportItem)).toExist();
+  expect(node.find(DashboardItem)).toExist();
 });
 
 it('should show no result found text when no matching reports were found', () => {

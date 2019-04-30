@@ -45,7 +45,7 @@ it('should display a number if visualization is number', () => {
     loaded: true
   });
 
-  expect(node.find(Number)).toBePresent();
+  expect(node.find(Number)).toExist();
   expect(node.find(Number).prop('report')).toEqual(report);
 });
 

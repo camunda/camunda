@@ -14,7 +14,7 @@ import ActionItem from './ActionItem';
 it('should have an action button', () => {
   const node = shallow(<ActionItem />);
 
-  expect(node.find(Button)).toBePresent();
+  expect(node.find(Button)).toExist();
 });
 
 it('should render child content', () => {

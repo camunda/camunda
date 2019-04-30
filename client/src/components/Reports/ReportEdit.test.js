@@ -143,7 +143,7 @@ it('should show a warning message when the data is not complete', async () => {
     }
   });
 
-  expect(node.find('Message')).toBePresent();
+  expect(node.find('Message')).toExist();
   expect(node.find('Message').props().type).toBe('warning');
 });
 
@@ -165,7 +165,7 @@ it('should show a warning message when there are incompatible filter ', async ()
     }
   });
 
-  expect(node.find('Message')).toBePresent();
+  expect(node.find('Message')).toExist();
   expect(node.find('Message').props().type).toBe('warning');
 });
 

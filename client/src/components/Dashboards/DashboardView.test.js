@@ -42,13 +42,13 @@ it('should display the key properties of a dashboard', () => {
 it('should provide a link to edit mode in view mode', () => {
   const node = shallow(<DashboardView />);
 
-  expect(node.find('.edit-button')).toBePresent();
+  expect(node.find('.edit-button')).toExist();
 });
 
 it('should render a sharing popover', () => {
   const node = shallow(<DashboardView />);
 
-  expect(node.find('Popover.share-button')).toBePresent();
+  expect(node.find('Popover.share-button')).toExist();
 });
 
 it('should enter fullscreen mode', () => {
@@ -101,11 +101,11 @@ it('should add an autorefresh addon when autorefresh mode is active', () => {
 it('should have a toggle theme button that is only visible in fullscreen mode', () => {
   const node = shallow(<DashboardView />);
 
-  expect(node.find('.theme-toggle')).not.toBePresent();
+  expect(node.find('.theme-toggle')).not.toExist();
 
   node.setState({fullScreenActive: true});
 
-  expect(node.find('.theme-toggle')).toBePresent();
+  expect(node.find('.theme-toggle')).toExist();
 });
 
 it('should toggle the theme when clicking the toggle theme button', () => {
@@ -175,7 +175,7 @@ it('should open editCollectionModal when calling openEditCollectionModal', () =>
 
   node.instance().openEditCollectionModal();
 
-  expect(node.find('EditCollectionModal')).toBePresent();
+  expect(node.find('EditCollectionModal')).toExist();
 });
 
 it('should load Collections on mount', () => {
@@ -187,5 +187,5 @@ it('should load Collections on mount', () => {
 it('should render collections dropdown', async () => {
   const node = shallow(<DashboardView />);
 
-  expect(node.find('CollectionsDropdown')).toBePresent();
+  expect(node.find('CollectionsDropdown')).toExist();
 });

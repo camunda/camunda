@@ -43,7 +43,7 @@ it('should render a Typeahead element with the available reports as options', ()
 
   const props = node.find('Typeahead').props();
 
-  expect(node.find('Typeahead')).toBePresent();
+  expect(node.find('Typeahead')).toExist();
   expect(props.placeholder).toBe('Select a Report');
   expect(props.values[0].name).toBe('Report A');
   expect(props.values[1].name).toBe('Report B');
@@ -86,7 +86,7 @@ it('should show only "No reports created yet" option if no reports are available
 it('should show a loading message while loading available reports', () => {
   const node = shallow(<ReportModal />);
 
-  expect(node.find('LoadingIndicator')).toBePresent();
+  expect(node.find('LoadingIndicator')).toExist();
 });
 
 it("should truncate report name if it's longer than 90 signs", () => {
@@ -121,7 +121,7 @@ it('should contain a text input field if in external source mode', () => {
 
   node.setState({external: true});
 
-  expect(node.find('.externalInput')).toBePresent();
+  expect(node.find('.externalInput')).toExist();
 });
 
 it('should  disable the submit button if the url does not start with http in external mode', () => {

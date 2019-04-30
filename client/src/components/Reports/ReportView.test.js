@@ -65,7 +65,7 @@ it('should display the key properties of a report', () => {
 it('should provide a link to edit mode in view mode', () => {
   const node = shallow(<ReportView report={report} />);
 
-  expect(node.find('.edit-button')).toBePresent();
+  expect(node.find('.edit-button')).toExist();
 });
 
 it('should open a deletion modal on delete button click', async () => {
@@ -91,7 +91,7 @@ it('should redirect to the report list on report deletion', async () => {
 
   await node.instance().deleteReport();
 
-  expect(node.find('Redirect')).toBePresent();
+  expect(node.find('Redirect')).toExist();
   expect(node.props().to).toEqual('/');
 });
 
@@ -104,12 +104,12 @@ it('should contain a ReportRenderer with the report evaluation result', () => {
 it('should render a sharing popover', () => {
   const node = shallow(<ReportView report={report} />);
 
-  expect(node.find('.share-button')).toBePresent();
+  expect(node.find('.share-button')).toExist();
 });
 
 it('should show a download csv button with the correct link', () => {
   const node = shallow(<ReportView report={report} />);
-  expect(node.find('.Report__csv-download-button')).toBePresent();
+  expect(node.find('.Report__csv-download-button')).toExist();
 
   const href = node.find('.Report__csv-download-button').props().href;
 
@@ -119,7 +119,7 @@ it('should show a download csv button with the correct link', () => {
 
 it('should show a download csv button even if the result is 0', () => {
   const node = shallow(<ReportView report={{...report, result: {data: 0}}} />);
-  expect(node.find('.Report__csv-download-button')).toBePresent();
+  expect(node.find('.Report__csv-download-button')).toExist();
 });
 
 it('should reflect excluded columns in the csv download link', () => {
@@ -128,7 +128,7 @@ it('should reflect excluded columns in the csv download link', () => {
     data: {...report.data, configuration: {excludedColumns: ['prop1', 'var__VariableName']}}
   };
   const node = shallow(<ReportView report={newReport} />);
-  expect(node.find('.Report__csv-download-button')).toBePresent();
+  expect(node.find('.Report__csv-download-button')).toExist();
 
   const href = node.find('.Report__csv-download-button').props().href;
   expect(href).toContain('?excludedColumns=prop1,variable:VariableName');
@@ -149,7 +149,7 @@ it('should set conflict state when conflict happens on delete button click', asy
 it('should render collections dropdown', async () => {
   const node = shallow(<ReportView report={report} />);
 
-  expect(node.find('CollectionsDropdown')).toBePresent();
+  expect(node.find('CollectionsDropdown')).toExist();
 });
 
 it('should open editCollectionModal when calling openEditCollectionModal', async () => {
@@ -157,7 +157,7 @@ it('should open editCollectionModal when calling openEditCollectionModal', async
 
   node.instance().openEditCollectionModal();
 
-  expect(node.find('EditCollectionModal')).toBePresent();
+  expect(node.find('EditCollectionModal')).toExist();
 });
 
 it('should invoke loadCollections on mount', async () => {

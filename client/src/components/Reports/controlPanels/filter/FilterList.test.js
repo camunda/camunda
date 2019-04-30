@@ -30,7 +30,7 @@ jest.mock('services', () => {
 it('should render an unordered list', () => {
   const node = mount(<FilterList data={[]} />);
 
-  expect(node.find('ul')).toBePresent();
+  expect(node.find('ul')).toExist();
 });
 
 it('should display a start date filter', () => {

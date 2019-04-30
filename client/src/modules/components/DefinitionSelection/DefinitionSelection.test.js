@@ -48,7 +48,7 @@ it('should render without crashing', () => {
 it('should display a loading indicator', () => {
   const node = shallow(<DefinitionSelection {...props} />);
 
-  expect(node.find(LoadingIndicator)).toBePresent();
+  expect(node.find(LoadingIndicator)).toExist();
 });
 
 it('should initially load all definitions', () => {
@@ -79,7 +79,7 @@ it('should disable typeahead if no reports are avaialbe', async () => {
   loadDefinitions.mockReturnValueOnce([]);
   const node = await shallow(<DefinitionSelection {...props} />);
 
-  expect(node.find('Typeahead')).toBePresent();
+  expect(node.find('Typeahead')).toExist();
   expect(node.find('Typeahead')).toBeDisabled();
 });
 
@@ -161,7 +161,7 @@ it('should show a note if the selected ProcDef version is ALL', async () => {
     <DefinitionSelection enableAllVersionSelection definitionVersion="ALL" />
   );
 
-  expect(node.find('.warning')).toBePresent();
+  expect(node.find('.warning')).toExist();
 });
 
 it('should pass an id for every entry to the typeahead', async () => {

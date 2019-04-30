@@ -25,14 +25,14 @@ it('should provide name edit input', async () => {
   const node = await shallow(<EditCollectionModal {...props} />);
   node.setState({name: 'test name'});
 
-  expect(node.find(Input)).toBePresent();
+  expect(node.find(Input)).toExist();
 });
 
 it('have a cancel and save collection button', async () => {
   const node = await shallow(<EditCollectionModal {...props} />);
 
-  expect(node.find('.confirm')).toBePresent();
-  expect(node.find('.cancel')).toBePresent();
+  expect(node.find('.confirm')).toExist();
+  expect(node.find('.cancel')).toExist();
 });
 
 it('should invoke onConfirm on save button click', async () => {

@@ -49,7 +49,7 @@ jest.mock('services', () => {
 it('should contain a modal', () => {
   const node = mount(<DateFilter />);
 
-  expect(node.find('#modal')).toBePresent();
+  expect(node.find('#modal')).toExist();
 });
 
 it('should contain a Date Picker', () => {
@@ -106,7 +106,7 @@ it('should disable the add filter button when dynamic value is not valid', () =>
 it('shoud show a warning message if the modal is for end date filter', () => {
   const endDateModal = mount(<DateFilter filterType="endDate" />);
 
-  expect(endDateModal.find('Message')).toBePresent();
+  expect(endDateModal.find('Message')).toExist();
 });
 
 it('shoud make difference between start and end date filter modals', () => {

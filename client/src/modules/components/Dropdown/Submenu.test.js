@@ -25,7 +25,7 @@ console.error = jest.fn();
 it('should render a dropdown option with the provided label', () => {
   const node = mount(<Submenu label="my label" />);
 
-  expect(node.find('.DropdownOption')).toBePresent();
+  expect(node.find('.DropdownOption')).toExist();
   expect(node.find('.DropdownOption')).toIncludeText('my label');
 });
 

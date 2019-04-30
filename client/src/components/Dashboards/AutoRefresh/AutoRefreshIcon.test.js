@@ -28,7 +28,7 @@ it('should show normal autorefreshicon when no interval is set', () => {
 it('should show a custom svg when interval is set', () => {
   const node = mount(<AutoRefreshIcon interval={5} />);
 
-  expect(node.find('svg')).toBePresent();
+  expect(node.find('svg')).toExist();
 });
 
 it('should fill the svg circle according to the time passed', () => {

@@ -20,17 +20,17 @@ it('should render its children', () => {
     </ControlGroup>
   );
 
-  expect(node.find('.foo')).toBePresent();
+  expect(node.find('.foo')).toExist();
 });
 
 it('should render additonal classNames', () => {
   const node = mount(<ControlGroup className="bar" />);
 
-  expect(node.find('.ControlGroup.bar')).toBePresent();
+  expect(node.find('.ControlGroup.bar')).toExist();
 });
 
 it('should render a modifier class reflecting a layout property', () => {
   const node = mount(<ControlGroup layout="horizontal" />);
 
-  expect(node.find('.ControlGroup.ControlGroup--horizontal')).toBePresent();
+  expect(node.find('.ControlGroup.ControlGroup--horizontal')).toExist();
 });

@@ -13,14 +13,14 @@ it('should provide name edit input', async () => {
   const node = await shallow(<EntityNameForm entity="" />);
   node.setState({name: 'test name'});
 
-  expect(node.find(Input)).toBePresent();
+  expect(node.find(Input)).toExist();
 });
 
 it('should provide a link to view mode', async () => {
   const node = await shallow(<EntityNameForm entity="" />);
 
-  expect(node.find('.save-button')).toBePresent();
-  expect(node.find('.cancel-button')).toBePresent();
+  expect(node.find('.save-button')).toExist();
+  expect(node.find('.cancel-button')).toExist();
 });
 
 it('should invoke save on save button click', async () => {

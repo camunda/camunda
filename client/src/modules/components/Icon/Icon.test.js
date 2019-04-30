@@ -22,13 +22,13 @@ it('should render without crashing', () => {
 it('should render a tag as provided as a property when using a background image', () => {
   const node = mount(<Icon type="plus" renderedIn="i" />);
 
-  expect(node.find('.Icon')).toHaveTagName('i');
+  expect(node.find('.Icon')).toHaveDisplayName('i');
 });
 
 it('should render an inline SVG', () => {
   const node = mount(<Icon type="plus" />);
 
-  expect(node.find('svg')).toBePresent();
+  expect(node.find('svg')).toExist();
 });
 
 it('should render an element with a class when "renderedIn" was provided as a property', () => {
@@ -46,7 +46,7 @@ it('should render an icon provided as child content', () => {
 it('should be possible to provide a classname to the Icon', () => {
   const node = mount(<Icon type="plus" className="customClassname" />);
 
-  expect(node.find('.customClassname')).toBePresent();
+  expect(node.find('.customClassname')).toExist();
 });
 
 it('should be possible to provide a size to the Icon', () => {

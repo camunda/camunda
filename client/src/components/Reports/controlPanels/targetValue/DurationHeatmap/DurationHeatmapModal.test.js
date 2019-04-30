@@ -72,7 +72,7 @@ const flushPromises = () => new Promise(resolve => setImmediate(resolve));
 it('should display the bpmn diagram in the modal', () => {
   const node = shallow(<DurationHeatmapModal {...validProps} />);
 
-  expect(node.find(BPMNDiagram)).toBePresent();
+  expect(node.find(BPMNDiagram)).toExist();
 });
 
 it('should display a list of flow nodes in a table', async () => {

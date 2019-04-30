@@ -33,14 +33,14 @@
 // it('renders a <button> element by default', () => {
 //   const node = mount(<Button />);
 
-//   expect(node).toHaveTagName('Button');
+//   expect(node).toHaveDisplayName('Button');
 // });
 
 // it('renders a <a> element when specified as a property', () => {
 //   const tag = 'a';
 
 //   const node = mount(<Button tag={tag} />);
-//   expect(node.find('.Button')).toHaveTagName('Link');
+//   expect(node.find('.Button')).toHaveDisplayName('Link');
 // });
 
 // it('renders a label as provided as a property', () => {

@@ -68,7 +68,7 @@ const props = {
 it('should contain a modal', () => {
   const node = mount(<VariableFilter {...props} />);
 
-  expect(node.find('#modal')).toBePresent();
+  expect(node.find('#modal')).toExist();
 });
 
 it('should disable add filter button if no variable is selected', () => {

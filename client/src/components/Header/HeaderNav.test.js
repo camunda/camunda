@@ -24,6 +24,6 @@ it('renders itself and its children', () => {
     </HeaderNav>
   );
 
-  expect(node.find('.HeaderNav')).toBePresent();
+  expect(node.find('.HeaderNav')).toExist();
   expect(node).toIncludeText('foo');
 });

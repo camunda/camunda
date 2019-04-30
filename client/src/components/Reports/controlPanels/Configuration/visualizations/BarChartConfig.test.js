@@ -39,6 +39,6 @@ it('should not display show instance count and color picker for combined reports
     />
   );
 
-  expect(node.find('ShowInstanceCount')).not.toBePresent();
-  expect(node.find('ColorPicker')).not.toBePresent();
+  expect(node.find('ShowInstanceCount')).not.toExist();
+  expect(node.find('ColorPicker')).not.toExist();
 });

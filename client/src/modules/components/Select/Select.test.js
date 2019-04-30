@@ -34,8 +34,8 @@ it('should render child elements and their props', () => {
     </Select>
   );
 
-  expect(node.find('#test_option')).toBePresent();
-  expect(node.find('option[value="1"]')).toBePresent();
+  expect(node.find('#test_option')).toExist();
+  expect(node.find('option[value="1"]')).toExist();
 });
 
 it('should translate the isInvalid props to is-invalid className', () => {

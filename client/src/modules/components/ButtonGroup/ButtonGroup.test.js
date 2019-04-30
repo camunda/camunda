@@ -20,17 +20,17 @@ it('should render its children', () => {
     </ButtonGroup>
   );
 
-  expect(node.find('button')).toBePresent();
+  expect(node.find('button')).toExist();
 });
 
 it('should apply passed classNames', () => {
   const node = mount(<ButtonGroup className="CustomClass" />);
 
-  expect(node.find('.CustomClass')).toBePresent();
+  expect(node.find('.CustomClass')).toExist();
 });
 
 it('should also work when not providing classNames', () => {
   const node = mount(<ButtonGroup />);
 
-  expect(node.find('.ButtonGroup')).toBePresent();
+  expect(node.find('.ButtonGroup')).toExist();
 });

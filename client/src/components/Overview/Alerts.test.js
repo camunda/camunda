@@ -90,7 +90,7 @@ it('should show a loading indicator', () => {
 
   node.setState({loading: true});
 
-  expect(node.find('LoadingIndicator')).toBePresent();
+  expect(node.find('LoadingIndicator')).toExist();
 });
 
 it('should load data', () => {
@@ -109,19 +109,19 @@ it('should show no data indicator', () => {
   loadEntities.mockReturnValueOnce([]);
   const node = shallow(<Alerts {...props} />);
 
-  expect(node.find('NoEntities')).toBePresent();
+  expect(node.find('NoEntities')).toExist();
 });
 
 it('should display error messages', () => {
   const node = shallow(<Alerts {...props} error="Something went wrong" />);
 
-  expect(node.find('Message')).toBePresent();
+  expect(node.find('Message')).toExist();
 });
 
 it('should show create Alert button', () => {
   const node = shallow(<Alerts {...props} />);
 
-  expect(node.find('.createButton')).toBePresent();
+  expect(node.find('.createButton')).toExist();
 });
 
 it('should show confirmation modal when deleting Alert', async () => {
@@ -145,6 +145,6 @@ it('should open a modal when editing an alert', () => {
     .first()
     .simulate('click');
 
-  expect(node.find('AlertModal')).toBePresent();
+  expect(node.find('AlertModal')).toExist();
   expect(node.find('AlertModal').prop('entity')).toBe(alert);
 });

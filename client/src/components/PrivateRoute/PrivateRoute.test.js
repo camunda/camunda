@@ -32,7 +32,7 @@ it('should render the login component', () => {
 
   node.setState({showLogin: true}, () => {
     const wrapper = node.renderProp('render')({});
-    expect(wrapper.find(Login)).toBePresent();
+    expect(wrapper.find(Login)).toExist();
   });
 });
 

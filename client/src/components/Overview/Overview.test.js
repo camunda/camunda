@@ -23,19 +23,19 @@ const props = {
 it('should show a loading indicator', () => {
   const node = shallow(<Overview {...props} store={{loading: true}} />);
 
-  expect(node.find('LoadingIndicator')).toBePresent();
+  expect(node.find('LoadingIndicator')).toExist();
 });
 
 it('should show create Report buttons', async () => {
   const node = shallow(<Overview {...props} />);
 
-  expect(node.find('.createReport')).toBePresent();
+  expect(node.find('.createReport')).toExist();
 });
 
 it('should have a Dropdown with more creation options', async () => {
   const node = shallow(<Overview {...props} />);
 
-  expect(node.find('.createReport').find(Dropdown)).toBePresent();
+  expect(node.find('.createReport').find(Dropdown)).toExist();
   expect(node.find('.createReport').find(Dropdown)).toMatchSnapshot();
 });
 

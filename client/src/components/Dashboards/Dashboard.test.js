@@ -51,7 +51,7 @@ it("should show an error page if dashboard doesn't exist", () => {
 it('should display a loading indicator', () => {
   const node = shallow(<Dashboard {...props} />);
 
-  expect(node.find('LoadingIndicator')).toBePresent();
+  expect(node.find('LoadingIndicator')).toExist();
 });
 
 it('should initially load data', async () => {
@@ -80,5 +80,5 @@ it('should redirect to the Overview page on dashboard deletion', async () => {
 
   await node.instance().deleteDashboard();
 
-  expect(node.find('Redirect')).toBePresent();
+  expect(node.find('Redirect')).toExist();
 });

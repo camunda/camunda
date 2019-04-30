@@ -16,20 +16,20 @@ import {shallow} from 'enzyme';
 it('should contain a list of Filters', () => {
   const node = shallow(<DecisionFilter data={[]} />);
 
-  expect(node.find(FilterList)).toBePresent();
+  expect(node.find(FilterList)).toExist();
 });
 
 it('should contain a dropdown', () => {
   const node = shallow(<DecisionFilter data={[]} />);
 
-  expect(node.find(Dropdown)).toBePresent();
+  expect(node.find(Dropdown)).toExist();
 });
 
 it('should not contain any filter modal when no newFilter is selected', () => {
   const node = shallow(<DecisionFilter data={[]} />);
 
-  expect(node.find(DateFilter)).not.toBePresent();
-  expect(node.find(VariableFilter)).not.toBePresent();
+  expect(node.find(DateFilter)).not.toExist();
+  expect(node.find(VariableFilter)).not.toExist();
 });
 
 it('should contain a filter modal when a newFilter should be created', () => {
@@ -37,7 +37,7 @@ it('should contain a filter modal when a newFilter should be created', () => {
 
   node.instance().openNewFilterModal('evaluationDateTime')();
 
-  expect(node.find(DateFilter)).toBePresent();
+  expect(node.find(DateFilter)).toExist();
 });
 
 it('should contain an edit filter modal when a filter should be edited', () => {
@@ -52,7 +52,7 @@ it('should contain an edit filter modal when a filter should be edited', () => {
     type: 'evaluationDateTime'
   })();
 
-  expect(node.find(DateFilter)).toBePresent();
+  expect(node.find(DateFilter)).toExist();
 });
 
 it('should contain a FilterModal component based on the selected new Filter', () => {
@@ -60,8 +60,8 @@ it('should contain a FilterModal component based on the selected new Filter', ()
 
   node.instance().openNewFilterModal('inputVariable')();
 
-  expect(node.find(VariableFilter)).toBePresent();
-  expect(node.find(DateFilter)).not.toBePresent();
+  expect(node.find(VariableFilter)).toExist();
+  expect(node.find(DateFilter)).not.toExist();
 });
 
 it('should contain a EditFilterModal component based on the Filter selected for edition', () => {
@@ -75,8 +75,8 @@ it('should contain a EditFilterModal component based on the Filter selected for 
     },
     type: 'evaluationDateTime'
   })();
-  expect(node.find(DateFilter)).toBePresent();
-  expect(node.find(VariableFilter)).not.toBePresent();
+  expect(node.find(DateFilter)).toExist();
+  expect(node.find(VariableFilter)).not.toExist();
 });
 
 it('should add a filter to the list of filters', () => {

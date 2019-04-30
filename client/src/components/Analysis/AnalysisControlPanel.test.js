@@ -71,8 +71,8 @@ const spy = jest.fn();
 it('should contain a gateway and end Event field', () => {
   const node = mount(<AnalysisControlPanel {...data} onChange={spy} />);
 
-  expect(node.find('[name="AnalysisControlPanel__gateway"]')).toBePresent();
-  expect(node.find('[name="AnalysisControlPanel__endEvent"]')).toBePresent();
+  expect(node.find('[name="AnalysisControlPanel__gateway"]')).toExist();
+  expect(node.find('[name="AnalysisControlPanel__endEvent"]')).toExist();
 });
 
 it('should show a please select message if an entity is not selected', () => {
@@ -144,7 +144,7 @@ it('should disable gateway and EndEvent elements if no ProcDef selected', async 
 it('should pass the xml to the Filter component', async () => {
   const node = await mount(<AnalysisControlPanel {...data} />);
   const filter = node.find('Filter');
-  expect(filter.find('[xml="aFooXml"]')).toBePresent();
+  expect(filter.find('[xml="aFooXml"]')).toExist();
 });
 
 it('should load the flownode names and hand them to the filter if process definition changes', async () => {

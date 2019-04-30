@@ -12,7 +12,7 @@ import Popover from './Popover';
 it('should include a button to toggle the popover', () => {
   const node = mount(<Popover title="Foobar" />);
 
-  expect(node.find('button')).toBePresent();
+  expect(node.find('button')).toExist();
 });
 
 it('should render the provided title in the button', () => {

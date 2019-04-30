@@ -46,7 +46,7 @@ evaluateReport.mockReturnValue(report);
 it('should display a loading indicator', () => {
   const node = shallow(<Report {...props} />).dive();
 
-  expect(node.find('LoadingIndicator')).toBePresent();
+  expect(node.find('LoadingIndicator')).toExist();
 });
 
 it("should show an error page if report doesn't exist", () => {
@@ -55,7 +55,7 @@ it("should show an error page if report doesn't exist", () => {
     serverError: 404
   });
 
-  expect(node.find('ErrorPage')).toBePresent();
+  expect(node.find('ErrorPage')).toExist();
 });
 
 it('should initially evaluate the report', () => {
@@ -70,7 +70,7 @@ it('should render ReportEdit component if viewMode is edit', async () => {
   const node = await shallow(<Report {...props} />).dive();
   node.setState({loaded: true, report});
 
-  expect(node.find('ReportEditErrorHandler')).toBePresent();
+  expect(node.find('ReportEditErrorHandler')).toExist();
 });
 
 it('should render ReportView component if viewMode is view', async () => {
@@ -79,5 +79,5 @@ it('should render ReportView component if viewMode is view', async () => {
   const node = await shallow(<Report {...props} />).dive();
   node.setState({loaded: true, report});
 
-  expect(node.find('ReportView')).toBePresent();
+  expect(node.find('ReportView')).toExist();
 });

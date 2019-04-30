@@ -44,7 +44,7 @@ it('should store the input in the state value array at the correct position', ()
 it('should display the possibility to add another value', () => {
   const node = shallow(<NumberInput {...props} />);
 
-  expect(node.find('.NumberInput__addValueButton')).toBePresent();
+  expect(node.find('.NumberInput__addValueButton')).toExist();
 });
 
 it('should add another value when clicking add another value button', () => {
@@ -85,7 +85,7 @@ it('should remove all values except the first one if operator is "is less/greate
 it('should not show the add value button for greater and less than operators', () => {
   const node = shallow(<NumberInput {...props} filter={{operator: '<', values: ['']}} />);
 
-  expect(node.find('.NumberInput__addValueButton')).not.toBePresent();
+  expect(node.find('.NumberInput__addValueButton')).not.toExist();
 });
 
 it('should disable add filter button if provided value is invalid', () => {

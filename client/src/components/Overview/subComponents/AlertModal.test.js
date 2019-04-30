@@ -191,7 +191,7 @@ it('should convert a duration threshold when confirming', async () => {
 it('should contain a threshold input', () => {
   const node = shallow(<AlertModal reports={reports} />);
 
-  expect(node.find(ThresholdInput)).toBePresent();
+  expect(node.find(ThresholdInput)).toExist();
 });
 
 it('should pass the selected report as initial value to the typeahead', () => {

@@ -12,13 +12,13 @@ import DashboardEdit from './DashboardEdit';
 it('should contain a Grid', () => {
   const node = shallow(<DashboardEdit />);
 
-  expect(node.find('Grid')).toBePresent();
+  expect(node.find('Grid')).toExist();
 });
 
 it('should contain an AddButton', () => {
   const node = shallow(<DashboardEdit />);
 
-  expect(node.find('AddButton')).toBePresent();
+  expect(node.find('AddButton')).toExist();
 });
 
 it('should editing report addons', () => {

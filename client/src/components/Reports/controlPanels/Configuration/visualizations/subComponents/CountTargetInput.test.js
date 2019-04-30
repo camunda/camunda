@@ -37,11 +37,11 @@ it('should update target values', () => {
 it('should show an error message if an input field does not have a valid value', async () => {
   const node = shallow(<CountTargetInput {...validProps} baseline={'notAValidValue'} />);
 
-  expect(node.find('ErrorMessage')).toBePresent();
+  expect(node.find('ErrorMessage')).toExist();
 });
 
 it('should show an error message if target is below baseline', async () => {
   const node = shallow(<CountTargetInput baseline={50} target={4} />);
 
-  expect(node.find('ErrorMessage')).toBePresent();
+  expect(node.find('ErrorMessage')).toExist();
 });

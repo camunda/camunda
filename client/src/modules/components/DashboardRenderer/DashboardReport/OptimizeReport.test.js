@@ -65,7 +65,7 @@ it('should not provide a link to the report when link is disabled', async () => 
   await node.instance().loadReport();
   node.update();
 
-  expect(node.find('a')).not.toBePresent();
+  expect(node.find('a')).not.toExist();
   expect(node).toIncludeText('Report Name');
 });
 

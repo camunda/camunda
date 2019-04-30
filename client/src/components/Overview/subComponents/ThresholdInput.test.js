@@ -14,15 +14,15 @@ import {Input, Select} from 'components';
 it('should contain a single input field if the type is not duration', () => {
   const node = shallow(<ThresholdInput type="number" value="123" />);
 
-  expect(node.find(Input)).toBePresent();
-  expect(node.find(Select)).not.toBePresent();
+  expect(node.find(Input)).toExist();
+  expect(node.find(Select)).not.toExist();
 });
 
 it('should contain a input and a select field if the type is duration', () => {
   const node = shallow(<ThresholdInput type="duration" value={{value: '123', unit: 'minutes'}} />);
 
-  expect(node.find(Input)).toBePresent();
-  expect(node.find(Select)).toBePresent();
+  expect(node.find(Input)).toExist();
+  expect(node.find(Select)).toExist();
 });
 
 it('should call the change handler when changing the value', () => {

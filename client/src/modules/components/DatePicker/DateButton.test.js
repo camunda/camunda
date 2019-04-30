@@ -20,7 +20,7 @@ jest.mock('components', () => {
 it('should contain a button', () => {
   const node = mount(<DateButton dateLabel={DateButton.TODAY} />);
 
-  expect(node.find('button')).toBePresent();
+  expect(node.find('button')).toExist();
 });
 
 it('should set label on element', () => {

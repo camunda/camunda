@@ -82,5 +82,5 @@ it('should construct special link for embedding', () => {
 it('should display a loading indicator', () => {
   const node = shallow(<ShareEntity {...props} />);
 
-  expect(node.find('LoadingIndicator')).toBePresent();
+  expect(node.find('LoadingIndicator')).toExist();
 });

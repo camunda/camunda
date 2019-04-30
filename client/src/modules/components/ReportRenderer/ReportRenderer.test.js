@@ -33,7 +33,7 @@ const reportTemplate = {
 it('should render ProcessReportRenderer if the report type is process', () => {
   const node = shallow(<ReportRenderer report={reportTemplate} />);
 
-  expect(node.find('ProcessReportRenderer')).toBePresent();
+  expect(node.find('ProcessReportRenderer')).toExist();
 });
 
 it('should render DecisionReportRenderer if the report type is decision', () => {
@@ -48,7 +48,7 @@ it('should render DecisionReportRenderer if the report type is decision', () => 
   };
   const node = shallow(<ReportRenderer report={report} />);
 
-  expect(node.find('DecisionReportRenderer')).toBePresent();
+  expect(node.find('DecisionReportRenderer')).toExist();
 });
 
 it('should render CombinedReportRenderer if the report is combined and all reports contain data', () => {
@@ -73,14 +73,14 @@ it('should render CombinedReportRenderer if the report is combined and all repor
   };
   const node = shallow(<ReportRenderer report={report} />);
 
-  expect(node.find(CombinedReportRenderer)).toBePresent();
+  expect(node.find(CombinedReportRenderer)).toExist();
 });
 
 it('should display an error message the report is defined', () => {
   const report = null;
   const node = shallow(<ReportRenderer report={report} />);
 
-  expect(node.find('Message')).toBePresent();
+  expect(node.find('Message')).toExist();
 });
 
 it('should include the instance count if indicated in the config', () => {
@@ -95,14 +95,14 @@ it('should include the instance count if indicated in the config', () => {
 
   const node = shallow(<ReportRenderer report={report} />);
 
-  expect(node.find('.additionalInfo')).toBePresent();
+  expect(node.find('.additionalInfo')).toExist();
   expect(node.find('.additionalInfo').text()).toContain('723');
 });
 
 it('should show an incomplete report notice when inside a dashboard', () => {
   const node = shallow(<ReportRenderer report={{data: {}}} isExternal={true} />);
 
-  expect(node.find('IncompleteReport')).toBePresent();
+  expect(node.find('IncompleteReport')).toExist();
 });
 
 describe('SetupNotice', () => {
@@ -196,7 +196,7 @@ describe('SetupNotice', () => {
 
     const node = shallow(<ReportRenderer report={newReport} updateReport />);
 
-    expect(node.find('SetupNotice')).not.toBePresent();
+    expect(node.find('SetupNotice')).not.toExist();
   });
 });
 
@@ -212,7 +212,7 @@ describe('NoDataNotice', () => {
 
     const node = shallow(<ReportRenderer report={report} />);
 
-    expect(node.find(NoDataNotice)).toBePresent();
+    expect(node.find(NoDataNotice)).toExist();
   });
 
   it('should not show a no data notice for single number frequency reports', () => {
@@ -237,7 +237,7 @@ describe('NoDataNotice', () => {
 
     const node = shallow(<ReportRenderer report={report} />);
 
-    expect(node.find(NoDataNotice)).not.toBePresent();
+    expect(node.find(NoDataNotice)).not.toExist();
   });
 
   it('should show a no data notice if a combined report contains no data', () => {
@@ -270,7 +270,7 @@ describe('NoDataNotice', () => {
 
     const node = shallow(<ReportRenderer report={report} />);
 
-    expect(node.find(NoDataNotice)).toBePresent();
+    expect(node.find(NoDataNotice)).toExist();
   });
 
   it('should not show a no data notice if a combined report contains at least one report with data', () => {
@@ -303,7 +303,7 @@ describe('NoDataNotice', () => {
 
     const node = shallow(<ReportRenderer report={report} />);
 
-    expect(node.find(NoDataNotice)).not.toBePresent();
+    expect(node.find(NoDataNotice)).not.toExist();
   });
 
   it('should show a no data notice if the reports contains process instances, but no meaningful datapoints', () => {
@@ -318,6 +318,6 @@ describe('NoDataNotice', () => {
 
     const node = shallow(<ReportRenderer report={report} />);
 
-    expect(node.find(NoDataNotice)).toBePresent();
+    expect(node.find(NoDataNotice)).toExist();
   });
 });

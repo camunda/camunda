@@ -43,7 +43,7 @@ const props = {
 it('should show a typeahead', () => {
   const node = mount(<StringInput {...props} />);
 
-  expect(node.find('TypeaheadMultipleSelection')).toBePresent();
+  expect(node.find('TypeaheadMultipleSelection')).toExist();
 });
 
 it('should load 10 values initially', () => {

@@ -51,7 +51,7 @@ it('should display an error message if the data does not have the correct format
     />
   );
 
-  expect(node.find(ReportBlankSlate)).toBePresent();
+  expect(node.find(ReportBlankSlate)).toExist();
 });
 
 it('should display an error message if no data is provided', () => {
@@ -59,13 +59,13 @@ it('should display an error message if no data is provided', () => {
     <Number report={{...report, result: {data: null}}} errorMessage="Error" formatter={v => v} />
   );
 
-  expect(node.find(ReportBlankSlate)).toBePresent();
+  expect(node.find(ReportBlankSlate)).toExist();
 });
 
 it('should not display an error message if data is valid', () => {
   const node = shallow(<Number report={report} errorMessage="Error" formatter={v => v} />);
 
-  expect(node.find(ReportBlankSlate)).not.toBePresent();
+  expect(node.find(ReportBlankSlate)).not.toExist();
 });
 
 it('should format data according to the provided formatter', () => {
@@ -88,5 +88,5 @@ it('should display a progress bar if target values are active', () => {
     />
   );
 
-  expect(node.find(ProgressBar)).toBePresent();
+  expect(node.find(ProgressBar)).toExist();
 });

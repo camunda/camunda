@@ -53,7 +53,7 @@ it('displays the loading indicator if is importing', () => {
     }
   });
 
-  expect(node.find('.is-in-progress')).toBePresent();
+  expect(node.find('.is-in-progress')).toExist();
 });
 
 it('does not display the loading indicator if is not importing', () => {
@@ -71,7 +71,7 @@ it('does not display the loading indicator if is not importing', () => {
     }
   });
 
-  expect(node.find('.is-in-progress')).not.toBePresent();
+  expect(node.find('.is-in-progress')).not.toExist();
 });
 
 it('displays the connection status', () => {
@@ -83,7 +83,7 @@ it('displays the connection status', () => {
     }
   });
 
-  expect(node.find('.Footer__connect-status')).toBePresent();
+  expect(node.find('.Footer__connect-status')).toExist();
 });
 
 it('should store data from the socket connection in state', () => {
