@@ -28,7 +28,9 @@ import io.zeebe.broker.logstreams.state.StateReplication;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.processor.SnapshotReplication;
 import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.logstreams.state.NoneSnapshotReplication;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.Injector;
@@ -41,8 +43,8 @@ public class Partition implements Service<Partition> {
   public static final String PARTITION_NAME_FORMAT = "raft-atomix-partition-%d";
   private final ClusterEventService eventService;
   private final BrokerCfg brokerCfg;
-  private StateReplication processorStateReplication;
-  private StateReplication exporterStateReplication;
+  private SnapshotReplication processorStateReplication;
+  private SnapshotReplication exporterStateReplication;
 
   public static String getPartitionName(final int partitionId) {
     return String.format(PARTITION_NAME_FORMAT, partitionId);
@@ -72,6 +74,8 @@ public class Partition implements Service<Partition> {
 
   @Override
   public void start(final ServiceStartContext startContext) {
+    final boolean noReplication = brokerCfg.getCluster().getReplicationFactor() == 1;
+
     logStream = logStreamInjector.getValue();
     final StateStorageFactory stateStorageFactory = stateStorageFactoryInjector.getValue();
 
@@ -79,7 +83,9 @@ public class Partition implements Service<Partition> {
     final StateStorage exporterStateStorage =
         stateStorageFactory.create(EXPORTER_PROCESSOR_ID, exporterProcessorName);
     exporterStateReplication =
-        new StateReplication(eventService, partitionId, exporterProcessorName);
+        noReplication
+            ? new NoneSnapshotReplication()
+            : new StateReplication(eventService, partitionId, exporterProcessorName);
     exporterSnapshotController =
         new StateSnapshotController(
             DefaultZeebeDbFactory.defaultFactory(ExporterColumnFamilies.class),
@@ -90,7 +96,9 @@ public class Partition implements Service<Partition> {
     final String streamProcessorName = ZbStreamProcessorService.PROCESSOR_NAME;
     final StateStorage stateStorage = stateStorageFactory.create(partitionId, streamProcessorName);
     processorStateReplication =
-        new StateReplication(eventService, partitionId, streamProcessorName);
+        noReplication
+            ? new NoneSnapshotReplication()
+            : new StateReplication(eventService, partitionId, streamProcessorName);
     processorSnapshotController =
         new StateSnapshotController(
             DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
