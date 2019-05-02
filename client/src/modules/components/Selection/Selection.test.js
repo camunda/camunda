@@ -29,6 +29,11 @@ const mockOnRetry = jest.fn();
 const mockOnCancel = jest.fn();
 const mockOnDelete = jest.fn();
 
+const timeout = {
+  enter: -mockMap.size * 20 + 600,
+  exit: 100
+};
+
 const mountSelection = isOpen => {
   return mount(
     <ThemeProvider>
@@ -37,6 +42,7 @@ const mountSelection = isOpen => {
         selectionId={1}
         instances={mockMap}
         instanceCount={145}
+        transitionTimeOut={timeout}
         onToggle={mockOnClick}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
@@ -142,6 +148,7 @@ describe('Selection', () => {
         selectionId={1}
         instances={mockMap}
         instanceCount={145}
+        transitionTimeOut={timeout}
         onToggle={mockOnClick}
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
