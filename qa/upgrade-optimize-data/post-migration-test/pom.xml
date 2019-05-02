@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <properties>
@@ -11,7 +10,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>upgrade-optimize-data</artifactId>
-    <version>2.5.0-SNAPSHOT</version>
+    <version>2.5.0-alpha1</version>
   </parent>
 
   <artifactId>post-migration-test</artifactId>
@@ -213,19 +212,19 @@
                 <configuration>
                   <skip>${skip.docker}</skip>
                   <target name="check-cambpm-is-running" description="Check whether CamBPM is running">
-                    <echo message="Check ES is running..."/>
+                    <echo message="Check ES is running..." />
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <socket server="localhost" port="9200"/>
+                      <socket server="localhost" port="9200" />
                     </waitfor>
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <http url="http://localhost:9200/_cluster/state"/>
+                      <http url="http://localhost:9200/_cluster/state" />
                     </waitfor>
-                    <echo message="ES is running."/>
-                    <echo message="Check CamBPM is running..."/>
+                    <echo message="ES is running." />
+                    <echo message="Check CamBPM is running..." />
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <socket server="localhost" port="8080"/>
+                      <socket server="localhost" port="8080" />
                     </waitfor>
-                    <echo message="CamBPM is running."/>
+                    <echo message="CamBPM is running." />
                   </target>
                 </configuration>
               </execution>
@@ -238,16 +237,15 @@
                 <phase>pre-integration-test</phase>
                 <configuration>
                   <target name="generate-engine-data" description="Generate process instances">
-                    <property environment="env"/>
+                    <property environment="env" />
                     <condition property="maven-settings" value="--settings=../../settings.xml" else="">
-                      <isset property="env.JENKINS_URL"/>
+                      <isset property="env.JENKINS_URL" />
                     </condition>
 
-                    <echo message="Generating engine data..."/>
-                    <exec dir="${project.build.directory}/../../../../qa/data-generation" executable="/bin/bash"
-                          failonerror="true">
-                      <arg value="-c"/>
-                      <arg value="set -o pipefail; mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 10' -B ${maven-settings} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn | sed 's/^/[ENGINE DATA GENERATION]: /'"/>
+                    <echo message="Generating engine data..." />
+                    <exec dir="${project.build.directory}/../../../../qa/data-generation" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="set -o pipefail; mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 10' -B ${maven-settings} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn | sed 's/^/[ENGINE DATA GENERATION]: /'" />
                     </exec>
                   </target>
                 </configuration>
@@ -262,26 +260,25 @@
                 <configuration>
                   <target name="unpack optimize distributions">
                     <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
-                    <property environment="env"/>
+                    <property environment="env" />
                     <condition property="maven-settings" value="--settings=settings.xml" else="">
-                      <isset property="env.JENKINS_URL"/>
+                      <isset property="env.JENKINS_URL" />
                     </condition>
                     <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
                       <sequential>
-                        <echo message="Downloading &amp; unpacking Optimize @{currentVersion}..."/>
+                        <echo message="Downloading &amp; unpacking Optimize @{currentVersion}..." />
                         <ac:if>
-                          <matches string="@{currentVersion}" pattern="2\.[0-2]\.0"/>
+                          <matches string="@{currentVersion}" pattern="2\.[0-2]\.0" />
                           <ac:then>
-                            <ac:var name="optimize.classifier" value="standalone"/>
+                            <ac:var name="optimize.classifier" value="standalone" />
                           </ac:then>
                           <ac:else>
-                            <ac:var name="optimize.classifier" value="production"/>
+                            <ac:var name="optimize.classifier" value="production" />
                           </ac:else>
                         </ac:if>
                         <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
-                          <arg value="-c"/>
-                          <arg
-                              value="mvn dependency:unpack -B ${maven-settings} -f qa/upgrade-optimize-data -Dartifact=org.camunda.optimize:camunda-optimize:@{currentVersion}:tar.gz:${optimize.classifier} -DoutputDirectory=${project.build.directory}/@{currentVersion} -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"/>
+                          <arg value="-c" />
+                          <arg value="mvn dependency:unpack -B ${maven-settings} -f qa/upgrade-optimize-data -Dartifact=org.camunda.optimize:camunda-optimize:@{currentVersion}:tar.gz:${optimize.classifier} -DoutputDirectory=${project.build.directory}/@{currentVersion} -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
                         </exec>
                       </sequential>
                     </ac:for>
@@ -297,10 +294,9 @@
                 <configuration>
                   <target>
                     <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
-                    <property environment="env"/>
-                    <condition property="maven-settings"
-                               value="--settings=${project.basedir}/../../../settings.xml" else="">
-                      <isset property="env.JENKINS_URL"/>
+                    <property environment="env" />
+                    <condition property="maven-settings" value="--settings=${project.basedir}/../../../settings.xml" else="">
+                      <isset property="env.JENKINS_URL" />
                     </condition>
 
                     <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
@@ -309,91 +305,82 @@
                         <ac:if>
                           <!-- only if not the first version in the list -->
                           <not>
-                            <matches string="${upgrade.versions}" pattern="^@{currentVersion},.*"/>
+                            <matches string="${upgrade.versions}" pattern="^@{currentVersion},.*" />
                           </not>
                           <ac:then>
-                            <echo message="Running migration to @{currentVersion}..."/>
+                            <echo message="Running migration to @{currentVersion}..." />
                             <ac:if>
-                              <matches string="@{currentVersion}" pattern="2\.[0-3]\.0"/>
+                              <matches string="@{currentVersion}" pattern="2\.[0-3]\.0" />
                               <ac:then>
-                                <ac:var name="optimize.upgrade.command"
-                                        value="java -cp environment:upgrade/* org.camunda.optimize.upgrade.main.UpgradeMain"/>
+                                <ac:var name="optimize.upgrade.command" value="java -cp environment:upgrade/* org.camunda.optimize.upgrade.main.UpgradeMain" />
                               </ac:then>
                               <ac:else>
-                                <ac:var name="optimize.upgrade.command" value="./upgrade/upgrade.sh "/>
+                                <ac:var name="optimize.upgrade.command" value="./upgrade/upgrade.sh " />
                               </ac:else>
                             </ac:if>
                             <exec dir="${project.build.directory}/@{currentVersion}" executable="/bin/bash">
-                              <arg value="-c"/>
-                              <arg
-                                  value="set -o pipefail; ${optimize.upgrade.command} --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT @{currentVersion}]: /'"/>
+                              <arg value="-c" />
+                              <arg value="set -o pipefail; ${optimize.upgrade.command} --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT @{currentVersion}]: /'" />
                             </exec>
-                            <echo message="Starting Optimize @{currentVersion}..."/>
-                            <exec dir="${project.build.directory}/@{currentVersion}/"
-                                  executable="${project.build.directory}/@{currentVersion}/optimize-startup.sh"
-                                  spawn="true"/>
+                            <echo message="Starting Optimize @{currentVersion}..." />
+                            <exec dir="${project.build.directory}/@{currentVersion}/" executable="${project.build.directory}/@{currentVersion}/optimize-startup.sh" spawn="true" />
 
-                            <echo message="Wait for Optimize to start..."/>
+                            <echo message="Wait for Optimize to start..." />
                             <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                              <socket server="localhost" port="8090"/>
+                              <socket server="localhost" port="8090" />
                             </waitfor>
 
-                            <echo message="Running post migration tests..."/>
+                            <echo message="Running post migration tests..." />
                             <exec executable="/bin/bash" failonerror="true">
-                              <arg value="-c"/>
-                              <arg
-                                  value="set -o pipefail; mvn verify -DskipTests=false -B ${maven-settings} | sed 's/^/[POST MIGRATION TESTS]: /'"/>
+                              <arg value="-c" />
+                              <arg value="set -o pipefail; mvn verify -DskipTests=false -B ${maven-settings} | sed 's/^/[POST MIGRATION TESTS]: /'" />
                             </exec>
                             <ac:if>
                               <not>
-                                <matches string="${upgrade.versions}" pattern="@{currentVersion}$"/>
+                                <matches string="${upgrade.versions}" pattern="@{currentVersion}$" />
                               </not>
                               <ac:then>
                                 <!-- Generate additional data-->
-                                <echo message="Generating optimize data"/>
+                                <echo message="Generating optimize data" />
                                 <exec executable="/bin/bash" failonerror="true">
-                                  <arg value="-c"/>
-                                  <arg
-                                      value="set -o pipefail; java -jar ${project.build.directory}/generators/generator@{currentVersion}.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'"/>
+                                  <arg value="-c" />
+                                  <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator@{currentVersion}.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
                                 </exec>
                               </ac:then>
                             </ac:if>
-                            <echo message="Killing Optimize @{currentVersion}..."/>
+                            <echo message="Killing Optimize @{currentVersion}..." />
                             <exec executable="/bin/bash">
-                              <arg value="-c"/>
-                              <arg value="pkill -f org.camunda.optimize.Main"/>
+                              <arg value="-c" />
+                              <arg value="pkill -f org.camunda.optimize.Main" />
                             </exec>
                           </ac:then>
                         <ac:else>
                           <!--If the first version in the list-->
                           <!-- Start the first version in the list and generate data-->
 
-                          <exec dir="${project.build.directory}/@{currentVersion}/"
-                                executable="${project.build.directory}/@{currentVersion}/optimize-startup.sh" spawn="true"/>
+                          <exec dir="${project.build.directory}/@{currentVersion}/" executable="${project.build.directory}/@{currentVersion}/optimize-startup.sh" spawn="true" />
 
-                          <echo message="Wait for Optimize to start..."/>
+                          <echo message="Wait for Optimize to start..." />
                           <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                            <socket server="localhost" port="8090"/>
+                            <socket server="localhost" port="8090" />
                           </waitfor>
 
-                          <echo message="Waiting for Optimize to populate ES..."/>
+                          <echo message="Waiting for Optimize to populate ES..." />
                           <exec executable="/bin/bash">
-                            <arg value="-c"/>
-                            <arg
-                                value="until test $(curl -s 'http://localhost:9200/optimize-metadata/_count' | jq '.count // 0') -eq 1; do sleep 2; done"/>
+                            <arg value="-c" />
+                            <arg value="until test $(curl -s 'http://localhost:9200/optimize-metadata/_count' | jq '.count // 0') -eq 1; do sleep 2; done" />
                           </exec>
 
-                          <echo message="Generating optimize data"/>
+                          <echo message="Generating optimize data" />
                           <exec executable="/bin/bash" failonerror="true">
-                            <arg value="-c"/>
-                            <arg
-                                value="set -o pipefail; java -jar ${project.build.directory}/generators/generator@{currentVersion}.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'"/>
+                            <arg value="-c" />
+                            <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator@{currentVersion}.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
                           </exec>
 
-                          <echo message="Killing Optimize @{currentVersion}..."/>
+                          <echo message="Killing Optimize @{currentVersion}..." />
                           <exec executable="/bin/bash">
-                            <arg value="-c"/>
-                            <arg value="pkill -f org.camunda.optimize.Main"/>
+                            <arg value="-c" />
+                            <arg value="pkill -f org.camunda.optimize.Main" />
                           </exec>
                         </ac:else>
                         </ac:if>
