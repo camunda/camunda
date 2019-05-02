@@ -90,13 +90,6 @@ class SelectionList extends React.Component {
     );
   };
 
-  getTransitionTimeOut = noOfInstances => {
-    return {
-      enter: -noOfInstances * 10 + 600,
-      exit: 100
-    };
-  };
-
   render() {
     const {
       selections,

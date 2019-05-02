@@ -6,9 +6,6 @@
 
 import styled from 'styled-components';
 import {themed, themeStyle, Colors, Animations} from 'modules/theme';
-
-import {Transition as TransitionComponent} from 'modules/components/Transition';
-
 import ContextualMessage from 'modules/components/ContextualMessage';
 
 const themedWith = (dark, light) => {
