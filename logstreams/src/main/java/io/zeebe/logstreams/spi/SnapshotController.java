@@ -74,4 +74,11 @@ public interface SnapshotController extends AutoCloseable {
    * @return valid snapshots count
    */
   int getValidSnapshotsCount();
+
+  /**
+   * Returns the position of the last valid snapshot. Or, -1 if no valid snapshot exists.
+   *
+   * @return the snapshot position
+   */
+  long getLastValidSnapshotPosition();
 }

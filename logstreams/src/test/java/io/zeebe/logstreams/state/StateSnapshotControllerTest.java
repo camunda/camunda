@@ -222,6 +222,38 @@ public class StateSnapshotControllerTest {
         .hasMessage("Failed to recover from snapshots");
   }
 
+  @Test
+  public void shouldGetValidSnapshotCount() {
+    // given
+    snapshotController.openDb();
+
+    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(0);
+
+    snapshotController.takeSnapshot(1L);
+    snapshotController.takeSnapshot(3L);
+    snapshotController.takeSnapshot(5L);
+    snapshotController.takeTempSnapshot();
+
+    // when/then
+    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(3);
+  }
+
+  @Test
+  public void shouldGetLastValidSnapshot() {
+    // given
+    snapshotController.openDb();
+
+    assertThat(snapshotController.getLastValidSnapshotPosition()).isEqualTo(-1L);
+
+    snapshotController.takeSnapshot(1L);
+    snapshotController.takeSnapshot(3L);
+    snapshotController.takeSnapshot(5L);
+    snapshotController.takeTempSnapshot();
+
+    // when/then
+    assertThat(snapshotController.getLastValidSnapshotPosition()).isEqualTo(5L);
+  }
+
   private void corruptSnapshot(long position) throws IOException {
     final File snapshot = storage.getSnapshotDirectoryFor(position);
     assertThat(snapshot).isNotNull();

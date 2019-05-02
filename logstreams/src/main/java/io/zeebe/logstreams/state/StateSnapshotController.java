@@ -244,8 +244,18 @@ public class StateSnapshotController implements SnapshotController {
     }
   }
 
+  @Override
   public int getValidSnapshotsCount() {
     return storage.list().size();
+  }
+
+  @Override
+  public long getLastValidSnapshotPosition() {
+    return storage.listByPositionDesc().stream()
+        .map(File::getName)
+        .mapToLong(Long::parseLong)
+        .findFirst()
+        .orElse(-1L);
   }
 
   @Override

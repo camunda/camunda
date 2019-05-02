@@ -241,11 +241,10 @@ public class StreamProcessorController extends Actor {
           () -> {
             final LogStream logStream = streamProcessorContext.logStream;
             if (asyncSnapshotDirector != null) {
-              LOG.info("On closing, will try to enforce snapshot creation.");
               actor.runOnCompletionBlockingCurrentPhase(
                   asyncSnapshotDirector.enforceSnapshotCreation(
                       processingStateMachine.getLastWrittenEventPosition(),
-                      logStream.getCommitPosition()),
+                      processingStateMachine.getLastSuccessfulProcessedEventPosition()),
                   (v, ex) -> {
                     try {
                       asyncSnapshotDirector.close();
