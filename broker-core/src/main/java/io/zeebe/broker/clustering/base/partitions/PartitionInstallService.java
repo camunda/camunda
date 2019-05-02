@@ -145,7 +145,14 @@ public class PartitionInstallService extends Actor
   @Override
   protected void onActorStarted() {
     actor.runOnCompletion(
-        leaderElectionInstallFuture, (leaderElection, e) -> leaderElection.addListener(this));
+        leaderElectionInstallFuture,
+        (leaderElection, e) -> {
+          if (e == null) {
+            leaderElection.addListener(this);
+          } else {
+            LOG.error("Could not install leader election for partition {}", partitionId, e);
+          }
+        });
   }
 
   public void onTransitionToLeader(int partitionId, long term) {
