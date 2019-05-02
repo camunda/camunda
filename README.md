@@ -56,6 +56,20 @@ This will delete all dangling images and containers. It might be useful
 when you run out of space or if you encounter any problem with the docker
 daemon.
 
+## Known issues
+
+### "max virtual memory" error on Mac
+
+Sometimes Elasticsearch will not run reporting the error in log:
+```
+max virtual memory areas vm.max_map_count [65530] likely too low, increase to at least [262144]
+```
+
+In this case following command might fix the issue:
+```
+sudo sysctl -w vm.max_map_count=262144
+```
+
 ## Commit Message Guidelines
 
 * **feat** (new feature for the user, not a new feature for build script)
