@@ -6,11 +6,10 @@
 package org.camunda.operate.es.reader;
 
 import static org.apache.lucene.search.join.ScoreMode.None;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.INCIDENT_KEY;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+ import static org.camunda.operate.es.schema.templates.ListViewTemplate.*;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.join.aggregations.JoinAggregationBuilders.children;
 import static org.elasticsearch.join.aggregations.JoinAggregationBuilders.parent;
 import static org.elasticsearch.join.query.JoinQueryBuilders.hasChildQuery;
@@ -28,7 +27,6 @@ import java.util.TreeSet;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
-import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.rest.dto.incidents.IncidentByWorkflowStatisticsDto;
@@ -77,12 +75,12 @@ public class IncidentStatisticsReader extends AbstractReader {
   }
   
   private Map<String, IncidentByWorkflowStatisticsDto> getIncidentsByWorkflow() {
-    Map<String, IncidentByWorkflowStatisticsDto> results = new HashMap<String, IncidentByWorkflowStatisticsDto>();
+    Map<String, IncidentByWorkflowStatisticsDto> results = new HashMap<>();
 
-    QueryBuilder incidentsQuery = boolQuery().must(
-        ElasticsearchUtil.joinWithAnd(
-            termQuery(IncidentTemplate.STATE, WorkflowInstanceState.ACTIVE.toString()),
-            hasChildQuery(ListViewTemplate.ACTIVITIES_JOIN_RELATION, existsQuery(ListViewTemplate.INCIDENT_KEY), ScoreMode.None)));
+    QueryBuilder incidentsQuery =
+        joinWithAnd(
+            termQuery(ListViewTemplate.STATE, WorkflowInstanceState.ACTIVE.toString()),
+            hasChildQuery(ListViewTemplate.ACTIVITIES_JOIN_RELATION, existsQuery(ListViewTemplate.INCIDENT_KEY), ScoreMode.None));
 
     SearchRequest searchRequest = new SearchRequest(workflowInstanceTemplate.getAlias())
         .source(new SearchSourceBuilder()
@@ -107,7 +105,9 @@ public class IncidentStatisticsReader extends AbstractReader {
   }
   
   private Map<String, IncidentByWorkflowStatisticsDto> updateActiveInstances(Map<String,IncidentByWorkflowStatisticsDto> statistics) {
-    QueryBuilder runningInstanceQuery = termQuery(IncidentTemplate.STATE, WorkflowInstanceState.ACTIVE.toString());
+    QueryBuilder runningInstanceQuery = joinWithAnd(
+        termQuery(ListViewTemplate.STATE, WorkflowInstanceState.ACTIVE.toString()),
+        termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION));
     Map<String, IncidentByWorkflowStatisticsDto> results = new HashMap<>(statistics);
     try {
       SearchRequest searchRequest = new SearchRequest(workflowInstanceTemplate.getAlias())
