@@ -4,7 +4,7 @@
 
 * [Backend Documentation](./backend)
 * [Frontend Documentation](./client)
-* [Contribution Guidelines](/wiki/Contributing-to-Operate)
+* [Contribution Guidelines](https://github.com/camunda/camunda-operate/wiki/Contributing-to-Operate)
 * [Issue Tracker](https://app.camunda.com/jira/secure/RapidBoard.jspa?rapidView=61)
 * [Zeebe](https://zeebe.io)
 
