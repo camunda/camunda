@@ -87,6 +87,7 @@ it('displays the connection status', () => {
 });
 
 it('should store data from the socket connection in state', () => {
+  jest.useFakeTimers();
   const data = {
     connectionStatus: {
       connectedToElasticsearch: true,
@@ -101,7 +102,11 @@ it('should store data from the socket connection in state', () => {
 
   const node = mount(<Footer />);
 
-  server.send(JSON.stringify(data));
+  server.on('connection', server => {
+    server.send(JSON.stringify(data));
+  });
+
+  jest.runOnlyPendingTimers();
 
   expect(node.state().connectionStatus).toEqual(data.connectionStatus);
   expect(node.state().isImporting).toEqual(data.isImporting);
