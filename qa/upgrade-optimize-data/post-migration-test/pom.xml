@@ -162,7 +162,8 @@
                 </goals>
                 <configuration>
                   <environmentVariables>
-                    <CAMBPM_VERSION>${camunda.engine.version}</CAMBPM_VERSION>
+                    <!--We use 7.10 because Optimize 2.3 only supports engine versions <= 7.10-->
+                    <CAMBPM_VERSION>${camunda.engine-7.10}</CAMBPM_VERSION>
                     <ES_VERSION>${elasticsearch.test.version}</ES_VERSION>
                   </environmentVariables>
                   <skip>${skip.docker}</skip>

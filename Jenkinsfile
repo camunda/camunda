@@ -16,7 +16,7 @@ String storeNumOfArtifacts() {
 
 def static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
-CAMBPM_VERSION_LATEST = "7.10.0"
+CAMBPM_VERSION_LATEST = "7.11.0-alpha4"
 
 String getCamBpmDockerImage(String camBpmVersion) {
   return "registry.camunda.cloud/camunda-bpm-platform-ee:${camBpmVersion}"
@@ -297,7 +297,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec()
+              yaml integrationTestPodSpec("7.10.0")
             }
           }
           steps {
@@ -361,6 +361,27 @@ pipeline {
             retry(2) {
               unstash name: "optimize-stash-client"
               integrationTestSteps('7.9')
+            }
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage('IT 7.10') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-7.10_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec('7.10.5')
+            }
+          }
+          steps {
+            retry(2) {
+              unstash name: "optimize-stash-client"
+              integrationTestSteps('7.10')
             }
           }
           post {
