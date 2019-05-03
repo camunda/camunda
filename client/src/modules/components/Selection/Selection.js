@@ -67,10 +67,15 @@ export default class Selection extends React.Component {
   };
 
   handleOnHeaderClick = () => {
-    if (this.props.isOpen) {
-      this.setState({showExitTransition: true});
+    const {isOpen, onToggle} = this.props;
+
+    if (isOpen) {
+      this.setState({showExitTransition: true}, () => {
+        onToggle();
+      });
+    } else {
+      onToggle();
     }
-    this.props.onToggle();
   };
 
   renderLabel = type => {
@@ -210,6 +215,7 @@ export default class Selection extends React.Component {
 
   render() {
     const {isOpen, selectionId, transitionTimeOut} = this.props;
+    const {showExitTransition} = this.state;
     const idString = `selection-${selectionId}`;
 
     return (
@@ -219,8 +225,10 @@ export default class Selection extends React.Component {
           data-test="openSelectionTransition"
           in={isOpen}
           timeout={transitionTimeOut}
-          exit={this.state.showExitTransition}
-          onExited={() => this.setState({showExitTransition: false})}
+          exit={showExitTransition}
+          onExited={() =>
+            showExitTransition && this.setState({showExitTransition: false})
+          }
           mountOnEnter
           unmountOnExit
         >
