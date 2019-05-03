@@ -101,7 +101,7 @@ public class ActivateJobsHandler {
           });
     } else {
       // enough jobs activated or no more partitions left to check
-      jobTypeToNextPartitionId.put(jobType, partitionIdIterator.getCurrentPartitionId() + 1);
+      jobTypeToNextPartitionId.put(jobType, partitionIdIterator.getCurrentPartitionId());
       responseObserver.onCompleted();
     }
   }

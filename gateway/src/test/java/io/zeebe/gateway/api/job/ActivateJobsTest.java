@@ -97,4 +97,28 @@ public class ActivateJobsTest extends GatewayTest {
         .extracting(v -> BufferUtil.bufferAsString(v.getValue()))
         .containsExactlyInAnyOrderElementsOf(fetchVariables);
   }
+
+  @Test
+  public void shouldActivateJobsRoundRobin() {
+    // given
+    final ActivateJobsStub stub = new ActivateJobsStub();
+    stub.registerWith(gateway);
+
+    final ActivateJobsRequest request =
+        ActivateJobsRequest.newBuilder().setType("test").setMaxJobsToActivate(2).build();
+
+    for (int partitionOffset = 0; partitionOffset < 3; partitionOffset++) {
+      // when
+      final Iterator<ActivateJobsResponse> responses = client.activateJobs(request);
+
+      // then
+      assertThat(responses.hasNext()).isTrue();
+      final ActivateJobsResponse response = responses.next();
+
+      for (ActivatedJob activatedJob : response.getJobsList()) {
+        assertThat(Protocol.decodePartitionId(activatedJob.getKey()))
+            .isEqualTo(Protocol.START_PARTITION_ID + partitionOffset);
+      }
+    }
+  }
 }
