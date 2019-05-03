@@ -17,6 +17,10 @@ package io.zeebe.logstreams.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
@@ -47,6 +51,7 @@ public class ReplicateSnapshotControllerTest {
   private StateSnapshotController receiverSnapshotController;
   private Replicator replicator;
   private StateStorage receiverStorage;
+  private NoopConsumer snapshotReplicatedCallback;
 
   @Before
   public void setup() throws IOException {
@@ -58,16 +63,18 @@ public class ReplicateSnapshotControllerTest {
     final File receiverSnapshotsDirectory = tempFolderRule.newFolder("snapshots-receiver");
     receiverStorage = new StateStorage(receiverRuntimeDirectory, receiverSnapshotsDirectory);
 
+    snapshotReplicatedCallback = spy(new NoopConsumer());
     replicator = new Replicator();
     replicatorSnapshotController =
         new StateSnapshotController(
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage, replicator, 1);
+            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage, replicator, 2);
+
     receiverSnapshotController =
         new StateSnapshotController(
             ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
             receiverStorage,
             replicator,
-            1);
+            2);
 
     autoCloseableRule.manage(replicatorSnapshotController);
     autoCloseableRule.manage(receiverSnapshotController);
@@ -135,7 +142,7 @@ public class ReplicateSnapshotControllerTest {
   @Test
   public void shouldReceiveSnapshotChunks() throws Exception {
     // given
-    receiverSnapshotController.consumeReplicatedSnapshots();
+    receiverSnapshotController.consumeReplicatedSnapshots(pos -> {});
     replicatorSnapshotController.takeSnapshot(1);
 
     // when
@@ -154,7 +161,7 @@ public class ReplicateSnapshotControllerTest {
   @Test
   public void shouldNotFailOnReplicatingAndReceivingTwice() throws Exception {
     // given
-    receiverSnapshotController.consumeReplicatedSnapshots();
+    receiverSnapshotController.consumeReplicatedSnapshots(pos -> {});
     replicatorSnapshotController.takeSnapshot(1);
     replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
 
@@ -174,10 +181,8 @@ public class ReplicateSnapshotControllerTest {
   @Test
   public void shouldEnsureMaxSnapshotCount() throws Exception {
     // given
-    receiverSnapshotController.consumeReplicatedSnapshots();
-    replicatorSnapshotController.takeSnapshot(1);
-    replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
-    replicatorSnapshotController.takeSnapshot(2);
+    receiverSnapshotController.consumeReplicatedSnapshots(pos -> {});
+    replicateXSnapshots(3);
 
     // when
     replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
@@ -185,7 +190,7 @@ public class ReplicateSnapshotControllerTest {
     // then
     final RocksDBWrapper wrapper = new RocksDBWrapper();
     final long recoveredSnapshot = receiverSnapshotController.recover();
-    assertThat(recoveredSnapshot).isEqualTo(2);
+    assertThat(recoveredSnapshot).isEqualTo(3);
 
     wrapper.wrap(receiverSnapshotController.openDb());
     final int valueFromSnapshot = wrapper.getInt(KEY);
@@ -193,6 +198,30 @@ public class ReplicateSnapshotControllerTest {
 
     assertThat(receiverStorage.existSnapshot(1)).isFalse();
     assertThat(receiverStorage.existSnapshot(2)).isTrue();
+    assertThat(receiverStorage.existSnapshot(3)).isTrue();
+  }
+
+  @Test
+  public void shouldInvokeCallbackOnReplicatedSnapshot() {
+    // given
+    receiverSnapshotController.consumeReplicatedSnapshots(snapshotReplicatedCallback::noop);
+    replicateXSnapshots(3);
+
+    // then
+    verify(snapshotReplicatedCallback, never()).noop(anyInt());
+
+    // when
+    replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
+
+    // then
+    verify(snapshotReplicatedCallback).noop(2);
+  }
+
+  private void replicateXSnapshots(final int snapshotAmount) {
+    for (int i = 1; i <= snapshotAmount; ++i) {
+      replicatorSnapshotController.takeSnapshot(i);
+      replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
+    }
   }
 
   protected static final class Replicator implements SnapshotReplication {
@@ -215,5 +244,9 @@ public class ReplicateSnapshotControllerTest {
 
     @Override
     public void close() {}
+  }
+
+  public class NoopConsumer {
+    public void noop(long position) {}
   }
 }

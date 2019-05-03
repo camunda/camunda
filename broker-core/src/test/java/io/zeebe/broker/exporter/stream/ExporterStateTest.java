@@ -164,4 +164,14 @@ public class ExporterStateTest {
     // then
     assertThat(positions).hasSize(2).contains(entry("e1", 1L), entry("e2", 2L));
   }
+
+  @Test
+  public void shouldGetLowestPosition() {
+    // given
+    state.setPosition("e2", -1L);
+    state.setPosition("e1", 1L);
+
+    // when/then
+    assertThat(state.getLowestPosition()).isEqualTo(-1L);
+  }
 }

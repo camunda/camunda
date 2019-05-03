@@ -24,6 +24,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.zip.CRC32;
 import org.agrona.collections.Long2LongHashMap;
 import org.slf4j.Logger;
@@ -40,12 +42,18 @@ final class ReplicationController {
   private final Long2LongHashMap receivedSnapshots = new Long2LongHashMap(MISSING_SNAPSHOT);
   private final StateStorage storage;
   private final Runnable ensureMaxSnapshotCount;
+  private final Supplier<Long> deletablePositionSupplier;
+  private Consumer<Long> deleteDataCallback;
 
   ReplicationController(
-      SnapshotReplication replication, StateStorage storage, Runnable ensureMaxSnapshotCount) {
+      SnapshotReplication replication,
+      StateStorage storage,
+      Runnable ensureMaxSnapshotCount,
+      Supplier<Long> deletablePositionSupplier) {
     this.replication = replication;
     this.storage = storage;
     this.ensureMaxSnapshotCount = ensureMaxSnapshotCount;
+    this.deletablePositionSupplier = deletablePositionSupplier;
   }
 
   private static long createChecksum(byte[] content) {
@@ -69,8 +77,9 @@ final class ReplicationController {
   }
 
   /** Registering for consuming snapshot chunks. */
-  public void consumeReplicatedSnapshots() {
-    replication.consume((this::consumeSnapshotChunk));
+  public void consumeReplicatedSnapshots(Consumer<Long> dataDeleteCallback) {
+    this.deleteDataCallback = dataDeleteCallback;
+    replication.consume(this::consumeSnapshotChunk);
   }
 
   /**
@@ -160,6 +169,9 @@ final class ReplicationController {
           totalChunkCount,
           validSnapshotDirectory.toPath());
       tryToMarkSnapshotAsValid(snapshotChunk, tmpSnapshotDirectory, validSnapshotDirectory);
+      if (deleteDataCallback != null) {
+        deleteDataCallback.accept(deletablePositionSupplier.get());
+      }
     } else {
       LOG.debug(
           "Waiting for more snapshot chunks, currently have {}/{}.",

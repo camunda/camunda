@@ -24,8 +24,10 @@ import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
 import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.LongArrayList;
 
 public class ExporterStreamProcessorState {
+  public static final long VALUE_NOT_FOUND = ExporterRecord.POSITION_UNKNOWN;
 
   private final DbString exporterId;
   private final DbLong position;
@@ -89,12 +91,19 @@ public class ExporterStreamProcessorState {
 
   private long getPosition() {
     final DbLong zbLong = exporterPositionColumnFamily.get(exporterId);
-    return zbLong == null ? ExporterRecord.POSITION_UNKNOWN : zbLong.getValue();
+    return zbLong == null ? VALUE_NOT_FOUND : zbLong.getValue();
   }
 
   public void visitPositions(BiConsumer<String, Long> consumer) {
     exporterPositionColumnFamily.forEach(
         (exporterId, position) -> consumer.accept(exporterId.toString(), position.getValue()));
+  }
+
+  public long getLowestPosition() {
+    final LongArrayList positions = new LongArrayList();
+
+    visitPositions((id, pos) -> positions.addLong(pos));
+    return positions.longStream().min().orElse(-1L);
   }
 
   public void removePosition(String exporter) {
