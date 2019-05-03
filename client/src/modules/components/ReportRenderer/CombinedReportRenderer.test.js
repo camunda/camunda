@@ -103,20 +103,6 @@ it('should render a chart if visualization is number', () => {
   expect(node.find(Chart)).toExist();
 });
 
-it('should instruct to select one or more reports if no reports are selected for combined reports', () => {
-  const report = {
-    combined: true,
-    data: {
-      configuration: {},
-      reports: []
-    }
-  };
-
-  const node = shallow(<CombinedReportRenderer mightFail={mightFail} report={report} />);
-
-  expect(node.find('ReportBlankSlate').prop('errorMessage')).toContain('one or more reports');
-});
-
 it('should pass the report to the visualization component', () => {
   const node = shallow(<CombinedReportRenderer mightFail={mightFail} report={CombinedReport} />);
 

@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import ReportBlankSlate from './ReportBlankSlate';
 
 import {getFormatter, processResult} from './service';
 
@@ -41,7 +40,7 @@ export default class ProcessReportRenderer extends React.Component {
       case 'heat':
         return Heatmap;
       default:
-        return ReportBlankSlate;
+        return;
     }
   };
 }

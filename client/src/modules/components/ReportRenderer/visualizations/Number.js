@@ -5,20 +5,15 @@
  */
 
 import React from 'react';
-import ReportBlankSlate from '../ReportBlankSlate';
 
 import ProgressBar from './ProgressBar';
-import {formatters, isDurationValue} from 'services';
+import {formatters} from 'services';
 
 import './Number.scss';
 
-export default function Number({report, formatter, errorMessage}) {
+export default function Number({report, formatter}) {
   const {data, result} = report;
   const {targetValue, precision} = data.configuration;
-
-  if (isDurationValue(result.data)) {
-    return <ReportBlankSlate errorMessage={errorMessage} />;
-  }
 
   if (targetValue && targetValue.active) {
     let min, max;

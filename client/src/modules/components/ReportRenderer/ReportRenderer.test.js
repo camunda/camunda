@@ -183,6 +183,20 @@ describe('SetupNotice', () => {
     expect(node).toMatchSnapshot();
   });
 
+  it('should instruct to select one or more reports if no reports are selected for combined reports', () => {
+    const report = {
+      combined: true,
+      data: {
+        configuration: {},
+        reports: []
+      }
+    };
+
+    const node = shallow(<ReportRenderer report={report} updateReport />);
+
+    expect(node).toMatchSnapshot();
+  });
+
   it('should not add instruction for group by if property is raw data', () => {
     const newReport = {
       ...reportTemplate,

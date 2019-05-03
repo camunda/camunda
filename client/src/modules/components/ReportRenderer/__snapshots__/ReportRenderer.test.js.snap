@@ -71,3 +71,9 @@ exports[`SetupNotice should instruct to click the edit button in report view 1`]
   </p>
 </SetupNotice>
 `;
+
+exports[`SetupNotice should instruct to select one or more reports if no reports are selected for combined reports 1`] = `
+<SetupNotice>
+  To display a report, please select one or more reports from the list.
+</SetupNotice>
+`;

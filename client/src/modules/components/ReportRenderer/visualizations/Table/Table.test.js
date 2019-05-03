@@ -96,53 +96,6 @@ it('should process raw data', async () => {
   expect(processRawData.process).toHaveBeenCalled();
 });
 
-it('should display an error message for a non-object result (single number)', async () => {
-  const node = await shallow(
-    <Table
-      {...props}
-      report={{
-        ...report,
-        result: {data: 7}
-      }}
-      errorMessage="Error"
-      formatter={v => v}
-    />
-  );
-
-  expect(node.find('ReportBlankSlate')).toExist();
-  expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
-});
-
-it('should display an error message if no data is provided', async () => {
-  const node = await shallow(
-    <Table {...props} report={{...report, result: null}} errorMessage="Error" formatter={v => v} />
-  );
-
-  expect(node.find('ReportBlankSlate')).toExist();
-  expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
-});
-
-it('should not display an error message if data is valid', async () => {
-  const node = await shallow(
-    <Table
-      {...props}
-      report={{
-        ...report,
-        result: {
-          data: [
-            {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
-            {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}}
-          ]
-        }
-      }}
-      errorMessage="Error"
-      formatter={v => v}
-    />
-  );
-
-  expect(node.find('ReportBlankSlate')).not.toExist();
-});
-
 it('should set the correct parameters when updating sorting', () => {
   const spy = jest.fn();
   const node = shallow(

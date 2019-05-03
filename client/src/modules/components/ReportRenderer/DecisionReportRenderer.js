@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import ReportBlankSlate from './ReportBlankSlate';
 
 import {Table, Number, Chart, DecisionTable} from './visualizations';
 
@@ -22,7 +21,7 @@ const getComponent = (groupBy, visualization) => {
     case 'pie':
       return Chart;
     default:
-      return ReportBlankSlate;
+      return;
   }
 };
 

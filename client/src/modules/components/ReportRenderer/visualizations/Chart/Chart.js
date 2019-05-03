@@ -9,7 +9,6 @@ import ChartRenderer from './ChartRenderer';
 import createDefaultChartConfig from './defaultChart';
 import createCombinedChartConfig from './combinedChart';
 import createTargetLineConfig from './targetLineChart';
-import ReportBlankSlate from '../../ReportBlankSlate';
 
 export default function Chart(props) {
   const {
@@ -17,13 +16,8 @@ export default function Chart(props) {
       combined,
       result,
       data: {configuration, visualization, view}
-    },
-    errorMessage
+    }
   } = props;
-
-  if (!result || typeof result.data !== 'object') {
-    return <ReportBlankSlate errorMessage={errorMessage} />;
-  }
 
   const reportView = view || Object.values(result.data)[0].data.view;
   const targetValueType = reportView.property === 'frequency' ? 'countChart' : 'durationChart';

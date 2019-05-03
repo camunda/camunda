@@ -15,7 +15,6 @@ export {
   checkDeleteConflict
 } from './dataLoaders';
 export {numberParser} from './NumberParser';
-export {isDurationValue} from './isDurationValue';
 export {incompatibleFilters} from './incompatibleFilters';
 export {default as reportConfig} from './reportConfig';
 export {getDiagramElementsBetween} from './diagramServices';

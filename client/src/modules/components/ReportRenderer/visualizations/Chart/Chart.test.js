@@ -28,40 +28,10 @@ const report = {
   }
 };
 
-it('should display an error message for a non-object result (single number)', () => {
-  const node = shallow(<Chart report={{...report, result: {data: 7}}} errorMessage="Error" />);
-
-  expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
-});
-
-it('should display an error message if no data is provided', () => {
-  const node = shallow(<Chart report={report} errorMessage="Error" />);
-
-  expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
-});
-
-it('should not display an error message if data is valid', () => {
-  const node = shallow(
-    <Chart report={{...report, result: {data: {foo: 123}}}} errorMessage="Error" />
-  );
-
-  expect(node.find('ReportBlankSlate')).not.toExist();
-});
-
 it('should destroy chart if no data is provided', () => {
   const node = shallow(<Chart report={report} errorMessage="Error" />);
 
   expect(node.chart).toBe(undefined);
-});
-
-it('should display an error message if there was data and the second time no data is provided', () => {
-  const node = shallow(
-    <Chart report={{...report, result: {data: {foo: 123}}}} errorMessage="Error" />
-  );
-
-  node.setProps({report: {...report, result: null}});
-
-  expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
 });
 
 it('should use the special targetLine type when target values are enabled on a line chart', () => {

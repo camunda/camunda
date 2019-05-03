@@ -26,19 +26,21 @@ const errorMessage =
 
 export default function ReportRenderer(props) {
   const {report, updateReport, isExternal} = props;
-  let View;
+  let View, somethingMissing;
   if (report) {
     const isDecision = report.reportType === 'decision';
 
     if (report.combined) {
       View = CombinedReportRenderer;
+      somethingMissing = checkCombined(report.data);
     } else if (isDecision) {
       View = DecisionReportRenderer;
+      somethingMissing = checkDecisionReport(report.data);
     } else {
       View = ProcessReportRenderer;
+      somethingMissing = checkProcessReport(report.data);
     }
 
-    const somethingMissing = checkReport(report);
     if (somethingMissing) {
       if (isExternal) {
         return <IncompleteReport id={report.id} />;
@@ -68,7 +70,7 @@ export default function ReportRenderer(props) {
             </NoDataNotice>
           ) : (
             <>
-              <View {...props} errorMessage={errorMessage} />
+              <View {...props} />
               {report.data.configuration.showInstanceCount && (
                 <div className="additionalInfo">
                   Total {isDecision ? 'Evaluation' : 'Instance'}
@@ -107,39 +109,39 @@ function containsData(report) {
   }
 }
 
-function checkReport({data, reportType, combined}) {
-  if (combined) {
-    const reports = data.reports;
-    if (!reports || !reports.length) {
-      return 'To display a report, please select one or more reports from the list.';
-    } else {
-      return;
-    }
-  } else {
-    return checkSingleReport(data, reportType);
+function checkCombined(data) {
+  const reports = data.reports;
+  if (!reports || !reports.length) {
+    return 'To display a report, please select one or more reports from the list.';
   }
 }
 
-function checkSingleReport(data, reportType) {
-  if (
-    reportType === 'process' &&
-    (isEmpty(data.processDefinitionKey) || isEmpty(data.processDefinitionVersion))
-  ) {
-    return (
-      <p>
-        Select a <b>Process Definition</b> above.
-      </p>
-    );
-  } else if (
-    reportType === 'decision' &&
-    (isEmpty(data.decisionDefinitionKey) || isEmpty(data.decisionDefinitionVersion))
-  ) {
+function checkDecisionReport(data) {
+  if (isEmpty(data.decisionDefinitionKey) || isEmpty(data.decisionDefinitionVersion)) {
     return (
       <p>
         Select a <b>Decision Definition</b> above.
       </p>
     );
-  } else if (!data.view) {
+  } else {
+    return checkSingleReport(data);
+  }
+}
+
+function checkProcessReport(data) {
+  if (isEmpty(data.processDefinitionKey) || isEmpty(data.processDefinitionVersion)) {
+    return (
+      <p>
+        Select a <b>Process Definition</b> above.
+      </p>
+    );
+  } else {
+    return checkSingleReport(data);
+  }
+}
+
+function checkSingleReport(data) {
+  if (!data.view) {
     return (
       <p>
         Select an option for <b>View</b> above.

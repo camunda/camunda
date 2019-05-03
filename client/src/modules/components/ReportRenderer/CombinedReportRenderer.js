@@ -8,19 +8,13 @@ import React from 'react';
 import {withErrorHandling} from 'HOC';
 
 import {getFormatter, processResult as processSingleReportResult} from './service';
-import ReportBlankSlate from './ReportBlankSlate';
 import {Table, Chart} from './visualizations';
 
 const getComponent = visualization => {
-  switch (visualization) {
-    case 'table':
-      return Table;
-    case 'number':
-    case 'bar':
-    case 'line':
-      return Chart;
-    default:
-      return ReportBlankSlate;
+  if (visualization === 'table') {
+    return Table;
+  } else {
+    return Chart;
   }
 };
 
@@ -28,31 +22,22 @@ export default withErrorHandling(
   class CombinedReportRenderer extends React.Component {
     render() {
       const {result} = this.props.report;
-      if (result && typeof result === 'object' && Object.keys(result.data).length) {
-        const {view, visualization} = Object.values(result.data)[0].data;
-        const Component = getComponent(visualization);
+      const {view, visualization} = Object.values(result.data)[0].data;
+      const Component = getComponent(visualization);
 
-        const processedReport = {
-          ...this.props.report,
-          result: {...this.props.report.result, data: processResult(this.props.report.result.data)}
-        };
-
-        return (
-          <div className="component">
-            <Component
-              {...this.props}
-              report={processedReport}
-              formatter={getFormatter(view.property)}
-            />
-          </div>
-        );
-      }
+      const processedReport = {
+        ...this.props.report,
+        result: {...this.props.report.result, data: processResult(this.props.report.result.data)}
+      };
 
       return (
-        <ReportBlankSlate
-          isCombined
-          errorMessage={'To display a report, please select one or more reports from the list.'}
-        />
+        <div className="component">
+          <Component
+            {...this.props}
+            report={processedReport}
+            formatter={getFormatter(view.property)}
+          />
+        </div>
       );
     }
   }

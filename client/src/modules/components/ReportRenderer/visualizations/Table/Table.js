@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import ReportBlankSlate from '../../ReportBlankSlate';
 import processRawData from './processRawData';
 
 import {Table as TableRenderer, LoadingIndicator} from 'components';
@@ -40,11 +39,7 @@ export default withErrorHandling(
     }
 
     render() {
-      const {report, errorMessage, disableReportScrolling, updateReport} = this.props;
-
-      if (!report.result || typeof report.result.data !== 'object') {
-        return <ReportBlankSlate errorMessage={errorMessage} />;
-      }
+      const {report, disableReportScrolling, updateReport} = this.props;
 
       if (this.state.needEndpoint && this.state.camundaEndpoints === null) {
         return <LoadingIndicator />;

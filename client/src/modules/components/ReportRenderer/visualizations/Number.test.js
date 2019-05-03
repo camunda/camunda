@@ -9,14 +9,12 @@ import {shallow} from 'enzyme';
 
 import Number from './Number';
 import ProgressBar from './ProgressBar';
-import ReportBlankSlate from '../ReportBlankSlate';
 
 jest.mock('services', () => {
   return {
     formatters: {
       convertDurationToSingleNumber: () => 12
-    },
-    isDurationValue: data => typeof data !== 'number'
+    }
   };
 });
 
@@ -40,32 +38,6 @@ const report = {
 it('should display the number provided per data property', () => {
   const node = shallow(<Number report={report} formatter={v => v} />);
   expect(node).toIncludeText('1234');
-});
-
-it('should display an error message if the data does not have the correct format', () => {
-  const node = shallow(
-    <Number
-      report={{...report, result: {data: {foo: 1234}}}}
-      errorMessage="Error"
-      formatter={v => v}
-    />
-  );
-
-  expect(node.find(ReportBlankSlate)).toExist();
-});
-
-it('should display an error message if no data is provided', () => {
-  const node = shallow(
-    <Number report={{...report, result: {data: null}}} errorMessage="Error" formatter={v => v} />
-  );
-
-  expect(node.find(ReportBlankSlate)).toExist();
-});
-
-it('should not display an error message if data is valid', () => {
-  const node = shallow(<Number report={report} errorMessage="Error" formatter={v => v} />);
-
-  expect(node.find(ReportBlankSlate)).not.toExist();
 });
 
 it('should format data according to the provided formatter', () => {
