@@ -965,5 +965,51 @@
 
       </build>
     </profile>
+
+    <!--
+      This profile is used to add an explicit dependency to surefire-junit. To fix the race condition
+      of https://github.com/zeebe-io/zeebe/issues/2379 we download all dependencies at the beginning
+      with mvn dependency:go-offline and then run the tests in offline mode. But the plugin misses
+      to download the surefire-junit dependency, therefore define an explicit dependency while downloading
+    -->
+    <profile>
+      <id>prepare-offline</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.maven.surefire</groupId>
+          <artifactId>surefire-junit4</artifactId>
+          <version>${plugin.version.surefire}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.maven.surefire</groupId>
+          <artifactId>surefire-junit47</artifactId>
+          <version>${plugin.version.surefire}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>analyze-dependencies</id>
+                <goals>
+                  <goal>analyze-only</goal>
+                </goals>
+                <configuration>
+                  <ignoredUnusedDeclaredDependencies combine.children="append">
+                    <dep>org.apache.maven.surefire:surefire-junit4</dep>
+                    <dep>org.apache.maven.surefire:surefire-junit47</dep>
+                  </ignoredUnusedDeclaredDependencies>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
