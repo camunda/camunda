@@ -59,7 +59,7 @@ it('should add another value when clicking add another value button', () => {
 it('should not have the possibility to remove the value if there is only one value', () => {
   const node = shallow(<NumberInput {...props} />);
 
-  expect(node.find('.NumberInput__removeItemButton').exists()).toBeFalsy();
+  expect(node.find('.NumberInput__removeItemButton')).not.toExist();
 });
 
 it('should have the possibility to remove a value if there are multiple values', () => {
