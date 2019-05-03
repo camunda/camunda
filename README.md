@@ -58,7 +58,7 @@ daemon.
 
 ## Known issues
 
-### "max virtual memory" error on Mac
+### "max virtual memory" error on Mac/Linux
 
 Sometimes Elasticsearch will not run reporting the error in log:
 ```
@@ -69,6 +69,8 @@ In this case following command might fix the issue:
 ```
 sudo sysctl -w vm.max_map_count=262144
 ```
+
+To set this value permanently, update the `vm.max_map_count` setting in /etc/sysctl.conf. For more info see here: https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
 
 ## Commit Message Guidelines
 
