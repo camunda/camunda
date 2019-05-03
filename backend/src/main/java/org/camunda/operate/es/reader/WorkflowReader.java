@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -175,6 +177,10 @@ public class WorkflowReader extends AbstractReader {
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
+  }
+  
+  public Set<String> getAllWorkflowIds(){
+    return getWorkflows().keySet();
   }
   
   /**

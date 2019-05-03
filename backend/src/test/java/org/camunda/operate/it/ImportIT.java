@@ -362,6 +362,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(incidentEntity.getErrorMessage()).isEqualTo(errorMessage);
     assertThat(incidentEntity.getErrorType()).isNotNull();
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
+    assertThat(incidentEntity.getWorkflowId()).isEqualTo(workflowId);
 
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
@@ -409,6 +410,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
     assertThat(incidentEntity.getErrorType()).isNotNull();
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
+    assertThat(incidentEntity.getWorkflowId()).isNotNull();
 
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
@@ -468,6 +470,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
+    assertThat(incidentEntity.getWorkflowId()).isNotNull();
 
     //when I cancel workflow instance
     ZeebeTestUtil.cancelWorkflowInstance(zeebeClient, workflowInstanceKey);

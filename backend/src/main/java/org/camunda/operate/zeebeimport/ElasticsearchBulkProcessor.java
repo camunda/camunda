@@ -63,6 +63,7 @@ public class ElasticsearchBulkProcessor extends Thread {
           listViewZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
           activityInstanceZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
           eventZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
+          incidentZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
           sequenceFlowZeebeRecordProcessor.processSequenceFlowRecord(record, bulkRequest);
           break;
         case INCIDENT:

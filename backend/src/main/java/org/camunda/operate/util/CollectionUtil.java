@@ -5,13 +5,18 @@
  */
 package org.camunda.operate.util;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.camunda.operate.exceptions.OperateRuntimeException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public abstract class CollectionUtil {
 
@@ -45,5 +50,18 @@ public abstract class CollectionUtil {
     if (collection!= null && object != null) {
       collection.add(object);
     }
+  }
+
+  public static <T> Set<T> asSet(T ...objects){
+    Set<T> result = new HashSet<>();
+    for(T object: objects) {
+      if(object!=null) result.add(object);
+    }
+    return result;
+  }
+  
+  public static Map<String, Object> toJSONMap(ObjectMapper objectMapper,Object input) throws IOException {
+    //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
+    return objectMapper.readValue(objectMapper.writeValueAsString(input), HashMap.class);
   }
 }

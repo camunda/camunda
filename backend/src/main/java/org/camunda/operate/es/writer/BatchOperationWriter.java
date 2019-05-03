@@ -29,7 +29,6 @@ import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
-import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -58,6 +57,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.camunda.operate.util.CollectionUtil.*;
 import static org.camunda.operate.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -118,7 +118,7 @@ public class BatchOperationWriter {
         operation.setLockOwner(workerId);
         operation.setLockExpirationTime(OffsetDateTime.now().plus(lockTimeout, ChronoUnit.MILLIS));
 
-        CollectionUtil.addToMap(result, operation.getWorkflowInstanceId(), operation);
+        addToMap(result, operation.getWorkflowInstanceId(), operation);
         bulkRequest.add(createUpdateByIdRequest(operation, false));
       }
     }
@@ -129,7 +129,7 @@ public class BatchOperationWriter {
 
   private UpdateRequest createUpdateByIdRequest(OperationEntity operation, boolean refreshImmediately) throws PersistenceException {
     try {
-      Map<String, Object> jsonMap = toJSONMap(operation);
+      Map<String, Object> jsonMap = toJSONMap(objectMapper,operation);
 
       UpdateRequest updateRequest = new UpdateRequest(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operation.getId())
         .doc(jsonMap);
@@ -270,7 +270,7 @@ public class BatchOperationWriter {
   }
   
   private Script getUpdateScript() throws IOException {
-    Map<String, Object> jsonMap = toJSONMap(CollectionUtil.asMap("endDate",OffsetDateTime.now()));
+    Map<String, Object> jsonMap = toJSONMap(objectMapper,asMap("endDate",OffsetDateTime.now()));
 
     String script =
           "ctx._source.state = '" + OperationState.COMPLETED.toString() + "';" +
@@ -293,11 +293,6 @@ public class BatchOperationWriter {
           failure.getMessage()), failure.getCause());
         throw new PersistenceException("Complete operation failed: " + failure.getMessage(), failure.getCause());
       }
-  }
-  
-  @SuppressWarnings("unchecked")
-  private Map<String, Object> toJSONMap(Object input) throws IOException {
-    return objectMapper.readValue(objectMapper.writeValueAsString(input), HashMap.class);
   }
 
   private int persistOperations(SearchHits hits, OperationRequestDto operationRequest) throws PersistenceException {

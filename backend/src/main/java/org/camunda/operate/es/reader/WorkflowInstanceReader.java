@@ -6,15 +6,14 @@
 package org.camunda.operate.es.reader;
 
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
@@ -77,6 +76,22 @@ public class WorkflowInstanceReader extends AbstractReader {
         logger.error(message, e);
         throw new OperateRuntimeException(message, e);
       }
+  }
+  
+  public List<String> getWorkflowInstanceIdsByWorkflowId(String workflowId){
+    QueryBuilder query = termQuery(ListViewTemplate.WORKFLOW_ID, workflowId);
+    
+    SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
+                                    .source(new SearchSourceBuilder()
+                                    .query(query)
+                                    .fetchSource(ListViewTemplate.WORKFLOW_INSTANCE_ID, null));
+    try {
+      return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining workflow instance ids: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
   }
 
   /**

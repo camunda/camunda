@@ -34,11 +34,13 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 
 public abstract class ElasticsearchUtil {
 
@@ -317,4 +319,19 @@ public abstract class ElasticsearchUtil {
     }
     return result;
   }
+  
+  public static long count(String indexName, RestHighLevelClient esClient) {
+    final SearchRequest searchRequest = new SearchRequest(indexName)
+        .source(new SearchSourceBuilder()
+            .query(constantScoreQuery(QueryBuilders.matchAllQuery())));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return response.getHits().getTotalHits();
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining all %s count: %s", indexName, e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+  
 }
