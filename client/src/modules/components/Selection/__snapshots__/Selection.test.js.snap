@@ -1419,7 +1419,7 @@ exports[`Selection should contain a Header 1`] = `
                                 "componentStyle": ComponentStyle {
                                   "componentId": "sc-cvbbAY",
                                   "isStatic": false,
-                                  "lastClassName": "jOoDJo",
+                                  "lastClassName": "hfuLcB",
                                   "rules": Array [
                                     "
   /* Positioning */
@@ -1428,6 +1428,10 @@ exports[`Selection should contain a Header 1`] = `
   width: 100%;
   bottom: -1px;
   left: 0px;
+
+  &:focus {
+    z-index: 1;
+  }
 
   /* Color */
   color: ",
@@ -1474,7 +1478,7 @@ exports[`Selection should contain a Header 1`] = `
                               aria-controls="selection-1"
                               aria-expanded={true}
                               aria-label="Selection 1, holding 145 Instances"
-                              className="sc-cvbbAY jOoDJo"
+                              className="sc-cvbbAY hfuLcB"
                               data-test="selection-toggle"
                               id="selection-1-toggle"
                               onClick={[Function]}

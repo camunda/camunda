@@ -102,6 +102,10 @@ export const SelectionToggle = themed(styled.button`
   bottom: -1px;
   left: 0px;
 
+  &:focus {
+    z-index: 1;
+  }
+
   /* Color */
   color: ${({isOpen}) =>
     isOpen ? '#ffffff' : themedWith('#ffffff', Colors.uiLight06)};
