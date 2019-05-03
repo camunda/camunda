@@ -22,7 +22,11 @@ Below are the components you'll use in the tutorial. Please download the full di
 1.   [Camunda Operate](https://github.com/zeebe-io/zeebe/releases/tag/0.17.0): An operations tool for monitoring and troubleshooting live workflow instances in Zeebe. Operate is currently available for free and unrestricted _non-production use_.
 1.   [Elasticsearch 6.7.0](https://www.elastic.co/downloads/past-releases/elasticsearch-6-7-0): An open-source distributed datastore that can connect to Zeebe to store workflow data for auditing, visualization, analysis, etc. Camunda Operate uses Elasticsearch as its underlying datastore, which is why you need to download Elasticsearch to complete this tutorial. Operate and Zeebe are compatible with Elasticsearch 6.7.0.
 
-If you have questions or feedback about the tutorial, we encourage you to visit the [Zeebe user forum](https://forum.zeebe.io) and ask a question.
+In case you're already familiar with BPMN and how to create a BPMN model in Zeebe Modeler, you can find the finished model that we create during the tutorial here: [Zeebe Getting Started Tutorial Workflow Model](getting-started/img/order-process.bpmn). 
+
+If you're using the finished model we provide rather than building your own, you can also move ahead to [section 3.3: Deploy a Workflow](/getting-started/deploy-a-workflow.html).
+
+And if you have questions or feedback about the tutorial, we encourage you to visit the [Zeebe user forum](https://forum.zeebe.io) and ask a question.
 
 There's a "Getting Started" category for topics that you can use when you ask your question or give feedback.
 
