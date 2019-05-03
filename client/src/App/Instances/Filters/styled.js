@@ -65,6 +65,11 @@ export const Select = styled(BasicSelect)`
 
 export const Textarea = styled(BasicTextarea)`
   ${widthStyle};
+
+  min-height: 52px;
+  max-height: 100px;
+
+  resize: vertical;
 `;
 
 export const TextInput = styled(BasicTextInput)`
