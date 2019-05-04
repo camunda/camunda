@@ -57,7 +57,7 @@
     <version.objenesis>3.0.1</version.objenesis>
     <version.protobuf>3.7.1</version.protobuf>
     <version.rocksdbjni>6.0.1</version.rocksdbjni>
-    <version.sbe>1.12.4</version.sbe>
+    <version.sbe>1.12.5</version.sbe>
     <version.scala-parser>1.0.6</version.scala-parser>
     <version.scala>2.12.8</version.scala>
     <version.slf4j>1.7.26</version.slf4j>
