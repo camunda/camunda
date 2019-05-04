@@ -132,15 +132,21 @@ public class StubbedGateway extends Gateway {
 
   private class StubbedTopologyManager implements BrokerTopologyManager {
 
-    private BrokerClusterStateImpl clusterState;
+    private final BrokerClusterStateImpl clusterState;
 
     StubbedTopologyManager() {
+      this(8);
+    }
+
+    StubbedTopologyManager(int partitionsCount) {
       clusterState = new BrokerClusterStateImpl();
       clusterState.addBrokerIfAbsent(0);
       clusterState.setBrokerAddressIfPresent(0, "localhost:26501");
-      clusterState.setPartitionLeader(START_PARTITION_ID, 0);
-      clusterState.addPartitionIfAbsent(START_PARTITION_ID);
-      clusterState.setPartitionsCount(1);
+      for (int partitionOffset = 0; partitionOffset < partitionsCount; partitionOffset++) {
+        clusterState.setPartitionLeader(START_PARTITION_ID + partitionOffset, 0);
+        clusterState.addPartitionIfAbsent(START_PARTITION_ID + partitionOffset);
+      }
+      clusterState.setPartitionsCount(partitionsCount);
     }
 
     @Override

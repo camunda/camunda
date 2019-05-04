@@ -20,6 +20,7 @@ import io.zeebe.gateway.api.util.StubbedGateway.RequestStub;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.data.MsgPackConverter;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import java.util.stream.LongStream;
 import org.agrona.DirectBuffer;
@@ -95,6 +96,8 @@ public class ActivateJobsStub
 
   @Override
   public BrokerResponse<JobBatchRecord> handle(BrokerActivateJobsRequest request) throws Exception {
+    final int partitionId = request.getPartitionId();
+
     final JobBatchRecord requestDto = request.getRequestWriter();
 
     final JobBatchRecord response = new JobBatchRecord();
@@ -103,17 +106,26 @@ public class ActivateJobsStub
     response.setType(requestDto.getType());
     response.setTimeout(requestDto.getTimeout());
     addJobs(
-        response, requestDto.getMaxJobsToActivate(), requestDto.getType(), requestDto.getWorker());
+        response,
+        partitionId,
+        requestDto.getMaxJobsToActivate(),
+        requestDto.getType(),
+        requestDto.getWorker());
 
-    return new BrokerResponse<>(response, 0, JOB_BATCH_KEY);
+    return new BrokerResponse<>(
+        response, partitionId, Protocol.encodePartitionId(partitionId, JOB_BATCH_KEY));
   }
 
   private void addJobs(
-      JobBatchRecord response, int amount, DirectBuffer type, DirectBuffer worker) {
+      JobBatchRecord response,
+      int partitionId,
+      int amount,
+      DirectBuffer type,
+      DirectBuffer worker) {
     LongStream.range(0, amount)
         .forEach(
             key -> {
-              response.jobKeys().add().setValue(key);
+              response.jobKeys().add().setValue(Protocol.encodePartitionId(partitionId, key));
               response
                   .jobs()
                   .add()
