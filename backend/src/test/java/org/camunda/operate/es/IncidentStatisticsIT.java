@@ -113,12 +113,10 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
           s.getInstancesWithActiveIncidentsCount() == 1L &&
           (s.getVersion() == 1 || s.getVersion() == 2)
     );
-
-
   }
 
   @Test
-  public void testIncidentStatisticsByWorkflow() throws Exception {
+  public void testWorkflowAndIncidentStatistics() throws Exception {
     createData();
     MockHttpServletRequestBuilder request = get(QUERY_INCIDENTS_BY_WORKFLOW_URL);
     MvcResult mvcResult = mockMvc.perform(request)
@@ -129,7 +127,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     List<IncidentsByWorkflowGroupStatisticsDto> response = mockMvcTestRule.listFromResponse(mvcResult, IncidentsByWorkflowGroupStatisticsDto.class);
 
     //assert data
-    assertThat(response).hasSize(2);
+    assertThat(response).hasSize(3);
     //assert Demo process group
     assertThat(response.get(0).getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
     assertThat(response.get(0).getWorkflowName()).isEqualTo(DEMO_PROCESS_NAME + "2");
@@ -157,7 +155,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     assertThat(response.get(1).getWorkflowName()).isEqualTo(ORDER_PROCESS_NAME + "2");
     assertThat(response.get(1).getActiveInstancesCount()).isEqualTo(8);
     assertThat(response.get(1).getInstancesWithActiveIncidentsCount()).isEqualTo(1);
-    assertThat(response.get(1).getWorkflows()).hasSize(1);
+    assertThat(response.get(1).getWorkflows()).hasSize(2);
     //assert Order process version 2
     final IncidentByWorkflowStatisticsDto workflow3 = response.get(1).getWorkflows().iterator().next();
     assertThat(workflow3.getName()).isEqualTo(ORDER_PROCESS_NAME + "2");

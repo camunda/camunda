@@ -5,11 +5,15 @@
  */
 package org.camunda.operate.rest.dto.incidents;
 
+import java.util.Comparator;
 import java.util.Set;
 import java.util.TreeSet;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 public class IncidentsByWorkflowGroupStatisticsDto {
+  
+  public static final Comparator<IncidentsByWorkflowGroupStatisticsDto> COMPARATOR = new IncidentsByWorkflowGroupStatisticsDtoComparator();
 
   private String bpmnProcessId;
 
@@ -20,7 +24,7 @@ public class IncidentsByWorkflowGroupStatisticsDto {
   private long activeInstancesCount;
 
   @JsonDeserialize(as = TreeSet.class)    //for tests
-  private Set<IncidentByWorkflowStatisticsDto> workflows = new TreeSet<>();
+  private Set<IncidentByWorkflowStatisticsDto> workflows = new TreeSet<>(IncidentByWorkflowStatisticsDto.COMPARATOR);
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
@@ -90,5 +94,32 @@ public class IncidentsByWorkflowGroupStatisticsDto {
     result = 31 * result + (int) (activeInstancesCount ^ (activeInstancesCount >>> 32));
     result = 31 * result + (workflows != null ? workflows.hashCode() : 0);
     return result;
+  }
+  
+  public static class IncidentsByWorkflowGroupStatisticsDtoComparator implements Comparator<IncidentsByWorkflowGroupStatisticsDto> { 
+    @Override
+    public int compare(IncidentsByWorkflowGroupStatisticsDto o1, IncidentsByWorkflowGroupStatisticsDto o2) {
+      if (o1 == null) {
+        if (o2 == null) {
+          return 0;
+        } else {
+          return 1;
+        }
+      }
+      if (o2 == null) {
+        return -1;
+      }
+      if (o1.equals(o2)) {
+        return 0;
+      }
+      int result = Long.compare(o2.getInstancesWithActiveIncidentsCount(), o1.getInstancesWithActiveIncidentsCount());
+      if (result == 0) {
+        result = Long.compare(o2.getActiveInstancesCount(), o1.getActiveInstancesCount());
+        if (result == 0) {
+          result = o1.getBpmnProcessId().compareTo(o2.getBpmnProcessId());
+        }
+      }
+      return result;
+    }
   }
 }

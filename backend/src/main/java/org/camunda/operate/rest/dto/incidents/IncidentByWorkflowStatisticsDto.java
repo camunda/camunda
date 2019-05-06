@@ -5,8 +5,12 @@
  */
 package org.camunda.operate.rest.dto.incidents;
 
+import java.util.Comparator;
+
 public class IncidentByWorkflowStatisticsDto implements Comparable<IncidentByWorkflowStatisticsDto> {
 
+  public final static Comparator<IncidentByWorkflowStatisticsDto> COMPARATOR = new IncidentByWorkflowStatisticsDtoComparator();
+  
   private String workflowId;
 
   private int version;
@@ -138,5 +142,33 @@ public class IncidentByWorkflowStatisticsDto implements Comparable<IncidentByWor
       compare = this.getWorkflowId().compareTo(other.getWorkflowId());
     }
     return compare;
+  }
+  
+  public static class IncidentByWorkflowStatisticsDtoComparator implements Comparator<IncidentByWorkflowStatisticsDto>{
+    
+    @Override
+    public int compare(IncidentByWorkflowStatisticsDto o1, IncidentByWorkflowStatisticsDto o2) {
+      if (o1 == null) {
+        if (o2 == null) {
+          return 0;
+        } else {
+          return 1;
+        }
+      }
+      if (o2 == null) {
+        return -1;
+      }
+      if (o1.equals(o2)) {
+        return 0;
+      }
+      int result = Long.compare(o2.getInstancesWithActiveIncidentsCount(), o1.getInstancesWithActiveIncidentsCount());
+      if (result == 0) {
+        result = Long.compare(o2.getActiveInstancesCount(), o1.getActiveInstancesCount());
+        if(result == 0) {
+          result = o1.getBpmnProcessId().compareTo(o2.getBpmnProcessId());
+        }
+      }
+      return result;
+    }
   }
 }

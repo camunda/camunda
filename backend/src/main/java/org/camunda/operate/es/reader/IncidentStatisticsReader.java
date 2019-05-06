@@ -13,7 +13,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.join.query.JoinQueryBuilders.hasChildQuery;
 
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,17 +60,15 @@ public class IncidentStatisticsReader extends AbstractReader {
   @Autowired
   private WorkflowReader workflowReader;
   
-  private final AggregationBuilder countInstances = terms("workflowIds")
+  private final AggregationBuilder countWorkflowIds = terms("workflowIds")
                                                         .field(ListViewTemplate.WORKFLOW_ID)
                                                         .size(ElasticsearchUtil.TERMS_AGG_SIZE);
-
-  public Set<IncidentsByWorkflowGroupStatisticsDto> getIncidentStatisticsByWorkflow(){
-    long start = System.currentTimeMillis();
-    final Map<String, IncidentByWorkflowStatisticsDto> statByWorkflowIdMap = updateActiveInstances(getIncidentsByWorkflow());
-    logger.debug(String.format("ElasticSearch query for getIncidentByWorkflowIdMap needed %d ms", (System.currentTimeMillis() - start)));
- 
+  
+  public Set<IncidentsByWorkflowGroupStatisticsDto> getWorkflowAndIncidentsStatistics(){
+    final Map<String, IncidentByWorkflowStatisticsDto> statisticByWorkflowIdMap = updateActiveInstances(getIncidentsByWorkflow());
     final Map<String, List<WorkflowEntity>> workflowGroups = workflowReader.getWorkflowsGrouped();
-    return collectStatisticsForWorkflowGroups(statByWorkflowIdMap, workflowGroups);
+    
+    return collectStatisticsForWorkflowGroups(statisticByWorkflowIdMap, workflowGroups,true);
   }
   
   private Map<String, IncidentByWorkflowStatisticsDto> getIncidentsByWorkflow() {
@@ -85,7 +82,7 @@ public class IncidentStatisticsReader extends AbstractReader {
     SearchRequest searchRequest = new SearchRequest(workflowInstanceTemplate.getAlias())
         .source(new SearchSourceBuilder()
             .query(incidentsQuery)
-            .aggregation(countInstances).size(0));
+            .aggregation(countWorkflowIds).size(0));
 
     try {
       SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -113,7 +110,7 @@ public class IncidentStatisticsReader extends AbstractReader {
       SearchRequest searchRequest = new SearchRequest(workflowInstanceTemplate.getAlias())
           .source(new SearchSourceBuilder()
               .query(runningInstanceQuery)
-              .aggregation(countInstances)
+              .aggregation(countWorkflowIds)
               .size(0));
       
       SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -139,26 +136,33 @@ public class IncidentStatisticsReader extends AbstractReader {
   }
 
   private Set<IncidentsByWorkflowGroupStatisticsDto> collectStatisticsForWorkflowGroups(Map<String, IncidentByWorkflowStatisticsDto> statByWorkflowIdMap,
-    Map<String, List<WorkflowEntity>> workflowGroups) {
-    Set<IncidentsByWorkflowGroupStatisticsDto> result = new TreeSet<>(new StatByWorkflowGroupComparator());
+    Map<String, List<WorkflowEntity>> workflowGroups,boolean includeEmptyWorkflows) {
+    
+    Set<IncidentsByWorkflowGroupStatisticsDto> result = new TreeSet<>(IncidentsByWorkflowGroupStatisticsDto.COMPARATOR);
+    
     //iterate over workflow groups (bpmnProcessId)
     for (Map.Entry<String, List<WorkflowEntity>> entry: workflowGroups.entrySet()) {
       IncidentsByWorkflowGroupStatisticsDto stat = new IncidentsByWorkflowGroupStatisticsDto();
       stat.setBpmnProcessId(entry.getKey());
+    
       //accumulate stat for workflow group
       long activeInstancesCount = 0;
       long instancesWithActiveIncidentsCount = 0;
+      
       //max version to find out latest workflow name
       long maxVersion = 0;
+      
       //iterate over workflow versions
       for (WorkflowEntity workflowEntity: entry.getValue()) {
         final IncidentByWorkflowStatisticsDto statForWorkflow = statByWorkflowIdMap.get(workflowEntity.getId());
         if (statForWorkflow != null) {
+      
           //accumulate data, even if there are no active incidents
           activeInstancesCount += statForWorkflow.getActiveInstancesCount();
           instancesWithActiveIncidentsCount += statForWorkflow.getInstancesWithActiveIncidentsCount();
+          
           //but add to the list only those with active incidents
-          if (statForWorkflow.getInstancesWithActiveIncidentsCount() > 0) {
+          if (includeEmptyWorkflows || statForWorkflow.getInstancesWithActiveIncidentsCount() > 0) {
             statForWorkflow.setName(workflowEntity.getName());
             statForWorkflow.setBpmnProcessId(workflowEntity.getBpmnProcessId());
             statForWorkflow.setVersion(workflowEntity.getVersion());
@@ -172,7 +176,7 @@ public class IncidentStatisticsReader extends AbstractReader {
         }
       }
       //if there are active incidents for a workflow group, include in the result
-      if (instancesWithActiveIncidentsCount > 0) {
+      if (includeEmptyWorkflows || instancesWithActiveIncidentsCount > 0) {
         stat.setActiveInstancesCount(activeInstancesCount);
         stat.setInstancesWithActiveIncidentsCount(instancesWithActiveIncidentsCount);
         result.add(stat);
@@ -182,7 +186,7 @@ public class IncidentStatisticsReader extends AbstractReader {
   }
 
   public Set<IncidentsByErrorMsgStatisticsDto> getIncidentStatisticsByError(){
-    Set<IncidentsByErrorMsgStatisticsDto> result = new TreeSet<>(new StatByErrorMsgComparator());
+    Set<IncidentsByErrorMsgStatisticsDto> result = new TreeSet<>(IncidentsByErrorMsgStatisticsDto.COMPARATOR);
     
     Map<String, WorkflowEntity> workflows = workflowReader.getWorkflowsWithFields("id","name","bpmnProcessId","version");
     
@@ -235,53 +239,5 @@ public class IncidentStatisticsReader extends AbstractReader {
       workflowStatistics.recordInstancesCount(incidentsCount);
     }
     return workflowStatistics;
-  }
-
-  public static class StatByErrorMsgComparator implements Comparator<IncidentsByErrorMsgStatisticsDto> {
-    @Override
-    public int compare(IncidentsByErrorMsgStatisticsDto o1, IncidentsByErrorMsgStatisticsDto o2) {
-      if (o1 == null) {
-        if (o2 == null) {
-          return 0;
-        } else {
-          return 1;
-        }
-      }
-      if (o2 == null) {
-        return -1;
-      }
-      if (o1.equals(o2)) {
-        return 0;
-      }
-      int result = Long.compare(o2.getInstancesWithErrorCount(), o1.getInstancesWithErrorCount());
-      if (result == 0) {
-        result = o1.getErrorMessage().compareTo(o2.getErrorMessage());
-      }
-      return result;
-    }
-  }
-
-  public static class StatByWorkflowGroupComparator implements Comparator<IncidentsByWorkflowGroupStatisticsDto> {
-    @Override
-    public int compare(IncidentsByWorkflowGroupStatisticsDto o1, IncidentsByWorkflowGroupStatisticsDto o2) {
-      if (o1 == null) {
-        if (o2 == null) {
-          return 0;
-        } else {
-          return 1;
-        }
-      }
-      if (o2 == null) {
-        return -1;
-      }
-      if (o1.equals(o2)) {
-        return 0;
-      }
-      int result = Long.compare(o2.getInstancesWithActiveIncidentsCount(), o1.getInstancesWithActiveIncidentsCount());
-      if (result == 0) {
-        result = o1.getBpmnProcessId().compareTo(o2.getBpmnProcessId());
-      }
-      return result;
-    }
   }
 }

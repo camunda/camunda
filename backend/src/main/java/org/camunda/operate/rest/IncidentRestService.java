@@ -34,8 +34,8 @@ public class IncidentRestService {
 
   @ApiOperation("Get incident statistics for workflows")
   @GetMapping("/byWorkflow")
-  public Collection<IncidentsByWorkflowGroupStatisticsDto> getIncidentStatisticsByWorkflow() {
-    return incidentStatisticsReader.getIncidentStatisticsByWorkflow();
+  public Collection<IncidentsByWorkflowGroupStatisticsDto> getWorkflowAndIncidentsStatistics() {
+    return incidentStatisticsReader.getWorkflowAndIncidentsStatistics();
   }
 
   @ApiOperation("Get incident statistics by error message")
