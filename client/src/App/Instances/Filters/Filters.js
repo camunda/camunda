@@ -27,7 +27,6 @@ import {
   getFilterWithDefaults,
   getLastVersionOfWorkflow
 } from './service';
-import VariableFilterInput from './VariableFilterInput';
 
 import {ALL_VERSIONS_OPTION, DEFAULT_CONTROLLED_VALUES} from './constants';
 
@@ -302,7 +301,7 @@ export default class Filters extends React.Component {
                     />
                   </Styled.Field>
                   <Styled.Field>
-                    <VariableFilterInput
+                    <Styled.VariableFilterInput
                       onFilterChange={this.props.onFilterChange}
                     />
                   </Styled.Field>

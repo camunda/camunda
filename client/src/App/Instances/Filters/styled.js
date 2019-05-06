@@ -14,6 +14,7 @@ import BasicTextInput from 'modules/components/Input';
 import BasicTextarea from 'modules/components/Textarea';
 import BasicSelect from 'modules/components/Select';
 import BasicCheckboxGroup from './CheckboxGroup';
+import {default as VariableFilterInputComp} from './VariableFilterInput';
 
 export const ExpandButton = styled(BasicExpandButton)`
   position: absolute;
@@ -28,6 +29,7 @@ export const ExpandButton = styled(BasicExpandButton)`
 export const Filters = styled.div`
   padding: 20px 20px 0 20px;
   overflow: auto;
+  overflow-x: hidden;
 `;
 
 export const FiltersHeader = styled(Panel.Header)`
@@ -77,6 +79,10 @@ export const TextInput = styled(BasicTextInput)`
 `;
 
 export const CheckboxGroup = styled(BasicCheckboxGroup)`
+  ${widthStyle};
+`;
+
+export const VariableFilterInput = styled(VariableFilterInputComp)`
   ${widthStyle};
 `;
 
