@@ -43,10 +43,14 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
 
   private static final String QUERY_INCIDENTS_BY_WORKFLOW_URL = INCIDENT_URL + "/byWorkflow";
   private static final String QUERY_INCIDENTS_BY_ERROR_URL = INCIDENT_URL + "/byError";
+
+  public static final String LOAN_BPMN_PROCESS_ID = "loanProcess";
+  public static final String LOAN_PROCESS_NAME = "Loan process";
   public static final String DEMO_BPMN_PROCESS_ID = "demoProcess";
   public static final String DEMO_PROCESS_NAME = "Demo process";
   public static final String ORDER_BPMN_PROCESS_ID = "orderProcess";
   public static final String ORDER_PROCESS_NAME = "Order process";
+  
   public static final String ERRMSG_OTHER = "Other error message";
 
   @Rule
@@ -124,18 +128,57 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
 
-    List<IncidentsByWorkflowGroupStatisticsDto> response = mockMvcTestRule.listFromResponse(mvcResult, IncidentsByWorkflowGroupStatisticsDto.class);
+    List<IncidentsByWorkflowGroupStatisticsDto> workflowGroups = mockMvcTestRule.listFromResponse(mvcResult, IncidentsByWorkflowGroupStatisticsDto.class);
 
     //assert data
-    assertThat(response).hasSize(3);
+    assertThat(workflowGroups).hasSize(3);
+    assertDemoWorkflow(workflowGroups.get(0));
+    assertOrderWorkflow(workflowGroups.get(1));
+    assertLoanWorkflow(workflowGroups.get(2));
+  }
+
+  private void assertLoanWorkflow(IncidentsByWorkflowGroupStatisticsDto loanWorkflowGroup) {
+    assertThat(loanWorkflowGroup.getBpmnProcessId()).isEqualTo(LOAN_BPMN_PROCESS_ID);
+    assertThat(loanWorkflowGroup.getWorkflowName()).isEqualTo(LOAN_PROCESS_NAME + "1");
+    assertThat(loanWorkflowGroup.getActiveInstancesCount()).isEqualTo(5);
+    assertThat(loanWorkflowGroup.getInstancesWithActiveIncidentsCount()).isEqualTo(0);
+    assertThat(loanWorkflowGroup.getWorkflows()).hasSize(1);
+    
+    //assert Loan process version 1
+    assertThat(loanWorkflowGroup.getWorkflows()).hasSize(1);
+    IncidentByWorkflowStatisticsDto loanProcessWorkflowStatistic = loanWorkflowGroup.getWorkflows().iterator().next();
+    assertThat(loanProcessWorkflowStatistic.getName()).isEqualTo(LOAN_PROCESS_NAME + "1");
+    assertThat(loanProcessWorkflowStatistic.getBpmnProcessId()).isEqualTo(LOAN_BPMN_PROCESS_ID);
+    assertThat(loanProcessWorkflowStatistic.getVersion()).isEqualTo(1);
+    assertThat(loanProcessWorkflowStatistic.getActiveInstancesCount()).isEqualTo(5);
+    assertThat(loanProcessWorkflowStatistic.getInstancesWithActiveIncidentsCount()).isEqualTo(0);
+  }
+
+  private void assertOrderWorkflow(IncidentsByWorkflowGroupStatisticsDto orderWorkflowGroup) {
+    //assert Order process group
+    assertThat(orderWorkflowGroup.getBpmnProcessId()).isEqualTo(ORDER_BPMN_PROCESS_ID);
+    assertThat(orderWorkflowGroup.getWorkflowName()).isEqualTo(ORDER_PROCESS_NAME + "2");
+    assertThat(orderWorkflowGroup.getActiveInstancesCount()).isEqualTo(8);
+    assertThat(orderWorkflowGroup.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
+    assertThat(orderWorkflowGroup.getWorkflows()).hasSize(2);
+    //assert Order process version 2
+    final IncidentByWorkflowStatisticsDto orderWorkflow = orderWorkflowGroup.getWorkflows().iterator().next();
+    assertThat(orderWorkflow.getName()).isEqualTo(ORDER_PROCESS_NAME + "2");
+    assertThat(orderWorkflow.getBpmnProcessId()).isEqualTo(ORDER_BPMN_PROCESS_ID);
+    assertThat(orderWorkflow.getVersion()).isEqualTo(2);
+    assertThat(orderWorkflow.getActiveInstancesCount()).isEqualTo(3);
+    assertThat(orderWorkflow.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
+  }
+
+  private void assertDemoWorkflow(IncidentsByWorkflowGroupStatisticsDto demoWorkflowGroup) {
     //assert Demo process group
-    assertThat(response.get(0).getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
-    assertThat(response.get(0).getWorkflowName()).isEqualTo(DEMO_PROCESS_NAME + "2");
-    assertThat(response.get(0).getActiveInstancesCount()).isEqualTo(9);
-    assertThat(response.get(0).getInstancesWithActiveIncidentsCount()).isEqualTo(4);
-    assertThat(response.get(0).getWorkflows()).hasSize(2);
+    assertThat(demoWorkflowGroup.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
+    assertThat(demoWorkflowGroup.getWorkflowName()).isEqualTo(DEMO_PROCESS_NAME + "2");
+    assertThat(demoWorkflowGroup.getActiveInstancesCount()).isEqualTo(9);
+    assertThat(demoWorkflowGroup.getInstancesWithActiveIncidentsCount()).isEqualTo(4);
+    assertThat(demoWorkflowGroup.getWorkflows()).hasSize(2);
     //assert Demo process version 1
-    final Iterator<IncidentByWorkflowStatisticsDto> workflows = response.get(0).getWorkflows().iterator();
+    final Iterator<IncidentByWorkflowStatisticsDto> workflows = demoWorkflowGroup.getWorkflows().iterator();
     final IncidentByWorkflowStatisticsDto workflow1 = workflows.next();
     assertThat(workflow1.getName()).isEqualTo(DEMO_PROCESS_NAME + "1");
     assertThat(workflow1.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
@@ -149,35 +192,14 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     assertThat(workflow2.getVersion()).isEqualTo(2);
     assertThat(workflow2.getActiveInstancesCount()).isEqualTo(6);
     assertThat(workflow2.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
-
-    //assert Order process group
-    assertThat(response.get(1).getBpmnProcessId()).isEqualTo(ORDER_BPMN_PROCESS_ID);
-    assertThat(response.get(1).getWorkflowName()).isEqualTo(ORDER_PROCESS_NAME + "2");
-    assertThat(response.get(1).getActiveInstancesCount()).isEqualTo(8);
-    assertThat(response.get(1).getInstancesWithActiveIncidentsCount()).isEqualTo(1);
-    assertThat(response.get(1).getWorkflows()).hasSize(2);
-    //assert Order process version 2
-    final IncidentByWorkflowStatisticsDto workflow3 = response.get(1).getWorkflows().iterator().next();
-    assertThat(workflow3.getName()).isEqualTo(ORDER_PROCESS_NAME + "2");
-    assertThat(workflow3.getBpmnProcessId()).isEqualTo(ORDER_BPMN_PROCESS_ID);
-    assertThat(workflow3.getVersion()).isEqualTo(2);
-    assertThat(workflow3.getActiveInstancesCount()).isEqualTo(3);
-    assertThat(workflow3.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
   }
-
-  /**
-   * Demo process   v1 -                          6 running instances:  3 active incidents,   2 resolved
-   * Demo process   v2 -    2 finished instances, 7 running:            2 active in 1 inst,   0 resolved
-   * Order process  v1 -                          5 running instances:  no incidents
-   * Order process  v2 -                          4 running instances:  2 active in 1 inst,   1 resolved
-   * Loan process   v1 -                          5 running instances:  0 active,             6 resolved
-   */
-  private void createData() {
+  
+  private void createDemoWorkflowData() {
     List<WorkflowEntity> workflowVersions = createWorkflowVersions(DEMO_BPMN_PROCESS_ID, DEMO_PROCESS_NAME, 2);
     elasticsearchTestRule.persistNew(workflowVersions.toArray(new OperateEntity[workflowVersions.size()]));
 
     List<OperateEntity> entities = new ArrayList<>();
-
+    
     //Demo process v1
     String workflowId = workflowVersions.get(0).getId();
     //instance #1
@@ -211,12 +233,17 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     for (int i = 8; i<=9; i++) {
       entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.COMPLETED, workflowId));
     }
-
-    workflowVersions = createWorkflowVersions(ORDER_BPMN_PROCESS_ID, ORDER_PROCESS_NAME, 2);
+    
+    elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+  }
+  
+  private void createOrderWorkflowData() {
+    List<WorkflowEntity> workflowVersions = createWorkflowVersions(ORDER_BPMN_PROCESS_ID, ORDER_PROCESS_NAME, 2);
     elasticsearchTestRule.persistNew(workflowVersions.toArray(new OperateEntity[workflowVersions.size()]));
 
+    List<OperateEntity> entities = new ArrayList<>();
     //Order process v1
-    workflowId = workflowVersions.get(0).getId();
+    String workflowId = workflowVersions.get(0).getId();
     //entities #1-5
     for (int i = 1; i<=5; i++) {
       entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
@@ -225,7 +252,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     //Order process v2
     workflowId = workflowVersions.get(1).getId();
     //instance #1
-    workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
+    WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
     entities.add(workflowInstance);
     entities.addAll(createIncidents(workflowInstance, 0, 1));
     //instance #2
@@ -236,14 +263,20 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     for (int i = 3; i<=4; i++) {
       entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
     }
+    
+    elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+  }
 
+  private void createLoanWorkflowData() {
     //Loan process v1
-    workflowVersions = createWorkflowVersions("loanProcess", "Loan process", 1);
+    List<WorkflowEntity> workflowVersions = createWorkflowVersions(LOAN_BPMN_PROCESS_ID, LOAN_PROCESS_NAME, 1);
     elasticsearchTestRule.persistNew(workflowVersions.get(0));
-    workflowId = workflowVersions.get(0).getId();
+    
+    List<OperateEntity> entities = new ArrayList<>();
+    String workflowId = workflowVersions.get(0).getId();
     //entities #1-3
     for (int i = 1; i<=3; i++) {
-      workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
+      WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
       entities.add(workflowInstance);
       entities.addAll(createIncidents(workflowInstance, 0, 2));
     }
@@ -253,6 +286,19 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     }
 
     elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+  }
+  
+  /**
+   * Demo process   v1 -                          6 running instances:  3 active incidents,   2 resolved
+   * Demo process   v2 -    2 finished instances, 7 running:            2 active in 1 inst,   0 resolved
+   * Order process  v1 -                          5 running instances:  no incidents
+   * Order process  v2 -                          4 running instances:  2 active in 1 inst,   1 resolved
+   * Loan process   v1 -                          5 running instances:  0 active,             6 resolved
+   */
+  private void createData() {
+    createDemoWorkflowData();
+    createOrderWorkflowData();
+    createLoanWorkflowData();
   }
 
   private List<OperateEntity> createIncidents(WorkflowInstanceForListViewEntity workflowInstance, int activeIncidentsCount, int resolvedIncidentsCount) {
