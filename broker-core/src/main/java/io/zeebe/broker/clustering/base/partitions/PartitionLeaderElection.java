@@ -50,7 +50,6 @@ public class PartitionLeaderElection extends Actor
   private final Injector<Atomix> atomixInjector = new Injector<>();
   private Atomix atomix;
 
-  // TODO: Check if we should use memberId instead of string
   private LeaderElection<String> election;
 
   private static final MultiRaftProtocol PROTOCOL =
@@ -67,6 +66,8 @@ public class PartitionLeaderElection extends Actor
   private boolean isLeader =
       false; // true if this node was the leader in the last leadership event received.
   private long leaderTerm; // current term if this node is the leader.
+  private CompletableActorFuture<Void> startFuture;
+  private boolean canBecomeLeader = true;
 
   public PartitionLeaderElection(int partitionId) {
     this.partitionId = partitionId;
@@ -81,35 +82,81 @@ public class PartitionLeaderElection extends Actor
 
     LOG.info("Creating leader election for partition {} in node {}", partitionId, memberId);
 
-    final CompletableFuture<LeaderElection<String>> leaderElectionCompletableFuture =
-        atomix
-            .<String>leaderElectionBuilder(DistributedLogstreamName.getPartitionKey(partitionId))
-            .withProtocol(PROTOCOL)
-            .buildAsync();
+    startFuture = new CompletableActorFuture();
 
-    final CompletableActorFuture startFuture = new CompletableActorFuture();
-    leaderElectionCompletableFuture.thenAccept(
-        e -> {
-          election = e;
-          election.run(memberId);
-          startContext.getScheduler().submitActor(this).join();
-          startFuture.complete(null);
-        });
-
+    startContext.getScheduler().submitActor(this);
     startContext.async(startFuture, true);
   }
 
   @Override
   protected void onActorStarted() {
-    initListeners();
+    initialize();
   }
 
-  private void initListeners() {
-    election.addListener(this);
-    election.addStateChangeListener(this);
+  private void initialize() {
+    final CompletableFuture<LeaderElection<String>> leaderElectionCompletableFuture =
+        atomix
+            .<String>leaderElectionBuilder(DistributedLogstreamName.getPartitionKey(partitionId))
+            .withProtocol(PROTOCOL)
+            .buildAsync();
+    leaderElectionCompletableFuture.whenComplete(
+        (leaderElection, error) -> {
+          if (error == null) {
+            election = leaderElection;
+            actor.run(
+                () -> {
+                  final CompletableActorFuture<Void> joinFuture = new CompletableActorFuture<>();
+                  tryJoinElection(joinFuture);
+                  actor.runOnCompletion(joinFuture, (r, e) -> tryAddListener());
+                });
+          } else {
+            LOG.debug(
+                "Couldn't create leader election for partition {}, retrying.", partitionId, error);
+            actor.run(this::initialize);
+          }
+        });
+  }
+
+  private void tryJoinElection(CompletableActorFuture<Void> joinFuture) {
+    actor.runUntilDone(
+        () -> {
+          try {
+            if (canBecomeLeader) {
+              election.run(memberId);
+            }
+            joinFuture.complete(null);
+            actor.done();
+          } catch (PrimitiveException error) {
+            LOG.debug(
+                "Couldn't join leader election for partition {}, retrying.", partitionId, error);
+            actor.yield();
+          }
+        });
+  }
+
+  private void tryAddListener() {
+    actor.runUntilDone(
+        () -> {
+          try {
+            election.addListener(this);
+            updateLeadership();
+            election.addStateChangeListener(this);
+            startFuture.complete(null);
+            actor.done();
+          } catch (PrimitiveException error) {
+            LOG.debug(
+                "Couldn't add listener for leader election for partition {}, retrying.",
+                partitionId,
+                error);
+            actor.yield();
+          }
+        });
+  }
+
+  private void updateLeadership() {
     try {
       final Leader<String> currentLeader = election.getLeadership().leader();
-      if (memberId.equals(currentLeader.id())) {
+      if (currentLeader != null && memberId.equals(currentLeader.id())) {
         transitionToLeader(currentLeader.term());
       } else {
         transitionToFollower();
@@ -132,6 +179,39 @@ public class PartitionLeaderElection extends Actor
     leaderTerm = term;
     isLeader = true;
     leaderElectionListeners.forEach(l -> l.onTransitionToLeader(partitionId, term));
+  }
+
+  /**
+   * Prevent this broker from becoming the stream processor leader for the partition until {@link
+   * #join} is invoked. If it is currently the leader a new leader will be elected.
+   */
+  public CompletableActorFuture<Void> stepdown() {
+    final CompletableActorFuture<Void> future = new CompletableActorFuture();
+    actor.run(
+        () -> {
+          canBecomeLeader = false;
+          try {
+            election.withdraw(memberId);
+            future.complete(null);
+          } catch (Exception e) {
+            future.completeExceptionally(e);
+          }
+        });
+    return future;
+  }
+
+  /**
+   * Join the election if it is not already joined. This broker can become stream processor leader
+   * for the partition anytime from now.
+   */
+  public CompletableActorFuture<Void> join() {
+    final CompletableActorFuture<Void> joinFuture = new CompletableActorFuture<>();
+    actor.run(
+        () -> {
+          canBecomeLeader = true;
+          tryJoinElection(joinFuture);
+        });
+    return joinFuture;
   }
 
   @Override
@@ -169,7 +249,7 @@ public class PartitionLeaderElection extends Actor
       case CLOSED:
       case EXPIRED:
       case SUSPENDED:
-        actor.call(
+        actor.run(
             () -> {
               if (isLeader) {
                 transitionToFollower();
@@ -181,8 +261,8 @@ public class PartitionLeaderElection extends Actor
           final Leader<String> currentLeader = election.getLeadership().leader();
           onLeadershipChange(currentLeader);
         } catch (PrimitiveException e) {
-          LOG.error("Couldn't get current leadership for partition {}", partitionId, e);
-          actor.call(
+          LOG.debug("Couldn't get current leadership for partition {}", partitionId, e);
+          actor.run(
               () -> {
                 if (isLeader) {
                   transitionToFollower();
@@ -193,7 +273,7 @@ public class PartitionLeaderElection extends Actor
   }
 
   private void onLeadershipChange(Leader<String> newLeader) {
-    actor.call(
+    actor.run(
         () -> {
           final boolean isNewLeader = newLeader != null && memberId.equals(newLeader.id());
 
