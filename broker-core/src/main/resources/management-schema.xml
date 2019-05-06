@@ -34,6 +34,11 @@
       <validValue name="READ_ERROR">2</validValue>
     </enum>
 
+    <enum name="BooleanType" encodingType="uint8" semanticType="Boolean">
+      <validValue name="FALSE">0</validValue>
+      <validValue name="TRUE">1</validValue>
+    </enum>
+
   </types>
 
   <sbe:message name="NotLeaderResponse" id="5">
@@ -61,6 +66,17 @@
     <field name="checksum" id="2" type="uint64"/>
     <data name="chunkName" id="3" type="varDataEncoding"/>
     <data name="content" id="4" type="blob"/>
+  </sbe:message>
+
+  <sbe:message name="LogReplicationRequest" id="16">
+    <field name="fromPosition" id="0" type="uint64"/>
+    <field name="toPosition" id="1" type="uint64"/>
+  </sbe:message>
+
+  <sbe:message name="LogReplicationResponse" id="17">
+    <field name="toPosition" id="0" type="uint64"/>
+    <field name="moreAvailable" id="1" type="BooleanType"/>
+    <data name="serializedEvents" id="2" type="blob"/>
   </sbe:message>
 
 </sbe:messageSchema>

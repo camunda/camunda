@@ -26,6 +26,8 @@ import io.zeebe.distributedlog.DistributedLogstreamClient;
 import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.DistributedLogstreamType;
 import io.zeebe.distributedlog.StorageConfiguration;
+import io.zeebe.distributedlog.restore.LogReplicationAppender;
+import io.zeebe.distributedlog.restore.LogReplicationClient;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -41,7 +43,7 @@ import org.slf4j.LoggerFactory;
 
 public class DefaultDistributedLogstreamService
     extends AbstractPrimitiveService<DistributedLogstreamClient>
-    implements DistributedLogstreamService {
+    implements DistributedLogstreamService, LogReplicationAppender {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(DefaultDistributedLogstreamService.class);
@@ -55,6 +57,8 @@ public class DefaultDistributedLogstreamService
   private String logName;
 
   private ServiceContainer serviceContainer;
+  private LogReplicationClient logReplicationClient;
+  private ServiceExecutor serviceExecutor;
 
   public DefaultDistributedLogstreamService(DistributedLogstreamServiceConfig config) {
     super(DistributedLogstreamType.instance(), DistributedLogstreamClient.class);
@@ -64,6 +68,8 @@ public class DefaultDistributedLogstreamService
   @Override
   protected void configure(ServiceExecutor executor) {
     super.configure(executor);
+
+    serviceExecutor = executor;
     try {
       logName = getRaftPartitionName(executor);
       LOG.info(
@@ -109,15 +115,16 @@ public class DefaultDistributedLogstreamService
     final String[] splitted = logServiceName.split("-");
     final int partitionId = Integer.parseInt(splitted[splitted.length - 1]);
 
-    final String localmemberId = getLocalMemberId().id();
-    serviceContainer = LogstreamConfig.getServiceContainer(localmemberId);
+    final String localMemberId = getLocalMemberId().id();
+    serviceContainer = LogstreamConfig.getServiceContainer(localMemberId);
+    logReplicationClient = LogstreamConfig.getLogReplicationClient(localMemberId, partitionId);
 
     if (serviceContainer.hasService(LogStreamServiceNames.logStreamServiceName(logServiceName))) {
-      logStream = LogstreamConfig.getLogStream(localmemberId, partitionId);
+      logStream = LogstreamConfig.getLogStream(localMemberId, partitionId);
     } else {
 
       final StorageConfiguration config =
-          LogstreamConfig.getConfig(localmemberId, partitionId).join();
+          LogstreamConfig.getConfig(localMemberId, partitionId).join();
 
       final File logDirectory = config.getLogDirectory();
       final File snapshotDirectory = config.getSnapshotsDirectory();
@@ -138,7 +145,7 @@ public class DefaultDistributedLogstreamService
     }
     this.logStorage = this.logStream.getLogStorage();
 
-    LogstreamConfig.putLogStream(localmemberId, partitionId, logStream);
+    LogstreamConfig.putLogStream(localMemberId, partitionId, logStream);
 
     final BufferedLogStreamReader reader = new BufferedLogStreamReader(logStream);
     reader.seekToLastEvent();
@@ -158,6 +165,11 @@ public class DefaultDistributedLogstreamService
       // error code;
     }
 
+    return append(commitPosition, blockBuffer);
+  }
+
+  @Override
+  public long append(long commitPosition, byte[] blockBuffer) {
     if (commitPosition <= lastPosition) {
       // This case can happen due to raft-replay or when appender retries due to timeout or other
       // exceptions.
