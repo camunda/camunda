@@ -170,19 +170,19 @@ export const PopoverOverlayStyle = createGlobalStyle`
     .djs-overlay.djs-overlay-popover {
       z-index: 2;
       ${({side}) => {
-        if (side === 'RIGHT') {
+        if (side === POPOVER_SIDE.RIGHT) {
           return css`
             transform: translate(0, calc(-6px - 50%));
           `;
         }
 
-        if (side === 'BOTTOM') {
+        if (side === POPOVER_SIDE.BOTTOM) {
           return css`
             transform: translate(calc(-6px - 50%), 0);
           `;
         }
 
-        if (side === 'LEFT') {
+        if (side === POPOVER_SIDE.LEFT) {
           return css`
             transform: translate(-100%, calc(-6px - 50%));
           `;
