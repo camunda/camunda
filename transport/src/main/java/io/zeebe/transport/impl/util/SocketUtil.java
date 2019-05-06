@@ -26,6 +26,9 @@ public class SocketUtil {
 
   public static final Logger LOG = new ZbLogger("io.zeebe.transport.impl.util.SocketUtil");
 
+  public static final String TEST_FORK_NUMBER_PROPERTY_NAME = "testForkNumber";
+  public static final String TEST_MAVEN_ID_PROPERTY_NAME = "testMavenId";
+
   public static final String DEFAULT_HOST = "localhost";
   public static final int BASE_PORT = 25600;
   public static final int RANGE_SIZE = 100;
@@ -34,20 +37,49 @@ public class SocketUtil {
   private static final PortRange PORT_RANGE;
 
   static {
-    int testForkNumber = 0;
-    try {
-      final String testForkNumberProperty = System.getProperty("testForkNumber");
-      if (testForkNumberProperty != null) {
-        testForkNumber = Integer.valueOf(testForkNumberProperty);
-      }
-    } catch (Exception e) {
-      LOG.warn("Failed to read test fork number system property");
-    }
+    final int testForkNumber = getTestForkNumber();
+    final int testMavenId = getTestMavenId();
 
-    final int min = BASE_PORT + testForkNumber * RANGE_SIZE;
+    final int min = BASE_PORT + testForkNumber * RANGE_SIZE + (testMavenId * RANGE_SIZE * 10);
     final int max = min + RANGE_SIZE;
     TEST_FORK_NUMBER = testForkNumber;
     PORT_RANGE = new PortRange(DEFAULT_HOST, min, max);
+  }
+
+  private static int getTestForkNumber() {
+    int testForkNumber = 0;
+    try {
+      final String testForkNumberProperty = System.getProperty(TEST_FORK_NUMBER_PROPERTY_NAME);
+      if (testForkNumberProperty != null) {
+        testForkNumber = Integer.valueOf(testForkNumberProperty);
+      } else {
+        LOG.warn(
+            "No system property '{}' set, using default value {}",
+            TEST_FORK_NUMBER_PROPERTY_NAME,
+            testForkNumber);
+      }
+    } catch (Exception e) {
+      LOG.warn("Failed to read test fork number system property", e);
+    }
+    return testForkNumber;
+  }
+
+  private static int getTestMavenId() {
+    int testMavenId = 0;
+    try {
+      final String testMavenIdProperty = System.getProperty(TEST_MAVEN_ID_PROPERTY_NAME);
+      if (testMavenIdProperty != null) {
+        testMavenId = Integer.valueOf(testMavenIdProperty);
+      } else {
+        LOG.warn(
+            "No system property '{}' set, using default value {}",
+            TEST_MAVEN_ID_PROPERTY_NAME,
+            testMavenId);
+      }
+    } catch (Exception e) {
+      LOG.warn("Failed to read test maven id system property", e);
+    }
+    return testMavenId;
   }
 
   public static SocketAddress getNextAddress() {
@@ -96,8 +128,24 @@ public class SocketUtil {
         next = basePort + (currentOffset++ % maxOffset);
       } while (!portAvailable(next));
 
-      LOG.debug("Choosing next port {} for test fork {}", next, TEST_FORK_NUMBER);
+      LOG.info(
+          "Choosing next port {} for test fork {} with range {}", next, TEST_FORK_NUMBER, this);
       return next;
+    }
+
+    @Override
+    public String toString() {
+      return "PortRange{"
+          + "host='"
+          + host
+          + '\''
+          + ", basePort="
+          + basePort
+          + ", maxOffset="
+          + maxOffset
+          + ", currentOffset="
+          + currentOffset
+          + '}';
     }
   }
 }
