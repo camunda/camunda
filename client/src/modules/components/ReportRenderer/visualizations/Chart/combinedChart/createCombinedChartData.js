@@ -38,23 +38,19 @@ export function extractCombinedData({report, theme, targetValue}) {
   const {reportsNames, resultArr, reportColors} = getCombinedChartProps(result.data, data);
 
   const isDark = theme === 'dark';
+  const labelsMap = {};
 
-  const flowNodeNames = {};
-
-  let labels = [
+  const keys = [
     ...new Set(
       resultArr.flat(2).map(({key, label}) => {
-        flowNodeNames[key] = label;
+        labelsMap[key] = label;
         return key;
       })
     )
   ];
 
-  const unitedResults = uniteResults(resultArr, labels);
-
-  if (data.groupBy.type === 'flowNodes') {
-    labels = labels.map(key => flowNodeNames[key] || key);
-  }
+  const unitedResults = uniteResults(resultArr, keys);
+  const labels = keys.map(key => labelsMap[key] || key);
 
   return {
     labels,

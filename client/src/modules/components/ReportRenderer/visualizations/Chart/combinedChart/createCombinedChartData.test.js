@@ -6,77 +6,78 @@
 
 import createCombinedChartData from './createCombinedChartData';
 
-import {uniteResults} from '../../service';
-
-jest.mock('../../service', () => {
+const createReport = ({reportA, reportB, groupByType}) => {
   return {
-    uniteResults: jest.fn().mockReturnValue([{key: 'foo', value: 123}, {key: 'bar', value: 5}])
+    result: {
+      data: {
+        reportA: {
+          name: 'Report A',
+          result: {
+            data: reportA.data
+          }
+        },
+        reportB: {
+          name: 'Report B',
+          result: {
+            data: reportB.data
+          }
+        }
+      }
+    },
+    data: {
+      groupBy: {
+        type: groupByType || 'startDate',
+        value: 'month'
+      },
+      reports: [{id: 'reportA', color: reportA.color}, {id: 'reportB', color: reportB.color}],
+      visualization: 'line'
+    },
+    combined: true
   };
-});
+};
 
 it('should return correct chart data object for a combined report', () => {
-  const resultData = {
-    reportA: {
-      name: 'Report A',
-      result: {
-        data: [
-          {key: 'foo', value: 123, label: 'Flownode Foo'},
-          {key: 'bar', value: 5, label: 'Barrrr'}
-        ]
-      }
-    },
-    reportB: {
-      name: 'Report B',
-      result: {
-        data: [
-          {key: 'foo', value: 1, label: 'Flownode Foo'},
-          {key: 'dar', value: 3, label: 'Flownode DAR'}
-        ]
-      }
-    }
+  const reportA = {
+    data: [
+      {key: 'foo', value: 123, label: 'Flownode Foo'},
+      {key: 'bar', value: 5, label: 'Barrrr'}
+    ],
+    color: 'blue'
   };
 
-  uniteResults.mockClear();
-  uniteResults.mockReturnValue([resultData.reportA.result.data, resultData.reportB.result.data]);
+  const reportB = {
+    data: [
+      {key: 'foo', value: 1, label: 'Flownode Foo'},
+      {key: 'dar', value: 3, label: 'Flownode DAR'}
+    ],
+    color: 'yellow'
+  };
 
   const chartData = createCombinedChartData({
-    report: {
-      result: {data: resultData},
-      data: {
-        groupBy: {
-          type: 'flowNodes',
-          value: ''
-        },
-        view: {},
-        reports: [{id: 'reportA', color: 'blue'}, {id: 'reportB', color: 'yellow'}],
-        configuration: {},
-        visualization: 'line'
-      },
-      combined: true
-    },
+    report: createReport({reportA, reportB, groupByType: 'flowNodes'}),
     targetValue: false,
     theme: 'light'
   });
 
-  expect(chartData).toEqual({
-    datasets: [
-      {
-        backgroundColor: 'transparent',
-        borderColor: 'blue',
-        borderWidth: 2,
-        data: [123, 5],
-        label: 'Report A',
-        legendColor: 'blue'
-      },
-      {
-        backgroundColor: 'transparent',
-        borderColor: 'yellow',
-        borderWidth: 2,
-        data: [1, 3],
-        label: 'Report B',
-        legendColor: 'yellow'
-      }
-    ],
-    labels: ['Barrrr', 'Flownode Foo', 'Flownode DAR']
+  expect(chartData).toMatchSnapshot();
+});
+
+it('should return correct chart data object for a combined report', () => {
+  const reportA = {
+    data: [{key: '2017-12-27T14:21:56.000', value: 123, label: 'Dec 2017'}],
+    color: 'blue'
+  };
+
+  const reportB = {
+    data: [{key: '2017-03-27T14:21:56.000', value: 5, label: 'Mar 2017'}],
+    color: 'yellow'
+  };
+
+  const chartData = createCombinedChartData({
+    report: createReport({reportA, reportB}),
+    targetValue: false,
+    theme: 'light'
   });
+
+  expect(chartData).toMatchSnapshot();
 });
