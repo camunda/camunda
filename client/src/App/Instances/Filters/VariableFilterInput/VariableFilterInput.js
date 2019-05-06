@@ -9,10 +9,10 @@ import PropTypes from 'prop-types';
 
 import * as Styled from './styled';
 
-export default function VariableFilterInput({onFilterChange}) {
+export default function VariableFilterInput(props) {
   const [name, setName] = useState('');
   const [value, setValue] = useState('');
-
+  const {onFilterChange, ...passedProps} = props;
   function handleBlur() {
     if (!name || !value) {
       return onFilterChange({variablesQuery: null});
@@ -22,7 +22,7 @@ export default function VariableFilterInput({onFilterChange}) {
   }
 
   return (
-    <Styled.VariableFilterInput>
+    <Styled.VariableFilterInput {...passedProps}>
       <Styled.TextInput
         placeholder="Variable"
         name="name"

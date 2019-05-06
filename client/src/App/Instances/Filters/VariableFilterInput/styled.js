@@ -14,6 +14,7 @@ export const VariableFilterInput = styled.div`
 `;
 
 export const TextInput = styled(BasicTextInput)`
+  min-width: 0;
   &:first-child {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
