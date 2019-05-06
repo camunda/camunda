@@ -103,7 +103,10 @@ it('should return correct combined table report data properties', () => {
     },
     result: {
       processInstanceCount: 100,
-      data: [{key: '2015-03-25T12:00:00Z', value: 2}, {key: '2015-03-26T12:00:00Z', value: 3}]
+      data: [
+        {key: '2015-03-25T12:00:00Z', label: '2015-03-25T12:00:00Z', value: 2},
+        {key: '2015-03-26T12:00:00Z', label: '2015-03-26T12:00:00Z', value: 3}
+      ]
     }
   };
 
@@ -123,8 +126,14 @@ it('should return correct combined table report data properties', () => {
 
   expect(tableProps).toEqual({
     combinedResult: [
-      [{key: '2015-03-25', value: 2}, {key: '2015-03-26', value: 3}],
-      [{key: '2015-03-25', value: 2}, {key: '2015-03-26', value: 3}]
+      [
+        {key: '2015-03-25T12:00:00Z', label: '2015-03-25', value: 2},
+        {key: '2015-03-26T12:00:00Z', label: '2015-03-26', value: 3}
+      ],
+      [
+        {key: '2015-03-25T12:00:00Z', label: '2015-03-25', value: 2},
+        {key: '2015-03-26T12:00:00Z', label: '2015-03-26', value: 3}
+      ]
     ],
     labels: [['foo', 'foo'], ['foo', 'foo']],
     processInstanceCount: [100, 100],

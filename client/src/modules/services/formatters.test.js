@@ -180,7 +180,10 @@ const exampleDurationReport = {
   },
   result: {
     processInstanceCount: 100,
-    data: [{key: '2015-03-25T12:00:00Z', value: 2}, {key: '2015-03-26T12:00:00Z', value: 3}]
+    data: [
+      {key: '2015-03-25T12:00:00Z', label: '2015-03-25T12:00:00Z', value: 2},
+      {key: '2015-03-26T12:00:00Z', label: '2015-03-26T12:00:00Z', value: 3}
+    ]
   }
 };
 
@@ -201,7 +204,10 @@ it('should adjust dates to units', () => {
     exampleDurationReport.data,
     exampleDurationReport.result.data
   );
-  expect(formatedResult).toEqual([{key: '2015-03-25', value: 2}, {key: '2015-03-26', value: 3}]);
+  expect(formatedResult).toEqual([
+    {key: '2015-03-25T12:00:00Z', label: '2015-03-25', value: 2},
+    {key: '2015-03-26T12:00:00Z', label: '2015-03-26', value: 3}
+  ]);
 });
 
 it('should adjust groupby Start Date option to unit', () => {
@@ -223,7 +229,7 @@ it('should adjust groupby Start Date option to unit', () => {
     specialExampleReport.data,
     specialExampleReport.result.data
   );
-  expect(formatedResult).toEqual([{key: 'Mar 2015', value: 2}]);
+  expect(formatedResult).toEqual([{key: '2015-03-25T12:00:00Z', label: 'Mar 2015', value: 2}]);
 });
 
 it('should adjust groupby Variable Date option to unit', () => {
@@ -237,12 +243,13 @@ it('should adjust groupby Variable Date option to unit', () => {
       }
     }
   };
-  const formatedResult = JSON.stringify(
-    formatReportResult(specialExampleReport.data, specialExampleReport.result.data)
+  const formatedResult = formatReportResult(
+    specialExampleReport.data,
+    specialExampleReport.result.data
   );
 
-  expect(formatedResult).not.toContain('2015-03-25T');
-  expect(formatedResult).toContain('2015-03-25 ');
+  expect(formatedResult[0].label).not.toContain('2015-03-25T');
+  expect(formatedResult[0].label).toContain('2015-03-25 ');
 });
 
 describe('automatic interval selection', () => {
@@ -265,62 +272,71 @@ describe('automatic interval selection', () => {
 
   it('should use seconds when interval is less than hour', () => {
     const result = [
-      {key: '2017-12-27T14:21:56.000', value: 2},
-      {key: '2017-12-27T14:21:57.000', value: 3}
+      {key: '2017-12-27T14:21:56.000', label: '2017-12-27T14:21:56.000', value: 2},
+      {key: '2017-12-27T14:21:57.000', label: '2017-12-27T14:21:57.000', value: 3}
     ];
 
     const formatedResult = formatReportResult(autoData, result);
 
     expect(formatedResult).toEqual([
-      {key: '2017-12-27 14:21:56', value: 2},
-      {key: '2017-12-27 14:21:57', value: 3}
+      {key: result[0].key, label: '2017-12-27 14:21:56', value: 2},
+      {key: result[1].key, label: '2017-12-27 14:21:57', value: 3}
     ]);
   });
 
   it('should use hours when interval is less than a day', () => {
     const result = [
-      {key: '2017-12-27T13:21:56.000', value: 2},
-      {key: '2017-12-27T14:21:57.000', value: 3}
+      {key: '2017-12-27T13:21:56.000', label: '2017-12-27T13:21:56.000', value: 2},
+      {key: '2017-12-27T14:21:57.000', label: '2017-12-27T14:21:57.000', value: 3}
     ];
 
     const formatedResult = formatReportResult(autoData, result);
 
     expect(formatedResult).toEqual([
-      {key: '2017-12-27 13:00:00', value: 2},
-      {key: '2017-12-27 14:00:00', value: 3}
+      {key: result[0].key, label: '2017-12-27 13:00:00', value: 2},
+      {key: result[1].key, label: '2017-12-27 14:00:00', value: 3}
     ]);
   });
 
   it('should use day when interval is less than a month', () => {
     const result = [
-      {key: '2017-12-20T13:21:56.000', value: 2},
-      {key: '2017-12-27T14:21:57.000', value: 3}
+      {key: '2017-12-20T13:21:56.000', label: '2017-12-20T13:21:56.000', value: 2},
+      {key: '2017-12-27T14:21:57.000', label: '2017-12-27T14:21:57.000', value: 3}
     ];
 
     const formatedResult = formatReportResult(autoData, result);
 
-    expect(formatedResult).toEqual([{key: '2017-12-20', value: 2}, {key: '2017-12-27', value: 3}]);
+    expect(formatedResult).toEqual([
+      {key: result[0].key, label: '2017-12-20', value: 2},
+      {key: result[1].key, label: '2017-12-27', value: 3}
+    ]);
   });
 
   it('should use month when interval is less than a year', () => {
     const result = [
-      {key: '2017-05-27T13:21:56.000', value: 2},
-      {key: '2017-12-27T14:21:57.000', value: 3}
+      {key: '2017-05-27T13:21:56.000', label: '2017-05-27T13:21:56.000', value: 2},
+      {key: '2017-12-27T14:21:57.000', label: '2017-12-27T14:21:57.000', value: 3}
     ];
 
     const formatedResult = formatReportResult(autoData, result);
 
-    expect(formatedResult).toEqual([{key: 'May 2017', value: 2}, {key: 'Dec 2017', value: 3}]);
+    expect(formatedResult).toEqual([
+      {key: result[0].key, label: 'May 2017', value: 2},
+      {key: result[1].key, label: 'Dec 2017', value: 3}
+    ]);
   });
 
   it('should use year when interval is greater than/equal a year', () => {
     const result = [
-      {key: '2015-12-27T13:21:56.000', value: 2},
-      {key: '2017-12-27T14:21:57.000', value: 3}
+      {key: '2015-12-27T13:21:56.000', label: '2015-12-27T13:21:56.000', value: 2},
+      {key: '2017-12-27T14:21:57.000', label: '2017-12-27T14:21:57.000', value: 3}
     ];
 
     const formatedResult = formatReportResult(autoData, result);
 
-    expect(formatedResult).toEqual([{key: '2015 ', value: 2}, {key: '2017 ', value: 3}]);
+    expect(formatedResult).toEqual([
+      {key: result[0].key, label: '2015 ', value: 2},
+      {key: result[1].key, label: '2017 ', value: 3}
+    ]);
   });
 });

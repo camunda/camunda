@@ -169,7 +169,7 @@ export function formatReportResult(data, result) {
 
   const formattedResult = result.map(entry => ({
     ...entry,
-    key: moment(entry.key).format(dateFormat)
+    label: moment(entry.label).format(dateFormat)
   }));
 
   return formattedResult;
