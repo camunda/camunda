@@ -196,3 +196,35 @@ it('should invok updateOverview when saving the report', async () => {
 
   expect(spy).toHaveBeenCalled();
 });
+
+describe('showIncompleteResultWarning', () => {
+  it('should show incomplete warning if report is configured and incomplete', () => {
+    const node = shallow(<ReportEdit report={report} />).dive();
+
+    node.setState({
+      report: {
+        ...report,
+        result: {...report.result, isComplete: false}
+      }
+    });
+
+    expect(node.instance().showIncompleteResultWarning()).toBe(true);
+  });
+
+  it('should not show incomplete data warning if the visualization is not selected', () => {
+    const node = shallow(<ReportEdit report={report} />).dive();
+
+    node.setState({
+      report: {
+        ...report,
+        data: {
+          ...report.data,
+          visualization: null
+        },
+        result: {...report.result, isComplete: false}
+      }
+    });
+
+    expect(node.instance().showIncompleteResultWarning()).toBe(false);
+  });
+});

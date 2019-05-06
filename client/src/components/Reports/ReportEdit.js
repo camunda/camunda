@@ -120,7 +120,12 @@ export default withErrorHandling(
 
     showIncompleteResultWarning = () => {
       const {report} = this.state;
-      if (!report || !report.result || typeof report.result.isComplete === 'undefined') {
+      if (
+        !report ||
+        !report.result ||
+        typeof report.result.isComplete === 'undefined' ||
+        !report.data.visualization
+      ) {
         return false;
       }
 
