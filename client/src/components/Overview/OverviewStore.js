@@ -71,16 +71,16 @@ class OverviewStore extends Component {
     this.setState({searchQuery});
   };
 
-  createReport = config => () =>
+  createReport = (type, subType) => () =>
     this.props.mightFail(
-      createEntity('report', null, config),
+      createEntity(`report/${type}/${subType}`),
       id => this.setState({redirect: '/report/' + id}),
       this.showError
     );
 
-  createCombinedReport = this.createReport({combined: true, reportType: 'process'});
-  createProcessReport = this.createReport({combined: false, reportType: 'process'});
-  createDecisionReport = this.createReport({combined: false, reportType: 'decision'});
+  createCombinedReport = this.createReport('process', 'combined');
+  createProcessReport = this.createReport('process', 'single');
+  createDecisionReport = this.createReport('decision', 'single');
 
   createDashboard = () =>
     this.props.mightFail(
@@ -148,8 +148,9 @@ class OverviewStore extends Component {
     };
 
     if (type === 'report') {
+      const {combined, reportType} = copy;
       this.props.mightFail(
-        createEntity(type, copy, {combined: copy.combined, reportType: copy.reportType}),
+        createEntity(`report/${reportType}/${combined ? 'combined' : 'single'}`, copy),
         applyCollections,
         this.showError
       );

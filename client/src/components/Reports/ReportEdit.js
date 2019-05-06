@@ -41,21 +41,14 @@ export default withErrorHandling(
       this.setState({saveLoading: true});
       await this.props.mightFail(
         updateEntity(
-          'report',
+          `report/${reportType}/${combined ? 'combined' : 'single'}`,
           id,
-          {name, data, reportType, combined},
+          {name, data},
           {query: {force: this.state.conflict !== null}}
         ),
         () => {
-          this.setState({
-            confirmModalVisible: false,
-            report: update(this.state.report, {name: {$set: name}}),
-            originalData: this.state.report,
-            redirect: `/report/${id}`,
-            conflict: null,
-            saveLoading: false
-          });
-          this.props.updateOverview(this.state.report);
+          this.props.updateOverview(update(this.state.report, {name: {$set: name}}));
+          this.setState({redirect: `/report/${id}`});
         },
         async error => {
           if (error.statusText === 'Conflict') {
