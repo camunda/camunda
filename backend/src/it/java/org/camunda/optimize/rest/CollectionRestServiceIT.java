@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRenameDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -62,7 +63,7 @@ public class CollectionRestServiceIT {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .withoutAuthentication()
-      .buildUpdateCollectionRequest("1", null)
+      .buildUpdateNameCollectionRequest("1", null)
       .execute();
 
     // then the status code is not authorized
@@ -74,7 +75,7 @@ public class CollectionRestServiceIT {
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateCollectionRequest("NonExistingId", new SimpleCollectionDefinitionDto())
+      .buildUpdateNameCollectionRequest("NonExistingId", new CollectionRenameDto())
       .execute();
 
     // given
@@ -82,14 +83,16 @@ public class CollectionRestServiceIT {
   }
 
   @Test
-  public void updateCollection() {
+  public void updateNameOfCollection() {
     //given
     String id = addEmptyCollectionToOptimize();
+    final CollectionRenameDto collectionRenameDto = new CollectionRenameDto();
+    collectionRenameDto.setName("Test");
 
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateCollectionRequest(id, new SimpleCollectionDefinitionDto())
+      .buildUpdateNameCollectionRequest(id, collectionRenameDto)
       .execute();
 
     // then the status code is okay
@@ -283,12 +286,12 @@ public class CollectionRestServiceIT {
   private void addCollectionToOptimize(String name) {
     String id = addEmptyCollectionToOptimize();
 
-    final SimpleCollectionDefinitionDto collection = new SimpleCollectionDefinitionDto();
+    final CollectionRenameDto collection = new CollectionRenameDto();
     collection.setName(name);
 
     embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateCollectionRequest(id, collection)
+      .buildUpdateNameCollectionRequest(id, collection)
       .execute();
   }
 

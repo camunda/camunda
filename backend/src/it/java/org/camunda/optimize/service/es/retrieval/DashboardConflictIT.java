@@ -123,14 +123,9 @@ public class DashboardConflictIT {
       .execute(IdDto.class, 200)
       .getId();
 
-    final SimpleCollectionDefinitionDto collectionUpdate = new SimpleCollectionDefinitionDto();
-    final CollectionDataDto<String> collectionData = new CollectionDataDto<>();
-    collectionData.setEntities(ImmutableList.of(dashboardId));
-    collectionUpdate.setData(collectionData);
-
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateCollectionRequest(id, collectionUpdate)
+      .buildAddEntityToCollectionRequest(id, dashboardId)
       .execute();
     assertThat(response.getStatus(), is(204));
 

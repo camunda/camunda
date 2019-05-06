@@ -98,7 +98,7 @@ public class CollectionReader {
 
   public List<ResolvedCollectionDefinitionDto> getAllResolvedCollections() {
     final List<SimpleCollectionDefinitionDto> allCollections = getAllCollections();
-    final Map<String, CollectionEntity> entityIdToEntityMap = getAllEntities()
+    final Map<String, CollectionEntity> entityIdToEntityMap = getAllEntities() //TODO check
       .stream()
       .collect(toMap(CollectionEntity::getId, r -> r));
 

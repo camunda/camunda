@@ -49,15 +49,20 @@ public class CollectionService implements ReportReferencingService, DashboardRef
     return collectionWriter.createNewCollectionAndReturnId(userId);
   }
 
-  public void updateCollection(SimpleCollectionDefinitionDto updatedCollection, String userId) {
+  public void updateNameOfCollection(String collectionId, String name, String userId) {
     CollectionDefinitionUpdateDto updateDto = new CollectionDefinitionUpdateDto();
-    updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
-    updateDto.setOwner(updatedCollection.getOwner());
-    updateDto.setName(updatedCollection.getName());
-    updateDto.setData(updatedCollection.getData());
+    updateDto.setName(name);
     updateDto.setLastModifier(userId);
     updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
-    collectionWriter.updateCollection(updateDto, updatedCollection.getId());
+    collectionWriter.updateCollection(updateDto, collectionId);
+  }
+
+  public void addEntityToCollection(String collectionId, String entityId, String userId) {
+    collectionWriter.addEntityToCollection(collectionId, entityId, userId);
+  }
+
+  public void removeEntityFromCollection(String collectionId, String entityId, String userId) {
+    collectionWriter.removeEntityFromCollection(collectionId, entityId, userId);
   }
 
   public List<ResolvedCollectionDefinitionDto> getAllResolvedCollections(MultivaluedMap<String, String> queryParameters) {
@@ -73,8 +78,8 @@ public class CollectionService implements ReportReferencingService, DashboardRef
     return collectionReader.getCollection(collectionId);
   }
 
-  public void removeEntityFromCollection(String entityId) {
-    collectionWriter.removeEntityFromCollections(entityId);
+  public void removeEntityFromAllCollections(String entityId) {
+    collectionWriter.removeEntityFromAllCollections(entityId);
   }
 
   public void deleteCollection(String collectionId) {
@@ -93,7 +98,7 @@ public class CollectionService implements ReportReferencingService, DashboardRef
 
   @Override
   public void handleDashboardDeleted(final DashboardDefinitionDto definition) {
-    removeEntityFromCollection(definition.getId());
+    removeEntityFromAllCollections(definition.getId());
   }
 
   @Override
@@ -115,7 +120,7 @@ public class CollectionService implements ReportReferencingService, DashboardRef
 
   @Override
   public void handleReportDeleted(final ReportDefinitionDto reportDefinition) {
-    removeEntityFromCollection(reportDefinition.getId());
+    removeEntityFromAllCollections(reportDefinition.getId());
   }
 
   @Override

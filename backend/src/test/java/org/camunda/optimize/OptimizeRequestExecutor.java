@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRenameDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -396,10 +397,24 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildUpdateCollectionRequest(String id, SimpleCollectionDefinitionDto entity) {
-    this.path = "collection/" + id;
+  public OptimizeRequestExecutor buildUpdateNameCollectionRequest(String id, CollectionRenameDto renameDto) {
+    this.path = "collection/" + id + "/rename";
     this.requestType = PUT;
-    this.body = getBody(entity);
+    this.body = getBody(renameDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildAddEntityToCollectionRequest(String id, String entityId) {
+    this.path = "collection/" + id + "/entity/" + entityId;
+    this.requestType = PUT;
+    this.body = Entity.json("");
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildRemoveEntityFromCollectionRequest(String id, String entityId) {
+    this.path = "collection/" + id + "/entity/" + entityId;
+    this.requestType = DELETE;
+    this.body = Entity.json("");
     return this;
   }
 

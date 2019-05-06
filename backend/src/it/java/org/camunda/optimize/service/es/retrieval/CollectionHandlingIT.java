@@ -9,11 +9,12 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRenameDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.elasticsearch.action.get.GetRequest;
@@ -27,16 +28,12 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
-import static junit.framework.TestCase.assertEquals;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -96,40 +93,29 @@ public class CollectionHandlingIT {
   }
 
   @Test
-  public void updateCollection() {
+  public void updateNameOfCollection() {
     // given
     String id = createNewCollection();
     String reportId = createNewSingleReport();
+    OffsetDateTime now = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
+    LocalDateUtil.setCurrentTime(now);
 
-    CollectionDataDto<String> collectionData = new CollectionDataDto<>();
-    Map<String, String> configuration = Collections.singletonMap("Foo", "Bar");
-    collectionData.setConfiguration(configuration);
-    collectionData.setEntities(Collections.singletonList(reportId));
-
-    SimpleCollectionDefinitionDto collection = new SimpleCollectionDefinitionDto();
-    collection.setData(collectionData);
-    collection.setId("shouldNotBeUpdated");
-    collection.setLastModifier("shouldNotBeUpdatedManually");
-    collection.setName("MyCollection");
-    OffsetDateTime shouldBeIgnoredDate = OffsetDateTime.now().plusHours(1);
-    collection.setCreated(shouldBeIgnoredDate);
-    collection.setLastModified(shouldBeIgnoredDate);
-    collection.setOwner("NewOwner");
+    CollectionRenameDto collectionRenameDto = new CollectionRenameDto();
+    collectionRenameDto.setName("MyCollection");
 
     // when
-    updateCollection(id, collection);
+    updateNameOfCollection(id, collectionRenameDto);
+    addEntityToCollection(reportId, id);
     List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
 
     // then
     assertThat(collections.size(), is(1));
     ResolvedCollectionDefinitionDto storedCollection = collections.get(0);
     assertThat(storedCollection.getId(), is(id));
-    assertThat(storedCollection.getCreated(), is(not(shouldBeIgnoredDate)));
-    assertThat(storedCollection.getLastModified(), is(not(shouldBeIgnoredDate)));
     assertThat(storedCollection.getName(), is("MyCollection"));
-    assertThat(storedCollection.getOwner(), is("NewOwner"));
+    assertThat(storedCollection.getLastModifier(), is("demo"));
+    assertThat(storedCollection.getLastModified(), is(now));
     CollectionDataDto<CollectionEntity> resultCollectionData = storedCollection.getData();
-    assertEquals(resultCollectionData.getConfiguration(), configuration);
     assertThat(resultCollectionData.getEntities().size(), is(1));
     ReportDefinitionDto report = (ReportDefinitionDto) resultCollectionData.getEntities().get(0);
     assertThat(report.getId(), is(reportId));
@@ -174,6 +160,65 @@ public class CollectionHandlingIT {
   }
 
   @Test
+  public void entityCanBeAddedAndRemovedFromCollection() {
+    // given
+    String collectionId = createNewCollection();
+    String dashboardId = createNewDashboard();
+
+    // when (add)
+    addEntityToCollection(dashboardId, collectionId);
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+
+    // then
+    assertThat(collections.size(), is(1));
+    ResolvedCollectionDefinitionDto collection1 = collections.get(0);
+    DashboardDefinitionDto dashboard = (DashboardDefinitionDto) collection1.getData().getEntities().get(0);
+    assertThat(dashboard.getId(), is(dashboardId));
+
+
+    // when (remove)
+    removeEntityFromCollection(dashboardId, collectionId);
+    collections = getAllResolvedCollections();
+
+    // then
+    assertThat(collections.size(), is(1));
+    collection1 = collections.get(0);
+    assertThat(collection1.getData().getEntities().size(), is(0));
+  }
+
+  @Test
+  public void entityAddedToCollectionMultipleTimes() {
+    // given
+    String collectionId = createNewCollection();
+    String dashboardId = createNewDashboard();
+
+    // when
+    OffsetDateTime timeFirstRequest = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
+    LocalDateUtil.setCurrentTime(timeFirstRequest);
+
+    addEntityToCollection(dashboardId, collectionId);
+
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+
+    // then
+    assertThat(collections.size(), is(1));
+    ResolvedCollectionDefinitionDto collection1 = collections.get(0);
+    assertThat(collection1.getLastModified(), is(timeFirstRequest));
+
+    // when
+    OffsetDateTime timeSecondRequest = OffsetDateTime.parse("2019-04-23T19:00:00+01:00");
+    LocalDateUtil.setCurrentTime(timeSecondRequest);
+
+    addEntityToCollection(dashboardId, collectionId);
+    collections = getAllResolvedCollections();
+
+    // then
+    assertThat(collections.size(), is(1));
+    collection1 = collections.get(0);
+    assertThat(collection1.getLastModified(), is(timeFirstRequest)); // no update happened
+  }
+
+  @Test
   public void entityCanBeAddedToMultipleCollections() {
     // given
     String collectionId1 = createNewCollection();
@@ -195,21 +240,16 @@ public class CollectionHandlingIT {
     assertThat(report.getId(), is(reportId));
   }
 
+
   @Test
   public void updateCollectionWithEntityIdThatDoesNotExists() {
     // given
     String id = createNewCollection();
 
-    CollectionDataDto<String> collectionData = new CollectionDataDto<>();
-    collectionData.setEntities(Collections.singletonList("fooReportId"));
-
-    SimpleCollectionDefinitionDto collectionUpdate = new SimpleCollectionDefinitionDto();
-    collectionUpdate.setData(collectionData);
-
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateCollectionRequest(id, collectionUpdate)
+      .buildAddEntityToCollectionRequest(id, "fooReportId")
       .execute();
 
     // then
@@ -220,10 +260,10 @@ public class CollectionHandlingIT {
   public void doNotUpdateNullFieldsInCollection() {
     // given
     String id = createNewCollection();
-    SimpleCollectionDefinitionDto collection = new SimpleCollectionDefinitionDto();
+    CollectionRenameDto collection = new CollectionRenameDto();
 
     // when
-    updateCollection(id, collection);
+    updateNameOfCollection(id, collection);
     List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
 
     // then
@@ -243,11 +283,11 @@ public class CollectionHandlingIT {
     String id1 = createNewCollection();
     String id2 = createNewCollection();
 
-    SimpleCollectionDefinitionDto collection = new SimpleCollectionDefinitionDto();
+    CollectionRenameDto collection = new CollectionRenameDto();
     collection.setName("B_collection");
-    updateCollection(id1, collection);
+    updateNameOfCollection(id1, collection);
     collection.setName("A_collection");
-    updateCollection(id2, collection);
+    updateNameOfCollection(id2, collection);
 
     // when
     List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
@@ -295,16 +335,25 @@ public class CollectionHandlingIT {
   }
 
   private void addEntityToCollection(String entityId, String collectionId) {
-    addEntitiesToCollection(Collections.singletonList(entityId), collectionId);
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildAddEntityToCollectionRequest(collectionId, entityId)
+      .execute();
+    assertThat(response.getStatus(), is(204));
   }
 
   private void addEntitiesToCollection(List<String> entityIds, String collectionId) {
-    SimpleCollectionDefinitionDto collection = new SimpleCollectionDefinitionDto();
-    CollectionDataDto<String> collectionData = new CollectionDataDto<>();
-    collectionData.setConfiguration("");
-    collectionData.setEntities(entityIds);
-    collection.setData(collectionData);
-    updateCollection(collectionId, collection);
+    for (String id : entityIds) {
+      addEntityToCollection(id, collectionId);
+    }
+  }
+
+  private void removeEntityFromCollection(String entityId, String collectionId) {
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildRemoveEntityFromCollectionRequest(collectionId, entityId)
+      .execute();
+    assertThat(response.getStatus(), is(204));
   }
 
   private String createNewSingleReport() {
@@ -365,10 +414,10 @@ public class CollectionHandlingIT {
       .getId();
   }
 
-  private void updateCollection(String id, SimpleCollectionDefinitionDto updatedCollection) {
+  private void updateNameOfCollection(String id, CollectionRenameDto renameCollection) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateCollectionRequest(id, updatedCollection)
+      .buildUpdateNameCollectionRequest(id, renameCollection)
       .execute();
     assertThat(response.getStatus(), is(204));
   }

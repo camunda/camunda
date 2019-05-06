@@ -40,10 +40,14 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
@@ -61,6 +65,7 @@ public class CollectionWriter {
 
   private final RestHighLevelClient esClient;
   private final ObjectMapper objectMapper;
+  private final DateTimeFormatter formatter;
 
 
   public IdDto createNewCollectionAndReturnId(String userId) {
@@ -100,6 +105,59 @@ public class CollectionWriter {
     return idDto;
   }
 
+  public void addEntityToCollection(String collectionId, String entityId, String userId) {
+    log.debug("Adding entity with id [{}] to collection with id [{}] in Elasticsearch", collectionId, entityId);
+
+    ensureThatAllProvidedEntityIdsExist(Collections.singletonList(entityId));
+
+
+    try {
+      final Map<String, Object> params = new HashMap<>();
+      params.put("entity", entityId);
+      params.put("lastModifier", userId);
+      params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
+
+      final Script addEntityScript = new Script(
+        ScriptType.INLINE,
+        Script.DEFAULT_SCRIPT_LANG,
+        "if(!ctx._source.data.entities.contains(params.entity)){ " +
+          "ctx._source.data.entities.add(params.entity); " +
+          "ctx._source.lastModifier = params.lastModifier; " +
+          "ctx._source.lastModified = params.lastModified; " +
+          "}",
+        params
+      );
+
+      UpdateRequest request = new UpdateRequest(
+        getOptimizeIndexAliasForType(COLLECTION_TYPE),
+        COLLECTION_TYPE,
+        collectionId
+      ).script(addEntityScript)
+        .setRefreshPolicy(IMMEDIATE)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+
+      UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
+
+      if (updateResponse.getShardInfo().getFailed() > 0) {
+        log.error("Was not able to update collection with id [{}].", collectionId);
+        throw new OptimizeRuntimeException("Was not able to update collection!");
+      }
+    } catch (IOException e) {
+      String errorMessage = String.format("Was not able to update collection with id [%s].", collectionId);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    } catch (ElasticsearchStatusException e) {
+      String errorMessage = String.format(
+        "Was not able to update collection with id [%s]. Collection does not exist!",
+        collectionId
+      );
+      log.error(errorMessage, e);
+      throw new NotFoundException(errorMessage, e);
+    }
+
+  }
+
+
   public void updateCollection(CollectionDefinitionUpdateDto collection, String id) {
     log.debug("Updating collection with id [{}] in Elasticsearch", id);
 
@@ -107,9 +165,9 @@ public class CollectionWriter {
     try {
       UpdateRequest request =
         new UpdateRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, id)
-        .doc(objectMapper.writeValueAsString(collection), XContentType.JSON)
-        .setRefreshPolicy(IMMEDIATE)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+          .doc(objectMapper.writeValueAsString(collection), XContentType.JSON)
+          .setRefreshPolicy(IMMEDIATE)
+          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
       UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
 
@@ -145,48 +203,81 @@ public class CollectionWriter {
       collectionData != null && collectionData.getEntities() != null && !collectionData.getEntities()
         .isEmpty();
     if (entityIdsAreProvided) {
-      List<String> entityIds = collectionData.getEntities();
-      log.debug("Checking that the given entity ids [{}] for a collection exist", entityIds);
-
-      SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-        .query(QueryBuilders.idsQuery().addIds(entityIds.toArray(new String[0])))
-        .size(0);
-      SearchRequest searchRequest =
-        new SearchRequest()
-          .indices(
-            getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
-            getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
-            getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE),
-            getOptimizeIndexAliasForType(DASHBOARD_TYPE)
-          )
-          .source(searchSourceBuilder);
-
-      SearchResponse searchResponse;
-      try {
-        searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      } catch (IOException e) {
-        String reason = "Was not able to fetch collections.";
-        log.error(reason, e);
-        throw new OptimizeRuntimeException(reason, e);
-      }
-
-      if (searchResponse.getHits().getTotalHits() != entityIds.size()) {
-        String errorMessage = "Could not update collection, since the update contains entity ids that " +
-          "do not exist in Optimize any longer.";
-        log.error(errorMessage);
-        throw new OptimizeRuntimeException(errorMessage);
-      }
+      ensureThatAllProvidedEntityIdsExist(collectionData.getEntities());
     }
   }
 
-  public void removeEntityFromCollections(String entityId) {
+  private void ensureThatAllProvidedEntityIdsExist(final List<String> entityIds) {
+    log.debug("Checking that the given entity ids [{}] for a collection exist", entityIds);
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(QueryBuilders.idsQuery().addIds(entityIds.toArray(new String[0])))
+      .size(0);
+    SearchRequest searchRequest =
+      new SearchRequest()
+        .indices(
+          getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
+          getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
+          getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE),
+          getOptimizeIndexAliasForType(DASHBOARD_TYPE)
+        )
+        .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = "Was not able to fetch collections.";
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    if (searchResponse.getHits().getTotalHits() != entityIds.size()) {
+      String errorMessage = "Could not update collection, since the update contains entity ids that " +
+        "do not exist in Optimize any longer.";
+      log.error(errorMessage);
+      throw new OptimizeRuntimeException(errorMessage);
+    }
+  }
+
+  public void removeEntityFromCollection(String collectionId, String entityId, String userId) {
+    log.debug("Removing entity [{}] from collection [{}].", entityId, collectionId);
+
+    Script removeEntityFromCollectionScript = getRemoveEntityFromCollectionScript(entityId);
+
+    final UpdateRequest request = new UpdateRequest(
+      getOptimizeIndexAliasForType(COLLECTION_TYPE),
+      COLLECTION_TYPE,
+      collectionId
+    )
+      .script(removeEntityFromCollectionScript)
+      .setRefreshPolicy(IMMEDIATE);
+
+
+    try {
+      UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
+
+      if (updateResponse.getShardInfo().getFailed() > 0) {
+        log.error("Was not able to update collection with id [{}].", collectionId);
+        throw new OptimizeRuntimeException("Was not able to update collection!");
+      }
+    } catch (IOException e) {
+      String errorMessage = String.format("Was not able to update collection with id [%s].", collectionId);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    } catch (ElasticsearchStatusException e) {
+      String errorMessage = String.format(
+        "Was not able to update collection with id [%s]. Collection does not exist!",
+        collectionId
+      );
+      log.error(errorMessage, e);
+      throw new NotFoundException(errorMessage, e);
+    }
+  }
+
+  public void removeEntityFromAllCollections(String entityId) {
     log.debug("Removing entity [{}] from all collections.", entityId);
-    Script removeEntityFromCollectionScript = new Script(
-      ScriptType.INLINE,
-      Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.data.entities.removeIf(id -> id.equals(params.idToRemove))",
-      Collections.singletonMap("idToRemove", entityId)
-    );
+    Script removeEntityFromCollectionScript = getRemoveEntityFromCollectionScript(entityId);
 
     NestedQueryBuilder query =
       QueryBuilders.nestedQuery(
@@ -223,11 +314,20 @@ public class CollectionWriter {
     }
   }
 
+  private Script getRemoveEntityFromCollectionScript(final String entityId) {
+    return new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      "ctx._source.data.entities.removeIf(id -> id.equals(params.idToRemove))",
+      Collections.singletonMap("idToRemove", entityId)
+    );
+  }
+
   public void deleteCollection(String collectionId) {
     log.debug("Deleting collection with id [{}]", collectionId);
     DeleteRequest request =
       new DeleteRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, collectionId)
-      .setRefreshPolicy(IMMEDIATE);
+        .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;
     try {

@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRenameDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.rest.providers.Secured;
@@ -55,23 +56,58 @@ public class CollectionRestService {
     return collectionService.createNewCollectionAndReturnId(userId);
   }
 
+
   /**
-   * Updates the given fields of a collection to the given id.
+   * Updates the name of a collection
    *
    * @param collectionId      the id of the collection
    * @param updatedCollection collection that needs to be updated. Only the fields that are defined here are actually
    *                          updated.
    */
   @PUT
-  @Path("/{id}")
+  @Path("/{id}/rename")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateCollection(@Context ContainerRequestContext requestContext,
-                               @PathParam("id") String collectionId,
-                               SimpleCollectionDefinitionDto updatedCollection) {
-    updatedCollection.setId(collectionId);
+  public void updateNameOfCollection(@Context ContainerRequestContext requestContext,
+                                     @PathParam("id") String collectionId,
+                                     CollectionRenameDto updatedCollection) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    collectionService.updateCollection(updatedCollection, userId);
+    collectionService.updateNameOfCollection(collectionId, updatedCollection.getName(), userId);
+  }
+
+
+  /**
+   * Adds entity to collection (if it wasn't already contained before)
+   *
+   * @param collectionId the id of the collection
+   * @param entityId     the id of the entity to add
+   */
+  @PUT
+  @Path("/{id}/entity/{entityId}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void addEntity(@Context ContainerRequestContext requestContext,
+                        @PathParam("id") String collectionId,
+                        @PathParam("entityId") String entityId) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    collectionService.addEntityToCollection(collectionId, entityId, userId);
+  }
+
+  /**
+   * Removes entity from collection.
+   *
+   * @param collectionId the id of the collection
+   * @param entityId     the id of the entity to remove
+   */
+  @DELETE
+  @Path("/{id}/entity/{entityId}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void removeEntity(@Context ContainerRequestContext requestContext,
+                           @PathParam("id") String collectionId,
+                           @PathParam("entityId") String entityId) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    collectionService.removeEntityFromCollection(collectionId, entityId, userId);
   }
 
 

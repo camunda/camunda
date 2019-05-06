@@ -396,14 +396,9 @@ public class ReportConflictIT {
       .execute(IdDto.class, 200)
       .getId();
 
-    final SimpleCollectionDefinitionDto collectionUpdate = new SimpleCollectionDefinitionDto();
-    final CollectionDataDto<String> collectionData = new CollectionDataDto<>();
-    collectionData.setEntities(Collections.singletonList(reportId));
-    collectionUpdate.setData(collectionData);
-
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateCollectionRequest(id, collectionUpdate)
+      .buildAddEntityToCollectionRequest(id, reportId)
       .execute();
     assertThat(response.getStatus(), is(204));
 
