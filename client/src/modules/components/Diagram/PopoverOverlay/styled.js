@@ -279,6 +279,7 @@ export const CodeLine = themed(styled.p`
     })};
     display: inline-block;
     width: 35px;
+    opacity: 0.5;
     padding-right: 11px;
     -webkit-user-select: none;
   }
