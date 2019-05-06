@@ -104,3 +104,12 @@ Waiting...Fatal error: watch ENOSPC
     ....
 ```
 then you can find [here](https://stackoverflow.com/a/17437601) a solution for this.
+
+
+## E2E Testing
+
+Make sure you started the backend with `yarn run start-backend` and the frontend with `yarn start`.
+
+```bash
+yarn run e2e
+```

@@ -1,8 +1,8 @@
 {
-  "plugins": ["prettier"],
+  "plugins": ["prettier", "testcafe"],
   "rules": {
     "prettier/prettier": "warn",
     "curly": "error"
   },
-  "extends": ["react-app", "plugin:camunda-licensed/commercial"]
+  "extends": ["react-app", "plugin:camunda-licensed/commercial", "plugin:testcafe/recommended"]
 }
