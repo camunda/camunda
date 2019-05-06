@@ -124,6 +124,8 @@ pipeline {
 
     post {
         always {
+            archiveArtifacts artifacts: '**/target/*-reports/**/*-output.txt,**/**/*.dumpstream,**/**/hs_err_*.log', allowEmptyArchive: true
+
             // Retrigger the build if there were connection issues
             script {
                 if (connectionProblem()) {
