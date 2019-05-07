@@ -21,6 +21,9 @@
             "bpmnProcessId": {
               "type": "keyword"
             },
+            "workflowKey": {
+              "type": "long"
+            },
             "workflowInstanceKey": {
               "type": "long"
             },

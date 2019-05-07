@@ -36,6 +36,12 @@ public interface IncidentRecordValue extends RecordValue {
   String getBpmnProcessId();
 
   /**
+   * @return the key of the workflow this incident belongs to. Can be <code>null</code> if the
+   *     incident belongs to no workflow.
+   */
+  long getWorkflowKey();
+
+  /**
    * @return the key of the workflow instance this incident belongs to. Can be <code>null</code> if
    *     the incident belongs to no workflow instance.
    */

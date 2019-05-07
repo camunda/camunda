@@ -83,7 +83,7 @@ public class JobFailIncidentTest {
   @Test
   public void shouldCreateIncidentIfJobHasNoRetriesLeft() {
     // given
-    testClient.deploy(WORKFLOW_INPUT_MAPPING);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW_INPUT_MAPPING).getKey();
 
     final long workflowInstanceKey =
         testClient
@@ -107,6 +107,7 @@ public class JobFailIncidentTest {
     assertIncidentRecordValue(
         ErrorType.JOB_NO_RETRIES.name(),
         "No more retries left.",
+        workflowKey,
         workflowInstanceKey,
         "failingTask",
         activityEvent.getKey(),
@@ -117,7 +118,7 @@ public class JobFailIncidentTest {
   @Test
   public void shouldCreateIncidentWithJobErrorMessage() {
     // given
-    testClient.deploy(WORKFLOW_INPUT_MAPPING);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW_INPUT_MAPPING).getKey();
 
     final long workflowInstanceKey =
         testClient
@@ -141,6 +142,7 @@ public class JobFailIncidentTest {
     assertIncidentRecordValue(
         ErrorType.JOB_NO_RETRIES.name(),
         "failed job",
+        workflowKey,
         workflowInstanceKey,
         "failingTask",
         activityEvent.getKey(),
@@ -151,7 +153,7 @@ public class JobFailIncidentTest {
   @Test
   public void shouldIncidentContainLastFailedJobErrorMessage() {
     // given
-    testClient.deploy(WORKFLOW_INPUT_MAPPING);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW_INPUT_MAPPING).getKey();
 
     final long workflowInstanceKey =
         testClient
@@ -171,6 +173,7 @@ public class JobFailIncidentTest {
     assertIncidentRecordValue(
         ErrorType.JOB_NO_RETRIES.name(),
         "second message",
+        workflowKey,
         workflowInstanceKey,
         "failingTask",
         activityEvent.getKey(),
@@ -181,7 +184,7 @@ public class JobFailIncidentTest {
   @Test
   public void shouldResolveIncidentIfJobRetriesIncreased() {
     // given
-    testClient.deploy(WORKFLOW_INPUT_MAPPING);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW_INPUT_MAPPING).getKey();
 
     final long workflowInstanceKey =
         testClient
@@ -211,6 +214,7 @@ public class JobFailIncidentTest {
     assertIncidentRecordValue(
         ErrorType.JOB_NO_RETRIES.name(),
         "No more retries left.",
+        workflowKey,
         workflowInstanceKey,
         "failingTask",
         activityEvent.getKey(),
@@ -250,7 +254,7 @@ public class JobFailIncidentTest {
   @Test
   public void shouldDeleteIncidentIfJobIsCanceled() {
     // given
-    testClient.deploy(WORKFLOW_INPUT_MAPPING);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW_INPUT_MAPPING).getKey();
 
     final long workflowInstanceKey =
         testClient
@@ -280,6 +284,7 @@ public class JobFailIncidentTest {
     assertIncidentRecordValue(
         ErrorType.JOB_NO_RETRIES.name(),
         "No more retries left.",
+        workflowKey,
         workflowInstanceKey,
         "failingTask",
         resolvedIncidentEvent.getValue().getElementInstanceKey(),

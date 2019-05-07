@@ -234,6 +234,7 @@ public class ExporterRecordMapper {
         asString(record.getErrorMessage()),
         asString(record.getBpmnProcessId()),
         asString(record.getElementId()),
+        record.getWorkflowKey(),
         record.getWorkflowInstanceKey(),
         record.getElementInstanceKey(),
         record.getJobKey(),

@@ -26,14 +26,16 @@ import io.zeebe.protocol.ErrorType;
 public class IncidentAssert {
 
   public static void assertIOMappingIncidentWithNoData(
+      long workflowKey,
       long workflowInstanceKey,
       Record<WorkflowInstanceRecordValue> followUpEvent,
       Record<IncidentRecordValue> incidentRecord) {
     assertIOMappingIncidentWithNoData(
-        workflowInstanceKey, "failingTask", followUpEvent, incidentRecord);
+        workflowKey, workflowInstanceKey, "failingTask", followUpEvent, incidentRecord);
   }
 
   public static void assertIOMappingIncidentWithNoData(
+      long workflowKey,
       long workflowInstanceKey,
       String activityId,
       Record<WorkflowInstanceRecordValue> followUpEvent,
@@ -41,6 +43,7 @@ public class IncidentAssert {
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
         "No data found for query foo.",
+        workflowKey,
         workflowInstanceKey,
         activityId,
         followUpEvent,
@@ -62,6 +65,7 @@ public class IncidentAssert {
   public static void assertIncidentRecordValue(
       String errorType,
       String errorMsg,
+      long workflowKey,
       long workflowInstanceKey,
       String activityId,
       Record<WorkflowInstanceRecordValue> followUpEvent,
@@ -69,6 +73,7 @@ public class IncidentAssert {
     assertIncidentRecordValue(
         errorType,
         errorMsg,
+        workflowKey,
         workflowInstanceKey,
         activityId,
         followUpEvent.getKey(),
@@ -78,6 +83,7 @@ public class IncidentAssert {
   public static void assertIncidentRecordValue(
       String errorType,
       String errorMsg,
+      long workflowKey,
       long workflowInstanceKey,
       String activityId,
       long activityInstanceKey,
@@ -85,6 +91,7 @@ public class IncidentAssert {
     assertIncidentRecordValue(
         errorType,
         errorMsg,
+        workflowKey,
         workflowInstanceKey,
         activityId,
         activityInstanceKey,
@@ -95,6 +102,7 @@ public class IncidentAssert {
   public static void assertIncidentRecordValue(
       String errorType,
       String errorMsg,
+      long workflowKey,
       long workflowInstanceKey,
       String elementId,
       long elementInstanceKey,
@@ -105,6 +113,7 @@ public class IncidentAssert {
         .hasErrorType(errorType)
         .hasErrorMessage(errorMsg)
         .hasBpmnProcessId("process")
+        .hasWorkflowKey(workflowKey)
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId(elementId)
         .hasElementInstanceKey(elementInstanceKey)

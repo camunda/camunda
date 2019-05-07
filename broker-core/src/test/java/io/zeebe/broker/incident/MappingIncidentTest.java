@@ -87,7 +87,7 @@ public class MappingIncidentTest {
   @Test
   public void shouldCreateIncidentForInputMappingFailure() {
     // given
-    testClient.deploy(WORKFLOW_INPUT_MAPPING);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW_INPUT_MAPPING).getKey();
 
     // when
     final long workflowInstanceKey =
@@ -107,7 +107,8 @@ public class MappingIncidentTest {
         .isEqualTo(createIncidentEvent.getPosition());
     assertThat(incidentEvent.getValue().getVariableScopeKey()).isEqualTo(failureEvent.getKey());
 
-    assertIOMappingIncidentWithNoData(workflowInstanceKey, failureEvent, incidentEvent);
+    assertIOMappingIncidentWithNoData(
+        workflowKey, workflowInstanceKey, failureEvent, incidentEvent);
   }
 
   @Test
@@ -146,7 +147,7 @@ public class MappingIncidentTest {
   @Test
   public void shouldCreateIncidentForOutputMappingFailure() {
     // given
-    testClient.deploy(WORKFLOW_OUTPUT_MAPPING);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW_OUTPUT_MAPPING).getKey();
 
     // when
     final long workflowInstanceKey =
@@ -168,13 +169,14 @@ public class MappingIncidentTest {
     assertThat(incidentEvent.getSourceRecordPosition())
         .isEqualTo(createIncidentEvent.getPosition());
 
-    assertIOMappingIncidentWithNoData(workflowInstanceKey, failureEvent, incidentEvent);
+    assertIOMappingIncidentWithNoData(
+        workflowKey, workflowInstanceKey, failureEvent, incidentEvent);
   }
 
   @Test
   public void shouldResolveIncidentForInputMappingFailure() {
     // given
-    testClient.deploy(WORKFLOW_INPUT_MAPPING);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW_INPUT_MAPPING).getKey();
 
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
@@ -200,13 +202,14 @@ public class MappingIncidentTest {
     assertThat(incidentResolveCommand.getPosition())
         .isEqualTo(incidentResolvedEvent.getSourceRecordPosition());
 
-    assertIOMappingIncidentWithNoData(workflowInstanceKey, followUpEvent, incidentResolvedEvent);
+    assertIOMappingIncidentWithNoData(
+        workflowKey, workflowInstanceKey, followUpEvent, incidentResolvedEvent);
   }
 
   @Test
   public void shouldResolveIncidentForOutputMappingFailure() {
     // given
-    testClient.deploy(WORKFLOW_OUTPUT_MAPPING);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW_OUTPUT_MAPPING).getKey();
 
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
@@ -235,7 +238,8 @@ public class MappingIncidentTest {
     assertThat(incidentResolveCommand.getPosition())
         .isEqualTo(incidentResolvedEvent.getSourceRecordPosition());
 
-    assertIOMappingIncidentWithNoData(workflowInstanceKey, followUpEvent, incidentResolvedEvent);
+    assertIOMappingIncidentWithNoData(
+        workflowKey, workflowInstanceKey, followUpEvent, incidentResolvedEvent);
   }
 
   @Test
@@ -249,7 +253,7 @@ public class MappingIncidentTest {
                 t -> t.zeebeTaskType("external").zeebeInput("foo", "foo").zeebeInput("bar", "bar"))
             .done();
 
-    testClient.deploy(modelInstance);
+    final long workflowKey = testClient.deployWorkflow(modelInstance).getKey();
 
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
@@ -279,6 +283,7 @@ public class MappingIncidentTest {
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
         "No data found for query foo.",
+        workflowKey,
         workflowInstanceKey,
         "failingTask",
         failureEvent,
@@ -288,7 +293,7 @@ public class MappingIncidentTest {
   @Test
   public void shouldResolveIncidentAfterPreviousResolvingFailed() {
     // given
-    testClient.deploy(WORKFLOW_INPUT_MAPPING);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW_INPUT_MAPPING).getKey();
 
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
@@ -323,6 +328,7 @@ public class MappingIncidentTest {
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
         "No data found for query foo.",
+        workflowKey,
         workflowInstanceKey,
         "failingTask",
         failureEvent,
@@ -364,7 +370,7 @@ public class MappingIncidentTest {
   @Test
   public void shouldResolveIncidentIfActivityTerminated() {
     // given
-    testClient.deploy(WORKFLOW_INPUT_MAPPING);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW_INPUT_MAPPING).getKey();
 
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
@@ -389,6 +395,7 @@ public class MappingIncidentTest {
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
         "No data found for query foo.",
+        workflowKey,
         workflowInstanceKey,
         "failingTask",
         incidentResolvedEvent.getValue().getElementInstanceKey(),
@@ -399,7 +406,7 @@ public class MappingIncidentTest {
   @Category(UnstableTest.class)
   public void shouldProcessIncidentsAfterMultipleTerminations() {
     // given
-    testClient.deploy(WORKFLOW_INPUT_MAPPING);
+    final long workflowKey = testClient.deployWorkflow(WORKFLOW_INPUT_MAPPING).getKey();
 
     // create and cancel instance with incident
     long workflowInstanceKey =
@@ -431,6 +438,7 @@ public class MappingIncidentTest {
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
         "No data found for query foo.",
+        workflowKey,
         workflowInstanceKey,
         "failingTask",
         incidentEvent.getValue().getElementInstanceKey(),

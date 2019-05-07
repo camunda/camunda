@@ -30,6 +30,7 @@ public class IncidentRecord extends UnpackedObject implements WorkflowInstanceRe
   private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
+  private final LongProperty workflowKeyProp = new LongProperty("workflowKey", -1L);
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
@@ -40,6 +41,7 @@ public class IncidentRecord extends UnpackedObject implements WorkflowInstanceRe
     this.declareProperty(errorTypeProp)
         .declareProperty(errorMessageProp)
         .declareProperty(bpmnProcessIdProp)
+        .declareProperty(workflowKeyProp)
         .declareProperty(workflowInstanceKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
@@ -88,6 +90,15 @@ public class IncidentRecord extends UnpackedObject implements WorkflowInstanceRe
     return this;
   }
 
+  public long getWorkflowKey() {
+    return workflowKeyProp.getValue();
+  }
+
+  public IncidentRecord setWorkflowKey(long workflowKey) {
+    this.workflowKeyProp.setValue(workflowKey);
+    return this;
+  }
+
   public long getWorkflowInstanceKey() {
     return workflowInstanceKeyProp.getValue();
   }
@@ -129,6 +140,7 @@ public class IncidentRecord extends UnpackedObject implements WorkflowInstanceRe
 
     setElementInstanceKey(key);
     setBpmnProcessId(workflowInstanceEvent.getBpmnProcessId());
+    setWorkflowKey(workflowInstanceEvent.getWorkflowKey());
     setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey());
     setElementId(workflowInstanceEvent.getElementId());
     setVariableScopeKey(key);

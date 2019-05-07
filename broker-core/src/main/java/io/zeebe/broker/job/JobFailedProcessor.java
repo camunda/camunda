@@ -56,6 +56,7 @@ public final class JobFailedProcessor implements TypedRecordProcessor<JobRecord>
           .setErrorType(ErrorType.JOB_NO_RETRIES)
           .setErrorMessage(incidentErrorMessage)
           .setBpmnProcessId(jobHeaders.getBpmnProcessId())
+          .setWorkflowKey(jobHeaders.getWorkflowKey())
           .setWorkflowInstanceKey(jobHeaders.getWorkflowInstanceKey())
           .setElementId(jobHeaders.getElementId())
           .setElementInstanceKey(jobHeaders.getElementInstanceKey())
