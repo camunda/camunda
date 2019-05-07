@@ -179,10 +179,6 @@ public class WorkflowReader extends AbstractReader {
     }
   }
   
-  public Set<String> getAllWorkflowIds(){
-    return getWorkflows().keySet();
-  }
-  
   /**
    * Returns up to maxSize WorkflowEntities only filled with the given field names.
    * @return Map of id -> WorkflowEntity

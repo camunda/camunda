@@ -9,6 +9,7 @@ import java.util.Comparator;
 
 public class IncidentByWorkflowStatisticsDto implements Comparable<IncidentByWorkflowStatisticsDto> {
 
+
   public final static Comparator<IncidentByWorkflowStatisticsDto> COMPARATOR = new IncidentByWorkflowStatisticsDtoComparator();
   
   private String workflowId;
@@ -133,13 +134,14 @@ public class IncidentByWorkflowStatisticsDto implements Comparable<IncidentByWor
   }
 
   @Override
-  public int compareTo(IncidentByWorkflowStatisticsDto other) {
-    if (other == null){
+  public int compareTo(IncidentByWorkflowStatisticsDto o) {
+    if (o == null){
       return 1;
     }
-    int compare = Long.compare(other.getInstancesWithActiveIncidentsCount(), this.getInstancesWithActiveIncidentsCount());
+    final IncidentByWorkflowStatisticsDto stat = (IncidentByWorkflowStatisticsDto) o;
+    int compare = Long.compare(stat.getInstancesWithActiveIncidentsCount(), this.getInstancesWithActiveIncidentsCount());
     if (compare == 0) {
-      compare = this.getWorkflowId().compareTo(other.getWorkflowId());
+      compare = this.getWorkflowId().compareTo(stat.getWorkflowId());
     }
     return compare;
   }
