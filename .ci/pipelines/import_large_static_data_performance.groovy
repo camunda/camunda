@@ -114,8 +114,8 @@ spec:
           protocol: TCP
       resources:
         limits:
-          cpu: 2
-          memory: 4Gi
+          cpu: 4
+          memory: 8Gi
         requests:
           cpu: 2
           memory: 2Gi
