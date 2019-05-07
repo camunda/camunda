@@ -43,7 +43,11 @@ export default class Filters extends React.Component {
       incidents: PropTypes.bool,
       startDate: PropTypes.string,
       version: PropTypes.string,
-      workflow: PropTypes.string
+      workflow: PropTypes.string,
+      variablesQuery: PropTypes.shape({
+        name: PropTypes.string,
+        value: PropTypes.string
+      })
     }).isRequired,
     filterCount: PropTypes.number.isRequired,
     onFilterChange: PropTypes.func.isRequired,
@@ -302,6 +306,7 @@ export default class Filters extends React.Component {
                   </Styled.Field>
                   <Styled.Field>
                     <Styled.VariableFilterInput
+                      variable={this.state.filter.variablesQuery}
                       onFilterChange={this.props.onFilterChange}
                     />
                   </Styled.Field>

@@ -12,7 +12,7 @@ import * as Styled from './styled';
 export default function VariableFilterInput(props) {
   const [name, setName] = useState('');
   const [value, setValue] = useState('');
-  const {onFilterChange, ...passedProps} = props;
+  const {onFilterChange, variable, ...passedProps} = props;
   function handleBlur() {
     if (!name || !value) {
       return onFilterChange({variablesQuery: null});
@@ -24,6 +24,7 @@ export default function VariableFilterInput(props) {
   return (
     <Styled.VariableFilterInput {...passedProps}>
       <Styled.TextInput
+        value={variable.name || name}
         placeholder="Variable"
         name="name"
         data-test="nameInput"
@@ -31,6 +32,7 @@ export default function VariableFilterInput(props) {
         onBlur={handleBlur}
       />
       <Styled.TextInput
+        value={variable.value || value}
         placeholder="Value"
         name="value"
         data-test="valueInput"
@@ -42,5 +44,6 @@ export default function VariableFilterInput(props) {
 }
 
 VariableFilterInput.propTypes = {
-  onFilterChange: PropTypes.func.isRequired
+  onFilterChange: PropTypes.func.isRequired,
+  variable: PropTypes.object
 };

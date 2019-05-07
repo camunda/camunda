@@ -229,7 +229,6 @@ class InstancesContainer extends Component {
     };
 
     const filter = parseQueryString(this.props.location.search).filter;
-
     // (1) empty filter
     if (!filter) {
       return setFilterInUrlAndState(DEFAULT_FILTER);

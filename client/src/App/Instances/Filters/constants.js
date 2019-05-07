@@ -14,5 +14,6 @@ export const DEFAULT_CONTROLLED_VALUES = {
   endDate: '',
   activityId: '',
   version: '',
-  workflow: ''
+  workflow: '',
+  variablesQuery: {name: '', value: ''}
 };
