@@ -73,6 +73,9 @@ public class SubscriptionCommandSender {
   private final CloseWorkflowInstanceSubscriptionCommand closeWorkflowInstanceSubscriptionCommand =
       new CloseWorkflowInstanceSubscriptionCommand();
 
+  private final RejectCorrelateMessageSubscriptionCommand
+      rejectCorrelateMessageSubscriptionCommand = new RejectCorrelateMessageSubscriptionCommand();
+
   private final Atomix atomix;
 
   private int partitionId;
@@ -129,6 +132,7 @@ public class SubscriptionCommandSender {
       final long workflowInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer messageName,
+      final long messageKey,
       final DirectBuffer variables) {
 
     final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
@@ -136,6 +140,7 @@ public class SubscriptionCommandSender {
     correlateWorkflowInstanceSubscriptionCommand.setSubscriptionPartitionId(partitionId);
     correlateWorkflowInstanceSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
     correlateWorkflowInstanceSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
+    correlateWorkflowInstanceSubscriptionCommand.setMessageKey(messageKey);
     correlateWorkflowInstanceSubscriptionCommand.getMessageName().wrap(messageName);
     correlateWorkflowInstanceSubscriptionCommand.getVariables().wrap(variables);
 
@@ -185,6 +190,25 @@ public class SubscriptionCommandSender {
 
     return sendSubscriptionCommand(
         workflowInstancePartitionId, closeWorkflowInstanceSubscriptionCommand);
+  }
+
+  public boolean rejectCorrelateMessageSubscription(
+      final long workflowInstanceKey,
+      final long elementInstanceKey,
+      final long messageKey,
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey) {
+
+    final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
+
+    rejectCorrelateMessageSubscriptionCommand.setSubscriptionPartitionId(partitionId);
+    rejectCorrelateMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
+    rejectCorrelateMessageSubscriptionCommand.setMessageKey(messageKey);
+    rejectCorrelateMessageSubscriptionCommand.getMessageName().wrap(messageName);
+    rejectCorrelateMessageSubscriptionCommand.getCorrelationKey().wrap(correlationKey);
+
+    return sendSubscriptionCommand(
+        workflowInstancePartitionId, rejectCorrelateMessageSubscriptionCommand);
   }
 
   private boolean sendSubscriptionCommand(

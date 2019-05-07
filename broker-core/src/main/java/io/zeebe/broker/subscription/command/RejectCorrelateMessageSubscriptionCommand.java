@@ -17,29 +17,27 @@
  */
 package io.zeebe.broker.subscription.command;
 
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.elementInstanceKeyNullValue;
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.messageKeyNullValue;
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength;
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue;
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.variablesHeaderLength;
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue;
+import static io.zeebe.broker.subscription.RejectCorrelateMessageSubscriptionDecoder.messageKeyNullValue;
+import static io.zeebe.broker.subscription.RejectCorrelateMessageSubscriptionDecoder.workflowInstanceKeyNullValue;
+import static io.zeebe.broker.subscription.RejectCorrelateMessageSubscriptionEncoder.correlationKeyHeaderLength;
+import static io.zeebe.broker.subscription.RejectCorrelateMessageSubscriptionEncoder.messageNameHeaderLength;
+import static io.zeebe.broker.subscription.RejectCorrelateMessageSubscriptionEncoder.subscriptionPartitionIdNullValue;
 
-import io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder;
-import io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionEncoder;
+import io.zeebe.broker.subscription.RejectCorrelateMessageSubscriptionDecoder;
+import io.zeebe.broker.subscription.RejectCorrelateMessageSubscriptionEncoder;
 import io.zeebe.broker.util.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class CorrelateWorkflowInstanceSubscriptionCommand
+public class RejectCorrelateMessageSubscriptionCommand
     extends SbeBufferWriterReader<
-        CorrelateWorkflowInstanceSubscriptionEncoder,
-        CorrelateWorkflowInstanceSubscriptionDecoder> {
+        RejectCorrelateMessageSubscriptionEncoder, RejectCorrelateMessageSubscriptionDecoder> {
 
-  private final CorrelateWorkflowInstanceSubscriptionEncoder encoder =
-      new CorrelateWorkflowInstanceSubscriptionEncoder();
-  private final CorrelateWorkflowInstanceSubscriptionDecoder decoder =
-      new CorrelateWorkflowInstanceSubscriptionDecoder();
+  private final RejectCorrelateMessageSubscriptionEncoder encoder =
+      new RejectCorrelateMessageSubscriptionEncoder();
+  private final RejectCorrelateMessageSubscriptionDecoder decoder =
+      new RejectCorrelateMessageSubscriptionDecoder();
 
   private int subscriptionPartitionId;
   private long workflowInstanceKey;
@@ -47,15 +45,15 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
   private long messageKey;
 
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
-  private final UnsafeBuffer variables = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer correlationKey = new UnsafeBuffer(0, 0);
 
   @Override
-  protected CorrelateWorkflowInstanceSubscriptionEncoder getBodyEncoder() {
+  protected RejectCorrelateMessageSubscriptionEncoder getBodyEncoder() {
     return encoder;
   }
 
   @Override
-  protected CorrelateWorkflowInstanceSubscriptionDecoder getBodyDecoder() {
+  protected RejectCorrelateMessageSubscriptionDecoder getBodyDecoder() {
     return decoder;
   }
 
@@ -64,8 +62,8 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     return super.getLength()
         + messageNameHeaderLength()
         + messageName.capacity()
-        + variablesHeaderLength()
-        + variables.capacity();
+        + correlationKeyHeaderLength()
+        + correlationKey.capacity();
   }
 
   @Override
@@ -75,10 +73,9 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     encoder
         .subscriptionPartitionId(subscriptionPartitionId)
         .workflowInstanceKey(workflowInstanceKey)
-        .elementInstanceKey(elementInstanceKey)
         .messageKey(messageKey)
         .putMessageName(messageName, 0, messageName.capacity())
-        .putVariables(variables, 0, variables.capacity());
+        .putCorrelationKey(correlationKey, 0, correlationKey.capacity());
   }
 
   @Override
@@ -87,32 +84,19 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
     workflowInstanceKey = decoder.workflowInstanceKey();
-    elementInstanceKey = decoder.elementInstanceKey();
     messageKey = decoder.messageKey();
 
-    offset = decoder.limit();
-
-    offset += messageNameHeaderLength();
-    final int messageNameLength = decoder.messageNameLength();
-    messageName.wrap(buffer, offset, messageNameLength);
-    offset += messageNameLength;
-    decoder.limit(offset);
-
-    offset += variablesHeaderLength();
-    final int variablesLength = decoder.variablesLength();
-    variables.wrap(buffer, offset, variablesLength);
-    offset += variablesLength;
-    decoder.limit(offset);
+    decoder.wrapMessageName(messageName);
+    decoder.wrapCorrelationKey(correlationKey);
   }
 
   @Override
   public void reset() {
     subscriptionPartitionId = subscriptionPartitionIdNullValue();
     workflowInstanceKey = workflowInstanceKeyNullValue();
-    elementInstanceKey = elementInstanceKeyNullValue();
     messageKey = messageKeyNullValue();
     messageName.wrap(0, 0);
-    variables.wrap(0, 0);
+    correlationKey.wrap(0, 0);
   }
 
   public int getSubscriptionPartitionId() {
@@ -131,14 +115,6 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     this.workflowInstanceKey = workflowInstanceKey;
   }
 
-  public long getElementInstanceKey() {
-    return elementInstanceKey;
-  }
-
-  public void setElementInstanceKey(long elementInstanceKey) {
-    this.elementInstanceKey = elementInstanceKey;
-  }
-
   public long getMessageKey() {
     return messageKey;
   }
@@ -151,7 +127,7 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     return messageName;
   }
 
-  public DirectBuffer getVariables() {
-    return variables;
+  public DirectBuffer getCorrelationKey() {
+    return correlationKey;
   }
 }

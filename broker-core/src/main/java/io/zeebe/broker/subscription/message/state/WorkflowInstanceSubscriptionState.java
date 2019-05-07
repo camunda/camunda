@@ -84,10 +84,7 @@ public class WorkflowInstanceSubscriptionState {
       long elementInstanceKey, DirectBuffer messageName) {
     wrapSubscriptionKeys(elementInstanceKey, messageName);
 
-    final WorkflowInstanceSubscription workflowInstanceSubscription =
-        subscriptionColumnFamily.get(elementKeyAndMessageName);
-
-    return workflowInstanceSubscription;
+    return subscriptionColumnFamily.get(elementKeyAndMessageName);
   }
 
   public void visitElementSubscriptions(

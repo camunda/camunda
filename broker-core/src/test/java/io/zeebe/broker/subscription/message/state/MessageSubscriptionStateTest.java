@@ -254,7 +254,7 @@ public class MessageSubscriptionStateTest {
     assertThat(subscription.isCorrelating()).isFalse();
 
     // when
-    state.updateToCorrelatingState(subscription, wrapString("{\"foo\":\"bar\"}"), 1_000);
+    state.updateToCorrelatingState(subscription, wrapString("{\"foo\":\"bar\"}"), 1_000, 5);
 
     // then
     assertThat(subscription.isCorrelating()).isTrue();
@@ -267,6 +267,7 @@ public class MessageSubscriptionStateTest {
     assertThat(subscriptions).hasSize(1);
     assertThat(subscriptions.get(0).getMessageVariables())
         .isEqualTo(subscription.getMessageVariables());
+    assertThat(subscriptions.get(0).getMessageKey()).isEqualTo(subscription.getMessageKey());
 
     // and
     final List<Long> keys = new ArrayList<>();

@@ -23,7 +23,6 @@ import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.util.sched.clock.ActorClock;
 
 public class PendingMessageSubscriptionChecker implements Runnable {
-
   private final SubscriptionCommandSender commandSender;
   private final MessageSubscriptionState subscriptionState;
 
@@ -50,6 +49,7 @@ public class PendingMessageSubscriptionChecker implements Runnable {
             subscription.getWorkflowInstanceKey(),
             subscription.getElementInstanceKey(),
             subscription.getMessageName(),
+            subscription.getMessageKey(),
             subscription.getMessageVariables());
 
     if (success) {

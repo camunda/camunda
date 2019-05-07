@@ -52,8 +52,9 @@
     <field name="subscriptionPartitionId" id="0" type="uint16"/>
     <field name="workflowInstanceKey" id="1" type="uint64"/>
     <field name="elementInstanceKey" id="2" type="uint64"/>
-    <data name="messageName" id="3" type="varDataEncoding"/>
-    <data name="variables" id="4" type="varDataEncoding"/>
+    <field name="messageKey" id="3" type="uint64"/>
+    <data name="messageName" id="4" type="varDataEncoding"/>
+    <data name="variables" id="5" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="CorrelateMessageSubscription" id="3">
@@ -76,6 +77,14 @@
     <field name="workflowInstanceKey" id="1" type="uint64"/>
     <field name="elementInstanceKey" id="2" type="uint64"/>
     <data name="messageName" id="3" type="varDataEncoding"/>
+  </sbe:message>
+
+  <sbe:message name="RejectCorrelateMessageSubscription" id="6">
+    <field name="subscriptionPartitionId" id="0" type="uint16"/>
+    <field name="workflowInstanceKey" id="1" type="uint64"/>
+    <field name="messageKey" id="2" type="uint64"/>
+    <data name="messageName" id="3" type="varDataEncoding"/>
+    <data name="correlationKey" id="4" type="varDataEncoding"/>
   </sbe:message>
 
 </sbe:messageSchema>

@@ -19,13 +19,25 @@ package io.zeebe.broker.exporter.stream;
 
 import static io.zeebe.exporter.api.record.Assertions.assertThat;
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static io.zeebe.util.buffer.BufferUtil.*;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.wrapArray;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
 import io.zeebe.broker.exporter.ExporterObjectMapper;
-import io.zeebe.broker.exporter.record.value.*;
+import io.zeebe.broker.exporter.record.value.DeploymentRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.MessageRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.VariableDocumentRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.VariableRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.WorkflowInstanceCreationRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
 import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
@@ -39,7 +51,16 @@ import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.RecordValue;
-import io.zeebe.exporter.api.record.value.*;
+import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.value.MessageRecordValue;
+import io.zeebe.exporter.api.record.value.MessageSubscriptionRecordValue;
+import io.zeebe.exporter.api.record.value.VariableDocumentRecordValue;
+import io.zeebe.exporter.api.record.value.VariableRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.BpmnElementType;
@@ -56,7 +77,18 @@ import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.*;
+import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.JobBatchIntent;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.protocol.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.intent.VariableDocumentIntent;
+import io.zeebe.protocol.intent.VariableIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.util.buffer.BufferUtil;
@@ -258,10 +290,12 @@ public class ExporterRecordTest {
     final String messageName = "name";
     final long workflowInstanceKey = 1L;
     final String correlationKey = "key";
+    final long messageKey = 1L;
 
     final MessageSubscriptionRecord record =
         new MessageSubscriptionRecord()
             .setElementInstanceKey(activityInstanceKey)
+            .setMessageKey(messageKey)
             .setMessageName(wrapString(messageName))
             .setWorkflowInstanceKey(workflowInstanceKey)
             .setCorrelationKey(wrapString(correlationKey));
@@ -316,12 +350,14 @@ public class ExporterRecordTest {
     final long activityInstanceKey = 123;
     final String messageName = "test-message";
     final int subscriptionPartitionId = 2;
+    final int messageKey = 3;
     final long workflowInstanceKey = 1345;
 
     final WorkflowInstanceSubscriptionRecord record =
         new WorkflowInstanceSubscriptionRecord()
             .setElementInstanceKey(activityInstanceKey)
             .setMessageName(wrapString(messageName))
+            .setMessageKey(messageKey)
             .setSubscriptionPartitionId(subscriptionPartitionId)
             .setWorkflowInstanceKey(workflowInstanceKey)
             .setVariables(VARIABLES_MSGPACK);

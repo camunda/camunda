@@ -30,11 +30,14 @@ import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValu
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.BpmnElementType;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.impl.record.value.deployment.Workflow;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.WorkflowInstances;
 import java.util.List;
@@ -676,6 +679,59 @@ public class MessageCorrelationTest {
                         .get("foo"))
             .collect(Collectors.toList());
     assertThat(correlatedValues).containsOnly("0", "1", "2");
+  }
+
+  @Test
+  public void shouldCorrelateMessageAgainAfterRejection() {
+    // given
+    testClient.publishMessage("a", "123", "");
+    testClient.publishMessage("b", "123", "");
+
+    final BpmnModelInstance twoMessages =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .eventBasedGateway("split")
+            .intermediateCatchEvent(
+                "element-a", c -> c.message(m -> m.name("a").zeebeCorrelationKey("key")))
+            .intermediateCatchEvent(
+                "element-ab", c -> c.message(m -> m.name("b").zeebeCorrelationKey("key")))
+            .exclusiveGateway("merge")
+            .endEvent()
+            .moveToNode("split")
+            .intermediateCatchEvent(
+                "element-b", c -> c.message(m -> m.name("b").zeebeCorrelationKey("key")))
+            .intermediateCatchEvent(
+                "element-ba", c -> c.message(m -> m.name("a").zeebeCorrelationKey("key")))
+            .connectTo("merge")
+            .done();
+
+    final Workflow workflow = testClient.deployWorkflow(twoMessages);
+
+    // when
+    testClient.createWorkflowInstance(
+        c -> c.setKey(workflow.getKey()).setVariables(MsgPackUtil.asMsgPack("key", "123")));
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.CORRELATE)
+                .withRecordType(RecordType.COMMAND_REJECTION)
+                .limit(1))
+        .isNotEmpty();
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.REJECT).limit(1))
+        .isNotEmpty();
+    assertThat(
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.CORRELATED)
+                .limit(2))
+        .extracting(r -> r.getValue().getMessageName())
+        .containsExactlyInAnyOrder("a", "b");
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                .withElementId("process")
+                .limit(1))
+        .isNotEmpty();
   }
 
   private List<Record<WorkflowInstanceSubscriptionRecordValue>> awaitMessagesCorrelated(

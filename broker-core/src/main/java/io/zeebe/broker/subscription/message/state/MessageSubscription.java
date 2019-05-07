@@ -34,6 +34,7 @@ public class MessageSubscription implements DbValue {
 
   private long workflowInstanceKey;
   private long elementInstanceKey;
+  private long messageKey;
   private long commandSentTime;
   private boolean closeOnCorrelate;
 
@@ -81,6 +82,14 @@ public class MessageSubscription implements DbValue {
     return elementInstanceKey;
   }
 
+  public long getMessageKey() {
+    return messageKey;
+  }
+
+  public void setMessageKey(final long messageKey) {
+    this.messageKey = messageKey;
+  }
+
   public long getCommandSentTime() {
     return commandSentTime;
   }
@@ -109,6 +118,9 @@ public class MessageSubscription implements DbValue {
     this.elementInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
+    this.messageKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
+    offset += Long.BYTES;
+
     this.commandSentTime = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
@@ -123,7 +135,7 @@ public class MessageSubscription implements DbValue {
   @Override
   public int getLength() {
     return 1
-        + Long.BYTES * 3
+        + Long.BYTES * 4
         + Integer.BYTES * 3
         + messageName.capacity()
         + correlationKey.capacity()
@@ -136,6 +148,9 @@ public class MessageSubscription implements DbValue {
     offset += Long.BYTES;
 
     buffer.putLong(offset, elementInstanceKey, ZB_DB_BYTE_ORDER);
+    offset += Long.BYTES;
+
+    buffer.putLong(offset, messageKey, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
     buffer.putLong(offset, commandSentTime, ZB_DB_BYTE_ORDER);

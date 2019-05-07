@@ -38,8 +38,10 @@ import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandRequestBuilder;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
@@ -50,6 +52,8 @@ public class PublishMessageTest {
 
   @ClassRule
   public static final RuleChain RULE_CHAIN = RuleChain.outerRule(BROKER_RULE).around(API_RULE);
+
+  @Rule public RecordingExporterTestWatcher testWatcher = new RecordingExporterTestWatcher();
 
   private PartitionTestClient testClient;
 

@@ -100,7 +100,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
   }
 
   @Override
-  protected void before() throws Exception {
+  protected void before() {
     mockSubscriptionCommandSender = mock(SubscriptionCommandSender.class);
     mockTopologyManager = mock(TopologyManager.class);
 
@@ -112,6 +112,9 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
         .thenReturn(true);
     when(mockSubscriptionCommandSender.closeMessageSubscription(
             anyInt(), anyLong(), anyLong(), any(DirectBuffer.class)))
+        .thenReturn(true);
+    when(mockSubscriptionCommandSender.rejectCorrelateMessageSubscription(
+            anyLong(), anyLong(), anyLong(), any(), any()))
         .thenReturn(true);
 
     streamProcessor =
