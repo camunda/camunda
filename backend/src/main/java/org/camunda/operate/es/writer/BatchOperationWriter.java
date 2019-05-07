@@ -129,7 +129,7 @@ public class BatchOperationWriter {
 
   private UpdateRequest createUpdateByIdRequest(OperationEntity operation, boolean refreshImmediately) throws PersistenceException {
     try {
-      Map<String, Object> jsonMap = toJSONMap(operation);
+      Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(operation), HashMap.class);
 
       UpdateRequest updateRequest = new UpdateRequest(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operation.getId())
         .doc(jsonMap);
@@ -270,7 +270,9 @@ public class BatchOperationWriter {
   }
   
   private Script getUpdateScript() throws IOException {
-    Map<String, Object> jsonMap = toJSONMap(CollectionUtil.asMap("endDate",OffsetDateTime.now()));
+    Map<String,Object> paramsMap = new HashMap<>();
+    paramsMap.put("endDate",OffsetDateTime.now());
+    Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(paramsMap), HashMap.class);
 
     String script =
           "ctx._source.state = '" + OperationState.COMPLETED.toString() + "';" +
@@ -293,11 +295,6 @@ public class BatchOperationWriter {
           failure.getMessage()), failure.getCause());
         throw new PersistenceException("Complete operation failed: " + failure.getMessage(), failure.getCause());
       }
-  }
-  
-  @SuppressWarnings("unchecked")
-  private Map<String, Object> toJSONMap(Object input) throws IOException {
-    return objectMapper.readValue(objectMapper.writeValueAsString(input), HashMap.class);
   }
 
   private int persistOperations(SearchHits hits, OperationRequestDto operationRequest) throws PersistenceException {
