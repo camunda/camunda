@@ -20,7 +20,6 @@ import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
-import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdUtil;
@@ -278,7 +277,8 @@ public class ListViewZeebeRecordProcessor {
         updateFields.put(ListViewTemplate.STATE, wiEntity.getState());
       }
 
-      Map<String, Object> jsonMap = CollectionUtil.toJSONMap(objectMapper, updateFields);
+      //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
+      Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
       return new UpdateRequest(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, wiEntity.getId())
         .upsert(objectMapper.writeValueAsString(wiEntity), XContentType.JSON)
         .doc(jsonMap);

@@ -37,8 +37,6 @@ public class IncidentEntity extends OperateZeebeEntity {
 
   private String workflowInstanceId;
 
-  private String workflowId;
-  
   private OffsetDateTime creationTime;
 
   public ErrorType getErrorType() {
@@ -101,14 +99,6 @@ public class IncidentEntity extends OperateZeebeEntity {
     this.workflowInstanceId = workflowInstanceId;
   }
 
-  public String getWorkflowId() {
-    return workflowId;
-  }
-
-  public void setWorkflowId(String workflowId) {
-    this.workflowId = workflowId;
-  }
-
   public OffsetDateTime getCreationTime() {
     return creationTime;
   }
@@ -142,8 +132,6 @@ public class IncidentEntity extends OperateZeebeEntity {
       return false;
     if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
       return false;
-    if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null)
-      return false;
     return creationTime != null ? creationTime.equals(that.creationTime) : that.creationTime == null;
   }
 
@@ -157,7 +145,6 @@ public class IncidentEntity extends OperateZeebeEntity {
     result = 31 * result + (flowNodeInstanceId != null ? flowNodeInstanceId.hashCode() : 0);
     result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
-    result = 31 * result + (workflowId != null ? workflowId.hashCode() : 0);
     result = 31 * result + (creationTime != null ? creationTime.hashCode() : 0);
     return result;
   }

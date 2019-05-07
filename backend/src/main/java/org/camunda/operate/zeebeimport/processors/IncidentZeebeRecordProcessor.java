@@ -6,25 +6,16 @@
 package org.camunda.operate.zeebeimport.processors;
 
 import java.io.IOException;
-import java.util.Optional;
-
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.writer.BatchOperationWriter;
-import org.camunda.operate.es.writer.IncidentWriter;
 import org.camunda.operate.exceptions.PersistenceException;
-import org.camunda.operate.rest.exception.NotFoundException;
-import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdUtil;
-import org.camunda.operate.zeebeimport.record.RecordImpl;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
-import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -55,12 +46,6 @@ public class IncidentZeebeRecordProcessor {
   @Autowired
   private BatchOperationWriter batchOperationWriter;
 
-  @Autowired
-  private WorkflowInstanceReader workflowInstanceReader;
-  
-  @Autowired
-  private IncidentWriter incidentWriter;
-  
   public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
 
@@ -89,12 +74,7 @@ public class IncidentZeebeRecordProcessor {
         incident.setJobId(IdUtil.getId(recordValue.getJobKey(), record));
       }
       if (recordValue.getWorkflowInstanceKey() > 0) {
-        String workflowInstanceId = IdUtil.getId(recordValue.getWorkflowInstanceKey(), record);
-        Optional<String> workflowId = getWorkflowIdBy(workflowInstanceId);
-        if(workflowId.isPresent()) {
-          incident.setWorkflowId(workflowId.get());
-        }
-        incident.setWorkflowInstanceId(workflowInstanceId);
+        incident.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
       }
       incident.setErrorMessage(recordValue.getErrorMessage());
       incident.setErrorType(ErrorType.valueOf(recordValue.getErrorType()));
@@ -105,15 +85,6 @@ public class IncidentZeebeRecordProcessor {
       incident.setState(IncidentState.ACTIVE);
       incident.setCreationTime(DateUtil.toOffsetDateTime(record.getTimestamp()));
       bulkRequest.add(getIncidentInsertQuery(incident));
-    }
-  }
-  
-  private Optional<String> getWorkflowIdBy(String workflowInstanceId) {
-    try {
-      WorkflowInstanceForListViewEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-      return Optional.of(workflowInstance.getWorkflowId());
-    } catch (NotFoundException e) {
-      return Optional.empty();
     }
   }
 
@@ -131,13 +102,6 @@ public class IncidentZeebeRecordProcessor {
   private DeleteRequest getIncidentDeleteQuery(String incidentId) throws PersistenceException {
     logger.debug("Delete incident: id {}", incidentId);
     return new DeleteRequest(incidentTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, incidentId);
-  }
-
-  public void processWorkflowInstanceRecord(RecordImpl record, BulkRequest bulkRequest) throws PersistenceException {
-    WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
-    String workflowInstanceId = IdUtil.getId(recordValue.getWorkflowInstanceKey(),record);
-    String workflowId = IdUtil.getId(recordValue.getWorkflowKey(),record);
-    incidentWriter.updateWorkflowIds(workflowId, CollectionUtil.asSet(workflowInstanceId));
   }
 
 }

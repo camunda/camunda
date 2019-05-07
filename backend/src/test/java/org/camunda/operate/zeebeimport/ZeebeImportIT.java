@@ -184,8 +184,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
     assertThat(incidentEntity.getErrorType()).isNotNull();
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
-    assertThat(incidentEntity.getWorkflowId()).isEqualTo(workflowId);
-    
+
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.INCIDENT);

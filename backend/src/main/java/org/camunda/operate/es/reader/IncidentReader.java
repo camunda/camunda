@@ -6,6 +6,7 @@
 package org.camunda.operate.es.reader;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.camunda.operate.entities.IncidentEntity;
@@ -51,11 +52,6 @@ public class IncidentReader extends AbstractReader {
 
   @Autowired
   private OperationReader operationReader;
-  
-  
-  public long getIncidentsCount() {
-    return ElasticsearchUtil.count(incidentTemplate.getAlias(), esClient);
-  }
 
   public List<IncidentEntity> getAllIncidents(String workflowInstanceId) {
     final TermQueryBuilder workflowInstanceIdQ = termQuery(IncidentTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);

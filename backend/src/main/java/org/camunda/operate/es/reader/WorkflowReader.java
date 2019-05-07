@@ -5,13 +5,6 @@
  */
 package org.camunda.operate.es.reader;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -35,6 +28,12 @@ import static org.camunda.operate.es.schema.indices.WorkflowIndex.BPMN_XML;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class WorkflowReader extends AbstractReader {
