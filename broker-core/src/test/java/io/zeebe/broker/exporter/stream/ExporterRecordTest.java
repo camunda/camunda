@@ -132,6 +132,7 @@ public class ExporterRecordTest {
   public void shouldExportIncidentRecord() {
     // given
     final long elementInstanceKey = 34;
+    final long workflowKey = 134;
     final long workflowInstanceKey = 10;
     final String elementId = "activity";
     final String bpmnProcessId = "process";
@@ -142,6 +143,7 @@ public class ExporterRecordTest {
     final IncidentRecord record =
         new IncidentRecord()
             .setElementInstanceKey(elementInstanceKey)
+            .setWorkflowKey(workflowKey)
             .setWorkflowInstanceKey(workflowInstanceKey)
             .setElementId(wrapString(elementId))
             .setBpmnProcessId(wrapString(bpmnProcessId))
@@ -157,6 +159,7 @@ public class ExporterRecordTest {
             errorMessage,
             bpmnProcessId,
             elementId,
+            workflowKey,
             workflowInstanceKey,
             elementInstanceKey,
             jobKey,

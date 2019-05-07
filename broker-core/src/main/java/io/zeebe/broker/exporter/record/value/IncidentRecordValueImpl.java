@@ -27,6 +27,7 @@ public class IncidentRecordValueImpl extends RecordValueImpl implements Incident
   private final String errorMessage;
   private final String bpmnProcessId;
   private final String elementId;
+  private final long workflowKey;
   private final long workflowInstanceKey;
   private final long elementInstanceKey;
   private final long jobKey;
@@ -38,6 +39,7 @@ public class IncidentRecordValueImpl extends RecordValueImpl implements Incident
       final String errorMessage,
       final String bpmnProcessId,
       final String elementId,
+      final long workflowKey,
       final long workflowInstanceKey,
       final long elementInstanceKey,
       final long jobKey,
@@ -47,6 +49,7 @@ public class IncidentRecordValueImpl extends RecordValueImpl implements Incident
     this.errorMessage = errorMessage;
     this.bpmnProcessId = bpmnProcessId;
     this.elementId = elementId;
+    this.workflowKey = workflowKey;
     this.workflowInstanceKey = workflowInstanceKey;
     this.elementInstanceKey = elementInstanceKey;
     this.jobKey = jobKey;
@@ -71,6 +74,11 @@ public class IncidentRecordValueImpl extends RecordValueImpl implements Incident
   @Override
   public String getElementId() {
     return elementId;
+  }
+
+  @Override
+  public long getWorkflowKey() {
+    return workflowKey;
   }
 
   @Override
