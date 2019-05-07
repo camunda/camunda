@@ -229,13 +229,14 @@ public class IncidentStatisticsReader extends AbstractReader {
       String workflowId = workflowIdBucket.getKeyAsString();
       long incidentsCount = ((Cardinality)workflowIdBucket.getAggregations().get("uniq_workflowInstances")).getValue();
 
-      IncidentByWorkflowStatisticsDto statisticForWorkflow = new IncidentByWorkflowStatisticsDto(workflowId, errorMessage, incidentsCount);
-      WorkflowEntity workflow = workflows.get(workflowId);
-      statisticForWorkflow.setName(workflow.getName());
-      statisticForWorkflow.setBpmnProcessId(workflow.getBpmnProcessId());
-      statisticForWorkflow.setVersion(workflow.getVersion());
-      
-      workflowStatistics.getWorkflows().add(statisticForWorkflow);
+      if (workflows.containsKey(workflowId)) {
+        IncidentByWorkflowStatisticsDto statisticForWorkflow = new IncidentByWorkflowStatisticsDto(workflowId, errorMessage, incidentsCount);
+        WorkflowEntity workflow = workflows.get(workflowId);
+        statisticForWorkflow.setName(workflow.getName());
+        statisticForWorkflow.setBpmnProcessId(workflow.getBpmnProcessId());
+        statisticForWorkflow.setVersion(workflow.getVersion());
+        workflowStatistics.getWorkflows().add(statisticForWorkflow);
+      }
       workflowStatistics.recordInstancesCount(incidentsCount);
     }
     return workflowStatistics;

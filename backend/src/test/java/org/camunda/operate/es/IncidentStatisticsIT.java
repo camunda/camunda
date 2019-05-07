@@ -65,18 +65,28 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
   public void starting() {
     this.mockMvc = mockMvcTestRule.getMockMvc();
   }
+  
+  @Test
+  public void testAbsentWorkflowDoesntThrowExceptions() throws Exception {
+    List<OperateEntity> entities = new ArrayList<>();
+    
+    //Create a workflowInstance that has no matching workflow 
+    String workflowId = "DoesNotExists";
+    WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
+    entities.add(workflowInstance);
+    entities.addAll(createIncidents(workflowInstance, 1, 0));
+    elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+
+    List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
+
+    assertThat(response).hasSize(1);
+  }
  
   @Test
   public void testIncidentStatisticsByError() throws Exception {
     createData();
-    MockHttpServletRequestBuilder request = get(QUERY_INCIDENTS_BY_ERROR_URL);
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
-
-    List<IncidentsByErrorMsgStatisticsDto> response = mockMvcTestRule.listFromResponse(mvcResult, IncidentsByErrorMsgStatisticsDto.class);
-
+  
+    List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
     assertThat(response).hasSize(2);
 
     //assert NO_RETRIES_LEFT
@@ -286,6 +296,16 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     }
 
     elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+  }
+  
+  private List<IncidentsByErrorMsgStatisticsDto> requestIncidentsByError() throws Exception {
+    MockHttpServletRequestBuilder request = get(QUERY_INCIDENTS_BY_ERROR_URL);
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+      .andReturn();
+
+    return mockMvcTestRule.listFromResponse(mvcResult, IncidentsByErrorMsgStatisticsDto.class);
   }
   
   /**
