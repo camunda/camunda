@@ -84,8 +84,8 @@ spec:
           protocol: TCP
       resources:
         limits:
-          cpu: 1
-          memory: 1Gi
+          cpu: 4
+          memory: 4Gi
         requests:
           cpu: 500m
           memory: 1Gi
