@@ -6,13 +6,13 @@
 
 import styled from 'styled-components';
 
-import Expand from 'modules/components/Expand';
+import BasicExpandButton from 'modules/components/ExpandButton';
 
 export const Collapse = styled.div`
   position: relative;
 `;
 
-export const ExpandButton = styled(Expand)`
+export const ExpandButton = styled(BasicExpandButton)`
   position: absolute;
   top: 14px;
   left: 0;

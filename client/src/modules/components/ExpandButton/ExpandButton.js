@@ -5,9 +5,10 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import * as Styled from './styled';
 
-export default function Button({children, isExpanded, ...props}) {
+export default function ExpandButton({children, isExpanded, ...props}) {
   return (
     <Styled.Button {...props}>
       <Styled.Icon expandTheme={props.expandTheme}>
@@ -17,3 +18,8 @@ export default function Button({children, isExpanded, ...props}) {
     </Styled.Button>
   );
 }
+
+ExpandButton.propTypes = {
+  isExpanded: PropTypes.bool,
+  expandTheme: PropTypes.string.isRequired
+};
