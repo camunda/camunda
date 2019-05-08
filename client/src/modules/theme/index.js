@@ -5,6 +5,7 @@
  */
 
 export {default as Colors} from './colors.js';
+export {default as ExpandColors} from './expandColors.js';
 export {default as Animations} from './animations.js';
 export {
   themed,

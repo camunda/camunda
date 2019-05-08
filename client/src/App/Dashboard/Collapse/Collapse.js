@@ -7,7 +7,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import * as Styled from './styled';
-
 export default class Collapse extends React.Component {
   static propTypes = {
     content: PropTypes.node,
@@ -30,12 +29,12 @@ export default class Collapse extends React.Component {
   render() {
     return (
       <Styled.Collapse>
-        <Styled.Button
+        <Styled.ExpandButton
           onClick={this.handleToggle}
           title={this.props.buttonTitle}
-        >
-          <Styled.Icon rotated={this.state.isCollapsed} />
-        </Styled.Button>
+          isExpanded={!this.state.isCollapsed}
+          expandTheme="collapse"
+        />
         {this.props.header}
         {!this.state.isCollapsed && this.props.content}
       </Styled.Collapse>
