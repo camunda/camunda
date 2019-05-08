@@ -56,6 +56,10 @@
     flex-direction: column;
     height: auto;
 
+    ul:not(:empty) + ul.fixedList {
+      border-top: 1px solid #bbb;
+    }
+
     > ul {
       list-style: none;
       padding: 0;
@@ -66,10 +70,6 @@
       &.scrollable {
         overflow-y: scroll;
         @include scrollable;
-      }
-
-      &.fixedList {
-        border-top: 1px solid #bbb;
       }
     }
   }

@@ -24,7 +24,7 @@ export default class Dropdown extends React.Component {
       open: false,
       openSubmenu: null,
       fixedSubmenu: null,
-      menuStyle: {},
+      menuStyle: {right: 0},
       listStyles: {}
     };
   }

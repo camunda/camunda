@@ -1,8 +1,10 @@
 @import 'shared-styles/shared-styles.scss';
 
 .Dashboards,
-.Collections {
+.Collections,
+.Reports {
   margin-bottom: 80px;
+  margin-left: 30px;
 }
 
 .Overview {
@@ -29,6 +31,8 @@
     display: flex;
 
     .collapseIcon {
+      position: absolute;
+      left: 0px;
       margin-top: 10px;
       &.right {
         transform: rotate(-90deg);
@@ -65,7 +69,8 @@
       display: flex;
       align-items: center;
       svg {
-        margin: 0px 10px;
+        margin-left: 7px;
+        margin-right: 15px;
       }
     }
 
@@ -121,7 +126,7 @@
   .createAllButton,
   .createDashboard {
     float: right;
-    margin: 6px 0 0 10px;
+    margin: 0px 0 0 10px;
 
     .Button {
       padding: 6px 20px;
@@ -190,26 +195,6 @@
         .operations {
           visibility: visible;
         }
-
-        .CollectionsDropdown {
-          .Button {
-            .downIcon,
-            .noCollection {
-              visibility: visible;
-            }
-          }
-        }
-      }
-
-      &:not(:hover) {
-        .CollectionsDropdown {
-          .Button:not(:focus) {
-            .downIcon,
-            .noCollection {
-              visibility: hidden;
-            }
-          }
-        }
       }
 
       .info {
@@ -236,7 +221,7 @@
           overflow: hidden;
 
           .dataTitle {
-            margin-bottom: 7px;
+            margin-bottom: 4px;
             display: flex;
 
             h3 {

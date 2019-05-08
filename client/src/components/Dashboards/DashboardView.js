@@ -240,7 +240,6 @@ export default themed(
                   toggleEntityCollection={toggleEntityCollection(this.loadCollections)}
                   entityCollections={dashboardCollections}
                   setCollectionToUpdate={this.openEditCollectionModal}
-                  small
                 />
               </div>
             </div>

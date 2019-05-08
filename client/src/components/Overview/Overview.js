@@ -27,7 +27,7 @@ function Overview({store: {loading, deleting, conflicts, deleteLoading, searchQu
               required
               type="text"
               className="searchInput"
-              placeholder="Find..."
+              placeholder="Filter for name..."
               value={searchQuery}
               onChange={({target: {value}}) => props.filter(value)}
             />

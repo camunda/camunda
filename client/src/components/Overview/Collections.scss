@@ -1,4 +1,6 @@
 .Collections {
+  margin-top: 36px;
+
   .collectionBlankSlate {
     background: url('./entityIcons/collections-blank-slate-icon.svg') no-repeat 50% 10%;
     background-color: #f7f8f9;
@@ -20,6 +22,7 @@
     }
 
     > .listItem {
+      border-bottom: 1px solid #d1d1d1;
       &:hover {
         background: none;
       }

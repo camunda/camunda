@@ -5,10 +5,13 @@
 
   .Button {
     border-radius: 15px;
-    height: 30px;
     border: 1px solid transparent;
     background: none;
     position: relative;
+    height: 26px;
+    font-size: 12px;
+    padding: 5px 10px;
+    padding-right: 25px;
 
     &:hover {
       background: rgba(#d8dce3, 0.5);
@@ -25,18 +28,9 @@
     &:active {
       background: rgba(#d8dce3, 0.8);
     }
-  }
 
-  &.small {
-    .Button {
-      height: 26px;
-      font-size: 12px;
-      padding: 5px 10px;
-      padding-right: 25px;
-
-      .downIcon {
-        bottom: 5px;
-      }
+    .downIcon {
+      bottom: 5px;
     }
   }
 }

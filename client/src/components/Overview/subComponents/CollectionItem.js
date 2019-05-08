@@ -59,7 +59,7 @@ export default class CollectionItem extends React.Component {
               </div>
             </div>
           </Button>
-          <div className="entityCollections" />
+          <div className="CollectionsDropdown" />
           <div className="operations">
             <Button
               title="Edit Collection"

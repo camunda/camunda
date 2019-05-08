@@ -198,7 +198,6 @@ export default class ReportView extends Component {
                 toggleEntityCollection={toggleEntityCollection(this.loadCollections)}
                 entityCollections={reportCollections}
                 setCollectionToUpdate={this.openEditCollectionModal}
-                small
               />
             </div>
           </div>

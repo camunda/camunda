@@ -15,8 +15,7 @@ export default function CollectionsDropdown({
   entity,
   entityCollections = [],
   setCollectionToUpdate,
-  currentCollection,
-  small
+  currentCollection
 }) {
   const collectionsCount = entityCollections.length;
   let label = <span className="noCollection">Add to Collection</span>;
@@ -31,7 +30,7 @@ export default function CollectionsDropdown({
   }
   return (
     <Dropdown
-      className={classnames('CollectionsDropdown', {small})}
+      className={classnames('CollectionsDropdown')}
       label={label}
       fixedOptions={[
         <Dropdown.Option onClick={() => setCollectionToUpdate({data: {entities: [entity.id]}})}>
