@@ -1,4 +1,4 @@
-Expand Button:
+Collapse Button:
 
 ```js
 <ExpandButton direction='UP'/>

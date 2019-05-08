@@ -41,13 +41,13 @@ describe('Pane', () => {
       });
 
       // then
-      const ExpandButtonNode = node.find(Styled.PaneExpandButton);
-      expect(ExpandButtonNode).toHaveLength(0);
+      const CollapseButtonNode = node.find(Styled.PaneCollapseButton);
+      expect(CollapseButtonNode).toHaveLength(0);
     });
   });
 
   describe('bottom pane', () => {
-    it('should render ExpandButton with UP icon if pane is collapsed', () => {
+    it('should render CollapseButton with UP icon if pane is collapsed', () => {
       // given
       const node = mountNode({
         paneId: PANE_ID.BOTTOM,
@@ -55,13 +55,13 @@ describe('Pane', () => {
       });
 
       // then
-      const ExpandButtonNode = node.find(Styled.PaneExpandButton);
+      const CollapseButtonNode = node.find(Styled.PaneCollapseButton);
 
-      expect(ExpandButtonNode).toHaveLength(1);
-      expect(ExpandButtonNode.prop('direction')).toBe(DIRECTION.UP);
+      expect(CollapseButtonNode).toHaveLength(1);
+      expect(CollapseButtonNode.prop('direction')).toBe(DIRECTION.UP);
     });
 
-    it("'should render both ExpandButtons if pane is in default position", () => {
+    it("'should render both CollapseButtons if pane is in default position", () => {
       // given
       const node = mountNode({
         paneId: PANE_ID.BOTTOM,
@@ -69,13 +69,13 @@ describe('Pane', () => {
       });
 
       // then
-      const ExpandButtonNodes = node.find(Styled.PaneExpandButton);
-      expect(ExpandButtonNodes).toHaveLength(2);
-      expect(ExpandButtonNodes.at(0).prop('direction')).toBe(DIRECTION.DOWN);
-      expect(ExpandButtonNodes.at(1).prop('direction')).toBe(DIRECTION.UP);
+      const CollapseButtonNodes = node.find(Styled.PaneCollapseButton);
+      expect(CollapseButtonNodes).toHaveLength(2);
+      expect(CollapseButtonNodes.at(0).prop('direction')).toBe(DIRECTION.DOWN);
+      expect(CollapseButtonNodes.at(1).prop('direction')).toBe(DIRECTION.UP);
     });
 
-    it("should render ExpandButton with DOWN icon if pane is expanded'", () => {
+    it("should render CollapseButton with DOWN icon if pane is expanded'", () => {
       // given
       const node = mountNode({
         paneId: PANE_ID.BOTTOM,
@@ -83,9 +83,9 @@ describe('Pane', () => {
       });
 
       // then
-      const ExpandButtonNode = node.find(Styled.PaneExpandButton);
-      expect(ExpandButtonNode).toHaveLength(1);
-      expect(ExpandButtonNode.prop('direction')).toBe(DIRECTION.DOWN);
+      const CollapseButtonNode = node.find(Styled.PaneCollapseButton);
+      expect(CollapseButtonNode).toHaveLength(1);
+      expect(CollapseButtonNode.prop('direction')).toBe(DIRECTION.DOWN);
     });
   });
 

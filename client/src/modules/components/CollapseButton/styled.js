@@ -12,7 +12,7 @@ import {ReactComponent as DownBar} from 'modules/components/Icon/down-bar.svg';
 import {ReactComponent as LeftBar} from 'modules/components/Icon/left-bar.svg';
 import {ReactComponent as RightBar} from 'modules/components/Icon/right-bar.svg';
 
-export const ExpandButton = themed(styled.button`
+export const CollapseButton = themed(styled.button`
   padding-left: 11.5px;
   padding-right: 15px;
   padding-top: 13px;

@@ -7,27 +7,27 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import ExpandButton from './ExpandButton';
+import CollapseButton from './CollapseButton';
 import {DIRECTION} from 'modules/constants';
 import * as Styled from './styled';
 
-describe('ExpandButton', () => {
-  it('should render Styled.ExpandButton with click listener', () => {
+describe('CollapseButton', () => {
+  it('should render Styled.CollapseButton with click listener', () => {
     // given
     const onClick = jest.fn();
     const node = shallow(
-      <ExpandButton onClick={onClick} direction={DIRECTION.UP} />
+      <CollapseButton onClick={onClick} direction={DIRECTION.UP} />
     );
 
     // then
-    const StyledExpandButtonNode = node.find(Styled.ExpandButton);
-    expect(StyledExpandButtonNode).toHaveLength(1);
-    expect(StyledExpandButtonNode.prop('onClick')).toBe(onClick);
+    const StyledCollapseButtonNode = node.find(Styled.CollapseButton);
+    expect(StyledCollapseButtonNode).toHaveLength(1);
+    expect(StyledCollapseButtonNode.prop('onClick')).toBe(onClick);
   });
 
   it('should render Up icon if icon direction is UP', () => {
     // given
-    const node = shallow(<ExpandButton direction={DIRECTION.UP} />);
+    const node = shallow(<CollapseButton direction={DIRECTION.UP} />);
 
     // then
     expect(node.find(Styled.Up)).toHaveLength(1);
@@ -36,7 +36,7 @@ describe('ExpandButton', () => {
 
   it('should render Down icon if icon direction is DOWN', () => {
     // given
-    const node = shallow(<ExpandButton direction={DIRECTION.DOWN} />);
+    const node = shallow(<CollapseButton direction={DIRECTION.DOWN} />);
 
     // then
     expect(node.find(Styled.Down)).toHaveLength(1);
@@ -45,7 +45,7 @@ describe('ExpandButton', () => {
 
   it('should render Left icon if icon direction is LEFT', () => {
     // given
-    const node = shallow(<ExpandButton direction={DIRECTION.LEFT} />);
+    const node = shallow(<CollapseButton direction={DIRECTION.LEFT} />);
 
     // then
     expect(node.find(Styled.Left)).toHaveLength(1);
@@ -54,7 +54,7 @@ describe('ExpandButton', () => {
 
   it('should render Right icon if icon direction is RIGHT', () => {
     // given
-    const node = shallow(<ExpandButton direction={DIRECTION.RIGHT} />);
+    const node = shallow(<CollapseButton direction={DIRECTION.RIGHT} />);
 
     // then
     expect(node.find(Styled.Right)).toHaveLength(1);

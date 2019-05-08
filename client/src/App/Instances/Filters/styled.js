@@ -8,15 +8,15 @@ import styled, {css} from 'styled-components';
 
 import {themed, themeStyle} from 'modules/theme';
 import Panel from 'modules/components/Panel';
-import BasicExpandButton from 'modules/components/ExpandButton';
-import VerticalExpandButton from 'modules/components/VerticalExpandButton';
+import BasicCollapseButton from 'modules/components/CollapseButton';
+import VerticalCollapseButton from 'modules/components/VerticalCollapseButton';
 import BasicTextInput from 'modules/components/Input';
 import BasicTextarea from 'modules/components/Textarea';
 import BasicSelect from 'modules/components/Select';
 import BasicCheckboxGroup from './CheckboxGroup';
 import {default as VariableFilterInputComp} from './VariableFilterInput';
 
-export const ExpandButton = styled(BasicExpandButton)`
+export const CollapseButton = styled(BasicCollapseButton)`
   position: absolute;
   right: 0;
   top: 0;
@@ -48,7 +48,7 @@ export const Field = styled.div`
   }
 `;
 
-export const VerticalButton = styled(VerticalExpandButton)`
+export const VerticalButton = styled(VerticalCollapseButton)`
   position: absolute;
   top: 0;
   left: 0;

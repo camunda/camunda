@@ -1,24 +1,24 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`ExpandButton should render Down icon if icon direction is DOWN 1`] = `
+exports[`CollapseButton should render Down icon if icon direction is DOWN 1`] = `
 <Themed(styled.button)>
   <Themed(Styled(ReactComponent)) />
 </Themed(styled.button)>
 `;
 
-exports[`ExpandButton should render Left icon if icon direction is LEFT 1`] = `
+exports[`CollapseButton should render Left icon if icon direction is LEFT 1`] = `
 <Themed(styled.button)>
   <Themed(Styled(ReactComponent)) />
 </Themed(styled.button)>
 `;
 
-exports[`ExpandButton should render Right icon if icon direction is RIGHT 1`] = `
+exports[`CollapseButton should render Right icon if icon direction is RIGHT 1`] = `
 <Themed(styled.button)>
   <Themed(Styled(ReactComponent)) />
 </Themed(styled.button)>
 `;
 
-exports[`ExpandButton should render Up icon if icon direction is UP 1`] = `
+exports[`CollapseButton should render Up icon if icon direction is UP 1`] = `
 <Themed(styled.button)>
   <Themed(Styled(ReactComponent)) />
 </Themed(styled.button)>

@@ -36,7 +36,7 @@ function Selections(props) {
               </Styled.VerticalButton>
             }
             collapseButton={
-              <Styled.ExpandButton
+              <Styled.CollapseButton
                 direction={DIRECTION.RIGHT}
                 isExpanded={true}
                 title="Collapse Selections"

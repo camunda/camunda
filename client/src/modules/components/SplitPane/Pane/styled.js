@@ -7,7 +7,7 @@
 import styled, {css} from 'styled-components';
 
 import Panel from 'modules/components/Panel';
-import ExpandButton from 'modules/components/ExpandButton';
+import CollapseButton from 'modules/components/CollapseButton';
 import {EXPAND_STATE} from 'modules/constants';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 
@@ -38,7 +38,7 @@ export const Footer = styled(Panel.Footer)`
   ${({expandState}) => (isCollapsed(expandState) ? collapsedStyle : '')};
 `;
 
-export const PaneExpandButton = styled(ExpandButton)`
+export const PaneCollapseButton = styled(CollapseButton)`
   border-top: none;
   border-bottom: none;
   border-right: none;

@@ -17,17 +17,17 @@ const iconsMap = {
   [DIRECTION.RIGHT]: Styled.Right
 };
 
-export default function ExpandButton({direction, onClick, ...props}) {
+export default function CollapseButton({direction, onClick, ...props}) {
   const TargetIcon = iconsMap[direction];
 
   return (
-    <Styled.ExpandButton {...props} onClick={onClick}>
+    <Styled.CollapseButton {...props} onClick={onClick}>
       <TargetIcon />
-    </Styled.ExpandButton>
+    </Styled.CollapseButton>
   );
 }
 
-ExpandButton.propTypes = {
+CollapseButton.propTypes = {
   direction: PropTypes.oneOf(Object.keys(DIRECTION)),
   onClick: PropTypes.func
 };

@@ -7,14 +7,14 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import VerticalExpandButton from './VerticalExpandButton';
+import VerticalCollapseButton from './VerticalCollapseButton';
 
-describe('VerticalExpandButton', () => {
+describe('VerticalCollapseButton', () => {
   it('should render a button', () => {
     const label = 'Random label';
     const children = <button>Child content</button>;
     const node = shallow(
-      <VerticalExpandButton label={label}>{children}</VerticalExpandButton>
+      <VerticalCollapseButton label={label}>{children}</VerticalCollapseButton>
     );
 
     expect(node.props().title).toBe(`Expand ${label}`);

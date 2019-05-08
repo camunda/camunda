@@ -10,7 +10,7 @@ import BadgeComponent from 'modules/components/Badge';
 import {default as SplitPaneComponent} from 'modules/components/SplitPane';
 import Panel from 'modules/components/Panel';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/components/CollapsablePanel/styled';
-import ExpandButton from 'modules/components/ExpandButton';
+import CollapseButton from 'modules/components/CollapseButton';
 
 import {HEADER_HEIGHT} from './../Header/styled';
 
@@ -43,7 +43,7 @@ export const Selections = styled.div`
   margin-left: 1px;
 `;
 
-export const RightExpandButton = styled(ExpandButton)`
+export const RightCollapseButton = styled(CollapseButton)`
   position: absolute;
   left: 0;
   top: 0;

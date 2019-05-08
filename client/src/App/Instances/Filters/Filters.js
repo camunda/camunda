@@ -213,7 +213,7 @@ export default class Filters extends React.Component {
               </Styled.VerticalButton>
             }
             collapseButton={
-              <Styled.ExpandButton
+              <Styled.CollapseButton
                 direction={DIRECTION.LEFT}
                 isExpanded={true}
                 title="Collapse Filters"

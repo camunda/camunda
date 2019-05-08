@@ -9,8 +9,8 @@ import styled from 'styled-components';
 import {Colors} from 'modules/theme';
 import BadgeComponent from 'modules/components/Badge';
 import BasicCollapsablePanel from 'modules/components/CollapsablePanel';
-import BasicExpandButton from 'modules/components/ExpandButton';
-import VerticalExpandButton from 'modules/components/VerticalExpandButton';
+import BasicCollapseButton from 'modules/components/CollapseButton';
+import VerticalCollapseButton from 'modules/components/VerticalCollapseButton';
 
 export const Selections = styled.div`
   position: absolute;
@@ -45,7 +45,7 @@ export const SelectionsBadge = styled(BadgeComponent)`
   color: #ffffff;
 `;
 
-export const ExpandButton = styled(BasicExpandButton)`
+export const CollapseButton = styled(BasicCollapseButton)`
   position: absolute;
   left: 0;
   top: 0;
@@ -55,7 +55,7 @@ export const ExpandButton = styled(BasicExpandButton)`
   z-index: 3;
 `;
 
-export const VerticalButton = styled(VerticalExpandButton)`
+export const VerticalButton = styled(VerticalCollapseButton)`
   position: absolute;
   top: 0;
   right: 0;
