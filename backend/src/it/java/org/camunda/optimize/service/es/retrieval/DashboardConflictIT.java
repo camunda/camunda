@@ -5,13 +5,11 @@
  */
 package org.camunda.optimize.service.es.retrieval;
 
-import com.google.common.collect.ImmutableList;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
@@ -123,9 +121,12 @@ public class DashboardConflictIT {
       .execute(IdDto.class, 200)
       .getId();
 
+    final CollectionEntityUpdateDto collectionEntityUpdateDto = new CollectionEntityUpdateDto();
+    collectionEntityUpdateDto.setEntityId(dashboardId);
+
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildAddEntityToCollectionRequest(id, dashboardId)
+      .buildAddEntityToCollectionRequest(id, collectionEntityUpdateDto)
       .execute();
     assertThat(response.getStatus(), is(204));
 

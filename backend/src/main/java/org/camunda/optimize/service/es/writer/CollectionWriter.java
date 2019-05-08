@@ -163,6 +163,7 @@ public class CollectionWriter {
 
     ensureThatAllProvidedEntityIdsExist(collection.getData());
     try {
+
       UpdateRequest request =
         new UpdateRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, id)
           .doc(objectMapper.writeValueAsString(collection), XContentType.JSON)

@@ -11,9 +11,8 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -42,7 +41,6 @@ import org.junit.runner.RunWith;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -395,10 +393,12 @@ public class ReportConflictIT {
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
       .getId();
+    final CollectionEntityUpdateDto collectionEntityUpdateDto = new CollectionEntityUpdateDto();
+    collectionEntityUpdateDto.setEntityId(reportId);
 
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildAddEntityToCollectionRequest(id, reportId)
+      .buildAddEntityToCollectionRequest(id, collectionEntityUpdateDto)
       .execute();
     assertThat(response.getStatus(), is(204));
 

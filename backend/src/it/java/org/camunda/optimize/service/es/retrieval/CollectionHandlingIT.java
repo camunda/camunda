@@ -9,7 +9,8 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRenameDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -28,7 +29,9 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
@@ -36,6 +39,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 
 
 public class CollectionHandlingIT {
@@ -93,15 +97,17 @@ public class CollectionHandlingIT {
   }
 
   @Test
-  public void updateNameOfCollection() {
+  public void updateCollection() {
     // given
     String id = createNewCollection();
     String reportId = createNewSingleReport();
     OffsetDateTime now = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
     LocalDateUtil.setCurrentTime(now);
 
-    CollectionRenameDto collectionRenameDto = new CollectionRenameDto();
+    PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto();
     collectionRenameDto.setName("MyCollection");
+    final Map<String, String> configuration = Collections.singletonMap("Foo", "Bar");
+    collectionRenameDto.setConfiguration(configuration);
 
     // when
     updateNameOfCollection(id, collectionRenameDto);
@@ -116,6 +122,7 @@ public class CollectionHandlingIT {
     assertThat(storedCollection.getLastModifier(), is("demo"));
     assertThat(storedCollection.getLastModified(), is(now));
     CollectionDataDto<CollectionEntity> resultCollectionData = storedCollection.getData();
+    assertEquals(resultCollectionData.getConfiguration(), configuration);
     assertThat(resultCollectionData.getEntities().size(), is(1));
     ReportDefinitionDto report = (ReportDefinitionDto) resultCollectionData.getEntities().get(0);
     assertThat(report.getId(), is(reportId));
@@ -247,9 +254,12 @@ public class CollectionHandlingIT {
     String id = createNewCollection();
 
     // when
+    final CollectionEntityUpdateDto collectionEntityUpdateDto = new CollectionEntityUpdateDto();
+    collectionEntityUpdateDto.setEntityId("fooReportId");
+
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildAddEntityToCollectionRequest(id, "fooReportId")
+      .buildAddEntityToCollectionRequest(id, collectionEntityUpdateDto)
       .execute();
 
     // then
@@ -260,7 +270,7 @@ public class CollectionHandlingIT {
   public void doNotUpdateNullFieldsInCollection() {
     // given
     String id = createNewCollection();
-    CollectionRenameDto collection = new CollectionRenameDto();
+    PartialCollectionDefinitionDto collection = new PartialCollectionDefinitionDto();
 
     // when
     updateNameOfCollection(id, collection);
@@ -283,7 +293,7 @@ public class CollectionHandlingIT {
     String id1 = createNewCollection();
     String id2 = createNewCollection();
 
-    CollectionRenameDto collection = new CollectionRenameDto();
+    PartialCollectionDefinitionDto collection = new PartialCollectionDefinitionDto();
     collection.setName("B_collection");
     updateNameOfCollection(id1, collection);
     collection.setName("A_collection");
@@ -335,9 +345,12 @@ public class CollectionHandlingIT {
   }
 
   private void addEntityToCollection(String entityId, String collectionId) {
+    final CollectionEntityUpdateDto collectionEntityUpdateDto = new CollectionEntityUpdateDto();
+    collectionEntityUpdateDto.setEntityId(entityId);
+
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildAddEntityToCollectionRequest(collectionId, entityId)
+      .buildAddEntityToCollectionRequest(collectionId, collectionEntityUpdateDto)
       .execute();
     assertThat(response.getStatus(), is(204));
   }
@@ -414,10 +427,10 @@ public class CollectionHandlingIT {
       .getId();
   }
 
-  private void updateNameOfCollection(String id, CollectionRenameDto renameCollection) {
+  private void updateNameOfCollection(String id, PartialCollectionDefinitionDto renameCollection) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateNameCollectionRequest(id, renameCollection)
+      .buildUpdatePartialCollectionRequest(id, renameCollection)
       .execute();
     assertThat(response.getStatus(), is(204));
   }

@@ -6,7 +6,9 @@
 package org.camunda.optimize.service.collection;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
@@ -49,9 +51,17 @@ public class CollectionService implements ReportReferencingService, DashboardRef
     return collectionWriter.createNewCollectionAndReturnId(userId);
   }
 
-  public void updateNameOfCollection(String collectionId, String name, String userId) {
+  public void updatePartialCollection(String collectionId, String userId,
+                                      PartialCollectionDefinitionDto collectionUpdate) {
     CollectionDefinitionUpdateDto updateDto = new CollectionDefinitionUpdateDto();
-    updateDto.setName(name);
+    updateDto.setName(collectionUpdate.getName());
+
+    if (collectionUpdate.getConfiguration() != null) {
+      final CollectionDataDto<String> collectionDataDto = new CollectionDataDto<>();
+      collectionDataDto.setConfiguration(collectionUpdate.getConfiguration());
+      collectionDataDto.setEntities(null);
+      updateDto.setData(collectionDataDto);
+    }
     updateDto.setLastModifier(userId);
     updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     collectionWriter.updateCollection(updateDto, collectionId);

@@ -12,10 +12,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRenameDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
@@ -397,17 +396,19 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildUpdateNameCollectionRequest(String id, CollectionRenameDto renameDto) {
-    this.path = "collection/" + id + "/rename";
+  public OptimizeRequestExecutor buildUpdatePartialCollectionRequest(String id,
+                                                                     PartialCollectionDefinitionDto updateDto) {
+    this.path = "collection/" + id;
     this.requestType = PUT;
-    this.body = getBody(renameDto);
+    this.body = getBody(updateDto);
     return this;
   }
 
-  public OptimizeRequestExecutor buildAddEntityToCollectionRequest(String id, String entityId) {
-    this.path = "collection/" + id + "/entity/" + entityId;
-    this.requestType = PUT;
-    this.body = Entity.json("");
+  public OptimizeRequestExecutor buildAddEntityToCollectionRequest(String id,
+                                                                   CollectionEntityUpdateDto entityUpdateDto) {
+    this.path = "collection/" + id + "/entity/";
+    this.requestType = POST;
+    this.body = getBody(entityUpdateDto);
     return this;
   }
 

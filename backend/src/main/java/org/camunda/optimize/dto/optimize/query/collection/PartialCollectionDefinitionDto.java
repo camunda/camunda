@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.optimize.query.collection;
 import lombok.Data;
 
 @Data
-public class CollectionRenameDto {
+public class PartialCollectionDefinitionDto {
   protected String name;
+  protected Object configuration;
 }

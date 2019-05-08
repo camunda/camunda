@@ -5,17 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.collection;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
-public class CollectionDataDto<DATA_TYPE> {
-
-  protected Object configuration = new HashMap<>();
-  protected List<DATA_TYPE> entities = new ArrayList<>();
+public class CollectionEntityUpdateDto {
+  protected String entityId;
 }

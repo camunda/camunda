@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRenameDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -63,7 +63,7 @@ public class CollectionRestServiceIT {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .withoutAuthentication()
-      .buildUpdateNameCollectionRequest("1", null)
+      .buildUpdatePartialCollectionRequest("1", null)
       .execute();
 
     // then the status code is not authorized
@@ -75,7 +75,7 @@ public class CollectionRestServiceIT {
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateNameCollectionRequest("NonExistingId", new CollectionRenameDto())
+      .buildUpdatePartialCollectionRequest("NonExistingId", new PartialCollectionDefinitionDto())
       .execute();
 
     // given
@@ -86,13 +86,13 @@ public class CollectionRestServiceIT {
   public void updateNameOfCollection() {
     //given
     String id = addEmptyCollectionToOptimize();
-    final CollectionRenameDto collectionRenameDto = new CollectionRenameDto();
+    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto();
     collectionRenameDto.setName("Test");
 
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateNameCollectionRequest(id, collectionRenameDto)
+      .buildUpdatePartialCollectionRequest(id, collectionRenameDto)
       .execute();
 
     // then the status code is okay
@@ -286,12 +286,12 @@ public class CollectionRestServiceIT {
   private void addCollectionToOptimize(String name) {
     String id = addEmptyCollectionToOptimize();
 
-    final CollectionRenameDto collection = new CollectionRenameDto();
+    final PartialCollectionDefinitionDto collection = new PartialCollectionDefinitionDto();
     collection.setName(name);
 
     embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateNameCollectionRequest(id, collection)
+      .buildUpdatePartialCollectionRequest(id, collection)
       .execute();
   }
 

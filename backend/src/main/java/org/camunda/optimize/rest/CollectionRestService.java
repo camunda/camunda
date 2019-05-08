@@ -6,7 +6,8 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRenameDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.rest.providers.Secured;
@@ -15,9 +16,11 @@ import org.camunda.optimize.service.security.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.PATCH;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -58,39 +61,40 @@ public class CollectionRestService {
 
 
   /**
-   * Updates the name of a collection
+   * Updates the name and/or configuration of a collection
    *
    * @param collectionId      the id of the collection
    * @param updatedCollection collection that needs to be updated. Only the fields that are defined here are actually
    *                          updated.
    */
   @PUT
-  @Path("/{id}/rename")
+  @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateNameOfCollection(@Context ContainerRequestContext requestContext,
-                                     @PathParam("id") String collectionId,
-                                     CollectionRenameDto updatedCollection) {
+  public void updateCollectionPartial(@Context ContainerRequestContext requestContext,
+                                      @PathParam("id") String collectionId,
+                                      @NotNull PartialCollectionDefinitionDto updatedCollection) {
+
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    collectionService.updateNameOfCollection(collectionId, updatedCollection.getName(), userId);
+    collectionService.updatePartialCollection(collectionId, userId, updatedCollection);
   }
 
 
   /**
    * Adds entity to collection (if it wasn't already contained before)
    *
-   * @param collectionId the id of the collection
-   * @param entityId     the id of the entity to add
+   * @param collectionId    the id of the collection
+   * @param entityUpdateDto contains the id of the entity to add
    */
-  @PUT
-  @Path("/{id}/entity/{entityId}")
+  @POST
+  @Path("/{id}/entity/")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public void addEntity(@Context ContainerRequestContext requestContext,
                         @PathParam("id") String collectionId,
-                        @PathParam("entityId") String entityId) {
+                        @NotNull CollectionEntityUpdateDto entityUpdateDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    collectionService.addEntityToCollection(collectionId, entityId, userId);
+    collectionService.addEntityToCollection(collectionId, entityUpdateDto.getEntityId(), userId);
   }
 
   /**
