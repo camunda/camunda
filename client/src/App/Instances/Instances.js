@@ -45,7 +45,11 @@ export default class Instances extends Component {
       incidents: PropTypes.bool,
       canceled: PropTypes.bool,
       completed: PropTypes.bool,
-      activityId: PropTypes.string
+      activityId: PropTypes.string,
+      variable: PropTypes.shape({
+        name: PropTypes.string,
+        value: PropTypes.string
+      })
     }).isRequired,
     filterCount: PropTypes.number.isRequired,
     groupedWorkflows: PropTypes.object.isRequired,
