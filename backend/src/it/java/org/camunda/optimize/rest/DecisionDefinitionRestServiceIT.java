@@ -7,7 +7,12 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DecisionDefinitionGroupOptimizeDto;
+import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
+import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
+import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsRestDto;
+import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -21,17 +26,22 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 
 public class DecisionDefinitionRestServiceIT {
+  private static final String TENANT_NONE_NAME = TenantService.TENANT_NONE.getName();
+
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -120,11 +130,7 @@ public class DecisionDefinitionRestServiceIT {
   public void getDecisionDefinitionXml() {
     //given
     DecisionDefinitionOptimizeDto expectedDefinitionDto = createDecisionDefinitionDto();
-    elasticSearchRule.addEntryToElasticsearch(
-      DECISION_DEFINITION_TYPE,
-      expectedDefinitionDto.getId(),
-      expectedDefinitionDto
-    );
+    addDecisionDefinitionToElasticsearch(expectedDefinitionDto);
 
     // when
     String actualXml =
@@ -135,6 +141,29 @@ public class DecisionDefinitionRestServiceIT {
 
     // then
     assertThat(actualXml, is(expectedDefinitionDto.getDmn10Xml()));
+  }
+
+  @Test
+  public void getDecisionDefinitionXmlByTenant() {
+    //given
+    final String firstTenantId = "tenant1";
+    final String secondTenantId = "tenant2";
+    DecisionDefinitionOptimizeDto firstTenantDefinition = createDecisionDefinitionDto("key", firstTenantId);
+    addDecisionDefinitionToElasticsearch(firstTenantDefinition);
+    DecisionDefinitionOptimizeDto secondTenantDefinition = createDecisionDefinitionDto("key", secondTenantId);
+    addDecisionDefinitionToElasticsearch(secondTenantDefinition);
+
+    // when
+    String actualXml =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetDecisionDefinitionXmlRequest(
+          firstTenantDefinition.getKey(), firstTenantDefinition.getVersion(), firstTenantDefinition.getTenantId()
+        )
+        .execute(String.class, 200);
+
+    // then
+    assertThat(actualXml, is(firstTenantDefinition.getDmn10Xml()));
   }
 
   @Test
@@ -174,11 +203,7 @@ public class DecisionDefinitionRestServiceIT {
   public void getDecisionDefinitionXmlWithNonsenseVersionReturns404Code() {
     // given
     DecisionDefinitionOptimizeDto expectedDefinitionDto = createDecisionDefinitionDto();
-    elasticSearchRule.addEntryToElasticsearch(
-      DECISION_DEFINITION_TYPE,
-      expectedDefinitionDto.getId(),
-      expectedDefinitionDto
-    );
+    addDecisionDefinitionToElasticsearch(expectedDefinitionDto);
 
     // when
     String message =
@@ -195,11 +220,7 @@ public class DecisionDefinitionRestServiceIT {
   public void getDecisionDefinitionXmlWithNonsenseKeyReturns404Code() {
     // given
     DecisionDefinitionOptimizeDto expectedDefinitionDto = createDecisionDefinitionDto();
-    elasticSearchRule.addEntryToElasticsearch(
-      DECISION_DEFINITION_TYPE,
-      expectedDefinitionDto.getId(),
-      expectedDefinitionDto
-    );
+    addDecisionDefinitionToElasticsearch(expectedDefinitionDto);
 
     // when
     String message =
@@ -247,6 +268,137 @@ public class DecisionDefinitionRestServiceIT {
     assertThat(decisionGroup2.getVersions().get(1).getVersion(), is("0"));
   }
 
+  @Test
+  public void testGetDecisionDefinitionVersionsWithTenants() {
+    //given
+    final String tenantId1 = "tenant1";
+    final String tenantName1 = "Tenant 1";
+    final String tenantId2 = "tenant2";
+    final String tenantName2 = "Tenant 2";
+    createTenant(tenantId1, tenantName1);
+    createTenant(tenantId2, tenantName2);
+    final String decDefKey1 = "decDefKey1";
+    final String decDefKey2 = "decDefKey2";
+    createDecisionDefinitionsForKey(decDefKey1, 3);
+    createDecisionDefinitionsForKey(decDefKey2, 2, tenantId1);
+    createDecisionDefinitionsForKey(decDefKey2, 3, tenantId2);
+
+    // when
+    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetDecisionDefinitionVersionsWithTenants()
+      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
+
+    // then
+    assertThat(definitions, is(notNullValue()));
+    assertThat(definitions.size(), is(2));
+
+    final DefinitionVersionsWithTenantsRestDto firstDefinition = definitions.get(0);
+    assertThat(firstDefinition.getKey(), is(decDefKey1));
+    final List<DefinitionWithTenantsRestDto> firstDefinitionVersions = firstDefinition.getVersions();
+    assertThat(firstDefinitionVersions.size(), is(4));
+    assertThat(firstDefinitionVersions.get(0).getVersion(), is(ALL_VERSIONS));
+    final List<TenantRestDto> tenantsAvailableOnFirstDefinition = firstDefinitionVersions.get(0).getTenants();
+    assertThat(tenantsAvailableOnFirstDefinition.size(), is(3));
+    assertThat(tenantsAvailableOnFirstDefinition.get(0).getId(), is(nullValue()));
+    assertThat(tenantsAvailableOnFirstDefinition.get(0).getName(), is(TENANT_NONE_NAME));
+    assertThat(tenantsAvailableOnFirstDefinition.get(1).getId(), is(tenantId1));
+    assertThat(tenantsAvailableOnFirstDefinition.get(1).getName(), is(tenantName1));
+    assertThat(tenantsAvailableOnFirstDefinition.get(2).getId(), is(tenantId2));
+    assertThat(tenantsAvailableOnFirstDefinition.get(2).getName(), is(tenantName2));
+    assertThat(firstDefinitionVersions.get(1).getVersion(), is("2"));
+    assertThat(firstDefinitionVersions.get(1).getTenants(), is(tenantsAvailableOnFirstDefinition));
+    assertThat(firstDefinitionVersions.get(2).getVersion(), is("1"));
+    assertThat(firstDefinitionVersions.get(2).getTenants(), is(tenantsAvailableOnFirstDefinition));
+    assertThat(firstDefinitionVersions.get(3).getVersion(), is("0"));
+    assertThat(firstDefinitionVersions.get(3).getTenants(), is(tenantsAvailableOnFirstDefinition));
+
+    final DefinitionVersionsWithTenantsRestDto secondDefinition = definitions.get(1);
+    assertThat(secondDefinition.getKey(), is(decDefKey2));
+    final List<DefinitionWithTenantsRestDto> secondDefinitionVersions = secondDefinition.getVersions();
+    assertThat(secondDefinitionVersions.size(), is(4));
+    assertThat(firstDefinitionVersions.get(0).getVersion(), is(ALL_VERSIONS));
+    final List<TenantRestDto> tenantsAvailableOnSecondDefinitionVersionAll = secondDefinitionVersions.get(0).getTenants();
+    assertThat(tenantsAvailableOnSecondDefinitionVersionAll.size(), is(2));
+    assertThat(tenantsAvailableOnSecondDefinitionVersionAll.get(0).getId(), is(tenantId1));
+    assertThat(tenantsAvailableOnSecondDefinitionVersionAll.get(0).getName(), is(tenantName1));
+    assertThat(tenantsAvailableOnSecondDefinitionVersionAll.get(1).getId(), is(tenantId2));
+    assertThat(tenantsAvailableOnSecondDefinitionVersionAll.get(1).getName(), is(tenantName2));
+    assertThat(secondDefinitionVersions.get(2).getVersion(), is("1"));
+    assertThat(secondDefinitionVersions.get(1).getVersion(), is("2"));
+    final List<TenantRestDto> tenantsAvailableOnSecondDefinitionVersion2 = secondDefinitionVersions.get(1).getTenants();
+    assertThat(tenantsAvailableOnSecondDefinitionVersion2.size(), is(1));
+    assertThat(tenantsAvailableOnSecondDefinitionVersion2.get(0).getId(), is(tenantId2));
+    assertThat(tenantsAvailableOnSecondDefinitionVersion2.get(0).getName(), is(tenantName2));
+    assertThat(secondDefinitionVersions.get(2).getVersion(), is("1"));
+    final List<TenantRestDto> tenantsAvailableOnSecondDefinitionVersion1 = secondDefinitionVersions.get(2).getTenants();
+    assertThat(tenantsAvailableOnSecondDefinitionVersion1.size(), is(2));
+    assertThat(tenantsAvailableOnSecondDefinitionVersion1.get(0).getId(), is(tenantId1));
+    assertThat(tenantsAvailableOnSecondDefinitionVersion1.get(0).getName(), is(tenantName1));
+    assertThat(tenantsAvailableOnSecondDefinitionVersion1.get(1).getId(), is(tenantId2));
+    assertThat(tenantsAvailableOnSecondDefinitionVersion1.get(1).getName(), is(tenantName2));
+    assertThat(secondDefinitionVersions.get(3).getVersion(), is("0"));
+    final List<TenantRestDto> tenantsAvailableOnSecondDefinitionVersion0 = secondDefinitionVersions.get(3).getTenants();
+    assertThat(tenantsAvailableOnSecondDefinitionVersion0.size(), is(2));
+    assertThat(tenantsAvailableOnSecondDefinitionVersion0.get(0).getId(), is(tenantId1));
+    assertThat(tenantsAvailableOnSecondDefinitionVersion0.get(0).getName(), is(tenantName1));
+    assertThat(tenantsAvailableOnSecondDefinitionVersion0.get(1).getId(), is(tenantId2));
+    assertThat(tenantsAvailableOnSecondDefinitionVersion0.get(1).getName(), is(tenantName2));
+  }
+
+  @Test
+  public void testGetDecisionDefinitionVersionsWithTenants_sharedAndTenantDefinitionWithSameKeyAndVersion() {
+    //given
+    final String tenantId1 = "tenant1";
+    final String tenantName1 = "Tenant 1";
+    createTenant(tenantId1, tenantName1);
+    final String decDefKey1 = "decDefKey1";
+
+    createDecisionDefinitionsForKey(decDefKey1, 2);
+    createDecisionDefinitionsForKey(decDefKey1, 3, tenantId1);
+
+    // when
+    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetDecisionDefinitionVersionsWithTenants()
+      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
+
+    // then
+    assertThat(definitions, is(notNullValue()));
+    assertThat(definitions.size(), is(1));
+
+    final DefinitionVersionsWithTenantsRestDto firstDefinition = definitions.get(0);
+    assertThat(firstDefinition.getKey(), is(decDefKey1));
+    final List<DefinitionWithTenantsRestDto> firstDefinitionVersions = firstDefinition.getVersions();
+    assertThat(firstDefinitionVersions.size(), is(4));
+    assertThat(firstDefinitionVersions.get(0).getVersion(), is(ALL_VERSIONS));
+    final List<TenantRestDto> tenantsAvailableOnVersionAll = firstDefinitionVersions.get(0).getTenants();
+    assertThat(tenantsAvailableOnVersionAll.size(), is(2));
+    assertThat(tenantsAvailableOnVersionAll.get(0).getId(), is(nullValue()));
+    assertThat(tenantsAvailableOnVersionAll.get(0).getName(), is(TENANT_NONE_NAME));
+    assertThat(tenantsAvailableOnVersionAll.get(1).getId(), is(tenantId1));
+    assertThat(tenantsAvailableOnVersionAll.get(1).getName(), is(tenantName1));
+    assertThat(firstDefinitionVersions.get(1).getVersion(), is("2"));
+    final List<TenantRestDto> tenantsAvailableOnVersion2 = firstDefinitionVersions.get(1).getTenants();
+    assertThat(tenantsAvailableOnVersion2.size(), is(1));
+    assertThat(tenantsAvailableOnVersion2.get(0).getId(), is(tenantId1));
+    assertThat(tenantsAvailableOnVersion2.get(0).getName(), is(tenantName1));
+    assertThat(firstDefinitionVersions.get(2).getVersion(), is("1"));
+    final List<TenantRestDto> tenantsAvailableOnVersion1 = firstDefinitionVersions.get(2).getTenants();
+    assertThat(tenantsAvailableOnVersion1.size(), is(2));
+    assertThat(tenantsAvailableOnVersion1.get(0).getId(), is(nullValue()));
+    assertThat(tenantsAvailableOnVersion1.get(0).getName(), is(TENANT_NONE_NAME));
+    assertThat(tenantsAvailableOnVersion1.get(1).getId(), is(tenantId1));
+    assertThat(tenantsAvailableOnVersion1.get(1).getName(), is(tenantName1));
+    assertThat(firstDefinitionVersions.get(3).getVersion(), is("0"));
+    assertThat(firstDefinitionVersions.get(3).getTenants(), is(tenantsAvailableOnVersion1));
+  }
+
+  private void createTenant(final String id, final String name) {
+    final TenantDto tenantDto = new TenantDto(id, name, "engine");
+    elasticSearchRule.addEntryToElasticsearch(TENANT_TYPE, id, tenantDto);
+  }
+
   private void grantSingleDefinitionAuthorizationsForUser(String userId, String definitionKey) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_DECISION_DEFINITION);
@@ -258,29 +410,42 @@ public class DecisionDefinitionRestServiceIT {
   }
 
   private void createDecisionDefinitionsForKey(String key, int count) {
+    createDecisionDefinitionsForKey(key, count, null);
+  }
+
+  private void createDecisionDefinitionsForKey(String key, int count, String tenantId) {
     IntStream.range(0, count).forEach(
-      i -> createDecisionDefinitionDto(key, String.valueOf(i))
+      i -> createDecisionDefinitionDto(key, String.valueOf(i), tenantId)
     );
   }
 
   private DecisionDefinitionOptimizeDto createDecisionDefinitionDto() {
-    return createDecisionDefinitionDto("key", "1");
+    return createDecisionDefinitionDto("key", "1", null);
   }
 
-  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key) {
+  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(final String key) {
     return createDecisionDefinitionDto(key, "1");
   }
 
-  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key, String version) {
+  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key, final String tenantId) {
+    return createDecisionDefinitionDto(key, "1", tenantId);
+  }
+
+  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key, String version,final String tenantId) {
     DecisionDefinitionOptimizeDto decisionDefinitionDto = new DecisionDefinitionOptimizeDto()
-      .setId("id-" + key + "-version-" + version)
+      .setId("id-" + key + "-version-" + version + "-" + tenantId)
       .setKey(key)
       .setVersion(version)
-      .setDmn10Xml("DecisionModelXml");
-    elasticSearchRule.addEntryToElasticsearch(
-      DECISION_DEFINITION_TYPE, decisionDefinitionDto.getId(), decisionDefinitionDto
-    );
+      .setTenantId(tenantId)
+      .setDmn10Xml("id-" + key + "-version-" + version + "-" + tenantId);
+    addDecisionDefinitionToElasticsearch(decisionDefinitionDto);
     return decisionDefinitionDto;
+  }
+
+  private void addDecisionDefinitionToElasticsearch(final DecisionDefinitionOptimizeDto definitionOptimizeDto) {
+    elasticSearchRule.addEntryToElasticsearch(
+      DECISION_DEFINITION_TYPE, definitionOptimizeDto.getId(), definitionOptimizeDto
+    );
   }
 
 }

@@ -3,26 +3,28 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
+
 package org.camunda.optimize.dto.optimize.query.definition;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
+import lombok.NoArgsConstructor;
+import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
-public class DecisionDefinitionGroupOptimizeDto {
-
+public class DefinitionWithTenants {
   private String key;
-  private List<DecisionDefinitionOptimizeDto> versions = new ArrayList<>();
+  private String name;
+  private String version;
+  private List<TenantDto> tenants;
 
   public void sort() {
-    versions.sort(
-      Comparator.comparing(
-        DecisionDefinitionOptimizeDto::getVersion, Comparator.comparing(Long::valueOf)
-      ).reversed()
-    );
+    tenants.sort(Comparator.comparing(TenantDto::getName, String::compareToIgnoreCase));
   }
 }

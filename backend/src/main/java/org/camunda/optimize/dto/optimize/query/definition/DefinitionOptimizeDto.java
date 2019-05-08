@@ -9,8 +9,11 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.io.Serializable;
 
-public interface KeyDefinitionOptimizeDto extends Serializable, OptimizeDto {
+public interface DefinitionOptimizeDto extends Serializable, OptimizeDto {
 
   String getKey();
+  String getName();
+  String getVersion();
+  String getTenantId();
 
 }

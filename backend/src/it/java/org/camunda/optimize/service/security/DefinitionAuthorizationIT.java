@@ -13,7 +13,7 @@ import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.definition.KeyDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionOptimizeDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -69,7 +69,7 @@ public class DefinitionAuthorizationIT {
     deployAndImportDefinition(definitionResourceType);
 
     //when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
     assertThat(definitions.size(), is(1));
@@ -87,7 +87,7 @@ public class DefinitionAuthorizationIT {
     deployAndImportDefinition(definitionResourceType);
 
     // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(0));
@@ -104,7 +104,7 @@ public class DefinitionAuthorizationIT {
     deployAndImportDefinition(definitionResourceType);
 
     // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(1));
@@ -125,7 +125,7 @@ public class DefinitionAuthorizationIT {
     deployAndImportDefinition(definitionResourceType);
 
     // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(0));
@@ -142,7 +142,7 @@ public class DefinitionAuthorizationIT {
     deployAndImportDefinition(definitionResourceType);
 
     // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(1));
@@ -159,7 +159,7 @@ public class DefinitionAuthorizationIT {
     deployAndImportDefinition(definitionResourceType);
 
     // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(0));
@@ -175,7 +175,7 @@ public class DefinitionAuthorizationIT {
     deployAndImportDefinition(definitionResourceType);
 
     // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(1));
@@ -192,7 +192,7 @@ public class DefinitionAuthorizationIT {
     deployAndImportDefinition(definitionResourceType);
 
     // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(0));
@@ -208,7 +208,7 @@ public class DefinitionAuthorizationIT {
     deployAndImportDefinition(definitionResourceType);
 
     // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(1));
@@ -225,7 +225,7 @@ public class DefinitionAuthorizationIT {
     deployAndImportDefinition(definitionResourceType);
 
     //when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
     assertThat(definitions.size(), is(1));
@@ -307,7 +307,7 @@ public class DefinitionAuthorizationIT {
     deployAndImportDefinition(definitionResourceType);
 
     // when
-    List<KeyDefinitionOptimizeDto> genzosDefinitions = retrieveDefinitionsAsUser(
+    List<DefinitionOptimizeDto> genzosDefinitions = retrieveDefinitionsAsUser(
       definitionResourceType, genzoUser, genzoUser
     );
 
@@ -325,7 +325,7 @@ public class DefinitionAuthorizationIT {
     deployAndImportDefinition(definitionResourceType);
 
     // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(1));
@@ -342,7 +342,7 @@ public class DefinitionAuthorizationIT {
     deployAndImportDefinition(definitionResourceType);
 
     // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(2));
@@ -515,13 +515,13 @@ public class DefinitionAuthorizationIT {
     return definitionResourceType == RESOURCE_TYPE_PROCESS_DEFINITION ? PROCESS_KEY : DECISION_KEY;
   }
 
-  private <T extends KeyDefinitionOptimizeDto> List<T> retrieveDefinitionsAsKermitUser(int resourceType) {
+  private <T extends DefinitionOptimizeDto> List<T> retrieveDefinitionsAsKermitUser(int resourceType) {
     return retrieveDefinitionsAsUser(resourceType, KERMIT_USER, KERMIT_USER);
   }
 
-  private <T extends KeyDefinitionOptimizeDto> List<T> retrieveDefinitionsAsUser(final int resourceType,
-                                                                                 final String userName,
-                                                                                 final String password) {
+  private <T extends DefinitionOptimizeDto> List<T> retrieveDefinitionsAsUser(final int resourceType,
+                                                                              final String userName,
+                                                                              final String password) {
     switch (resourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
         return (List<T>) retrieveProcessDefinitionsAsUser(userName, password);

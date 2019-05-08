@@ -50,7 +50,7 @@ public class DecisionDefinitionVersionResolverServiceTest {
     //then
     assertThat(versionForDecisionDefinitionId.isPresent(), is(true));
     assertThat(versionForDecisionDefinitionId.get(), is(version));
-    verify(decisionDefinitionReader, times(1)).fetchAllDecisionDefinitionWithoutXmlAsService();
+    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false);
   }
 
   @Test
@@ -69,7 +69,7 @@ public class DecisionDefinitionVersionResolverServiceTest {
     assertThat(versionForDecisionDefinitionIdSecondTry.isPresent(), is(true));
     assertThat(versionForDecisionDefinitionIdFirstTry.get(), is(versionForDecisionDefinitionIdSecondTry.get()));
 
-    verify(decisionDefinitionReader, times(1)).fetchAllDecisionDefinitionWithoutXmlAsService();
+    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false);
   }
 
   @Test
@@ -83,14 +83,14 @@ public class DecisionDefinitionVersionResolverServiceTest {
 
     //then
     assertThat(versionResult.isPresent(), is(false));
-    verify(decisionDefinitionReader, times(1)).fetchAllDecisionDefinitionWithoutXmlAsService();
+    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false);
   }
 
   private void mockDecisionDefinitions(final String id, final String version) {
     List<DecisionDefinitionOptimizeDto> mockedDefinitions = Lists.newArrayList(
       new DecisionDefinitionOptimizeDto(id, "key", version, "name", "", "engine", null)
     );
-    when(decisionDefinitionReader.fetchAllDecisionDefinitionWithoutXmlAsService()).thenReturn(mockedDefinitions);
+    when(decisionDefinitionReader.getDecisionDefinitions(false, false)).thenReturn(mockedDefinitions);
   }
 
 }

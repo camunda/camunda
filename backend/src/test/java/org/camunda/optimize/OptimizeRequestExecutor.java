@@ -526,6 +526,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetProcessDefinitionVersionsWithTenants() {
+    this.path = "process-definition/definitionVersionsWithTenants";
+    this.requestType = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetProcessDefinitionsGroupedByKeyRequest() {
     this.path = "process-definition/groupedByKey";
     this.requestType = GET;
@@ -533,9 +539,14 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetProcessDefinitionXmlRequest(String key, Object version) {
+    return buildGetProcessDefinitionXmlRequest(key, version, null);
+  }
+
+  public OptimizeRequestExecutor buildGetProcessDefinitionXmlRequest(String key, Object version, String tenantId) {
     this.path = "process-definition/xml";
     this.addSingleQueryParam("processDefinitionKey", key);
     this.addSingleQueryParam("processDefinitionVersion", version);
+    this.addSingleQueryParam("tenantId", tenantId);
     this.requestType = GET;
     return this;
   }
@@ -636,10 +647,21 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetDecisionDefinitionVersionsWithTenants() {
+    this.path = "decision-definition/definitionVersionsWithTenants";
+    this.requestType = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetDecisionDefinitionXmlRequest(String key, Object version) {
+    return buildGetDecisionDefinitionXmlRequest(key, version, null);
+  }
+
+  public OptimizeRequestExecutor buildGetDecisionDefinitionXmlRequest(String key, Object version, String tenantId) {
     this.path = "decision-definition/xml";
     this.addSingleQueryParam("key", key);
     this.addSingleQueryParam("version", version);
+    this.addSingleQueryParam("tenantId", tenantId);
     this.requestType = GET;
     return this;
   }

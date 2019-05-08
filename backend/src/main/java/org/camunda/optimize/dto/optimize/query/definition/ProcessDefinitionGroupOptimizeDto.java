@@ -13,7 +13,7 @@ import java.util.Comparator;
 import java.util.List;
 
 @Data
-public class ProcessDefinitionGroupOptimizeDto implements KeyDefinitionOptimizeDto  {
+public class ProcessDefinitionGroupOptimizeDto {
 
   private String key;
   private List<ProcessDefinitionOptimizeDto> versions = new ArrayList<>();

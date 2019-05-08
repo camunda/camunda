@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.reader;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -13,6 +15,7 @@ import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.service.ProcessDefinitionService;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -24,9 +27,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
@@ -48,27 +48,18 @@ import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 
+@AllArgsConstructor
 @Component
+@Slf4j
 public class BranchAnalysisReader {
 
-  private final Logger logger = LoggerFactory.getLogger(BranchAnalysisReader.class);
-
   private RestHighLevelClient esClient;
-  private ProcessDefinitionReader processDefinitionReader;
+  private ProcessDefinitionService definitionService;
   private ProcessQueryFilterEnhancer queryFilterEnhancer;
-
-  @Autowired
-  public BranchAnalysisReader(RestHighLevelClient esClient,
-                              ProcessDefinitionReader processDefinitionReader,
-                              ProcessQueryFilterEnhancer queryFilterEnhancer) {
-    this.esClient = esClient;
-    this.processDefinitionReader = processDefinitionReader;
-    this.queryFilterEnhancer = queryFilterEnhancer;
-  }
 
   public BranchAnalysisDto branchAnalysis(String userId, BranchAnalysisQueryDto request) {
     ValidationHelper.validate(request);
-    logger.debug("Performing branch analysis on process definition with key [{}] and version [{}]",
+    log.debug("Performing branch analysis on process definition with key [{}] and version [{}]",
       request.getProcessDefinitionKey(),
       request.getProcessDefinitionVersion()
     );
@@ -180,7 +171,7 @@ public class BranchAnalysisReader {
         request.getProcessDefinitionKey(),
         request.getProcessDefinitionVersion()
       );
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -197,7 +188,7 @@ public class BranchAnalysisReader {
   }
 
   private Optional<BpmnModelInstance> getBpmnModelInstance(String userId, String definitionKey, String definitionVersion) {
-    return processDefinitionReader.getProcessDefinitionXml(userId, definitionKey, definitionVersion)
+    return definitionService.getProcessDefinitionXml(userId, definitionKey, definitionVersion)
       .map(xml -> Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes())));
   }
 

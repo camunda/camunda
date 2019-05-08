@@ -9,13 +9,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import org.camunda.optimize.dto.optimize.query.definition.KeyDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionOptimizeDto;
 
 @Accessors(chain = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class DecisionDefinitionOptimizeDto implements KeyDefinitionOptimizeDto  {
+public class DecisionDefinitionOptimizeDto implements DefinitionOptimizeDto {
   private String id;
   private String key;
   private String version;

@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.DecisionDefinitionCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.OptimizeCleanupConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
@@ -22,23 +21,15 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.cleanup.OptimizeCleanupService.enforceAllSpecificDefinitionKeyConfigurationsHaveMatchInKnown;
 
+@AllArgsConstructor
 @Component
+@Slf4j
 public class OptimizeDecisionCleanupService implements OptimizeCleanupService {
-  private static final Logger logger = LoggerFactory.getLogger(OptimizeDecisionCleanupService.class);
 
   private final ConfigurationService configurationService;
-
   private final DecisionDefinitionReader decisionDefinitionReader;
   private final DecisionInstanceWriter decisionInstanceWriter;
 
-  @Autowired
-  public OptimizeDecisionCleanupService(final ConfigurationService configurationService,
-                                        final DecisionDefinitionReader decisionDefinitionReader,
-                                        final DecisionInstanceWriter decisionInstanceWriter) {
-    this.configurationService = configurationService;
-    this.decisionDefinitionReader = decisionDefinitionReader;
-    this.decisionInstanceWriter = decisionInstanceWriter;
-  }
 
   @Override
   public void doCleanup(final OffsetDateTime startTime) {
@@ -50,7 +41,7 @@ public class OptimizeDecisionCleanupService implements OptimizeCleanupService {
     );
     int i = 1;
     for (String currentProcessDefinitionKey : allOptimizeProcessDefinitionKeys) {
-      logger.info("Decision History Cleanup step {}/{}", i, allOptimizeProcessDefinitionKeys.size());
+      log.info("Decision History Cleanup step {}/{}", i, allOptimizeProcessDefinitionKeys.size());
       performCleanupForDecisionKey(startTime, currentProcessDefinitionKey);
       i++;
     }
@@ -60,7 +51,7 @@ public class OptimizeDecisionCleanupService implements OptimizeCleanupService {
     final DecisionDefinitionCleanupConfiguration cleanupConfigurationForKey = getCleanupConfiguration()
       .getDecisionDefinitionCleanupConfigurationForKey(decisionDefinitionKey);
 
-    logger.info(
+    log.info(
       "Performing cleanup on decision instances for decisionDefinitionKey: {}, with ttl: {}",
       decisionDefinitionKey, cleanupConfigurationForKey.getTtl()
     );
@@ -72,14 +63,14 @@ public class OptimizeDecisionCleanupService implements OptimizeCleanupService {
     );
 
 
-    logger.info(
+    log.info(
       "Finished cleanup on decision instances for decisionDefinitionKey: {}, with ttl: {}",
       decisionDefinitionKey, cleanupConfigurationForKey.getTtl()
     );
   }
 
   private Set<String> getAllOptimizeDecisionDefinitionKeys() {
-    return decisionDefinitionReader.fetchFullyImportedDecisionDefinitionsAsService()
+    return decisionDefinitionReader.getDecisionDefinitions(false, false)
       .stream()
       .map(DecisionDefinitionOptimizeDto::getKey)
       .collect(Collectors.toSet());

@@ -42,9 +42,10 @@ public class TenantServiceIT {
     final List<TenantDto> tenants = embeddedOptimizeRule.getTenantService().getTenants();
 
     // then
-    assertThat(tenants.size(), is(1));
-    assertThat(tenants.get(0).getId(), is(tenantId));
-    assertThat(tenants.get(0).getName(), is(tenantName));
+    assertThat(tenants.size(), is(2));
+    assertThat(tenants.get(0), is(TenantService.TENANT_NONE));
+    assertThat(tenants.get(1).getId(), is(tenantId));
+    assertThat(tenants.get(1).getName(), is(tenantName));
   }
 
   @Test
@@ -59,9 +60,10 @@ public class TenantServiceIT {
     final List<TenantDto> tenants = embeddedOptimizeRule.getTenantService().getTenants();
 
     // then
-    assertThat(tenants.size(), is(1));
-    assertThat(tenants.get(0).getId(), is(tenantId));
-    assertThat(tenants.get(0).getName(), is(tenantName));
+    assertThat(tenants.size(), is(2));
+    assertThat(tenants.get(0), is(TenantService.TENANT_NONE));
+    assertThat(tenants.get(1).getId(), is(tenantId));
+    assertThat(tenants.get(1).getName(), is(tenantName));
   }
 
   @Test
@@ -75,9 +77,10 @@ public class TenantServiceIT {
     final List<TenantDto> tenants = embeddedOptimizeRule.getTenantService().getTenants();
 
     // then
-    assertThat(tenants.size(), is(1));
-    assertThat(tenants.get(0).getId(), is(tenantId));
-    assertThat(tenants.get(0).getName(), is(tenantId));
+    assertThat(tenants.size(), is(2));
+    assertThat(tenants.get(0), is(TenantService.TENANT_NONE));
+    assertThat(tenants.get(1).getId(), is(tenantId));
+    assertThat(tenants.get(1).getName(), is(tenantId));
   }
 
   @Test
@@ -96,11 +99,12 @@ public class TenantServiceIT {
     final List<TenantDto> tenants = embeddedOptimizeRule.getTenantService().getTenants();
 
     // then
-    assertThat(tenants.size(), is(2));
-    assertThat(tenants.get(0).getId(), is(defaultTenantId));
-    assertThat(tenants.get(0).getName(), is(defaultTenantName));
-    assertThat(tenants.get(1).getId(), is(storedTenantId));
-    assertThat(tenants.get(1).getName(), is(storedTenantName));
+    assertThat(tenants.size(), is(3));
+    assertThat(tenants.get(0), is(TenantService.TENANT_NONE));
+    assertThat(tenants.get(1).getId(), is(defaultTenantId));
+    assertThat(tenants.get(1).getName(), is(defaultTenantName));
+    assertThat(tenants.get(2).getId(), is(storedTenantId));
+    assertThat(tenants.get(2).getName(), is(storedTenantName));
   }
 
   private void setDefaultTenant(final DefaultTenant defaultTenant) {

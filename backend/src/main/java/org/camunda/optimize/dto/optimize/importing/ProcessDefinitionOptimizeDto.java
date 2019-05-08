@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import org.camunda.optimize.dto.optimize.query.definition.KeyDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionOptimizeDto;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +18,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class ProcessDefinitionOptimizeDto implements KeyDefinitionOptimizeDto {
+public class ProcessDefinitionOptimizeDto implements DefinitionOptimizeDto {
   private String id;
   private String key;
   private String version;

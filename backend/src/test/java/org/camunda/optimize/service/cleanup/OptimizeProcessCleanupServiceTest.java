@@ -284,7 +284,7 @@ public class OptimizeProcessCleanupServiceTest {
     final List<ProcessDefinitionOptimizeDto> processDefinitionOptimizeDtos = processDefinitionIds.stream()
       .map(this::createProcessDefinitionDto)
       .collect(Collectors.toList());
-    when(processDefinitionReader.fetchFullyImportedProcessDefinitionsAsService()).thenReturn(
+    when(processDefinitionReader.getFullyImportedProcessDefinitions(false)).thenReturn(
       processDefinitionOptimizeDtos);
     return processDefinitionIds;
   }

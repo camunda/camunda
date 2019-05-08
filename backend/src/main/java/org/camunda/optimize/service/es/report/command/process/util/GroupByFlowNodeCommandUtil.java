@@ -65,8 +65,9 @@ public class GroupByFlowNodeCommandUtil {
 
     return commandContext
       .getProcessDefinitionReader()
-      .getFullyImportedProcessDefinitionAsService(
-        reportData.getProcessDefinitionKey(), reportData.getProcessDefinitionVersion()
+      .getFullyImportedProcessDefinition(
+        reportData.getProcessDefinitionKey(),
+        reportData.getProcessDefinitionVersion()
       );
   }
 

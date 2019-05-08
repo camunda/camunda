@@ -15,9 +15,11 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Component
 public class TenantService implements ConfigurationReloadable {
+  public static final TenantDto TENANT_NONE = new TenantDto(null, "Not defined", null);
 
   private final TenantReader tenantReader;
   private final ConfigurationService configurationService;
@@ -38,14 +40,15 @@ public class TenantService implements ConfigurationReloadable {
   }
 
   private void initDefaultTenants() {
-    this.configuredDefaultTenants = configurationService.getConfiguredEngines().entrySet()
-      .stream()
-      .filter(entry -> entry.getValue().getDefaultTenantId().isPresent())
-      .map(entry -> {
-        final String tenantId = entry.getValue().getDefaultTenantId().get();
-        return new TenantDto(tenantId, entry.getValue().getDefaultTenantName().orElse(tenantId), entry.getKey());
-      })
-      .collect(ImmutableList.toImmutableList());
+    this.configuredDefaultTenants = Stream.concat(
+      Stream.of(TENANT_NONE),
+      configurationService.getConfiguredEngines().entrySet().stream()
+        .filter(entry -> entry.getValue().getDefaultTenantId().isPresent())
+        .map(entry -> {
+          final String tenantId = entry.getValue().getDefaultTenantId().get();
+          return new TenantDto(tenantId, entry.getValue().getDefaultTenantName().orElse(tenantId), entry.getKey());
+        })
+    ).collect(ImmutableList.toImmutableList());
   }
 
   @Override

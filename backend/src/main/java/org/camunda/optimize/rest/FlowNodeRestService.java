@@ -43,7 +43,7 @@ public class FlowNodeRestService {
   public FlowNodeNamesResponseDto getFlowNodeNames(final FlowNodeIdsToNamesRequestDto request) {
     final FlowNodeNamesResponseDto result = new FlowNodeNamesResponseDto();
     final Optional<ProcessDefinitionOptimizeDto> processDefinitionXmlDto = processDefinitionReader
-      .getFullyImportedProcessDefinitionAsService(request.getProcessDefinitionKey(), request.getProcessDefinitionVersion());
+      .getFullyImportedProcessDefinition(request.getProcessDefinitionKey(), request.getProcessDefinitionVersion());
 
     if (processDefinitionXmlDto.isPresent()) {
       List<String> nodeIds = request.getNodeIds();

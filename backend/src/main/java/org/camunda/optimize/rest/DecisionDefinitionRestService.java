@@ -5,15 +5,16 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DecisionDefinitionGroupOptimizeDto;
+import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
+import org.camunda.optimize.rest.mapper.DefinitionVersionsWithTenantsMapper;
 import org.camunda.optimize.rest.providers.CacheRequest;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
+import org.camunda.optimize.service.DecisionDefinitionService;
 import org.camunda.optimize.service.security.SessionService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.GET;
@@ -28,21 +29,14 @@ import java.util.Collection;
 import java.util.List;
 
 
+@AllArgsConstructor
 @Secured
 @Path("/decision-definition")
 @Component
+@Slf4j
 public class DecisionDefinitionRestService {
-  private static final Logger logger = LoggerFactory.getLogger(DecisionDefinitionRestService.class);
-
-  private final DecisionDefinitionReader decisionDefinitionReader;
+  private final DecisionDefinitionService decisionDefinitionService;
   private final SessionService sessionService;
-
-  @Autowired
-  public DecisionDefinitionRestService(final DecisionDefinitionReader decisionDefinitionReader,
-                                       final SessionService sessionService) {
-    this.decisionDefinitionReader = decisionDefinitionReader;
-    this.sessionService = sessionService;
-  }
 
   /**
    * Retrieves all decision definition stored in Optimize.
@@ -55,7 +49,7 @@ public class DecisionDefinitionRestService {
   public Collection<DecisionDefinitionOptimizeDto> getDecisionDefinitions(@Context ContainerRequestContext requestContext,
                                                                           @QueryParam("includeXml") boolean includeXml) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return decisionDefinitionReader.fetchFullyImportedDecisionDefinitions(userId, includeXml);
+    return decisionDefinitionService.getFullyImportedDecisionDefinitions(userId, includeXml);
   }
 
   /**
@@ -68,7 +62,18 @@ public class DecisionDefinitionRestService {
   @Path("/groupedByKey")
   public List<DecisionDefinitionGroupOptimizeDto> getDecisionDefinitionsGroupedByKey(@Context ContainerRequestContext requestContext) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return decisionDefinitionReader.getDecisionDefinitionsGroupedByKey(userId);
+    return decisionDefinitionService.getProcessDefinitionsGroupedByKey(userId);
+  }
+
+  @GET
+  @Produces(MediaType.APPLICATION_JSON)
+  @Path("/definitionVersionsWithTenants")
+  public List<DefinitionVersionsWithTenantsRestDto> getProcessDefinitionVersionsWithTenants(
+    @Context ContainerRequestContext requestContext) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return DefinitionVersionsWithTenantsMapper.mapToDefinitionVersionsWithTenantsRestDto(
+      decisionDefinitionService.getProcessDefinitionVersionsWithTenants(userId)
+    );
   }
 
   /**
@@ -85,14 +90,18 @@ public class DecisionDefinitionRestService {
   @CacheRequest
   public String getDecisionDefinitionXml(@Context ContainerRequestContext requestContext,
                                          @QueryParam("key") String decisionDefinitionKey,
-                                         @QueryParam("version") String decisionDefinitionVersion) {
+                                         @QueryParam("version") String decisionDefinitionVersion,
+                                         @QueryParam("tenantId") String tenantId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return decisionDefinitionReader.getDecisionDefinitionXml(userId, decisionDefinitionKey, decisionDefinitionVersion)
-      .orElseThrow(() -> {
-        String notFoundErrorMessage = "Could not find xml for decision definition with key [" + decisionDefinitionKey +
-          "] and version [" + decisionDefinitionVersion + "]. It is possible that is hasn't been imported yet.";
-        logger.error(notFoundErrorMessage);
-        return new NotFoundException(notFoundErrorMessage);
-      });
+    return decisionDefinitionService.getDecisionDefinitionXml(
+      userId, decisionDefinitionKey, decisionDefinitionVersion, tenantId
+    ).orElseThrow(() -> {
+      String notFoundErrorMessage = "Could not find xml for decision definition with key [" + decisionDefinitionKey +
+        "] and version [" + decisionDefinitionVersion + "]. It is possible that is hasn't been imported yet.";
+      log.error(notFoundErrorMessage);
+      return new NotFoundException(notFoundErrorMessage);
+    });
   }
+
+
 }

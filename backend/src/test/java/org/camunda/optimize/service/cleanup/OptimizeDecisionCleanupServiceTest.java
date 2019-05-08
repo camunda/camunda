@@ -216,7 +216,7 @@ public class OptimizeDecisionCleanupServiceTest {
     final List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos = decisionDefinitionIds.stream()
       .map(this::createDecisionDefinitionDto)
       .collect(Collectors.toList());
-    when(decisionDefinitionReader.fetchFullyImportedDecisionDefinitionsAsService()).thenReturn(
+    when(decisionDefinitionReader.getDecisionDefinitions(false, false)).thenReturn(
       decisionDefinitionOptimizeDtos);
     return decisionDefinitionIds;
   }

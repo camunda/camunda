@@ -5,15 +5,16 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
+import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
+import org.camunda.optimize.rest.mapper.DefinitionVersionsWithTenantsMapper;
 import org.camunda.optimize.rest.providers.CacheRequest;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.ProcessDefinitionService;
 import org.camunda.optimize.service.security.SessionService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.GET;
@@ -28,16 +29,14 @@ import java.util.Collection;
 import java.util.List;
 
 
+@AllArgsConstructor
 @Secured
 @Path("/process-definition")
 @Component
+@Slf4j
 public class ProcessDefinitionRestService {
-  private static final Logger logger = LoggerFactory.getLogger(ProcessDefinitionRestService.class);
+  private ProcessDefinitionService processDefinitionService;
 
-  @Autowired
-  private ProcessDefinitionReader processDefinitionReader;
-
-  @Autowired
   private SessionService sessionService;
 
   /**
@@ -53,7 +52,7 @@ public class ProcessDefinitionRestService {
     @QueryParam("includeXml") boolean includeXml) {
 
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return processDefinitionReader.fetchFullyImportedProcessDefinitions(userId, includeXml);
+    return processDefinitionService.getFullyImportedProcessDefinitions(userId, includeXml);
   }
 
   /**
@@ -67,7 +66,18 @@ public class ProcessDefinitionRestService {
   public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey(
     @Context ContainerRequestContext requestContext) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return processDefinitionReader.getProcessDefinitionsGroupedByKey(userId);
+    return processDefinitionService.getProcessDefinitionsGroupedByKey(userId);
+  }
+
+  @GET
+  @Produces(MediaType.APPLICATION_JSON)
+  @Path("/definitionVersionsWithTenants")
+  public List<DefinitionVersionsWithTenantsRestDto> getProcessDefinitionVersionsWithTenants(
+    @Context ContainerRequestContext requestContext) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return DefinitionVersionsWithTenantsMapper.mapToDefinitionVersionsWithTenantsRestDto(
+      processDefinitionService.getProcessDefinitionVersionsWithTenants(userId)
+    );
   }
 
   /**
@@ -85,14 +95,17 @@ public class ProcessDefinitionRestService {
   public String getProcessDefinitionXml(
     @Context ContainerRequestContext requestContext,
     @QueryParam("processDefinitionKey") String processDefinitionKey,
-    @QueryParam("processDefinitionVersion") String processDefinitionVersion) {
+    @QueryParam("processDefinitionVersion") String processDefinitionVersion,
+    @QueryParam("tenantId") String tenantId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return processDefinitionReader.getProcessDefinitionXml(userId, processDefinitionKey, processDefinitionVersion)
-      .orElseThrow(() -> {
-        String notFoundErrorMessage = "Could not find xml for process definition with key [" + processDefinitionKey +
-          "] and version [" + processDefinitionVersion + "]. It is possible that is hasn't been imported yet.";
-        logger.error(notFoundErrorMessage);
-        return new NotFoundException(notFoundErrorMessage);
-      });
+    return processDefinitionService.getProcessDefinitionXml(
+      userId, processDefinitionKey, processDefinitionVersion, tenantId
+    ).orElseThrow(() -> {
+      String notFoundErrorMessage = "Could not find xml for process definition with key [" + processDefinitionKey +
+        "] and version [" + processDefinitionVersion + "]. It is possible that is hasn't been imported yet.";
+      log.error(notFoundErrorMessage);
+      return new NotFoundException(notFoundErrorMessage);
+    });
   }
+
 }
