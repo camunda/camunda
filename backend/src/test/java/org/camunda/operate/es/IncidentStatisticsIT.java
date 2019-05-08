@@ -23,6 +23,7 @@ import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.test.web.servlet.MockMvc;
@@ -142,8 +143,8 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     assertLoanWorkflow(workflowGroups.get(2));
   }
   
-  @Test
-  public void testWorkflowWithNoInstancesIsSortedByVersionAscending() throws Exception {
+  @Ignore @Test
+  public void testWorkflowWithoutInstancesIsSortedByVersionAscending() throws Exception {
     createNoInstancesWorkflowData(3);
     
     List<IncidentsByWorkflowGroupStatisticsDto> workflowGroups = requestIncidentsByWorkflow();
