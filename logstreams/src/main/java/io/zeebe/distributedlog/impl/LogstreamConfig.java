@@ -17,6 +17,8 @@ package io.zeebe.distributedlog.impl;
 
 import io.zeebe.distributedlog.StorageConfiguration;
 import io.zeebe.distributedlog.StorageConfigurationManager;
+import io.zeebe.distributedlog.restore.LogReplicationClient;
+import io.zeebe.distributedlog.restore.LogReplicationClientFactory;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -29,6 +31,8 @@ public class LogstreamConfig {
   private static final Map<String, ServiceContainer> SERVICE_CONTAINERS = new ConcurrentHashMap<>();
   private static final Map<String, StorageConfigurationManager> CONFIGS = new ConcurrentHashMap<>();
   private static final Map<String, LogStream> LOGSTREAMS = new ConcurrentHashMap<>();
+  private static final Map<String, LogReplicationClientFactory> LOG_REPLICATION_CLIENT_PROVIDERS =
+      new ConcurrentHashMap<>();
 
   public static void putServiceContainer(String nodeId, ServiceContainer serviceContainer) {
     SERVICE_CONTAINERS.put(nodeId, serviceContainer);
@@ -52,6 +56,15 @@ public class LogstreamConfig {
 
   public static LogStream getLogStream(String nodeId, int partitionId) {
     return LOGSTREAMS.get(key(nodeId, partitionId));
+  }
+
+  public static LogReplicationClient getLogReplicationClient(String nodeId, int partitionId) {
+    return LOG_REPLICATION_CLIENT_PROVIDERS.get(nodeId).createClient(partitionId);
+  }
+
+  public static void putLogReplicationClientFactory(
+      String nodeId, LogReplicationClientFactory provider) {
+    LOG_REPLICATION_CLIENT_PROVIDERS.put(nodeId, provider);
   }
 
   private static String key(String nodeId, int partitionId) {

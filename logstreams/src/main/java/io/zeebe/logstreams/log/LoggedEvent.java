@@ -16,10 +16,11 @@
 package io.zeebe.logstreams.log;
 
 import io.zeebe.util.buffer.BufferReader;
+import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
 /** Represents an event on the log stream. */
-public interface LoggedEvent {
+public interface LoggedEvent extends BufferWriter {
   /** @return the event's position in the log. */
   long getPosition();
 
