@@ -54,17 +54,16 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   @Override
   public boolean createZeebeData(boolean manuallyCalled) {
-      //+ Start possible cases
-      createWorkflowWith2VersionsAndNoInstances();
-      createWorkflowWithInstancesThatHasOnlyIncidents();
-      createWorkflowWithInstancesThatHasNoIncidents();
-  
     if (!super.createZeebeData(manuallyCalled)) {
       return false;
     }
 
     logger.debug("Test data will be generated");
 
+    createWorkflowWith2VersionsAndNoInstances();
+    createWorkflowWithInstancesThatHasOnlyIncidents();
+    createWorkflowWithInstancesThatHasNoIncidents();
+    
     deployVersion1();
 
     createSpecialDataV1();
