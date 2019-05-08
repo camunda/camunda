@@ -38,6 +38,10 @@ public class VariableIT extends OperateZeebeIntegrationTest {
   private Predicate<Object[]> activityIsActiveCheck;
 
   @Autowired
+  @Qualifier("variableExistsCheck")
+  private Predicate<Object[]> variableExistsCheck;
+
+  @Autowired
   private ActivityInstanceReader activityInstanceReader;
 
   @Rule
@@ -86,7 +90,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     //TC 1 - when workflow instance is started
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
-    elasticsearchTestRule.processOneBatchOfRecords(ImportValueType.VARIABLE);
+    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, "otherVar");
 
     //then
     final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
@@ -99,7 +103,8 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     //TC2 - when subprocess and task with input mapping are activated
     completeTask(workflowInstanceKey, "task1", null);
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
-    elasticsearchTestRule.processOneBatchOfRecords(ImportValueType.VARIABLE);
+    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, "taskVarIn");
+
 
     //then
     variables = getVariables(workflowInstanceId,"subProcess");
@@ -113,7 +118,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     //TC3 - when activity with output mapping is completed
     completeTask(workflowInstanceKey, "task2", "{\"taskVarOut\": \"someResult\", \"otherTaskVar\": 456}");
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task3");
-    elasticsearchTestRule.processOneBatchOfRecords(ImportValueType.VARIABLE);
+    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, "otherTaskVar");
 
     //then
     variables = getVariables(workflowInstanceId,"task2");
@@ -133,6 +138,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     //TC4 - when variables are updated
     ZeebeTestUtil.updateVariables(zeebeClient, workflowInstanceId, "{\"var1\": \"updatedValue\" , \"newVar\": 555 }");
     elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
+
     variables = getVariables(workflowInstanceId);
     assertThat(variables).hasSize(4);
     assertVariable(variables, "var1","\"updatedValue\"");
