@@ -17,7 +17,7 @@ camunda.operate:
     host: localhost
     port: 9200
     prefix: zeebe-record
-    batchSize: 2000
+    batchSize: 500
 logging:
   level:
     ROOT: INFO
