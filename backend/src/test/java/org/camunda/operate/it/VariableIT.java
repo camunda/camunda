@@ -148,6 +148,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
     //TC5 - when task is completed with new payload and workflow instance is finished
     completeTask(workflowInstanceKey, "task3", "{\"task3Completed\": true}");
+    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, "task3Completed");
 
     //then
     variables = getVariables(workflowInstanceId);
