@@ -6,6 +6,7 @@
 package org.camunda.operate.es;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import org.camunda.operate.entities.ActivityState;
@@ -48,6 +49,8 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
   public static final String DEMO_PROCESS_NAME = "Demo process";
   public static final String ORDER_BPMN_PROCESS_ID = "orderProcess";
   public static final String ORDER_PROCESS_NAME = "Order process";
+  public static final String NO_INSTANCES_PROCESS_ID = "noInstancesProcess";
+  public static final String NO_INSTANCES_PROCESS_NAME = "No Instances Process";
   
   public static final String ERRMSG_OTHER = "Other error message";
 
@@ -130,19 +133,38 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
   @Test
   public void testWorkflowAndIncidentStatistics() throws Exception {
     createData();
-    MockHttpServletRequestBuilder request = get(QUERY_INCIDENTS_BY_WORKFLOW_URL);
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
-
-    List<IncidentsByWorkflowGroupStatisticsDto> workflowGroups = mockMvcTestRule.listFromResponse(mvcResult, IncidentsByWorkflowGroupStatisticsDto.class);
-
-    //assert data
+    
+    List<IncidentsByWorkflowGroupStatisticsDto> workflowGroups = requestIncidentsByWorkflow();
+    
     assertThat(workflowGroups).hasSize(3);
     assertDemoWorkflow(workflowGroups.get(0));
     assertOrderWorkflow(workflowGroups.get(1));
     assertLoanWorkflow(workflowGroups.get(2));
+  }
+  
+  @Test
+  public void testWorkflowWithNoInstances() throws Exception {
+    createNoInstancesWorkflowData(3);
+    
+    List<IncidentsByWorkflowGroupStatisticsDto> workflowGroups = requestIncidentsByWorkflow();
+   
+    assertThat(workflowGroups).hasSize(1);
+    Collection<IncidentByWorkflowStatisticsDto> workflows = workflowGroups.get(0).getWorkflows();
+    assertThat(workflows).hasSize(3);
+    
+    Iterator<IncidentByWorkflowStatisticsDto> workflowIterator = workflows.iterator();
+    
+    assertNoInstancesWorkflow(workflowIterator.next(),3);
+    assertNoInstancesWorkflow(workflowIterator.next(),2);
+    assertNoInstancesWorkflow(workflowIterator.next(),1);
+  }
+
+  private void assertNoInstancesWorkflow(IncidentByWorkflowStatisticsDto workflow,int version) {
+    assertThat(workflow.getName()).isEqualTo(NO_INSTANCES_PROCESS_NAME + version);
+    assertThat(workflow.getBpmnProcessId()).isEqualTo(NO_INSTANCES_PROCESS_ID);
+    assertThat(workflow.getVersion()).isEqualTo(version);
+    assertThat(workflow.getActiveInstancesCount()).isEqualTo(0);
+    assertThat(workflow.getInstancesWithActiveIncidentsCount()).isEqualTo(0);
   }
 
   private void assertLoanWorkflow(IncidentsByWorkflowGroupStatisticsDto loanWorkflowGroup) {
@@ -294,6 +316,21 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     }
 
     elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
+  }
+  
+  private void createNoInstancesWorkflowData(int versionCount) {
+    createWorkflowVersions(NO_INSTANCES_PROCESS_ID, NO_INSTANCES_PROCESS_NAME, versionCount)
+      .forEach( workflowVersion -> elasticsearchTestRule.persistNew(workflowVersion));
+  }
+
+  private List<IncidentsByWorkflowGroupStatisticsDto> requestIncidentsByWorkflow() throws Exception {
+    MockHttpServletRequestBuilder request = get(QUERY_INCIDENTS_BY_WORKFLOW_URL);
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+      .andReturn();
+
+    return mockMvcTestRule.listFromResponse(mvcResult, IncidentsByWorkflowGroupStatisticsDto.class);
   }
   
   private List<IncidentsByErrorMsgStatisticsDto> requestIncidentsByError() throws Exception {

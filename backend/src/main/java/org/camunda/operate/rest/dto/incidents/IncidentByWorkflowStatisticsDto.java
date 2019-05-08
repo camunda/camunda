@@ -168,6 +168,9 @@ public class IncidentByWorkflowStatisticsDto implements Comparable<IncidentByWor
         result = Long.compare(o2.getActiveInstancesCount(), o1.getActiveInstancesCount());
         if(result == 0) {
           result = o1.getBpmnProcessId().compareTo(o2.getBpmnProcessId());
+        } 
+        if(result == 0) {
+          result = Integer.compare(o1.getVersion(),o2.getVersion());
         }
       }
       return result;

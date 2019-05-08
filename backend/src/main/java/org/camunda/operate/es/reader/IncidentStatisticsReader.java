@@ -65,10 +65,8 @@ public class IncidentStatisticsReader extends AbstractReader {
                                                         .size(ElasticsearchUtil.TERMS_AGG_SIZE);
   
   public Set<IncidentsByWorkflowGroupStatisticsDto> getWorkflowAndIncidentsStatistics(){
-    final Map<String, IncidentByWorkflowStatisticsDto> statisticByWorkflowIdMap = updateActiveInstances(getIncidentsByWorkflow());
-    final Map<String, List<WorkflowEntity>> workflowGroups = workflowReader.getWorkflowsGrouped();
-    
-    return collectStatisticsForWorkflowGroups(statisticByWorkflowIdMap, workflowGroups,true);
+    final Map<String, IncidentByWorkflowStatisticsDto> incidentsByWorkflowMap = updateActiveInstances(getIncidentsByWorkflow());        
+    return collectStatisticsForWorkflowGroups(incidentsByWorkflowMap);
   }
   
   private Map<String, IncidentByWorkflowStatisticsDto> getIncidentsByWorkflow() {
@@ -135,10 +133,11 @@ public class IncidentStatisticsReader extends AbstractReader {
     }
   }
 
-  private Set<IncidentsByWorkflowGroupStatisticsDto> collectStatisticsForWorkflowGroups(Map<String, IncidentByWorkflowStatisticsDto> statByWorkflowIdMap,
-    Map<String, List<WorkflowEntity>> workflowGroups,boolean includeEmptyWorkflows) {
+  private Set<IncidentsByWorkflowGroupStatisticsDto> collectStatisticsForWorkflowGroups(Map<String, IncidentByWorkflowStatisticsDto> incidentsByWorkflowMap) {
     
     Set<IncidentsByWorkflowGroupStatisticsDto> result = new TreeSet<>(IncidentsByWorkflowGroupStatisticsDto.COMPARATOR);
+    
+    final Map<String, List<WorkflowEntity>> workflowGroups = workflowReader.getWorkflowsGrouped();
     
     //iterate over workflow groups (bpmnProcessId)
     for (Map.Entry<String, List<WorkflowEntity>> entry: workflowGroups.entrySet()) {
@@ -154,33 +153,28 @@ public class IncidentStatisticsReader extends AbstractReader {
       
       //iterate over workflow versions
       for (WorkflowEntity workflowEntity: entry.getValue()) {
-        final IncidentByWorkflowStatisticsDto statForWorkflow = statByWorkflowIdMap.get(workflowEntity.getId());
+        IncidentByWorkflowStatisticsDto statForWorkflow = incidentsByWorkflowMap.get(workflowEntity.getId());
         if (statForWorkflow != null) {
-      
-          //accumulate data, even if there are no active incidents
           activeInstancesCount += statForWorkflow.getActiveInstancesCount();
           instancesWithActiveIncidentsCount += statForWorkflow.getInstancesWithActiveIncidentsCount();
-          
-          //but add to the list only those with active incidents
-          if (includeEmptyWorkflows || statForWorkflow.getInstancesWithActiveIncidentsCount() > 0) {
-            statForWorkflow.setName(workflowEntity.getName());
-            statForWorkflow.setBpmnProcessId(workflowEntity.getBpmnProcessId());
-            statForWorkflow.setVersion(workflowEntity.getVersion());
-            stat.getWorkflows().add(statForWorkflow);
-          }
+        }else {
+          statForWorkflow = new IncidentByWorkflowStatisticsDto(workflowEntity.getId(),0,0);
         }
+        statForWorkflow.setName(workflowEntity.getName());
+        statForWorkflow.setBpmnProcessId(workflowEntity.getBpmnProcessId());
+        statForWorkflow.setVersion(workflowEntity.getVersion());
+        stat.getWorkflows().add(statForWorkflow);
+
         //set the latest name
         if (workflowEntity.getVersion() > maxVersion) {
           stat.setWorkflowName(workflowEntity.getName());
           maxVersion = workflowEntity.getVersion();
         }
       }
-      //if there are active incidents for a workflow group, include in the result
-      if (includeEmptyWorkflows || instancesWithActiveIncidentsCount > 0) {
-        stat.setActiveInstancesCount(activeInstancesCount);
-        stat.setInstancesWithActiveIncidentsCount(instancesWithActiveIncidentsCount);
-        result.add(stat);
-      }
+
+      stat.setActiveInstancesCount(activeInstancesCount);
+      stat.setInstancesWithActiveIncidentsCount(instancesWithActiveIncidentsCount);
+      result.add(stat);
     }
     return result;
   }
