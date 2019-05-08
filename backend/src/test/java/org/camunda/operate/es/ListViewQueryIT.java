@@ -230,7 +230,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     createData();
 
     //given
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setVariablesQuery(new VariablesQueryDto("var1", "X")));
+    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setVariable(new VariablesQueryDto("var1", "X")));
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
         .content(mockMvcTestRule.json(query))
@@ -255,7 +255,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     createData();
 
     //given
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setVariablesQuery(new VariablesQueryDto("var1", "A")));
+    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setVariable(new VariablesQueryDto("var1", "A")));
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
         .content(mockMvcTestRule.json(query))

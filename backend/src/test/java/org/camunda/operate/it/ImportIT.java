@@ -177,14 +177,14 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   private void assertVariableExists(long workflowInstanceKey, String name, String value) {
     ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView(
       TestUtil.createGetAllWorkflowInstancesQuery(q -> {
-        q.setVariablesQuery(new VariablesQueryDto(name, value));
+        q.setVariable(new VariablesQueryDto(name, value));
       }));
     assertThat(wi.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
   }
 
   private void assertVariableDoesNotExist(long workflowInstanceKey, String name, String value) {
     final ListViewResponseDto listViewResponse = listViewReader.queryWorkflowInstances(TestUtil.createGetAllWorkflowInstancesQuery(q ->
-      q.setVariablesQuery(new VariablesQueryDto(name, value))), 0, 100);
+      q.setVariable(new VariablesQueryDto(name, value))), 0, 100);
     assertThat(listViewResponse.getTotalCount()).isEqualTo(0);
     assertThat(listViewResponse.getWorkflowInstances()).hasSize(0);
   }

@@ -229,8 +229,8 @@ public class ListViewReader {
     }
 
     QueryBuilder variablesQuery = null;
-    if (query.getVariablesQuery() != null) {
-      variablesQuery = createVariablesQuery(query.getVariablesQuery());
+    if (query.getVariable() != null) {
+      variablesQuery = createVariablesQuery(query.getVariable());
     }
 
     return joinWithAnd(runningFinishedQuery, activityIdQuery, idsQuery, errorMessageQuery, createDateQuery, endDateQuery, workflowIdQuery, bpmnProcessIdQuery, excludeIdsQuery, variablesQuery);

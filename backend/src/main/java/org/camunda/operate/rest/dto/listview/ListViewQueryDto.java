@@ -49,7 +49,7 @@ public class ListViewQueryDto {
 
   private List<String> excludeIds;
 
-  private VariablesQueryDto variablesQuery;
+  private VariablesQueryDto variable;
 
   public ListViewQueryDto() {
   }
@@ -190,12 +190,12 @@ public class ListViewQueryDto {
     this.excludeIds = excludeIds;
   }
 
-  public VariablesQueryDto getVariablesQuery() {
-    return variablesQuery;
+  public VariablesQueryDto getVariable() {
+    return variable;
   }
 
-  public void setVariablesQuery(VariablesQueryDto variablesQuery) {
-    this.variablesQuery = variablesQuery;
+  public void setVariable(VariablesQueryDto variable) {
+    this.variable = variable;
   }
 
   @Override
@@ -241,7 +241,7 @@ public class ListViewQueryDto {
       return false;
     if (excludeIds != null ? !excludeIds.equals(that.excludeIds) : that.excludeIds != null)
       return false;
-    return variablesQuery != null ? variablesQuery.equals(that.variablesQuery) : that.variablesQuery == null;
+    return variable != null ? variable.equals(that.variable) : that.variable == null;
   }
 
   @Override
@@ -263,7 +263,7 @@ public class ListViewQueryDto {
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (workflowVersion != null ? workflowVersion.hashCode() : 0);
     result = 31 * result + (excludeIds != null ? excludeIds.hashCode() : 0);
-    result = 31 * result + (variablesQuery != null ? variablesQuery.hashCode() : 0);
+    result = 31 * result + (variable != null ? variable.hashCode() : 0);
     return result;
   }
 }
