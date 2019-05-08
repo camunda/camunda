@@ -144,18 +144,16 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
   
   @Test
   public void testWorkflowWithNoInstances() throws Exception {
-    createNoInstancesWorkflowData(3);
+    createNoInstancesWorkflowData(1);
     
     List<IncidentsByWorkflowGroupStatisticsDto> workflowGroups = requestIncidentsByWorkflow();
    
     assertThat(workflowGroups).hasSize(1);
     Collection<IncidentByWorkflowStatisticsDto> workflows = workflowGroups.get(0).getWorkflows();
-    assertThat(workflows).hasSize(3);
+    assertThat(workflows).hasSize(1);
     
     Iterator<IncidentByWorkflowStatisticsDto> workflowIterator = workflows.iterator();
     
-    assertNoInstancesWorkflow(workflowIterator.next(),3);
-    assertNoInstancesWorkflow(workflowIterator.next(),2);
     assertNoInstancesWorkflow(workflowIterator.next(),1);
   }
 
