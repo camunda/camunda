@@ -5,19 +5,17 @@
  */
 package org.camunda.operate.data.usertest;
 
-import javax.annotation.PreDestroy;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import javax.annotation.PreDestroy;
+
 import org.camunda.operate.data.AbstractDataGenerator;
 import org.camunda.operate.data.util.NameGenerator;
 import org.camunda.operate.util.ZeebeTestUtil;
@@ -27,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.commands.FailJobCommandStep1;
 import io.zeebe.client.api.commands.FinalCommandStep;
@@ -55,6 +54,11 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   @Override
   public boolean createZeebeData(boolean manuallyCalled) {
+      //+ Start possible cases
+      createWorkflowWith2VersionsAndNoInstances();
+      createWorkflowWithInstancesThatHasOnlyIncidents();
+      createWorkflowWithInstancesThatHasNoIncidents();
+  
     if (!super.createZeebeData(manuallyCalled)) {
       return false;
     }
@@ -535,6 +539,19 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   private boolean canProgress(long key) {
     return !doNotTouchWorkflowInstanceKeys.contains(key);
+  }
+  
+  protected void createWorkflowWith2VersionsAndNoInstances() {
+    ZeebeTestUtil.deployWorkflow(client, "usertest/NoInstancesProcess_v_1.bpmn");
+    ZeebeTestUtil.deployWorkflow(client, "usertest/NoInstancesProcess_v_2.bpmn");
+  }
+  
+  protected void createWorkflowWithInstancesThatHasOnlyIncidents() {
+    logger.info("createWorkflowWithInstancesThatHasOnlyIncidents NOT IMPLEMENTED yet.");
+  }
+  
+  protected void createWorkflowWithInstancesThatHasNoIncidents() {
+    logger.info("createWorkflowWithInstancesThatHasNoIncidents NOT IMPLEMENTED yet.");
   }
 
   protected void deployVersion1() {
