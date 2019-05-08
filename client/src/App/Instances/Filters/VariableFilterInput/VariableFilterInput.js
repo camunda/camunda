@@ -4,27 +4,39 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import PropTypes from 'prop-types';
 
 import * as Styled from './styled';
 
-export default function VariableFilterInput(props) {
+export default function VariableFilterInput({
+  onFilterChange,
+  variable,
+  ...props
+}) {
   const [name, setName] = useState('');
   const [value, setValue] = useState('');
-  const {onFilterChange, variable, ...passedProps} = props;
+
+  useEffect(
+    () => {
+      setName(variable.name);
+      setValue(variable.value);
+    },
+    [variable]
+  );
+
   function handleBlur() {
     if (!name || !value) {
-      return onFilterChange({variablesQuery: null});
+      return onFilterChange({variable: null});
     }
 
-    onFilterChange({variablesQuery: {name, value}});
+    onFilterChange({variable: {name, value}});
   }
 
   return (
-    <Styled.VariableFilterInput {...passedProps}>
+    <Styled.VariableFilterInput {...props}>
       <Styled.TextInput
-        value={variable.name || name}
+        value={name}
         placeholder="Variable"
         name="name"
         data-test="nameInput"
@@ -32,7 +44,7 @@ export default function VariableFilterInput(props) {
         onBlur={handleBlur}
       />
       <Styled.TextInput
-        value={variable.value || value}
+        value={value}
         placeholder="Value"
         name="value"
         data-test="valueInput"

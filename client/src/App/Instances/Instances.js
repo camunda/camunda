@@ -46,7 +46,7 @@ export default class Instances extends Component {
       canceled: PropTypes.bool,
       completed: PropTypes.bool,
       activityId: PropTypes.string,
-      variablesQuery: PropTypes.shape({
+      variable: PropTypes.shape({
         name: PropTypes.string,
         value: PropTypes.string
       })

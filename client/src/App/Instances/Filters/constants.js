@@ -15,5 +15,5 @@ export const DEFAULT_CONTROLLED_VALUES = {
   activityId: '',
   version: '',
   workflow: '',
-  variablesQuery: {name: '', value: ''}
+  variable: {name: '', value: ''}
 };
