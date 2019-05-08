@@ -385,4 +385,37 @@ public class BrokerLeaderChangeTest {
       }
     }
   }
+
+  @Test
+  public void shouldStepdownAndRejoinElection() {
+    // given
+    final int partition = Protocol.START_PARTITION_ID;
+    final String partitionName = Partition.getPartitionName(partition);
+    final int oldLeaderId = clusteringRule.getLeaderForPartition(partition).getNodeId();
+    final Broker oldLeader = getBroker(oldLeaderId);
+    final PartitionLeaderElection election = getElection(oldLeader, partition);
+
+    // when
+    election.stepdown().join();
+    assertThat(
+            election
+                .getElection()
+                .getLeadership()
+                .candidates()
+                .contains(String.valueOf(oldLeaderId)))
+        .isFalse();
+    assertBrokerNoService(
+        oldLeader, PartitionServiceNames.leaderPartitionServiceName(partitionName));
+
+    election.join().join();
+
+    // then
+    assertThat(
+            election
+                .getElection()
+                .getLeadership()
+                .candidates()
+                .contains(String.valueOf(oldLeaderId)))
+        .isTrue();
+  }
 }
