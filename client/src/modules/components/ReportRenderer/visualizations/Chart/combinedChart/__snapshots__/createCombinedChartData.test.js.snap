@@ -4,33 +4,25 @@ exports[`should return correct chart data object for a combined report 1`] = `
 Object {
   "datasets": Array [
     Object {
-      "backgroundColor": "transparent",
-      "borderColor": "blue",
-      "borderWidth": 2,
       "data": Array [
-        5,
         123,
+        5,
         null,
       ],
-      "label": "Report A",
-      "legendColor": "blue",
+      "label": "report A",
     },
     Object {
-      "backgroundColor": "transparent",
-      "borderColor": "yellow",
-      "borderWidth": 2,
       "data": Array [
-        null,
         1,
+        null,
         3,
       ],
-      "label": "Report B",
-      "legendColor": "yellow",
+      "label": "report B",
     },
   ],
   "labels": Array [
-    "Barrrr",
     "Flownode Foo",
+    "Barrrr",
     "Flownode DAR",
   ],
 }
@@ -40,26 +32,18 @@ exports[`should return correct chart data object for a combined report 2`] = `
 Object {
   "datasets": Array [
     Object {
-      "backgroundColor": "transparent",
-      "borderColor": "blue",
-      "borderWidth": 2,
       "data": Array [
         123,
         null,
       ],
-      "label": "Report A",
-      "legendColor": "blue",
+      "label": "report A",
     },
     Object {
-      "backgroundColor": "transparent",
-      "borderColor": "yellow",
-      "borderWidth": 2,
       "data": Array [
         null,
         5,
       ],
-      "label": "Report B",
-      "legendColor": "yellow",
+      "label": "report B",
     },
   ],
   "labels": Array [
