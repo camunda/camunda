@@ -44,25 +44,6 @@ void runRelease(params) {
   """)
 }
 
-def githubRelease = '''\
-#!/bin/bash
-
-ARTIFACT="camunda-operate"
-ZEEBE_VERSION=$(mvn help:evaluate -Dexpression=version.zeebe -q -DforceStdout)
-
-cd target/checkout/distro/target
-
-# create checksums
-sha1sum ${ARTIFACT}-${RELEASE_VERSION}.tar.gz > ${ARTIFACT}-${RELEASE_VERSION}.tar.gz.sha1sum
-sha1sum ${ARTIFACT}-${RELEASE_VERSION}.zip > ${ARTIFACT}-${RELEASE_VERSION}.zip.sha1sum
-
-# upload to github release
-curl -sL https://github.com/aktau/github-release/releases/download/v0.7.2/linux-amd64-github-release.tar.bz2 | tar xjvf - --strip 3
-for f in ${ARTIFACT}-${RELEASE_VERSION}.{tar.gz,zip}{,.sha1sum}; do
-	./github-release upload --user zeebe-io --repo zeebe --tag ${ZEEBE_VERSION} --name "${f}" --file "${f}"
-done
-'''
-
 static String mavenAgent(env) {
   return """
 apiVersion: v1
@@ -163,14 +144,6 @@ pipeline {
           sshagent(['camunda-jenkins-github-ssh']) {
             runRelease(params)
           }
-        }
-      }
-    }
-    stage('Upload to GitHub Release') {
-      when { expression { return params.PUSH_CHANGES } }
-      steps {
-        container('maven') {
-          sh githubRelease
         }
       }
     }
