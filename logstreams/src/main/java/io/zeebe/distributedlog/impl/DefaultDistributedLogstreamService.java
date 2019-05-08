@@ -26,8 +26,8 @@ import io.zeebe.distributedlog.DistributedLogstreamClient;
 import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.DistributedLogstreamType;
 import io.zeebe.distributedlog.StorageConfiguration;
-import io.zeebe.distributedlog.restore.LogReplicationAppender;
-import io.zeebe.distributedlog.restore.LogReplicationClient;
+import io.zeebe.distributedlog.restore.RestoreClient;
+import io.zeebe.distributedlog.restore.log.LogReplicationAppender;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -57,7 +57,7 @@ public class DefaultDistributedLogstreamService
   private String logName;
 
   private ServiceContainer serviceContainer;
-  private LogReplicationClient logReplicationClient;
+  private RestoreClient restoreClient;
   private ServiceExecutor serviceExecutor;
 
   public DefaultDistributedLogstreamService(DistributedLogstreamServiceConfig config) {
@@ -117,7 +117,7 @@ public class DefaultDistributedLogstreamService
 
     final String localMemberId = getLocalMemberId().id();
     serviceContainer = LogstreamConfig.getServiceContainer(localMemberId);
-    logReplicationClient = LogstreamConfig.getLogReplicationClient(localMemberId, partitionId);
+    restoreClient = LogstreamConfig.getRestoreClient(localMemberId, partitionId);
 
     if (serviceContainer.hasService(LogStreamServiceNames.logStreamServiceName(logServiceName))) {
       logStream = LogstreamConfig.getLogStream(localMemberId, partitionId);

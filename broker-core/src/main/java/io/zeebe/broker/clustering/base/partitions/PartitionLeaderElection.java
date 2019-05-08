@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.clustering.base.partitions;
 
+import io.atomix.cluster.Member;
+import io.atomix.cluster.MemberId;
 import io.atomix.core.Atomix;
 import io.atomix.core.election.Leader;
 import io.atomix.core.election.LeaderElection;
@@ -28,6 +30,8 @@ import io.atomix.protocols.raft.MultiRaftProtocol;
 import io.atomix.protocols.raft.ReadConsistency;
 import io.zeebe.broker.Loggers;
 import io.zeebe.distributedlog.impl.DistributedLogstreamName;
+import io.zeebe.distributedlog.impl.LogstreamConfig;
+import io.zeebe.distributedlog.restore.PartitionLeaderElectionController;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -43,7 +47,8 @@ import org.slf4j.Logger;
 public class PartitionLeaderElection extends Actor
     implements Service<PartitionLeaderElection>,
         LeadershipEventListener<String>,
-        Consumer<PrimitiveState> {
+        Consumer<PrimitiveState>,
+        PartitionLeaderElectionController {
 
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
@@ -82,7 +87,7 @@ public class PartitionLeaderElection extends Actor
 
     LOG.info("Creating leader election for partition {} in node {}", partitionId, memberId);
 
-    startFuture = new CompletableActorFuture();
+    startFuture = new CompletableActorFuture<>();
 
     startContext.getScheduler().submitActor(this);
     startContext.async(startFuture, true);
@@ -109,6 +114,7 @@ public class PartitionLeaderElection extends Actor
                   tryJoinElection(joinFuture);
                   actor.runOnCompletion(joinFuture, (r, e) -> tryAddListener());
                 });
+            LogstreamConfig.putLeaderElectionController(memberId, partitionId, this);
           } else {
             LOG.debug(
                 "Couldn't create leader election for partition {}, retrying.", partitionId, error);
@@ -185,8 +191,9 @@ public class PartitionLeaderElection extends Actor
    * Prevent this broker from becoming the stream processor leader for the partition until {@link
    * #join} is invoked. If it is currently the leader a new leader will be elected.
    */
-  public CompletableActorFuture<Void> stepdown() {
-    final CompletableActorFuture<Void> future = new CompletableActorFuture();
+  @Override
+  public CompletableFuture<Void> withdraw() {
+    final CompletableFuture<Void> future = new CompletableFuture<>();
     actor.run(
         () -> {
           canBecomeLeader = false;
@@ -204,14 +211,40 @@ public class PartitionLeaderElection extends Actor
    * Join the election if it is not already joined. This broker can become stream processor leader
    * for the partition anytime from now.
    */
-  public CompletableActorFuture<Void> join() {
+  @Override
+  public CompletableFuture<Void> join() {
+    final CompletableFuture<Void> result = new CompletableFuture<>();
     final CompletableActorFuture<Void> joinFuture = new CompletableActorFuture<>();
     actor.run(
         () -> {
           canBecomeLeader = true;
           tryJoinElection(joinFuture);
+
+          actor.runOnCompletion(
+              joinFuture,
+              (nothing, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                } else {
+                  result.complete(null);
+                }
+              });
         });
-    return joinFuture;
+
+    return result;
+  }
+
+  @Override
+  public MemberId getLeader() {
+    final Leader<String> leader = election.getLeadership().leader();
+    if (leader != null) {
+      final Member member = atomix.getMembershipService().getMember(leader.id());
+      if (member != null) {
+        return member.id();
+      }
+    }
+
+    return null;
   }
 
   @Override

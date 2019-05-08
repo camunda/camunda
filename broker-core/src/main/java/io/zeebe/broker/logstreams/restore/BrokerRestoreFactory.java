@@ -18,27 +18,37 @@
 package io.zeebe.broker.logstreams.restore;
 
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.zeebe.distributedlog.restore.LogReplicationClient;
-import io.zeebe.distributedlog.restore.LogReplicationClientFactory;
-import io.zeebe.distributedlog.restore.LogReplicationServer;
+import io.zeebe.distributedlog.restore.RestoreClient;
+import io.zeebe.distributedlog.restore.RestoreClientFactory;
+import io.zeebe.distributedlog.restore.RestoreServer;
+import java.util.concurrent.ExecutorService;
 
-public class LogReplicationFactory implements LogReplicationClientFactory {
+public class BrokerRestoreFactory implements RestoreClientFactory {
   private final ClusterCommunicationService communicationService;
 
-  public LogReplicationFactory(ClusterCommunicationService communicationService) {
+  public BrokerRestoreFactory(ClusterCommunicationService communicationService) {
     this.communicationService = communicationService;
   }
 
   @Override
-  public LogReplicationClient createClient(int partitionId) {
-    return new BrokerLogReplicationClient(communicationService, getReplicationTopic(partitionId));
+  public RestoreClient createClient(int partitionId) {
+    return new BrokerRestoreClient(
+        communicationService, getReplicationTopic(partitionId), getRestoreInfoTopic(partitionId));
   }
 
-  public LogReplicationServer createServer(int partitionId) {
-    return new BrokerLogReplicationServer(communicationService, getReplicationTopic(partitionId));
+  public RestoreServer createServer(int partitionId, ExecutorService executor) {
+    return new BrokerRestoreServer(
+        communicationService,
+        getReplicationTopic(partitionId),
+        getRestoreInfoTopic(partitionId),
+        executor);
   }
 
   private String getReplicationTopic(int partitionId) {
     return String.format("log-replication-%d", partitionId);
+  }
+
+  private String getRestoreInfoTopic(int partitionId) {
+    return String.format("restore-info-%d", partitionId);
   }
 }

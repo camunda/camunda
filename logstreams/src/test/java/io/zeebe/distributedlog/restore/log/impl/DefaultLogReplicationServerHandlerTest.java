@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.distributedlog.restore.impl;
+package io.zeebe.distributedlog.restore.log.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.distributedlog.restore.LogReplicationRequest;
-import io.zeebe.distributedlog.restore.LogReplicationResponse;
+import io.zeebe.distributedlog.restore.log.LogReplicationRequest;
+import io.zeebe.distributedlog.restore.log.LogReplicationResponse;
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.util.LogStreamReaderRule;

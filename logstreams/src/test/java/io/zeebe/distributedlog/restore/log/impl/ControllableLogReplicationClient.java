@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.distributedlog.restore.impl;
+package io.zeebe.distributedlog.restore.log.impl;
 
 import io.atomix.cluster.MemberId;
-import io.zeebe.distributedlog.restore.LogReplicationClient;
-import io.zeebe.distributedlog.restore.LogReplicationRequest;
-import io.zeebe.distributedlog.restore.LogReplicationResponse;
+import io.zeebe.distributedlog.restore.log.LogReplicationClient;
+import io.zeebe.distributedlog.restore.log.LogReplicationRequest;
+import io.zeebe.distributedlog.restore.log.LogReplicationResponse;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;

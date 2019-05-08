@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.distributedlog.restore.impl;
+package io.zeebe.distributedlog.restore.log.impl;
 
-import io.zeebe.distributedlog.restore.LogReplicationRequest;
+import io.zeebe.distributedlog.restore.log.LogReplicationRequest;
 
 public class DefaultLogReplicationRequest implements LogReplicationRequest {
   private long fromPosition;

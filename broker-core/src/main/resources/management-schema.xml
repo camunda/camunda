@@ -79,4 +79,13 @@
     <data name="serializedEvents" id="2" type="blob"/>
   </sbe:message>
 
+  <sbe:message name="RestoreInfoRequest" id="18">
+    <field name="latestLocalPosition" id="0" type="uint64"/>
+    <field name="backupPosition" id="1" type="uint64"/>
+  </sbe:message>
+
+  <sbe:message name="RestoreInfoResponse" id="19">
+    <field name="replicationTarget" id="0" type="uint8"/>
+  </sbe:message>
+
 </sbe:messageSchema>

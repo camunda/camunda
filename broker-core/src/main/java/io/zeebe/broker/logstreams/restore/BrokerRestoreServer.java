@@ -18,46 +18,53 @@
 package io.zeebe.broker.logstreams.restore;
 
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.utils.concurrent.SingleThreadContext;
-import io.atomix.utils.concurrent.ThreadContext;
-import io.zeebe.distributedlog.restore.LogReplicationServer;
+import io.zeebe.distributedlog.restore.RestoreInfoServer;
+import io.zeebe.distributedlog.restore.RestoreServer;
+import io.zeebe.distributedlog.restore.log.LogReplicationServer;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
-public class BrokerLogReplicationServer implements AutoCloseable, LogReplicationServer {
+public class BrokerRestoreServer implements RestoreServer {
   private final ClusterCommunicationService communicationService;
-  private final String replicationTopic;
-  private final ThreadContext threadContext;
+  private final String logReplicationTopic;
+  private final String restoreInfoTopic;
+  private final ExecutorService executor;
 
-  public BrokerLogReplicationServer(
-      ClusterCommunicationService communicationService, String replicationTopic) {
-    this(
-        communicationService,
-        replicationTopic,
-        new SingleThreadContext(String.format("%s-%%d", replicationTopic)));
-  }
-
-  public BrokerLogReplicationServer(
+  public BrokerRestoreServer(
       ClusterCommunicationService communicationService,
-      String replicationTopic,
-      ThreadContext threadContext) {
+      String logReplicationTopic,
+      String restoreInfoTopic,
+      ExecutorService executor) {
     this.communicationService = communicationService;
-    this.replicationTopic = replicationTopic;
-    this.threadContext = threadContext;
+    this.logReplicationTopic = logReplicationTopic;
+    this.restoreInfoTopic = restoreInfoTopic;
+    this.executor = executor;
   }
 
   @Override
   public void close() {
-    communicationService.unsubscribe(replicationTopic);
-    threadContext.close();
+    communicationService.unsubscribe(logReplicationTopic);
+    communicationService.unsubscribe(restoreInfoTopic);
+    executor.shutdownNow();
   }
 
   @Override
-  public CompletableFuture<Void> serve(Handler server) {
+  public CompletableFuture<Void> serve(LogReplicationServer.Handler server) {
     return communicationService.subscribe(
-        replicationTopic,
+        logReplicationTopic,
         SbeLogReplicationRequest::new,
         server::onReplicationRequest,
         SbeLogReplicationResponse::serialize,
-        threadContext);
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> serve(RestoreInfoServer.Handler server) {
+    return communicationService.subscribe(
+        restoreInfoTopic,
+        SbeRestoreInfoRequest::new,
+        server::onRestoreInfoRequest,
+        SbeRestoreInfoResponse::serialize,
+        executor);
   }
 }

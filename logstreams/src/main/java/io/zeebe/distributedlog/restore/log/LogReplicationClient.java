@@ -13,13 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.distributedlog.restore;
+package io.zeebe.distributedlog.restore.log;
 
-public interface LogReplicationRequest {
+import io.atomix.cluster.MemberId;
+import java.util.concurrent.CompletableFuture;
 
-  /** @return the position to replication from (exclusive) */
-  long getFromPosition();
+@FunctionalInterface
+public interface LogReplicationClient {
 
-  /** @return upper bound position to replicate until (inclusive) */
-  long getToPosition();
+  /**
+   * Sends a log replication request to the given cluster member.
+   *
+   * @param server target cluster member
+   * @param request request to send
+   * @return the server response as a future
+   */
+  CompletableFuture<LogReplicationResponse> replicate(
+      MemberId server, LogReplicationRequest request);
 }

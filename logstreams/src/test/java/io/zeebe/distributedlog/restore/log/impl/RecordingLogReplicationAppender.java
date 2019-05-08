@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.distributedlog.restore.impl;
+package io.zeebe.distributedlog.restore.log.impl;
 
-import io.zeebe.distributedlog.restore.LogReplicationAppender;
+import io.zeebe.distributedlog.restore.log.LogReplicationAppender;
 import java.util.ArrayList;
 import java.util.List;
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.distributedlog.restore;
+package io.zeebe.distributedlog.restore.log;
 
 import java.util.concurrent.CompletableFuture;
 
