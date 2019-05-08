@@ -49,11 +49,11 @@ public class EmbeddedCamundaOptimizeIT {
       }
     });
 
-    final Set<Thread> threadsAfterStart = threadsAfterStartup.get(5, TimeUnit.SECONDS);
+    final Set<Thread> threadsAfterStart = threadsAfterStartup.get(30, TimeUnit.SECONDS);
     embeddedCamundaOptimize.destroyOptimize();
 
     optimizeApplicationThread.shutdown();
-    optimizeApplicationThread.awaitTermination(5, TimeUnit.SECONDS);
+    optimizeApplicationThread.awaitTermination(30, TimeUnit.SECONDS);
 
     assertThat(threadsAfterStart, is(not(baseThreadSet)));
     assertThat(getCurrentThreads(), is(baseThreadSet));
