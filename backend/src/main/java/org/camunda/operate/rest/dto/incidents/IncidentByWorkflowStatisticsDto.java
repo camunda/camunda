@@ -24,7 +24,7 @@ public class IncidentByWorkflowStatisticsDto implements Comparable<IncidentByWor
 
   private long instancesWithActiveIncidentsCount;
 
-  private Long activeInstancesCount;
+  private long activeInstancesCount;
 
   public IncidentByWorkflowStatisticsDto() {
   }
@@ -89,11 +89,11 @@ public class IncidentByWorkflowStatisticsDto implements Comparable<IncidentByWor
     this.instancesWithActiveIncidentsCount = instancesWithActiveIncidentsCount;
   }
 
-  public Long getActiveInstancesCount() {
+  public long getActiveInstancesCount() {
     return activeInstancesCount;
   }
 
-  public void setActiveInstancesCount(Long activeInstancesCount) {
+  public void setActiveInstancesCount(long activeInstancesCount) {
     this.activeInstancesCount = activeInstancesCount;
   }
 
@@ -118,7 +118,7 @@ public class IncidentByWorkflowStatisticsDto implements Comparable<IncidentByWor
       return false;
     if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
       return false;
-    return activeInstancesCount != null ? activeInstancesCount.equals(that.activeInstancesCount) : that.activeInstancesCount == null;
+    return activeInstancesCount == that.activeInstancesCount;
   }
 
   @Override
@@ -129,21 +129,13 @@ public class IncidentByWorkflowStatisticsDto implements Comparable<IncidentByWor
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
     result = 31 * result + (int) (instancesWithActiveIncidentsCount ^ (instancesWithActiveIncidentsCount >>> 32));
-    result = 31 * result + (activeInstancesCount != null ? activeInstancesCount.hashCode() : 0);
+    result = 31 * result + (int) activeInstancesCount;
     return result;
   }
 
   @Override
   public int compareTo(IncidentByWorkflowStatisticsDto o) {
-    if (o == null){
-      return 1;
-    }
-    final IncidentByWorkflowStatisticsDto stat = (IncidentByWorkflowStatisticsDto) o;
-    int compare = Long.compare(stat.getInstancesWithActiveIncidentsCount(), this.getInstancesWithActiveIncidentsCount());
-    if (compare == 0) {
-      compare = this.getWorkflowId().compareTo(stat.getWorkflowId());
-    }
-    return compare;
+    return COMPARATOR.compare(this, o);
   }
   
   public static class IncidentByWorkflowStatisticsDtoComparator implements Comparator<IncidentByWorkflowStatisticsDto>{
@@ -166,14 +158,21 @@ public class IncidentByWorkflowStatisticsDto implements Comparable<IncidentByWor
       int result = Long.compare(o2.getInstancesWithActiveIncidentsCount(), o1.getInstancesWithActiveIncidentsCount());
       if (result == 0) {
         result = Long.compare(o2.getActiveInstancesCount(), o1.getActiveInstancesCount());
-        if(result == 0) {
-          result = o1.getBpmnProcessId().compareTo(o2.getBpmnProcessId());
-        } 
-        if(result == 0) {
-          result = Integer.compare(o1.getVersion(),o2.getVersion());
+        if (result == 0) {
+          result = emptyStringWhenNull(o1.getWorkflowId()).compareTo(emptyStringWhenNull(o2.getWorkflowId()));
+          if (result == 0) {
+            result = emptyStringWhenNull(o1.getBpmnProcessId()).compareTo(emptyStringWhenNull(o2.getBpmnProcessId()));
+            if (result == 0) {
+              result = Integer.compare(o1.getVersion(), o2.getVersion());
+            }
+          }
         }
       }
       return result;
+    }
+
+    private String emptyStringWhenNull(String aString) {
+      return aString == null ? "" : aString;
     }
   }
 }

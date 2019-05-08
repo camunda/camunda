@@ -101,7 +101,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     assertThat(next.getName()).isEqualTo(DEMO_PROCESS_NAME + 1);
     assertThat(next.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
     assertThat(next.getInstancesWithActiveIncidentsCount()).isEqualTo(2L);
-    assertThat(next.getActiveInstancesCount()).isNull();
+    assertThat(next.getActiveInstancesCount()).isEqualTo(0);
     assertThat(next.getVersion()).isEqualTo(1);
     assertThat(next.getErrorMessage()).isEqualTo(TestUtil.ERROR_MSG);
     assertThat(next.getWorkflowId()).isNotNull().isNotEmpty();
@@ -110,7 +110,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     assertThat(next.getName()).isEqualTo(ORDER_PROCESS_NAME + 2);
     assertThat(next.getBpmnProcessId()).isEqualTo(ORDER_BPMN_PROCESS_ID);
     assertThat(next.getInstancesWithActiveIncidentsCount()).isEqualTo(1L);
-    assertThat(next.getActiveInstancesCount()).isNull();
+    assertThat(next.getActiveInstancesCount()).isEqualTo(0);
     assertThat(next.getVersion()).isEqualTo(2);
     assertThat(next.getErrorMessage()).isEqualTo(TestUtil.ERROR_MSG);
     assertThat(next.getWorkflowId()).isNotNull().isNotEmpty();
@@ -143,18 +143,20 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
   }
   
   @Test
-  public void testWorkflowWithNoInstances() throws Exception {
-    createNoInstancesWorkflowData(1);
+  public void testWorkflowWithNoInstancesIsSortedByVersionAscending() throws Exception {
+    createNoInstancesWorkflowData(3);
     
     List<IncidentsByWorkflowGroupStatisticsDto> workflowGroups = requestIncidentsByWorkflow();
    
     assertThat(workflowGroups).hasSize(1);
     Collection<IncidentByWorkflowStatisticsDto> workflows = workflowGroups.get(0).getWorkflows();
-    assertThat(workflows).hasSize(1);
+    assertThat(workflows).hasSize(3);
     
     Iterator<IncidentByWorkflowStatisticsDto> workflowIterator = workflows.iterator();
     
     assertNoInstancesWorkflow(workflowIterator.next(),1);
+    assertNoInstancesWorkflow(workflowIterator.next(),2);
+    assertNoInstancesWorkflow(workflowIterator.next(),3);
   }
 
   private void assertNoInstancesWorkflow(IncidentByWorkflowStatisticsDto workflow,int version) {

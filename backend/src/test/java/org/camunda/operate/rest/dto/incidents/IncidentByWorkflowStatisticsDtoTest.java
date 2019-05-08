@@ -18,6 +18,18 @@ public class IncidentByWorkflowStatisticsDtoTest {
   }
   
   @Test
+  public void testComparatorNoInstances() {
+     IncidentByWorkflowStatisticsDto worfklowVersionOne = new IncidentByWorkflowStatisticsDto();
+     worfklowVersionOne.setVersion(1);
+     IncidentByWorkflowStatisticsDto worfklowVersionThree =  new IncidentByWorkflowStatisticsDto();
+     worfklowVersionThree.setVersion(3);
+     IncidentByWorkflowStatisticsDto workflowVersionFour = new IncidentByWorkflowStatisticsDto();
+     workflowVersionFour.setVersion(4);
+     assertIsBefore(worfklowVersionOne, worfklowVersionThree);
+     assertIsBefore(worfklowVersionThree, workflowVersionFour);
+  }
+  
+  @Test
   public void testComparatorDifferentInstancesAndIncidents() {
      IncidentByWorkflowStatisticsDto moreIncidents= newWithInstancesAndIncidents(1314+845, 845);
      IncidentByWorkflowStatisticsDto lessIncidents= newWithInstancesAndIncidents(1351+831, 831);
