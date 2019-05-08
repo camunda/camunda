@@ -227,7 +227,12 @@ public class PartitionInstallService extends Actor
   private ActorFuture<Void> installLeaderPartition(long leaderTerm) {
     LOG.debug("Installing leader partition service for partition {}", partitionId);
     final Partition partition =
-        new Partition(brokerCfg, clusterEventService, partitionId, RaftState.LEADER);
+        new Partition(
+            brokerCfg,
+            clusterEventService,
+            clusterCommunicationService,
+            partitionId,
+            RaftState.LEADER);
 
     final CompositeServiceBuilder leaderInstallService =
         startContext.createComposite(leaderInstallRootServiceName);
@@ -264,7 +269,12 @@ public class PartitionInstallService extends Actor
   private ActorFuture<Partition> installFollowerPartition() {
     LOG.debug("Installing follower partition service for partition {}", partitionId);
     final Partition partition =
-        new Partition(brokerCfg, clusterEventService, partitionId, RaftState.FOLLOWER);
+        new Partition(
+            brokerCfg,
+            clusterEventService,
+            clusterCommunicationService,
+            partitionId,
+            RaftState.FOLLOWER);
 
     return startContext
         .createService(followerPartitionServiceName, partition)

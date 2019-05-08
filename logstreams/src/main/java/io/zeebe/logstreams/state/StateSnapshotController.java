@@ -268,6 +268,21 @@ public class StateSnapshotController implements SnapshotController {
   }
 
   @Override
+  public void addListener(SnapshotReplicationListener listener) {
+    replicationController.addListener(listener);
+  }
+
+  @Override
+  public void removeListener(SnapshotReplicationListener listener) {
+    replicationController.removeListener(listener);
+  }
+
+  @Override
+  public void enableRetrySnapshot(long snapshotPosition) {
+    replicationController.clearInvalidatedSnapshot(snapshotPosition);
+  }
+
+  @Override
   public void close() throws Exception {
     if (db != null) {
       db.close();

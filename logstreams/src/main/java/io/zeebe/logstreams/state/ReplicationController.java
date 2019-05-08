@@ -18,10 +18,13 @@ package io.zeebe.logstreams.state;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 import io.zeebe.logstreams.impl.Loggers;
+import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.zip.CRC32;
@@ -42,6 +45,9 @@ final class ReplicationController {
   private final Runnable ensureMaxSnapshotCount;
   private final Supplier<Long> deletablePositionSupplier;
   private Consumer<Long> deleteDataCallback;
+
+  private final List<SnapshotReplicationListener> replicationListeners =
+      new CopyOnWriteArrayList<>();
 
   ReplicationController(
       SnapshotReplication replication,
@@ -78,6 +84,14 @@ final class ReplicationController {
   public void consumeReplicatedSnapshots(Consumer<Long> dataDeleteCallback) {
     this.deleteDataCallback = dataDeleteCallback;
     replication.consume(this::consumeSnapshotChunk);
+  }
+
+  public void addListener(SnapshotReplicationListener listener) {
+    replicationListeners.add(listener);
+  }
+
+  public void removeListener(SnapshotReplicationListener listener) {
+    replicationListeners.remove(listener);
   }
 
   /**
@@ -149,8 +163,25 @@ final class ReplicationController {
     }
   }
 
+  private void deleteTmpSnapshotDirectoryIfExists(long snapshotPosition) {
+    final File tmpSnapshotDirectory =
+        storage.getTmpSnapshotDirectoryFor(Long.toString(snapshotPosition));
+    if (tmpSnapshotDirectory.exists()) {
+      try {
+        FileUtil.deleteFolder(tmpSnapshotDirectory.toPath());
+      } catch (IOException e) {
+        LOG.error(
+            "Unexpected error occurred when deleting invalid snapshot from {}",
+            tmpSnapshotDirectory.toPath(),
+            e);
+      }
+    }
+  }
+
   private void markSnapshotAsInvalid(SnapshotChunk chunk) {
-    receivedSnapshots.put(chunk.getSnapshotPosition(), INVALID_SNAPSHOT);
+    final long snapshotPosition = chunk.getSnapshotPosition();
+    receivedSnapshots.put(snapshotPosition, INVALID_SNAPSHOT);
+    replicationListeners.forEach(listener -> listener.onFailure(snapshotPosition));
   }
 
   private void validateWhenReceivedAllChunks(
@@ -199,6 +230,17 @@ final class ReplicationController {
           "Unexpected error occurred on moving replicated snapshot from '{}'.",
           tmpSnapshotDirectory.toPath(),
           ioe);
+      return;
+    }
+
+    replicationListeners.forEach(
+        listener -> listener.onReplicated(snapshotChunk.getSnapshotPosition()));
+  }
+
+  public void clearInvalidatedSnapshot(long snapshotPosition) {
+    if (receivedSnapshots.get(snapshotPosition) == INVALID_SNAPSHOT) {
+      receivedSnapshots.remove(snapshotPosition);
+      deleteTmpSnapshotDirectoryIfExists(snapshotPosition);
     }
   }
 
