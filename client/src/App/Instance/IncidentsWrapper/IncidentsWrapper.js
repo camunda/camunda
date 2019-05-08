@@ -134,7 +134,7 @@ function IncidentsWrapper(props) {
       }
     };
 
-    return [...incidents.values()].filter(item => isSelected(item));
+    return [...incidents].filter(item => isSelected(item));
   }
 
   const sortedIncidents = sortData(
