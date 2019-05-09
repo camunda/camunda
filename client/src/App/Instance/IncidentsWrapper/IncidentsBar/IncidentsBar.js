@@ -19,11 +19,12 @@ export default function IncidentsBar({id, count, onClick, isArrowFlipped}) {
   } in Instance ${id}. `;
 
   return (
-    <Styled.IncidentsBar onClick={onClick} title={title}>
-      <Styled.Transition in={isArrowFlipped} timeout={400}>
-        <Styled.Arrow />
-      </Styled.Transition>
-
+    <Styled.IncidentsBar
+      onClick={onClick}
+      title={title}
+      isExpanded={isArrowFlipped}
+      expandTheme="incidentsBar"
+    >
       {errorMessage}
     </Styled.IncidentsBar>
   );

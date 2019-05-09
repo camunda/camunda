@@ -39,10 +39,9 @@ describe('Foldable', () => {
     expect(FocusButtonNode.prop('onClick')).toBe(mockOnSelection);
 
     // Summary Expand Button
-    const FoldButtonNode = SummaryNode.dive().find(Styled.FoldButton);
-    expect(FoldButtonNode).toHaveLength(1);
-    expect(FoldButtonNode.prop('onClick')).toBe(node.instance().toggleFold);
-    expect(FoldButtonNode.dive().find(Styled.RightIcon)).toHaveLength(1);
+    const ExpandButtonNode = SummaryNode.dive().find(Styled.ExpandButton);
+    expect(ExpandButtonNode).toHaveLength(1);
+    expect(ExpandButtonNode.prop('onClick')).toBe(node.instance().toggleFold);
 
     // Details
     const DetailsNode = node.find(Foldable.Details);
@@ -68,12 +67,12 @@ describe('Foldable', () => {
     );
 
     // then
-    const FoldButtonNode = node
+    const ExpandButtonNode = node
       .find(Foldable.Summary)
       .dive()
-      .find(Styled.FoldButton);
+      .find(Styled.ExpandButton);
 
-    expect(FoldButtonNode).toHaveLength(0);
+    expect(ExpandButtonNode).toHaveLength(0);
   });
 
   it('toggleFold should change folded state', () => {
@@ -96,7 +95,7 @@ describe('Foldable', () => {
 
     // Summary
     const SummaryNode = node.find(Foldable.Summary);
-    expect(SummaryNode.dive().find(Styled.DownIcon)).toHaveLength(1);
+    expect(SummaryNode.dive().find(Styled.ExpandButton)).toHaveLength(1);
 
     // Details
     const DetailsNode = node.find(Foldable.Details);

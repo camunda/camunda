@@ -59,9 +59,11 @@ Foldable.Summary = function Summary({
   return (
     <Styled.Summary {...props}>
       {isFoldable ? (
-        <Styled.FoldButton onClick={toggleFold} isSelected={isSelected}>
-          {!isFolded ? <Styled.DownIcon /> : <Styled.RightIcon />}
-        </Styled.FoldButton>
+        <Styled.ExpandButton
+          onClick={toggleFold}
+          isExpanded={!isFolded}
+          expandTheme="foldable"
+        />
       ) : null}
       <Styled.FocusButton showHoverState={!isSelected} onClick={onSelection} />
       <Styled.SummaryLabel

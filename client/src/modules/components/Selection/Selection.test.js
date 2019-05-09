@@ -61,8 +61,7 @@ describe('Selection', () => {
 
   it('should contain a Header', () => {
     expect(node.find(Styled.Dt)).toExist();
-    expect(node.find(Styled.Dt)).toMatchSnapshot();
-    expect(node.find(Styled.Dt).props().isOpen).toBe(true);
+    expect(node.find(Styled.Dt).props().isExpanded).toBe(true);
   });
 
   it('should contain Instances', () => {

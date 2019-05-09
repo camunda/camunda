@@ -12,8 +12,6 @@ import {TransitionGroup} from 'modules/components/Transition';
 
 import {OPERATION_STATE, OPERATION_TYPE} from 'modules/constants';
 import {getWorkflowName, getLatestOperation} from 'modules/utils/instance';
-import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
-import {ReactComponent as Right} from 'modules/components/Icon/right.svg';
 import {BADGE_TYPE} from 'modules/constants';
 
 import * as Styled from './styled.js';
@@ -118,22 +116,16 @@ export default class Selection extends React.Component {
     </Styled.Actions>
   );
 
-  renderArrowIcon = isOpen => (
-    <Styled.ArrowIcon isOpen={isOpen}>
-      {isOpen ? <Down /> : <Right />}
-    </Styled.ArrowIcon>
-  );
-
   renderHeader = idString => {
     const {isOpen, selectionId, instanceCount} = this.props;
     return (
-      <Styled.Dt isOpen={isOpen}>
-        {this.renderArrowIcon(isOpen)}
+      <Styled.Dt isExpanded={isOpen}>
         <Styled.Heading role="heading">
           <Styled.SelectionToggle
             data-test="selection-toggle"
             onClick={this.handleOnHeaderClick}
-            isOpen={isOpen}
+            isExpanded={isOpen}
+            expandTheme={isOpen ? 'selectionExpanded' : 'selectionCollapsed'}
             id={`${idString}-toggle`}
             aria-expanded={isOpen}
             aria-controls={idString}

@@ -15,6 +15,7 @@ import {ReactComponent as Retry} from 'modules/components/Icon/retry.svg';
 import {ReactComponent as Batch} from 'modules/components/Icon/batch.svg';
 import {ReactComponent as Stop} from 'modules/components/Icon/stop.svg';
 import BadgeComponent from 'modules/components/Badge';
+import BasicExpandButton from 'modules/components/ExpandButton';
 
 const themedWith = (dark, light) => {
   return themeStyle({
@@ -78,15 +79,17 @@ export const Dt = themed(styled.dt`
   align-items: center;
   position: relative;
 
-  ${({isOpen}) => !isOpen && hoverSelector}
+  ${({isExpanded}) => !isExpanded && hoverSelector}
 
-  background: ${({isOpen}) =>
-    isOpen ? Colors.selections : themedWith(Colors.uiDark03, Colors.uiLight02)};
+  background: ${({isExpanded}) =>
+    isExpanded
+      ? Colors.selections
+      : themedWith(Colors.uiDark03, Colors.uiLight02)};
   border-style: solid;
   border-width: 1px 0 1px 1px;
-  border-color: ${({isOpen}) =>
-    isOpen ? '#659fff' : themedWith(Colors.uiDark05, Colors.uiLight05)};
-  border-radius: 3px 0 0 ${({isOpen}) => (isOpen ? 0 : '3px')};
+  border-color: ${({isExpanded}) =>
+    isExpanded ? '#659fff' : themedWith(Colors.uiDark05, Colors.uiLight05)};
+  border-radius: 3px 0 0 ${({isExpanded}) => (isExpanded ? 0 : '3px')};
 `);
 
 export const Heading = themed(styled.span`
@@ -94,7 +97,7 @@ export const Heading = themed(styled.span`
   align-items: flex-start;
 `);
 
-export const SelectionToggle = themed(styled.button`
+export const SelectionToggle = themed(styled(BasicExpandButton)`
   /* Positioning */
   background: transparent;
   position: absolute;
@@ -107,13 +110,13 @@ export const SelectionToggle = themed(styled.button`
   }
 
   /* Color */
-  color: ${({isOpen}) =>
-    isOpen ? '#ffffff' : themedWith('#ffffff', Colors.uiLight06)};
+  color: ${({isExpanded}) =>
+    isExpanded ? '#ffffff' : themedWith('#ffffff', Colors.uiLight06)};
 
   /* Display & Box Model */
   display: flex;
   align-items: center;
-  border-radius: 3px 0 0 ${({isOpen}) => (isOpen ? 0 : '3px')};
+  border-radius: 3px 0 0 ${({isExpanded}) => (isExpanded ? 0 : '3px')};
   height: 32px;
   padding-left: 9px;
   padding-right: 21px;
@@ -123,7 +126,7 @@ export const SelectionToggle = themed(styled.button`
   font-weight: 600;
 
   /* Other */
-  cursor: ${({isOpen}) => (!isOpen ? 'pointer' : '')};
+  cursor: ${({isExpanded}) => (!isExpanded ? 'pointer' : '')};
 `);
 
 export const Headline = styled.div`
@@ -164,19 +167,9 @@ export const DeleteIcon = styled(RemoveItem)`
   cursor: pointer;
 `;
 
-export const ArrowIcon = themed(styled.div`
-  position: relative;
-  top: 1px;
-  padding-left: 10px;
-  cursor: pointer;
-
-  color: ${({isOpen}) =>
-    isOpen ? '#ffffff' : themedWith('#ffffff', Colors.uiLight06)};
-`);
-
 export const Badge = styled(BadgeComponent)`
   ${props =>
-    !props.isOpen
+    !props.isExpanded
       ? 'color: #ffffff'
       : `background: #ffffff; color: ${Colors.selections}`};
 `;

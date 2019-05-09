@@ -58,7 +58,7 @@ export const Button = themed(styled.button`
   :hover {
     ${Icon.WrappedComponent}::before {
       // hover background color/opacity
-      ${props => Themes[props.expandTheme].hover.background[props.theme]};
+      ${props => Themes[props.expandTheme].hover.background[props.theme]}
     }
 
     ${Icon.WrappedComponent} {

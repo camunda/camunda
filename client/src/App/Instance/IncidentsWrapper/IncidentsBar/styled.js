@@ -6,12 +6,11 @@
 
 import styled from 'styled-components';
 import {INCIDENTS_BAR_HEIGHT} from 'modules/constants.js';
-import {Colors, themed} from 'modules/theme';
-import withStrippedProps from 'modules/utils/withStrippedProps';
-import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
-import {Transition as TransitionComponent} from 'modules/components/Transition';
+import {Colors} from 'modules/theme';
 
-export const IncidentsBar = styled.button`
+import BasicExpandButton from 'modules/components/ExpandButton';
+
+export const IncidentsBar = styled(BasicExpandButton)`
   display: flex;
   align-items: center;
   position: relative;
@@ -27,32 +26,31 @@ export const IncidentsBar = styled.button`
   color: #ffffff;
 
   cursor: pointer;
+
+  > :first-child {
+    margin-right: 11px;
+    margin-bottom: 1px;
+  }
 `;
 
-export const Transition = themed(styled(TransitionComponent)`
-  &.transition-enter {
-    transform: rotate(-90deg);
-  }
-  &.transition-enter-active {
-    transform: none;
-    transition: transform ${({timeout}) => timeout + 'ms'};
-  }
+// export const Transition = themed(styled(TransitionComponent)`
+//   &.transition-enter {
+//     transform: rotate(-90deg);
+//   }
+//   &.transition-enter-active {
+//     transform: none;
+//     transition: transform ${({timeout}) => timeout + 'ms'};
+//   }
 
-  &.transition-enter-done {
-    transform: none;
-  }
+//   &.transition-enter-done {
+//     transform: none;
+//   }
 
-  &.transition-exit {
-    transform: none;
-  }
-  &.transition-exit-active {
-    transform: rotate(-90deg);
-    transition: transform ${({timeout}) => timeout + 'ms'};
-  }
-`);
-
-export const Arrow = styled(withStrippedProps(['isFlipped'])(Down))`
-  margin-right: 11px;
-  position: relative;
-  transform: rotate(-90deg);
-`;
+//   &.transition-exit {
+//     transform: none;
+//   }
+//   &.transition-exit-active {
+//     transform: rotate(-90deg);
+//     transition: transform ${({timeout}) => timeout + 'ms'};
+//   }
+// `);

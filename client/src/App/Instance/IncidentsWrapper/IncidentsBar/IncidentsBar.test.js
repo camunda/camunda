@@ -6,7 +6,6 @@
 
 import React from 'react';
 import {mount} from 'enzyme';
-import * as Styled from './styled';
 import IncidentsBar from './IncidentsBar';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 
@@ -45,10 +44,5 @@ describe('IncidentsBar', () => {
     node.simulate('click');
 
     expect(mockProps.onClick).toHaveBeenCalledTimes(1);
-  });
-
-  it('should contain an arrow', () => {
-    const node = mountComponent(mockProps);
-    expect(node.find(Styled.Arrow).length).toBe(1);
   });
 });
