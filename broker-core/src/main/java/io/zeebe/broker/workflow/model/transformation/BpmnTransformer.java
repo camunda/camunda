@@ -73,7 +73,6 @@ public class BpmnTransformer {
     step2Visitor.registerHandler(new ContextProcessTransformer());
     step2Visitor.registerHandler(new EndEventTransformer());
     step2Visitor.registerHandler(new FlowNodeTransformer());
-    step2Visitor.registerHandler(new IntermediateCatchEventTransformer());
     step2Visitor.registerHandler(new ParallelGatewayTransformer());
     step2Visitor.registerHandler(new SequenceFlowTransformer());
     step2Visitor.registerHandler(new ServiceTaskTransformer());
@@ -85,6 +84,7 @@ public class BpmnTransformer {
     step3Visitor.registerHandler(new ContextProcessTransformer());
     step3Visitor.registerHandler(new EventBasedGatewayTransformer());
     step3Visitor.registerHandler(new ExclusiveGatewayTransformer());
+    step3Visitor.registerHandler(new IntermediateCatchEventTransformer());
   }
 
   public List<ExecutableWorkflow> transformDefinitions(BpmnModelInstance modelInstance) {
