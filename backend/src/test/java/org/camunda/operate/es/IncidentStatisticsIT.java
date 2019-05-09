@@ -5,10 +5,18 @@
  */
 package org.camunda.operate.es;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.rest.IncidentRestService.INCIDENT_URL;
+import static org.camunda.operate.util.TestUtil.createActivityInstance;
+import static org.camunda.operate.util.TestUtil.createIncident;
+import static org.camunda.operate.util.TestUtil.createWorkflowInstanceEntity;
+import static org.camunda.operate.util.TestUtil.createWorkflowVersions;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.WorkflowEntity;
@@ -19,25 +27,10 @@ import org.camunda.operate.rest.dto.incidents.IncidentByWorkflowStatisticsDto;
 import org.camunda.operate.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import org.camunda.operate.rest.dto.incidents.IncidentsByWorkflowGroupStatisticsDto;
 import org.camunda.operate.util.ElasticsearchTestRule;
-import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.TestUtil;
-import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.rest.IncidentRestService.INCIDENT_URL;
-import static org.camunda.operate.util.TestUtil.createActivityInstance;
-import static org.camunda.operate.util.TestUtil.createIncident;
-import static org.camunda.operate.util.TestUtil.createWorkflowInstanceEntity;
-import static org.camunda.operate.util.TestUtil.createWorkflowVersions;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class IncidentStatisticsIT extends OperateIntegrationTest {
 
@@ -57,16 +50,6 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
-
-  @Rule
-  public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
-
-  private MockMvc mockMvc;
-
-  @Before
-  public void starting() {
-    this.mockMvc = mockMvcTestRule.getMockMvc();
-  }
   
   @Test
   public void testAbsentWorkflowDoesntThrowExceptions() throws Exception {
@@ -143,7 +126,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     assertLoanWorkflow(workflowGroups.get(2));
   }
   
-  @Ignore @Test
+  @Test
   public void testWorkflowWithoutInstancesIsSortedByVersionAscending() throws Exception {
     createNoInstancesWorkflowData(3);
     
@@ -154,18 +137,17 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     assertThat(workflows).hasSize(3);
     
     Iterator<IncidentByWorkflowStatisticsDto> workflowIterator = workflows.iterator();
-    
     assertNoInstancesWorkflow(workflowIterator.next(),1);
     assertNoInstancesWorkflow(workflowIterator.next(),2);
     assertNoInstancesWorkflow(workflowIterator.next(),3);
   }
 
   private void assertNoInstancesWorkflow(IncidentByWorkflowStatisticsDto workflow,int version) {
-    assertThat(workflow.getName()).isEqualTo(NO_INSTANCES_PROCESS_NAME + version);
-    assertThat(workflow.getBpmnProcessId()).isEqualTo(NO_INSTANCES_PROCESS_ID);
     assertThat(workflow.getVersion()).isEqualTo(version);
     assertThat(workflow.getActiveInstancesCount()).isEqualTo(0);
     assertThat(workflow.getInstancesWithActiveIncidentsCount()).isEqualTo(0);
+    assertThat(workflow.getBpmnProcessId()).isEqualTo(NO_INSTANCES_PROCESS_ID);
+    assertThat(workflow.getName()).isEqualTo(NO_INSTANCES_PROCESS_NAME + version);
   }
 
   private void assertLoanWorkflow(IncidentsByWorkflowGroupStatisticsDto loanWorkflowGroup) {
@@ -325,25 +307,13 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
   }
 
   private List<IncidentsByWorkflowGroupStatisticsDto> requestIncidentsByWorkflow() throws Exception {
-    MockHttpServletRequestBuilder request = get(QUERY_INCIDENTS_BY_WORKFLOW_URL);
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
-
-    return mockMvcTestRule.listFromResponse(mvcResult, IncidentsByWorkflowGroupStatisticsDto.class);
+    return mockMvcTestRule.listFromResponse(getRequest(QUERY_INCIDENTS_BY_WORKFLOW_URL), IncidentsByWorkflowGroupStatisticsDto.class);
   }
   
   private List<IncidentsByErrorMsgStatisticsDto> requestIncidentsByError() throws Exception {
-    MockHttpServletRequestBuilder request = get(QUERY_INCIDENTS_BY_ERROR_URL);
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
-
-    return mockMvcTestRule.listFromResponse(mvcResult, IncidentsByErrorMsgStatisticsDto.class);
+    return mockMvcTestRule.listFromResponse(getRequest(QUERY_INCIDENTS_BY_ERROR_URL), IncidentsByErrorMsgStatisticsDto.class);
   }
-  
+ 
   /**
    * Demo process   v1 -                          6 running instances:  3 active incidents,   2 resolved
    * Demo process   v2 -    2 finished instances, 7 running:            2 active in 1 inst,   0 resolved

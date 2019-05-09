@@ -13,24 +13,17 @@ import org.camunda.operate.rest.dto.activity.ActivityInstanceDto;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeDto;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeRequestDto;
 import org.camunda.operate.util.IdTestUtil;
-import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.zeebe.client.ZeebeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.rest.ActivityInstanceRestService.ACTIVITY_INSTANCE_URL;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
 
@@ -42,18 +35,12 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
   @Qualifier("incidentIsActiveCheck")
   private Predicate<Object[]> incidentIsActiveCheck;
 
-  @Rule
-  public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
-
   private ZeebeClient zeebeClient;
-
-  private MockMvc mockMvc;
 
   @Before
   public void init() {
     super.before();
     zeebeClient = super.getClient();
-    this.mockMvc = mockMvcTestRule.getMockMvc();
   }
 
   @Test
@@ -173,28 +160,16 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
   @Test
   public void testActivityInstanceTreeFails() throws Exception {
     ActivityInstanceTreeRequestDto treeRequest = new ActivityInstanceTreeRequestDto();
-    MockHttpServletRequestBuilder request = post(ACTIVITY_INSTANCE_URL)
-      .content(mockMvcTestRule.json(treeRequest))
-      .contentType(mockMvcTestRule.getContentType());
 
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isBadRequest())
-      .andReturn();
-
-    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("Workflow instance id must be provided when requesting for activity instance tree.");
+    MvcResult mvcResult = postRequestThatShouldFail(ACTIVITY_INSTANCE_URL,treeRequest);
+    
+    assertErrorMessageIsEqualTo(mvcResult, "Workflow instance id must be provided when requesting for activity instance tree.");
   }
 
   protected ActivityInstanceTreeDto getActivityInstanceTreeFromRest(long workflowInstanceKey) throws Exception {
     ActivityInstanceTreeRequestDto treeRequest = new ActivityInstanceTreeRequestDto(IdTestUtil.getId(workflowInstanceKey));
-    MockHttpServletRequestBuilder request = post(ACTIVITY_INSTANCE_URL)
-      .content(mockMvcTestRule.json(treeRequest))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc
-      .perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+  
+    MvcResult mvcResult =  postRequest(ACTIVITY_INSTANCE_URL,treeRequest);
 
     return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ActivityInstanceTreeDto>() { });
   }

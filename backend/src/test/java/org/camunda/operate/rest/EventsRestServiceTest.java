@@ -5,8 +5,14 @@
  */
 package org.camunda.operate.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import org.camunda.operate.JacksonConfig;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventSourceType;
@@ -15,31 +21,18 @@ import org.camunda.operate.es.reader.EventReader;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.EventDto;
 import org.camunda.operate.rest.dto.EventQueryDto;
-import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.MockUtil;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(
   classes = {TestApplicationWithNoBeans.class, EventRestService.class, JacksonConfig.class, OperateProperties.class}
 )
 public class EventsRestServiceTest extends OperateIntegrationTest {
-
-  @Rule
-  public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
 
   @MockBean
   private EventReader eventReader;
@@ -59,14 +52,7 @@ public class EventsRestServiceTest extends OperateIntegrationTest {
     given(eventReader.queryEvents(eventQuery)).willReturn(eventEntities);
 
     //when
-    MockHttpServletRequestBuilder request = post(EventRestService.EVENTS_URL)
-      .content(mockMvcTestRule.json(eventQuery))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvcTestRule.getMockMvc().perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult = postRequest(EventRestService.EVENTS_URL,eventQuery);
 
     //then
     List<EventDto> eventDtos = mockMvcTestRule.listFromResponse(mvcResult, EventDto.class);

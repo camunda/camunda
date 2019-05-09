@@ -17,6 +17,8 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -164,7 +166,7 @@ public class IncidentStatisticsReader extends AbstractReader {
         statForWorkflow.setBpmnProcessId(workflowEntity.getBpmnProcessId());
         statForWorkflow.setVersion(workflowEntity.getVersion());
         stat.getWorkflows().add(statForWorkflow);
-
+        
         //set the latest name
         if (workflowEntity.getVersion() > maxVersion) {
           stat.setWorkflowName(workflowEntity.getName());

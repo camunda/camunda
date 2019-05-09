@@ -8,6 +8,10 @@ package org.camunda.operate.rest.dto.incidents;
 import org.junit.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Iterator;
+import java.util.Set;
+import java.util.TreeSet;
+
 public class IncidentByWorkflowStatisticsDtoTest {
 
   @Test
@@ -25,8 +29,20 @@ public class IncidentByWorkflowStatisticsDtoTest {
      worfklowVersionThree.setVersion(3);
      IncidentByWorkflowStatisticsDto workflowVersionFour = new IncidentByWorkflowStatisticsDto();
      workflowVersionFour.setVersion(4);
+    
      assertIsBefore(worfklowVersionOne, worfklowVersionThree);
      assertIsBefore(worfklowVersionThree, workflowVersionFour);
+     
+     // and with TreeSet 
+     Set<IncidentByWorkflowStatisticsDto> workflows = new TreeSet<>(IncidentByWorkflowStatisticsDto.COMPARATOR);
+     workflows.add(worfklowVersionThree);
+     workflows.add(worfklowVersionOne);
+     workflows.add(workflowVersionFour);
+     
+     Iterator<IncidentByWorkflowStatisticsDto> workflowsIterator  = workflows.iterator();
+     assertThat(workflowsIterator.next().getVersion()).isEqualTo(1);
+     assertThat(workflowsIterator.next().getVersion()).isEqualTo(3);
+     assertThat(workflowsIterator.next().getVersion()).isEqualTo(4);
   }
   
   @Test

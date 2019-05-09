@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Random;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperateEntity;
@@ -28,15 +27,11 @@ import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.dto.listview.VariablesQueryDto;
 import org.camunda.operate.rest.dto.listview.WorkflowInstanceStateDto;
 import org.camunda.operate.util.ElasticsearchTestRule;
-import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.TestUtil;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import com.fasterxml.jackson.core.type.TypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
@@ -45,9 +40,6 @@ import static org.camunda.operate.util.TestUtil.createActivityInstanceWithIncide
 import static org.camunda.operate.util.TestUtil.createIncident;
 import static org.camunda.operate.util.TestUtil.createVariable;
 import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Tests Elasticsearch queries for workflow instances.
@@ -55,27 +47,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class ListViewQueryIT extends OperateIntegrationTest {
 
   private static final String QUERY_INSTANCES_URL = WORKFLOW_INSTANCE_URL;
-  private static final String GET_INSTANCE_URL = WORKFLOW_INSTANCE_URL + "/%s";
-
-  private Random random = new Random();
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
-
-  @Rule
-  public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
 
   private WorkflowInstanceForListViewEntity instanceWithoutIncident;
   private WorkflowInstanceForListViewEntity runningInstance;
   private WorkflowInstanceForListViewEntity completedInstance;
   private WorkflowInstanceForListViewEntity canceledInstance;
-
-  private MockMvc mockMvc;
-
-  @Before
-  public void starting() {
-    this.mockMvc = mockMvcTestRule.getMockMvc();
-  }
 
   @Test
   public void testQueryAllRunning() throws Exception {
@@ -88,13 +67,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       q.setIncidents(true);
     });
 
-    MockHttpServletRequestBuilder request = post(query(0, 100)).content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(mockMvcTestRule.getContentType());
+    MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
-    MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andExpect(content().contentType(mockMvcTestRule.getContentType())).andReturn();
-
-    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {
-    });
+    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     assertThat(response.getWorkflowInstances().size()).isEqualTo(3);
     assertThat(response.getTotalCount()).isEqualTo(3);
@@ -172,16 +147,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   }
 
-  private void requestAndAssertIds(ListViewRequestDto query, String testCaseName, String... ids) throws Exception {
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
+  private void requestAndAssertIds(ListViewRequestDto query, String testCaseName, String... ids) throws Exception {   
     //then
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
-
+    MvcResult mvcResult = postRequest(query(0, 100), query);
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     assertThat(response.getWorkflowInstances()).as(testCaseName).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(ids);
@@ -204,15 +172,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     //given
     ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setErrorMessage(errorMessage));
-
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-        .content(mockMvcTestRule.json(query))
-        .contentType(mockMvcTestRule.getContentType());
     //when
-    MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-        .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -232,14 +193,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //given
     ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setVariable(new VariablesQueryDto("var1", "X")));
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-        .content(mockMvcTestRule.json(query))
-        .contentType(mockMvcTestRule.getContentType());
     //when
-    MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-        .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100), query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -257,20 +212,13 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //given
     ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setVariable(new VariablesQueryDto("var1", "A")));
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-        .content(mockMvcTestRule.json(query))
-        .contentType(mockMvcTestRule.getContentType());
     //when
-    MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-        .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
     //then
     assertThat(response.getWorkflowInstances().size()).isEqualTo(0);
-
   }
 
   @Test
@@ -288,13 +236,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       q.setActivityId(activityId);
     });
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-        .content(mockMvcTestRule.json(query))
-        .contentType(mockMvcTestRule.getContentType());
-    MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-        .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -353,13 +295,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       q.setActivityId(activityId);
     });
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult =postRequest(query(0, 100),query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -429,13 +365,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       q.setActivityId(activityId);
     });
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -514,13 +444,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       q.setActivityId(activityId);
     });
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -569,13 +493,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       q.setActivityId(activityId);
     });
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -601,14 +519,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     );
 
     //when
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-        .content(mockMvcTestRule.json(query))
-        .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-        .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
@@ -632,14 +543,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     );
 
     //when
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-        .content(mockMvcTestRule.json(query))
-        .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-        .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
@@ -669,14 +573,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setWorkflowIds(Arrays.asList(wfId1, wfId3)));
 
     //when
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
@@ -712,14 +609,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     });
 
     //when
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
@@ -736,14 +626,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> {
       q.setWorkflowVersion(1);
     });
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
-
     //then
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isBadRequest())
-      .andReturn();
+    MvcResult mvcResult = postRequestThatShouldFail(query(0, 100),query);
 
     assertThat(mvcResult.getResolvedException().getMessage()).contains("BpmnProcessId must be provided in request, when workflow version is not null");
 
@@ -771,14 +655,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setBpmnProcessId(bpmnProcessId1));
 
     //when
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),query);
 
     //then
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
@@ -797,25 +674,14 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllWorkflowInstancesQuery();
 
     //page 1
-    MockHttpServletRequestBuilder request = post(query(0, 3))
-        .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-        .contentType(mockMvcTestRule.getContentType());
-    MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-        .andReturn();
-     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
-     assertThat(response.getWorkflowInstances().size()).isEqualTo(3);
-     assertThat(response.getTotalCount()).isEqualTo(5);
+    MvcResult mvcResult = postRequest(query(0, 3), workflowInstanceQueryDto);
+    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {
+    });
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(3);
+    assertThat(response.getTotalCount()).isEqualTo(5);
 
     //page 2
-    request = post(query(3, 3))
-      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(mockMvcTestRule.getContentType());
-    mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    mvcResult = postRequest(query(3, 3),workflowInstanceQueryDto);
     response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
     assertThat(response.getWorkflowInstances().size()).isEqualTo(2);
     assertThat(response.getTotalCount()).isEqualTo(5);
@@ -828,14 +694,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllWorkflowInstancesQuery();
     workflowInstanceQueryDto.setSorting(sorting);
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -982,14 +841,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllFinishedQuery();
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult =  postRequest(query(0, 100),workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -1007,14 +859,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllWorkflowInstancesQuery();
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -1038,14 +883,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     query2.setCanceled(true);
     workflowInstanceQueryDto.getQueries().add(query2);
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -1062,14 +900,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       q.setCompleted(true);
     });
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -1088,14 +919,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       q.setCanceled(true);
     });
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -1114,16 +938,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       q.setIncidents(true);
     });
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc
-      .perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content()
-        .contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
@@ -1142,15 +957,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       q.setActive(true);
     });
 
-    MockHttpServletRequestBuilder request = post(query(0, 100))
-      .content(mockMvcTestRule.json(workflowInstanceQueryDto))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc
-      .perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
+    MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 

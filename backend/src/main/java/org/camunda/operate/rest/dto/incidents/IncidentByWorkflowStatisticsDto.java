@@ -159,12 +159,9 @@ public class IncidentByWorkflowStatisticsDto implements Comparable<IncidentByWor
       if (result == 0) {
         result = Long.compare(o2.getActiveInstancesCount(), o1.getActiveInstancesCount());
         if (result == 0) {
-          result = emptyStringWhenNull(o1.getWorkflowId()).compareTo(emptyStringWhenNull(o2.getWorkflowId()));
+          result = emptyStringWhenNull(o1.getBpmnProcessId()).compareTo(emptyStringWhenNull(o2.getBpmnProcessId()));
           if (result == 0) {
-            result = emptyStringWhenNull(o1.getBpmnProcessId()).compareTo(emptyStringWhenNull(o2.getBpmnProcessId()));
-            if (result == 0) {
-              result = Integer.compare(o1.getVersion(), o2.getVersion());
-            }
+            result = Integer.compare(o1.getVersion(), o2.getVersion());
           }
         }
       }

@@ -10,14 +10,10 @@ import static org.camunda.operate.util.TestUtil.createActivityInstance;
 import static org.camunda.operate.util.TestUtil.createActivityInstanceWithIncident;
 import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
 import static org.junit.Assert.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
@@ -30,15 +26,10 @@ import org.camunda.operate.rest.dto.WorkflowInstanceCoreStatisticsDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.util.ElasticsearchTestRule;
-import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 /**
  * Tests Elasticsearch query for workflow statistics.
@@ -48,20 +39,8 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
   private static final String QUERY_WORKFLOW_STATISTICS_URL = "/api/workflow-instances/statistics";
   private static final String QUERY_WORKFLOW_CORE_STATISTICS_URL = "/api/workflow-instances/core-statistics";
 
-  private Random random = new Random();
-
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
-
-  @Rule
-  public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
-
-  private MockMvc mockMvc;
-
-  @Before
-  public void starting() {
-    this.mockMvc = mockMvcTestRule.getMockMvc();
-  }
 
   @Test
   public void testOneWorkflowStatistics() throws Exception {
@@ -92,13 +71,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
   public void testFailStatisticsWithNoWorkflowId() throws Exception {
     final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(null);
 
-    MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isBadRequest())
-      .andReturn();
+    MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL, query);
 
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Exactly one workflow must be specified in the request");
   }
@@ -111,13 +84,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(null);
     query.getQueries().get(0).setBpmnProcessId(bpmnProcessId);
 
-    MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isBadRequest())
-      .andReturn();
+    MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL, query);
 
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Exactly one workflow must be specified in the request");
   }
@@ -131,13 +98,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
     query.getQueries().get(0).setWorkflowIds(Arrays.asList(workflowId, "otherWorkflowId"));
 
-    MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isBadRequest())
-      .andReturn();
+    MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL, query);
 
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Exactly one workflow must be specified in the request");
   }
@@ -147,18 +108,11 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
   public void testFailStatisticsWithWorkflowIdAndBpmnProcessId() throws Exception {
     String workflowId = "1";
     String bpmnProcessId = "demoProcess";
-    Integer version = 1;
     final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
     query.getQueries().get(0).setBpmnProcessId(bpmnProcessId);
     query.getQueries().get(0).setWorkflowVersion(1);
 
-    MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isBadRequest())
-      .andReturn();
+    MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL,query);
 
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Exactly one workflow must be specified in the request");
   }
@@ -171,13 +125,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     final ListViewRequestDto query = new ListViewRequestDto();
 
-    MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isBadRequest())
-      .andReturn();
+    MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL, query);
 
     assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("Exactly one query must be specified in the request.");
   }
@@ -190,15 +138,8 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
     query.getQueries().add(new ListViewQueryDto());
-
-
-    MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isBadRequest())
-      .andReturn();
+    
+    MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL, query);
 
     assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("Exactly one query must be specified in the request.");
   }
@@ -241,16 +182,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
   }
 
   private List<ActivityStatisticsDto> getActivityStatistics(ListViewRequestDto query) throws Exception {
-    MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
-
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-      .andReturn();
-
-    return mockMvcTestRule.listFromResponse(mvcResult, ActivityStatisticsDto.class);
+    return mockMvcTestRule.listFromResponse(postRequest(QUERY_WORKFLOW_STATISTICS_URL, query), ActivityStatisticsDto.class);
   }
 
   @Test
@@ -375,12 +307,8 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
   @Test
   public void testGetCoreStatistics() throws Exception {
-    // given no data
-    MockHttpServletRequestBuilder request = MockMvcRequestBuilders.get(QUERY_WORKFLOW_CORE_STATISTICS_URL);
     // when request core-statistics
-    MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andExpect(content().contentType(mockMvcTestRule.getContentType())).andReturn();
-
-    WorkflowInstanceCoreStatisticsDto coreStatistics = mockMvcTestRule.fromResponse(mvcResult, WorkflowInstanceCoreStatisticsDto.class);
+    WorkflowInstanceCoreStatisticsDto coreStatistics = mockMvcTestRule.fromResponse( getRequest(QUERY_WORKFLOW_CORE_STATISTICS_URL), WorkflowInstanceCoreStatisticsDto.class);
     // then return zero statistics
     assertEquals(coreStatistics.getActive().longValue(), 0L);
     assertEquals(coreStatistics.getRunning().longValue(), 0L);
@@ -391,10 +319,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     createData("sampleProcess");
     
     // when request core-statistics
-    request = MockMvcRequestBuilders.get(QUERY_WORKFLOW_CORE_STATISTICS_URL);
-    mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andExpect(content().contentType(mockMvcTestRule.getContentType())).andReturn();
-
-    coreStatistics = mockMvcTestRule.fromResponse(mvcResult, WorkflowInstanceCoreStatisticsDto.class);
+    coreStatistics = mockMvcTestRule.fromResponse(getRequest(QUERY_WORKFLOW_CORE_STATISTICS_URL), WorkflowInstanceCoreStatisticsDto.class);
     // then return non-zero statistics
     assertEquals(coreStatistics.getActive().longValue(), 6L);
     assertEquals(coreStatistics.getRunning().longValue(), 12L);

@@ -9,7 +9,6 @@ import org.assertj.core.api.Assertions;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.HealthCheckRestService;
 import org.camunda.operate.util.ElasticsearchTestRule;
-import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.OperateZeebeRule;
 import org.camunda.operate.util.ZeebeClientRule;
@@ -17,17 +16,12 @@ import org.camunda.operate.zeebeimport.PartitionHolder;
 import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import io.zeebe.test.EmbeddedBrokerRule;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class ZeebeConnectorIT extends OperateIntegrationTest {
 
@@ -51,16 +45,6 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
   private ZeebeClientRule clientRule;
 
-  @Rule
-  public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
-
-  private MockMvc mockMvc;
-
-  @Before
-  public void starting() {
-    this.mockMvc = mockMvcTestRule.getMockMvc();
-  }
-
   @After
   public void cleanup() {
     if (operateZeebeRule != null) {
@@ -78,10 +62,7 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
     //then 1
     //application context must be successfully started
-    MockHttpServletRequestBuilder request = get(HealthCheckRestService.HEALTH_CHECK_URL);
-    mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andReturn();
+    getRequest(HealthCheckRestService.HEALTH_CHECK_URL);
     //import is working fine
     zeebeImporter.performOneRoundOfImport();
     //partition list is empty
