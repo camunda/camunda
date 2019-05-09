@@ -3465,13 +3465,13 @@ commander@2.17.x, commander@~2.17.1:
   version "2.17.1"
   resolved "https://registry.yarnpkg.com/commander/-/commander-2.17.1.tgz#bd77ab7de6de94205ceacc72f1716d29f20a77bf"
 
-commander@^2.11.0, commander@^2.14.1, commander@^2.9.0, commander@~2.19.0:
-  version "2.19.0"
-  resolved "https://registry.yarnpkg.com/commander/-/commander-2.19.0.tgz#f6198aa84e5b83c46054b94ddedbfed5ee9ff12a"
-
-commander@^2.19.0, commander@^2.8.1:
+commander@^2.11.0, commander@^2.14.1, commander@^2.19.0, commander@^2.8.1, commander@^2.9.0:
   version "2.20.0"
   resolved "https://registry.yarnpkg.com/commander/-/commander-2.20.0.tgz#d58bb2b5c1ee8f87b0d340027e9e94e222c5a422"
+
+commander@~2.19.0:
+  version "2.19.0"
+  resolved "https://registry.yarnpkg.com/commander/-/commander-2.19.0.tgz#f6198aa84e5b83c46054b94ddedbfed5ee9ff12a"
 
 common-tags@^1.8.0:
   version "1.8.0"
@@ -5010,7 +5010,7 @@ eslint@^5.16.0:
     table "^5.2.3"
     text-table "^0.2.0"
 
-esotope-hammerhead@^0.2.0:
+esotope-hammerhead@^0.2.1:
   version "0.2.1"
   resolved "https://registry.yarnpkg.com/esotope-hammerhead/-/esotope-hammerhead-0.2.1.tgz#c7afdb624d9125b07f0555dd88ae2dcffc70def6"
   integrity sha512-IicdvCt1BIFTIM4nbjxGp98whIakOYZ4lA0UaDXnXpJpB11jYBX11Uv3x2f5ncSlFmxyZRdrN5skH5wK4TCWFQ==
@@ -5833,13 +5833,9 @@ globule@^1.0.0:
     lodash "~4.17.10"
     minimatch "~3.0.2"
 
-graceful-fs@^4.1.11, graceful-fs@^4.1.15, graceful-fs@^4.1.2:
+graceful-fs@^4.1.11, graceful-fs@^4.1.15, graceful-fs@^4.1.2, graceful-fs@^4.1.6:
   version "4.1.15"
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.1.15.tgz#ffb703e1066e8a0eeaa4c8b80ba9253eeefbfb00"
-
-graceful-fs@^4.1.6:
-  version "4.1.11"
-  resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.1.11.tgz#0e8bdfe4d1ddb8854d64e04ea7c00e2a026e5658"
 
 graceful-fs@~1.2.0:
   version "1.2.3"
@@ -8007,13 +8003,7 @@ lru-cache@^4.1.3:
     pseudomap "^1.0.2"
     yallist "^2.1.2"
 
-make-dir@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/make-dir/-/make-dir-1.0.0.tgz#97a011751e91dd87cfadef58832ebb04936de978"
-  dependencies:
-    pify "^2.3.0"
-
-make-dir@^1.3.0:
+make-dir@^1.0.0, make-dir@^1.3.0:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/make-dir/-/make-dir-1.3.0.tgz#79c1033b80515bd6d24ec9933e860ca75ee27f0c"
   integrity sha512-2w31R7SJtieJJnQtGc7RVL2StM2vGYVfqUOvUDxH6bC6aJTxPxTF0GnIgCyu7tjockiUWAYQRbxa7vKn34s5sQ==
@@ -11451,16 +11441,9 @@ source-map-support@^0.4.15:
   dependencies:
     source-map "^0.5.6"
 
-source-map-support@^0.5.5, source-map-support@~0.5.10:
+source-map-support@^0.5.5, source-map-support@^0.5.6, source-map-support@~0.5.10:
   version "0.5.12"
   resolved "https://registry.yarnpkg.com/source-map-support/-/source-map-support-0.5.12.tgz#b4f3b10d51857a5af0138d3ce8003b201613d599"
-  dependencies:
-    buffer-from "^1.0.0"
-    source-map "^0.6.0"
-
-source-map-support@^0.5.6:
-  version "0.5.9"
-  resolved "https://registry.yarnpkg.com/source-map-support/-/source-map-support-0.5.9.tgz#41bc953b2534267ea2d605bccfa7bfa3111ced5f"
   dependencies:
     buffer-from "^1.0.0"
     source-map "^0.6.0"
@@ -12039,17 +12022,17 @@ testcafe-browser-tools@1.6.8:
     read-file-relative "^1.2.0"
     which-promise "^1.0.0"
 
-testcafe-hammerhead@14.6.2:
-  version "14.6.2"
-  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-14.6.2.tgz#ef88fcbd8b541a2391fe247c31f0e9c22ae8e363"
-  integrity sha512-07ay6koiLYOMDfJ/kfMwwiNGmWkXRuqNFoK8q+HmOl1AWN0C/hqV70ZIqaGuzUVa2Izn/nKslZ2sWLU0sST6bA==
+testcafe-hammerhead@14.6.3:
+  version "14.6.3"
+  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-14.6.3.tgz#61d22650a4fe3b6ee7af721acff5d4f78afcb1af"
+  integrity sha512-vMQGfO7d6Vy0wkyzAdBUQ4Rin7vLqJGrBvgjlvBaj2ec1oH+RX0IlOwCB3HFMA/JljM7BpVD7y97Jq9Ebcgs4g==
   dependencies:
     acorn-hammerhead "^0.2.0"
     bowser "1.6.0"
     brotli "^1.3.1"
     crypto-md5 "^1.0.0"
     css "2.2.3"
-    esotope-hammerhead "^0.2.0"
+    esotope-hammerhead "^0.2.1"
     iconv-lite "0.4.11"
     lodash "4.17.11"
     lru-cache "2.6.3"
@@ -12112,10 +12095,10 @@ testcafe-reporter-xunit@^2.1.0:
   resolved "https://registry.yarnpkg.com/testcafe-reporter-xunit/-/testcafe-reporter-xunit-2.1.0.tgz#e6d66c572ce15af266706af0fd610b2a841dd443"
   integrity sha1-5tZsVyzhWvJmcGrw/WELKoQd1EM=
 
-testcafe@^1.1.3:
-  version "1.1.3"
-  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.1.3.tgz#5440cac32ec571760d7fa43482d058beb946cac2"
-  integrity sha512-AnwNHaJJPG5JrIB0UcPgQ/TjdraADGamh63D8m+4l0DLhgBUr/u7TYocucSDSq1tciR0HhE8Mgh5N4wriHH4Yw==
+testcafe@^1.1.4:
+  version "1.1.4"
+  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.1.4.tgz#8c03542b3790d91e47af3439f4c77ff67d1d32ad"
+  integrity sha512-2c0erAxmRd8o018e0sQ1SVVyX1JlTXwUHlRIITF3u7bPAe40IFINhPGBA8KhDYwWDSaOUZp4ft6bxDef2g8Zgg==
   dependencies:
     "@types/node" "^10.12.19"
     async-exit-hook "^1.1.2"
@@ -12177,7 +12160,7 @@ testcafe@^1.1.3:
     source-map-support "^0.5.5"
     strip-bom "^2.0.0"
     testcafe-browser-tools "1.6.8"
-    testcafe-hammerhead "14.6.2"
+    testcafe-hammerhead "14.6.3"
     testcafe-legacy-api "3.1.11"
     testcafe-reporter-json "^2.1.0"
     testcafe-reporter-list "^2.1.0"
