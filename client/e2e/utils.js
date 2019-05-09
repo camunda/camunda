@@ -5,43 +5,19 @@
  */
 
 import {Selector} from 'testcafe';
-import setup from '../setup';
-import config from '../config';
 
-fixture(`Example Test`)
-  .page(config.endpoint)
-  .beforeEach(setup);
-
-test('Create a report and put it on a dashboard', async t => {
-  await login(t);
-  await createNewReport(t);
-  await selectDefinition(t, 'Invoice Receipt', '2');
-  await selectView(t, 'Raw Data');
-  await save(t);
-  await gotoOverview(t);
-  await createNewDashboard(t);
-  await addReportToDashboard(t, 'New Report');
-  await save(t);
-
-  const Report = Selector('.ReportRenderer');
-
-  await t.expect(Report.visible).ok();
-  await t.expect(Report.textContent).contains('invoice');
-  await t.expect(Report.textContent).contains('Start Date');
-});
-
-async function login(t) {
+export async function login(t) {
   await t
     .typeText('input[name="username"]', 'demo')
     .typeText('input[name="password"]', 'demo')
     .click('.Button--primary');
 }
 
-async function createNewReport(t) {
+export async function createNewReport(t) {
   await t.click(Selector('button').withText('Create Process Report'));
 }
 
-async function selectDefinition(t, name, version) {
+export async function selectDefinition(t, name, version) {
   await t
     .click(Selector('button').withText('Select Process'))
     .click('.Typeahead.name input')
@@ -51,7 +27,7 @@ async function selectDefinition(t, name, version) {
     .click('.processDefinitionPopover');
 }
 
-async function selectView(t, name) {
+export async function selectView(t, name) {
   const dropdown = Selector('.label')
     .withText('View')
     .nextSibling();
@@ -59,19 +35,23 @@ async function selectView(t, name) {
   await t.click(dropdown.find('button')).click(dropdown.find('.DropdownOption').withText(name));
 }
 
-async function save(t) {
+export async function save(t) {
   await t.click('.save-button');
 }
 
-async function gotoOverview(t) {
+export async function cancel(t) {
+  await t.click('.cancel-button');
+}
+
+export async function gotoOverview(t) {
   await t.click(Selector('a').withText('Dashboards & Reports'));
 }
 
-async function createNewDashboard(t) {
+export async function createNewDashboard(t) {
   await t.click(Selector('button').withText('Create Dashboard'));
 }
 
-async function addReportToDashboard(t, name) {
+export async function addReportToDashboard(t, name) {
   await t
     .click('.AddButton')
     .click('.ReportModal .optionsButton')
