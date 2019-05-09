@@ -20,6 +20,7 @@ package io.zeebe.broker.logstreams.state;
 import static io.zeebe.broker.Loggers.STREAM_PROCESSING;
 
 import io.atomix.cluster.messaging.ClusterEventService;
+import io.atomix.cluster.messaging.Subscription;
 import io.zeebe.logstreams.processor.SnapshotChunk;
 import io.zeebe.logstreams.processor.SnapshotReplication;
 import java.util.concurrent.ExecutorService;
@@ -38,7 +39,9 @@ public class StateReplication implements SnapshotReplication {
 
   private final DirectBuffer readBuffer = new UnsafeBuffer(0, 0);
   private final ClusterEventService eventService;
+
   private ExecutorService executorService;
+  private Subscription subscription;
 
   public StateReplication(ClusterEventService eventService, int partitionId, String name) {
     this.eventService = eventService;
@@ -65,25 +68,33 @@ public class StateReplication implements SnapshotReplication {
   @Override
   public void consume(Consumer<SnapshotChunk> consumer) {
     executorService = Executors.newSingleThreadExecutor((r) -> new Thread(r, replicationTopic));
-    eventService.subscribe(
-        replicationTopic,
-        (bytes -> {
-          readBuffer.wrap(bytes);
-          final SnapshotChunkImpl chunk = new SnapshotChunkImpl();
-          chunk.wrap(readBuffer, 0, bytes.length);
-          LOG.debug(
-              "Received on topic {} replicated snapshot chunk {} for snapshot pos {}.",
-              replicationTopic,
-              chunk.getChunkName(),
-              chunk.getSnapshotPosition());
-          return chunk;
-        }),
-        consumer,
-        executorService);
+
+    subscription =
+        eventService
+            .subscribe(
+                replicationTopic,
+                (bytes -> {
+                  readBuffer.wrap(bytes);
+                  final SnapshotChunkImpl chunk = new SnapshotChunkImpl();
+                  chunk.wrap(readBuffer, 0, bytes.length);
+                  LOG.debug(
+                      "Received on topic {} replicated snapshot chunk {} for snapshot pos {}.",
+                      replicationTopic,
+                      chunk.getChunkName(),
+                      chunk.getSnapshotPosition());
+                  return chunk;
+                }),
+                consumer,
+                executorService)
+            .join();
   }
 
   @Override
   public void close() {
+    if (subscription != null) {
+      subscription.close().join();
+      subscription = null;
+    }
     if (executorService != null) {
       executorService.shutdownNow();
       executorService = null;
