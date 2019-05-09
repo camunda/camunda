@@ -12,14 +12,15 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
-
 @Provider
 public class ESConnectionExceptionMapper implements ExceptionMapper<NoNodeAvailableException> {
+
   @Override
   public Response toResponse(NoNodeAvailableException exception) {
     return Response.status(exception.status().getStatus())
-        .entity(exception.getMessage())
-        .type(MediaType.APPLICATION_JSON).
-            build();
+      .entity(exception.getMessage())
+      .type(MediaType.APPLICATION_JSON)
+      .build();
   }
+
 }

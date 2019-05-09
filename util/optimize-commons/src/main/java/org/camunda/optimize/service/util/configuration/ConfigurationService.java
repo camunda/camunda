@@ -23,6 +23,7 @@ import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
+import lombok.Setter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.Version;
 import org.slf4j.Logger;
@@ -53,6 +54,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
 
+@Setter
 public class ConfigurationService {
   public static final String DOC_URL = MessageFormat.format(
     "https://docs.camunda.org/optimize/{0}.{1}",
@@ -142,10 +144,15 @@ public class ConfigurationService {
   private String containerKeystoreLocation;
   private Integer containerHttpsPort;
 
-  private String containerAccessUrl;
+  // we use optional field here in order to allow restoring defaults with BeanUtils.copyProperties
+  // if only the getter is of type Optional the value won't get reset properly
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  private Optional<String> containerAccessUrl;
 
-  // we use an optional here to allow to test if
-  // certain cookie flags are set when http is disabled.
+  // we use optional field here in order to allow restoring defaults with BeanUtils.copyProperties
+  // if only the getter is of type Optional the value won't get reset properly
+  // we also distinguish between null and Optional.empty here, null results in the value getting read from the config json
+  // Optional.empty is an actual value that does not trigger read from configuration json on access
   @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
   private Optional<Integer> containerHttpPort;
 
@@ -430,10 +437,6 @@ public class ConfigurationService {
     return DecisionOutputImportPluginBasePackages;
   }
 
-  public void setDecisionOutputImportPluginBasePackages(List<String> decisionOutputImportPluginBasePackages) {
-    this.DecisionOutputImportPluginBasePackages = decisionOutputImportPluginBasePackages;
-  }
-
   public String getUserValidationEndpoint() {
     if (userValidationEndpoint == null) {
       userValidationEndpoint = cutTrailingSlash(
@@ -595,10 +598,6 @@ public class ConfigurationService {
     return esAggregationBucketLimit;
   }
 
-  public void setEsAggregationBucketLimit(final Integer esAggregationBucketLimit) {
-    this.esAggregationBucketLimit = esAggregationBucketLimit;
-  }
-
   public String getEsRefreshInterval() {
     if (esRefreshInterval == null) {
       esRefreshInterval = configJsonContext.read(ConfigurationServiceConstants.ES_REFRESH_INTERVAL);
@@ -752,13 +751,14 @@ public class ConfigurationService {
 
   public Optional<String> getContainerAccessUrl() {
     if (containerAccessUrl == null) {
-      containerAccessUrl = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_ACCESSURL);
+      containerAccessUrl = Optional.ofNullable(configJsonContext.read(ConfigurationServiceConstants.CONTAINER_ACCESSURL));
     }
-    return Optional.ofNullable(containerAccessUrl);
+    return containerAccessUrl;
   }
 
-  public void setContainerAccessUrl(String accessUrl) {
-    containerAccessUrl = accessUrl;
+  // Note: special setter for Optional field value, see note on field why the field is Optional
+  public void setContainerAccessUrlValue(String containerAccessUrl) {
+    this.containerAccessUrl = Optional.ofNullable(containerAccessUrl);
   }
 
   public List<String> getDecisionInputImportPluginBasePackages() {
@@ -804,6 +804,11 @@ public class ConfigurationService {
       );
     }
     return containerHttpPort;
+  }
+
+  // Note: special setter for Optional field value, see note on field why the field is Optional
+  public void setContainerHttpPortValue(Integer containerHttpPort) {
+    this.containerHttpPort = Optional.ofNullable(containerHttpPort);
   }
 
   @JsonIgnore
@@ -1018,111 +1023,4 @@ public class ConfigurationService {
     return cleanupServiceConfiguration;
   }
 
-  public void setExportCsvLimit(Integer exportCsvLimit) {
-    this.exportCsvLimit = exportCsvLimit;
-  }
-
-  public void setExportCsvOffset(Integer exportCsvOffset) {
-    this.exportCsvOffset = exportCsvOffset;
-  }
-
-  public void setVariableImportPluginBasePackages(List<String> variableImportPluginBasePackages) {
-    this.variableImportPluginBasePackages = variableImportPluginBasePackages;
-  }
-
-  public void setEngineRestFilterPluginBasePackages(List<String> engineRestFilterPluginBasePackages) {
-    this.engineRestFilterPluginBasePackages = engineRestFilterPluginBasePackages;
-  }
-
-  public void setAuthenticationExtractorPluginBasePackages(List<String> authenticationExtractorPluginBasePackages) {
-    this.authenticationExtractorPluginBasePackages = authenticationExtractorPluginBasePackages;
-  }
-
-  public void setConfiguredEngines(Map<String, EngineConfiguration> configuredEngines) {
-    this.configuredEngines = configuredEngines;
-  }
-
-  public void setSharingEnabled(Boolean sharingEnabled) {
-    this.sharingEnabled = sharingEnabled;
-  }
-
-  public void setCurrentTimeBackoffMilliseconds(Integer currentTimeBackoffMilliseconds) {
-    this.currentTimeBackoffMilliseconds = currentTimeBackoffMilliseconds;
-  }
-
-  public void setEngineImportProcessInstanceMaxPageSize(Integer engineImportProcessInstanceMaxPageSize) {
-    this.engineImportProcessInstanceMaxPageSize = engineImportProcessInstanceMaxPageSize;
-  }
-
-  public void setEngineImportDecisionInstanceMaxPageSize(Integer engineImportDecisionInstanceMaxPageSize) {
-    this.engineImportDecisionInstanceMaxPageSize = engineImportDecisionInstanceMaxPageSize;
-  }
-
-  public void setEngineImportVariableInstanceMaxPageSize(Integer engineImportVariableInstanceMaxPageSize) {
-    this.engineImportVariableInstanceMaxPageSize = engineImportVariableInstanceMaxPageSize;
-  }
-
-  public void setEngineImportActivityInstanceMaxPageSize(Integer engineImportActivityInstanceMaxPageSize) {
-    this.engineImportActivityInstanceMaxPageSize = engineImportActivityInstanceMaxPageSize;
-  }
-
-  public void setEngineImportUserTaskInstanceMaxPageSize(Integer engineImportUserTaskInstanceMaxPageSize) {
-    this.engineImportUserTaskInstanceMaxPageSize = engineImportUserTaskInstanceMaxPageSize;
-  }
-
-  public void setEngineImportProcessDefinitionXmlMaxPageSize(Integer engineImportProcessDefinitionXmlMaxPageSize) {
-    this.engineImportProcessDefinitionXmlMaxPageSize = engineImportProcessDefinitionXmlMaxPageSize;
-  }
-
-  public void setEngineImportDecisionDefinitionXmlMaxPageSize(Integer engineImportDecisionDefinitionXmlMaxPageSize) {
-    this.engineImportDecisionDefinitionXmlMaxPageSize = engineImportDecisionDefinitionXmlMaxPageSize;
-  }
-
-  public void setDecisionInputImportPluginBasePackages(List<String> decisionInputImportPluginBasePackages) {
-    this.DecisionInputImportPluginBasePackages = decisionInputImportPluginBasePackages;
-  }
-
-  public void setContainerHttpsPort(Integer containerHttpsPort) {
-    this.containerHttpsPort = containerHttpsPort;
-  }
-
-  public void setContainerHttpPort(Integer containerHttpPort) {
-    this.containerHttpPort = Optional.ofNullable(containerHttpPort);
-  }
-
-  public void setAlertEmailUsername(String alertEmailUsername) {
-    this.alertEmailUsername = alertEmailUsername;
-  }
-
-  public void setEmailEnabled(Boolean emailEnabled) {
-    this.emailEnabled = emailEnabled;
-  }
-
-  public void setAlertEmailPassword(String alertEmailPassword) {
-    this.alertEmailPassword = alertEmailPassword;
-  }
-
-  public void setAlertEmailAddress(String alertEmailAddress) {
-    this.alertEmailAddress = alertEmailAddress;
-  }
-
-  public void setAlertEmailHostname(String alertEmailHostname) {
-    this.alertEmailHostname = alertEmailHostname;
-  }
-
-  public void setAlertEmailPort(Integer alertEmailPort) {
-    this.alertEmailPort = alertEmailPort;
-  }
-
-  public void setAlertEmailProtocol(String alertEmailProtocol) {
-    this.alertEmailProtocol = alertEmailProtocol;
-  }
-
-  public void setImportDmnDataEnabled(Boolean importDmnDataEnabled) {
-    this.importDmnDataEnabled = importDmnDataEnabled;
-  }
-
-  public void setSameSiteCookieFlagEnabled(Boolean sameSiteCookieFlagEnabled) {
-    this.sameSiteCookieFlagEnabled = sameSiteCookieFlagEnabled;
-  }
 }

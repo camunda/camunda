@@ -292,7 +292,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     //given
     String reportId = startProcessAndCreateReport();
     setEmailConfiguration();
-    embeddedOptimizeRule.getConfigurationService().setContainerAccessUrl("http://test.de:8090");
+    embeddedOptimizeRule.getConfigurationService().setContainerAccessUrlValue("http://test.de:8090");
 
 
     // when

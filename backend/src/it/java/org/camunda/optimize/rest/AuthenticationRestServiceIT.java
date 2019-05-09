@@ -14,6 +14,7 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.service.security.AuthCookieService.SAME_SITE_COOKIE_FLAG;
@@ -122,9 +123,7 @@ public class AuthenticationRestServiceIT {
   @Test
   public void cookieIsSecureIfHttpIsDisabled() {
     // given
-    Integer defaultHttpPort =
-      embeddedOptimizeRule.getConfigurationService().getContainerHttpPort().get();
-    embeddedOptimizeRule.getConfigurationService().setContainerHttpPort(null);
+    embeddedOptimizeRule.getConfigurationService().setContainerHttpPort(Optional.empty());
 
     // when
     Response authResponse = embeddedOptimizeRule
@@ -132,9 +131,6 @@ public class AuthenticationRestServiceIT {
 
     // then
     assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isSecure(), is(true));
-
-    // cleanup
-    embeddedOptimizeRule.getConfigurationService().setContainerHttpPort(defaultHttpPort);
   }
 
   @Test

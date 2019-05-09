@@ -207,7 +207,6 @@
           <version>2.22.2</version>
           <configuration>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <runOrder>alphabetical</runOrder>
           </configuration>
         </plugin>
         <plugin>

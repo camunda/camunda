@@ -5,27 +5,27 @@
  */
 package org.camunda.optimize.rest.providers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.BadRequestException;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
 
 @Provider
+@Slf4j
 public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
-  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private static Response buildGenericErrorResponse(Throwable e) {
     return Response
       .status(getStatusForError(e))
-      .entity(new ErrorResponseDto(e.getMessage())).build();
+      .type(MediaType.APPLICATION_JSON_TYPE)
+      .entity(new ErrorResponseDto(e.getMessage()))
+      .build();
   }
 
   private static Response.Status getStatusForError(Throwable e) {
@@ -43,7 +43,8 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 
   @Override
   public Response toResponse(Throwable throwable) {
-    logger.error("Mapping generic REST error", throwable);
+    log.error("Mapping generic REST error", throwable);
     return buildGenericErrorResponse(throwable);
   }
+
 }
