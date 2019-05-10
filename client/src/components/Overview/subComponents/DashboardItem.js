@@ -47,14 +47,16 @@ export default withStore(function DashboardItem({
           </div>
         </div>
       </Link>
-      <CollectionsDropdown
-        entity={dashboard}
-        currentCollection={collection}
-        toggleEntityCollection={toggleEntityCollection}
-        setCollectionToUpdate={setCollectionToUpdate}
-        collections={collections}
-        entityCollections={dashboardCollections}
-      />
+      <div className="collections">
+        <CollectionsDropdown
+          entity={dashboard}
+          currentCollection={collection}
+          toggleEntityCollection={toggleEntityCollection}
+          setCollectionToUpdate={setCollectionToUpdate}
+          collections={collections}
+          entityCollections={dashboardCollections}
+        />
+      </div>
       <div className="operations">
         <Link title="Edit Dashboard" to={`/dashboard/${dashboard.id}/edit`}>
           <Icon title="Edit Dashboard" type="edit" className="editLink" />

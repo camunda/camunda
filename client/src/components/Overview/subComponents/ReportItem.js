@@ -45,14 +45,16 @@ export default withStore(function ReportItem({
           </div>
         </div>
       </Link>
-      <CollectionsDropdown
-        entity={report}
-        currentCollection={collection}
-        toggleEntityCollection={toggleEntityCollection}
-        setCollectionToUpdate={setCollectionToUpdate}
-        collections={collections}
-        entityCollections={reportCollections}
-      />
+      <div className="collections">
+        <CollectionsDropdown
+          entity={report}
+          currentCollection={collection}
+          toggleEntityCollection={toggleEntityCollection}
+          setCollectionToUpdate={setCollectionToUpdate}
+          collections={collections}
+          entityCollections={reportCollections}
+        />
+      </div>
       <div className="operations">
         <Link title="Edit Report" to={`/report/${report.id}/edit`}>
           <Icon title="Edit Report" type="edit" className="editLink" />

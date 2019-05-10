@@ -7,7 +7,6 @@
 import React from 'react';
 import {Dropdown} from 'components';
 import './CollectionsDropdown.scss';
-import classnames from 'classnames';
 
 export default function CollectionsDropdown({
   collections,
@@ -30,8 +29,8 @@ export default function CollectionsDropdown({
   }
   return (
     <Dropdown
-      className={classnames('CollectionsDropdown')}
       label={label}
+      className="CollectionsDropdown"
       fixedOptions={[
         <Dropdown.Option onClick={() => setCollectionToUpdate({data: {entities: [entity.id]}})}>
           Add to new Collection...
