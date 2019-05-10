@@ -32,25 +32,3 @@ export const IncidentsBar = styled(BasicExpandButton)`
     margin-bottom: 1px;
   }
 `;
-
-// export const Transition = themed(styled(TransitionComponent)`
-//   &.transition-enter {
-//     transform: rotate(-90deg);
-//   }
-//   &.transition-enter-active {
-//     transform: none;
-//     transition: transform ${({timeout}) => timeout + 'ms'};
-//   }
-
-//   &.transition-enter-done {
-//     transform: none;
-//   }
-
-//   &.transition-exit {
-//     transform: none;
-//   }
-//   &.transition-exit-active {
-//     transform: rotate(-90deg);
-//     transition: transform ${({timeout}) => timeout + 'ms'};
-//   }
-// `);

@@ -10,6 +10,7 @@ import withStrippedProps from 'modules/utils/withStrippedProps';
 import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
 import {ReactComponent as Right} from 'modules/components/Icon/right.svg';
 import {themed, ExpandButtonThemes as Themes} from 'modules/theme';
+import {Transition as TransitionComponent} from 'modules/components/Transition';
 
 const iconStyle = css`
   width: 16px;
@@ -83,3 +84,35 @@ export const Button = themed(styled.button`
     }
   }
 `);
+
+export const Transition = styled(TransitionComponent)`
+  &.transition-enter {
+    transform: none;
+  }
+
+  &.transition-enter-active {
+    transform: rotate(90deg);
+    ${props => `transition: transform ${props.timeout}ms`};
+  }
+
+  &.transition-enter-done {
+    transform: rotate(90deg);
+  }
+
+  &.transition-exit {
+    transform: rotate(90deg);
+  }
+
+  &.transition-exit-active {
+    transform: none;
+    ${props => `transition: transform ${props.timeout}ms`};
+  }
+
+  &.transition-exit-done {
+    transform: none;
+  }
+
+  &.transition-appear {
+    transform: rotate(90deg);
+  }
+`;

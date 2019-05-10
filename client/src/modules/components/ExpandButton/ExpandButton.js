@@ -11,9 +11,12 @@ import * as Styled from './styled';
 export default function ExpandButton({children, isExpanded, ...props}) {
   return (
     <Styled.Button {...props}>
-      <Styled.Icon expandTheme={props.expandTheme}>
-        {isExpanded ? <Styled.DownIcon /> : <Styled.RightIcon />}
-      </Styled.Icon>
+      <Styled.Transition timeout={400} in={isExpanded} appear>
+        <Styled.Icon expandTheme={props.expandTheme}>
+          <Styled.RightIcon />
+        </Styled.Icon>
+      </Styled.Transition>
+
       {children}
     </Styled.Button>
   );
@@ -22,4 +25,8 @@ export default function ExpandButton({children, isExpanded, ...props}) {
 ExpandButton.propTypes = {
   isExpanded: PropTypes.bool,
   expandTheme: PropTypes.string.isRequired
+};
+
+ExpandButton.defaultProps = {
+  isExpanded: false
 };

@@ -134,7 +134,7 @@ export default class Selection extends React.Component {
             }`}
           >
             <Styled.Headline>Selection {selectionId}</Styled.Headline>
-            <Styled.Badge isOpen={isOpen} type={BADGE_TYPE.SELECTIONS}>
+            <Styled.Badge isExpanded={isOpen} type={BADGE_TYPE.SELECTIONS}>
               {instanceCount}
             </Styled.Badge>
           </Styled.SelectionToggle>
