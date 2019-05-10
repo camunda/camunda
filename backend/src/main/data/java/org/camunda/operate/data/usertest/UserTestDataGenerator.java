@@ -53,19 +53,18 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   protected PayloadUtil payloadUtil;
 
   @Override
-  public boolean createZeebeData(boolean manuallyCalled) {
+  public boolean createZeebeData(boolean manuallyCalled) {   
     if (!super.createZeebeData(manuallyCalled)) {
       return false;
     }
-
     logger.debug("Test data will be generated");
 
-    createWorkflowWith2VersionsAndNoInstances();
-    createWorkflowWithInstancesThatHasOnlyIncidents();
-    createWorkflowWithInstancesThatHasNoIncidents();
+    createWorkflowWithoutInstances();
+    createWorkflowWithInstancesThatHasOnlyIncidents(5 + random.nextInt(17), 5 + random.nextInt(17));
+    createWorkflowWithInstancesWithoutIncidents(5 + random.nextInt(23), 5 + random.nextInt(23));
     
     deployVersion1();
-
+ 
     createSpecialDataV1();
 
     startWorkflowInstances(1);
@@ -81,7 +80,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     startWorkflowInstances(3);
 
     progressWorkflowInstances();
-
+    
     return true;
 
   }
@@ -540,17 +539,38 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return !doNotTouchWorkflowInstanceKeys.contains(key);
   }
   
-  protected void createWorkflowWith2VersionsAndNoInstances() {
-    ZeebeTestUtil.deployWorkflow(client, "usertest/NoInstancesProcess_v_1.bpmn");
-    ZeebeTestUtil.deployWorkflow(client, "usertest/NoInstancesProcess_v_2.bpmn");
+  protected void createWorkflowWithoutInstances() {
+    String workflowKeyVersion1 = ZeebeTestUtil.deployWorkflow(client, "usertest/withoutInstancesProcess_v_1.bpmn");
+    String workflowKeyVersion2 = ZeebeTestUtil.deployWorkflow(client, "usertest/withoutInstancesProcess_v_2.bpmn");
+    logger.info("Created workflow 'withoutInstancesProcess' version 1: {} and version 2: {}", workflowKeyVersion1, workflowKeyVersion2);
   }
   
-  protected void createWorkflowWithInstancesThatHasOnlyIncidents() {
-    logger.info("createWorkflowWithInstancesThatHasOnlyIncidents NOT IMPLEMENTED yet.");
+  protected void createWorkflowWithInstancesThatHasOnlyIncidents(int forVersion1,int forVersion2) {
+    ZeebeTestUtil.deployWorkflow(client, "usertest/onlyIncidentsProcess_v_1.bpmn");
+    for (int i = 0; i < forVersion1; i++) {
+      long workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(client, "onlyIncidentsProcess", null);
+      failTask(workflowInstanceId, "alwaysFails", "No memory left.");
+    }
+    ZeebeTestUtil.deployWorkflow(client, "usertest/onlyIncidentsProcess_v_2.bpmn");
+    for (int i = 0; i < forVersion2; i++) {
+      long workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(client, "onlyIncidentsProcess", null);
+      failTask(workflowInstanceId, "alwaysFails", "No space left on device.");
+      failTask(workflowInstanceId, "alwaysFails2", "No space left on device.");
+    }
+    logger.info("Created workflow 'onlyIncidentsProcess' with {} instances for version 1 and {} instances for version 2", forVersion1, forVersion2);
   }
   
-  protected void createWorkflowWithInstancesThatHasNoIncidents() {
-    logger.info("createWorkflowWithInstancesThatHasNoIncidents NOT IMPLEMENTED yet.");
+  protected void createWorkflowWithInstancesWithoutIncidents(int forVersion1,int forVersion2) {
+    ZeebeTestUtil.deployWorkflow(client, "usertest/withoutIncidentsProcess_v_1.bpmn");
+    for (int i = 0; i < forVersion1; i++) {
+      ZeebeTestUtil.startWorkflowInstance(client, "withoutIncidentsProcess", null);
+    }
+    ZeebeTestUtil.deployWorkflow(client, "usertest/withoutIncidentsProcess_v_2.bpmn");
+    for (int i = 0; i < forVersion2; i++) {
+      long workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(client, "withoutIncidentsProcess", null);
+      completeTask(workflowInstanceId, "neverFails", null);
+    }
+    logger.info("Created workflow 'withoutIncidentsProcess' with {} instances for version 1 and {} instances for version 2", forVersion1, forVersion2);
   }
 
   protected void deployVersion1() {
