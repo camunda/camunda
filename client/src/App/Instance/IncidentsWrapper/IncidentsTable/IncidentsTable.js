@@ -49,7 +49,10 @@ export default class IncidentsTable extends React.Component {
 
   renderModal = () => {
     return (
-      <Modal onModalClose={this.toggleModal}>
+      <Modal
+        onModalClose={this.toggleModal}
+        isVisible={this.state.isModalVisibile}
+      >
         <Modal.Header>{this.state.modalTitle}</Modal.Header>
         <Modal.Body>
           <Modal.BodyText>{this.state.modalContent}</Modal.BodyText>
@@ -215,7 +218,7 @@ export default class IncidentsTable extends React.Component {
             </TransitionGroup>
           </TBody>
         </Table>
-        {this.state.isModalVisibile && this.renderModal()}
+        {this.renderModal()}
       </>
     );
   }

@@ -48,7 +48,9 @@ export default class PopoverOverlay extends React.Component {
         <Styled.ModalBody>
           <pre>
             <Styled.LinesSeparator />
-            <code>{this.renderBeautifiedMetadata()}</code>
+            <code>
+              {this.props.metadata.data && this.renderBeautifiedMetadata()}
+            </code>
           </pre>
         </Styled.ModalBody>
         <Modal.Footer>

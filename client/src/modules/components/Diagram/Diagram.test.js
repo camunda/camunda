@@ -20,6 +20,25 @@ import Diagram from './Diagram';
 import DiagramControls from './DiagramControls';
 import * as Styled from './styled';
 
+jest.mock('react-transition-group', () => {
+  const FakeTransition = jest.fn(({children}) => children);
+  const FakeCSSTransition = jest.fn(props =>
+    props.in ? <FakeTransition>{props.children}</FakeTransition> : null
+  );
+
+  return {
+    CSSTransition: FakeCSSTransition,
+    Transition: FakeTransition,
+    TransitionGroup: jest.fn(({children}) => {
+      return children.map(transtion => {
+        const completedTransition = {...transtion};
+        completedTransition.props = {...transtion.props, in: true};
+        return completedTransition;
+      });
+    })
+  };
+});
+
 const mockProps = {
   definitions: parsedDiagram.definitions,
   onFlowNodeSelection: jest.fn()
