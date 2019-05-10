@@ -16,11 +16,17 @@ const HeaderContent = () => <div>Header Content</div>;
 const BodyContent = () => <div>Body Content</div>;
 const onModalClose = jest.fn();
 const primaryButtonClickHandler = jest.fn();
+const isVisible = true;
 
 const mountNode = (props = {}) => {
   return mount(
     <ThemeProvider value="dark">
-      <Modal {...props} onModalClose={onModalClose} className="modal-root">
+      <Modal
+        {...props}
+        onModalClose={onModalClose}
+        isVisible={isVisible}
+        className="modal-root"
+      >
         <Modal.Header>
           <HeaderContent />
         </Modal.Header>

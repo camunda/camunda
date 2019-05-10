@@ -9,6 +9,8 @@ import styled from 'styled-components';
 import {ReactComponent as CloseLarge} from 'modules/components/Icon/close-large.svg';
 import Panel from 'modules/components/Panel';
 import Button from 'modules/components/Button';
+import {Transition as TransitionComponent} from 'modules/components/Transition';
+
 import {themed, Colors, themeStyle} from 'modules/theme';
 
 export const ModalRoot = themed(styled.div`
@@ -27,7 +29,50 @@ export const ModalRoot = themed(styled.div`
   })};
 `);
 
+export const Transition = themed(styled(TransitionComponent)`
+  &.transition-enter {
+    opacity: 0;
+
+    > div {
+      transform: scale(0.9);
+    }
+  }
+  &.transition-enter-active {
+    opacity: 1;
+    transition: opacity ${({timeout}) => timeout + 'ms'};
+
+    > div {
+      transform: scale(1) perspective(1px);
+      transition: transform ${({timeout}) => timeout + 'ms'};
+    }
+  }
+
+  &.transition-enter-done {
+    opacity: 1;
+    > div {
+      transform: scale(1) perspective(1px);
+    }
+  }
+
+  &.transition-exit {
+    opacity: 1;
+    > div {
+      transform: scale(1) perspective(1px);
+    }
+  }
+
+  &.transition-exit-active {
+    opacity: 0;
+    transition: opacity ${({timeout}) => timeout + 'ms'};
+    > div {
+      transform: scale(0.9) perspective(1px);
+      transition: transform ${({timeout}) => timeout + 'ms'};
+    }
+  }
+`);
+
 export const ModalContent = themed(styled(Panel)`
+  /* transform: scale(0.9); */
   width: 80%;
   height: 90%;
   border: 1px solid

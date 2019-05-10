@@ -35,6 +35,7 @@ function withModal(Component) {
 export default class Modal extends React.Component {
   static propTypes = {
     onModalClose: PropTypes.func.isRequired,
+    isVisible: PropTypes.bool.isRequired,
     children: PropTypes.node,
     className: PropTypes.string
   };
@@ -86,20 +87,31 @@ export default class Modal extends React.Component {
   addKeyHandler = (keyCode, handler) => this.keyHandlers.set(keyCode, handler);
 
   render() {
-    const {onModalClose, children, className} = this.props;
+    const {onModalClose, children, className, isVisible} = this.props;
     return createPortal(
-      <Styled.ModalRoot className={className} ref={this.modalRef} role="dialog">
-        <Styled.ModalContent>
-          <ModalContext.Provider
-            value={{
-              onModalClose,
-              addKeyHandler: this.addKeyHandler
-            }}
-          >
-            {children}
-          </ModalContext.Provider>
-        </Styled.ModalContent>
-      </Styled.ModalRoot>,
+      <Styled.Transition
+        in={isVisible}
+        timeout={200}
+        mountOnEnter
+        unmountOnExit
+      >
+        <Styled.ModalRoot
+          className={className}
+          ref={this.modalRef}
+          role="dialog"
+        >
+          <Styled.ModalContent>
+            <ModalContext.Provider
+              value={{
+                onModalClose,
+                addKeyHandler: this.addKeyHandler
+              }}
+            >
+              {children}
+            </ModalContext.Provider>
+          </Styled.ModalContent>
+        </Styled.ModalRoot>
+      </Styled.Transition>,
       document.body
     );
   }

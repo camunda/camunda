@@ -36,13 +36,14 @@ export default class PopoverOverlay extends React.Component {
 
   renderModal = () => {
     const {metadata, selectedFlowNodeName} = this.props;
+    const {isModalVisibile} = this.state;
 
     const headerTitleSuffix = !metadata.isSingleRowPeterCase
       ? ''
       : `Instance ${metadata.data.activityInstanceId}`;
 
     return (
-      <Modal onModalClose={this.handleModalClose}>
+      <Modal onModalClose={this.handleModalClose} isVisible={isModalVisibile}>
         <Modal.Header>{`Flow Node "${selectedFlowNodeName}" ${headerTitleSuffix} Metadata`}</Modal.Header>
         <Styled.ModalBody>
           <pre>
@@ -146,7 +147,7 @@ export default class PopoverOverlay extends React.Component {
               More...
             </Styled.Button>
           )}
-          {this.state.isModalVisibile && this.renderModal()}
+          {this.renderModal()}
         </Styled.Popover>
       </Overlay>
     );
