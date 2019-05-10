@@ -19,21 +19,33 @@ export async function createNewReport(t) {
 
 export async function selectDefinition(t, name, version) {
   await t
-    .click(Selector('button').withText('Select Process'))
-    .click('.Typeahead.name input')
+    .click(
+      Selector('.label')
+        .withText('Process Definition')
+        .nextSibling()
+    )
+    .typeText('.Typeahead.name input', name, {replace: true})
     .click(Selector('.Typeahead.name .DropdownOption').withText(name))
     .click('.version.Dropdown')
     .click(Selector('.version.Dropdown .DropdownOption').withText(version))
     .click('.processDefinitionPopover');
 }
 
-export async function selectView(t, name) {
+const selectControlPanelOption = type => async (t, name, subname) => {
   const dropdown = Selector('.label')
-    .withText('View')
+    .withText(type)
     .nextSibling();
 
   await t.click(dropdown.find('button')).click(dropdown.find('.DropdownOption').withText(name));
-}
+
+  if (subname) {
+    await t.click(dropdown.find('.Submenu .DropdownOption').withText(subname));
+  }
+};
+
+export const selectView = selectControlPanelOption('View');
+export const selectGroupby = selectControlPanelOption('Group By');
+export const selectVisualization = selectControlPanelOption('Visualization');
 
 export async function save(t) {
   await t.click('.save-button');
@@ -41,6 +53,13 @@ export async function save(t) {
 
 export async function cancel(t) {
   await t.click('.cancel-button');
+}
+
+export async function selectAggregation(t, type) {
+  await t.click('.Configuration .Popover');
+  await t.click('.AggregationType .Select');
+  await t.click(Selector('.AggregationType option').withText(type));
+  await t.click('.Configuration .Popover');
 }
 
 export async function gotoOverview(t) {
