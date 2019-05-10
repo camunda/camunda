@@ -18,37 +18,77 @@
 package io.zeebe.broker.logstreams.restore;
 
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.cluster.messaging.ClusterEventService;
+import io.atomix.primitive.partition.Partition;
+import io.atomix.primitive.partition.PartitionGroup;
+import io.atomix.primitive.partition.PartitionService;
+import io.zeebe.distributedlog.impl.DistributedLogstreamName;
 import io.zeebe.distributedlog.restore.RestoreClient;
-import io.zeebe.distributedlog.restore.RestoreClientFactory;
-import io.zeebe.distributedlog.restore.RestoreServer;
-import java.util.concurrent.ExecutorService;
+import io.zeebe.distributedlog.restore.RestoreFactory;
+import io.zeebe.distributedlog.restore.RestoreNodeProvider;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreContext;
 
-public class BrokerRestoreFactory implements RestoreClientFactory {
+public class BrokerRestoreFactory implements RestoreFactory {
   private final ClusterCommunicationService communicationService;
+  private final ClusterEventService eventService;
+  private final PartitionService partitionService;
+  private final String partitionGroupName;
+  private final String localMemberId;
 
-  public BrokerRestoreFactory(ClusterCommunicationService communicationService) {
+  public BrokerRestoreFactory(
+      ClusterCommunicationService communicationService,
+      ClusterEventService eventService,
+      PartitionService partitionService,
+      String partitionGroupName,
+      String localMemberId) {
     this.communicationService = communicationService;
+    this.eventService = eventService;
+    this.partitionService = partitionService;
+    this.partitionGroupName = partitionGroupName;
+    this.localMemberId = localMemberId;
+  }
+
+  @Override
+  public RestoreNodeProvider createNodeProvider(int partitionId) {
+    return new CyclicPartitionNodeProvider(() -> getPartition(partitionId), localMemberId);
   }
 
   @Override
   public RestoreClient createClient(int partitionId) {
     return new BrokerRestoreClient(
-        communicationService, getReplicationTopic(partitionId), getRestoreInfoTopic(partitionId));
-  }
-
-  public RestoreServer createServer(int partitionId, ExecutorService executor) {
-    return new BrokerRestoreServer(
         communicationService,
-        getReplicationTopic(partitionId),
+        localMemberId,
+        getLogReplicationTopic(partitionId),
         getRestoreInfoTopic(partitionId),
-        executor);
+        getSnapshotRequestTopic(partitionId),
+        getSnapshotInfoRequestTopic(partitionId),
+        eventService);
   }
 
-  private String getReplicationTopic(int partitionId) {
+  @Override
+  public SnapshotRestoreContext createSnapshotRestoreContext() {
+    return new BrokerSnapshotRestoreContext(eventService, localMemberId);
+  }
+
+  private Partition getPartition(int partitionId) {
+    final PartitionGroup group = partitionService.getPartitionGroup(partitionGroupName);
+    final String partitionKey = DistributedLogstreamName.getPartitionKey(partitionId);
+    return group.getPartition(partitionKey);
+  }
+
+  static String getLogReplicationTopic(int partitionId) {
     return String.format("log-replication-%d", partitionId);
   }
 
-  private String getRestoreInfoTopic(int partitionId) {
+  static String getRestoreInfoTopic(int partitionId) {
     return String.format("restore-info-%d", partitionId);
+  }
+
+  static String getSnapshotRequestTopic(int partitionId) {
+    return String.format("snapshot-request-%d", partitionId);
+  }
+
+  static String getSnapshotInfoRequestTopic(int partitionId) {
+    return String.format("snapshot-info-request-%d", partitionId);
   }
 }

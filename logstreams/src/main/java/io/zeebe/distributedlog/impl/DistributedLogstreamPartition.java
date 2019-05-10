@@ -24,13 +24,13 @@ import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.util.ZbLogger;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DistributedLogstreamPartition implements Service<DistributedLogstreamPartition> {
-  private static final Logger LOG = LoggerFactory.getLogger(DistributedLogstreamPartition.class);
+  private static final Logger LOG = new ZbLogger(DistributedLogstreamPartition.class);
 
   private DistributedLogstream distributedLog;
 
@@ -69,41 +69,11 @@ public class DistributedLogstreamPartition implements Service<DistributedLogstre
 
   @Override
   public void start(ServiceStartContext startContext) {
+    final CompletableActorFuture<Void> startFuture = new CompletableActorFuture<>();
     this.atomix = atomixInjector.getValue();
     this.memberId = atomix.getMembershipService().getLocalMember().id().id();
-
-    final CompletableFuture<DistributedLogstream> distributedLogstreamCompletableFuture =
-        atomix
-            .<DistributedLogstreamBuilder, DistributedLogstreamConfig, DistributedLogstream>
-                primitiveBuilder(primitiveName, DistributedLogstreamType.instance())
-            .withProtocol(PROTOCOL)
-            .buildAsync();
-
-    final CompletableActorFuture<Void> startFuture = new CompletableActorFuture<>();
-
-    distributedLogstreamCompletableFuture
-        .whenComplete(
-            (log, error) -> {
-              if (error == null) {
-                distributedLog = log;
-              } else {
-                startFuture.completeExceptionally(error);
-              }
-            })
-        .thenApply(log -> this.claimLeaderShip())
-        .whenComplete(
-            (r, error) -> {
-              if (error == null) {
-                LOG.info(
-                    "Node {} claimed leadership for partition {} successfully",
-                    memberId,
-                    partitionId);
-                startFuture.complete(null);
-              } else {
-                startFuture.completeExceptionally(error);
-              }
-            });
     startContext.async(startFuture, true);
+    tryStart(startFuture);
   }
 
   @Override
@@ -119,5 +89,41 @@ public class DistributedLogstreamPartition implements Service<DistributedLogstre
 
   public Injector<Atomix> getAtomixInjector() {
     return atomixInjector;
+  }
+
+  private void tryStart(CompletableActorFuture<Void> startFuture) {
+    final CompletableFuture<Boolean> leadershipClaim;
+    if (distributedLog == null) {
+      leadershipClaim = buildPrimitiveAsync().thenCompose(this::onPrimitiveBuilt);
+    } else {
+      leadershipClaim = this.onPrimitiveBuilt(distributedLog);
+    }
+
+    leadershipClaim.whenComplete((nothing, error) -> onLeadershipClaimed(startFuture, error));
+  }
+
+  private void onLeadershipClaimed(CompletableActorFuture<Void> startFuture, Throwable error) {
+    if (error == null) {
+      LOG.debug("Partition {} for node {} claimed leadership", partitionId, memberId);
+      startFuture.complete(null);
+    }
+    if (error != null) {
+      LOG.error(
+          "Partition {} for node {} failed to start, retrying.", partitionId, memberId, error);
+      tryStart(startFuture);
+    }
+  }
+
+  private CompletableFuture<Boolean> onPrimitiveBuilt(DistributedLogstream distributedLog) {
+    this.distributedLog = distributedLog;
+    return this.claimLeaderShip();
+  }
+
+  private CompletableFuture<DistributedLogstream> buildPrimitiveAsync() {
+    return atomix
+        .<DistributedLogstreamBuilder, DistributedLogstreamConfig, DistributedLogstream>
+            primitiveBuilder(primitiveName, DistributedLogstreamType.instance())
+        .withProtocol(PROTOCOL)
+        .buildAsync();
   }
 }

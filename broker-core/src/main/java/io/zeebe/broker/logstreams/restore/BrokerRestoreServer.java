@@ -18,38 +18,80 @@
 package io.zeebe.broker.logstreams.restore;
 
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.zeebe.distributedlog.restore.RestoreInfoServer;
 import io.zeebe.distributedlog.restore.RestoreServer;
-import io.zeebe.distributedlog.restore.log.LogReplicationServer;
+import io.zeebe.distributedlog.restore.impl.DefaultRestoreInfoRequestHandler;
+import io.zeebe.distributedlog.restore.impl.DefaultSnapshotInfoRequestHandler;
+import io.zeebe.distributedlog.restore.impl.DefaultSnapshotRequestHandler;
+import io.zeebe.distributedlog.restore.log.impl.DefaultLogReplicationRequestHandler;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.spi.SnapshotController;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class BrokerRestoreServer implements RestoreServer {
   private final ClusterCommunicationService communicationService;
   private final String logReplicationTopic;
   private final String restoreInfoTopic;
+  private final String snapshotRequestTopic;
+  private final String snapshotInfoRequestTopic;
   private final ExecutorService executor;
+
+  public BrokerRestoreServer(ClusterCommunicationService communicationService, int partitionId) {
+    this(
+        communicationService,
+        BrokerRestoreFactory.getLogReplicationTopic(partitionId),
+        BrokerRestoreFactory.getRestoreInfoTopic(partitionId),
+        BrokerRestoreFactory.getSnapshotRequestTopic(partitionId),
+        BrokerRestoreFactory.getSnapshotInfoRequestTopic(partitionId));
+  }
 
   public BrokerRestoreServer(
       ClusterCommunicationService communicationService,
       String logReplicationTopic,
       String restoreInfoTopic,
-      ExecutorService executor) {
+      String snapshotRequestTopic,
+      String snapshotInfoRequestTopic) {
     this.communicationService = communicationService;
     this.logReplicationTopic = logReplicationTopic;
     this.restoreInfoTopic = restoreInfoTopic;
-    this.executor = executor;
+    this.snapshotRequestTopic = snapshotRequestTopic;
+    this.snapshotInfoRequestTopic = snapshotInfoRequestTopic;
+
+    this.executor = Executors.newSingleThreadExecutor(r -> new Thread(r, "restore-server"));
+  }
+
+  public CompletableFuture<Void> start(
+      LogStream logStream,
+      SnapshotController processorSnapshotController,
+      SnapshotController exporterSnapshotController) {
+    final LogReplicationRequestHandler logReplicationHandler =
+        new DefaultLogReplicationRequestHandler(logStream);
+    final RestoreInfoRequestHandler restoreInfoHandler =
+        new DefaultRestoreInfoRequestHandler(logStream, processorSnapshotController);
+    final SnapshotRequestHandler snapshotRequestHandler =
+        new DefaultSnapshotRequestHandler(processorSnapshotController, exporterSnapshotController);
+    final SnapshotInfoRequestHandler snapshotInfoRequestHandler =
+        new DefaultSnapshotInfoRequestHandler(
+            processorSnapshotController, exporterSnapshotController);
+
+    return serve(logReplicationHandler)
+        .thenCompose(nothing -> serve(restoreInfoHandler))
+        .thenCompose(nothing -> serve(snapshotRequestHandler))
+        .thenCompose(nothing -> serve(snapshotInfoRequestHandler));
   }
 
   @Override
   public void close() {
     communicationService.unsubscribe(logReplicationTopic);
     communicationService.unsubscribe(restoreInfoTopic);
+    communicationService.unsubscribe(snapshotRequestTopic);
+    communicationService.unsubscribe(snapshotInfoRequestTopic);
     executor.shutdownNow();
   }
 
   @Override
-  public CompletableFuture<Void> serve(LogReplicationServer.Handler server) {
+  public CompletableFuture<Void> serve(LogReplicationRequestHandler server) {
     return communicationService.subscribe(
         logReplicationTopic,
         SbeLogReplicationRequest::new,
@@ -59,12 +101,24 @@ public class BrokerRestoreServer implements RestoreServer {
   }
 
   @Override
-  public CompletableFuture<Void> serve(RestoreInfoServer.Handler server) {
+  public CompletableFuture<Void> serve(RestoreInfoRequestHandler server) {
     return communicationService.subscribe(
         restoreInfoTopic,
         SbeRestoreInfoRequest::new,
         server::onRestoreInfoRequest,
         SbeRestoreInfoResponse::serialize,
         executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> serve(SnapshotInfoRequestHandler handler) {
+    return communicationService.subscribe(
+        snapshotInfoRequestTopic, handler::onSnapshotInfoRequest, executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> serve(SnapshotRequestHandler handler) {
+    return communicationService.subscribe(
+        snapshotRequestTopic, handler::onSnapshotRequest, executor);
   }
 }

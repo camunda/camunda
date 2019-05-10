@@ -36,7 +36,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class DefaultLogReplicationServerHandlerTest {
+public class DefaultLogReplicationRequestHandlerTest {
   private static final TemporaryFolder LOG_FOLDER = new TemporaryFolder();
   private static final LogStreamRule LOG_STREAM_RULE = new LogStreamRule(LOG_FOLDER);
   private static final LogStreamWriterRule LOG_STREAM_WRITER_RULE =
@@ -65,8 +65,8 @@ public class DefaultLogReplicationServerHandlerTest {
     final EventRange events = new EventRange(EVENTS.subList(1, EVENTS.size()));
     final LogReplicationRequest request =
         new DefaultLogReplicationRequest(EVENTS.get(0).getPosition(), events.lastPosition);
-    final DefaultLogReplicationServerHandler handler =
-        new DefaultLogReplicationServerHandler(LOG_STREAM_RULE.getLogStream());
+    final DefaultLogReplicationRequestHandler handler =
+        new DefaultLogReplicationRequestHandler(LOG_STREAM_RULE.getLogStream());
 
     // when
     final LogReplicationResponse response = handler.onReplicationRequest(request);
@@ -84,8 +84,8 @@ public class DefaultLogReplicationServerHandlerTest {
     final EventRange events = new EventRange(EVENTS.subList(0, 5));
     final LogReplicationRequest request =
         new DefaultLogReplicationRequest(-1, EVENTS.get(5).getPosition());
-    final DefaultLogReplicationServerHandler handler =
-        new DefaultLogReplicationServerHandler(
+    final DefaultLogReplicationRequestHandler handler =
+        new DefaultLogReplicationRequestHandler(
             LOG_STREAM_RULE.getLogStream(), events.serialized.length + 1);
 
     // when
@@ -104,8 +104,8 @@ public class DefaultLogReplicationServerHandlerTest {
     final int requestedCount = 8;
     final EventRange events = new EventRange(EVENTS.subList(0, requestedCount));
     final LogReplicationRequest request = new DefaultLogReplicationRequest(-1, events.lastPosition);
-    final DefaultLogReplicationServerHandler handler =
-        new DefaultLogReplicationServerHandler(LOG_STREAM_RULE.getLogStream());
+    final DefaultLogReplicationRequestHandler handler =
+        new DefaultLogReplicationRequestHandler(LOG_STREAM_RULE.getLogStream());
 
     // when
     final LogReplicationResponse response = handler.onReplicationRequest(request);
@@ -125,8 +125,8 @@ public class DefaultLogReplicationServerHandlerTest {
     final LogReplicationRequest request =
         new DefaultLogReplicationRequest(
             EVENTS.get(requestedCount - 1).getPosition(), events.lastPosition);
-    final DefaultLogReplicationServerHandler handler =
-        new DefaultLogReplicationServerHandler(LOG_STREAM_RULE.getLogStream());
+    final DefaultLogReplicationRequestHandler handler =
+        new DefaultLogReplicationRequestHandler(LOG_STREAM_RULE.getLogStream());
 
     // when
     final LogReplicationResponse response = handler.onReplicationRequest(request);
@@ -148,8 +148,8 @@ public class DefaultLogReplicationServerHandlerTest {
     final LogReplicationRequest request =
         new DefaultLogReplicationRequest(
             EVENTS.get(requestedCount).getPosition(), events.lastPosition, true);
-    final DefaultLogReplicationServerHandler handler =
-        new DefaultLogReplicationServerHandler(LOG_STREAM_RULE.getLogStream());
+    final DefaultLogReplicationRequestHandler handler =
+        new DefaultLogReplicationRequestHandler(LOG_STREAM_RULE.getLogStream());
 
     // when
     final LogReplicationResponse response = handler.onReplicationRequest(request);
@@ -169,8 +169,8 @@ public class DefaultLogReplicationServerHandlerTest {
     final EventRange events = new EventRange(EVENTS);
     final LogReplicationRequest request =
         new DefaultLogReplicationRequest(events.lastPosition + 1, events.lastPosition + 2);
-    final DefaultLogReplicationServerHandler handler =
-        new DefaultLogReplicationServerHandler(LOG_STREAM_RULE.getLogStream());
+    final DefaultLogReplicationRequestHandler handler =
+        new DefaultLogReplicationRequestHandler(LOG_STREAM_RULE.getLogStream());
 
     // when
     final LogReplicationResponse response = handler.onReplicationRequest(request);
@@ -186,8 +186,8 @@ public class DefaultLogReplicationServerHandlerTest {
     // given
     final EventRange events = new EventRange(EVENTS);
     final LogReplicationRequest request = new DefaultLogReplicationRequest(-1, events.lastPosition);
-    final DefaultLogReplicationServerHandler handler =
-        new DefaultLogReplicationServerHandler(LOG_STREAM_RULE.getLogStream());
+    final DefaultLogReplicationRequestHandler handler =
+        new DefaultLogReplicationRequestHandler(LOG_STREAM_RULE.getLogStream());
 
     // when
     final LogReplicationResponse response = handler.onReplicationRequest(request);

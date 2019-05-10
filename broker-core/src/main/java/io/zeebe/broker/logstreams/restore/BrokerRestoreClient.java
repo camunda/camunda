@@ -19,6 +19,7 @@ package io.zeebe.broker.logstreams.restore;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.cluster.messaging.ClusterEventService;
 import io.zeebe.distributedlog.restore.RestoreClient;
 import io.zeebe.distributedlog.restore.RestoreInfoRequest;
 import io.zeebe.distributedlog.restore.RestoreInfoResponse;
@@ -28,21 +29,34 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 public class BrokerRestoreClient implements RestoreClient {
+  private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(5);
   private final ClusterCommunicationService communicationService;
   private final String logReplicationTopic;
   private final String restoreInfoTopic;
+  private final String snapshotRequestTopic;
+  private final String snapshotInfoRequestTopic;
+  private final ClusterEventService eventService;
+  private String localMemberId;
 
   public BrokerRestoreClient(
       ClusterCommunicationService communicationService,
+      String localMemberId,
       String logReplicationTopic,
-      String restoreInfoTopic) {
+      String restoreInfoTopic,
+      String snapshotRequestTopic,
+      String snapshotInfoRequestTopic,
+      ClusterEventService eventService) {
     this.communicationService = communicationService;
+    this.localMemberId = localMemberId;
     this.logReplicationTopic = logReplicationTopic;
     this.restoreInfoTopic = restoreInfoTopic;
+    this.snapshotRequestTopic = snapshotRequestTopic;
+    this.snapshotInfoRequestTopic = snapshotInfoRequestTopic;
+    this.eventService = eventService;
   }
 
   @Override
-  public CompletableFuture<LogReplicationResponse> replicate(
+  public CompletableFuture<LogReplicationResponse> requestLogReplication(
       MemberId server, LogReplicationRequest request) {
     return communicationService.send(
         logReplicationTopic,
@@ -50,7 +64,7 @@ public class BrokerRestoreClient implements RestoreClient {
         SbeLogReplicationRequest::serialize,
         SbeLogReplicationResponse::new,
         server,
-        Duration.ofSeconds(5));
+        DEFAULT_REQUEST_TIMEOUT);
   }
 
   @Override
@@ -62,6 +76,17 @@ public class BrokerRestoreClient implements RestoreClient {
         SbeRestoreInfoRequest::serialize,
         SbeRestoreInfoResponse::new,
         server,
-        Duration.ofSeconds(5));
+        DEFAULT_REQUEST_TIMEOUT);
+  }
+
+  @Override
+  public CompletableFuture<Integer> requestSnapshotInfo(MemberId server) {
+    return communicationService.send(
+        snapshotInfoRequestTopic, null, server, DEFAULT_REQUEST_TIMEOUT);
+  }
+
+  @Override
+  public void requestLatestSnapshot(MemberId server) {
+    communicationService.unicast(snapshotRequestTopic, null, server);
   }
 }

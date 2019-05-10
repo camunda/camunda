@@ -35,6 +35,8 @@ public class DataCfg implements ConfigurationEntry {
 
   private String snapshotReplicationPeriod = "5m";
 
+  private String raftSegmentSize;
+
   private int maxSnapshots = 1;
 
   @Override
@@ -93,6 +95,14 @@ public class DataCfg implements ConfigurationEntry {
 
   public int getMaxSnapshots() {
     return maxSnapshots;
+  }
+
+  public String getRaftSegmentSize() {
+    return raftSegmentSize;
+  }
+
+  public void setRaftSegmentSize(String raftSegmentSize) {
+    this.raftSegmentSize = raftSegmentSize;
   }
 
   @Override

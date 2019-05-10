@@ -16,38 +16,109 @@
 package io.zeebe.logstreams.state;
 
 import io.atomix.cluster.MemberId;
-import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.distributedlog.restore.RestoreClient;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreContext;
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.LoggerFactory;
 
-public class SnapshotRequester implements SnapshotReplicationListener {
-
-  private final OnDemandSnapshotReplication client;
-  private CompletableFuture<Long> replicationFuture;
-  private final SnapshotController snapshotController;
+public class SnapshotRequester {
+  private final RestoreClient client;
+  private final ReplicationController processorSnapshotController;
+  private final SnapshotRestoreContext restoreContext;
+  private final int partitionId;
+  private final StateStorage processorStorage;
+  private final StateStorage exporterStorage;
+  private final SnapshotReplication processorSnapshotReplicationConsumer;
+  private final ReplicationController exporterSnapshotController;
+  private final SnapshotReplication exporterSnapshotReplicationConsumer;
 
   public SnapshotRequester(
-      OnDemandSnapshotReplication client, SnapshotController snapshotController) {
+      RestoreClient client, SnapshotRestoreContext restoreContext, int partitionId) {
     this.client = client;
-    this.snapshotController = snapshotController;
+    this.restoreContext = restoreContext;
+    this.partitionId = partitionId;
+
+    exporterSnapshotReplicationConsumer =
+        restoreContext.createExporterSnapshotReplicationConsumer(partitionId);
+    processorSnapshotReplicationConsumer =
+        restoreContext.createProcessorSnapshotReplicationConsumer(partitionId);
+    processorStorage = restoreContext.getProcessorStateStorage(partitionId);
+    exporterStorage = restoreContext.getExporterStateStorage(partitionId);
+
+    this.processorSnapshotController =
+        new ReplicationController(
+            processorSnapshotReplicationConsumer, this.processorStorage, () -> {}, () -> -1L);
+
+    this.exporterSnapshotController =
+        new ReplicationController(
+            exporterSnapshotReplicationConsumer, this.exporterStorage, () -> {}, () -> -1L);
   }
 
-  public CompletableFuture<Long> getLatestSnapshotFrom(MemberId server) {
-    replicationFuture = new CompletableFuture<>();
-    snapshotController.addListener(this);
-    client.request(server);
-    return replicationFuture;
+  public CompletableFuture<Long> getLatestSnapshotsFrom(
+      MemberId server, boolean getExporterSnapshot) {
+
+    processorSnapshotController.consumeReplicatedSnapshots(pos -> {});
+
+    CompletableFuture<Long> replicated = CompletableFuture.completedFuture(null);
+
+    if (getExporterSnapshot) {
+      exporterSnapshotController.consumeReplicatedSnapshots(pos -> {});
+      final CompletableFuture<Long> exporterFuture = new CompletableFuture<>();
+      exporterSnapshotController.addListener(
+          new DefaultSnapshotReplicationListener(
+              exporterSnapshotController, exporterSnapshotReplicationConsumer, exporterFuture));
+      replicated = replicated.thenCompose((nothing) -> exporterFuture);
+    }
+
+    final CompletableFuture<Long> future = new CompletableFuture<>();
+    processorSnapshotController.addListener(
+        new DefaultSnapshotReplicationListener(
+            processorSnapshotController, processorSnapshotReplicationConsumer, future));
+    replicated = replicated.thenCompose((nothing) -> future);
+
+    client.requestLatestSnapshot(server);
+    return replicated;
   }
 
-  @Override
-  public void onReplicated(long snapshotPosition) {
-    replicationFuture.complete(snapshotPosition);
-    snapshotController.removeListener(this);
+  public long getExporterPosition() {
+    return restoreContext.getExporterPositionSupplier(exporterStorage).get();
   }
 
-  @Override
-  public void onFailure(long snapshotPosition) {
-    replicationFuture.completeExceptionally(new FailedSnapshotReplication(snapshotPosition));
-    snapshotController.enableRetrySnapshot(snapshotPosition);
-    snapshotController.removeListener(this);
+  public long getProcessedPosition() {
+    return restoreContext.getProcessorPositionSupplier(partitionId, processorStorage).get();
+  }
+
+  static class DefaultSnapshotReplicationListener implements SnapshotReplicationListener {
+    private final ReplicationController controller;
+    private SnapshotReplication consumer;
+    private final CompletableFuture<Long> future;
+
+    DefaultSnapshotReplicationListener(
+        ReplicationController controller,
+        SnapshotReplication consumer,
+        CompletableFuture<Long> future) {
+      this.controller = controller;
+      this.consumer = consumer;
+      this.future = future;
+    }
+
+    @Override
+    public void onReplicated(long snapshotPosition) {
+      LoggerFactory.getLogger("Restore").info("Replicated snapshot {}", snapshotPosition);
+      try {
+        future.complete(snapshotPosition);
+      } catch (Exception e) {
+        future.completeExceptionally(e);
+      }
+      consumer.close();
+      controller.removeListener(this);
+    }
+
+    @Override
+    public void onFailure(long snapshotPosition) {
+      future.completeExceptionally(new FailedSnapshotReplication(snapshotPosition));
+      controller.clearInvalidatedSnapshot(snapshotPosition);
+      controller.removeListener(this);
+    }
   }
 }

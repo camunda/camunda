@@ -45,6 +45,7 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
@@ -71,6 +72,8 @@ public class LogStreamService implements LogStream, Service<LogStream> {
 
   private final Position commitPosition;
 
+  private final AtomicBoolean restoring;
+
   private Supplier<Long> exporterPositionSupplier;
   private LogBlockIndexContext logBlockIndexContext;
 
@@ -91,6 +94,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     this.serviceContainer = builder.getServiceContainer();
     this.onCommitPositionUpdatedConditions = builder.getOnCommitPositionUpdatedConditions();
     this.commitPosition = builder.getCommitPosition();
+    this.restoring = new AtomicBoolean(false);
     this.writeBufferSize = ByteValue.ofBytes(builder.getWriteBufferSize());
     this.maxAppendBlockSize = builder.getMaxAppendBlockSize();
   }

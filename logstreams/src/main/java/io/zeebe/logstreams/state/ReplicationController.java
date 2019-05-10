@@ -31,7 +31,7 @@ import java.util.zip.CRC32;
 import org.agrona.collections.Long2LongHashMap;
 import org.slf4j.Logger;
 
-final class ReplicationController {
+public final class ReplicationController {
 
   private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
 
@@ -49,7 +49,7 @@ final class ReplicationController {
   private final List<SnapshotReplicationListener> replicationListeners =
       new CopyOnWriteArrayList<>();
 
-  ReplicationController(
+  public ReplicationController(
       SnapshotReplication replication,
       StateStorage storage,
       Runnable ensureMaxSnapshotCount,

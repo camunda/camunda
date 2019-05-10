@@ -17,18 +17,18 @@ package io.zeebe.distributedlog.restore.impl;
 
 import io.zeebe.distributedlog.restore.RestoreInfoRequest;
 import io.zeebe.distributedlog.restore.RestoreInfoResponse;
-import io.zeebe.distributedlog.restore.RestoreInfoServer;
-import io.zeebe.distributedlog.restore.RestoreStrategy.ReplicationTarget;
+import io.zeebe.distributedlog.restore.RestoreInfoResponse.ReplicationTarget;
+import io.zeebe.distributedlog.restore.RestoreServer.RestoreInfoRequestHandler;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.spi.SnapshotController;
 
-public class DefaultRestoreInfoServerHandler implements RestoreInfoServer.Handler {
+public class DefaultRestoreInfoRequestHandler implements RestoreInfoRequestHandler {
   private final SnapshotController snapshotController;
   private final LogStreamReader reader;
 
-  public DefaultRestoreInfoServerHandler(
+  public DefaultRestoreInfoRequestHandler(
       LogStream logStream, SnapshotController snapshotController) {
     this.reader = new BufferedLogStreamReader(logStream);
     this.snapshotController = snapshotController;
@@ -37,14 +37,25 @@ public class DefaultRestoreInfoServerHandler implements RestoreInfoServer.Handle
   @Override
   public RestoreInfoResponse onRestoreInfoRequest(RestoreInfoRequest request) {
     final ReplicationTarget target;
-    if (snapshotController.getLastValidSnapshotPosition() >= request.getLatestLocalPosition()) {
-      target = ReplicationTarget.SNAPSHOT;
-    } else if (reader.seek(request.getLatestLocalPosition()) && reader.hasNext()) {
-      target = ReplicationTarget.EVENTS;
+    final long lastValidSnapshotPosition = snapshotController.getLastValidSnapshotPosition();
+    if (lastValidSnapshotPosition > -1
+        && lastValidSnapshotPosition >= request.getLatestLocalPosition()) {
+      target = RestoreInfoResponse.ReplicationTarget.SNAPSHOT;
+    } else if (seekToRequestedPositionExclusive(request.getLatestLocalPosition())) {
+      target = RestoreInfoResponse.ReplicationTarget.EVENTS;
     } else {
-      target = ReplicationTarget.NONE;
+      target = RestoreInfoResponse.ReplicationTarget.NONE;
     }
 
     return new DefaultRestoreInfoResponse(target);
+  }
+
+  private boolean seekToRequestedPositionExclusive(long position) {
+    if (position == -1) {
+      reader.seekToFirstEvent();
+      return reader.hasNext();
+    }
+
+    return reader.seek(position) && reader.hasNext();
   }
 }

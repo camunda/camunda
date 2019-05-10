@@ -25,10 +25,10 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.partitions.RaftState;
+import io.zeebe.broker.logstreams.restore.BrokerRestoreServer;
 import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
@@ -190,9 +190,9 @@ public class ClientApiMessageHandlerTest {
         new Partition(
             null,
             mock(ClusterEventService.class),
-            mock(ClusterCommunicationService.class),
             LOG_STREAM_PARTITION_ID,
-            RaftState.LEADER) {
+            RaftState.LEADER,
+            mock(BrokerRestoreServer.class)) {
           @Override
           public LogStream getLogStream() {
             return logStream;

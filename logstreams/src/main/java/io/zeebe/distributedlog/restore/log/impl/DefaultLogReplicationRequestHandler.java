@@ -15,9 +15,9 @@
  */
 package io.zeebe.distributedlog.restore.log.impl;
 
+import io.zeebe.distributedlog.restore.RestoreServer.LogReplicationRequestHandler;
 import io.zeebe.distributedlog.restore.log.LogReplicationRequest;
 import io.zeebe.distributedlog.restore.log.LogReplicationResponse;
-import io.zeebe.distributedlog.restore.log.LogReplicationServer;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
@@ -28,18 +28,18 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class DefaultLogReplicationServerHandler implements LogReplicationServer.Handler {
+public class DefaultLogReplicationRequestHandler implements LogReplicationRequestHandler {
   private static final int DEFAULT_READ_BUFFER_SIZE = 64 * 1024 * 1024;
 
   private final LogStreamReader reader;
   private final MutableDirectBuffer readerBuffer;
   private final Logger logger;
 
-  public DefaultLogReplicationServerHandler(LogStream logStream) {
+  public DefaultLogReplicationRequestHandler(LogStream logStream) {
     this(logStream, DEFAULT_READ_BUFFER_SIZE);
   }
 
-  public DefaultLogReplicationServerHandler(LogStream logStream, int bufferSize) {
+  public DefaultLogReplicationRequestHandler(LogStream logStream, int bufferSize) {
     this.reader = new BufferedLogStreamReader(logStream);
     this.readerBuffer = new UnsafeBuffer(ByteBuffer.allocate(bufferSize));
     this.logger = new ZbLogger(String.format("log.replication.server.%s", logStream.getLogName()));

@@ -20,14 +20,13 @@ package io.zeebe.broker.clustering.base.partitions;
 import static io.zeebe.broker.exporter.ExporterManagerService.EXPORTER_PROCESSOR_ID;
 import static io.zeebe.broker.exporter.ExporterManagerService.PROCESSOR_NAME;
 
-import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.engine.EngineService;
 import io.zeebe.broker.engine.impl.StateReplication;
 import io.zeebe.broker.exporter.stream.ExporterColumnFamilies;
 import io.zeebe.broker.exporter.stream.ExportersState;
-import io.zeebe.broker.logstreams.state.DefaultOnDemandSnapshotReplication;
+import io.zeebe.broker.logstreams.restore.BrokerRestoreServer;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -42,8 +41,7 @@ import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.slf4j.Logger;
 
 /** Service representing a partition. */
@@ -52,12 +50,10 @@ public class Partition implements Service<Partition> {
   public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
   private final ClusterEventService eventService;
   private final BrokerCfg brokerCfg;
-  private final ClusterCommunicationService communicationService;
+  private final BrokerRestoreServer restoreServer;
+
   private SnapshotReplication processorStateReplication;
   private SnapshotReplication exporterStateReplication;
-  private DefaultOnDemandSnapshotReplication processorSnapshotRequestServer;
-  private DefaultOnDemandSnapshotReplication exporterSnapshotRequestServer;
-  private ExecutorService executor;
 
   public static String getPartitionName(final int partitionId) {
     return String.format(PARTITION_NAME_FORMAT, partitionId);
@@ -75,18 +71,19 @@ public class Partition implements Service<Partition> {
   public Partition(
       BrokerCfg brokerCfg,
       ClusterEventService eventService,
-      ClusterCommunicationService communicationService,
-      final int partitionId,
-      final RaftState state) {
+      int partitionId,
+      RaftState state,
+      BrokerRestoreServer restoreServer) {
     this.brokerCfg = brokerCfg;
     this.partitionId = partitionId;
     this.state = state;
     this.eventService = eventService;
-    this.communicationService = communicationService;
+    this.restoreServer = restoreServer;
   }
 
   @Override
   public void start(final ServiceStartContext startContext) {
+    final CompletableActorFuture<Void> startedFuture = new CompletableActorFuture<>();
     final boolean noReplication = brokerCfg.getCluster().getReplicationFactor() == 1;
 
     logStream = logStreamInjector.getValue();
@@ -125,24 +122,23 @@ public class Partition implements Service<Partition> {
 
       processorSnapshotController.consumeReplicatedSnapshots(logStream::delete);
       exporterSnapshotController.consumeReplicatedSnapshots(pos -> {});
-    } else {
-      executor =
-          Executors.newSingleThreadExecutor(
-              (r) -> new Thread(r, String.format("snapshot-request-server-%d", partitionId)));
-      processorSnapshotRequestServer =
-          new DefaultOnDemandSnapshotReplication(
-              communicationService, partitionId, streamProcessorName, executor);
-      processorSnapshotRequestServer.serve(
-          request -> {
-            LOG.info("Received snapshot replication request for partition {}", partitionId);
-            processorSnapshotController.replicateLatestSnapshot(r -> r.run());
-          });
-      exporterSnapshotRequestServer =
-          new DefaultOnDemandSnapshotReplication(
-              communicationService, partitionId, exporterProcessorName, executor);
-      exporterSnapshotRequestServer.serve(
-          request -> exporterSnapshotController.replicateLatestSnapshot(r -> r.run()));
     }
+
+    startRestoreServer(startedFuture);
+    startContext.async(startedFuture, true);
+  }
+
+  private void startRestoreServer(CompletableActorFuture<Void> startedFuture) {
+    restoreServer
+        .start(logStream, processorSnapshotController, exporterSnapshotController)
+        .whenComplete(
+            (nothing, error) -> {
+              if (error != null) {
+                startedFuture.completeExceptionally(error);
+              } else {
+                startedFuture.complete(null);
+              }
+            });
   }
 
   private long getLowestReplicatedExportedPosition() {
@@ -183,15 +179,7 @@ public class Partition implements Service<Partition> {
   public void stop(ServiceStopContext stopContext) {
     processorStateReplication.close();
     exporterStateReplication.close();
-    if (processorSnapshotRequestServer != null) {
-      processorSnapshotRequestServer.close();
-    }
-    if (exporterSnapshotRequestServer != null) {
-      exporterSnapshotRequestServer.close();
-    }
-    if (executor != null) {
-      executor.shutdown();
-    }
+    restoreServer.close();
   }
 
   @Override

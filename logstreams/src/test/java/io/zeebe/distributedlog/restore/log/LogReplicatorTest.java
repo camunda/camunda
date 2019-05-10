@@ -18,7 +18,7 @@ package io.zeebe.distributedlog.restore.log;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.zeebe.distributedlog.restore.log.impl.ControllableLogReplicationClient;
+import io.zeebe.distributedlog.restore.impl.ControllableRestoreClient;
 import io.zeebe.distributedlog.restore.log.impl.DefaultLogReplicationResponse;
 import io.zeebe.distributedlog.restore.log.impl.RecordingLogReplicationAppender;
 import java.util.concurrent.CompletableFuture;
@@ -29,7 +29,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class LogReplicatorTest {
-  private final ControllableLogReplicationClient client = new ControllableLogReplicationClient();
+  private final ControllableRestoreClient client = new ControllableRestoreClient();
   private final RecordingLogReplicationAppender appender = new RecordingLogReplicationAppender();
   private final Executor executor = Runnable::run;
   private final MemberId server = MemberId.anonymous();
@@ -49,7 +49,7 @@ public class LogReplicatorTest {
 
     // when
     replicator.replicate(server, -1, -1);
-    client.complete(-1, response);
+    client.completeLogReplication(-1, response);
 
     // then
     assertThat(appender.getInvocations())
@@ -67,12 +67,14 @@ public class LogReplicatorTest {
     // when
     final CompletableFuture<Long> result =
         replicator.replicate(server, -1, response.getToPosition() + 1);
-    client.complete(-1, response);
+    client.completeLogReplication(-1, response);
 
     // then
     assertThat(result).isNotCompleted();
-    assertThat(client.getRequests()).hasSize(2);
-    assertThat(client.getRequests().get(response.getToPosition())).isNotNull().isNotCompleted();
+    assertThat(client.getLogReplicationRequests()).hasSize(2);
+    assertThat(client.getLogReplicationRequests().get(response.getToPosition()))
+        .isNotNull()
+        .isNotCompleted();
   }
 
   @Test
@@ -83,10 +85,10 @@ public class LogReplicatorTest {
     // when
     final CompletableFuture<Long> result =
         replicator.replicate(server, -1, response.getToPosition() + 1, true);
-    client.complete(-1, response);
+    client.completeLogReplication(-1, response);
 
     // then
-    assertThat(client.getRequests()).hasSize(2);
+    assertThat(client.getLogReplicationRequests()).hasSize(2);
     assertThat(client.getRequestLog().get(0).includeFromPosition()).isTrue();
     assertThat(client.getRequestLog().get(1).includeFromPosition()).isFalse();
   }
@@ -99,7 +101,7 @@ public class LogReplicatorTest {
     // when
     final CompletableFuture<Long> result =
         replicator.replicate(server, -1, response.getToPosition() + 1);
-    client.complete(-1, response);
+    client.completeLogReplication(-1, response);
 
     // then
     assertThat(result).isCompletedWithValue(response.getToPosition());
@@ -117,13 +119,13 @@ public class LogReplicatorTest {
     // when
     final CompletableFuture<Long> result =
         replicator.replicate(server, -1, response[1].getToPosition());
-    client.complete(-1, response[0]);
+    client.completeLogReplication(-1, response[0]);
 
     // then
     assertThat(result).isNotCompleted();
 
     // when
-    client.complete(response[0].getToPosition(), response[1]);
+    client.completeLogReplication(response[0].getToPosition(), response[1]);
 
     // then
     assertThat(result).isCompletedWithValue(response[1].getToPosition());
@@ -137,7 +139,7 @@ public class LogReplicatorTest {
     // when
     final CompletableFuture<Long> result =
         replicator.replicate(server, -1, response.getToPosition() + 1);
-    client.complete(-1, response);
+    client.completeLogReplication(-1, response);
 
     // then
     assertThat(result).isCompletedWithValue(response.getToPosition());
@@ -151,7 +153,7 @@ public class LogReplicatorTest {
 
     // when
     final CompletableFuture<Long> result = replicator.replicate(server, -1, -1);
-    client.complete(-1, error);
+    client.completeLogReplication(-1, error);
 
     // then
     assertThat(appender.getInvocations()).isEmpty();
@@ -169,7 +171,7 @@ public class LogReplicatorTest {
 
     // when
     final CompletableFuture<Long> result = replicator.replicate(server, -1, -1);
-    client.complete(-1, response);
+    client.completeLogReplication(-1, response);
 
     // then
     assertThat(appender.getInvocations()).isEmpty();
@@ -187,7 +189,7 @@ public class LogReplicatorTest {
 
     // when
     final CompletableFuture<Long> result = replicator.replicate(server, -1, -1);
-    client.complete(-1, response);
+    client.completeLogReplication(-1, response);
 
     // then
     assertThat(result)
@@ -211,7 +213,7 @@ public class LogReplicatorTest {
 
     // when
     final CompletableFuture<Long> result = replicator.replicate(server, -1, -1);
-    client.complete(-1, response);
+    client.completeLogReplication(-1, response);
 
     // then
     assertThat(result).isCompletedExceptionally().hasFailedWithThrowableThat().isEqualTo(error);
