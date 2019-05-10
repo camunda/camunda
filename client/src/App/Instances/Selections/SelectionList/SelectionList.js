@@ -104,7 +104,7 @@ class SelectionList extends React.Component {
         <Styled.Ul>
           <TransitionGroup component={null}>
             {selections.length === 10 && (
-              <Styled.Transition timeout={noTimeout}>
+              <Styled.Transition timeout={{enter: 100, exit: 100}}>
                 <Styled.MessageWrapper>
                   <Styled.SelectionMessage
                     type={MESSAGES_TYPE.DROP_SELECTION}

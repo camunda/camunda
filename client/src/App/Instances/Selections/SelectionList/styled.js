@@ -36,13 +36,16 @@ export const Li = styled.li`
 
 export const MessageWrapper = styled.div`
   display: flex;
-  justify-content: flex-end;
-  padding-right: 40px;
+  padding-left: 40px;
 `;
 
 export const SelectionMessage = styled(ContextualMessage)`
   margin-top: 20px;
   height: 23px;
+
+  > div:nth-child(2) {
+    width: 310px;
+  }
 `;
 
 export const NoSelectionWrapper = themed(styled.div`
