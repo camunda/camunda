@@ -1,0 +1,22 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render component 1`] = `
+<div
+  className="VisibleNodesFilter"
+>
+  <fieldset
+    className="NodeFilter"
+  >
+    <legend>
+      Selected nodes to display
+    </legend>
+    <ForwardRef(Button)
+      onClick={[Function]}
+    >
+      Show Flow Nodes...
+    </ForwardRef(Button)>
+  </fieldset>
+</div>
+`;
+
+exports[`should render nothing if report is not grouped by flowNodes 1`] = `""`;

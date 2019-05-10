@@ -23,21 +23,32 @@ export function getFormatter(viewProperty) {
   }
 }
 
-export function processResult({
-  data: {
+export function processResult({data, result}) {
+  const {
     view,
     configuration: {aggregationType}
-  },
-  result
-}) {
+  } = data;
+
+  const filteredResult = filterResult(result, data);
   if (view.property.toLowerCase().includes('duration')) {
-    if (result.type === 'durationNumber') {
-      return {...result, data: result.data[aggregationType]};
+    if (filteredResult.type === 'durationNumber') {
+      return {...filteredResult, data: filteredResult.data[aggregationType]};
     }
-    if (result.type === 'durationMap') {
-      const newData = result.data.map(entry => ({...entry, value: entry.value[aggregationType]}));
-      return {...result, data: newData};
+    if (filteredResult.type === 'durationMap') {
+      const newData = filteredResult.data.map(entry => {
+        return {...entry, value: entry.value[aggregationType]};
+      });
+
+      return {...filteredResult, data: newData};
     }
   }
+  return filteredResult;
+}
+
+function filterResult(result, {groupBy: {type}, configuration: {hiddenNodes}}) {
+  if (type === 'flowNodes') {
+    return {...result, data: result.data.filter(({key}) => !(hiddenNodes || []).includes(key))};
+  }
+
   return result;
 }

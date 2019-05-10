@@ -1,0 +1,17 @@
+.NodeSelectionModal {
+  .Modal__content {
+    display: flex;
+    flex-direction: column;
+
+    .diagramActions {
+      .Button:first-of-type {
+        margin-right: 10px;
+      }
+    }
+
+    .diagramContainer {
+      flex-grow: 1;
+      display: flex;
+    }
+  }
+}

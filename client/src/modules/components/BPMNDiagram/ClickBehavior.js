@@ -14,7 +14,9 @@ export default class ClickBehavior extends React.Component {
   }
 
   componentDidMount() {
-    this.getNodeObjects();
+    if (this.props.setSelectedNodes) {
+      this.getNodeObjects();
+    }
     this.setupEventListeners();
     this.update();
   }
