@@ -73,7 +73,11 @@ public class MapResultSortingUtility {
       case SortingDto.SORT_BY_VALUE:
         comparator = Comparator.comparing(t -> {
           final Object value = valueSupplier.apply(t);
-          if (value instanceof Comparable) {
+          if (value == null) {
+            // we want to make sure that null values are sorted to the end
+            final int last = sortOrder.equals(SortOrder.DESC)? -1 : 1;
+            return (Comparable) o -> last;
+          } else if (value instanceof Comparable) {
             return ((Comparable) value);
           } else {
             throw new OptimizeRuntimeException(

@@ -69,6 +69,7 @@ public class FlowNodeSortingIT {
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData.size(), is(4));
+    assertThat(getExecutedFlowNodeCount(result), is(4L));
     final List<String> resultLabels = resultData.stream()
       .map(MapResultEntryDto::getLabel)
       .collect(Collectors.toList());
@@ -90,12 +91,12 @@ public class FlowNodeSortingIT {
     // when
     final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
-      evaluateDurationReport(reportData);
+    ProcessDurationReportMapResultDto result = evaluateDurationReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto<AggregationResultDto>> resultData = evaluationResponse.getResult().getData();
+    List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
     assertThat(resultData.size(), is(4));
+    assertThat(getExecutedFlowNodeCount(result), is(4L));
     final List<String> resultLabels = resultData.stream()
       .map(MapResultEntryDto::getLabel)
       .collect(Collectors.toList());
@@ -139,6 +140,7 @@ public class FlowNodeSortingIT {
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData.size(), is(4));
+    assertThat(getExecutedFlowNodeCount(result), is(4L));
     final List<String> resultLabels = resultData.stream()
       .map(MapResultEntryDto::getLabel)
       .collect(Collectors.toList());
@@ -182,6 +184,7 @@ public class FlowNodeSortingIT {
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData.size(), is(4));
+    assertThat(getExecutedFlowNodeCount(result), is(4L));
     final List<String> resultLabels = resultData.stream()
       .map(MapResultEntryDto::getLabel)
       .collect(Collectors.toList());
@@ -273,5 +276,22 @@ public class FlowNodeSortingIT {
       // @formatter:off
       .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
       // @formatter:on
+  }
+
+  private long getExecutedFlowNodeCount(ProcessCountReportMapResultDto resultList) {
+    return resultList.getData().stream().filter(result -> result.getValue() > 0).count();
+  }
+
+  private long getExecutedFlowNodeCount(ProcessDurationReportMapResultDto resultList) {
+    return resultList.getData()
+      .stream()
+      .map(MapResultEntryDto::getValue)
+      .filter(result ->
+                result.getAvg() != null &&
+                  result.getMedian() != null &&
+                  result.getMin() != null &&
+                  result.getMax() != null
+      )
+      .count();
   }
 }

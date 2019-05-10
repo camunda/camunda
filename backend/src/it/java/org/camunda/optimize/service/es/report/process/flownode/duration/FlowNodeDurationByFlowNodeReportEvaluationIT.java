@@ -41,7 +41,6 @@ import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -52,6 +51,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
+import static org.hamcrest.core.IsNull.nullValue;
 
 @RunWith(JUnitParamsRunner.class)
 public class FlowNodeDurationByFlowNodeReportEvaluationIT {
@@ -71,6 +71,10 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
   @Rule
   public RuleChain chain = RuleChain
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
+
+  private static Object[] aggregationTypes() {
+    return AggregationType.values();
+  }
 
   @Test
   public void reportEvaluationForOneProcess() throws Exception {
@@ -201,7 +205,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getProcessInstanceCount(), is(3L));
     assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData().size(), is(1));
+    assertThat(resultDto.getData().size(), is(4));
+    assertThat(getExecutedFlowNodeCount(resultDto), is(1L));
     assertThat(resultDto.getIsComplete(), is(false));
   }
 
@@ -240,10 +245,6 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     );
   }
 
-  private static Object[] aggregationTypes() {
-    return AggregationType.values();
-  }
-
   @Test
   @Parameters(method = "aggregationTypes")
   public void testCustomOrderOnResultValueIsApplied(final AggregationType aggregationType) throws SQLException {
@@ -279,18 +280,6 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
       bucketValues,
       contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
     );
-  }
-
-  private ProcessDefinitionEngineDto deployProcessWithTwoTasks() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
-      .startEvent(START_EVENT)
-      .serviceTask(SERVICE_TASK_ID)
-      .camundaExpression("${true}")
-      .serviceTask(SERVICE_TASK_ID_2)
-      .camundaExpression("${true}")
-      .endEvent(END_EVENT)
-      .done();
-    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
   @Test
@@ -499,10 +488,9 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
 
     // then
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(result.getDataEntryForKey(START_EVENT).get().getValue(), is(calculateExpectedValueGivenDurations(100L)));
-    assertThat(result.getDataEntryForKey(USER_TASK).isPresent(), is(false));
-    assertThat(result.getDataEntryForKey(END_EVENT).isPresent(), is(false));
   }
 
   @Test
@@ -546,6 +534,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     // then
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(3L));
     assertThat(
       result.getDataEntryForKey(SERVICE_TASK_ID).get().getValue(),
       is(calculateExpectedValueGivenDurations(10L))
@@ -581,6 +570,37 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
   }
 
   @Test
+  public void resultContainsNonExecutedFlowNodes() {
+    // given
+    BpmnModelInstance subProcess = Bpmn.createExecutableProcess()
+      .startEvent("startEvent")
+      .userTask("userTask")
+      .endEvent("endEvent")
+      .done();
+    ProcessInstanceEngineDto engineDto = engineRule.deployAndStartProcess(subProcess);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = createFlowNodeDurationGroupByFlowNodeHeatmapReport(
+      engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
+    );
+    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+
+    // then
+    assertThat(result.getData().size(), is(3));
+    AggregationResultDto notExecutedFlowNodeResult = result.getData()
+      .stream()
+      .filter(r -> r.getKey().equals("endEvent"))
+      .findFirst().get().getValue();
+    assertThat(notExecutedFlowNodeResult.getMedian(), nullValue());
+    assertThat(notExecutedFlowNodeResult.getAvg(), nullValue());
+    assertThat(notExecutedFlowNodeResult.getMin(), nullValue());
+    assertThat(notExecutedFlowNodeResult.getMax(), nullValue());
+  }
+
+  @Test
   public void filterInReport() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
@@ -598,8 +618,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     // then
     ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
-    Map<String, AggregationResultDto> resultMap;
-    assertThat(result.getData().size(), is(0));
+    assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(0L));
 
     // when
     reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -714,6 +734,33 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
       Math.round(statistics.getMean()),
       Math.round(statistics.getPercentile(50.0D))
     );
+  }
+
+  private long getExecutedFlowNodeCount(ProcessDurationReportMapResultDto resultList) {
+    return resultList.getData()
+      .stream()
+      .map(MapResultEntryDto::getValue)
+      .filter(result ->
+                result.getAvg() != null &&
+                  result.getMedian() != null &&
+                  result.getMin() != null &&
+                  result.getMax() != null
+      )
+      .count();
+  }
+
+  private ProcessDefinitionEngineDto deployProcessWithTwoTasks() {
+    // @formatter:off
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
+      .startEvent(START_EVENT)
+      .serviceTask(SERVICE_TASK_ID)
+        .camundaExpression("${true}")
+      .serviceTask(SERVICE_TASK_ID_2)
+        .camundaExpression("${true}")
+      .endEvent(END_EVENT)
+      .done();
+    // @formatter:on
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
 }

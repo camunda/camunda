@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.process.util;
 
+import com.google.common.collect.Sets;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -14,9 +15,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEnt
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class GroupByFlowNodeCommandUtil {
@@ -48,14 +52,27 @@ public class GroupByFlowNodeCommandUtil {
 
   public static <MAP extends ProcessReportMapResult<V>, V> void enrichResultData(
     final CommandContext<SingleProcessReportDefinitionDto> commandContext,
-    final ReportEvaluationResult<MAP, SingleProcessReportDefinitionDto> evaluationResult) {
+    final ReportEvaluationResult<MAP, SingleProcessReportDefinitionDto> evaluationResult,
+    Supplier<V> createNewEmptyResult) {
 
     final ProcessReportDataDto reportData = commandContext.getReportDefinition().getData();
     getProcessDefinitionIfAvailable(commandContext, reportData)
       .ifPresent(processDefinition -> {
         final Map<String, String> flowNodeNames = processDefinition.getFlowNodeNames();
 
-        evaluationResult.getResultAsDto().getData().forEach(entry -> entry.setLabel(flowNodeNames.get(entry.getKey())));
+        Set<String> flowNodeKeysWithResult = new HashSet<>();
+        evaluationResult.getResultAsDto().getData().forEach(entry -> {
+          entry.setLabel(flowNodeNames.get(entry.getKey()));
+          flowNodeKeysWithResult.add(entry.getKey());
+        });
+        Set<String> allFlowNodeKeys = flowNodeNames.keySet();
+        Set<String> difference = Sets.difference(allFlowNodeKeys, flowNodeKeysWithResult);
+        difference.forEach(flowNodeKey -> {
+          MapResultEntryDto<V> emptyResult = new MapResultEntryDto<>(flowNodeKey, createNewEmptyResult.get());
+          emptyResult.setLabel(flowNodeNames.get(flowNodeKey));
+          evaluationResult.getResultAsDto().getData().add(emptyResult);
+        });
+
       });
   }
 

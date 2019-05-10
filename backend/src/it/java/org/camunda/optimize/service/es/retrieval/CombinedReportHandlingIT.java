@@ -292,11 +292,11 @@ public class CombinedReportHandlingIT {
     List<MapResultEntryDto<AggregationResultDto>> userTaskCount1 = resultMap.get(totalDurationReportId)
       .getResult()
       .getData();
-    assertThat(userTaskCount1.size(), is(1));
+    assertThat(userTaskCount1.size(), is(3));
     List<MapResultEntryDto<AggregationResultDto>> userTaskCount2 = resultMap.get(idleDurationReportId)
       .getResult()
       .getData();
-    assertThat(userTaskCount2.size(), is(1));
+    assertThat(userTaskCount2.size(), is(3));
   }
 
   @Test
@@ -321,7 +321,7 @@ public class CombinedReportHandlingIT {
     List<MapResultEntryDto<AggregationResultDto>> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId)
       .getResult()
       .getData();
-    assertThat(userTaskCount1.size(), is(1));
+    assertThat(userTaskCount1.size(), is(3));
     List<MapResultEntryDto<AggregationResultDto>> userTaskCount2 = resultMap.get(flowNodeDurationReportId)
       .getResult()
       .getData();

@@ -39,6 +39,7 @@ import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -49,6 +50,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
+import static org.hamcrest.core.IsNull.nullValue;
 
 @RunWith(JUnitParamsRunner.class)
 public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
@@ -95,7 +97,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(2));
+    assertThat(result.getData().size(), is(4));
+    assertThat(getExecutedFlowNodeCount(result), is(2L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
       is(calculateExpectedValueGivenDurations(setDuration))
@@ -130,7 +133,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(2));
+    assertThat(result.getData().size(), is(4));
+    assertThat(getExecutedFlowNodeCount(result), is(2L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
       is(calculateExpectedValueGivenDurations(setDurations))
@@ -167,7 +171,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     // then
     assertThat(result.getIsComplete(), is(true));
-    assertThat(result.getData().size(), is(2));
+    assertThat(result.getData().size(), is(4));
+    assertThat(getExecutedFlowNodeCount(result), is(2L));
     assertThat(result.getDataEntryForKey(USER_TASK_1).get().getValue(), is(calculateExpectedValueGivenDurations(10L)));
     assertThat(result.getDataEntryForKey(USER_TASK_2).get().getValue(), is(calculateExpectedValueGivenDurations(20L)));
   }
@@ -199,7 +204,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     // then
     assertThat(resultDto.getProcessInstanceCount(), is(2L));
     assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData().size(), is(1));
+    assertThat(resultDto.getData().size(), is(4));
+    assertThat(getExecutedFlowNodeCount(resultDto), is(1L));
     assertThat(resultDto.getIsComplete(), is(false));
   }
 
@@ -228,7 +234,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     // then
     final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
-    assertThat(resultData.size(), is(2));
+    assertThat(resultData.size(), is(4));
+    assertThat(getExecutedFlowNodeCount(result), is(2L));
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
       resultKeys,
@@ -262,7 +269,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     // then
     final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
-    assertThat(resultData.size(), is(2));
+    assertThat(resultData.size(), is(4));
+    assertThat(getExecutedFlowNodeCount(result), is(2L));
     final List<String> resultLabels = resultData.stream()
       .map(MapResultEntryDto::getLabel)
       .collect(Collectors.toList());
@@ -303,15 +311,9 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
-    assertThat(resultData.size(), is(2));
-    final List<Long> bucketValues = resultData.stream()
-      .map(entry -> entry.getValue().getResultForGivenAggregationType(aggregationType))
-      .collect(Collectors.toList());
-    assertThat(
-      bucketValues,
-      contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
-    );
+    assertThat(result.getData().size(), is(4));
+    assertThat(getExecutedFlowNodeCount(result), is(2L));
+    assertCorrectValueOrdering(aggregationType, result);
   }
 
   @Test
@@ -337,7 +339,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     //then
-    assertThat(result.getData().size(), is(2));
+    assertThat(result.getData().size(), is(4));
+    assertThat(getExecutedFlowNodeCount(result), is(2L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
       is(calculateExpectedValueGivenDurations(20L, 40L))
@@ -368,7 +371,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     //then
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
       is(calculateExpectedValueGivenDurations(20L, 40L))
@@ -397,7 +401,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     //then
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
       is(calculateExpectedValueGivenDurations(20L, 40L))
@@ -433,10 +438,12 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result2 = evaluateReport(reportData2).getResult();
 
     // then
-    assertThat(result1.getData().size(), is(1));
+    assertThat(result1.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result1), is(1L));
     assertThat(result1.getDataEntryForKey(USER_TASK_1).get().getValue(), is(calculateExpectedValueGivenDurations(40L)));
 
-    assertThat(result2.getData().size(), is(1));
+    assertThat(result2.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result2), is(1L));
     assertThat(result2.getDataEntryForKey(USER_TASK_1).get().getValue(), is(calculateExpectedValueGivenDurations(20L)));
   }
 
@@ -462,7 +469,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
       is(calculateExpectedValueGivenDurations(100L, 300L, 600L))
@@ -498,7 +506,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().size(), is(4));
+    assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(result.getDataEntryForKey(USER_TASK_1).get().getValue(), is(calculateExpectedValueGivenDurations(100L)));
   }
 
@@ -529,7 +538,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(result.getDataEntryForKey(USER_TASK_1).get().getValue(), is(calculateExpectedValueGivenDurations(10L)));
   }
 
@@ -552,7 +562,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(result.getDataEntryForKey(USER_TASK_1).get().getValue(), is(calculateExpectedValueGivenDurations(10L)));
   }
 
@@ -577,7 +588,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     // then
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(0));
+    assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(0L));
 
     // when
     reportData = createReport(processDefinition);
@@ -586,7 +598,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     // then
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(result.getDataEntryForKey(USER_TASK_1).get().getValue(), is(calculateExpectedValueGivenDurations(10L)));
   }
 
@@ -699,6 +712,37 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       .execute();
+  }
+
+  private long getExecutedFlowNodeCount(ProcessDurationReportMapResultDto resultList) {
+    return resultList.getData()
+      .stream()
+      .map(MapResultEntryDto::getValue)
+      .filter(result ->
+                result.getAvg() != null &&
+                  result.getMedian() != null &&
+                  result.getMin() != null &&
+                  result.getMax() != null
+      )
+      .count();
+  }
+
+  private void assertCorrectValueOrdering(AggregationType aggregationType, ProcessDurationReportMapResultDto result) {
+    List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
+    final List<Long> bucketValues = resultData.stream()
+      .map(entry -> entry.getValue().getResultForGivenAggregationType(aggregationType))
+      .collect(Collectors.toList());
+    final List<Long> bucketValuesWithoutNullValue = bucketValues.stream()
+      .filter(Objects::nonNull)
+      .collect(Collectors.toList());
+    assertThat(
+      bucketValuesWithoutNullValue,
+      contains(bucketValuesWithoutNullValue.stream().sorted(Comparator.naturalOrder()).toArray())
+    );
+    long notExecutedFlowNodes = resultData.size() - getExecutedFlowNodeCount(result);
+    for (int i = resultData.size() - 1; i > getExecutedFlowNodeCount(result) - 1; i--) {
+      assertThat(bucketValues.get(i), nullValue());
+    }
   }
 
 }

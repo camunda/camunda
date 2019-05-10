@@ -249,7 +249,8 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     // then
     assertThat(resultDto.getProcessInstanceCount(), is(2L));
     assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData().size(), is(1));
+    assertThat(resultDto.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(resultDto), is(1L));
     assertThat(resultDto.getIsComplete(), is(false));
   }
 
@@ -323,6 +324,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     // then
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(13));
+    assertThat(getExecutedFlowNodeCount(result), is(13L));
     assertThat(result.getDataEntryForKey(TEST_ACTIVITY + 0).get().getValue(), is(1L));
   }
 
@@ -373,11 +375,38 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData.size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(3L));
     final List<Long> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(
       bucketValues,
       contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
     );
+  }
+
+  @Test
+  public void resultContainsNonExecutedFlowNodes() {
+    // given
+     BpmnModelInstance subProcess = Bpmn.createExecutableProcess()
+      .startEvent("startEvent")
+      .userTask("userTask")
+      .endEvent("endEvent")
+      .done();
+    ProcessInstanceEngineDto engineDto = engineRule.deployAndStartProcess(subProcess);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+      engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
+    );
+    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
+
+    // then
+    assertThat(result.getData().size(), is(3));
+    MapResultEntryDto<Long> notExecutedFlowNode =
+      result.getDataEntryForKey("endEvent").get();
+    assertThat(notExecutedFlowNode.getValue(), is(0L));
   }
 
   @Test
@@ -428,6 +457,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     //then
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(5));
+    assertThat(getExecutedFlowNodeCount(result), is(5L));
   }
 
   @Test
@@ -452,7 +482,8 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
 
     // then
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(0));
+    assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(0L));
 
     // when
     reportData = createCountFlowNodeFrequencyGroupByFlowNode(
@@ -563,5 +594,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
       .execute();
   }
 
-
+  private long getExecutedFlowNodeCount(ProcessCountReportMapResultDto resultList) {
+    return resultList.getData().stream().filter(result -> result.getValue() > 0).count();
+  }
 }
