@@ -100,6 +100,10 @@ public class BrokerClusterStateImpl implements BrokerClusterState {
           if (partitionLeaders.get(partitionId) == brokerId) {
             partitionLeaders.remove(partitionId);
           }
+          final List<Integer> followers = partitionFollowers.get(partitionId);
+          if (followers != null) {
+            followers.remove(new Integer(brokerId));
+          }
         });
   }
 
