@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.12.0">
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.1.0">
   <bpmn:collaboration id="Collaboration_KontaktdatenAendernProzess">
     <bpmn:participant id="kontaktdatenAendern" name="Kontaktdaten Aendern Prozess" processRef="kontaktdaten-aendern" />
   </bpmn:collaboration>
@@ -14,13 +14,9 @@
       <bpmn:outgoing>SequenceFlow_08ybd2o</bpmn:outgoing>
       <bpmn:messageEventDefinition messageRef="Message_5" />
     </bpmn:startEvent>
-    <bpmn:serviceTask id="angabenPruefenTask" name="Angaben prüfen" camunda:expression="${true}">
-      <bpmn:incoming>SequenceFlow_08ybd2o</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_170lfhd</bpmn:outgoing>
-    </bpmn:serviceTask>
     <bpmn:serviceTask id="belegErstellenTask" name="Beleg erstellen" camunda:expression="${true}">
-      <bpmn:documentation><![CDATA[Lokaler Aufruf
-AntragRendern]]></bpmn:documentation>
+      <bpmn:documentation>Lokaler Aufruf
+AntragRendern</bpmn:documentation>
       <bpmn:incoming>SequenceFlow_170lfhd</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_12bpgif</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -31,8 +27,8 @@ AntragRendern]]></bpmn:documentation>
       <bpmn:incoming>SequenceFlow_0tntdc3</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:serviceTask id="vorgangErstellenTask" name="Offenen Vorgang erstellen" camunda:expression="${true}">
-      <bpmn:documentation><![CDATA[Fire/Forget
-esb://arbeitsmanagement/BelegeVerarbeiten]]></bpmn:documentation>
+      <bpmn:documentation>Fire/Forget
+esb://arbeitsmanagement/BelegeVerarbeiten</bpmn:documentation>
       <bpmn:incoming>SequenceFlow_1axayii</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1qzsjxu</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -50,6 +46,10 @@ esb://arbeitsmanagement/BelegeVerarbeiten]]></bpmn:documentation>
       <bpmn:outgoing>SequenceFlow_0tntdc3</bpmn:outgoing>
     </bpmn:sendTask>
     <bpmn:sequenceFlow id="SequenceFlow_0tntdc3" sourceRef="prozessBeendenReceiveTask" targetRef="EndEvent_KontaktdatenAendern" />
+    <bpmn:userTask id="angabenPruefenTask" name="Angaben prüfen" camunda:candidateUsers="john" camunda:candidateGroups="sales">
+      <bpmn:incoming>SequenceFlow_08ybd2o</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_170lfhd</bpmn:outgoing>
+    </bpmn:userTask>
   </bpmn:process>
   <bpmn:message id="Message_5" name="KontaktdatenAendernStartMessage" />
   <bpmn:message id="Message_6" name="ProzessBeendenMessage" />
@@ -98,9 +98,6 @@ esb://arbeitsmanagement/BelegeVerarbeiten]]></bpmn:documentation>
           <dc:Bounds x="163" y="234" width="77" height="36" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_18avotm_di" bpmnElement="angabenPruefenTask">
-        <dc:Bounds x="259" y="176" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ServiceTask_0yt6af7_di" bpmnElement="belegErstellenTask">
         <dc:Bounds x="393" y="176" width="100" height="80" />
       </bpmndi:BPMNShape>
@@ -130,6 +127,9 @@ esb://arbeitsmanagement/BelegeVerarbeiten]]></bpmn:documentation>
           <dc:Bounds x="808" y="201" width="90" height="0" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="UserTask_0gkwsya_di" bpmnElement="angabenPruefenTask">
+        <dc:Bounds x="259" y="176" width="100" height="80" />
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

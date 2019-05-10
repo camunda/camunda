@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.12.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.1.0">
   <bpmn:process id="conduct-interview" name="Conduct Interview" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" camunda:asyncBefore="true">
       <bpmn:outgoing>SequenceFlow_0hog06p</bpmn:outgoing>
@@ -8,21 +8,21 @@
       <bpmn:incoming>SequenceFlow_167t5jp</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_0hog06p" sourceRef="StartEvent_1" targetRef="Task_1st3h01" />
-    <bpmn:task id="Task_1st3h01" name="Find date with Candidate">
+    <bpmn:sequenceFlow id="SequenceFlow_1ux6qwj" sourceRef="Task_1st3h01" targetRef="Task_1b1kgf1" />
+    <bpmn:sequenceFlow id="SequenceFlow_0ufx807" sourceRef="Task_1b1kgf1" targetRef="Task_1qf6dyc" />
+    <bpmn:sequenceFlow id="SequenceFlow_167t5jp" sourceRef="Task_1qf6dyc" targetRef="EndEvent_0isyfne" />
+    <bpmn:userTask id="Task_1st3h01" name="Find date with Candidate" camunda:candidateUsers="demo,john" camunda:candidateGroups="sales,management">
       <bpmn:incoming>SequenceFlow_0hog06p</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1ux6qwj</bpmn:outgoing>
-    </bpmn:task>
-    <bpmn:sequenceFlow id="SequenceFlow_1ux6qwj" sourceRef="Task_1st3h01" targetRef="Task_1b1kgf1" />
-    <bpmn:task id="Task_1b1kgf1" name="Conduct interview">
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_1b1kgf1" name="Conduct interview">
       <bpmn:incoming>SequenceFlow_1ux6qwj</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0ufx807</bpmn:outgoing>
-    </bpmn:task>
-    <bpmn:sequenceFlow id="SequenceFlow_0ufx807" sourceRef="Task_1b1kgf1" targetRef="Task_1qf6dyc" />
-    <bpmn:task id="Task_1qf6dyc" name="Discuss results ">
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_1qf6dyc" name="Discuss results " camunda:candidateUsers="mary,demo" camunda:candidateGroups="management">
       <bpmn:incoming>SequenceFlow_0ufx807</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_167t5jp</bpmn:outgoing>
-    </bpmn:task>
-    <bpmn:sequenceFlow id="SequenceFlow_167t5jp" sourceRef="Task_1qf6dyc" targetRef="EndEvent_0isyfne" />
+    </bpmn:userTask>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="conduct-interview">
@@ -45,9 +45,6 @@
           <dc:Bounds x="217.5" y="98.5" width="0" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Task_1st3h01_di" bpmnElement="Task_1st3h01">
-        <dc:Bounds x="235" y="80" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_1ux6qwj_di" bpmnElement="SequenceFlow_1ux6qwj">
         <di:waypoint x="335" y="120" />
         <di:waypoint x="365" y="120" />
@@ -55,9 +52,6 @@
           <dc:Bounds x="350" y="98.5" width="0" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Task_1b1kgf1_di" bpmnElement="Task_1b1kgf1">
-        <dc:Bounds x="365" y="80" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0ufx807_di" bpmnElement="SequenceFlow_0ufx807">
         <di:waypoint x="465" y="120" />
         <di:waypoint x="502" y="120" />
@@ -65,9 +59,6 @@
           <dc:Bounds x="483.5" y="98.5" width="0" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Task_1qf6dyc_di" bpmnElement="Task_1qf6dyc">
-        <dc:Bounds x="502" y="80" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_167t5jp_di" bpmnElement="SequenceFlow_167t5jp">
         <di:waypoint x="602" y="120" />
         <di:waypoint x="638" y="120" />
@@ -75,6 +66,15 @@
           <dc:Bounds x="620" y="98.5" width="0" height="13" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="UserTask_1pxjmn8_di" bpmnElement="Task_1st3h01">
+        <dc:Bounds x="235" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_1lhh964_di" bpmnElement="Task_1b1kgf1">
+        <dc:Bounds x="365" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_1cnlaji_di" bpmnElement="Task_1qf6dyc">
+        <dc:Bounds x="502" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

@@ -130,6 +130,7 @@ public class DataGenerationExecutor {
     try {
       boolean finishedGeneration =
         importExecutor.awaitTermination(timeoutInHours, TimeUnit.HOURS);
+
       if (!finishedGeneration) {
         logger.error("Could not finish data generation in time. Trying to interrupt!");
         importExecutor.shutdownNow();
@@ -141,7 +142,7 @@ public class DataGenerationExecutor {
       if (progressReporter != null) {
         stopReportingProgress(progressReporter);
       }
-      completer.stopUserTaskCompletion();
+      completer.awaitUserTaskCompletion();
       engineClient.close();
     }
   }

@@ -246,7 +246,7 @@
                     <echo message="Generating engine data..." />
                     <exec dir="${project.build.directory}/../../../../qa/data-generation" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="set -o pipefail; mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 10' -B ${maven-settings} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn | sed 's/^/[ENGINE DATA GENERATION]: /'" />
+                      <arg value="set -o pipefail; mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 1000' -B ${maven-settings} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn | sed 's/^/[ENGINE DATA GENERATION]: /'" />
                     </exec>
                   </target>
                 </configuration>

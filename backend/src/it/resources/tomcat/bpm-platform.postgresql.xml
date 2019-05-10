@@ -21,7 +21,7 @@
       <property name="jdbcDriver">org.postgresql.Driver</property>
       <property name="jdbcUsername">camunda</property>
       <property name="jdbcPassword">camunda</property>
-
+      <property name="restrictUserOperationLogToAuthenticatedUsers">false</property>
     </properties>
 
     <plugins>

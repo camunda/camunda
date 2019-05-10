@@ -8,6 +8,7 @@ package org.camunda.optimize.data.generation.generators.client;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -42,8 +43,10 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -55,6 +58,7 @@ public class SimpleEngineClient {
   private CloseableHttpClient client;
   private String engineRestEndpoint;
   private ObjectMapper objectMapper = new ObjectMapper();
+  private HashSet<String> tasksToNotComplete = new HashSet<>();
 
 
   public SimpleEngineClient(String engineRestEndpoint) {
@@ -71,7 +75,7 @@ public class SimpleEngineClient {
       .collect(Collectors.toList());
   }
 
-   public void close() {
+  public void close() {
     try {
       client.close();
     } catch (IOException e) {
@@ -145,8 +149,9 @@ public class SimpleEngineClient {
       String responseString = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
       result = objectMapper.readValue(
         responseString,
-        new TypeReference<List<ProcessDefinitionEngineDto>>() {}
-        );
+        new TypeReference<List<ProcessDefinitionEngineDto>>() {
+        }
+      );
     } catch (Exception e) {
       logger.error("Could not fetch all process definitions for given deployment!", e);
     } finally {
@@ -157,16 +162,13 @@ public class SimpleEngineClient {
   }
 
   private String getProcessDefinitionUri() {
-    return  engineRestEndpoint + "/process-definition";
-  }
-
-  private String getDecisionDefinitionUri() {
-    return  engineRestEndpoint + "/decision-definition";
+    return engineRestEndpoint + "/process-definition";
   }
 
   private String getCreateDeploymentUri() {
     return getDeploymentUri() + "create";
   }
+
   private String getDeploymentUri() {
     return engineRestEndpoint + "/deployment/";
   }
@@ -181,7 +183,7 @@ public class SimpleEngineClient {
       response = client.execute(deploymentRequest);
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Something really bad happened during deployment, " +
-          "could not create a deployment!");
+                                     "could not create a deployment!");
       }
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       deployment = objectMapper.readValue(responseString, DeploymentDto.class);
@@ -207,7 +209,7 @@ public class SimpleEngineClient {
       response = client.execute(deploymentRequest);
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Something really bad happened during deployment, " +
-          "could not create a deployment!");
+                                     "could not create a deployment!");
       }
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       deployment = objectMapper.readValue(responseString, DeploymentDto.class);
@@ -227,9 +229,10 @@ public class SimpleEngineClient {
       post.addHeader("content-type", "application/json");
       post.setEntity(new StringEntity(convertVariableMapToJsonString(variables)));
       response = client.execute(post);
+
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Could not start the process definition " + procDefId +
-        ". Reason: " + response.getStatusLine().getReasonPhrase());
+                                     ". Reason: " + response.getStatusLine().getReasonPhrase());
       }
     } catch (Exception e) {
       logger.error("Error during start of process instance!");
@@ -237,15 +240,13 @@ public class SimpleEngineClient {
     } finally {
       closeResponse(response);
     }
-
-
   }
 
   private String convertVariableMapToJsonString(Map<String, Object> plainVariables) throws JsonProcessingException {
     Map<String, Object> variables = new HashMap<>();
     for (Map.Entry<String, Object> nameToValue : plainVariables.entrySet()) {
       Object value = nameToValue.getValue();
-      if(value instanceof ComplexVariableDto) {
+      if (value instanceof ComplexVariableDto) {
         variables.put(nameToValue.getKey(), value);
       } else {
         Map<String, Object> fields = new HashMap<>();
@@ -260,7 +261,7 @@ public class SimpleEngineClient {
   }
 
   private String getStartProcessInstanceUri(String procDefId) {
-    return engineRestEndpoint +  "/process-definition/" + procDefId + "/start";
+    return engineRestEndpoint + "/process-definition/" + procDefId + "/start";
   }
 
   private HttpPost createProcessDeploymentRequest(String process) {
@@ -270,7 +271,12 @@ public class SimpleEngineClient {
       .addTextBody("deployment-name", "deployment")
       .addTextBody("enable-duplicate-filtering", "false")
       .addTextBody("deployment-source", "process application")
-      .addBinaryBody("data", process.getBytes(StandardCharsets.UTF_8), ContentType.APPLICATION_OCTET_STREAM, "hiring_process.bpmn")
+      .addBinaryBody(
+        "data",
+        process.getBytes(StandardCharsets.UTF_8),
+        ContentType.APPLICATION_OCTET_STREAM,
+        "hiring_process.bpmn"
+      )
       .build();
     post.setEntity(entity);
     return post;
@@ -283,7 +289,12 @@ public class SimpleEngineClient {
       .addTextBody("deployment-name", "deployment")
       .addTextBody("enable-duplicate-filtering", "false")
       .addTextBody("deployment-source", "process application")
-      .addBinaryBody("data", decision.getBytes(StandardCharsets.UTF_8), ContentType.APPLICATION_OCTET_STREAM, "decision.dmn")
+      .addBinaryBody(
+        "data",
+        decision.getBytes(StandardCharsets.UTF_8),
+        ContentType.APPLICATION_OCTET_STREAM,
+        "decision.dmn"
+      )
       .build();
     post.setEntity(entity);
     return post;
@@ -301,8 +312,10 @@ public class SimpleEngineClient {
       content = new StringEntity(objectMapper.writeValueAsString(message), Charset.defaultCharset());
       post.setEntity(content);
       response = client.execute(post);
-      if (response.getStatusLine().getStatusCode() != 204) {
-        throw new RuntimeException("Warning: response code for correlating message should be 204!");
+      int statusCode = response.getStatusLine().getStatusCode();
+      if (statusCode != 204) {
+        throw new RuntimeException("Warning: response code for correlating message should be 204, got " + statusCode
+                                     + " instead");
       }
     } catch (Exception e) {
       logger.error("Error while trying to correlate message!", e);
@@ -321,50 +334,118 @@ public class SimpleEngineClient {
     }
   }
 
-  public void finishAllUserTasks() {
+  public boolean finishAllUserTasks() {
     HttpGet get = new HttpGet(getTaskListUri());
-    executeFinishAllUserTasks(client, get);
+    return executeFinishAllUserTasks(client, get);
   }
 
-  private void executeFinishAllUserTasks(CloseableHttpClient client, HttpGet get) {
-    CloseableHttpResponse response = null;
-    try {
-      response = client.execute(get);
+  private boolean executeFinishAllUserTasks(CloseableHttpClient client, HttpGet get) {
+
+    try (CloseableHttpResponse response = client.execute(get)) {
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       List<TaskDto> tasks = objectMapper.readValue(responseString, new TypeReference<List<TaskDto>>() {
       });
+
+      if (allTasksCompleted(tasks)) {
+        return true;
+      }
+
+      if (tasks.size() != 0)
+        logger.info(tasks.size() - tasksToNotComplete.size() + " user tasks left to complete");
+
       for (TaskDto task : tasks) {
         claimAndCompleteUserTask(client, task);
       }
+      return false;
     } catch (Exception e) {
       logger.error("Error while trying to finish the user task!!", e);
-    } finally {
-      closeResponse(response);
+      return false;
     }
   }
 
+  private boolean allTasksCompleted(List<TaskDto> tasks) {
+    return tasks.size() != 0 && tasks.size() == tasksToNotComplete.size() &&
+    tasks.stream().allMatch(t -> tasksToNotComplete.contains(t.getId()));
+  }
 
 
   private String getTaskListUri() {
     return engineRestEndpoint + "/task?maxResults=1000";
   }
 
+  private String getTaskIdentityLinksUri(String taskId) {
+    return engineRestEndpoint + "/task/" + taskId + "/identity-links";
+  }
+
+
   private void claimAndCompleteUserTask(CloseableHttpClient client, TaskDto task) {
-    CloseableHttpResponse response = null;
+    Random random = new Random();
     try {
-      HttpPost claimPost = new HttpPost(getClaimTaskUri(task.getId()));
-      claimPost.setEntity(new StringEntity("{ \"userId\" : " + "\"demo\"" + "}"));
-      claimPost.addHeader("Content-Type", "application/json");
-      response = client.execute(claimPost);
-      if (response.getStatusLine().getStatusCode() != 204) {
-        throw new RuntimeException("Wrong error code when claiming user tasks!");
+      addOrRemoveIdentityLinks(client, task);
+      claimTask(client, task);
+
+      if (random.nextDouble() > 0.95) {
+        unclaimTask(client, task);
+      } else if (!isTaskToComplete(task.getId())) {
+        if (random.nextDouble() < 0.97) {
+          completeUserTask(client, task);
+        } else {
+          setDoNotCompleteFlag(task);
+        }
       }
-      completeUserTask(client, task);
     } catch (Exception e) {
       logger.error("Could not claim user task!", e);
-    } finally {
-      closeResponse(response);
     }
+  }
+
+  private void unclaimTask(CloseableHttpClient client, TaskDto task) throws IOException {
+    HttpPost unclaimPost = new HttpPost(getUnclaimTaskUri(task.getId()));
+    CloseableHttpResponse response = client.execute(unclaimPost);
+    closeResponse(response);
+  }
+
+  private void claimTask(CloseableHttpClient client, TaskDto task) throws IOException {
+    HttpPost claimPost = new HttpPost(getClaimTaskUri(task.getId()));
+    claimPost.setEntity(new StringEntity("{ \"userId\" : " + "\"demo\"" + "}"));
+    claimPost.addHeader("Content-Type", "application/json");
+    CloseableHttpResponse claimResponse = client.execute(claimPost);
+
+    if (claimResponse.getStatusLine().getStatusCode() != 204) {
+      throw new RuntimeException("Wrong error code when claiming user tasks!");
+    }
+
+    closeResponse(claimResponse);
+  }
+
+  private void addOrRemoveIdentityLinks(CloseableHttpClient client, TaskDto task) throws IOException {
+    HttpGet identityLinksGet = new HttpGet(getTaskIdentityLinksUri(task.getId()));
+    CloseableHttpResponse getLinksResponse = client.execute(identityLinksGet);
+    String content = EntityUtils.toString(getLinksResponse.getEntity());
+    List<JsonNode> links = objectMapper.readValue(content, new TypeReference<List<JsonNode>>() {
+    });
+
+    closeResponse(getLinksResponse);
+    if (links.size() == 0) {
+      HttpPost candidatePost = new HttpPost(getTaskIdentityLinksUri(task.getId()));
+      candidatePost.setEntity(
+        new StringEntity("{\"userId\":\"demo\", \"type\":\"candidate\"}")
+      );
+      candidatePost.addHeader("Content-Type", "application/json");
+      client.execute(candidatePost);
+    } else {
+      HttpPost candidateDeletePost = new HttpPost(getTaskIdentityLinksUri(task.getId()) + "/delete");
+      candidateDeletePost.addHeader("Content-Type", "application/json");
+      candidateDeletePost.setEntity(new StringEntity(objectMapper.writeValueAsString(links.get(0))));
+      client.execute(candidateDeletePost);
+    }
+  }
+
+  private void setDoNotCompleteFlag(TaskDto task) throws IOException {
+    tasksToNotComplete.add(task.getId());
+  }
+
+  private Boolean isTaskToComplete(String taskId) {
+    return tasksToNotComplete.contains(taskId);
   }
 
   private void completeUserTask(CloseableHttpClient client, TaskDto task) {
@@ -386,6 +467,10 @@ public class SimpleEngineClient {
 
   private String getClaimTaskUri(String taskId) {
     return engineRestEndpoint + "/task/" + taskId + "/claim";
+  }
+
+  private String getUnclaimTaskUri(String taskId) {
+    return engineRestEndpoint + "/task/" + taskId + "/unclaim";
   }
 
   private String getCompleteTaskUri(String taskId) {

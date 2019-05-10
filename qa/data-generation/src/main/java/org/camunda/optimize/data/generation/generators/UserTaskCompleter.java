@@ -7,33 +7,33 @@ package org.camunda.optimize.data.generation.generators;
 
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
 
+import java.util.concurrent.CountDownLatch;
+
 public class UserTaskCompleter {
 
   private SimpleEngineClient engineClient;
-  private Thread completerThread;
-
+  private CountDownLatch finished = new CountDownLatch(1);
   public UserTaskCompleter(SimpleEngineClient engineClient) {
     this.engineClient = engineClient;
   }
 
   public void startUserTaskCompletion() {
-    completerThread = new Thread(() -> {
-      while (!completerThread.isInterrupted()) {
-        if (engineClient != null) {
-          engineClient.finishAllUserTasks();
-        }
-        try {
-          Thread.sleep(2000L);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
+    Thread completerThread = new Thread(() -> {
+      boolean allUserTasksCompleted = false;
+      while (!allUserTasksCompleted) {
+        allUserTasksCompleted = engineClient.finishAllUserTasks();
       }
+      finished.countDown();
     });
     completerThread.start();
   }
 
-  public void stopUserTaskCompletion() {
-    completerThread.interrupt();
+  public void awaitUserTaskCompletion() {
+    try {
+      finished.await();
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
   }
 
 

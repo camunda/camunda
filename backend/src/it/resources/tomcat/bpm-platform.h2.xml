@@ -21,6 +21,7 @@
       <property name="jdbcDriver">org.h2.Driver</property>
       <property name="jdbcUsername">sa</property>
       <property name="jdbcPassword"></property>
+      <property name="restrictUserOperationLogToAuthenticatedUsers">false</property>
     </properties>
 
     <plugins>
