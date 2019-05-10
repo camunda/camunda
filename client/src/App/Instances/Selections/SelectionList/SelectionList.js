@@ -98,7 +98,6 @@ class SelectionList extends React.Component {
       onDeleteSelection
     } = this.props;
 
-    const noTimeout = {enter: 0, exit: 0};
     return (
       <React.Fragment>
         <Styled.Ul>
@@ -125,9 +124,7 @@ class SelectionList extends React.Component {
                   <Styled.Transition
                     key={selectionId}
                     timeout={timeout}
-                    exit={
-                      !(selections.length === 1 || selections.length === 10)
-                    }
+                    exit={!(selections.length === 1)}
                   >
                     <Styled.Li data-test="selection-list-item">
                       <Selection
@@ -147,7 +144,7 @@ class SelectionList extends React.Component {
                 );
               })
             ) : (
-              <Styled.Transition timeout={noTimeout}>
+              <Styled.Transition timeout={{enter: 0, exit: 0}}>
                 <Styled.NoSelectionWrapper data-test="empty-selection-list-message">
                   {NO_SELECTIONS_MESSAGE}
                 </Styled.NoSelectionWrapper>
