@@ -17,12 +17,12 @@
  */
 package io.zeebe.broker.workflow.message;
 
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.zeebe.broker.test.EmbeddedBrokerConfigurator;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -57,7 +57,8 @@ public class MessageCorrelationMultiplePartitionsTest {
           .endEvent("end")
           .done();
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
+  public EmbeddedBrokerRule brokerRule =
+      new EmbeddedBrokerRule(EmbeddedBrokerConfigurator.setPartitionCount(3));
 
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
 

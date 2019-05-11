@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.variables;
 
-import static io.zeebe.broker.workflow.gateway.ParallelGatewayStreamProcessorTest.PROCESS_ID;
+import static io.zeebe.broker.workflow.JobAssert.PROCESS_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;

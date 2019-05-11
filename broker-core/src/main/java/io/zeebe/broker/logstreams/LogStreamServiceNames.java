@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.logstreams;
 
-import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.servicecontainer.ServiceName;
 

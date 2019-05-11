@@ -25,7 +25,7 @@ import io.zeebe.broker.exporter.repo.ExporterRepository;
 import io.zeebe.broker.exporter.stream.ExporterColumnFamilies;
 import io.zeebe.broker.exporter.stream.ExporterStreamProcessor;
 import io.zeebe.broker.exporter.stream.ExporterStreamProcessorState;
-import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
+import io.zeebe.broker.logstreams.StreamProcessorServiceFactory;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.spi.SnapshotController;
@@ -102,7 +102,7 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
           .processorName(PROCESSOR_NAME)
           .snapshotController(snapshotController)
           .streamProcessorFactory(
-              (zeebeDb, dbContext) -> {
+              (actor, zeebeDb, dbContext) -> {
                 final ExporterStreamProcessor exporterStreamProcessor =
                     new ExporterStreamProcessor(
                         zeebeDb,

@@ -17,12 +17,12 @@
  */
 package io.zeebe.broker.workflow.message;
 
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static io.zeebe.broker.workflow.WorkflowAssert.assertMessageSubscription;
 import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowSubscription;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.test.EmbeddedBrokerConfigurator;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
@@ -106,7 +106,7 @@ public class MessageCatchElementTest {
           .done();
 
   public static EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule(setPartitionCount(PARTITION_COUNT));
+      new EmbeddedBrokerRule(EmbeddedBrokerConfigurator.setPartitionCount(PARTITION_COUNT));
   public static ClientApiRule apiRule =
       new ClientApiRule(0, PARTITION_COUNT, brokerRule::getAtomix);
 

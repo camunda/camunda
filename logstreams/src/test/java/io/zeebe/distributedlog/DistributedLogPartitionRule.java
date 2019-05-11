@@ -48,7 +48,7 @@ public class DistributedLogPartitionRule {
   private final int nodeId;
   private LogStream logStream;
   private BufferedLogStreamReader reader;
-  private LogStreamWriterImpl writer = new LogStreamWriterImpl();
+  private final LogStreamWriterImpl writer = new LogStreamWriterImpl();
 
   private final RecordMetadata metadata = new RecordMetadata();
   public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.distributedlog.test");

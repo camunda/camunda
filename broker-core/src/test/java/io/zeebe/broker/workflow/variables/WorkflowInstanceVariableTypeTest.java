@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.workflow.variables;
 
-import static io.zeebe.broker.workflow.gateway.ParallelGatewayStreamProcessorTest.PROCESS_ID;
-
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
@@ -43,6 +41,8 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class WorkflowInstanceVariableTypeTest {
+
+  private static final String PROCESS_ID = "process";
 
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();

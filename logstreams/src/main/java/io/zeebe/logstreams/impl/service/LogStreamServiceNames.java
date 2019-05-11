@@ -79,11 +79,4 @@ public class LogStreamServiceNames {
     return ServiceName.newServiceName(
         String.format("logstream.%s.storage.appender-root", logName), Void.class);
   }
-
-  public static final ServiceName<StreamProcessorService> streamProcessorService(
-      String logName, String processorName) {
-    return ServiceName.newServiceName(
-        String.format("logstream.%s.processor.%s", logName, processorName),
-        StreamProcessorService.class);
-  }
 }

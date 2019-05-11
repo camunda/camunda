@@ -27,7 +27,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.LongArrayList;
 
 public class ExporterStreamProcessorState {
-  public static final long VALUE_NOT_FOUND = ExporterRecord.POSITION_UNKNOWN;
+  public static final long VALUE_NOT_FOUND = -1;
 
   private final DbString exporterId;
   private final DbLong position;

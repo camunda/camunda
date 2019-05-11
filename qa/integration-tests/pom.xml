@@ -21,6 +21,11 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-workflow-engine</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
       <artifactId>zeebe-client-java</artifactId>
     </dependency>
 

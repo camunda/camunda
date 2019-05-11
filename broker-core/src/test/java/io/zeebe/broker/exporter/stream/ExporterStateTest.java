@@ -93,7 +93,7 @@ public class ExporterStateTest {
     final long position = state.getPosition(id);
 
     // then
-    assertThat(position).isEqualTo(ExporterRecord.POSITION_UNKNOWN);
+    assertThat(position).isEqualTo(-1);
   }
 
   @Test
@@ -148,7 +148,7 @@ public class ExporterStateTest {
 
     // then
     assertThat(state.getPosition("e1")).isEqualTo(1L);
-    assertThat(state.getPosition("e2")).isEqualTo(ExporterRecord.POSITION_UNKNOWN);
+    assertThat(state.getPosition("e2")).isEqualTo(-1);
   }
 
   @Test

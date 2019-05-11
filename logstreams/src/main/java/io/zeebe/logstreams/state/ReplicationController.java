@@ -18,8 +18,6 @@ package io.zeebe.logstreams.state;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.processor.SnapshotChunk;
-import io.zeebe.logstreams.processor.SnapshotReplication;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

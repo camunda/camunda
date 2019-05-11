@@ -65,8 +65,8 @@ public class ExporterStreamProcessorTest {
       new StreamProcessorRule(
           PARTITION_ID, DefaultZeebeDbFactory.defaultFactory(ExporterColumnFamilies.class));
 
-  private List<ControlledTestExporter> exporters = new ArrayList<>();
-  private List<ExporterDescriptor> exporterDescriptors = new ArrayList<>();
+  private final List<ControlledTestExporter> exporters = new ArrayList<>();
+  private final List<ExporterDescriptor> exporterDescriptors = new ArrayList<>();
 
   private ExporterStreamProcessorState state;
 
@@ -93,7 +93,7 @@ public class ExporterStreamProcessorTest {
   private StreamProcessorControl startStreamProcessor(
       List<ExporterDescriptor> exporterDescriptors) {
     return rule.runStreamProcessor(
-        (db, dbContext) -> {
+        (actor, db, dbContext) -> {
           final ExporterStreamProcessor streamProcessor =
               new ExporterStreamProcessor(
                   db, db.createContext(), PARTITION_ID, exporterDescriptors);
@@ -331,7 +331,7 @@ public class ExporterStreamProcessorTest {
 
     // then
     assertThat(state.getPosition(EXPORTER_ID_1)).isEqualTo(eventPosition);
-    assertThat(state.getPosition(EXPORTER_ID_2)).isEqualTo(ExporterRecord.POSITION_UNKNOWN);
+    assertThat(state.getPosition(EXPORTER_ID_2)).isEqualTo(-1);
   }
 
   @Test

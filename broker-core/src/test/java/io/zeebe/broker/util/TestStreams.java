@@ -25,7 +25,13 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
-import io.zeebe.broker.exporter.stream.ExporterRecord;
+import io.zeebe.broker.logstreams.StreamProcessors;
+import io.zeebe.broker.logstreams.processor.EventProcessor;
+import io.zeebe.broker.logstreams.processor.StreamProcessor;
+import io.zeebe.broker.logstreams.processor.StreamProcessorContext;
+import io.zeebe.broker.logstreams.processor.StreamProcessorController;
+import io.zeebe.broker.logstreams.processor.StreamProcessorFactory;
+import io.zeebe.broker.logstreams.processor.StreamProcessorService;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
@@ -37,18 +43,12 @@ import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.processor.StreamProcessorController;
-import io.zeebe.logstreams.processor.StreamProcessorFactory;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
@@ -101,7 +101,6 @@ public class TestStreams {
         MessageStartEventSubscriptionRecord.class, ValueType.MESSAGE_START_EVENT_SUBSCRIPTION);
     VALUE_TYPES.put(
         WorkflowInstanceSubscriptionRecord.class, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
-    VALUE_TYPES.put(ExporterRecord.class, ValueType.EXPORTER);
     VALUE_TYPES.put(JobBatchRecord.class, ValueType.JOB_BATCH);
     VALUE_TYPES.put(TimerRecord.class, ValueType.TIMER);
     VALUE_TYPES.put(VariableRecord.class, ValueType.VARIABLE);
@@ -131,10 +130,6 @@ public class TestStreams {
     this.closeables = closeables;
     this.serviceContainer = serviceContainer;
     this.actorScheduler = actorScheduler;
-  }
-
-  public LogStream createLogStream(final String name) {
-    return createLogStream(name, 0);
   }
 
   public LogStream createLogStream(final String name, final int partitionId) {
@@ -434,15 +429,15 @@ public class TestStreams {
       final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
 
       final StreamProcessorService processorService =
-          LogStreams.createStreamProcessor(name, streamProcessorId)
+          StreamProcessors.createStreamProcessor(name, streamProcessorId)
               .logStream(stream)
               .snapshotController(currentSnapshotController)
               .actorScheduler(actorScheduler)
               .serviceContainer(serviceContainer)
               .streamProcessorFactory(
-                  (zeebeDb, dbContext) -> {
+                  (actor, zeebeDb, dbContext) -> {
                     currentStreamProcessor.wrap(
-                        factory.createProcessor(zeebeDb, dbContext), openFuture);
+                        factory.createProcessor(actor, zeebeDb, dbContext), openFuture);
                     return currentStreamProcessor;
                   })
               .build()

@@ -17,18 +17,14 @@
  */
 package io.zeebe.broker.logstreams;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.ZB_STREAM_PROCESSOR_SERVICE_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.serverTransport;
 
-import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
+import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.DurationUtil;
 import java.time.Duration;
@@ -55,15 +51,19 @@ public class LogStreamsComponent implements Component {
     serviceContainer
         .createService(ZB_STREAM_PROCESSOR_SERVICE_NAME, streamProcessorService)
         .dependency(
-            serverTransport(CLIENT_API_SERVER_NAME),
+            TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME),
             streamProcessorService.getClientApiTransportInjector())
-        .dependency(TOPOLOGY_MANAGER_SERVICE, streamProcessorService.getTopologyManagerInjector())
+        .dependency(
+            ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE,
+            streamProcessorService.getTopologyManagerInjector())
         .dependency(
             STREAM_PROCESSOR_SERVICE_FACTORY,
             streamProcessorService.getStreamProcessorServiceFactoryInjector())
-        .dependency(ATOMIX_SERVICE, streamProcessorService.getAtomixInjector())
+        .dependency(
+            ClusterBaseLayerServiceNames.ATOMIX_SERVICE, streamProcessorService.getAtomixInjector())
         .groupReference(
-            LEADER_PARTITION_GROUP_NAME, streamProcessorService.getPartitionsGroupReference())
+            ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME,
+            streamProcessorService.getPartitionsGroupReference())
         .install();
   }
 }

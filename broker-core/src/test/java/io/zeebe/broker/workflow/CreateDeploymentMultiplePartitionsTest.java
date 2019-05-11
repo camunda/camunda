@@ -17,12 +17,12 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.UnstableCI;
+import io.zeebe.broker.test.EmbeddedBrokerConfigurator;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
@@ -66,7 +66,8 @@ public class CreateDeploymentMultiplePartitionsTest {
   public static final int PARTITION_ID = DEPLOYMENT_PARTITION;
   public static final int PARTITION_COUNT = 3;
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(PARTITION_COUNT));
+  public EmbeddedBrokerRule brokerRule =
+      new EmbeddedBrokerRule(EmbeddedBrokerConfigurator.setPartitionCount(PARTITION_COUNT));
 
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
 

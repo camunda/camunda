@@ -45,27 +45,27 @@ public class DistributedLogTest {
 
   public ServiceContainerRule serviceContainerRule3 = new ServiceContainerRule(actorSchedulerRule3);
 
-  private static List<String> members = Arrays.asList("1", "2", "3");
+  private static final List<String> MEMBERS = Arrays.asList("1", "2", "3");
 
   public DistributedLogRule node1 =
       new DistributedLogRule(
-          serviceContainerRule1, 1, numPartitions, replicationFactor, members, null);
+          serviceContainerRule1, 1, NUM_PARTITIONS, REPLICATION_FACTOR, MEMBERS, null);
 
   public DistributedLogRule node2 =
       new DistributedLogRule(
-          serviceContainerRule2, 2, 1, 3, members, Collections.singletonList(node1.getNode()));
+          serviceContainerRule2, 2, 1, 3, MEMBERS, Collections.singletonList(node1.getNode()));
 
   public DistributedLogRule node3 =
       new DistributedLogRule(
-          serviceContainerRule3, 3, 1, 3, members, Collections.singletonList(node2.getNode()));
+          serviceContainerRule3, 3, 1, 3, MEMBERS, Collections.singletonList(node2.getNode()));
 
   public Timeout timeoutRule = Timeout.seconds(120);
 
   public static final int DEFAULT_RETRIES = 500;
 
-  private static int partitionId = Protocol.START_PARTITION_ID;
-  private static int numPartitions = 1;
-  private static int replicationFactor = 3;
+  private static final int PARTITION_ID = Protocol.START_PARTITION_ID;
+  private static final int NUM_PARTITIONS = 1;
+  private static final int REPLICATION_FACTOR = 3;
 
   @Rule
   public RuleChain ruleChain =
@@ -88,7 +88,7 @@ public class DistributedLogTest {
     node3.waitUntilNodesJoined();
 
     // given
-    node1.becomeLeader(partitionId);
+    node1.becomeLeader(PARTITION_ID);
 
     // when
     final Event event = writeEvent("record");
@@ -106,7 +106,7 @@ public class DistributedLogTest {
     node3.waitUntilNodesJoined();
 
     // given
-    node1.becomeLeader(partitionId);
+    node1.becomeLeader(PARTITION_ID);
 
     // when
     final Event event1 = writeEvent("record1");
@@ -132,7 +132,7 @@ public class DistributedLogTest {
     node3.waitUntilNodesJoined();
 
     // given
-    node1.becomeLeader(partitionId);
+    node1.becomeLeader(PARTITION_ID);
 
     final Event event1 = writeEvent("record1");
     assertEventReplicated(event1, node1);
@@ -184,13 +184,13 @@ public class DistributedLogTest {
     node3.waitUntilNodesJoined();
 
     // given
-    node2.becomeLeader(partitionId);
+    node2.becomeLeader(PARTITION_ID);
     final Event event1 = writeEvent("record1", node2);
     final Event event2 = writeEvent("record2", node2);
     assertEventReplicated(event1, node2);
     assertEventReplicated(event2, node2);
 
-    node1.becomeLeader(partitionId);
+    node1.becomeLeader(PARTITION_ID);
     final Event leaderInitialEvent =
         writeEvent(
             "leaderinitialevent", node1); // This must be done by the leaderServices in the broker
@@ -211,20 +211,20 @@ public class DistributedLogTest {
     assertEventsCount(node3, 4);
 
     // event3 must be not replicated;
-    assertThat(node2.eventAppended(partitionId, event3.message, event3.position)).isFalse();
+    assertThat(node2.eventAppended(PARTITION_ID, event3.message, event3.position)).isFalse();
   }
 
   private Event writeEvent(String message) {
     final Event event = new Event();
     event.message = message;
-    event.position = node1.writeEvent(partitionId, message);
+    event.position = node1.writeEvent(PARTITION_ID, message);
     return event;
   }
 
   private Event writeEvent(String message, DistributedLogRule node) {
     final Event event = new Event();
     event.message = message;
-    event.position = node.writeEvent(partitionId, message);
+    event.position = node.writeEvent(PARTITION_ID, message);
     return event;
   }
 
@@ -241,10 +241,10 @@ public class DistributedLogTest {
 
   private void assertEventReplicated(Event event, DistributedLogRule node) {
     TestUtil.waitUntil(
-        () -> node.eventAppended(partitionId, event.message, event.position), DEFAULT_RETRIES);
+        () -> node.eventAppended(PARTITION_ID, event.message, event.position), DEFAULT_RETRIES);
   }
 
   private void assertEventsCount(DistributedLogRule node, int expectedCount) {
-    assertThat(node.getCommittedEventsCount(partitionId)).isEqualTo(expectedCount);
+    assertThat(node.getCommittedEventsCount(PARTITION_ID)).isEqualTo(expectedCount);
   }
 }

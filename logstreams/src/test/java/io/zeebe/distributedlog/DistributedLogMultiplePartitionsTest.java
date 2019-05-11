@@ -43,36 +43,36 @@ public class DistributedLogMultiplePartitionsTest {
 
   public ServiceContainerRule serviceContainerRule3 = new ServiceContainerRule(actorSchedulerRule3);
 
-  private static List<String> members = Arrays.asList("1", "2", "3");
+  private static final List<String> MEMBERS = Arrays.asList("1", "2", "3");
 
   public DistributedLogRule node1 =
       new DistributedLogRule(
-          serviceContainerRule1, 1, numPartitions, replicationFactor, members, null);
+          serviceContainerRule1, 1, NUM_PARTITIONS, REPLICATION_FACTOR, MEMBERS, null);
 
   public DistributedLogRule node2 =
       new DistributedLogRule(
           serviceContainerRule2,
           2,
-          numPartitions,
-          replicationFactor,
-          members,
+          NUM_PARTITIONS,
+          REPLICATION_FACTOR,
+          MEMBERS,
           Collections.singletonList(node1.getNode()));
 
   public DistributedLogRule node3 =
       new DistributedLogRule(
           serviceContainerRule3,
           3,
-          numPartitions,
-          replicationFactor,
-          members,
+          NUM_PARTITIONS,
+          REPLICATION_FACTOR,
+          MEMBERS,
           Collections.singletonList(node2.getNode()));
 
   public Timeout timeoutRule = Timeout.seconds(60);
 
   public static final int DEFAULT_RETRIES = 500;
 
-  private static int numPartitions = 3;
-  private static int replicationFactor = 3;
+  private static final int NUM_PARTITIONS = 3;
+  private static final int REPLICATION_FACTOR = 3;
 
   @Rule
   public RuleChain ruleChain =

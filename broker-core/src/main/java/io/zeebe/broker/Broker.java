@@ -20,7 +20,7 @@ package io.zeebe.broker;
 import io.zeebe.broker.clustering.ClusterComponent;
 import io.zeebe.broker.exporter.ExporterComponent;
 import io.zeebe.broker.logstreams.LogStreamsComponent;
-import io.zeebe.broker.subscription.SubscriptionComponent;
+import io.zeebe.broker.logstreams.SubscriptionComponent;
 import io.zeebe.broker.system.SystemComponent;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;

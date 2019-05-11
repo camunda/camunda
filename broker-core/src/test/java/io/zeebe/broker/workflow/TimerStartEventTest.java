@@ -17,10 +17,10 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.workflow.state.TimerInstance.NO_ELEMENT_INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
@@ -112,9 +112,9 @@ public class TimerStartEventTest {
 
     Assertions.assertThat(timerRecord)
         .hasDueDate(brokerRule.getClock().getCurrentTimeInMillis() + 1000)
-        .hasWorkflowInstanceKey(NO_ELEMENT_INSTANCE)
+        .hasWorkflowInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE)
         .hasHandlerFlowNodeId("start_1")
-        .hasElementInstanceKey(NO_ELEMENT_INSTANCE);
+        .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
   }
 
   @Test
@@ -424,7 +424,7 @@ public class TimerStartEventTest {
     Assertions.assertThat(timerRecord)
         .hasDueDate(triggerTime.toEpochMilli())
         .hasHandlerFlowNodeId("start_2")
-        .hasElementInstanceKey(NO_ELEMENT_INSTANCE);
+        .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
 
     assertThat(
             RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
@@ -453,7 +453,7 @@ public class TimerStartEventTest {
     Assertions.assertThat(timerRecord)
         .hasDueDate(triggerTime.toEpochMilli())
         .hasHandlerFlowNodeId("start_2")
-        .hasElementInstanceKey(NO_ELEMENT_INSTANCE);
+        .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
   }
 
   @Test

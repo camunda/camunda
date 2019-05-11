@@ -59,9 +59,9 @@ public class DistributedLogRule extends ExternalResource {
   private final SocketAddress socketAddress;
   private final List<Node> otherNodes;
   private Atomix atomix;
-  private int numPartitions;
-  private int replicationFactor;
-  private List<String> members;
+  private final int numPartitions;
+  private final int replicationFactor;
+  private final List<String> members;
 
   private CompletableFuture<Void> nodeStarted;
   public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.distributedlog.test");

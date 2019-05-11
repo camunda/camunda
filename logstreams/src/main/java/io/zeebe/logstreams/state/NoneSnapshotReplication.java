@@ -15,8 +15,6 @@
  */
 package io.zeebe.logstreams.state;
 
-import io.zeebe.logstreams.processor.SnapshotChunk;
-import io.zeebe.logstreams.processor.SnapshotReplication;
 import java.util.function.Consumer;
 
 public class NoneSnapshotReplication implements SnapshotReplication {

@@ -20,17 +20,17 @@ package io.zeebe.broker.logstreams;
 import io.atomix.core.Atomix;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
+import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
 import io.zeebe.broker.incident.processor.IncidentEventProcessors;
 import io.zeebe.broker.job.JobEventProcessors;
-import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
-import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory.Builder;
+import io.zeebe.broker.logstreams.StreamProcessorServiceFactory.Builder;
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.state.ZeebeState;
-import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.processor.MessageEventProcessors;
 import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.broker.transport.clientapi.CommandResponseWriterImpl;
 import io.zeebe.broker.workflow.deployment.distribute.processor.DeploymentDistributeProcessor;
 import io.zeebe.broker.workflow.processor.BpmnStepProcessor;
 import io.zeebe.broker.workflow.processor.CatchEventBehavior;
@@ -50,6 +50,7 @@ import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ServerTransport;
+import io.zeebe.util.sched.ActorControl;
 
 public class ZbStreamProcessorService implements Service<ZbStreamProcessorService> {
 
@@ -96,64 +97,88 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
     streamProcessorServiceBuilder
         .snapshotController(partition.getProcessorSnapshotController())
         .streamProcessorFactory(
-            (zeebeDb, dbContext) -> {
+            (actor, zeebeDb, dbContext) -> {
               final ZeebeState zeebeState = new ZeebeState(partitionId, zeebeDb, dbContext);
               final TypedStreamEnvironment streamEnvironment =
                   new TypedStreamEnvironment(
-                      partition.getLogStream(), clientApiTransport.getOutput());
+                      partition.getLogStream(),
+                      new CommandResponseWriterImpl(clientApiTransport.getOutput()));
 
-              return createTypedStreamProcessor(partitionId, streamEnvironment, zeebeState);
+              return createTypedStreamProcessor(actor, partitionId, streamEnvironment, zeebeState);
             })
         .deleteDataOnSnapshot(true)
         .build();
   }
 
   public TypedStreamProcessor createTypedStreamProcessor(
-      int partitionId, TypedStreamEnvironment streamEnvironment, ZeebeState zeebeState) {
+      ActorControl actor,
+      int partitionId,
+      TypedStreamEnvironment streamEnvironment,
+      ZeebeState zeebeState) {
     final TypedEventStreamProcessorBuilder typedProcessorBuilder =
         streamEnvironment.newStreamProcessor().zeebeState(zeebeState);
 
-    addDistributeDeploymentProcessors(zeebeState, streamEnvironment, typedProcessorBuilder);
+    addDistributeDeploymentProcessors(actor, zeebeState, streamEnvironment, typedProcessorBuilder);
+
+    final SubscriptionCommandSenderImpl subscriptionCommandSender =
+        new SubscriptionCommandSenderImpl(atomix);
+    subscriptionCommandSender.init(topologyManager, actor, streamEnvironment.getStream());
+    final CatchEventBehavior catchEventBehavior =
+        new CatchEventBehavior(
+            zeebeState, subscriptionCommandSender, clusterCfg.getPartitionsCount());
+
+    addDeploymentRelatedProcessorAndServices(
+        catchEventBehavior, partitionId, zeebeState, typedProcessorBuilder);
+    addMessageProcessors(subscriptionCommandSender, zeebeState, typedProcessorBuilder);
+
     final BpmnStepProcessor stepProcessor =
-        addWorkflowProcessors(zeebeState, typedProcessorBuilder);
-    addDeploymentRelatedProcessorAndServices(partitionId, zeebeState, typedProcessorBuilder);
+        addWorkflowProcessors(
+            zeebeState, typedProcessorBuilder, subscriptionCommandSender, catchEventBehavior);
     addIncidentProcessors(zeebeState, stepProcessor, typedProcessorBuilder);
     addJobProcessors(zeebeState, typedProcessorBuilder);
-    addMessageProcessors(zeebeState, typedProcessorBuilder);
 
     return typedProcessorBuilder.build();
   }
 
   private void addDistributeDeploymentProcessors(
+      ActorControl actor,
       ZeebeState zeebeState,
       TypedStreamEnvironment streamEnvironment,
       TypedEventStreamProcessorBuilder typedEventStreamProcessorBuilder) {
     final LogStream stream = streamEnvironment.getStream();
     final LogStreamWriterImpl logStreamWriter = new LogStreamWriterImpl(stream);
 
+    final TopologyPartitionListenerImpl partitionListener =
+        new TopologyPartitionListenerImpl(actor);
+    topologyManager.addTopologyPartitionListener(partitionListener);
+
+    final DeploymentDistributorImpl deploymentDistributor =
+        new DeploymentDistributorImpl(
+            clusterCfg, atomix, partitionListener, zeebeState.getDeploymentState(), actor);
     final DeploymentDistributeProcessor deploymentDistributeProcessor =
         new DeploymentDistributeProcessor(
-            clusterCfg, topologyManager, zeebeState.getDeploymentState(), atomix, logStreamWriter);
+            zeebeState.getDeploymentState(), logStreamWriter, deploymentDistributor);
 
     typedEventStreamProcessorBuilder.onCommand(
         ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
   }
 
   private BpmnStepProcessor addWorkflowProcessors(
-      ZeebeState zeebeState, TypedEventStreamProcessorBuilder typedProcessorBuilder) {
-    final SubscriptionCommandSender subscriptionCommandSender =
-        new SubscriptionCommandSender(atomix);
+      ZeebeState zeebeState,
+      TypedEventStreamProcessorBuilder typedProcessorBuilder,
+      SubscriptionCommandSenderImpl subscriptionCommandSender,
+      CatchEventBehavior catchEventBehavior) {
     final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getWorkflowState());
     return WorkflowEventProcessors.addWorkflowProcessors(
         typedProcessorBuilder,
         zeebeState,
         subscriptionCommandSender,
-        topologyManager,
-        timerChecker,
-        clusterCfg.getPartitionsCount());
+        catchEventBehavior,
+        timerChecker);
   }
 
   public void addDeploymentRelatedProcessorAndServices(
+      CatchEventBehavior catchEventBehavior,
       int partitionId,
       ZeebeState zeebeState,
       TypedEventStreamProcessorBuilder typedProcessorBuilder) {
@@ -161,10 +186,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
     final boolean isDeploymentPartition = partitionId == Protocol.DEPLOYMENT_PARTITION;
     if (isDeploymentPartition) {
       DeploymentEventProcessors.addTransformingDeploymentProcessor(
-          typedProcessorBuilder,
-          zeebeState,
-          new CatchEventBehavior(
-              zeebeState, new SubscriptionCommandSender(atomix), clusterCfg.getPartitionsCount()));
+          typedProcessorBuilder, zeebeState, catchEventBehavior);
     } else {
       DeploymentEventProcessors.addDeploymentCreateProcessor(typedProcessorBuilder, workflowState);
     }
@@ -188,11 +210,11 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
   }
 
   private void addMessageProcessors(
-      ZeebeState zeebeState, TypedEventStreamProcessorBuilder typedProcessorBuilder) {
-    final SubscriptionCommandSender subscriptionCommandSender =
-        new SubscriptionCommandSender(atomix);
+      SubscriptionCommandSenderImpl subscriptionCommandSender,
+      ZeebeState zeebeState,
+      TypedEventStreamProcessorBuilder typedProcessorBuilder) {
     MessageEventProcessors.addMessageProcessors(
-        typedProcessorBuilder, zeebeState, subscriptionCommandSender, topologyManager);
+        typedProcessorBuilder, zeebeState, subscriptionCommandSender);
   }
 
   @Override

@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.workflow;
 
+import static io.zeebe.broker.workflow.JobAssert.PROCESS_ID;
 import static io.zeebe.broker.workflow.JobAssert.assertJobHeaders;
 import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstanceRecord;
-import static io.zeebe.broker.workflow.gateway.ParallelGatewayStreamProcessorTest.PROCESS_ID;
 import static io.zeebe.exporter.api.record.Assertions.assertThat;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CANCEL;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
