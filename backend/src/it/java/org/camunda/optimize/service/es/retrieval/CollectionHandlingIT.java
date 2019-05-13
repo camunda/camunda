@@ -8,9 +8,10 @@ package org.camunda.optimize.service.es.retrieval;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -104,14 +105,17 @@ public class CollectionHandlingIT {
     OffsetDateTime now = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
     LocalDateUtil.setCurrentTime(now);
 
-    PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto();
-    collectionRenameDto.setName("MyCollection");
+    PartialCollectionUpdateDto collectionUpdate = new PartialCollectionUpdateDto();
+    collectionUpdate.setName("MyCollection");
     final Map<String, String> configuration = Collections.singletonMap("Foo", "Bar");
-    collectionRenameDto.setConfiguration(configuration);
+    final PartialCollectionDataDto data = new PartialCollectionDataDto();
+    data.setConfiguration(configuration);
+    data.setEntities(Arrays.asList(reportId));
+    collectionUpdate.setData(data);
+
 
     // when
-    updateNameOfCollection(id, collectionRenameDto);
-    addEntityToCollection(reportId, id);
+    updateCollectionRequest(id, collectionUpdate);
     List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
 
     // then
@@ -125,6 +129,92 @@ public class CollectionHandlingIT {
     assertEquals(resultCollectionData.getConfiguration(), configuration);
     assertThat(resultCollectionData.getEntities().size(), is(1));
     ReportDefinitionDto report = (ReportDefinitionDto) resultCollectionData.getEntities().get(0);
+    assertThat(report.getId(), is(reportId));
+  }
+
+  @Test
+  public void updatePartialCollection() {
+    // given
+    String id = createNewCollection();
+    String reportId = createNewSingleReport();
+    OffsetDateTime now = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
+    LocalDateUtil.setCurrentTime(now);
+
+    // when (update only name)
+    PartialCollectionUpdateDto collectionUpdate = new PartialCollectionUpdateDto();
+    collectionUpdate.setName("MyCollection");
+
+    updateCollectionRequest(id, collectionUpdate);
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+
+    // then
+    assertThat(collections.size(), is(1));
+    ResolvedCollectionDefinitionDto storedCollection = collections.get(0);
+    assertThat(storedCollection.getId(), is(id));
+    assertThat(storedCollection.getName(), is("MyCollection"));
+    assertThat(storedCollection.getLastModifier(), is("demo"));
+    assertThat(storedCollection.getLastModified(), is(now));
+
+    // when (update only configuration)
+    collectionUpdate = new PartialCollectionUpdateDto();
+    final Map<String, String> configuration = Collections.singletonMap("Foo", "Bar");
+    PartialCollectionDataDto data = new PartialCollectionDataDto();
+    data.setConfiguration(configuration);
+    collectionUpdate.setData(data);
+
+    updateCollectionRequest(id, collectionUpdate);
+    collections = getAllResolvedCollections();
+
+    // then
+    assertThat(collections.size(), is(1));
+    storedCollection = collections.get(0);
+    assertThat(storedCollection.getId(), is(id));
+    assertThat(storedCollection.getName(), is("MyCollection"));
+    assertThat(storedCollection.getLastModifier(), is("demo"));
+    assertThat(storedCollection.getLastModified(), is(now));
+    CollectionDataDto<CollectionEntity> resultCollectionData = storedCollection.getData();
+    assertEquals(resultCollectionData.getConfiguration(), configuration);
+
+    // when (update only entities)
+    collectionUpdate = new PartialCollectionUpdateDto();
+    data = new PartialCollectionDataDto();
+    data.setEntities(Arrays.asList(reportId));
+    collectionUpdate.setData(data);
+
+    updateCollectionRequest(id, collectionUpdate);
+    collections = getAllResolvedCollections();
+
+    // then
+    assertThat(collections.size(), is(1));
+    storedCollection = collections.get(0);
+    assertThat(storedCollection.getId(), is(id));
+    assertThat(storedCollection.getName(), is("MyCollection"));
+    assertThat(storedCollection.getLastModifier(), is("demo"));
+    assertThat(storedCollection.getLastModified(), is(now));
+    resultCollectionData = storedCollection.getData();
+    assertEquals(resultCollectionData.getConfiguration(), configuration);
+    assertThat(resultCollectionData.getEntities().size(), is(1));
+    ReportDefinitionDto report = (ReportDefinitionDto) resultCollectionData.getEntities().get(0);
+    assertThat(report.getId(), is(reportId));
+
+    // when (again only update name)
+    collectionUpdate = new PartialCollectionUpdateDto();
+    collectionUpdate.setName("TestNewCollection");
+
+    updateCollectionRequest(id, collectionUpdate);
+    collections = getAllResolvedCollections();
+
+    // then
+    assertThat(collections.size(), is(1));
+    storedCollection = collections.get(0);
+    assertThat(storedCollection.getId(), is(id));
+    assertThat(storedCollection.getName(), is("TestNewCollection"));
+    assertThat(storedCollection.getLastModifier(), is("demo"));
+    assertThat(storedCollection.getLastModified(), is(now));
+    resultCollectionData = storedCollection.getData();
+    assertEquals(resultCollectionData.getConfiguration(), configuration);
+    assertThat(resultCollectionData.getEntities().size(), is(1));
+    report = (ReportDefinitionDto) resultCollectionData.getEntities().get(0);
     assertThat(report.getId(), is(reportId));
   }
 
@@ -270,10 +360,10 @@ public class CollectionHandlingIT {
   public void doNotUpdateNullFieldsInCollection() {
     // given
     String id = createNewCollection();
-    PartialCollectionDefinitionDto collection = new PartialCollectionDefinitionDto();
+    PartialCollectionUpdateDto collection = new PartialCollectionUpdateDto();
 
     // when
-    updateNameOfCollection(id, collection);
+    updateCollectionRequest(id, collection);
     List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
 
     // then
@@ -293,11 +383,11 @@ public class CollectionHandlingIT {
     String id1 = createNewCollection();
     String id2 = createNewCollection();
 
-    PartialCollectionDefinitionDto collection = new PartialCollectionDefinitionDto();
+    PartialCollectionUpdateDto collection = new PartialCollectionUpdateDto();
     collection.setName("B_collection");
-    updateNameOfCollection(id1, collection);
+    updateCollectionRequest(id1, collection);
     collection.setName("A_collection");
-    updateNameOfCollection(id2, collection);
+    updateCollectionRequest(id2, collection);
 
     // when
     List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
@@ -427,7 +517,7 @@ public class CollectionHandlingIT {
       .getId();
   }
 
-  private void updateNameOfCollection(String id, PartialCollectionDefinitionDto renameCollection) {
+  private void updateCollectionRequest(String id, PartialCollectionUpdateDto renameCollection) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(id, renameCollection)

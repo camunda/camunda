@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -75,7 +75,7 @@ public class CollectionRestServiceIT {
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdatePartialCollectionRequest("NonExistingId", new PartialCollectionDefinitionDto())
+      .buildUpdatePartialCollectionRequest("NonExistingId", new PartialCollectionUpdateDto())
       .execute();
 
     // given
@@ -86,7 +86,7 @@ public class CollectionRestServiceIT {
   public void updateNameOfCollection() {
     //given
     String id = addEmptyCollectionToOptimize();
-    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto();
+    final PartialCollectionUpdateDto collectionRenameDto = new PartialCollectionUpdateDto();
     collectionRenameDto.setName("Test");
 
     // when
@@ -286,7 +286,7 @@ public class CollectionRestServiceIT {
   private void addCollectionToOptimize(String name) {
     String id = addEmptyCollectionToOptimize();
 
-    final PartialCollectionDefinitionDto collection = new PartialCollectionDefinitionDto();
+    final PartialCollectionUpdateDto collection = new PartialCollectionUpdateDto();
     collection.setName(name);
 
     embeddedOptimizeRule

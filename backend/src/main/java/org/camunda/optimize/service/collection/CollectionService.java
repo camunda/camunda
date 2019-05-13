@@ -6,9 +6,9 @@
 package org.camunda.optimize.service.collection;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
@@ -51,17 +51,19 @@ public class CollectionService implements ReportReferencingService, DashboardRef
     return collectionWriter.createNewCollectionAndReturnId(userId);
   }
 
-  public void updatePartialCollection(String collectionId, String userId,
-                                      PartialCollectionDefinitionDto collectionUpdate) {
+  public void updatePartialCollection(String collectionId,
+                                      String userId,
+                                      PartialCollectionUpdateDto collectionUpdate) {
     CollectionDefinitionUpdateDto updateDto = new CollectionDefinitionUpdateDto();
     updateDto.setName(collectionUpdate.getName());
 
-    if (collectionUpdate.getConfiguration() != null) {
-      final CollectionDataDto<String> collectionDataDto = new CollectionDataDto<>();
-      collectionDataDto.setConfiguration(collectionUpdate.getConfiguration());
-      collectionDataDto.setEntities(null);
+    if (collectionUpdate.getData() != null) {
+      final PartialCollectionDataDto collectionDataDto = new PartialCollectionDataDto();
+      collectionDataDto.setConfiguration(collectionUpdate.getData().getConfiguration());
+      collectionDataDto.setEntities(collectionUpdate.getData().getEntities());
       updateDto.setData(collectionDataDto);
     }
+
     updateDto.setLastModifier(userId);
     updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     collectionWriter.updateCollection(updateDto, collectionId);

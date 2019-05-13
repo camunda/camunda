@@ -8,16 +8,9 @@ package org.camunda.optimize.dto.optimize.query.collection;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
-import java.time.OffsetDateTime;
-
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
-public class CollectionDefinitionUpdateDto {
-
+public class PartialCollectionUpdateDto {
   protected String name;
-  protected OffsetDateTime lastModified;
-  protected String owner;
-  protected String lastModifier;
-
   protected PartialCollectionDataDto data;
 }

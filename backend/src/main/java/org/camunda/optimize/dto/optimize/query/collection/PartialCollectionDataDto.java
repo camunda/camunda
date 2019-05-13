@@ -5,10 +5,15 @@
  */
 package org.camunda.optimize.dto.optimize.query.collection;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
+import java.util.List;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
-public class PartialCollectionDefinitionDto {
-  protected String name;
+public class PartialCollectionDataDto {
+
   protected Object configuration;
+  protected List<String> entities;
 }

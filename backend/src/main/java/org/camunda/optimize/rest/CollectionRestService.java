@@ -7,7 +7,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.rest.providers.Secured;
@@ -20,7 +20,6 @@ import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
-import javax.ws.rs.PATCH;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -73,7 +72,7 @@ public class CollectionRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateCollectionPartial(@Context ContainerRequestContext requestContext,
                                       @PathParam("id") String collectionId,
-                                      @NotNull PartialCollectionDefinitionDto updatedCollection) {
+                                      @NotNull PartialCollectionUpdateDto updatedCollection) {
 
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionService.updatePartialCollection(collectionId, userId, updatedCollection);

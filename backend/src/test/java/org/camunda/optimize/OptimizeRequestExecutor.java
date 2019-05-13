@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -397,7 +397,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildUpdatePartialCollectionRequest(String id,
-                                                                     PartialCollectionDefinitionDto updateDto) {
+                                                                     PartialCollectionUpdateDto updateDto) {
     this.path = "collection/" + id;
     this.requestType = PUT;
     this.body = getBody(updateDto);
@@ -415,7 +415,6 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildRemoveEntityFromCollectionRequest(String id, String entityId) {
     this.path = "collection/" + id + "/entity/" + entityId;
     this.requestType = DELETE;
-    this.body = Entity.json("");
     return this;
   }
 

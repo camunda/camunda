@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.service.es.schema.type.CollectionType;
@@ -34,7 +34,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
@@ -47,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
@@ -117,16 +115,13 @@ public class CollectionWriter {
       params.put("lastModifier", userId);
       params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
 
-      final Script addEntityScript = new Script(
-        ScriptType.INLINE,
-        Script.DEFAULT_SCRIPT_LANG,
-        "if(!ctx._source.data.entities.contains(params.entity)){ " +
-          "ctx._source.data.entities.add(params.entity); " +
-          "ctx._source.lastModifier = params.lastModifier; " +
-          "ctx._source.lastModified = params.lastModified; " +
-          "}",
-        params
-      );
+
+      String script = "if(!ctx._source.data.entities.contains(params.entity)){ " +
+        "ctx._source.data.entities.add(params.entity); " +
+        "ctx._source.lastModifier = params.lastModifier; " +
+        "ctx._source.lastModified = params.lastModified; " +
+        "}";
+      final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScript(script, params);
 
       UpdateRequest request = new UpdateRequest(
         getOptimizeIndexAliasForType(COLLECTION_TYPE),
@@ -199,7 +194,7 @@ public class CollectionWriter {
     }
   }
 
-  private void ensureThatAllProvidedEntityIdsExist(CollectionDataDto<String> collectionData) {
+  private void ensureThatAllProvidedEntityIdsExist(PartialCollectionDataDto collectionData) {
     boolean entityIdsAreProvided =
       collectionData != null && collectionData.getEntities() != null && !collectionData.getEntities()
         .isEmpty();
@@ -316,9 +311,7 @@ public class CollectionWriter {
   }
 
   private Script getRemoveEntityFromCollectionScript(final String entityId) {
-    return new Script(
-      ScriptType.INLINE,
-      Script.DEFAULT_SCRIPT_LANG,
+    return ElasticsearchWriterUtil.createDefaultScript(
       "ctx._source.data.entities.removeIf(id -> id.equals(params.idToRemove))",
       Collections.singletonMap("idToRemove", entityId)
     );
