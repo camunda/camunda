@@ -20,8 +20,8 @@ package io.zeebe.broker.exporter.stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
 import java.util.HashMap;
@@ -93,7 +93,7 @@ public class ExporterStateTest {
     final long position = state.getPosition(id);
 
     // then
-    assertThat(position).isEqualTo(ExporterRecord.POSITION_UNKNOWN);
+    assertThat(position).isEqualTo(-1);
   }
 
   @Test
@@ -148,7 +148,7 @@ public class ExporterStateTest {
 
     // then
     assertThat(state.getPosition("e1")).isEqualTo(1L);
-    assertThat(state.getPosition("e2")).isEqualTo(ExporterRecord.POSITION_UNKNOWN);
+    assertThat(state.getPosition("e2")).isEqualTo(-1);
   }
 
   @Test

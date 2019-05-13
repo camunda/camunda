@@ -25,6 +25,7 @@
     <module>service-container</module>
     <module>bpmn-model</module>
     <module>logstreams</module>
+    <module>engine</module>  
     <module>transport</module>
     <module>test</module>
     <module>util</module>

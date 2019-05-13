@@ -22,18 +22,18 @@ import static io.zeebe.broker.exporter.ExporterManagerService.PROCESSOR_NAME;
 
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.engine.EngineService;
 import io.zeebe.broker.exporter.stream.ExporterColumnFamilies;
 import io.zeebe.broker.exporter.stream.ExporterStreamProcessorState;
-import io.zeebe.broker.logstreams.ZbStreamProcessorService;
-import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
-import io.zeebe.broker.logstreams.state.StateReplication;
-import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.zeebe.engine.state.StateStorageFactory;
+import io.zeebe.engine.state.replication.StateReplication;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.processor.SnapshotReplication;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.logstreams.state.NoneSnapshotReplication;
+import io.zeebe.logstreams.state.SnapshotReplication;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.Injector;
@@ -96,7 +96,7 @@ public class Partition implements Service<Partition> {
             exporterStateReplication,
             brokerCfg.getData().getMaxSnapshots());
 
-    final String streamProcessorName = ZbStreamProcessorService.PROCESSOR_NAME;
+    final String streamProcessorName = EngineService.PROCESSOR_NAME;
     final StateStorage stateStorage = stateStorageFactory.create(partitionId, streamProcessorName);
     processorStateReplication =
         noReplication

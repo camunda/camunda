@@ -43,12 +43,9 @@ import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
 import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.broker.exporter.util.ControlledTestExporter;
-import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
-import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
-import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.RecordValue;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
@@ -73,6 +70,8 @@ import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
@@ -519,8 +518,7 @@ public class ExporterRecordTest {
   private void assertRecordExported(
       final Intent intent, final UnpackedObject record, final RecordValue expectedRecordValue) {
     // setup stream processor
-    final StreamProcessorControl control =
-        rule.runStreamProcessor((db, dbContext) -> createStreamProcessor(db));
+    rule.runStreamProcessor((actor, db, dbContext) -> createStreamProcessor(db));
 
     // write event
     final long position = rule.writeEvent(intent, record);

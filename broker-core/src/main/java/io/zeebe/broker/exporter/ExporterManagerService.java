@@ -19,13 +19,13 @@ package io.zeebe.broker.exporter;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.engine.StreamProcessorServiceFactory;
 import io.zeebe.broker.exporter.jar.ExporterJarLoadException;
 import io.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.zeebe.broker.exporter.repo.ExporterRepository;
 import io.zeebe.broker.exporter.stream.ExporterColumnFamilies;
 import io.zeebe.broker.exporter.stream.ExporterStreamProcessor;
 import io.zeebe.broker.exporter.stream.ExporterStreamProcessorState;
-import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.spi.SnapshotController;
@@ -102,7 +102,7 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
           .processorName(PROCESSOR_NAME)
           .snapshotController(snapshotController)
           .streamProcessorFactory(
-              (zeebeDb, dbContext) -> {
+              (actor, zeebeDb, dbContext) -> {
                 final ExporterStreamProcessor exporterStreamProcessor =
                     new ExporterStreamProcessor(
                         zeebeDb,

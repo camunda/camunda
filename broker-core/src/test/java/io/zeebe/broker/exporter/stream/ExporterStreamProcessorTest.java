@@ -25,14 +25,14 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.zeebe.broker.Loggers;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.zeebe.broker.exporter.util.PojoConfigurationExporter;
 import io.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExporterConfiguration;
-import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
+import io.zeebe.engine.Loggers;
+import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -65,8 +65,8 @@ public class ExporterStreamProcessorTest {
       new StreamProcessorRule(
           PARTITION_ID, DefaultZeebeDbFactory.defaultFactory(ExporterColumnFamilies.class));
 
-  private List<ControlledTestExporter> exporters = new ArrayList<>();
-  private List<ExporterDescriptor> exporterDescriptors = new ArrayList<>();
+  private final List<ControlledTestExporter> exporters = new ArrayList<>();
+  private final List<ExporterDescriptor> exporterDescriptors = new ArrayList<>();
 
   private ExporterStreamProcessorState state;
 
@@ -93,7 +93,7 @@ public class ExporterStreamProcessorTest {
   private StreamProcessorControl startStreamProcessor(
       List<ExporterDescriptor> exporterDescriptors) {
     return rule.runStreamProcessor(
-        (db, dbContext) -> {
+        (actor, db, dbContext) -> {
           final ExporterStreamProcessor streamProcessor =
               new ExporterStreamProcessor(
                   db, db.createContext(), PARTITION_ID, exporterDescriptors);
@@ -331,7 +331,7 @@ public class ExporterStreamProcessorTest {
 
     // then
     assertThat(state.getPosition(EXPORTER_ID_1)).isEqualTo(eventPosition);
-    assertThat(state.getPosition(EXPORTER_ID_2)).isEqualTo(ExporterRecord.POSITION_UNKNOWN);
+    assertThat(state.getPosition(EXPORTER_ID_2)).isEqualTo(-1);
   }
 
   @Test

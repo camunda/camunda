@@ -22,22 +22,12 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public class Records {
-
-  public static DeploymentRecord asDeploymentRecord(final LoggedEvent event) {
-    return readValueAs(event, DeploymentRecord.class);
-  }
-
-  public static JobRecord asJobRecord(final LoggedEvent event) {
-    return readValueAs(event, JobRecord.class);
-  }
 
   protected static <T extends UnpackedObject> T readValueAs(
       final LoggedEvent event, final Class<T> valueClass) {
@@ -87,10 +77,6 @@ public class Records {
 
   public static boolean isWorkflowInstanceCreationRecord(final LoggedEvent event) {
     return isRecordOfType(event, ValueType.WORKFLOW_INSTANCE_CREATION);
-  }
-
-  public static boolean isErrorRecord(final LoggedEvent event) {
-    return isRecordOfType(event, ValueType.ERROR);
   }
 
   public static boolean hasIntent(final LoggedEvent event, final Intent intent) {

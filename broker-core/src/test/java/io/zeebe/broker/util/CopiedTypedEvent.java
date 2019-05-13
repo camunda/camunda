@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.util;
 
-import io.zeebe.broker.logstreams.processor.TypedEventImpl;
-import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.engine.processor.TypedEventImpl;
+import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;

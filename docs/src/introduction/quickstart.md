@@ -175,10 +175,10 @@ To start a Zeebe broker use the `broker` or `broker.bat` file located in the
 13:14:41.766 [io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl] [gateway-zb-actors-0] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26501' on transport 'broker-client-internal'
 13:14:42.032 [service-controller] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.raft - Created raft partition-0 with configuration RaftConfiguration{heartbeatInterval='250ms', electionInterval='1s', leaveTimeout='1s'}
 13:14:42.222 [partition-0] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.raft - Joined raft in term 0
-13:14:42.280 [zb-stream-processor] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.logstreams - Recovering state of partition 0 from snapshot
-13:14:42.851 [zb-stream-processor] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.logstreams - Recovered state of partition 0 from snapshot at position -1
-13:14:43.002 [zb-stream-processor] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.processor - Start scanning the log for error events.
-13:14:43.003 [zb-stream-processor] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.processor - Finished scanning the log for error events.
+13:14:42.280 [zb-stream-processor] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.broker.logstreams - Recovering state of partition 0 from snapshot
+13:14:42.851 [zb-stream-processor] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.broker.logstreams - Recovered state of partition 0 from snapshot at position -1
+13:14:43.002 [zb-stream-processor] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.broker.incident.processor - Start scanning the log for error events.
+13:14:43.003 [zb-stream-processor] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.broker.incident.processor - Finished scanning the log for error events.
 
 ```
 

@@ -22,17 +22,15 @@ import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.context.ExporterContext;
 import io.zeebe.broker.exporter.record.RecordMetadataImpl;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
-import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.engine.processor.EventProcessor;
+import io.zeebe.engine.processor.StreamProcessor;
+import io.zeebe.engine.processor.StreamProcessorContext;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.spi.Exporter;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventProcessor;
-import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
@@ -54,7 +52,6 @@ public class ExporterStreamProcessor implements StreamProcessor {
 
   private final ExporterStreamProcessorState state;
   private final RecordExporter recordExporter = new RecordExporter();
-  private final ExporterRecordProcessor exporterRecordProcessor = new ExporterRecordProcessor();
 
   private ActorControl actorControl;
 
@@ -79,18 +76,11 @@ public class ExporterStreamProcessor implements StreamProcessor {
 
   @Override
   public EventProcessor onEvent(LoggedEvent event) {
-    final EventProcessor processor;
     event.readMetadata(rawMetadata);
 
-    if (rawMetadata.getValueType() == ValueType.EXPORTER) {
-      exporterRecordProcessor.wrap(event);
-      processor = exporterRecordProcessor;
-    } else {
-      recordExporter.wrap(event);
-      processor = recordExporter;
-    }
+    recordExporter.wrap(event);
 
-    return processor;
+    return recordExporter;
   }
 
   @Override
@@ -175,21 +165,6 @@ public class ExporterStreamProcessor implements StreamProcessor {
 
     private String getId() {
       return context.getConfiguration().getId();
-    }
-  }
-
-  private class ExporterRecordProcessor implements EventProcessor {
-    private final ExporterRecord record = new ExporterRecord();
-
-    public void wrap(final LoggedEvent event) {
-      event.readValue(record);
-    }
-
-    @Override
-    public void processEvent() {
-      for (final ExporterPosition position : record.getPositions()) {
-        state.setPositionIfGreater(position.getId(), position.getPosition());
-      }
     }
   }
 

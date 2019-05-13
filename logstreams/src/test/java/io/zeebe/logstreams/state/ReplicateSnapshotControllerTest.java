@@ -24,8 +24,6 @@ import static org.mockito.Mockito.verify;
 
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.zeebe.logstreams.processor.SnapshotChunk;
-import io.zeebe.logstreams.processor.SnapshotReplication;
 import io.zeebe.logstreams.util.RocksDBWrapper;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;

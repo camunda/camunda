@@ -31,13 +31,13 @@ import static org.junit.Assert.fail;
 
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
-import io.zeebe.broker.job.JobTimeoutTrigger;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.engine.processor.workflow.job.JobTimeoutTrigger;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.IncidentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;

@@ -18,7 +18,6 @@ package io.zeebe.logstreams.state;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.processor.SnapshotReplication;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.util.FileUtil;
 import java.io.File;

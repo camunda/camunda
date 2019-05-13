@@ -19,10 +19,10 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.Loggers;
 import io.zeebe.broker.it.DataDeleteTest;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.engine.Loggers;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.MessageIntent;
