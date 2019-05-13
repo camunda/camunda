@@ -10,7 +10,8 @@ import * as Styled from './styled';
 function Copyright(props) {
   return (
     <Styled.Copyright {...props}>
-      &copy; Camunda Services GmbH 2018. All rights reserved. | v1.0
+      &copy; Camunda Services GmbH {new Date().getFullYear()}. All rights
+      reserved.
     </Styled.Copyright>
   );
 }
