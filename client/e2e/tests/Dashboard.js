@@ -50,7 +50,7 @@ test('cancel changes', async t => {
   await t.expect(e.dashboardName.textContent).eql('New Name');
 });
 
-// we cannot automatically test this as browsers do not like going fullscreen automatically
+// enable this test once https://github.com/DevExpress/testcafe/issues/2863 is fixed
 // test('view in fullscreen and dark mode', async t => {
 //   await t.click(e.dashboard);
 //   await t.click(e.fullscreenButton);
