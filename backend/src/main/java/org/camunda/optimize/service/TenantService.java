@@ -8,6 +8,7 @@ package org.camunda.optimize.service;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.service.es.reader.TenantReader;
+import org.camunda.optimize.service.security.TenantAuthorizationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
@@ -22,15 +24,29 @@ public class TenantService implements ConfigurationReloadable {
   public static final TenantDto TENANT_NONE = new TenantDto(null, "Not defined", null);
 
   private final TenantReader tenantReader;
+  private final TenantAuthorizationService tenantAuthorizationService;
   private final ConfigurationService configurationService;
 
   private List<TenantDto> configuredDefaultTenants;
 
-  public TenantService(final TenantReader tenantReader, final ConfigurationService configurationService) {
+  public TenantService(final TenantReader tenantReader,
+                       final TenantAuthorizationService tenantAuthorizationService,
+                       final ConfigurationService configurationService) {
     this.tenantReader = tenantReader;
+    this.tenantAuthorizationService = tenantAuthorizationService;
     this.configurationService = configurationService;
 
     initDefaultTenants();
+  }
+
+  public boolean isAuthorizedToSeeTenant(final String userId, final String tenantId) {
+    return tenantAuthorizationService.isAuthorizedToSeeTenant(userId, tenantId);
+  }
+
+  public List<TenantDto> getTenantsForUser(final String userId) {
+    return getTenants().stream()
+      .filter(tenantDto -> tenantAuthorizationService.isAuthorizedToSeeTenant(userId, tenantDto.getId()))
+      .collect(Collectors.toList());
   }
 
   public List<TenantDto> getTenants() {

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.security;
 
+import com.google.common.collect.ImmutableList;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -22,7 +23,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,8 +33,10 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_REVOKE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.READ_HISTORY_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.READ_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.util.DmnHelper.createSimpleDmnModel;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -61,10 +63,10 @@ public class DefinitionAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void grantGlobalAccessForAllDefinitions(int definitionResourceType) throws IOException {
+  public void grantGlobalAccessForAllDefinitions(int definitionResourceType) {
     //given
     addKermitUserAndGrantAccessToOptimize();
-    addGlobalAuthorizationForAllDefinitions(definitionResourceType);
+    addGlobalAuthorizationForResource(definitionResourceType);
 
     deployAndImportDefinition(definitionResourceType);
 
@@ -77,11 +79,29 @@ public class DefinitionAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void revokeAllDefinitionAuthorizationsForGroup(int definitionResourceType) throws Exception {
+  public void grantGlobalAccessForAllTenants(int definitionResourceType) {
+    //given
+    addKermitUserAndGrantAccessToOptimize();
+    addGlobalAuthorizationForResource(definitionResourceType);
+    addGlobalAuthorizationForResource(RESOURCE_TYPE_TENANT);
+
+    deployAndImportDefinition(definitionResourceType);
+    deployAndImportDefinition(definitionResourceType, "tenant1");
+
+    //when
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+
+    //then
+    assertThat(definitions.size(), is(2));
+  }
+
+  @Test
+  @Parameters(method = "definitionType")
+  public void revokeAllDefinitionAuthorizationsForGroup(int definitionResourceType) {
     // given
     addKermitUserAndGrantAccessToOptimize();
     createKermitGroupAndAddKermitToThatGroup();
-    addGlobalAuthorizationForAllDefinitions(definitionResourceType);
+    addGlobalAuthorizationForResource(definitionResourceType);
     revokeAllDefinitionAuthorizationsForKermitGroup(definitionResourceType);
 
     deployAndImportDefinition(definitionResourceType);
@@ -95,11 +115,11 @@ public class DefinitionAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void grantAllDefinitionAuthorizationsForGroup(int definitionResourceType) throws Exception {
+  public void grantAllResourceAuthorizationsForGroup(int definitionResourceType) {
     // given
     addKermitUserAndGrantAccessToOptimize();
     createKermitGroupAndAddKermitToThatGroup();
-    grantAllDefinitionAuthorizationsForKermitGroup(definitionResourceType);
+    grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
 
     deployAndImportDefinition(definitionResourceType);
 
@@ -112,11 +132,53 @@ public class DefinitionAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void revokeSingleDefinitionAuthorizationForGroup(int definitionResourceType) throws Exception {
+  public void revokeAllTenantAccessForGroup(int definitionResourceType) {
     // given
     addKermitUserAndGrantAccessToOptimize();
     createKermitGroupAndAddKermitToThatGroup();
-    grantAllDefinitionAuthorizationsForKermitGroup(definitionResourceType);
+    grantSingleResourceAuthorizationForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
+    createTenantGroupAuthorization(
+      GROUP_ID, ImmutableList.of(ALL_PERMISSION), ALL_RESOURCES_RESOURCE_ID, AUTHORIZATION_TYPE_REVOKE
+    );
+
+    deployAndImportDefinition(definitionResourceType, "tenant1");
+    deployAndImportDefinition(definitionResourceType, "tenant2");
+
+    // when
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+
+    // then
+    assertThat(definitions.size(), is(0));
+  }
+
+  @Test
+  @Parameters(method = "definitionType")
+  public void grantAllTenantAccessForGroup(int definitionResourceType) {
+    // given
+    addKermitUserAndGrantAccessToOptimize();
+    createKermitGroupAndAddKermitToThatGroup();
+    grantSingleResourceAuthorizationForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
+    createTenantGroupAuthorization(
+      GROUP_ID, ImmutableList.of(ALL_PERMISSION), ALL_RESOURCES_RESOURCE_ID, AUTHORIZATION_TYPE_GRANT
+    );
+
+    deployAndImportDefinition(definitionResourceType, "tenant1");
+    deployAndImportDefinition(definitionResourceType, "tenant2");
+
+    // when
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+
+    // then
+    assertThat(definitions.size(), is(2));
+  }
+
+  @Test
+  @Parameters(method = "definitionType")
+  public void revokeSingleDefinitionAuthorizationForGroup(int definitionResourceType) {
+    // given
+    addKermitUserAndGrantAccessToOptimize();
+    createKermitGroupAndAddKermitToThatGroup();
+    grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
     revokeSingleDefinitionAuthorizationsForKermitGroup(
       getDefinitionKey(definitionResourceType),
       definitionResourceType
@@ -133,11 +195,11 @@ public class DefinitionAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void grantSingleDefinitionAuthorizationsForGroup(int definitionResourceType) throws Exception {
+  public void grantSingleDefinitionAuthorizationsForGroup(int definitionResourceType) {
     // given
     addKermitUserAndGrantAccessToOptimize();
     createKermitGroupAndAddKermitToThatGroup();
-    grantSingleDefinitionAuthorizationForKermitGroup(getDefinitionKey(definitionResourceType), definitionResourceType);
+    grantSingleResourceAuthorizationForKermitGroup(getDefinitionKey(definitionResourceType), definitionResourceType);
 
     deployAndImportDefinition(definitionResourceType);
 
@@ -150,11 +212,50 @@ public class DefinitionAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void revokeAllDefinitionAuthorizationsForUser(int definitionResourceType) throws Exception {
+  public void revokeSingleTenantAuthorizationForGroup(int definitionResourceType) {
+    // given
+    final String tenantId = "tenant1";
+    addKermitUserAndGrantAccessToOptimize();
+    createKermitGroupAndAddKermitToThatGroup();
+    grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
+    grantAllResourceAuthorizationsForKermitGroup(RESOURCE_TYPE_TENANT);
+    revokeSingleResourceAuthorizationsForGroup(GROUP_ID, tenantId, RESOURCE_TYPE_TENANT);
+
+    deployAndImportDefinition(definitionResourceType, tenantId);
+
+    // when
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+
+    // then
+    assertThat(definitions.size(), is(0));
+  }
+
+  @Test
+  @Parameters(method = "definitionType")
+  public void grantSingleTenantAuthorizationsForGroup(int definitionResourceType) {
+    // given
+    final String tenantId = "tenant1";
+    addKermitUserAndGrantAccessToOptimize();
+    createKermitGroupAndAddKermitToThatGroup();
+    grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
+    grantSingleResourceAuthorizationsForGroup(GROUP_ID, tenantId, RESOURCE_TYPE_TENANT);
+
+    deployAndImportDefinition(definitionResourceType, tenantId);
+
+    // when
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+
+    // then
+    assertThat(definitions.size(), is(1));
+  }
+
+  @Test
+  @Parameters(method = "definitionType")
+  public void revokeAllResourceAuthorizationsForUser(int definitionResourceType) {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    addGlobalAuthorizationForAllDefinitions(definitionResourceType);
-    revokeAllDefinitionAuthorizationsForKermit(definitionResourceType);
+    addGlobalAuthorizationForResource(definitionResourceType);
+    revokeAllResourceAuthorizationsForKermit(definitionResourceType);
 
     deployAndImportDefinition(definitionResourceType);
 
@@ -167,10 +268,10 @@ public class DefinitionAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void grantAllDefinitionAuthorizationsForUser(int definitionResourceType) throws Exception {
+  public void grantAllDefinitionAuthorizationsForUser(int definitionResourceType) {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    grantAllDefinitionAuthorizationsForKermit(definitionResourceType);
+    grantAllResourceAuthorizationsForKermit(definitionResourceType);
 
     deployAndImportDefinition(definitionResourceType);
 
@@ -183,11 +284,11 @@ public class DefinitionAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void revokeSingleDefinitionAuthorizationForUser(int definitionResourceType) throws Exception {
+  public void revokeSingleDefinitionAuthorizationForUser(int definitionResourceType) {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    grantAllDefinitionAuthorizationsForKermit(definitionResourceType);
-    revokeSingleDefinitionAuthorizationsForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
+    grantAllResourceAuthorizationsForKermit(definitionResourceType);
+    revokeSingleResourceAuthorizationsForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
 
     deployAndImportDefinition(definitionResourceType);
 
@@ -200,10 +301,10 @@ public class DefinitionAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void grantSingleDefinitionAuthorizationsForUser(int definitionResourceType) throws Exception {
+  public void grantSingleResourceAuthorizationsForUser(int definitionResourceType) {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    grantSingleDefinitionAuthorizationForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
+    grantSingleResourceAuthorizationForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
 
     deployAndImportDefinition(definitionResourceType);
 
@@ -216,11 +317,88 @@ public class DefinitionAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void grantAndRevokeSeveralTimes(int definitionResourceType) throws IOException {
+  public void revokeSingleTenantAuthorizationForUser(int definitionResourceType) {
+    // given
+    final String tenantId = "tenant1";
+    addKermitUserAndGrantAccessToOptimize();
+    grantAllResourceAuthorizationsForKermit(definitionResourceType);
+    grantAllResourceAuthorizationsForKermitGroup(RESOURCE_TYPE_TENANT);
+    revokeSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
+
+    deployAndImportDefinition(definitionResourceType, tenantId);
+
+    // when
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+
+    // then
+    assertThat(definitions.size(), is(0));
+  }
+
+  @Test
+  @Parameters(method = "definitionType")
+  public void grantSingleTenantAuthorizationsForUser(int definitionResourceType) {
+    // given
+    final String tenantId = "tenant1";
+    addKermitUserAndGrantAccessToOptimize();
+    grantAllResourceAuthorizationsForKermit(definitionResourceType);
+    grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
+
+    deployAndImportDefinition(definitionResourceType, tenantId);
+
+    // when
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+
+    // then
+    assertThat(definitions.size(), is(1));
+  }
+
+  @Test
+  @Parameters(method = "definitionType")
+  public void grantAllTenantAccessForUser(int definitionResourceType) {
+    // given
+    addKermitUserAndGrantAccessToOptimize();
+    grantSingleResourceAuthorizationForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
+    createTenantUserAuthorization(
+      KERMIT_USER, ImmutableList.of(ALL_PERMISSION), ALL_RESOURCES_RESOURCE_ID, AUTHORIZATION_TYPE_GRANT
+    );
+
+    deployAndImportDefinition(definitionResourceType, "tenant1");
+    deployAndImportDefinition(definitionResourceType, "tenant2");
+
+    // when
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+
+    // then
+    assertThat(definitions.size(), is(2));
+  }
+
+  @Test
+  @Parameters(method = "definitionType")
+  public void revokeAllTenantAccessForUser(int definitionResourceType) {
+    // given
+    addKermitUserAndGrantAccessToOptimize();
+    grantSingleResourceAuthorizationForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
+    createTenantUserAuthorization(
+      KERMIT_USER, ImmutableList.of(ALL_PERMISSION), ALL_RESOURCES_RESOURCE_ID, AUTHORIZATION_TYPE_REVOKE
+    );
+
+    deployAndImportDefinition(definitionResourceType, "tenant1");
+    deployAndImportDefinition(definitionResourceType, "tenant2");
+
+    // when
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+
+    // then
+    assertThat(definitions.size(), is(0));
+  }
+
+  @Test
+  @Parameters(method = "definitionType")
+  public void grantAndRevokeSeveralTimes(int definitionResourceType) {
     //given
     addKermitUserAndGrantAccessToOptimize();
     createKermitGroupAndAddKermitToThatGroup();
-    addGlobalAuthorizationForAllDefinitions(definitionResourceType);
+    addGlobalAuthorizationForResource(definitionResourceType);
 
     deployAndImportDefinition(definitionResourceType);
 
@@ -238,7 +416,7 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(0));
 
     // when
-    grantAllDefinitionAuthorizationsForKermitGroup(definitionResourceType);
+    grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
     definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
@@ -255,50 +433,49 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(0));
 
     // when
-    grantSingleDefinitionAuthorizationForKermitGroup(getDefinitionKey(definitionResourceType), definitionResourceType);
+    grantSingleResourceAuthorizationForKermitGroup(getDefinitionKey(definitionResourceType), definitionResourceType);
     definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(1));
 
     // when
-    revokeAllDefinitionAuthorizationsForKermit(definitionResourceType);
+    revokeAllResourceAuthorizationsForKermit(definitionResourceType);
     definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(0));
 
     // when
-    grantAllDefinitionAuthorizationsForKermit(definitionResourceType);
+    grantAllResourceAuthorizationsForKermit(definitionResourceType);
     definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(1));
 
     // when
-    revokeSingleDefinitionAuthorizationsForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
+    revokeSingleResourceAuthorizationsForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
     definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(0));
 
     // when
-    grantSingleDefinitionAuthorizationForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
+    grantSingleResourceAuthorizationForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
     definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(1));
   }
 
-
   @Test
   @Parameters(method = "definitionType")
-  public void authorizationForOneGroupIsNotTransferredToOtherGroups(int definitionResourceType) throws Exception {
+  public void authorizationForOneGroupIsNotTransferredToOtherGroups(int definitionResourceType) {
     // given
     final String genzoUser = "genzo";
     addKermitUserAndGrantAccessToOptimize();
     createKermitGroupAndAddKermitToThatGroup();
-    grantAllDefinitionAuthorizationsForKermitGroup(definitionResourceType);
+    grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
     engineRule.addUser(genzoUser, genzoUser);
     engineRule.grantUserOptimizeAccess(genzoUser);
     engineRule.createGroup("genzoGroup", "Group", "foo");
@@ -317,7 +494,7 @@ public class DefinitionAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void readAndReadHistoryPermissionsGrandDefinitionAccess(int definitionResourceType) throws Exception {
+  public void readAndReadHistoryPermissionsGrandDefinitionAccess(int definitionResourceType) {
     // given
     addKermitUserAndGrantAccessToOptimize();
     grantAllDefinitionAuthorizationsForUserWithReadPermission(KERMIT_USER, definitionResourceType);
@@ -333,10 +510,30 @@ public class DefinitionAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void grantAuthorizationToSingleDefinitionTransfersToAllVersions(int definitionResourceType) throws Exception {
+  public void grantReadTenantAccessForUser(int definitionResourceType) {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    grantSingleDefinitionAuthorizationForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
+    grantSingleResourceAuthorizationForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
+    createTenantUserAuthorization(
+      KERMIT_USER, ImmutableList.of(READ_PERMISSION), ALL_RESOURCES_RESOURCE_ID, AUTHORIZATION_TYPE_GRANT
+    );
+
+    deployAndImportDefinition(definitionResourceType, "tenant1");
+    deployAndImportDefinition(definitionResourceType, "tenant2");
+
+    // when
+    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+
+    // then
+    assertThat(definitions.size(), is(2));
+  }
+
+  @Test
+  @Parameters(method = "definitionType")
+  public void grantAuthorizationToSingleDefinitionTransfersToAllVersions(int definitionResourceType) {
+    // given
+    addKermitUserAndGrantAccessToOptimize();
+    grantSingleResourceAuthorizationForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
 
     deployAndImportDefinition(definitionResourceType);
     deployAndImportDefinition(definitionResourceType);
@@ -348,13 +545,43 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(2));
   }
 
-  private void deployAndImportDefinition(int definitionResourceType) throws IOException {
+  private void createTenantUserAuthorization(final String tenantUser,
+                                             final ImmutableList<String> permissions,
+                                             final String resourceIdId,
+                                             int type) {
+    AuthorizationDto authorizationDto = new AuthorizationDto();
+    authorizationDto.setResourceType(RESOURCE_TYPE_TENANT);
+    authorizationDto.setPermissions(permissions);
+    authorizationDto.setResourceId(resourceIdId);
+    authorizationDto.setType(type);
+    authorizationDto.setUserId(tenantUser);
+    engineRule.createAuthorization(authorizationDto);
+  }
+
+  private void createTenantGroupAuthorization(final String groupId,
+                                              final ImmutableList<String> permissions,
+                                              final String resourceIdId,
+                                              int type) {
+    AuthorizationDto authorizationDto = new AuthorizationDto();
+    authorizationDto.setResourceType(RESOURCE_TYPE_TENANT);
+    authorizationDto.setPermissions(permissions);
+    authorizationDto.setResourceId(resourceIdId);
+    authorizationDto.setType(type);
+    authorizationDto.setGroupId(groupId);
+    engineRule.createAuthorization(authorizationDto);
+  }
+
+  private void deployAndImportDefinition(int definitionResourceType) {
+    deployAndImportDefinition(definitionResourceType, null);
+  }
+
+  private void deployAndImportDefinition(int definitionResourceType, final String tenantId) {
     switch (definitionResourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        deploySimpleProcessDefinition(PROCESS_KEY);
+        deploySimpleProcessDefinition(PROCESS_KEY, tenantId);
         break;
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        deploySimpleDecisionDefinition(DECISION_KEY);
+        deploySimpleDecisionDefinition(DECISION_KEY, tenantId);
         break;
       default:
         throw new IllegalStateException("Uncovered definitionResourceType: " + definitionResourceType);
@@ -364,9 +591,9 @@ public class DefinitionAuthorizationIT {
     elasticSearchRule.refreshAllOptimizeIndices();
   }
 
-  private void addGlobalAuthorizationForAllDefinitions(int definitionResourceType) {
+  private void addGlobalAuthorizationForResource(int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
+    authorizationDto.setResourceType(resourceType);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GLOBAL);
@@ -374,25 +601,25 @@ public class DefinitionAuthorizationIT {
     engineRule.createAuthorization(authorizationDto);
   }
 
-  private void grantAllDefinitionAuthorizationsForKermitGroup(int definitionResourceType) {
-    grantAllDefinitionAuthorizationsForGroup(GROUP_ID, definitionResourceType);
+  private void grantAllResourceAuthorizationsForKermitGroup(int resourceType) {
+    grantAllResourceAuthorizationsForGroup(GROUP_ID, resourceType);
   }
 
-  private void grantSingleDefinitionAuthorizationForKermitGroup(String definitionKey, int definitionResourceType) {
-    grantSingleDefinitionAuthorizationsForGroup(GROUP_ID, definitionKey, definitionResourceType);
+  private void grantSingleResourceAuthorizationForKermitGroup(String resourceId, int resourceType) {
+    grantSingleResourceAuthorizationsForGroup(GROUP_ID, resourceId, resourceType);
   }
 
-  private void revokeAllDefinitionAuthorizationsForKermitGroup(int definitionResourceType) {
-    revokeAllDefinitionAuthorizationsForGroup(GROUP_ID, definitionResourceType);
+  private void revokeAllDefinitionAuthorizationsForKermitGroup(int resourceType) {
+    revokeAllDefinitionAuthorizationsForGroup(GROUP_ID, resourceType);
   }
 
-  private void revokeSingleDefinitionAuthorizationsForKermitGroup(String definitionKey, int definitionResourceType) {
-    revokeSingleDefinitionAuthorizationsForGroup(GROUP_ID, definitionKey, definitionResourceType);
+  private void revokeSingleDefinitionAuthorizationsForKermitGroup(String resourceID, int reourceType) {
+    revokeSingleResourceAuthorizationsForGroup(GROUP_ID, resourceID, reourceType);
   }
 
-  private void grantAllDefinitionAuthorizationsForGroup(String groupId, int definitionResourceType) {
+  private void grantAllResourceAuthorizationsForGroup(String groupId, int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
+    authorizationDto.setResourceType(resourceType);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
@@ -400,13 +627,13 @@ public class DefinitionAuthorizationIT {
     engineRule.createAuthorization(authorizationDto);
   }
 
-  private void grantSingleDefinitionAuthorizationsForGroup(String groupId,
-                                                           String definitionKey,
-                                                           int definitionResourceType) {
+  private void grantSingleResourceAuthorizationsForGroup(String groupId,
+                                                         String resourceId,
+                                                         int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
+    authorizationDto.setResourceType(resourceType);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(definitionKey);
+    authorizationDto.setResourceId(resourceId);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setGroupId(groupId);
     engineRule.createAuthorization(authorizationDto);
@@ -422,32 +649,32 @@ public class DefinitionAuthorizationIT {
     engineRule.createAuthorization(authorizationDto);
   }
 
-  private void revokeSingleDefinitionAuthorizationsForGroup(String groupId,
-                                                            String definitionKey,
-                                                            int definitionResourceType) {
+  private void revokeSingleResourceAuthorizationsForGroup(String groupId,
+                                                          String resourceId,
+                                                          int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
+    authorizationDto.setResourceType(resourceType);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(definitionKey);
+    authorizationDto.setResourceId(resourceId);
     authorizationDto.setType(AUTHORIZATION_TYPE_REVOKE);
     authorizationDto.setGroupId(groupId);
     engineRule.createAuthorization(authorizationDto);
   }
 
-  private void grantAllDefinitionAuthorizationsForKermit(int definitionResourceType) {
-    grantAllDefinitionAuthorizationsForUser(KERMIT_USER, definitionResourceType);
+  private void grantAllResourceAuthorizationsForKermit(int resourceType) {
+    grantAllDefinitionAuthorizationsForUser(KERMIT_USER, resourceType);
   }
 
-  private void grantSingleDefinitionAuthorizationForKermit(String definitionKey, int definitionResourceType) {
-    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, definitionKey, definitionResourceType);
+  private void grantSingleResourceAuthorizationForKermit(String resourceId, int resourceType) {
+    grantSingleResourceAuthorizationsForUser(KERMIT_USER, resourceId, resourceType);
   }
 
-  private void revokeAllDefinitionAuthorizationsForKermit(int definitionResourceType) {
-    revokeAllDefinitionAuthorizationsForUser(KERMIT_USER, definitionResourceType);
+  private void revokeAllResourceAuthorizationsForKermit(int resourceType) {
+    revokeAllResourceAuthorizationsForUser(KERMIT_USER, resourceType);
   }
 
-  private void revokeSingleDefinitionAuthorizationsForKermit(String definitionKey, int definitionResourceType) {
-    revokeSingleDefinitionAuthorizationsForUser(KERMIT_USER, definitionKey, definitionResourceType);
+  private void revokeSingleResourceAuthorizationsForKermit(String resourceId, int resourceType) {
+    revokeSingleResourceAuthorizationsForUser(KERMIT_USER, resourceId, resourceType);
   }
 
   private void grantAllDefinitionAuthorizationsForUser(String userId, int definitionResourceType) {
@@ -460,13 +687,13 @@ public class DefinitionAuthorizationIT {
     engineRule.createAuthorization(authorizationDto);
   }
 
-  private void grantSingleDefinitionAuthorizationsForUser(String userId,
-                                                          String definitionKey,
-                                                          int definitionResourceType) {
+  private void grantSingleResourceAuthorizationsForUser(String userId,
+                                                        String resourceId,
+                                                        int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
+    authorizationDto.setResourceType(resourceType);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(definitionKey);
+    authorizationDto.setResourceId(resourceId);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(userId);
     engineRule.createAuthorization(authorizationDto);
@@ -484,9 +711,9 @@ public class DefinitionAuthorizationIT {
     engineRule.createAuthorization(authorizationDto);
   }
 
-  private void revokeAllDefinitionAuthorizationsForUser(String userId, int definitionResourceType) {
+  private void revokeAllResourceAuthorizationsForUser(String userId, int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
+    authorizationDto.setResourceType(resourceType);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_REVOKE);
@@ -494,9 +721,9 @@ public class DefinitionAuthorizationIT {
     engineRule.createAuthorization(authorizationDto);
   }
 
-  private void revokeSingleDefinitionAuthorizationsForUser(String userId,
-                                                           String definitionKey,
-                                                           int definitionResourceType) {
+  private void revokeSingleResourceAuthorizationsForUser(String userId,
+                                                         String definitionKey,
+                                                         int definitionResourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(definitionResourceType);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
@@ -548,17 +775,17 @@ public class DefinitionAuthorizationIT {
       .executeAndReturnList(DecisionDefinitionOptimizeDto.class, 200);
   }
 
-  private String deploySimpleProcessDefinition(final String processId) {
+  private String deploySimpleProcessDefinition(final String processId, String tenantId) {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
       .startEvent()
       .endEvent()
       .done();
-    return engineRule.deployProcessAndGetId(modelInstance);
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId).getId();
   }
 
-  private String deploySimpleDecisionDefinition(final String decisionKey) {
+  private String deploySimpleDecisionDefinition(final String decisionKey, final String tenantId) {
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionKey);
-    return engineRule.deployDecisionDefinition(modelInstance).getId();
+    return engineRule.deployDecisionDefinition(modelInstance, tenantId).getId();
   }
 
   private void createKermitGroupAndAddKermitToThatGroup() {

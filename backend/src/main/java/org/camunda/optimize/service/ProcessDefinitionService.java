@@ -27,14 +27,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ProcessDefinitionService extends AbstractDefinitionService {
 
-  private DefinitionAuthorizationService authorizationService;
-  private ProcessDefinitionReader processDefinitionReader;
+  private final DefinitionAuthorizationService definitionAuthorizationService;
+  private final ProcessDefinitionReader processDefinitionReader;
 
   public ProcessDefinitionService(final TenantService tenantService,
-                                  final DefinitionAuthorizationService authorizationService,
+                                  final DefinitionAuthorizationService definitionAuthorizationService,
                                   final ProcessDefinitionReader processDefinitionReader) {
     super(tenantService);
-    this.authorizationService = authorizationService;
+    this.definitionAuthorizationService = definitionAuthorizationService;
     this.processDefinitionReader = processDefinitionReader;
   }
 
@@ -77,7 +77,7 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
 
   public List<DefinitionAvailableVersionsWithTenants> getProcessDefinitionVersionsWithTenants(final String userId) {
     final List<ProcessDefinitionOptimizeDto> definitions = getFullyImportedProcessDefinitions(userId, false);
-    return createDefinitionsWithAvailableVersionsAndTenants(definitions);
+    return createDefinitionsWithAvailableVersionsAndTenants(userId, definitions);
   }
 
 
@@ -90,8 +90,11 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
       .collect(Collectors.toList());
   }
 
-  private boolean isAuthorizedToReadProcessDefinition(final String userId, final ProcessDefinitionOptimizeDto def) {
-    return authorizationService.isAuthorizedToSeeProcessDefinition(userId, def.getKey());
+  private boolean isAuthorizedToReadProcessDefinition(final String userId,
+                                                      final ProcessDefinitionOptimizeDto processDefinition) {
+    return definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
+      userId, processDefinition.getKey(), processDefinition.getTenantId()
+    );
   }
 
   private Map<String, ProcessDefinitionGroupOptimizeDto> getKeyToProcessDefinitionMap(final String userId) {

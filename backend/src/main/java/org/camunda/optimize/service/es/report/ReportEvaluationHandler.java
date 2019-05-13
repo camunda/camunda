@@ -145,8 +145,9 @@ public abstract class ReportEvaluationHandler {
     if (!isAuthorizedToSeeReport(userId, reportDefinition)) {
       ProcessReportDataDto reportData = reportDefinition.getData();
       throw new ForbiddenException(
-        "User [" + userId + "] is not authorized to evaluate report ["
-          + reportDefinition.getName() + "] with process definition [" + reportData.getProcessDefinitionKey() + "]."
+        "User [" + userId + "] is not authorized to evaluate report [" + reportDefinition.getName() + "] " +
+          "with process definition [" + reportData.getProcessDefinitionKey() + "] " +
+          "and tenant ids [" + reportData.getTenantIds() + "]."
       );
     }
 
@@ -161,8 +162,9 @@ public abstract class ReportEvaluationHandler {
     if (!isAuthorizedToSeeReport(userId, reportDefinition)) {
       DecisionReportDataDto reportData = reportDefinition.getData();
       throw new ForbiddenException(
-        "User [" + userId + "] is not authorized to evaluate report ["
-          + reportDefinition.getName() + "] with decision definition [" + reportData.getDecisionDefinitionKey() + "]."
+        "User [" + userId + "] is not authorized to evaluate report [" + reportDefinition.getName() + "] " +
+          "with decision definition [" + reportData.getDecisionDefinitionKey() + "] " +
+          "and tenant ids [" + reportData.getTenantIds() + "]."
       );
     }
 

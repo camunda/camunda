@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
@@ -43,6 +44,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
@@ -399,7 +401,8 @@ public class ProcessDefinitionRestServiceIT {
     final List<DefinitionWithTenantsRestDto> secondDefinitionVersions = secondDefinition.getVersions();
     assertThat(secondDefinitionVersions.size(), is(4));
     assertThat(firstDefinitionVersions.get(0).getVersion(), is(ALL_VERSIONS));
-    final List<TenantRestDto> tenantsAvailableOnSecondDefinitionVersionAll = secondDefinitionVersions.get(0).getTenants();
+    final List<TenantRestDto> tenantsAvailableOnSecondDefinitionVersionAll = secondDefinitionVersions.get(0)
+      .getTenants();
     assertThat(tenantsAvailableOnSecondDefinitionVersionAll.size(), is(2));
     assertThat(tenantsAvailableOnSecondDefinitionVersionAll.get(0).getId(), is(tenantId1));
     assertThat(tenantsAvailableOnSecondDefinitionVersionAll.get(0).getName(), is(tenantName1));
@@ -473,6 +476,111 @@ public class ProcessDefinitionRestServiceIT {
     assertThat(tenantsAvailableOnVersion1.get(1).getName(), is(tenantName1));
     assertThat(firstDefinitionVersions.get(3).getVersion(), is("0"));
     assertThat(firstDefinitionVersions.get(3).getTenants(), is(tenantsAvailableOnVersion1));
+  }
+
+  @Test
+  public void testGetProcessDefinitionVersionsWithTenants_onlyAuthorizedTenantsAvailable() {
+    // given
+    final String tenantId1 = "1";
+    final String tenantName1 = "My Tenant 1";
+    final String tenantId2 = "2";
+    final String tenantName2 = "My Tenant 2";
+    createTenant(tenantId1, tenantName1);
+    createTenant(tenantId2, tenantName2);
+    final String procDefKey = "procDefKey";
+    createProcessDefinitionsForKey(procDefKey, 2, tenantId1);
+    createProcessDefinitionsForKey(procDefKey, 3, tenantId2);
+
+    final String tenant1UserId = "tenantUser";
+    createUserWithTenantAuthorization(tenant1UserId, ImmutableList.of(ALL_PERMISSION), tenantId1);
+    grantSingleDefinitionAuthorizationsForUser(tenant1UserId, procDefKey);
+
+    // when
+    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeRule
+      .getRequestExecutor()
+      .withUserAuthentication(tenant1UserId, tenant1UserId)
+      .buildGetProcessDefinitionVersionsWithTenants()
+      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
+
+    // then
+    assertThat(definitions, is(notNullValue()));
+    assertThat(definitions.size(), is(1));
+    final DefinitionVersionsWithTenantsRestDto availableDefinition = definitions.get(0);
+    assertThat(availableDefinition.getKey(), is(procDefKey));
+    final List<DefinitionWithTenantsRestDto> definitionVersions = availableDefinition.getVersions();
+    assertThat(definitionVersions.size(), is(3));
+    definitionVersions.forEach(versionWithTenants -> {
+      assertThat(versionWithTenants.getTenants().size(), is(1));
+      assertThat(versionWithTenants.getTenants().get(0).getId(), is(tenantId1));
+      assertThat(versionWithTenants.getTenants().get(0).getName(), is(tenantName1));
+    });
+  }
+
+  @Test
+  public void testGetProcessDefinitionVersionsWithTenants_sharedDefinitionNoneTenantAndAuthorizedTenantsAvailable() {
+    // given
+    final String tenantId1 = "1";
+    final String tenantName1 = "My Tenant 1";
+    final String tenantId2 = "2";
+    final String tenantName2 = "My Tenant 2";
+
+    createTenant(tenantId1, tenantName1);
+    createTenant(tenantId2, tenantName2);
+    final String procDefKey = "procDefKey";
+    createProcessDefinitionsForKey(procDefKey, 4);
+    createProcessDefinitionsForKey(procDefKey, 3, tenantId2);
+
+    final String tenant1UserId = "tenantUser";
+    createUserWithTenantAuthorization(tenant1UserId, ImmutableList.of(ALL_PERMISSION), tenantId1);
+    grantSingleDefinitionAuthorizationsForUser(tenant1UserId, procDefKey);
+
+    // when
+    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeRule
+      .getRequestExecutor()
+      .withUserAuthentication(tenant1UserId, tenant1UserId)
+      .buildGetProcessDefinitionVersionsWithTenants()
+      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
+
+    // then
+    assertThat(definitions, is(notNullValue()));
+    assertThat(definitions.size(), is(1));
+
+    final DefinitionVersionsWithTenantsRestDto availableDefinition = definitions.get(0);
+    assertThat(availableDefinition.getKey(), is(procDefKey));
+    final List<DefinitionWithTenantsRestDto> definitionVersions = availableDefinition.getVersions();
+    assertThat(definitionVersions.size(), is(5));
+    definitionVersions.forEach(versionWithTenants -> {
+      assertThat(versionWithTenants.getTenants().size(), is(2));
+      assertThat(versionWithTenants.getTenants().get(0).getId(), is(nullValue()));
+      assertThat(versionWithTenants.getTenants().get(0).getName(), is(TENANT_NONE_NAME));
+      assertThat(versionWithTenants.getTenants().get(1).getId(), is(tenantId1));
+      assertThat(versionWithTenants.getTenants().get(1).getName(), is(tenantName1));
+    });
+  }
+
+  private void createUserWithTenantAuthorization(final String tenantUser,
+                                                 final ImmutableList<String> permissions,
+                                                 final String tenantId) {
+    createOptimizeUser(tenantUser);
+    createTenantAuthorization(tenantUser, permissions, tenantId, AUTHORIZATION_TYPE_GRANT);
+  }
+
+  private void createTenantAuthorization(final String tenantUser,
+                                         final ImmutableList<String> permissions,
+                                         final String resourceIdId,
+                                         int type) {
+    AuthorizationDto authorizationDto = new AuthorizationDto();
+    authorizationDto.setResourceType(RESOURCE_TYPE_TENANT);
+    authorizationDto.setPermissions(permissions);
+    authorizationDto.setResourceId(resourceIdId);
+    authorizationDto.setType(type);
+    authorizationDto.setUserId(tenantUser);
+    engineRule.createAuthorization(authorizationDto);
+  }
+
+  private void createOptimizeUser(final String tenantUser) {
+    engineRule.addUser(tenantUser, tenantUser);
+    engineRule.grantUserOptimizeAccess(tenantUser);
   }
 
   private void createTenant(final String id, final String name) {

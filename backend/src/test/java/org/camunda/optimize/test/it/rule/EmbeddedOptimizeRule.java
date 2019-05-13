@@ -27,8 +27,8 @@ import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndex
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
+import org.camunda.optimize.service.security.AbstractCachingAuthorizationService;
 import org.camunda.optimize.service.security.AuthCookieService;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
@@ -43,12 +43,11 @@ import org.springframework.context.ApplicationContext;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -273,11 +272,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     }
   }
 
-  private void invalidateAuthorizationCache()
-    throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-    final Method invalidateCacheMethod = DefinitionAuthorizationService.class.getDeclaredMethod("reset");
-    invalidateCacheMethod.setAccessible(true);
-    invalidateCacheMethod.invoke(getDefinitionAuthorizationService());
+  private void invalidateAuthorizationCache() {
+    getCachingAuthorizationServices().forEach(AbstractCachingAuthorizationService::reset);
   }
 
   public void reloadConfiguration() {
@@ -390,8 +386,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getApplicationContext().getBean(AlertService.class);
   }
 
-  public DefinitionAuthorizationService getDefinitionAuthorizationService() {
-    return getApplicationContext().getBean(DefinitionAuthorizationService.class);
+  public Collection<AbstractCachingAuthorizationService> getCachingAuthorizationServices() {
+    return getApplicationContext().getBeansOfType(AbstractCachingAuthorizationService.class).values();
   }
 
   public TenantService getTenantService() {

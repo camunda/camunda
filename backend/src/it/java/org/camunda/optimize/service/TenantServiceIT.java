@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service;
 
+import com.google.common.collect.ImmutableList;
+import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.service.util.configuration.DefaultTenant;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -17,6 +19,11 @@ import org.junit.rules.RuleChain;
 
 import java.util.List;
 
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_RESOURCES_RESOURCE_ID;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_REVOKE;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -107,8 +114,152 @@ public class TenantServiceIT {
     assertThat(tenants.get(2).getName(), is(storedTenantName));
   }
 
+  @Test
+  public void isAuthorizedToAccessTenant_noTenantAccess() {
+    // given
+    final String tenantId = "1";
+    final String tenantName = "My Tenant";
+    addTenantToElasticsearch(new TenantDto(tenantId, tenantName, "engine"));
+    final String tenantUser = "tenantUser";
+
+    createOptimizeUser(tenantUser);
+
+    // when
+    final boolean isAuthorized = embeddedOptimizeRule.getTenantService().isAuthorizedToSeeTenant(tenantUser, tenantId);
+    // then
+    assertThat(isAuthorized, is(false));
+  }
+
+  @Test
+  public void isAuthorizedToAccessTenant_allTenantAccessGranted() {
+    // given
+    final String tenantId = "1";
+    final String tenantName = "My Tenant";
+    addTenantToElasticsearch(new TenantDto(tenantId, tenantName, "engine"));
+    final String tenantUser = "tenantUser";
+
+    createUserWithTenantAuthorization(tenantUser, ImmutableList.of(ALL_PERMISSION), ALL_RESOURCES_RESOURCE_ID);
+
+    // when
+    final boolean isAuthorized = embeddedOptimizeRule.getTenantService().isAuthorizedToSeeTenant(tenantUser, tenantId);
+    // then
+    assertThat(isAuthorized, is(true));
+  }
+
+  @Test
+  public void isAuthorizedToAccessTenant_specificResourceAccessGranted() {
+    // given
+    final String tenantId = "1";
+    final String tenantName = "My Tenant";
+    addTenantToElasticsearch(new TenantDto(tenantId, tenantName, "engine"));
+    final String tenantUser = "tenantUser";
+
+    createUserWithTenantAuthorization(tenantUser, ImmutableList.of(ALL_PERMISSION), tenantId);
+
+    // when
+    final boolean isAuthorized = embeddedOptimizeRule.getTenantService().isAuthorizedToSeeTenant(tenantUser, tenantId);
+    // then
+    assertThat(isAuthorized, is(true));
+  }
+
+  @Test
+  public void isAuthorizedToAccessTenant_specificResourceAccessRevoked() {
+    // given
+    final String tenantId = "1";
+    final String tenantName = "My Tenant";
+    addTenantToElasticsearch(new TenantDto(tenantId, tenantName, "engine"));
+    final String tenantUser = "tenantUser";
+
+    createUserWithTenantAuthorization(tenantUser, ImmutableList.of(ALL_PERMISSION), ALL_RESOURCES_RESOURCE_ID);
+    createTenantAuthorization(tenantUser, ImmutableList.of(ALL_PERMISSION), tenantId, AUTHORIZATION_TYPE_REVOKE);
+
+    // when
+    final boolean isAuthorized = embeddedOptimizeRule.getTenantService().isAuthorizedToSeeTenant(tenantUser, tenantId);
+    // then
+    assertThat(isAuthorized, is(false));
+  }
+
+  @Test
+  public void getAuthorizedTenantsOnly() {
+    // given
+    final String storedTenantId1 = "1";
+    final String storedTenantName1 = "My Tenant 1";
+    final String storedTenantId2 = "2";
+    final String storedTenantName2 = "My Tenant 2";
+
+    final String tenantUserId = "tenantUser";
+
+    createUserWithTenantAuthorization(tenantUserId, ImmutableList.of(ALL_PERMISSION), storedTenantId1);
+    addTenantToElasticsearch(new TenantDto(storedTenantId1, storedTenantName1, "engine"));
+    addTenantToElasticsearch(new TenantDto(storedTenantId2, storedTenantName2, "engine"));
+
+    //when
+    final List<TenantDto> tenantsForUser = embeddedOptimizeRule.getTenantService().getTenantsForUser(tenantUserId);
+
+    //then
+    assertThat(tenantsForUser.size(), is(2));
+    assertThat(tenantsForUser.get(0), is(TenantService.TENANT_NONE));
+    assertThat(tenantsForUser.get(1).getId(), is(storedTenantId1));
+  }
+
+  @Test
+  public void getAuthorizedTenantsOnly_withDefaultEngineTenant() {
+    // given
+    final String storedTenantId1 = "1";
+    final String storedTenantName1 = "My Tenant 1";
+    final String storedTenantId2 = "2";
+    final String storedTenantName2 = "My Tenant 2";
+    final String defaultTenantId = "myTenantId";
+    final String defaultTenantName = "Default Tenant";
+    setDefaultTenant(new DefaultTenant(defaultTenantId, defaultTenantName));
+    embeddedOptimizeRule.reloadConfiguration();
+
+    final String tenantUserId = "tenantUser";
+
+    createUserWithTenantAuthorization(tenantUserId, ImmutableList.of(ALL_PERMISSION), storedTenantId1);
+    addTenantToElasticsearch(new TenantDto(storedTenantId1, storedTenantName1, "engine"));
+    addTenantToElasticsearch(new TenantDto(storedTenantId2, storedTenantName2, "engine"));
+
+    //when
+    final List<TenantDto> tenantsForUser = embeddedOptimizeRule.getTenantService().getTenantsForUser(tenantUserId);
+
+    //then
+    assertThat(tenantsForUser.size(), is(3));
+    assertThat(tenantsForUser.get(0), is(TenantService.TENANT_NONE));
+    assertThat(tenantsForUser.get(1).getId(), is(defaultTenantId));
+    assertThat(tenantsForUser.get(2).getId(), is(storedTenantId1));
+  }
+
+  private void createUserWithTenantAuthorization(final String tenantUser,
+                                                 final ImmutableList<String> permissions,
+                                                 final String resourceIdId) {
+    createOptimizeUser(tenantUser);
+    createTenantAuthorization(tenantUser, permissions, resourceIdId, AUTHORIZATION_TYPE_GRANT);
+  }
+
+  private void createTenantAuthorization(final String tenantUser, final ImmutableList<String> permissions,
+                                         final String resourceIdId, int type) {
+    AuthorizationDto authorizationDto = new AuthorizationDto();
+    authorizationDto.setResourceType(RESOURCE_TYPE_TENANT);
+    authorizationDto.setPermissions(permissions);
+    authorizationDto.setResourceId(resourceIdId);
+    authorizationDto.setType(type);
+    authorizationDto.setUserId(tenantUser);
+    engineRule.createAuthorization(authorizationDto);
+  }
+
+  private void createOptimizeUser(final String tenantUser) {
+    engineRule.addUser(tenantUser, tenantUser);
+    engineRule.grantUserOptimizeAccess(tenantUser);
+  }
+
   private void setDefaultTenant(final DefaultTenant defaultTenant) {
-    embeddedOptimizeRule.getConfigurationService().getConfiguredEngines().values().iterator().next().setDefaultTenant(defaultTenant);
+    embeddedOptimizeRule.getConfigurationService()
+      .getConfiguredEngines()
+      .values()
+      .iterator()
+      .next()
+      .setDefaultTenant(defaultTenant);
   }
 
   private void addTenantToElasticsearch(final TenantDto engine) {

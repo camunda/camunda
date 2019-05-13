@@ -40,12 +40,6 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
 
   public Optional<String> getDecisionDefinitionXml(final String userId,
                                                    final String definitionKey,
-                                                   final String definitionVersion) {
-    return getDecisionDefinitionXml(userId, definitionKey, definitionVersion, null);
-  }
-
-  public Optional<String> getDecisionDefinitionXml(final String userId,
-                                                   final String definitionKey,
                                                    final String definitionVersion,
                                                    final String tenantId) {
     return decisionDefinitionReader.getFullyImportedDecisionDefinition(definitionKey, definitionVersion, tenantId)
@@ -70,14 +64,14 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
     return definitionsResult;
   }
 
-  public List<DecisionDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey(final String userId) {
+  public List<DecisionDefinitionGroupOptimizeDto> getDecisionDefinitionsGroupedByKey(final String userId) {
     Map<String, DecisionDefinitionGroupOptimizeDto> resultMap = getKeyToDecisionDefinitionMap(userId);
     return new ArrayList<>(resultMap.values());
   }
 
-  public List<DefinitionAvailableVersionsWithTenants> getProcessDefinitionVersionsWithTenants(final String userId) {
+  public List<DefinitionAvailableVersionsWithTenants> getDecisionDefinitionVersionsWithTenants(final String userId) {
     final List<DecisionDefinitionOptimizeDto> definitions = getFullyImportedDecisionDefinitions(userId, false);
-    return createDefinitionsWithAvailableVersionsAndTenants(definitions);
+    return createDefinitionsWithAvailableVersionsAndTenants(userId, definitions);
   }
 
   private List<DecisionDefinitionOptimizeDto> filterAuthorizedDecisionDefinitions(
@@ -89,8 +83,11 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
       .collect(Collectors.toList());
   }
 
-  private boolean isAuthorizedToReadDecisionDefinition(final String userId, final DecisionDefinitionOptimizeDto def) {
-    return authorizationService.isAuthorizedToSeeDecisionDefinition(userId, def.getKey());
+  private boolean isAuthorizedToReadDecisionDefinition(final String userId,
+                                                       final DecisionDefinitionOptimizeDto decisionDefinition) {
+    return authorizationService.isAuthorizedToSeeDecisionDefinition(
+      userId, decisionDefinition.getKey(), decisionDefinition.getTenantId()
+    );
   }
 
   private Map<String, DecisionDefinitionGroupOptimizeDto> getKeyToDecisionDefinitionMap(final String userId) {

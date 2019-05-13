@@ -11,7 +11,6 @@ import java.util.List;
 
 @Data
 public class AuthorizationDto {
-
   protected String id;
   protected Integer type;
   protected List<String> permissions;

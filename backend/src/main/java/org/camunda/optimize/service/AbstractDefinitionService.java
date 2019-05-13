@@ -27,8 +27,9 @@ abstract class AbstractDefinitionService {
   private TenantService tenantService;
 
   List<DefinitionAvailableVersionsWithTenants> createDefinitionsWithAvailableVersionsAndTenants(
+    final String userId,
     final List<? extends DefinitionOptimizeDto> definitions) {
-    final Map<String, TenantDto> allAvailableTenantsById = tenantService.getTenants()
+    final Map<String, TenantDto> allAvailableTenantsById = tenantService.getTenantsForUser(userId)
       .stream()
       .collect(Collectors.toMap(TenantDto::getId, v -> v));
 

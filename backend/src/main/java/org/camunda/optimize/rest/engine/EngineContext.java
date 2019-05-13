@@ -26,6 +26,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 
 public class EngineContext {
   private static final Logger logger = LoggerFactory.getLogger(EngineContext.class);
@@ -98,6 +99,18 @@ public class EngineContext {
     } catch (Exception e) {
       logger.error(
         "Could not fetch decision definition authorizations from the Engine to check the access permissions.",
+        e
+      );
+    }
+    return new ArrayList<>();
+  }
+
+  public List<AuthorizationDto> getAllTenantAuthorizations() {
+    try {
+      return getAuthorizationsForType(RESOURCE_TYPE_TENANT);
+    } catch (Exception e) {
+      logger.error(
+        "Could not fetch tenant authorizations from the Engine to check the access permissions.",
         e
       );
     }

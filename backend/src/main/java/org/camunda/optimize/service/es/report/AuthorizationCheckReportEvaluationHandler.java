@@ -44,13 +44,17 @@ public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationH
       SingleProcessReportDefinitionDto processReport = (SingleProcessReportDefinitionDto) report;
       ProcessReportDataDto reportData = processReport.getData();
       if (reportData != null) {
-        return authorizationService.isAuthorizedToSeeProcessDefinition(userId, reportData.getProcessDefinitionKey());
+        return authorizationService.isAuthorizedToSeeProcessDefinition(
+          userId, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
+        );
       }
     } else if (report instanceof SingleDecisionReportDefinitionDto) {
       SingleDecisionReportDefinitionDto decisionReport = (SingleDecisionReportDefinitionDto) report;
       DecisionReportDataDto reportData = decisionReport.getData();
       if (reportData != null) {
-        return authorizationService.isAuthorizedToSeeDecisionDefinition(userId, reportData.getDecisionDefinitionKey());
+        return authorizationService.isAuthorizedToSeeDecisionDefinition(
+          userId, reportData.getDecisionDefinitionKey(), reportData.getTenantIds()
+        );
       }
     }
     return true;

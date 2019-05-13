@@ -62,7 +62,7 @@ public class DecisionDefinitionRestService {
   @Path("/groupedByKey")
   public List<DecisionDefinitionGroupOptimizeDto> getDecisionDefinitionsGroupedByKey(@Context ContainerRequestContext requestContext) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return decisionDefinitionService.getProcessDefinitionsGroupedByKey(userId);
+    return decisionDefinitionService.getDecisionDefinitionsGroupedByKey(userId);
   }
 
   @GET
@@ -72,7 +72,7 @@ public class DecisionDefinitionRestService {
     @Context ContainerRequestContext requestContext) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return DefinitionVersionsWithTenantsMapper.mapToDefinitionVersionsWithTenantsRestDto(
-      decisionDefinitionService.getProcessDefinitionVersionsWithTenants(userId)
+      decisionDefinitionService.getDecisionDefinitionVersionsWithTenants(userId)
     );
   }
 

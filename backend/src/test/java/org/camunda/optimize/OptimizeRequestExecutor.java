@@ -237,6 +237,17 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildUpdateSingleReportRequest(String id,
+                                                                ReportDefinitionDto entity) {
+    switch (entity.getReportType()) {
+      default:
+      case PROCESS:
+        return buildUpdateSingleProcessReportRequest(id, (SingleProcessReportDefinitionDto) entity, null);
+      case DECISION:
+        return buildUpdateSingleDecisionReportRequest(id, (SingleDecisionReportDefinitionDto) entity, null);
+    }
+  }
+
   public OptimizeRequestExecutor buildUpdateSingleProcessReportRequest(String id,
                                                                        SingleProcessReportDefinitionDto entity) {
     return buildUpdateSingleProcessReportRequest(id, entity, null);

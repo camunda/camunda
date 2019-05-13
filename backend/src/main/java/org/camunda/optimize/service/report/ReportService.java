@@ -318,8 +318,9 @@ public class ReportService {
                                                        SingleProcessReportDefinitionDto reportDefinition) {
     final ProcessReportDataDto reportData = reportDefinition.getData();
     if (reportData != null) {
-      return
-        authorizationService.isAuthorizedToSeeProcessDefinition(userId, reportData.getProcessDefinitionKey());
+      return authorizationService.isAuthorizedToSeeProcessDefinition(
+        userId, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
+      );
     }
     return true;
   }
@@ -328,7 +329,9 @@ public class ReportService {
                                                         SingleDecisionReportDefinitionDto reportDefinition) {
     final DecisionReportDataDto reportData = reportDefinition.getData();
     if (reportData != null) {
-      return authorizationService.isAuthorizedToSeeDecisionDefinition(userId, reportData.getDecisionDefinitionKey());
+      return authorizationService.isAuthorizedToSeeDecisionDefinition(
+        userId, reportData.getDecisionDefinitionKey(), reportData.getTenantIds()
+      );
     }
     return true;
   }
@@ -338,13 +341,17 @@ public class ReportService {
       SingleProcessReportDefinitionDto processDefinition = (SingleProcessReportDefinitionDto) reportDefinition;
       final ProcessReportDataDto reportData = processDefinition.getData();
       if (reportData != null) {
-        return authorizationService.isAuthorizedToSeeProcessDefinition(userId, reportData.getProcessDefinitionKey());
+        return authorizationService.isAuthorizedToSeeProcessDefinition(
+          userId, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
+        );
       }
     } else if (reportDefinition instanceof SingleDecisionReportDefinitionDto) {
       SingleDecisionReportDefinitionDto decisionReport = (SingleDecisionReportDefinitionDto) reportDefinition;
       DecisionReportDataDto reportData = decisionReport.getData();
       if (reportData != null) {
-        return authorizationService.isAuthorizedToSeeDecisionDefinition(userId, reportData.getDecisionDefinitionKey());
+        return authorizationService.isAuthorizedToSeeDecisionDefinition(
+          userId, reportData.getDecisionDefinitionKey(), reportData.getTenantIds()
+        );
       }
     }
     return true;
