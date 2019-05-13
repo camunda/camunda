@@ -11,10 +11,12 @@ export const Dashboard = styled.main`
   padding: 0 20px 38px;
   display: flex;
   flex-direction: column;
+  height: calc(100vh - 56px);
 `;
 
 export const TitleWrapper = styled.div`
   display: flex;
+  min-height: 1px;
 `;
 
 export const Tile = themed(styled.div`
@@ -65,6 +67,5 @@ export const TileTitle = themed(styled.h2`
 
 export const TileContent = styled.div`
   position: relative;
-  overflow: auto;
-  height: 644px;
+  overflow-y: scroll;
 `;
