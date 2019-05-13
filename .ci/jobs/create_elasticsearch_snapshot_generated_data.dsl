@@ -1,7 +1,7 @@
 pipelineJob('create-elasticsearch-snapshots-generated-data') {
 
   displayName 'Create elasticsearch snapshot with generated data'
-  description 'Generate data e create snapshot to be used in other jobs (e.g. performance tests)'
+  description 'Generate data and create snapshot to be used in other jobs (e.g. performance tests).'
 
   definition {
     cps {

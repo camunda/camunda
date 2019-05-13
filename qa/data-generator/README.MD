@@ -1,3 +1,7 @@
+# Test data generator
+
+This project generates data for the import performance test.
+
 # Prerequisites
 
 * Zeebe is running
