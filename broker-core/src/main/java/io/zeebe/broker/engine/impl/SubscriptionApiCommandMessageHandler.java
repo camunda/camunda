@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.logstreams;
+package io.zeebe.broker.engine.impl;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.subscription.CloseMessageSubscriptionDecoder;

@@ -18,8 +18,8 @@
 package io.zeebe.broker.exporter;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.engine.EngineServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 import static io.zeebe.broker.exporter.ExporterServiceNames.EXPORTER_MANAGER;
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;

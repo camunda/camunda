@@ -15,11 +15,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.logstreams;
+package io.zeebe.broker.engine;
 
+import io.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandler;
+import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.servicecontainer.ServiceName;
 
-public class SubscriptionServiceNames {
+public class EngineServiceNames {
+  public static final ServiceName<StreamProcessorServiceFactory> STREAM_PROCESSOR_SERVICE_FACTORY =
+      ServiceName.newServiceName(
+          "logstreams.processor-factory", StreamProcessorServiceFactory.class);
+
+  public static final ServiceName<StateStorageFactory> stateStorageFactoryServiceName(
+      String partitionName) {
+    return ServiceName.newServiceName(
+        String.format("%s.rocksdb.storage", partitionName), StateStorageFactory.class);
+  }
+
+  public static final ServiceName<EngineService> ENGINE_SERVICE_NAME =
+      ServiceName.newServiceName("logstreams.processor", EngineService.class);
 
   public static final ServiceName<SubscriptionApiCommandMessageHandler>
       SUBSCRIPTION_API_MESSAGE_HANDLER_SERVICE_NAME =

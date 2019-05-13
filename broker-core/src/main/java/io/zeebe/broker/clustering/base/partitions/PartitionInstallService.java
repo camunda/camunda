@@ -27,7 +27,7 @@ import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.f
 import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.leaderOpenLogStreamServiceName;
 import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.leaderPartitionServiceName;
 import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.partitionLeaderElectionServiceName;
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.stateStorageFactoryServiceName;
+import static io.zeebe.broker.engine.EngineServiceNames.stateStorageFactoryServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 
 import io.atomix.cluster.messaging.ClusterEventService;

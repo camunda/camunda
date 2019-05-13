@@ -15,15 +15,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.logstreams;
+package io.zeebe.broker.engine;
 
 import io.atomix.core.Atomix;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
+import io.zeebe.broker.engine.StreamProcessorServiceFactory.Builder;
+import io.zeebe.broker.engine.impl.DeploymentDistributorImpl;
+import io.zeebe.broker.engine.impl.SubscriptionCommandSenderImpl;
 import io.zeebe.broker.incident.processor.IncidentEventProcessors;
 import io.zeebe.broker.job.JobEventProcessors;
-import io.zeebe.broker.logstreams.StreamProcessorServiceFactory.Builder;
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
@@ -52,7 +54,7 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.ActorControl;
 
-public class ZbStreamProcessorService implements Service<ZbStreamProcessorService> {
+public class EngineService implements Service<EngineService> {
 
   public static final String PROCESSOR_NAME = "zb-stream-processor";
 
@@ -68,11 +70,9 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
   private TopologyManager topologyManager;
   private Atomix atomix;
   private final ServiceGroupReference<Partition> partitionsGroupReference =
-      ServiceGroupReference.<Partition>create()
-          .onAdd((partitionName, partition) -> startStreamProcessors(partitionName, partition))
-          .build();
+      ServiceGroupReference.<Partition>create().onAdd(this::startEngineForPartition).build();
 
-  public ZbStreamProcessorService(final ClusterCfg clusterCfg) {
+  public EngineService(final ClusterCfg clusterCfg) {
     this.clusterCfg = clusterCfg;
   }
 
@@ -84,7 +84,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
     this.atomix = atomixInjector.getValue();
   }
 
-  public void startStreamProcessors(
+  public void startEngineForPartition(
       final ServiceName<Partition> partitionServiceName, final Partition partition) {
     final int partitionId = partition.getPartitionId();
 
@@ -218,7 +218,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
   }
 
   @Override
-  public ZbStreamProcessorService get() {
+  public EngineService get() {
     return this;
   }
 

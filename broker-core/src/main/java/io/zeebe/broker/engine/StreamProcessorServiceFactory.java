@@ -15,9 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.logstreams;
+package io.zeebe.broker.engine;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.logstreams.StreamProcessors;
 import io.zeebe.broker.logstreams.processor.EventFilter;
 import io.zeebe.broker.logstreams.processor.MetadataFilter;
 import io.zeebe.broker.logstreams.processor.StreamProcessorFactory;

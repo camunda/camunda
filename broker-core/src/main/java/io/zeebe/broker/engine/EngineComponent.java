@@ -15,12 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.logstreams;
+package io.zeebe.broker.engine;
 
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.ZB_STREAM_PROCESSOR_SERVICE_NAME;
+import static io.zeebe.broker.engine.EngineServiceNames.ENGINE_SERVICE_NAME;
+import static io.zeebe.broker.engine.EngineServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
+import io.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -29,7 +30,7 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.DurationUtil;
 import java.time.Duration;
 
-public class LogStreamsComponent implements Component {
+public class EngineComponent implements Component {
 
   @Override
   public void init(SystemContext context) {
@@ -46,10 +47,10 @@ public class LogStreamsComponent implements Component {
         .createService(STREAM_PROCESSOR_SERVICE_FACTORY, streamProcessorFactory)
         .install();
 
-    final ZbStreamProcessorService streamProcessorService =
-        new ZbStreamProcessorService(brokerConfiguration.getCluster());
+    final EngineService streamProcessorService =
+        new EngineService(brokerConfiguration.getCluster());
     serviceContainer
-        .createService(ZB_STREAM_PROCESSOR_SERVICE_NAME, streamProcessorService)
+        .createService(ENGINE_SERVICE_NAME, streamProcessorService)
         .dependency(
             TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME),
             streamProcessorService.getClientApiTransportInjector())
@@ -64,6 +65,18 @@ public class LogStreamsComponent implements Component {
         .groupReference(
             ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME,
             streamProcessorService.getPartitionsGroupReference())
+        .install();
+
+    final SubscriptionApiCommandMessageHandlerService messageHandlerService =
+        new SubscriptionApiCommandMessageHandlerService();
+    serviceContainer
+        .createService(
+            EngineServiceNames.SUBSCRIPTION_API_MESSAGE_HANDLER_SERVICE_NAME, messageHandlerService)
+        .dependency(
+            ClusterBaseLayerServiceNames.ATOMIX_SERVICE, messageHandlerService.getAtomixInjector())
+        .groupReference(
+            ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME,
+            messageHandlerService.getLeaderParitionsGroupReference())
         .install();
   }
 }

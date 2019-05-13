@@ -58,14 +58,6 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
   public void onOpen(final TypedStreamProcessor streamProcessor) {
     streamProcessorId = streamProcessor.getStreamProcessorContext().getId();
     actor = streamProcessor.getActor();
-
-    //    partitionListener = new TopologyPartitionListenerImpl(streamProcessor.getActor());
-    //    topologyManager.addTopologyPartitionListener(partitionListener);
-    //
-    //    deploymentDistributor =
-    //        new DeploymentDistributor(clusterCfg, atomix, partitionListener, deploymentsState,
-    // actor);
-
     actor.submit(this::reprocessPendingDeployments);
   }
 
