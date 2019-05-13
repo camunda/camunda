@@ -20,8 +20,8 @@ package io.zeebe.broker.exporter.stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
 import java.util.HashMap;

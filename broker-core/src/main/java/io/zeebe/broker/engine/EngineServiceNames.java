@@ -18,7 +18,7 @@
 package io.zeebe.broker.engine;
 
 import io.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandler;
-import io.zeebe.broker.logstreams.state.StateStorageFactory;
+import io.zeebe.engine.state.StateStorageFactory;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class EngineServiceNames {

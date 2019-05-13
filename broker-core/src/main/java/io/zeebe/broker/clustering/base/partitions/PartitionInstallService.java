@@ -32,11 +32,11 @@ import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributed
 
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.logstreams.state.StateStorageFactory;
-import io.zeebe.broker.logstreams.state.StateStorageFactoryService;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.distributedlog.StorageConfiguration;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
+import io.zeebe.engine.state.StateStorageFactory;
+import io.zeebe.engine.state.StateStorageFactoryService;
 import io.zeebe.logstreams.impl.service.LeaderOpenLogStreamAppenderService;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.LogStream;

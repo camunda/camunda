@@ -17,11 +17,11 @@
  */
 package io.zeebe.broker.system.management.deployment;
 
-import io.zeebe.broker.util.SbeBufferWriterReader;
 import io.zeebe.clustering.management.MessageHeaderDecoder;
 import io.zeebe.clustering.management.MessageHeaderEncoder;
 import io.zeebe.clustering.management.NotLeaderResponseDecoder;
 import io.zeebe.clustering.management.NotLeaderResponseEncoder;
+import io.zeebe.engine.util.SbeBufferWriterReader;
 
 public class NotLeaderResponse
     extends SbeBufferWriterReader<NotLeaderResponseEncoder, NotLeaderResponseDecoder> {

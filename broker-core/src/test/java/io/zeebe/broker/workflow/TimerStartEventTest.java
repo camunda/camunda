@@ -20,7 +20,7 @@ package io.zeebe.broker.workflow;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.broker.workflow.state.TimerInstance;
+import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
-  package="io.zeebe.broker.subscription" id="6" version="1"
+  package="io.zeebe.engine.processor.workflow.message.command" id="6" version="1"
   semanticVersion="${project.version}" description="Zeebe Subscription Protocol"
   byteOrder="littleEndian">
 

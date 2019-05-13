@@ -19,11 +19,11 @@ package io.zeebe.broker.logstreams.restore;
 
 import static io.zeebe.clustering.management.LogReplicationResponseEncoder.toPositionNullValue;
 
-import io.zeebe.broker.util.SbeBufferWriterReader;
 import io.zeebe.clustering.management.BooleanType;
 import io.zeebe.clustering.management.LogReplicationResponseDecoder;
 import io.zeebe.clustering.management.LogReplicationResponseEncoder;
 import io.zeebe.distributedlog.restore.LogReplicationResponse;
+import io.zeebe.engine.util.SbeBufferWriterReader;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;

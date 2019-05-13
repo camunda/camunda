@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.util;
 
-import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.Intent;

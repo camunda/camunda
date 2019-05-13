@@ -18,11 +18,11 @@
 package io.zeebe.broker.engine;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.logstreams.StreamProcessors;
-import io.zeebe.broker.logstreams.processor.EventFilter;
-import io.zeebe.broker.logstreams.processor.MetadataFilter;
-import io.zeebe.broker.logstreams.processor.StreamProcessorFactory;
-import io.zeebe.broker.logstreams.processor.StreamProcessorService;
+import io.zeebe.engine.processor.EventFilter;
+import io.zeebe.engine.processor.MetadataFilter;
+import io.zeebe.engine.processor.StreamProcessorFactory;
+import io.zeebe.engine.processor.StreamProcessorService;
+import io.zeebe.engine.processor.StreamProcessors;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotController;

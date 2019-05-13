@@ -20,10 +20,10 @@ package io.zeebe.broker.logstreams.restore;
 import static io.zeebe.clustering.management.LogReplicationRequestEncoder.fromPositionNullValue;
 import static io.zeebe.clustering.management.LogReplicationRequestEncoder.toPositionNullValue;
 
-import io.zeebe.broker.util.SbeBufferWriterReader;
 import io.zeebe.clustering.management.LogReplicationRequestDecoder;
 import io.zeebe.clustering.management.LogReplicationRequestEncoder;
 import io.zeebe.distributedlog.restore.LogReplicationRequest;
+import io.zeebe.engine.util.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

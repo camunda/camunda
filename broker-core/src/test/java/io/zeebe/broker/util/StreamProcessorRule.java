@@ -23,12 +23,12 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.broker.logstreams.processor.CommandResponseWriter;
-import io.zeebe.broker.logstreams.processor.StreamProcessorFactory;
-import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
-import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.db.ZeebeDbFactory;
+import io.zeebe.engine.processor.CommandResponseWriter;
+import io.zeebe.engine.processor.StreamProcessorFactory;
+import io.zeebe.engine.processor.TypedStreamEnvironment;
+import io.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
