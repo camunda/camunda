@@ -101,7 +101,7 @@ public class DistributedLogRule extends ExternalResource {
 
     LogstreamConfig.putConfig(memberId, config);
     LogstreamConfig.putServiceContainer(memberId, serviceContainer);
-    LogstreamConfig.putLogReplicationClientFactory(
+    LogstreamConfig.putRestoreClientFactory(
         memberId, p -> null); // return null until we figure out what to use to test
 
     configFuture = actorScheduler.submitActor(config);

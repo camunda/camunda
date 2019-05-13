@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.distributedlog.restore;
+package io.zeebe.distributedlog.restore.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.zeebe.distributedlog.restore.impl.ControllableLogReplicationClient;
-import io.zeebe.distributedlog.restore.impl.DefaultLogReplicationResponse;
-import io.zeebe.distributedlog.restore.impl.RecordingLogReplicationAppender;
+import io.zeebe.distributedlog.restore.log.impl.ControllableLogReplicationClient;
+import io.zeebe.distributedlog.restore.log.impl.DefaultLogReplicationResponse;
+import io.zeebe.distributedlog.restore.log.impl.RecordingLogReplicationAppender;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;

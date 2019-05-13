@@ -17,12 +17,13 @@
  */
 package io.zeebe.broker.logstreams.restore;
 
+import static io.zeebe.clustering.management.LogReplicationResponseEncoder.serializedEventsHeaderLength;
 import static io.zeebe.clustering.management.LogReplicationResponseEncoder.toPositionNullValue;
 
 import io.zeebe.clustering.management.BooleanType;
 import io.zeebe.clustering.management.LogReplicationResponseDecoder;
 import io.zeebe.clustering.management.LogReplicationResponseEncoder;
-import io.zeebe.distributedlog.restore.LogReplicationResponse;
+import io.zeebe.distributedlog.restore.log.LogReplicationResponse;
 import io.zeebe.engine.util.SbeBufferWriterReader;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
@@ -38,7 +39,6 @@ public class SbeLogReplicationResponse
 
   private long toPosition;
   private boolean moreAvailable;
-  private int serializedEventsLength;
 
   public SbeLogReplicationResponse() {}
 
@@ -65,7 +65,6 @@ public class SbeLogReplicationResponse
     toPosition = toPositionNullValue();
     moreAvailable = false;
     serializedEvents.wrap(0, 0);
-    serializedEventsLength = 0;
   }
 
   @Override
@@ -75,7 +74,6 @@ public class SbeLogReplicationResponse
     toPosition = decoder.toPosition();
     moreAvailable = decoder.moreAvailable() == BooleanType.TRUE;
     decoder.wrapSerializedEvents(serializedEvents);
-    serializedEventsLength = decoder.serializedEventsLength();
   }
 
   public void wrap(LogReplicationResponse other) {
@@ -90,6 +88,11 @@ public class SbeLogReplicationResponse
     encoder.toPosition(toPosition);
     encoder.putSerializedEvents(serializedEvents, 0, serializedEvents.capacity());
     encoder.moreAvailable(moreAvailable ? BooleanType.TRUE : BooleanType.FALSE);
+  }
+
+  @Override
+  public int getLength() {
+    return super.getLength() + serializedEventsHeaderLength() + serializedEvents.capacity();
   }
 
   @Override
@@ -117,12 +120,10 @@ public class SbeLogReplicationResponse
 
   public void setSerializedEvents(byte[] serializedEvents) {
     this.serializedEvents.wrap(serializedEvents);
-    this.serializedEventsLength = serializedEvents.length;
   }
 
   public void setSerializedEvents(DirectBuffer serializedEvents, int offset, int length) {
     this.serializedEvents.wrap(serializedEvents, offset, length);
-    this.serializedEventsLength = length;
   }
 
   public static byte[] serialize(LogReplicationResponse response) {
@@ -131,7 +132,7 @@ public class SbeLogReplicationResponse
 
   @Override
   public boolean isValid() {
-    return toPosition != toPositionNullValue() && serializedEventsLength > 0;
+    return toPosition != toPositionNullValue() && serializedEvents.capacity() > 0;
   }
 
   @Override

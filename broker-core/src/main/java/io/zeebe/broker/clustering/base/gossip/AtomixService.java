@@ -26,7 +26,7 @@ import io.atomix.core.AtomixBuilder;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.logstreams.restore.LogReplicationFactory;
+import io.zeebe.broker.logstreams.restore.BrokerRestoreFactory;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
@@ -124,8 +124,8 @@ public class AtomixService implements Service<Atomix> {
     atomixBuilder.withManagementGroup(systemGroup).withPartitionGroups(partitionGroup);
 
     atomix = atomixBuilder.build();
-    LogstreamConfig.putLogReplicationClientFactory(
-        localMemberId, new LogReplicationFactory(atomix.getCommunicationService()));
+    LogstreamConfig.putRestoreClientFactory(
+        localMemberId, new BrokerRestoreFactory(atomix.getCommunicationService()));
   }
 
   @Override

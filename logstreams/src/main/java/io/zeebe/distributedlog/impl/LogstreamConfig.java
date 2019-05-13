@@ -17,12 +17,14 @@ package io.zeebe.distributedlog.impl;
 
 import io.zeebe.distributedlog.StorageConfiguration;
 import io.zeebe.distributedlog.StorageConfigurationManager;
-import io.zeebe.distributedlog.restore.LogReplicationClient;
-import io.zeebe.distributedlog.restore.LogReplicationClientFactory;
+import io.zeebe.distributedlog.restore.PartitionLeaderElectionController;
+import io.zeebe.distributedlog.restore.RestoreClient;
+import io.zeebe.distributedlog.restore.RestoreClientFactory;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /* Used by DefaultDistributedLogstreamService to get the node specific objects/configuration */
@@ -31,8 +33,10 @@ public class LogstreamConfig {
   private static final Map<String, ServiceContainer> SERVICE_CONTAINERS = new ConcurrentHashMap<>();
   private static final Map<String, StorageConfigurationManager> CONFIGS = new ConcurrentHashMap<>();
   private static final Map<String, LogStream> LOGSTREAMS = new ConcurrentHashMap<>();
-  private static final Map<String, LogReplicationClientFactory> LOG_REPLICATION_CLIENT_PROVIDERS =
+  private static final Map<String, RestoreClientFactory> RESTORE_CLIENT_FACTORIES =
       new ConcurrentHashMap<>();
+  private static final Map<String, CompletableFuture<PartitionLeaderElectionController>>
+      LEADER_ELECTION_CONTROLLERS = new ConcurrentHashMap<>();
 
   public static void putServiceContainer(String nodeId, ServiceContainer serviceContainer) {
     SERVICE_CONTAINERS.put(nodeId, serviceContainer);
@@ -58,13 +62,27 @@ public class LogstreamConfig {
     return LOGSTREAMS.get(key(nodeId, partitionId));
   }
 
-  public static LogReplicationClient getLogReplicationClient(String nodeId, int partitionId) {
-    return LOG_REPLICATION_CLIENT_PROVIDERS.get(nodeId).createClient(partitionId);
+  public static RestoreClient getRestoreClient(String nodeId, int partitionId) {
+    return RESTORE_CLIENT_FACTORIES.get(nodeId).createClient(partitionId);
   }
 
-  public static void putLogReplicationClientFactory(
-      String nodeId, LogReplicationClientFactory provider) {
-    LOG_REPLICATION_CLIENT_PROVIDERS.put(nodeId, provider);
+  public static void putRestoreClientFactory(String nodeId, RestoreClientFactory provider) {
+    RESTORE_CLIENT_FACTORIES.put(nodeId, provider);
+  }
+
+  public static CompletableFuture<PartitionLeaderElectionController> getLeaderElectionController(
+      String nodeId, int partitionId) {
+    return LEADER_ELECTION_CONTROLLERS.computeIfAbsent(
+        key(nodeId, partitionId), k -> new CompletableFuture<>());
+  }
+
+  public static void putLeaderElectionController(
+      String nodeId, int partitionId, PartitionLeaderElectionController controller) {
+    getLeaderElectionController(nodeId, partitionId).complete(controller);
+  }
+
+  public static void removeLeaderElectionController(String nodeId, int partitionId) {
+    LEADER_ELECTION_CONTROLLERS.remove(key(nodeId, partitionId));
   }
 
   private static String key(String nodeId, int partitionId) {

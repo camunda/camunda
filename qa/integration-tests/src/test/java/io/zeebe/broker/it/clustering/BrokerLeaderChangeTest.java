@@ -387,7 +387,7 @@ public class BrokerLeaderChangeTest {
   }
 
   @Test
-  public void shouldStepdownAndRejoinElection() {
+  public void shouldWithdrawAndRejoinElection() {
     // given
     final int partition = Protocol.START_PARTITION_ID;
     final String partitionName = Partition.getPartitionName(partition);
@@ -396,7 +396,7 @@ public class BrokerLeaderChangeTest {
     final PartitionLeaderElection election = getElection(oldLeader, partition);
 
     // when
-    election.stepdown().join();
+    election.withdraw().join();
     assertThat(
             election
                 .getElection()

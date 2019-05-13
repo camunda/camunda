@@ -15,14 +15,11 @@
  */
 package io.zeebe.distributedlog.restore;
 
-@FunctionalInterface
-public interface LogReplicationClientFactory {
+public interface RestoreInfoRequest {
 
-  /**
-   * Returns a configured {@link LogReplicationClient} for the given partition.
-   *
-   * @param partitionId id of the partition containing the target log
-   * @return a configured {@link LogReplicationClient}
-   */
-  LogReplicationClient createClient(int partitionId);
+  /** @return the requester's latest commit position on its local log */
+  long getLatestLocalPosition();
+
+  /** @return the requester's required backup commit position */
+  long getBackupPosition();
 }

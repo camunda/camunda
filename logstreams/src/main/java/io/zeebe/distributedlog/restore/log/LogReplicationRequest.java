@@ -13,18 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.distributedlog.restore;
+package io.zeebe.distributedlog.restore.log;
 
-@FunctionalInterface
-public interface LogReplicationAppender {
+public interface LogReplicationRequest {
 
-  /**
-   * Appends a block of complete, serialized {@link io.zeebe.logstreams.log.LoggedEvent} to a log
-   * stream, and updates the commit position to {@code commitPosition}.
-   *
-   * @param commitPosition the position of the last event in the {@code blockBuffer}
-   * @param blockBuffer the buffer containing a block of log entries to be written into storage
-   * @return the address at which the block has been written or error status code
-   */
-  long append(long commitPosition, byte[] blockBuffer);
+  /** @return the position to replication from (exclusive) */
+  long getFromPosition();
+
+  /** @return upper bound position to replicate until (inclusive) */
+  long getToPosition();
 }

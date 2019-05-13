@@ -19,30 +19,48 @@ package io.zeebe.broker.logstreams.restore;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.zeebe.distributedlog.restore.LogReplicationClient;
-import io.zeebe.distributedlog.restore.LogReplicationRequest;
-import io.zeebe.distributedlog.restore.LogReplicationResponse;
+import io.zeebe.distributedlog.restore.RestoreClient;
+import io.zeebe.distributedlog.restore.RestoreInfoRequest;
+import io.zeebe.distributedlog.restore.RestoreInfoResponse;
+import io.zeebe.distributedlog.restore.log.LogReplicationRequest;
+import io.zeebe.distributedlog.restore.log.LogReplicationResponse;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
-public class BrokerLogReplicationClient implements LogReplicationClient {
+public class BrokerRestoreClient implements RestoreClient {
   private final ClusterCommunicationService communicationService;
-  private final String replicationTopic;
+  private final String logReplicationTopic;
+  private final String restoreInfoTopic;
 
-  public BrokerLogReplicationClient(
-      ClusterCommunicationService communicationService, String replicationTopic) {
+  public BrokerRestoreClient(
+      ClusterCommunicationService communicationService,
+      String logReplicationTopic,
+      String restoreInfoTopic) {
     this.communicationService = communicationService;
-    this.replicationTopic = replicationTopic;
+    this.logReplicationTopic = logReplicationTopic;
+    this.restoreInfoTopic = restoreInfoTopic;
   }
 
   @Override
   public CompletableFuture<LogReplicationResponse> replicate(
       MemberId server, LogReplicationRequest request) {
     return communicationService.send(
-        replicationTopic,
+        logReplicationTopic,
         request,
         SbeLogReplicationRequest::serialize,
         SbeLogReplicationResponse::new,
+        server,
+        Duration.ofSeconds(5));
+  }
+
+  @Override
+  public CompletableFuture<RestoreInfoResponse> requestRestoreInfo(
+      MemberId server, RestoreInfoRequest request) {
+    return communicationService.send(
+        restoreInfoTopic,
+        request,
+        SbeRestoreInfoRequest::serialize,
+        SbeRestoreInfoResponse::new,
         server,
         Duration.ofSeconds(5));
   }
