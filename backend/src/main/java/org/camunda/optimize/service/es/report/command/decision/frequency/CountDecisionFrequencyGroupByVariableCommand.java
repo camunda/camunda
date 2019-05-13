@@ -60,11 +60,7 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
       reportData.getDecisionDefinitionVersion()
     );
 
-    BoolQueryBuilder query = setupBaseQuery(
-      reportData.getDecisionDefinitionKey(),
-      reportData.getDecisionDefinitionVersion()
-    );
-    queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
+    final BoolQueryBuilder query = setupBaseQuery(reportData);
 
     DecisionGroupByVariableValueDto groupBy =
       ((DecisionGroupByDto<DecisionGroupByVariableValueDto>) reportData.getGroupBy()).getValue();

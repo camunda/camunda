@@ -6,8 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
@@ -19,17 +18,29 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-@Getter
-@Setter
+@Data
 public class DecisionReportDataDto extends SingleReportDataDto implements Combinable {
 
   protected String decisionDefinitionKey;
   protected String decisionDefinitionVersion;
+  protected List<String> tenantIds = new ArrayList<>();
   protected List<DecisionFilterDto> filter = new ArrayList<>();
   protected DecisionViewDto view;
   protected DecisionGroupByDto groupBy;
   protected DecisionVisualization visualization;
   protected DecisionParametersDto parameters = new DecisionParametersDto();
+
+  @JsonIgnore
+  @Override
+  public String getDefinitionKey() {
+    return decisionDefinitionKey;
+  }
+
+  @JsonIgnore
+  @Override
+  public String getDefinitionVersion() {
+    return decisionDefinitionVersion;
+  }
 
   @JsonIgnore
   @Override
@@ -53,16 +64,4 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
       Objects.equals(visualization, that.visualization);
   }
 
-  @Override
-  public String toString() {
-    return "DecisionReportDataDto{" +
-      "decisionDefinitionKey='" + decisionDefinitionKey + '\'' +
-      ", decisionDefinitionVersion='" + decisionDefinitionVersion + '\'' +
-      ", filter=" + filter +
-      ", view=" + view +
-      ", groupBy=" + groupBy +
-      ", visualization=" + visualization +
-      ", parameters=" + parameters +
-      '}';
-  }
 }

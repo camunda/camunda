@@ -11,7 +11,13 @@ import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 
+import java.util.List;
+
 public abstract class SingleReportDataDto implements ReportDataDto, Combinable {
 
   @Getter @Setter protected SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
+
+  public abstract String getDefinitionKey();
+  public abstract String getDefinitionVersion();
+  public abstract List<String> getTenantIds();
 }

@@ -5,14 +5,10 @@
  */
 package org.camunda.optimize.service.es.report.process;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -27,21 +23,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -51,30 +40,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 
-public class RawProcessDataReportEvaluationIT {
-
-  private static final String BUSINESS_KEY = "aBusinessKey";
-
-
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule)
-    .around(engineRule)
-    .around(embeddedOptimizeRule)
-    .around(engineDatabaseRule);
+public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   @Test
   public void reportAcrossAllVersions() {
@@ -88,7 +62,8 @@ public class RawProcessDataReportEvaluationIT {
     // when
     final ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
       processInstance.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS);
-    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateReport(reportData);
+    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
+      reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -114,7 +89,8 @@ public class RawProcessDataReportEvaluationIT {
     // when
     final ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
       processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateReport(reportData);
+    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
+      reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -149,7 +125,8 @@ public class RawProcessDataReportEvaluationIT {
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
       processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateReport(reportData);
+    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
+      reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -185,7 +162,7 @@ public class RawProcessDataReportEvaluationIT {
 
     // when
     final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      evaluateReportById(reportId);
+      evaluateRawReportById(reportId);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -219,7 +196,8 @@ public class RawProcessDataReportEvaluationIT {
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
       processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateReport(reportData);
+    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
+      reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -262,7 +240,8 @@ public class RawProcessDataReportEvaluationIT {
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
       processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateReport(reportData);
+    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
+      reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -284,6 +263,34 @@ public class RawProcessDataReportEvaluationIT {
   }
 
   @Test
+  public void reportEvaluationSingleBucketFilteredBySingleTenant() {
+    // given
+    final String tenantId1 = "tenantId1";
+    final String tenantId2 = "tenantId2";
+    final List<String> selectedTenants = Lists.newArrayList(tenantId1);
+    final String processKey = deployAndStartMultiTenantSimpleServiceTaskProcess(
+      Lists.newArrayList(null, tenantId1, tenantId2)
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
+      processKey, ReportConstants.ALL_VERSIONS
+    );
+    reportData.setTenantIds(selectedTenants);
+    RawDataProcessReportResultDto result = evaluateRawReport(reportData).getResult();
+
+    // then
+    assertThat(result.getProcessInstanceCount(), is((long) selectedTenants.size()));
+    result.getData().forEach(rawDataDecisionInstanceDto -> assertThat(
+      rawDataDecisionInstanceDto.getTenantId(),
+      isOneOf(selectedTenants.toArray())
+    ));
+  }
+
+  @Test
   public void resultShouldBeOrderAccordingToStartDate() throws Exception {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
@@ -298,7 +305,8 @@ public class RawProcessDataReportEvaluationIT {
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
       processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateReport(reportData);
+    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
+      reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -347,7 +355,8 @@ public class RawProcessDataReportEvaluationIT {
       processInstanceDto1.getProcessDefinitionKey(), processInstanceDto1.getProcessDefinitionVersion()
     );
     reportData.getParameters().setSorting(new SortingDto(ProcessInstanceType.PROCESS_INSTANCE_ID, SortOrder.DESC));
-    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateReport(reportData);
+    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
+      reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -371,7 +380,8 @@ public class RawProcessDataReportEvaluationIT {
       processInstanceDto1.getProcessDefinitionKey(), processInstanceDto1.getProcessDefinitionVersion()
     );
     reportData.getParameters().setSorting(new SortingDto("lalalala", SortOrder.ASC));
-    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateReport(reportData);
+    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
+      reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -383,19 +393,19 @@ public class RawProcessDataReportEvaluationIT {
   public void testCustomOrderOnProcessInstanceVariableIsApplied() {
     // given
     ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleProcessWithVariables(
-      toImmutableMap(new SimpleEntry<>("intVar", 0))
+      ImmutableMap.of("intVar", 0)
     );
 
     ProcessInstanceEngineDto processInstanceDto3 = engineRule.startProcessInstance(
-      processInstanceDto1.getDefinitionId(), toImmutableMap(new SimpleEntry<>("intVar", 2))
+      processInstanceDto1.getDefinitionId(), ImmutableMap.of("intVar", 2)
     );
 
     ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(
-      processInstanceDto1.getDefinitionId(), toImmutableMap(new SimpleEntry<>("intVar", 1))
+      processInstanceDto1.getDefinitionId(), ImmutableMap.of("intVar", 1)
     );
 
     ProcessInstanceEngineDto processInstanceDto4 = engineRule.startProcessInstance(
-      processInstanceDto1.getDefinitionId(), toImmutableMap(new SimpleEntry<>("otherVar", 0))
+      processInstanceDto1.getDefinitionId(), ImmutableMap.of("otherVar", 0)
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -409,7 +419,8 @@ public class RawProcessDataReportEvaluationIT {
       processInstanceDto1.getProcessDefinitionKey(), processInstanceDto1.getProcessDefinitionVersion()
     );
     reportData.getParameters().setSorting(new SortingDto("variable:intVar", SortOrder.ASC));
-    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateReport(reportData);
+    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
+      reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -433,7 +444,8 @@ public class RawProcessDataReportEvaluationIT {
       processInstanceDto1.getProcessDefinitionKey(), processInstanceDto1.getProcessDefinitionVersion()
     );
     reportData.getParameters().setSorting(new SortingDto("variable:lalalala", SortOrder.ASC));
-    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateReport(reportData);
+    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
+      reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -458,7 +470,8 @@ public class RawProcessDataReportEvaluationIT {
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
       processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateReport(reportData);
+    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
+      reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -493,7 +506,8 @@ public class RawProcessDataReportEvaluationIT {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
       processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
     );
-    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateReport(reportData);
+    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
+      reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -527,7 +541,7 @@ public class RawProcessDataReportEvaluationIT {
                            .add()
                            .buildList());
     final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult1 =
-      evaluateReport(reportData);
+      evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result1 = evaluationResult1.getResult();
 
     // then
@@ -552,7 +566,7 @@ public class RawProcessDataReportEvaluationIT {
                            .buildList());
 
     final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult2 =
-      evaluateReport(reportData);
+      evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result2 = evaluationResult2.getResult();
 
     // then
@@ -585,7 +599,7 @@ public class RawProcessDataReportEvaluationIT {
                            .add()
                            .buildList());
     final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult1 =
-      evaluateReport(reportData);
+      evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result1 = evaluationResult1.getResult();
 
     // then
@@ -602,7 +616,7 @@ public class RawProcessDataReportEvaluationIT {
       processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
     final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult2 =
-      evaluateReport(reportData);
+      evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result2 = evaluationResult2.getResult();
 
     // then
@@ -632,7 +646,8 @@ public class RawProcessDataReportEvaluationIT {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
       processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
     reportData.setFilter(createVariableFilter());
-    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateReport(reportData);
+    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
+      reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -676,7 +691,8 @@ public class RawProcessDataReportEvaluationIT {
       .buildList();
 
     reportData.getFilter().addAll(flowNodeFilter);
-    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateReport(reportData);
+    final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
+      reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -760,82 +776,4 @@ public class RawProcessDataReportEvaluationIT {
     return id;
   }
 
-  @SafeVarargs
-  private final Map<String, Object> toImmutableMap(SimpleEntry<String, Object>... Entry) {
-    return Collections.unmodifiableMap(
-      Stream.of(Entry).collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue))
-    );
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleProcess() {
-    return deployAndStartSimpleProcessWithVariables(new HashMap<>());
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .endEvent()
-      .done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables, BUSINESS_KEY);
-  }
-
-  private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent("startEvent")
-      .exclusiveGateway("splittingGateway")
-      .name("Should we go to task 1?")
-      .condition("yes", "${goToTask1}")
-      .serviceTask("task1")
-      .camundaExpression("${true}")
-      .exclusiveGateway("mergeGateway")
-      .endEvent("endEvent")
-      .moveToNode("splittingGateway")
-      .condition("no", "${!goToTask1}")
-      .serviceTask("task2")
-      .camundaExpression("${true}")
-      .connectTo("mergeGateway")
-      .done();
-    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
-  }
-
-  private ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReportById(final String reportId) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId)
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {
-      });
-  }
-
-  private ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReport(final ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
-      // @formatter:on
-  }
-
-  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
-  }
-
-  private String createNewReport() {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
-  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(id, updatedReport)
-      .execute();
-    assertThat(response.getStatus(), is(204));
-  }
 }

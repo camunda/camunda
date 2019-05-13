@@ -1,2 +1,2 @@
-"decisionDefinitionKey","decisionDefinitionId","decisionInstanceId","evaluationDateTime","engineName","input:clause1","input:InputClause_15qmk0v","output:clause3","output:OutputClause_1ur6jbl"
-"invoiceClassification","${DD_ID}","${DI_ID}","2019-01-29T18:20:23.277+01:00","1","200.0","Misc","day-to-day expense","false"
+"decisionDefinitionKey","decisionDefinitionId","decisionInstanceId","evaluationDateTime","engineName","tenantId","input:clause1","input:InputClause_15qmk0v","output:clause3","output:OutputClause_1ur6jbl"
+"invoiceClassification","${DD_ID}","${DI_ID}","2019-01-29T18:20:23.277+01:00","1",,"200.0","Misc","day-to-day expense","false"

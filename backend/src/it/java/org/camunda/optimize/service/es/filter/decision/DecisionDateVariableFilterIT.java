@@ -31,7 +31,8 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     final String inputVariableIdToFilterOn = INPUT_INVOICE_DATE_ID;
 
     final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition(
-      "dmn/invoiceBusinessDecision_withDate.xml");
+      "dmn/invoiceBusinessDecision_withDate.xml"
+    );
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
       createInputsWithDate(100.0, "2018-01-01T00:00:00+00:00")
@@ -71,7 +72,8 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     final String inputVariableIdToFilterOn = INPUT_INVOICE_DATE_ID;
 
     final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition(
-      "dmn/invoiceBusinessDecision_withDate.xml");
+      "dmn/invoiceBusinessDecision_withDate.xml"
+    );
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
       createInputsWithDate(100.0, "2018-01-01T00:00:00+00:00")
@@ -112,7 +114,8 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     final String inputVariableIdToFilterOn = INPUT_INVOICE_DATE_ID;
 
     final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition(
-      "dmn/invoiceBusinessDecision_withDate.xml");
+      "dmn/invoiceBusinessDecision_withDate.xml"
+    );
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
       createInputsWithDate(100.0, "2018-01-01T00:00:00+00:00")

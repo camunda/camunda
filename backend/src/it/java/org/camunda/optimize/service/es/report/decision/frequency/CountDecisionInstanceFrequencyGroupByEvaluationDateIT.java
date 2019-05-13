@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.decision.frequency;
 
+import com.google.common.collect.Lists;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
@@ -32,14 +33,12 @@ import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DecisionFilterUtilHelper.createDoubleInputVariableFilter;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.hamcrest.CoreMatchers.is;
@@ -556,6 +555,33 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     assertThat(resultData.get(0).getValue(), is(5L));
+  }
+
+  @Test
+  public void reportEvaluationSingleBucketFilteredBySingleTenant() {
+    // given
+    final String tenantId1 = "tenantId1";
+    final String tenantId2 = "tenantId2";
+    final List<String> selectedTenants = Lists.newArrayList(tenantId1);
+    final String decisionDefinitionKey = deployAndStartMultiTenantDefinition(
+      Lists.newArrayList(null, tenantId1, tenantId2)
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey(decisionDefinitionKey)
+      .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setTenantIds(selectedTenants)
+      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
+      .setDateInterval(GroupByDateUnit.HOUR)
+      .build();
+    DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getDecisionInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test

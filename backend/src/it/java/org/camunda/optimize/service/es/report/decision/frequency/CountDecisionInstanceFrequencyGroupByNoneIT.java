@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.decision.frequency;
 
+import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -16,6 +17,7 @@ import org.camunda.optimize.test.util.DecisionReportDataType;
 import org.junit.Test;
 
 import javax.ws.rs.core.Response;
+import java.util.List;
 
 import static org.camunda.optimize.test.util.DecisionFilterUtilHelper.createDoubleInputVariableFilter;
 import static org.hamcrest.CoreMatchers.is;
@@ -110,6 +112,32 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     assertThat(result.getDecisionInstanceCount(), is(5L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData(), is(5L));
+  }
+
+  @Test
+  public void reportEvaluationSingleBucketFilteredBySingleTenant() {
+    // given
+    final String tenantId1 = "tenantId1";
+    final String tenantId2 = "tenantId2";
+    final List<String> selectedTenants = Lists.newArrayList(tenantId1);
+    final String decisionDefinitionKey = deployAndStartMultiTenantDefinition(
+      Lists.newArrayList(null, tenantId1, tenantId2)
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey(decisionDefinitionKey)
+      .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setTenantIds(selectedTenants)
+      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
+      .build();
+    DecisionReportNumberResultDto result = evaluateNumberReport(reportData).getResult();
+
+    // then
+    assertThat(result.getData(), is((long) selectedTenants.size()));
   }
 
   @Test

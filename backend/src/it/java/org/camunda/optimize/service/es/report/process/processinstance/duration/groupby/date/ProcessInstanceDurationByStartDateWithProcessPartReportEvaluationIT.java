@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.processinstance.duration.groupby.date;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.Lists;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -13,7 +13,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
@@ -35,17 +34,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
-import org.junit.Rule;
+import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
-import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
@@ -70,24 +64,13 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 @RunWith(JUnitParamsRunner.class)
-public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT {
+public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   private static final String END_EVENT = "endEvent";
   private static final String START_EVENT = "startEvent";
   private static final String START_LOOP = "mergeExclusiveGateway";
   private static final String END_LOOP = "splittingGateway";
   private static final String TEST_ACTIVITY = "testActivity";
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule)
-    .around(engineRule)
-    .around(embeddedOptimizeRule)
-    .around(engineDatabaseRule);
 
   @Test
   public void reportEvaluationForOneProcess() throws Exception {
@@ -117,7 +100,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART)
       .build();
 
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -165,7 +148,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
 
     // when
     ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
-      evaluateReportById(reportId);
+      evaluateDurationMapReportById(reportId);
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -203,7 +186,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART)
       .build();
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
@@ -236,7 +219,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
@@ -276,7 +259,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
@@ -313,7 +296,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(startDateFilterDto)
       .build();
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
 
     // then
@@ -374,7 +357,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -408,7 +391,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -439,7 +422,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -458,7 +441,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART)
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -497,7 +480,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -542,7 +525,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART)
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -550,6 +533,30 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
     assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurations(1000L, 9000L, 2000L)));
+  }
+
+  @Test
+  public void reportEvaluationSingleBucketFilteredBySingleTenant() {
+    // given
+    final String tenantId1 = "tenantId1";
+    final String tenantId2 = "tenantId2";
+    final List<String> selectedTenants = Lists.newArrayList(tenantId1);
+    final String processKey = deployAndStartMultiTenantSimpleServiceTaskProcess(
+      Lists.newArrayList(null, tenantId1, tenantId2)
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByStartDateWithProcessPartReport(
+      processKey, ReportConstants.ALL_VERSIONS, GroupByDateUnit.HOUR, START_EVENT, END_EVENT
+    );
+    reportData.setTenantIds(selectedTenants);
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getProcessInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test
@@ -580,7 +587,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setFilter(createVariableFilter("true"))
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
@@ -590,7 +597,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
 
     // when
     reportData.setFilter(createVariableFilter("false"));
-    result = evaluateReport(reportData).getResult();
+    result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     resultData = result.getData();
@@ -637,7 +644,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
@@ -679,7 +686,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
@@ -721,7 +728,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART)
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
@@ -777,7 +784,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
     reportData.getConfiguration().setAggregationType(aggregationType);
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
@@ -818,7 +825,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
@@ -853,7 +860,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -881,7 +888,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -909,7 +916,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -937,7 +944,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -965,7 +972,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -1027,16 +1034,6 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .buildList();
   }
 
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
-    ProcessDefinitionEngineDto processDefinitionEngineDto = deploySimpleServiceTaskProcess();
-    ProcessInstanceEngineDto processInstanceEngineDto =
-      engineRule.startProcessInstance(processDefinitionEngineDto.getId());
-    processInstanceEngineDto.setProcessDefinitionKey(processDefinitionEngineDto.getKey());
-    processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinitionEngineDto.getVersion()));
-    return processInstanceEngineDto;
-  }
-
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
     // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
@@ -1091,7 +1088,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
   }
 
   private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
-    String id = createNewProcessReport();
+    String id = createNewReport();
 
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
@@ -1104,41 +1101,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     updateReport(id, report);
     return id;
   }
-
-  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(id, updatedReport)
-      .execute();
-
-    assertThat(response.getStatus(), is(204));
-  }
-
-  private String createNewProcessReport() {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
-  private ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateReportById(String reportId) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId)
-      // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
-      // @formatter:on
-  }
-
-  private ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
-      // @formatter:on
-  }
+  
 
   private void adjustProcessInstanceDates(String processInstanceId,
                                           OffsetDateTime startDate,

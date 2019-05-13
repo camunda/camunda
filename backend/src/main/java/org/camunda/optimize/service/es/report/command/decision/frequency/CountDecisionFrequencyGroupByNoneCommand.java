@@ -34,11 +34,7 @@ public class CountDecisionFrequencyGroupByNoneCommand extends DecisionReportComm
       reportData.getDecisionDefinitionVersion()
     );
 
-    BoolQueryBuilder query = setupBaseQuery(
-      reportData.getDecisionDefinitionKey(),
-      reportData.getDecisionDefinitionVersion()
-    );
-    queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
+    final BoolQueryBuilder query = setupBaseQuery(reportData);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)

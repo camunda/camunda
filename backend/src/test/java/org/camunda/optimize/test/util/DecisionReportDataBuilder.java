@@ -27,6 +27,7 @@ public class DecisionReportDataBuilder {
 
   private String decisionDefinitionKey;
   private String decisionDefinitionVersion;
+  private List<String> tenantIds = new ArrayList<>();
   private String variableId;
   private String variableName;
   private GroupByDateUnit dateInterval;
@@ -68,6 +69,7 @@ public class DecisionReportDataBuilder {
         throw new IllegalStateException("Unsupported type: " + reportDataType);
     }
     reportData.setFilter(this.filter);
+    reportData.setTenantIds(this.tenantIds);
     return reportData;
   }
 
@@ -108,6 +110,16 @@ public class DecisionReportDataBuilder {
 
   public DecisionReportDataBuilder setFilter(List<DecisionFilterDto> newFilter) {
     this.filter.addAll(newFilter);
+    return this;
+  }
+
+  public DecisionReportDataBuilder setTenantId(String tenantId) {
+    this.tenantIds.add(tenantId);
+    return this;
+  }
+
+  public DecisionReportDataBuilder setTenantIds(List<String> tenantIds) {
+    this.tenantIds.addAll(tenantIds);
     return this;
   }
 

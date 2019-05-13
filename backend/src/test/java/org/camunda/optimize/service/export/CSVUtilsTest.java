@@ -33,7 +33,7 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    assertThat(result.get(0).length, is(9));
+    assertThat(result.get(0).length, is(10));
   }
 
 
@@ -49,7 +49,7 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    assertThat(result.get(0).length, is(9 - excludedColumns.size()));
+    assertThat(result.get(0).length, is(10 - excludedColumns.size()));
     assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
   }
 
@@ -67,7 +67,7 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    assertThat(result.get(0).length, is(9 - excludedColumns.size()));
+    assertThat(result.get(0).length, is(10 - excludedColumns.size()));
     assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
   }
 
@@ -81,8 +81,8 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    // 5 fields, 7 inputs, 14 outputs
-    assertThat(result.get(0).length, is(5 + 7 + 14));
+    // 6 fields, 7 inputs, 14 outputs
+    assertThat(result.get(0).length, is(6 + 7 + 14));
   }
 
   @Test
@@ -98,8 +98,8 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    // 5 fields, 7 inputs, 14 outputs - 1 excluded fields
-    assertThat(result.get(0).length, is(5 + 7 + 14 - excludedColumns.size()));
+    // 6 fields, 7 inputs, 14 outputs - 1 excluded fields
+    assertThat(result.get(0).length, is(6 + 7 + 14 - excludedColumns.size()));
     assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
   }
 
@@ -116,8 +116,8 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    // 5 fields, 7 inputs, 14 outputs - 1 excluded fields
-    assertThat(result.get(0).length, is(5 + 7 + 14 - excludedColumns.size()));
+    // 6 fields, 7 inputs, 14 outputs - 1 excluded fields
+    assertThat(result.get(0).length, is(6 + 7 + 14 - excludedColumns.size()));
     assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
   }
 
@@ -134,8 +134,8 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    // 5 fields, 7 inputs, 14 outputs - 1 excluded fields
-    assertThat(result.get(0).length, is(5 + 7 + 14 - excludedColumns.size()));
+    // 6 fields, 7 inputs, 14 outputs - 1 excluded fields
+    assertThat(result.get(0).length, is(6 + 7 + 14 - excludedColumns.size()));
     assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
   }
 
@@ -156,8 +156,8 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    // 5 fields, 7 inputs, 14 outputs - 1 excluded fields
-    assertThat(result.get(0).length, is(5 + 7 + 14 - excludedColumns.size()));
+    // 6 fields, 7 inputs, 14 outputs - 1 excluded fields
+    assertThat(result.get(0).length, is(6 + 7 + 14 - excludedColumns.size()));
     assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
   }
 

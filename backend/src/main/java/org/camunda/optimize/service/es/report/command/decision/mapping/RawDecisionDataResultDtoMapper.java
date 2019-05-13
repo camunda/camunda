@@ -106,32 +106,28 @@ public class RawDecisionDataResultDtoMapper {
   }
 
   private RawDataDecisionInstanceDto convertToRawDataEntry(final DecisionInstanceDto decisionInstanceDto) {
-    RawDataDecisionInstanceDto rawDataInstance = new RawDataDecisionInstanceDto();
-    rawDataInstance.setDecisionInstanceId(decisionInstanceDto.getDecisionInstanceId());
-    rawDataInstance.setDecisionDefinitionId(decisionInstanceDto.getDecisionDefinitionId());
-    rawDataInstance.setDecisionDefinitionKey(decisionInstanceDto.getDecisionDefinitionKey());
-    rawDataInstance.setEvaluationDateTime(decisionInstanceDto.getEvaluationDateTime());
-    rawDataInstance.setEngineName(decisionInstanceDto.getEngine());
-
-    rawDataInstance.setInputVariables(
+    return new RawDataDecisionInstanceDto(
+      decisionInstanceDto.getDecisionDefinitionKey(),
+      decisionInstanceDto.getDecisionDefinitionId(),
+      decisionInstanceDto.getDecisionInstanceId(),
+      decisionInstanceDto.getEvaluationDateTime(),
+      decisionInstanceDto.getEngine(),
+      decisionInstanceDto.getTenantId(),
       decisionInstanceDto.getInputs().stream().collect(toMap(
         InputInstanceDto::getClauseId,
         this::mapToVariableEntry
-      ))
-    );
+      )),
 
-    rawDataInstance.setOutputVariables(
       decisionInstanceDto.getOutputs().stream().collect(toMap(
         OutputInstanceDto::getClauseId,
         this::mapToVariableEntry,
         (variableEntry, variableEntry2) -> {
+
           variableEntry.getValues().addAll(variableEntry2.getValues());
           return variableEntry;
         }
       ))
     );
-
-    return rawDataInstance;
   }
 
   private InputVariableEntry mapToVariableEntry(final InputInstanceDto inputInstanceDto) {

@@ -53,11 +53,7 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
       reportData.getDecisionDefinitionVersion()
     );
 
-    final BoolQueryBuilder query = setupBaseQuery(
-      reportData.getDecisionDefinitionKey(),
-      reportData.getDecisionDefinitionVersion()
-    );
-    queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
+    final BoolQueryBuilder query = setupBaseQuery(reportData);
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.decision;
 
+import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
@@ -33,6 +34,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitionIT {
@@ -131,6 +133,34 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
   private DecisionDefinitionEngineDto deployDishDecisionDefinition() {
     return engineRule.deployDecisionDefinition("dmn/decide-dish.xml");
+  }
+
+  @Test
+  public void reportEvaluationSingleBucketFilteredBySingleTenant() {
+    // given
+    final String tenantId1 = "tenantId1";
+    final String tenantId2 = "tenantId2";
+    final List<String> selectedTenants = Lists.newArrayList(tenantId1);
+    final String decisionDefinitionKey = deployAndStartMultiTenantDefinition(
+      Lists.newArrayList(null, tenantId1, tenantId2)
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
+      decisionDefinitionKey, ALL_VERSIONS
+    );
+    reportData.setTenantIds(selectedTenants);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+
+    // then
+    assertThat(result.getDecisionInstanceCount(), is((long) selectedTenants.size()));
+    result.getData().forEach(rawDataDecisionInstanceDto -> assertThat(
+      rawDataDecisionInstanceDto.getTenantId(),
+      isOneOf(selectedTenants.toArray())
+    ));
   }
 
   @Test

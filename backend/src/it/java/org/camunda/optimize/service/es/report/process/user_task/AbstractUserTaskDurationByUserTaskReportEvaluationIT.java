@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.user_task;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.Lists;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -26,13 +26,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Rule;
+import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
@@ -53,22 +49,13 @@ import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.core.IsNull.nullValue;
 
 @RunWith(JUnitParamsRunner.class)
-public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
+public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   private static final String START_EVENT = "startEvent";
   private static final String END_EVENT = "endEvent";
   private static final String PROCESS_DEFINITION_KEY = "123";
   private static final String USER_TASK_1 = "userTask1";
   private static final String USER_TASK_2 = "userTask2";
-
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
 
   @Test
   public void reportEvaluationForOneProcess() {
@@ -85,7 +72,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     final ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
-      evaluateReport(reportData);
+      evaluateDurationMapReport(reportData);
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -130,7 +117,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     // when
     final ProcessReportDataDto reportData =
       createReport(processDefinition);
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(4));
@@ -167,7 +154,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getIsComplete(), is(true));
@@ -199,7 +186,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessDurationReportMapResultDto resultDto = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto resultDto = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getProcessInstanceCount(), is(2L));
@@ -230,7 +217,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
@@ -265,7 +252,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.DESC));
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
@@ -308,7 +295,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setAggregationType(aggregationType);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(4));
@@ -336,7 +323,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     //when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     //then
     assertThat(result.getData().size(), is(4));
@@ -368,7 +355,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     //when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     //then
     assertThat(result.getData().size(), is(3));
@@ -398,7 +385,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessReportDataDto reportData = createReport(
       processDefinition1.getKey(), ReportConstants.ALL_VERSIONS
     );
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     //then
     assertThat(result.getData().size(), is(3));
@@ -433,9 +420,9 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
-    final ProcessDurationReportMapResultDto result1 = evaluateReport(reportData1).getResult();
+    final ProcessDurationReportMapResultDto result1 = evaluateDurationMapReport(reportData1).getResult();
     final ProcessReportDataDto reportData2 = createReport(processDefinition2);
-    final ProcessDurationReportMapResultDto result2 = evaluateReport(reportData2).getResult();
+    final ProcessDurationReportMapResultDto result2 = evaluateDurationMapReport(reportData2).getResult();
 
     // then
     assertThat(result1.getData().size(), is(3));
@@ -445,6 +432,28 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     assertThat(result2.getData().size(), is(3));
     assertThat(getExecutedFlowNodeCount(result2), is(1L));
     assertThat(result2.getDataEntryForKey(USER_TASK_1).get().getValue(), is(calculateExpectedValueGivenDurations(20L)));
+  }
+
+  @Test
+  public void reportEvaluationSingleBucketFilteredBySingleTenant() {
+    // given
+    final String tenantId1 = "tenantId1";
+    final String tenantId2 = "tenantId2";
+    final List<String> selectedTenants = Lists.newArrayList(tenantId1);
+    final String processKey = deployAndStartMultiTenantUserTaskProcess(
+      Lists.newArrayList(null, tenantId1, tenantId2)
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
+    reportData.setTenantIds(selectedTenants);
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getProcessInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
   }
 
   @Test
@@ -466,7 +475,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(3));
@@ -483,7 +492,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     final ProcessReportDataDto reportData = createReport(
       "nonExistingProcessDefinitionId", "1"
     );
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(0));
@@ -503,7 +512,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(4));
@@ -535,7 +544,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(3));
@@ -559,7 +568,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(3));
@@ -584,7 +593,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     // when
     ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(createStartDateFilter(null, processStartTime.minusSeconds(1L)));
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -594,7 +603,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     // when
     reportData = createReport(processDefinition);
     reportData.setFilter(createStartDateFilter(processStartTime, null));
-    result = evaluateReport(reportData).getResult();
+    result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -679,13 +688,31 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     engineRule.finishAllUserTasks(processInstanceDto1.getId());
   }
 
+  protected String deployAndStartMultiTenantUserTaskProcess(final List<String> deployedTenants) {
+    final String processKey = "multiTenantProcess";
+    deployedTenants.stream()
+      .filter(Objects::nonNull)
+      .forEach(tenantId -> engineRule.createTenant(tenantId, tenantId));
+    deployedTenants
+      .forEach(tenant -> {
+        final ProcessDefinitionEngineDto processDefinitionEngineDto = deployOneUserTasksDefinition(processKey, tenant);
+        engineRule.startProcessInstance(processDefinitionEngineDto.getId());
+      });
+
+    return processKey;
+  }
+
   private ProcessDefinitionEngineDto deployOneUserTasksDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
+    return deployOneUserTasksDefinition("aProcess", null);
+  }
+
+  private ProcessDefinitionEngineDto deployOneUserTasksDefinition(String key, String tenantId) {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(key)
       .startEvent(START_EVENT)
       .userTask(USER_TASK_1)
       .endEvent(END_EVENT)
       .done();
-    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 
   private ProcessDefinitionEngineDto deployTwoUserTasksDefinition() {
@@ -696,22 +723,6 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
       .endEvent(END_EVENT)
       .done();
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
-  }
-
-  private ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
-      // @formatter:on
-  }
-
-  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
   }
 
   private long getExecutedFlowNodeCount(ProcessDurationReportMapResultDto resultList) {

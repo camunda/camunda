@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.process.flownode;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -17,12 +16,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Rule;
+import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.util.Comparator;
 import java.util.List;
@@ -37,19 +32,11 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 
 
-public class FlowNodeSortingIT {
+public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
 
   private static final String LABEL_SUFFIX = "_label";
   private static final String TEST_ACTIVITY = "testActivity";
   private static final String TEST_ACTIVITY_2 = "testActivity_2";
-
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
   public void customOrderOnResultLabelForFrequencyReports() {
@@ -64,7 +51,7 @@ public class FlowNodeSortingIT {
       processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    final ProcessCountReportMapResultDto result = evaluateFrequencyReport(reportData).getResult();
+    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -91,7 +78,7 @@ public class FlowNodeSortingIT {
     // when
     final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    ProcessDurationReportMapResultDto result = evaluateDurationReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
@@ -135,7 +122,7 @@ public class FlowNodeSortingIT {
       processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    final ProcessCountReportMapResultDto result = evaluateFrequencyReport(reportData).getResult();
+    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -179,7 +166,7 @@ public class FlowNodeSortingIT {
       processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    final ProcessCountReportMapResultDto result = evaluateFrequencyReport(reportData).getResult();
+    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -219,7 +206,7 @@ public class FlowNodeSortingIT {
       processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ProcessCountReportMapResultDto result = evaluateFrequencyReport(reportData).getResult();
+    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -258,24 +245,6 @@ public class FlowNodeSortingIT {
       processDefinition.getProcessDefinitionKey(),
       String.valueOf(processDefinition.getProcessDefinitionVersion())
     );
-  }
-
-  private ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluateFrequencyReport(ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>>() {});
-      // @formatter:on
-  }
-
-  private ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateDurationReport(ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
-      // @formatter:on
   }
 
   private long getExecutedFlowNodeCount(ProcessCountReportMapResultDto resultList) {

@@ -5,15 +5,13 @@
  */
 package org.camunda.optimize.service.es.report.command.util;
 
+import lombok.experimental.UtilityClass;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@UtilityClass
 public class ReportUtil {
-
-  private static final Logger logger = LoggerFactory.getLogger(ReportUtil.class);
 
   public static void copyDefinitionMetaDataToUpdate(ReportDefinitionDto from, ReportDefinitionUpdateDto to) {
     to.setId(from.getId());

@@ -15,7 +15,7 @@ import java.io.IOException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 @Component
-public class DecisionInstanceType extends StrictTypeMappingCreator {
+public class DecisionInstanceType extends StrictTypeMappingCreator implements DefinitionBasedType {
 
   public static final int VERSION = 2;
 
@@ -70,6 +70,21 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
   @Override
   public int getVersion() {
     return VERSION;
+  }
+
+  @Override
+  public String getDefinitionKeyFieldName() {
+    return DECISION_DEFINITION_KEY;
+  }
+
+  @Override
+  public String getDefinitionVersionFieldName() {
+    return DECISION_DEFINITION_VERSION;
+  }
+
+  @Override
+  public String getTenantIdFieldName() {
+    return TENANT_ID;
   }
 
   @Override

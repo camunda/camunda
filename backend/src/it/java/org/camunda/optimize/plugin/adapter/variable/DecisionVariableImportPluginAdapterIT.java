@@ -226,7 +226,9 @@ public class DecisionVariableImportPluginAdapterIT {
   }
 
   public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(HashMap<String, Object> variables) {
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineRule.deployDecisionDefinition(DEFAULT_DMN_DEFINITION_PATH);
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineRule.deployDecisionDefinition(
+      DEFAULT_DMN_DEFINITION_PATH
+    );
     engineRule.startDecisionInstance(
       decisionDefinitionEngineDto.getId(),
       variables

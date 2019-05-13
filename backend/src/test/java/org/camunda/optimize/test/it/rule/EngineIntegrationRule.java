@@ -368,21 +368,38 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
+  public ProcessInstanceEngineDto deployAndStartProcess(BpmnModelInstance bpmnModelInstance) {
+    return deployAndStartProcess(bpmnModelInstance, null);
+  }
+
+  public ProcessInstanceEngineDto deployAndStartProcess(BpmnModelInstance bpmnModelInstance, String tenantId) {
+    return deployAndStartProcessWithVariables(bpmnModelInstance, new HashMap<>(), tenantId);
+  }
+
+
   public ProcessInstanceEngineDto deployAndStartProcessWithVariables(BpmnModelInstance bpmnModelInstance,
                                                                      Map<String, Object> variables) {
-    return deployAndStartProcessWithVariables(bpmnModelInstance, variables, "aBusinessKey");
+    return deployAndStartProcessWithVariables(bpmnModelInstance, variables, null);
   }
 
   public ProcessInstanceEngineDto deployAndStartProcessWithVariables(BpmnModelInstance bpmnModelInstance,
                                                                      Map<String, Object> variables,
-                                                                     String businessKey) {
-    CloseableHttpClient client = getHttpClient();
-    DeploymentDto deployment = deployProcess(bpmnModelInstance, client);
-    List<ProcessDefinitionEngineDto> procDefs = getAllProcessDefinitions(deployment, client);
+                                                                     String tenantId) {
+    return deployAndStartProcessWithVariables(bpmnModelInstance, variables, "aBusinessKey", tenantId);
+  }
+
+  public ProcessInstanceEngineDto deployAndStartProcessWithVariables(BpmnModelInstance bpmnModelInstance,
+                                                                     Map<String, Object> variables,
+                                                                     String businessKey,
+                                                                     String tenantId) {
+    final CloseableHttpClient client = getHttpClient();
+    final DeploymentDto deployment = deployProcess(bpmnModelInstance, client, tenantId);
+    final List<ProcessDefinitionEngineDto> procDefs = getAllProcessDefinitions(deployment, client);
     assertThat(procDefs.size(), is(1));
-    ProcessDefinitionEngineDto processDefinitionEngineDto = procDefs.get(0);
-    ProcessInstanceEngineDto processInstanceDto =
-      startProcessInstance(processDefinitionEngineDto.getId(), client, variables, businessKey);
+    final ProcessDefinitionEngineDto processDefinitionEngineDto = procDefs.get(0);
+    final ProcessInstanceEngineDto processInstanceDto = startProcessInstance(
+      processDefinitionEngineDto.getId(), client, variables, businessKey
+    );
     processInstanceDto.setProcessDefinitionKey(processDefinitionEngineDto.getKey());
     processInstanceDto.setProcessDefinitionVersion(String.valueOf(processDefinitionEngineDto.getVersion()));
 
@@ -508,15 +525,6 @@ public class EngineIntegrationRule extends TestWatcher {
     return closeableHttpClient;
   }
 
-  public ProcessInstanceEngineDto startProcessInstance(String processDefinitionId) {
-    CloseableHttpClient client = getHttpClient();
-    return startProcessInstance(processDefinitionId, client, new HashMap<>());
-  }
-
-
-  public ProcessInstanceEngineDto deployAndStartProcess(BpmnModelInstance bpmnModelInstance) {
-    return deployAndStartProcessWithVariables(bpmnModelInstance, new HashMap<>());
-  }
 
   public String deployProcessAndGetId(BpmnModelInstance modelInstance) {
     ProcessDefinitionEngineDto processDefinitionId = deployProcessAndGetProcessDefinition(modelInstance, null);
@@ -538,7 +546,8 @@ public class EngineIntegrationRule extends TestWatcher {
     return deployProcess(bpmnModelInstance, client, null);
   }
 
-  private DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance, CloseableHttpClient client,
+  private DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance,
+                                      CloseableHttpClient client,
                                       String tenantId) {
     String process = Bpmn.convertToString(bpmnModelInstance);
     HttpPost deploymentRequest = createDeploymentRequest(process, "test.bpmn", tenantId);
@@ -749,19 +758,12 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
-  public ProcessInstanceEngineDto startProcessInstance(String procDefId, CloseableHttpClient client) {
-    return startProcessInstance(procDefId, client, new HashMap<>());
+  public ProcessInstanceEngineDto startProcessInstance(String processDefinitionId) {
+    return startProcessInstance(processDefinitionId, new HashMap<>());
   }
 
   public ProcessInstanceEngineDto startProcessInstance(String processDefinitionId, Map<String, Object> variables) {
-    CloseableHttpClient client = getHttpClient();
-    return startProcessInstance(processDefinitionId, client, variables, "aBusinessKey");
-  }
-
-  private ProcessInstanceEngineDto startProcessInstance(String processDefinitionId,
-                                                        CloseableHttpClient client,
-                                                        Map<String, Object> variables) {
-    return startProcessInstance(processDefinitionId, client, variables, "aBusinessKey");
+    return startProcessInstance(processDefinitionId, variables, "aBusinessKey");
   }
 
   public ProcessInstanceEngineDto startProcessInstance(String processDefinitionId,
@@ -1030,6 +1032,7 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
+
   public DecisionDefinitionEngineDto deployAndStartDecisionDefinition() {
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition(
       DEFAULT_DMN_DEFINITION_PATH
@@ -1044,28 +1047,33 @@ public class EngineIntegrationRule extends TestWatcher {
     return decisionDefinitionEngineDto;
   }
 
+  public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(DmnModelInstance dmnModelInstance) {
+    return deployAndStartDecisionDefinition(dmnModelInstance, null);
+  }
+
+  public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(DmnModelInstance dmnModelInstance, String tenantId) {
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition(dmnModelInstance, tenantId);
+    startDecisionInstance(decisionDefinitionEngineDto.getId());
+    return decisionDefinitionEngineDto;
+  }
+
+  public DecisionDefinitionEngineDto deployDecisionDefinitionWithTenant(String tenantId) {
+    return deployDecisionDefinition(DEFAULT_DMN_DEFINITION_PATH, tenantId);
+  }
+
   public DecisionDefinitionEngineDto deployDecisionDefinition() {
     return deployDecisionDefinition(DEFAULT_DMN_DEFINITION_PATH);
   }
 
-  public DecisionDefinitionEngineDto deployDecisionDefinitionWithTenant(String tenantId) {
-    final DmnModelInstance dmnModelInstance = Dmn.readModelFromStream(
-      getClass().getClassLoader().getResourceAsStream(DEFAULT_DMN_DEFINITION_PATH)
-    );
-    return deployDecisionDefinition(dmnModelInstance, tenantId);
+  public DecisionDefinitionEngineDto deployDecisionDefinition(String dmnPath) {
+    return deployDecisionDefinition(dmnPath, null);
   }
 
-  public DecisionDefinitionEngineDto deployDecisionDefinition(String dmnPath) {
+  public DecisionDefinitionEngineDto deployDecisionDefinition(String dmnPath, String tenantId) {
     final DmnModelInstance dmnModelInstance = Dmn.readModelFromStream(
       getClass().getClassLoader().getResourceAsStream(dmnPath)
     );
-    return deployDecisionDefinition(dmnModelInstance);
-  }
-
-  public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(DmnModelInstance dmnModelInstance) {
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition(dmnModelInstance);
-    startDecisionInstance(decisionDefinitionEngineDto.getId());
-    return decisionDefinitionEngineDto;
+    return deployDecisionDefinition(dmnModelInstance, tenantId);
   }
 
   public DecisionDefinitionEngineDto deployDecisionDefinition(DmnModelInstance dmnModelInstance) {

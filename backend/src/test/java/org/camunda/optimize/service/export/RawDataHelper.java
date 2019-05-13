@@ -31,6 +31,8 @@ public class RawDataHelper {
     instance1.setStartDate(OffsetDateTime.parse(FIXED_TIME));
     instance1.setEndDate(OffsetDateTime.parse(FIXED_TIME));
     instance1.setBusinessKey("aBusinessKey");
+    instance1.setEngineName("engine");
+    instance1.setTenantId("tenant");
 
     final Map<String, Object> variables1 = new HashMap<>();
     variables1.put("1", "test");
@@ -57,6 +59,8 @@ public class RawDataHelper {
     instance1.setDecisionDefinitionId("test_id");
     instance1.setDecisionDefinitionKey("test_key");
     instance1.setEvaluationDateTime(OffsetDateTime.parse(FIXED_TIME));
+    instance1.setEngineName("engine");
+    instance1.setTenantId("tenant");
 
     final Map<String, InputVariableEntry> inputs = new HashMap<>();
     inputs.put("1", new InputVariableEntry("1", "1", VariableType.BOOLEAN, "true"));

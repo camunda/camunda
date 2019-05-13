@@ -40,20 +40,23 @@ public class RawProcessDataResultDtoMapper {
     SearchHits searchHits = searchResponse.getHits();
 
     Arrays.stream(searchHits.getHits())
-        .limit(recordLimit)
-        .forEach(hit -> {
-          final String sourceAsString = hit.getSourceAsString();
-          try {
-            final ProcessInstanceDto processInstanceDto = objectMapper.readValue(sourceAsString, ProcessInstanceDto.class);
+      .limit(recordLimit)
+      .forEach(hit -> {
+        final String sourceAsString = hit.getSourceAsString();
+        try {
+          final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
+            sourceAsString,
+            ProcessInstanceDto.class
+          );
 
-            Map<String, Object> variables = getVariables(processInstanceDto, objectMapper);
-            allVariableNames.addAll(variables.keySet());
-            RawDataProcessInstanceDto dataEntry = convertToRawDataEntry(processInstanceDto, variables);
-            rawData.add(dataEntry);
-          } catch (IOException e) {
-            logger.error("can't map process instance {}", sourceAsString, e);
-          }
-        });
+          Map<String, Object> variables = getVariables(processInstanceDto, objectMapper);
+          allVariableNames.addAll(variables.keySet());
+          RawDataProcessInstanceDto dataEntry = convertToRawDataEntry(processInstanceDto, variables);
+          rawData.add(dataEntry);
+        } catch (IOException e) {
+          logger.error("can't map process instance {}", sourceAsString, e);
+        }
+      });
 
     ensureEveryRawDataInstanceContainsAllVariableNames(rawData, allVariableNames);
 
@@ -63,27 +66,28 @@ public class RawProcessDataResultDtoMapper {
   private void ensureEveryRawDataInstanceContainsAllVariableNames(final List<RawDataProcessInstanceDto> rawData,
                                                                   final Set<String> allVariableNames) {
     rawData
-        .forEach(data -> allVariableNames
-            .forEach(varName -> data.getVariables().putIfAbsent(varName, ""))
-        );
+      .forEach(data -> allVariableNames
+        .forEach(varName -> data.getVariables().putIfAbsent(varName, ""))
+      );
   }
 
   private RawDataProcessInstanceDto convertToRawDataEntry(final ProcessInstanceDto processInstanceDto,
                                                           final Map<String, Object> variables) {
-    RawDataProcessInstanceDto rawDataInstance = new RawDataProcessInstanceDto();
-    rawDataInstance.setProcessInstanceId(processInstanceDto.getProcessInstanceId());
-    rawDataInstance.setProcessDefinitionId(processInstanceDto.getProcessDefinitionId());
-    rawDataInstance.setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey());
-    rawDataInstance.setStartDate(processInstanceDto.getStartDate());
-    rawDataInstance.setEndDate(processInstanceDto.getEndDate());
-    rawDataInstance.setEngineName(processInstanceDto.getEngine());
-    rawDataInstance.setBusinessKey(processInstanceDto.getBusinessKey());
-
-    rawDataInstance.setVariables(variables);
-    return rawDataInstance;
+    return new RawDataProcessInstanceDto(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionId(),
+      processInstanceDto.getProcessInstanceId(),
+      processInstanceDto.getBusinessKey(),
+      processInstanceDto.getStartDate(),
+      processInstanceDto.getEndDate(),
+      processInstanceDto.getEngine(),
+      processInstanceDto.getTenantId(),
+      variables
+    );
   }
 
-  private Map<String, Object> getVariables(final ProcessInstanceDto processInstanceDto, final ObjectMapper objectMapper) {
+  private Map<String, Object> getVariables(final ProcessInstanceDto processInstanceDto,
+                                           final ObjectMapper objectMapper) {
     Map<String, Object> result = new TreeMap<>();
 
     for (VariableInstanceDto instance : processInstanceDto.obtainAllVariables()) {

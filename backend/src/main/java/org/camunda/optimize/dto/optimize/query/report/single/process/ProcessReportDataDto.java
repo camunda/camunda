@@ -6,8 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -22,17 +21,29 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-@Getter
-@Setter
+@Data
 public class ProcessReportDataDto extends SingleReportDataDto implements Combinable {
 
   protected String processDefinitionKey;
   protected String processDefinitionVersion;
+  protected List<String> tenantIds = new ArrayList<>();
   protected List<ProcessFilterDto> filter = new ArrayList<>();
   protected ProcessViewDto view;
   protected ProcessGroupByDto groupBy;
   protected ProcessVisualization visualization;
   protected ProcessParametersDto parameters = new ProcessParametersDto();
+
+  @JsonIgnore
+  @Override
+  public String getDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  @JsonIgnore
+  @Override
+  public String getDefinitionVersion() {
+    return processDefinitionVersion;
+  }
 
   @JsonIgnore
   @Override
@@ -60,16 +71,4 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       Objects.equals(visualization, that.visualization);
   }
 
-  @Override
-  public String toString() {
-    return "ProcessReportDataDto{" +
-      "processDefinitionKey='" + processDefinitionKey + '\'' +
-      ", processDefinitionVersion='" + processDefinitionVersion + '\'' +
-      ", filter=" + filter +
-      ", view=" + view +
-      ", groupBy=" + groupBy +
-      ", visualization='" + visualization + '\'' +
-      ", parameters=" + parameters +
-      '}';
-  }
 }

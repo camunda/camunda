@@ -472,6 +472,33 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
   }
 
   @Test
+  public void reportEvaluationSingleBucketFilteredBySingleTenant() {
+    // given
+    final String tenantId1 = "tenantId1";
+    final String tenantId2 = "tenantId2";
+    final List<String> selectedTenants = Lists.newArrayList(tenantId1);
+    final String decisionDefinitionKey = deployAndStartMultiTenantDefinition(
+      Lists.newArrayList(null, tenantId1, tenantId2)
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey(decisionDefinitionKey)
+      .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setTenantIds(selectedTenants)
+      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_INPUT_VARIABLE)
+      .setVariableId(INPUT_AMOUNT_ID)
+      .build();
+    DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getDecisionInstanceCount(), is((long) selectedTenants.size()));
+  }
+
+  @Test
   public void testVariableNameIsAvailable() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();

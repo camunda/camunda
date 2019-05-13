@@ -25,6 +25,8 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
 
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.test.util.DmnHelper.createSimpleDmnModel;
@@ -46,7 +48,6 @@ public abstract class AbstractDecisionDefinitionIT {
   protected static final String INPUT_VARIABLE_SEASON = "season";
   protected static final String INPUT_VARIABLE_NUMBER_OF_GUESTS = "guestCount";
   protected static final String INPUT_VARIABLE_GUEST_WITH_CHILDREN = "guestsWithChildren";
-
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -79,19 +80,44 @@ public abstract class AbstractDecisionDefinitionIT {
     }
   }
 
+  protected String deployAndStartMultiTenantDefinition(final List<String> deployedTenants) {
+    final String decisionDefinitionKey = "multiTenantProcess";
+    deployedTenants.stream()
+      .filter(Objects::nonNull)
+      .forEach(tenantId -> engineRule.createTenant(tenantId, tenantId));
+    deployedTenants
+      .forEach(tenant -> {
+        final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinitionWithDifferentKey(
+          decisionDefinitionKey, tenant
+        );
+        startDecisionInstanceWithInputVars(
+          decisionDefinitionEngineDto.getId(), createInputs(100.0, "Misc")
+        );
+      });
+    return decisionDefinitionKey;
+  }
+
   protected DecisionDefinitionEngineDto deployAndStartSimpleDecisionDefinition(String decisionKey) {
+    return deployAndStartSimpleDecisionDefinition(decisionKey, null);
+  }
+
+  protected DecisionDefinitionEngineDto deployAndStartSimpleDecisionDefinition(String decisionKey, String tenantId) {
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionKey);
-    return engineRule.deployAndStartDecisionDefinition(modelInstance);
+    return engineRule.deployAndStartDecisionDefinition(modelInstance, tenantId);
   }
 
   protected DecisionDefinitionEngineDto deployDecisionDefinitionWithDifferentKey(final String key) {
+    return deployDecisionDefinitionWithDifferentKey(key, null);
+  }
+
+  protected DecisionDefinitionEngineDto deployDecisionDefinitionWithDifferentKey(final String key, String tenantId) {
     final DmnModelInstance dmnModelInstance = Dmn.readModelFromStream(
       getClass().getClassLoader().getResourceAsStream(EngineIntegrationRule.DEFAULT_DMN_DEFINITION_PATH)
     );
     dmnModelInstance.getDefinitions().getDrgElements().stream()
       .findFirst()
       .ifPresent(drgElement -> drgElement.setId(key));
-    return engineRule.deployDecisionDefinition(dmnModelInstance);
+    return engineRule.deployDecisionDefinition(dmnModelInstance, tenantId);
   }
 
   protected HashMap<String, InputVariableEntry> createInputs(final double amountValue,
@@ -151,7 +177,6 @@ public abstract class AbstractDecisionDefinitionIT {
       .execute(new TypeReference<DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
       // @formatter:on
   }
-
 
   protected Response evaluateReportAndReturnResponse(DecisionReportDataDto reportData) {
     return embeddedOptimizeRule

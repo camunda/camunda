@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.flownode.duration;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.Lists;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -26,13 +26,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Rule;
+import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
@@ -54,7 +51,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.core.IsNull.nullValue;
 
 @RunWith(JUnitParamsRunner.class)
-public class FlowNodeDurationByFlowNodeReportEvaluationIT {
+public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   public static final String PROCESS_DEFINITION_KEY = "123";
   private static final String START_EVENT = "startEvent";
@@ -62,15 +59,6 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
   private static final String SERVICE_TASK_ID = "aSimpleServiceTask";
   private static final String SERVICE_TASK_ID_2 = "aSimpleServiceTask2";
   private static final String USER_TASK = "userTask";
-
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
 
   private static Object[] aggregationTypes() {
     return AggregationType.values();
@@ -88,7 +76,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     // then
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
@@ -127,7 +115,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     // then
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
@@ -160,7 +148,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     // when
     ProcessReportDataDto reportData =
       getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     // then
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
@@ -199,7 +187,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     // then
     final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
@@ -232,7 +220,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     // when
     final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     // then
     List<MapResultEntryDto<AggregationResultDto>> resultData = evaluationResponse.getResult().getData();
@@ -268,7 +256,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.getConfiguration().setAggregationType(aggregationType);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     // then
     final List<MapResultEntryDto<AggregationResultDto>> resultData = evaluationResponse.getResult().getData();
@@ -307,7 +295,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessReportDataDto reportData = createFlowNodeDurationGroupByFlowNodeHeatmapReport(
       latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     //then
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
@@ -347,7 +335,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessReportDataDto reportData = createFlowNodeDurationGroupByFlowNodeHeatmapReport(
       latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     //then
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
@@ -377,7 +365,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessReportDataDto reportData = createFlowNodeDurationGroupByFlowNodeHeatmapReport(
       processDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     //then
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
@@ -386,6 +374,30 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
       result.getDataEntryForKey(SERVICE_TASK_ID).get().getValue(),
       is(calculateExpectedValueGivenDurations(10L, 20L, 90L))
     );
+  }
+
+  @Test
+  public void reportEvaluationSingleBucketFilteredBySingleTenant() {
+    // given
+    final String tenantId1 = "tenantId1";
+    final String tenantId2 = "tenantId2";
+    final List<String> selectedTenants = Lists.newArrayList(tenantId1);
+    final String processKey = deployAndStartMultiTenantSimpleServiceTaskProcess(
+      Lists.newArrayList(null, tenantId1, tenantId2)
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeHeatmapReport(
+      processKey, ReportConstants.ALL_VERSIONS
+    );
+    reportData.setTenantIds(selectedTenants);
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getProcessInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
   }
 
   @Test
@@ -411,10 +423,10 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     // when
     ProcessReportDataDto reportData1 = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse1 =
-      evaluateReport(reportData1);
+      evaluateDurationMapReport(reportData1);
     ProcessReportDataDto reportData2 = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition2);
     ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse2 =
-      evaluateReport(reportData2);
+      evaluateDurationMapReport(reportData2);
 
     // then
     final ProcessDurationReportMapResultDto result1 = evaluationResponse1.getResult();
@@ -446,7 +458,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     // then
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
@@ -463,7 +475,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     // when
     ProcessReportDataDto reportData =
       createFlowNodeDurationGroupByFlowNodeHeatmapReport("nonExistingProcessDefinitionId", "1");
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     // then
     assertThat(evaluationResponse.getResult().getData().size(), is(0));
@@ -484,7 +496,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
         processDefinition.getKey(),
         processDefinition.getVersionAsString()
       );
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     // then
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
@@ -529,7 +541,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
         subProcessDefinition.getKey(),
         String.valueOf(subProcessDefinition.getVersion())
       );
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     // then
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
@@ -556,7 +568,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     // then
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
@@ -586,7 +598,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessReportDataDto reportData = createFlowNodeDurationGroupByFlowNodeHeatmapReport(
       engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
     );
-    ProcessDurationReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(3));
@@ -613,7 +625,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.setFilter(createStartDateFilter(null, past.minusSeconds(1L)));
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
 
     // then
     ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
@@ -624,7 +636,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     // when
     reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.setFilter(createStartDateFilter(past, null));
-    evaluationResponse = evaluateReport(reportData);
+    evaluationResponse = evaluateDurationMapReport(reportData);
 
     // then
     result = evaluationResponse.getResult();
@@ -701,21 +713,6 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT {
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
-      // @formatter:on
-  }
-
-  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
-  }
 
   private ProcessReportDataDto getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessDefinitionEngineDto processDefinition) {
     return createFlowNodeDurationGroupByFlowNodeHeatmapReport(

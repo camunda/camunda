@@ -5,10 +5,11 @@
  */
 package org.camunda.optimize.service.es.report.process.flownode.frequency;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.AbstractServiceTaskBuilder;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -20,13 +21,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.core.Is;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
@@ -44,18 +43,11 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 
-public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
-
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   private static final String TEST_ACTIVITY = "testActivity";
   private static final String TEST_ACTIVITY_2 = "testActivity_2";
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
@@ -71,7 +63,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
       latestProcess.getProcessDefinitionKey(), ALL_VERSIONS
     );
-    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(reportData);
 
     //then
     final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
@@ -94,7 +86,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
       latestProcess.getProcessDefinitionKey(), ALL_VERSIONS
     );
-    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(reportData);
 
     //then
     final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
@@ -115,7 +107,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
       processInstanceDto.getProcessDefinitionKey(), ALL_VERSIONS
     );
-    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(reportData);
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -132,6 +124,30 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   }
 
   @Test
+  public void reportEvaluationSingleBucketFilteredBySingleTenant() {
+    // given
+    final String tenantId1 = "tenantId1";
+    final String tenantId2 = "tenantId2";
+    final List<String> selectedTenants = Lists.newArrayList(tenantId1);
+    final String processKey = deployAndStartMultiTenantSimpleServiceTaskProcess(
+      Lists.newArrayList(null, tenantId1, tenantId2)
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode(
+      processKey, ReportConstants.ALL_VERSIONS
+    );
+    reportData.setTenantIds(selectedTenants);
+    ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getProcessInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
+  }
+
+  @Test
   public void otherProcessDefinitionsDoNoAffectResult() {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -143,7 +159,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
       processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
-    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(reportData);
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -170,7 +186,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
       processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
-    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(reportData);
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -198,7 +214,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
       processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
-    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
 
@@ -220,7 +236,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
       engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
     );
-    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
     assertThat(result.getProcessInstanceCount(), is(2L));
@@ -244,7 +260,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
       engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
     );
-    ProcessCountReportMapResultDto resultDto = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto resultDto = evaluateCountMapReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getProcessInstanceCount(), is(2L));
@@ -270,11 +286,11 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
         instanceDto.getProcessDefinitionKey(),
         instanceDto.getProcessDefinitionVersion()
       );
-    final ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse1 = evaluateReport(
+    final ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse1 = evaluateCountMapReport(
       reportData);
     reportData.setProcessDefinitionKey(instanceDto2.getProcessDefinitionKey());
     reportData.setProcessDefinitionVersion(instanceDto2.getProcessDefinitionVersion());
-    final ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse2 = evaluateReport(
+    final ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse2 = evaluateCountMapReport(
       reportData);
 
     // then
@@ -319,7 +335,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
       instanceDto.getProcessDefinitionKey(), instanceDto.getProcessDefinitionVersion()
     );
-    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -342,7 +358,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
       processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -370,7 +386,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
       processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
+    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -400,7 +416,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
       engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
     );
-    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(3));
@@ -452,7 +468,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     //when
     ProcessReportDataDto reportData =
       createCountFlowNodeFrequencyGroupByFlowNode(testMIProcess, "1");
-    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     //then
     assertThat(result.getData(), is(notNullValue()));
@@ -478,7 +494,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
                            .end(past.minusSeconds(1L))
                            .add()
                            .buildList());
-    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
+    ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -490,7 +506,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
       processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
     );
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
-    result = evaluateReport(reportData).getResult();
+    result = evaluateCountMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -537,10 +553,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     assertThat(response.getStatus(), is(400));
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
-    return deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
-  }
-
   private ProcessInstanceEngineDto deployProcessWithTwoTasks() {
     // @formatter:off
 
@@ -556,18 +568,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     return engineRule.deployAndStartProcess(modelInstance);
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String activityId) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent("start")
-        .serviceTask(activityId)
-        .camundaExpression("${true}")
-      .endEvent("end")
-      .done();
-    return engineRule.deployAndStartProcess(processModel);
-  }
-  // @formatter:on
-
   private ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess() {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent("startEvent")
@@ -575,23 +575,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
       .endEvent()
       .done();
     return engineRule.deployAndStartProcess(processModel);
-  }
-
-
-  private ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>>() {});
-      // @formatter:on
-  }
-
-  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
   }
 
   private long getExecutedFlowNodeCount(ProcessCountReportMapResultDto resultList) {

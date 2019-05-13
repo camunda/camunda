@@ -70,11 +70,7 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
       reportData.getDecisionDefinitionVersion()
     );
 
-    BoolQueryBuilder query = setupBaseQuery(
-      reportData.getDecisionDefinitionKey(),
-      reportData.getDecisionDefinitionVersion()
-    );
-    queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
+    final BoolQueryBuilder query = setupBaseQuery(reportData);
 
     DecisionGroupByEvaluationDateTimeValueDto groupBy =
       ((DecisionGroupByEvaluationDateTimeDto) reportData.getGroupBy())
