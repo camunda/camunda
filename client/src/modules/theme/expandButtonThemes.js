@@ -7,6 +7,12 @@
 import {css} from 'styled-components';
 import {Colors} from '.';
 
+const DEFAULT_THEME = 'collapse';
+
+export function getExpandButtonTheme(themeName) {
+  return ExpandButtonThemes[themeName] || ExpandButtonThemes[DEFAULT_THEME];
+}
+
 const ExpandButtonThemes = {
   // collapse is used for the incidents panels on dashbord
   collapse: {

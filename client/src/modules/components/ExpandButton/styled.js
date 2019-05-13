@@ -9,7 +9,7 @@ import styled, {css} from 'styled-components';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
 import {ReactComponent as Right} from 'modules/components/Icon/right.svg';
-import {themed, ExpandButtonThemes as Themes} from 'modules/theme';
+import {themed, getExpandButtonTheme as getTheme} from 'modules/theme';
 import {Transition as TransitionComponent} from 'modules/components/Transition';
 
 const iconStyle = css`
@@ -35,7 +35,7 @@ export const Icon = themed(styled.div`
 
   svg {
     // default arrow color/opacity
-    ${props => Themes[props.expandTheme].default.arrow[props.theme]}};
+    ${props => getTheme(props.expandTheme).default.arrow[props.theme]}};
   }
 
   &:before {
@@ -47,7 +47,7 @@ export const Icon = themed(styled.div`
     z-index: -1;
 
     // default background color/opacity
-    ${props => Themes[props.expandTheme].default.background[props.theme]};
+    ${props => getTheme(props.expandTheme).default.background[props.theme]};
   }
 `);
 
@@ -59,13 +59,13 @@ export const Button = themed(styled.button`
   :hover {
     ${Icon.WrappedComponent}::before {
       // hover background color/opacity
-      ${props => Themes[props.expandTheme].hover.background[props.theme]}
+      ${props => getTheme(props.expandTheme).hover.background[props.theme]}
     }
 
     ${Icon.WrappedComponent} {
       svg {
         // hover arrow color/opacity
-        ${props => Themes[props.expandTheme].hover.arrow[props.theme]};
+        ${props => getTheme(props.expandTheme).hover.arrow[props.theme]};
       }
     }
   }
@@ -73,13 +73,13 @@ export const Button = themed(styled.button`
   :active {
     ${Icon.WrappedComponent}::before {
       // active background color/opacity
-      ${props => Themes[props.expandTheme].active.background[props.theme]}
+      ${props => getTheme(props.expandTheme).active.background[props.theme]}
     }
 
     ${Icon.WrappedComponent} {
       svg {
         // active arrow color/opacity
-        ${props => Themes[props.expandTheme].active.arrow[props.theme]};
+        ${props => getTheme(props.expandTheme).active.arrow[props.theme]};
       }
     }
   }

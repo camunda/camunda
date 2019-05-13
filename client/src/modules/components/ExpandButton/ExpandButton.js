@@ -7,6 +7,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import * as Styled from './styled';
+import {ExpandButtonThemes} from 'modules/theme';
 
 export default function ExpandButton({children, isExpanded, ...props}) {
   return (
@@ -24,7 +25,7 @@ export default function ExpandButton({children, isExpanded, ...props}) {
 
 ExpandButton.propTypes = {
   isExpanded: PropTypes.bool,
-  expandTheme: PropTypes.string.isRequired
+  expandTheme: PropTypes.oneOf(Object.keys(ExpandButtonThemes)).isRequired
 };
 
 ExpandButton.defaultProps = {

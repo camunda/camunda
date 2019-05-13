@@ -10,13 +10,11 @@ import ExpandButton from './ExpandButton';
 import * as Styled from './styled';
 
 describe('ExpandButton', () => {
-  it('should render correct colors based on theme', () => {
-    // should/can we test?
-  });
-
   it('should render arrow icon', () => {
     // given
-    const node = shallow(<ExpandButton isExpanded={false} expandTheme="" />);
+    const node = shallow(
+      <ExpandButton isExpanded={false} expandTheme="collapse" />
+    );
 
     // when
     const RightIconNode = node.find(Styled.RightIcon);
@@ -25,12 +23,10 @@ describe('ExpandButton', () => {
     expect(RightIconNode).toExist();
   });
 
-  it('should render arrow down when isExpanded is true', () => {});
-
   it('should render provided children inside the button', () => {
     // given
     const node = shallow(
-      <ExpandButton expandTheme="">
+      <ExpandButton expandTheme="collapse">
         <div id="child1">child node 1</div>
         <div id="child2">child node 2</div>
       </ExpandButton>
