@@ -65,8 +65,10 @@ public class ListViewTemplate extends AbstractTemplateCreator {
       .startObject(WORKFLOW_ID)
         .field("type", "keyword")
       .endObject()
+      // WORKFLOW_NAME index is stored as lowercase keyword: https://www.elastic.co/guide/en/elasticsearch/reference/current/keyword.html
       .startObject(WORKFLOW_NAME)
         .field("type", "keyword")
+        .field("normalizer","case_insensitive")
       .endObject()
       .startObject(WORKFLOW_VERSION)
         .field("type", "long")

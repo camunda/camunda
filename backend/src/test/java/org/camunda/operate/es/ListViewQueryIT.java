@@ -71,8 +71,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(3);
-    assertThat(response.getTotalCount()).isEqualTo(3);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(6);
+    assertThat(response.getTotalCount()).isEqualTo(6);
     for (ListViewWorkflowInstanceDto workflowInstanceDto : response.getWorkflowInstances()) {
       assertThat(workflowInstanceDto.getEndDate()).isNull();
       assertThat(workflowInstanceDto.getState()).isIn(WorkflowInstanceStateDto.ACTIVE, WorkflowInstanceStateDto.INCIDENT);
@@ -674,17 +674,17 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllWorkflowInstancesQuery();
 
     //page 1
-    MvcResult mvcResult = postRequest(query(0, 3), workflowInstanceQueryDto);
+    MvcResult mvcResult = postRequest(query(0, 5), workflowInstanceQueryDto);
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {
     });
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(3);
-    assertThat(response.getTotalCount()).isEqualTo(5);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(5);
+    assertThat(response.getTotalCount()).isEqualTo(8);
 
     //page 2
-    mvcResult = postRequest(query(3, 3),workflowInstanceQueryDto);
+    mvcResult = postRequest(query(5, 3),workflowInstanceQueryDto);
     response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(2);
-    assertThat(response.getTotalCount()).isEqualTo(5);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(3);
+    assertThat(response.getTotalCount()).isEqualTo(8);
   }
 
   private void testSorting(SortingDto sorting, Comparator<ListViewWorkflowInstanceDto> comparator) throws Exception {
@@ -698,7 +698,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(5);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(8);
 
     assertThat(response.getWorkflowInstances()).isSortedAccordingTo(comparator);
   }
@@ -742,10 +742,11 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     testSorting(sorting, comparator);
   }
+  
   @Test
   public void testSortingByWorkflowNameAsc() throws Exception {
     final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> {
-      int x = o1.getWorkflowName().compareTo(o2.getWorkflowName());
+      int x = o1.getWorkflowName().toLowerCase().compareTo(o2.getWorkflowName().toLowerCase());
       if (x == 0) {
         x = o1.getId().compareTo(o2.getId());
       }
@@ -754,14 +755,14 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy("workflowName");
     sorting.setSortOrder("asc");
-
+    
     testSorting(sorting, comparator);
   }
 
   @Test
   public void testSortingByWorkflowNameDesc() throws Exception {
     final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> {
-      int x = o2.getWorkflowName().compareTo(o1.getWorkflowName());
+      int x = o2.getWorkflowName().toLowerCase().compareTo(o1.getWorkflowName().toLowerCase());
       if (x == 0) {
         x = o1.getId().compareTo(o2.getId());
       }
@@ -863,8 +864,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
-    assertThat(response.getTotalCount()).isEqualTo(5);
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(5);
+    assertThat(response.getTotalCount()).isEqualTo(8);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(8);
   }
 
   @Test
@@ -887,8 +888,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
-    assertThat(response.getTotalCount()).isEqualTo(5);
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(5);
+    assertThat(response.getTotalCount()).isEqualTo(8);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(8);
   }
 
   @Test
@@ -961,8 +962,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
-    assertThat(response.getTotalCount()).isEqualTo(2);
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(2);
+    assertThat(response.getTotalCount()).isEqualTo(5);
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(5);
     assertThat(response.getWorkflowInstances()).allMatch((wi) -> !wi.getState().equals(WorkflowInstanceStateDto.INCIDENT));
 
   }
@@ -995,10 +996,30 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 //    assertThat(workflowInstanceDto.getIncidents().size()).isEqualTo(instanceWithoutIncident.getIncidents().size());
 //
 //  }
-
+  
+  private void createWorkflowInstanceWithUpperLowerCaseWorkflowname() {
+    WorkflowInstanceForListViewEntity upperWorkflow = createWorkflowInstance(WorkflowInstanceState.ACTIVE, "UPPER_WORKFLOW_ID");
+    upperWorkflow.setWorkflowName("UPPER_LOWER_WORKFLOW_NAME");
+    
+    WorkflowInstanceForListViewEntity lowerWorkflow = createWorkflowInstance(WorkflowInstanceState.ACTIVE, "lower_workflow_id");
+    lowerWorkflow.setWorkflowName("upper_lower_workflow_name");
+    
+    elasticsearchTestRule.persistNew(upperWorkflow,lowerWorkflow);
+  }
+  
+  private void createWorkflowInstanceWithoutWorkflowname() {
+    WorkflowInstanceForListViewEntity workflowWithoutName = createWorkflowInstance(WorkflowInstanceState.ACTIVE, "doesnotmatter");
+    workflowWithoutName.setBpmnProcessId("lower_workflow_id");
+    workflowWithoutName.setWorkflowName(null);
+   
+    elasticsearchTestRule.persistNew(workflowWithoutName);
+  }
+  
   private void createData() {
     List<VariableForListViewEntity> vars = new ArrayList<>();
 
+    createWorkflowInstanceWithUpperLowerCaseWorkflowname();
+    createWorkflowInstanceWithoutWorkflowname();
     //running instance with one activity and without incidents
     final String workflowId = "someWorkflowId";
     runningInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);

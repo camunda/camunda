@@ -199,4 +199,9 @@ public class ListViewWorkflowInstanceDto {
     result = 31 * result + (operations != null ? operations.hashCode() : 0);
     return result;
   }
+  
+  @Override
+  public String toString() {
+    return String.format("ListViewWorkflowInstanceDto %s (%s)", workflowName, workflowId);
+  }
 }

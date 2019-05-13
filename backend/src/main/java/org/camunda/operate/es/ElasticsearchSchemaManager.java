@@ -153,15 +153,15 @@ public class ElasticsearchSchemaManager {
         .field("number_of_replicas", "0")
         .field("number_of_shards", "1")
         .startObject("analysis")
-          .startObject("analyzer")
-            .startObject("case_sensitive")
-              .field("type", "custom")
-              .field("tokenizer", "whitespace")
-              .field("filter", new String[]{"standard"})
+          // define a lowercase normalizer: https://www.elastic.co/guide/en/elasticsearch/reference/current/keyword.html
+          .startObject("normalizer")
+            .startObject("case_insensitive")
+              .field("filter","lowercase")
             .endObject()
-        . endObject()
+           .endObject()
+          .endObject()
         .endObject()
-      .endObject()), XContentType.JSON)
+        ), XContentType.JSON)
     .build();
   }
 
