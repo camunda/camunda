@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Re
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
@@ -157,7 +156,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     final ProcessDurationReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
+    List<MapResultEntryDto<Long>> resultData = result.getData();
     MatcherAssert.assertThat(resultData.size(), is(2));
     MatcherAssert.assertThat(result.getIsComplete(), is(false));
 
@@ -167,7 +166,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     );
     MatcherAssert.assertThat(
       resultData.get(0).getValue(),
-      is(new AggregationResultDto(1000L, 1000L, 1000L, 1000L))
+      is(1000L)
     );
 
     MatcherAssert.assertThat(
@@ -176,7 +175,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     );
     MatcherAssert.assertThat(
       resultData.get(1).getValue(),
-      is(new AggregationResultDto(0L, 0L, 0L, 0L))
+      is(0L)
     );
   }
 
@@ -226,7 +225,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     final ProcessDurationReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
+    List<MapResultEntryDto<Long>> resultData = result.getData();
     MatcherAssert.assertThat(resultData.size(), is(2));
     MatcherAssert.assertThat(result.getIsComplete(), is(false));
 

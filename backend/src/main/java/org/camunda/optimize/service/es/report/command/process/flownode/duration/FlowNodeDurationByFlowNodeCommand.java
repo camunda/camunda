@@ -5,10 +5,11 @@
  */
 package org.camunda.optimize.service.es.report.command.process.flownode.duration;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.FlowNodeDurationGroupingCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
@@ -22,15 +23,12 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.percentiles.tdigest.ParsedTDigestPercentiles;
-import org.elasticsearch.search.aggregations.metrics.stats.ParsedStats;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLong;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_DURATION;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_ID;
@@ -42,18 +40,17 @@ import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.percentiles;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.stats;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
+@AllArgsConstructor
 public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingCommand {
 
   private static final String MI_BODY = "multiInstanceBody";
   private static final String EVENTS_AGGREGATION = "events";
   private static final String FILTERED_EVENTS_AGGREGATION = "filteredEvents";
   private static final String ACTIVITY_ID_TERMS_AGGREGATION = "activities";
-  private static final String STATS_DURATION_AGGREGATION = "statsAggregatedDuration";
-  private static final String MEDIAN_DURATION_AGGREGATION = "medianAggregatedDuration";
+
+  protected AggregationStrategy aggregationStrategy;
 
   @Override
   protected SingleProcessMapDurationReportResult evaluate() {
@@ -119,13 +116,7 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
                 .size(configurationService.getEsAggregationBucketLimit())
                 .field(EVENTS + "." + ACTIVITY_ID)
                 .subAggregation(
-                  stats(STATS_DURATION_AGGREGATION)
-                    .field(EVENTS + "." + ACTIVITY_DURATION)
-                )
-                .subAggregation(
-                  percentiles(MEDIAN_DURATION_AGGREGATION)
-                    .percentiles(50)
-                    .field(EVENTS + "." + ACTIVITY_DURATION)
+                  aggregationStrategy.getAggregationBuilder(EVENTS + "." + ACTIVITY_DURATION)
                 )
             )
         );
@@ -139,19 +130,11 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
     final Filter filteredActivities = activities.getAggregations().get(FILTERED_EVENTS_AGGREGATION);
     final Terms activityIdTerms = filteredActivities.getAggregations().get(ACTIVITY_ID_TERMS_AGGREGATION);
 
-    final List<MapResultEntryDto<AggregationResultDto>> resultData = new ArrayList<>();
+    final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
     for (Terms.Bucket b : activityIdTerms.getBuckets()) {
-      final ParsedStats statsAggregation = b.getAggregations().get(STATS_DURATION_AGGREGATION);
-      final ParsedTDigestPercentiles medianAggregation = b.getAggregations().get(MEDIAN_DURATION_AGGREGATION);
 
-      final AggregationResultDto aggregationResultDto = new AggregationResultDto(
-        mapToLong(statsAggregation.getMin()),
-        mapToLong(statsAggregation.getMax()),
-        mapToLong(statsAggregation.getAvg()),
-        mapToLong(medianAggregation)
-      );
-
-      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), aggregationResultDto));
+      final long value = aggregationStrategy.getValue(b.getAggregations());
+      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), value));
     }
 
     resultDto.setData(resultData);

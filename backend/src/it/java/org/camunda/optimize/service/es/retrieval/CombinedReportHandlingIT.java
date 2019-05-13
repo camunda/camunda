@@ -20,7 +20,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
@@ -289,11 +288,11 @@ public class CombinedReportHandlingIT {
     Map<String, ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(2));
-    List<MapResultEntryDto<AggregationResultDto>> userTaskCount1 = resultMap.get(totalDurationReportId)
+    List<MapResultEntryDto<Long>> userTaskCount1 = resultMap.get(totalDurationReportId)
       .getResult()
       .getData();
     assertThat(userTaskCount1.size(), is(3));
-    List<MapResultEntryDto<AggregationResultDto>> userTaskCount2 = resultMap.get(idleDurationReportId)
+    List<MapResultEntryDto<Long>> userTaskCount2 = resultMap.get(idleDurationReportId)
       .getResult()
       .getData();
     assertThat(userTaskCount2.size(), is(3));
@@ -318,11 +317,11 @@ public class CombinedReportHandlingIT {
     Map<String, ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(2));
-    List<MapResultEntryDto<AggregationResultDto>> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId)
+    List<MapResultEntryDto<Long>> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId)
       .getResult()
       .getData();
     assertThat(userTaskCount1.size(), is(3));
-    List<MapResultEntryDto<AggregationResultDto>> userTaskCount2 = resultMap.get(flowNodeDurationReportId)
+    List<MapResultEntryDto<Long>> userTaskCount2 = resultMap.get(flowNodeDurationReportId)
       .getResult()
       .getData();
     assertThat(userTaskCount2.size(), is(3));

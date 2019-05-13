@@ -5,52 +5,27 @@
  */
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.date;
 
-import com.google.common.collect.ImmutableList;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
+import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.metrics.percentiles.tdigest.ParsedTDigestPercentiles;
-import org.elasticsearch.search.aggregations.metrics.stats.ParsedStats;
-
-import java.util.List;
-
-import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLong;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.percentiles;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.stats;
 
 
 public class ProcessInstanceDurationGroupByStartDateCommand extends
   AbstractProcessInstanceDurationGroupByStartDateCommand {
 
-  private static final String STATS_DURATION_AGGREGATION = "statsAggregatedDuration";
-  private static final String MEDIAN_DURATION_AGGREGATION = "medianAggregatedDuration";
-
-  @Override
-  protected AggregationResultDto processAggregationOperation(Aggregations aggs) {
-    ParsedStats statsAggregation = aggs.get(STATS_DURATION_AGGREGATION);
-    ParsedTDigestPercentiles medianAggregation = aggs.get(MEDIAN_DURATION_AGGREGATION);
-
-    return new AggregationResultDto(
-      mapToLong(statsAggregation.getMin()),
-      mapToLong(statsAggregation.getMax()),
-      mapToLong(statsAggregation.getAvg()),
-      mapToLong(medianAggregation)
-    );
+  public ProcessInstanceDurationGroupByStartDateCommand(final AggregationStrategy strategy) {
+    super(strategy);
   }
 
   @Override
-  protected List<AggregationBuilder> createOperationsAggregations() {
-    return
-      ImmutableList.<AggregationBuilder>builder()
-        .add(
-          stats(STATS_DURATION_AGGREGATION)
-            .field(ProcessInstanceType.DURATION))
-        .add(
-          percentiles(MEDIAN_DURATION_AGGREGATION)
-            .percentiles(50)
-            .field(ProcessInstanceType.DURATION))
-        .build();
+  protected long processAggregationOperation(Aggregations aggs) {
+    return aggregationStrategy.getValue(aggs);
+  }
+
+  @Override
+  protected AggregationBuilder createOperationsAggregation() {
+    return aggregationStrategy.getAggregationBuilder(ProcessInstanceType.DURATION);
   }
 
 }

@@ -7,8 +7,9 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.d
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -22,6 +23,7 @@ import org.elasticsearch.search.aggregations.metrics.scripted.ScriptedMetricAggr
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLong;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
@@ -35,25 +37,36 @@ public class ProcessPartQueryUtil {
   private static final String NESTED_AGGREGATION = "nestedAggregation";
   private static final String TERMS_AGGREGATIONS = "termsAggregations";
 
-  public static AggregationResultDto processProcessPartAggregationOperations(Aggregations aggs) {
+  public static Long processProcessPartAggregationOperations(Aggregations aggs, AggregationType aggregationType) {
     Terms agg = aggs.get(TERMS_AGGREGATIONS);
     DescriptiveStatistics stats = new DescriptiveStatistics();
     long sum = 0L;
     for (Terms.Bucket entry : agg.getBuckets()) {
       Nested nested = entry.getAggregations().get(NESTED_AGGREGATION);
       ScriptedMetric scriptedMetric = nested.getAggregations().get(SCRIPT_AGGREGATION);
+
       Integer scriptedResult = (Integer) scriptedMetric.aggregation();
       if (scriptedResult != null) {
         sum += scriptedResult;
         stats.addValue(scriptedResult);
       }
     }
-    return new AggregationResultDto(
-      Math.round(stats.getMin()),
-      Math.round(stats.getMax()),
-      Math.round(stats.getMean()),
-      Math.round(stats.getPercentile(50))
-    );
+    return getResultForGivenAggregationType(stats, aggregationType);
+  }
+
+  private static Long getResultForGivenAggregationType(DescriptiveStatistics stats, AggregationType aggregationType) {
+    switch (aggregationType) {
+      case MIN:
+        return mapToLong(stats.getMin());
+      case MAX:
+        return mapToLong(stats.getMax());
+      case AVERAGE:
+        return mapToLong(stats.getMean());
+      case MEDIAN:
+        return mapToLong(stats.getPercentile(50));
+      default:
+        throw new OptimizeRuntimeException(String.format("Unknown aggregation type [%s]", aggregationType));
+    }
   }
 
   public static BoolQueryBuilder addProcessPartQuery(BoolQueryBuilder boolQueryBuilder,
@@ -63,12 +76,14 @@ public class ProcessPartQueryUtil {
     boolQueryBuilder.must(nestedQuery(
       ProcessInstanceType.EVENTS,
       termQuery(termPath, startFlowNodeId),
-      ScoreMode.None)
+      ScoreMode.None
+                          )
     );
     boolQueryBuilder.must(nestedQuery(
       ProcessInstanceType.EVENTS,
       termQuery(termPath, endFlowNodeId),
-      ScoreMode.None)
+      ScoreMode.None
+                          )
     );
     return boolQueryBuilder;
   }
@@ -89,13 +104,13 @@ public class ProcessPartQueryUtil {
       nested(NESTED_AGGREGATION, ProcessInstanceType.EVENTS);
     return
       terms(TERMS_AGGREGATIONS)
-      .field(ProcessInstanceType.PROCESS_INSTANCE_ID)
-      .subAggregation(
-        searchThroughTheEvents
-          .subAggregation(
-            findStartAndEndDatesForEvents
-        )
-      );
+        .field(ProcessInstanceType.PROCESS_INSTANCE_ID)
+        .subAggregation(
+          searchThroughTheEvents
+            .subAggregation(
+              findStartAndEndDatesForEvents
+            )
+        );
   }
 
   private static Script createInitScript() {
@@ -103,6 +118,7 @@ public class ProcessPartQueryUtil {
   }
 
   private static Script createMapScript() {
+    // @formatter:off
     return new Script(
       "if(doc['events.activityId'].value == params.startFlowNodeId && " +
           "doc['events.startDate'].value != null && " +
@@ -116,9 +132,11 @@ public class ProcessPartQueryUtil {
         "params._agg.ends.add(endDateInMillis);" +
       "}"
     );
+    // @formatter:on
   }
 
   private static Script createCombineScript() {
+    // @formatter:off
     return new Script(
         "if (!params._agg.starts.isEmpty() && !params._agg.ends.isEmpty()) {" +
         "long minStart = params._agg.starts.stream().min(Long::compareTo).get(); " +
@@ -131,9 +149,11 @@ public class ProcessPartQueryUtil {
       "}" +
       "return null;"
     );
+    // @formatter:on
   }
 
   private static Script getReduceScript() {
+    // @formatter:off
     return new Script(
       "if (params._aggs.size() == 1) {" +
         "return params._aggs.get(0);" +
@@ -146,5 +166,6 @@ public class ProcessPartQueryUtil {
       "} " +
       "return sum / Math.max(1, params._aggs.size());"
     );
+    // @formatter:on
   }
 }

@@ -6,22 +6,26 @@
 package org.camunda.optimize.service.es.report.result.process;
 
 import com.google.common.collect.Lists;
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
+import org.camunda.optimize.service.export.CSVUtils;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,6 +34,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 
+@RunWith(JUnitParamsRunner.class)
 public class CombinedProcessReportResultTest {
 
   @Test
@@ -47,7 +52,8 @@ public class CombinedProcessReportResultTest {
 
     CombinedProcessReportResult underTest = createTestCombinedProcessReportResult(
       ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE,
-      mapResultDtos
+      mapResultDtos,
+      AggregationType.AVERAGE
     );
 
 
@@ -111,7 +117,8 @@ public class CombinedProcessReportResultTest {
 
     CombinedProcessReportResult underTest = createTestCombinedProcessReportResult(
       ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE,
-      resultDtos
+      resultDtos,
+      AggregationType.AVERAGE
     );
 
     // when
@@ -131,18 +138,20 @@ public class CombinedProcessReportResultTest {
     );
   }
 
+
+  private static Object[] aggregationTypes() {
+    return AggregationType.values();
+  }
+
+
   @Test
-  public void testGetResultAsCsvForDurationNumberResult() {
+  @Parameters(method = "aggregationTypes")
+  public void testGetResultAsCsvForDurationNumberResult(final AggregationType aggregationType) {
 
     // given
 
     final ProcessDurationReportNumberResultDto durReportDto = new ProcessDurationReportNumberResultDto();
-    final AggregationResultDto aggroResult = new AggregationResultDto();
-    aggroResult.setAvg(3l);
-    aggroResult.setMedian(3l);
-    aggroResult.setMin(1l);
-    aggroResult.setMax(6l);
-    durReportDto.setData(aggroResult);
+    durReportDto.setData(6L);
 
     final ArrayList<ProcessReportResultDto> resultDtos = Lists.newArrayList(
       durReportDto,
@@ -151,7 +160,8 @@ public class CombinedProcessReportResultTest {
 
     CombinedProcessReportResult underTest = createTestCombinedProcessReportResult(
       ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE,
-      resultDtos
+      resultDtos,
+      aggregationType
     );
 
 
@@ -160,38 +170,38 @@ public class CombinedProcessReportResultTest {
 
 
     // then
+    assertCsvByAggregationType(resultAsCsv, aggregationType);
+  }
+
+  private void assertCsvByAggregationType(final List<String[]> resultAsCsv, AggregationType aggregationType) {
     assertArrayEquals(
-      new String[]{"SingleTestReport0", "", "", "", "", "SingleTestReport1", "", "", ""},
+      new String[]{"SingleTestReport0", "", "SingleTestReport1"},
       resultAsCsv.get(0)
     );
     assertArrayEquals(
-      new String[]{"processInstance_duration", "", "", "", "", "processInstance_duration", "", "", ""},
+      new String[]{"processInstance_duration", "", "processInstance_duration"},
       resultAsCsv.get(1)
     );
     assertArrayEquals(
-      new String[]{"minimum", "maximum", "average", "median", "", "minimum", "maximum", "average", "median"},
+      new String[]{CSVUtils.mapAggregationType(aggregationType), "", CSVUtils.mapAggregationType(aggregationType)},
       resultAsCsv.get(2)
     );
 
-    assertArrayEquals(new String[]{"1", "6", "3", "3", "", "1", "6", "3", "3"}, resultAsCsv.get(3));
+    assertArrayEquals(new String[]{"6", "", "6"}, resultAsCsv.get(3));
   }
 
 
   @Test
-  public void testGetResultAsCsvForDurationMapResult() {
+  @Parameters(method = "aggregationTypes")
+  public void testGetResultAsCsvForDurationMapResult(final AggregationType aggregationType) {
 
     // given
 
     final ProcessDurationReportMapResultDto durMapReportDto = new ProcessDurationReportMapResultDto();
-    final AggregationResultDto aggroResult = new AggregationResultDto();
-    aggroResult.setAvg(3l);
-    aggroResult.setMedian(3l);
-    aggroResult.setMin(1l);
-    aggroResult.setMax(6l);
 
-    List<MapResultEntryDto<AggregationResultDto>> data = new ArrayList<>();
-    data.add(new MapResultEntryDto<>("test1", aggroResult));
-    data.add(new MapResultEntryDto<>("test2", aggroResult));
+    List<MapResultEntryDto<Long>> data = new ArrayList<>();
+    data.add(new MapResultEntryDto<>("test1", 3L));
+    data.add(new MapResultEntryDto<>("test2", 6L));
     durMapReportDto.setData(data);
 
     final ArrayList<ProcessReportResultDto> resultDtos = Lists.newArrayList(
@@ -201,7 +211,8 @@ public class CombinedProcessReportResultTest {
 
     CombinedProcessReportResult underTest = createTestCombinedProcessReportResult(
       ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE,
-      resultDtos
+      resultDtos,
+      aggregationType
     );
 
 
@@ -211,20 +222,21 @@ public class CombinedProcessReportResultTest {
 
     // then
     assertArrayEquals(
-      new String[]{"SingleTestReport0", "", "", "", "", "", "SingleTestReport1", "", "", "", ""},
+      new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""},
       resultAsCsv.get(0)
     );
     assertArrayEquals(
-      new String[]{"variable_test_DOUBLE", "processInstance_duration", "", "", "", "", "variable_test_DOUBLE",
-        "processInstance_duration", "", "", ""},
+      new String[]{"variable_test_DOUBLE", "processInstance_duration", "", "variable_test_DOUBLE",
+        "processInstance_duration"},
       resultAsCsv.get(1)
     );
     assertArrayEquals(
-      new String[]{"", "minimum", "maximum", "average", "median", "", "", "minimum", "maximum", "average", "median"},
+      new String[]{"", CSVUtils.mapAggregationType(aggregationType), "", "",
+        CSVUtils.mapAggregationType(aggregationType)},
       resultAsCsv.get(2)
     );
-    assertArrayEquals(new String[]{"test1", "1", "6", "3", "3", "", "test1", "1", "6", "3", "3"}, resultAsCsv.get(3));
-    assertArrayEquals(new String[]{"test2", "1", "6", "3", "3", "", "test2", "1", "6", "3", "3"}, resultAsCsv.get(4));
+    assertArrayEquals(new String[]{"test1", "3", "", "test1", "3"}, resultAsCsv.get(3));
+    assertArrayEquals(new String[]{"test2", "6", "", "test2", "6"}, resultAsCsv.get(4));
 
     // when (limit = 0)
     resultAsCsv = underTest.getResultAsCsv(0, 0, null);
@@ -232,19 +244,20 @@ public class CombinedProcessReportResultTest {
 
     //then
     assertArrayEquals(
-      new String[]{"SingleTestReport0", "", "", "", "", "", "SingleTestReport1", "", "", "", ""},
+      new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""},
       resultAsCsv.get(0)
     );
     assertArrayEquals(
-      new String[]{"variable_test_DOUBLE", "processInstance_duration", "", "", "", "", "variable_test_DOUBLE",
-        "processInstance_duration", "", "", ""},
+      new String[]{"variable_test_DOUBLE", "processInstance_duration", "", "variable_test_DOUBLE",
+        "processInstance_duration"},
       resultAsCsv.get(1)
     );
     assertArrayEquals(
-      new String[]{"", "minimum", "maximum", "average", "median", "", "", "minimum", "maximum", "average", "median"},
+      new String[]{"", CSVUtils.mapAggregationType(aggregationType), "", "",
+        CSVUtils.mapAggregationType(aggregationType)},
       resultAsCsv.get(2)
     );
-    assertArrayEquals(new String[]{"test1", "1", "6", "3", "3", "", "test1", "1", "6", "3", "3"}, resultAsCsv.get(3));
+    assertArrayEquals(new String[]{"test1", "3", "", "test1", "3"}, resultAsCsv.get(3));
 
 
     // when (offset = 1)
@@ -253,19 +266,20 @@ public class CombinedProcessReportResultTest {
 
     //then
     assertArrayEquals(
-      new String[]{"SingleTestReport0", "", "", "", "", "", "SingleTestReport1", "", "", "", ""},
+      new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""},
       resultAsCsv.get(0)
     );
     assertArrayEquals(
-      new String[]{"variable_test_DOUBLE", "processInstance_duration", "", "", "", "", "variable_test_DOUBLE",
-        "processInstance_duration", "", "", ""},
+      new String[]{"variable_test_DOUBLE", "processInstance_duration", "", "variable_test_DOUBLE",
+        "processInstance_duration"},
       resultAsCsv.get(1)
     );
     assertArrayEquals(
-      new String[]{"", "minimum", "maximum", "average", "median", "", "", "minimum", "maximum", "average", "median"},
+      new String[]{"", CSVUtils.mapAggregationType(aggregationType), "", "",
+        CSVUtils.mapAggregationType(aggregationType)},
       resultAsCsv.get(2)
     );
-    assertArrayEquals(new String[]{"test2", "1", "6", "3", "3", "", "test2", "1", "6", "3", "3"}, resultAsCsv.get(3));
+    assertArrayEquals(new String[]{"test2", "6", "", "test2", "6"}, resultAsCsv.get(3));
   }
 
   @Test
@@ -286,13 +300,15 @@ public class CombinedProcessReportResultTest {
 
 
   private CombinedProcessReportResult createTestCombinedProcessReportResult(ProcessReportDataType reportDataType,
-                                                                            List<ProcessReportResultDto> reportResultDtos) {
+                                                                            List<ProcessReportResultDto> reportResultDtos,
+                                                                            AggregationType aggregationType) {
 
     final ProcessReportDataDto processReportDataDto = ProcessReportDataBuilder.createReportData()
       .setVariableName("test")
       .setReportDataType(reportDataType)
       .setVariableType(VariableType.DOUBLE)
       .build();
+    processReportDataDto.getConfiguration().setAggregationType(aggregationType);
 
     List<ReportEvaluationResult> reportEvaluationResults = new ArrayList<>();
 

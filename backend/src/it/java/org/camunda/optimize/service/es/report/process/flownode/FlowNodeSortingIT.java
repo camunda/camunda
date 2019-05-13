@@ -9,7 +9,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
@@ -21,6 +20,7 @@ import org.junit.Test;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
@@ -81,7 +81,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
+    List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData.size(), is(4));
     assertThat(getExecutedFlowNodeCount(result), is(4L));
     final List<String> resultLabels = resultData.stream()
@@ -255,12 +255,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     return resultList.getData()
       .stream()
       .map(MapResultEntryDto::getValue)
-      .filter(result ->
-                result.getAvg() != null &&
-                  result.getMedian() != null &&
-                  result.getMin() != null &&
-                  result.getMax() != null
-      )
+      .filter(Objects::nonNull)
       .count();
   }
 }

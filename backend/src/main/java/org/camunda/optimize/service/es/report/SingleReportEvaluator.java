@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
@@ -16,6 +17,11 @@ import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
+import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
+import org.camunda.optimize.service.es.report.command.aggregations.AvgAggregation;
+import org.camunda.optimize.service.es.report.command.aggregations.MaxAggregation;
+import org.camunda.optimize.service.es.report.command.aggregations.MedianAggregation;
+import org.camunda.optimize.service.es.report.command.aggregations.MinAggregation;
 import org.camunda.optimize.service.es.report.command.decision.RawDecisionDataCommand;
 import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByEvaluationDateTimeCommand;
 import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByInputVariableCommand;
@@ -40,6 +46,7 @@ import org.camunda.optimize.service.es.report.command.process.user_task.duration
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -47,6 +54,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createCountFrequencyGroupByEvaluationDateTimeReport;
@@ -125,50 +133,96 @@ public class SingleReportEvaluator {
   }
 
   private static void addFlowNodeDurationReports() {
-    commandSuppliers.put(
-      createFlowNodeDurationGroupByFlowNodeReport().createCommandKey(),
+    createCommandsForAllAggregationTypes(
+      (AggregationType aggro) -> createFlowNodeDurationGroupByFlowNodeReport(aggro).createCommandKey(),
       FlowNodeDurationByFlowNodeCommand::new
     );
   }
 
+  private static void createCommandsForAllAggregationTypes(Function<AggregationType, String> createCommandKeyFunction,
+                                                           Function<AggregationStrategy, Command> createCommandFunction) {
+    for (AggregationType currAggro : AggregationType.values()) {
+      createCommandForAggregationType(currAggro, createCommandKeyFunction, createCommandFunction);
+    }
+  }
+
+
+  private static void createCommandForAggregationType(AggregationType aggregationType,
+                                                      Function<AggregationType, String> createCommandKeyFunction,
+                                                      Function<AggregationStrategy, Command> createCommandFunction) {
+    switch (aggregationType) {
+      case MIN:
+        commandSuppliers.put(
+          createCommandKeyFunction.apply(aggregationType), () -> createCommandFunction.apply(new MinAggregation())
+        );
+        break;
+      case MAX:
+        commandSuppliers.put(
+          createCommandKeyFunction.apply(aggregationType), () -> createCommandFunction.apply(new MaxAggregation())
+        );
+        break;
+      case AVERAGE:
+        commandSuppliers.put(
+          createCommandKeyFunction.apply(aggregationType), () -> createCommandFunction.apply(new AvgAggregation())
+        );
+        break;
+      case MEDIAN:
+        commandSuppliers.put(
+          createCommandKeyFunction.apply(aggregationType), () -> createCommandFunction.apply(new MedianAggregation())
+        );
+        break;
+      default:
+        throw new OptimizeRuntimeException(String.format("Unknown aggregation type [%s]", aggregationType));
+    }
+
+  }
+
   private static void addUserTaskDurationReports() {
-    commandSuppliers.put(
-      createUserTaskIdleDurationGroupByUserTaskReport().createCommandKey(),
+    // IDLE USER TASKS
+    createCommandsForAllAggregationTypes(
+      (AggregationType aggro) -> createUserTaskIdleDurationGroupByUserTaskReport(aggro).createCommandKey(),
       UserTaskIdleDurationByUserTaskCommand::new
     );
-    commandSuppliers.put(
-      createUserTaskTotalDurationGroupByUserTaskReport().createCommandKey(),
+
+    // TOTAL USER TASKS
+    createCommandsForAllAggregationTypes(
+      (AggregationType aggro) -> createUserTaskTotalDurationGroupByUserTaskReport(aggro).createCommandKey(),
       UserTaskTotalDurationByUserTaskCommand::new
     );
-    commandSuppliers.put(
-      createUserTaskWorkDurationGroupByUserTaskReport().createCommandKey(),
+
+    // WORK USER TASKS
+    createCommandsForAllAggregationTypes(
+      (AggregationType aggro) -> createUserTaskWorkDurationGroupByUserTaskReport(aggro).createCommandKey(),
       UserTaskWorkDurationByUserTaskCommand::new
     );
   }
 
   private static void addProcessInstanceDurationReports() {
-    commandSuppliers.put(
-      createProcessInstanceDurationGroupByNoneReport().createCommandKey(),
+
+    createCommandsForAllAggregationTypes(
+      (AggregationType aggro) -> createProcessInstanceDurationGroupByNoneReport(aggro).createCommandKey(),
       ProcessInstanceDurationGroupByNoneCommand::new
     );
-    commandSuppliers.put(
-      createProcessInstanceDurationGroupByNoneWithProcessPartReport().createCommandKey(),
+    createCommandsForAllAggregationTypes(
+      (AggregationType aggro) -> createProcessInstanceDurationGroupByNoneWithProcessPartReport(aggro).createCommandKey(),
       ProcessInstanceDurationGroupByNoneWithProcessPartCommand::new
     );
-    commandSuppliers.put(
-      createProcessInstanceDurationGroupByStartDateReport().createCommandKey(),
+
+    createCommandsForAllAggregationTypes(
+      (AggregationType aggro) -> createProcessInstanceDurationGroupByStartDateReport(aggro).createCommandKey(),
       ProcessInstanceDurationGroupByStartDateCommand::new
     );
-    commandSuppliers.put(
-      createProcessInstanceDurationGroupByStartDateWithProcessPartReport().createCommandKey(),
+    createCommandsForAllAggregationTypes(
+      (AggregationType aggro) -> createProcessInstanceDurationGroupByStartDateWithProcessPartReport(aggro).createCommandKey(),
       ProcessInstanceDurationGroupByStartDateWithProcessPartCommand::new
     );
-    commandSuppliers.put(
-      createProcessInstanceDurationGroupByVariableReport().createCommandKey(),
+
+    createCommandsForAllAggregationTypes(
+      (AggregationType aggro) -> createProcessInstanceDurationGroupByVariableReport(aggro).createCommandKey(),
       ProcessInstanceDurationByVariableCommand::new
     );
-    commandSuppliers.put(
-      createProcessInstanceDurationGroupByVariableWithProcessPartReport().createCommandKey(),
+    createCommandsForAllAggregationTypes(
+      (AggregationType aggro) -> createProcessInstanceDurationGroupByVariableWithProcessPartReport(aggro).createCommandKey(),
       ProcessInstanceDurationGroupByVariableWithProcessPartCommand::new
     );
   }

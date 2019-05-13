@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.none;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
+import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberDurationReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -20,13 +20,14 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
-import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
 public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
   extends ProcessReportCommand<SingleProcessNumberDurationReportResult> {
+
+  protected AggregationStrategy aggregationStrategy;
 
   @Override
   protected SingleProcessNumberDurationReportResult evaluate() {
@@ -82,12 +83,11 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
   }
 
   private void addAggregation(SearchSourceBuilder searchSourceBuilder) {
-    createOperationsAggregations()
-      .forEach(searchSourceBuilder::aggregation);
+    searchSourceBuilder.aggregation(createOperationsAggregation());
   }
 
-  protected abstract AggregationResultDto processAggregationOperation(Aggregations aggregations);
+  protected abstract long processAggregationOperation(Aggregations aggregations);
 
-  protected abstract List<AggregationBuilder> createOperationsAggregations();
+  protected abstract AggregationBuilder createOperationsAggregation();
 
 }

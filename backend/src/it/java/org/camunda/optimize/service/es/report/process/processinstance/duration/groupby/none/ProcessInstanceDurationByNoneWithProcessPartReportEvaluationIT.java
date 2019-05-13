@@ -9,12 +9,12 @@ import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -33,12 +33,17 @@ import org.junit.Test;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE_WITH_PART;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
@@ -55,6 +60,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
   private static final String START_LOOP = "mergeExclusiveGateway";
   private static final String END_LOOP = "splittingGateway";
   private static final String TEST_ACTIVITY = "testActivity";
+
+  private final List<AggregationType> aggregationTypes = Arrays.asList(AggregationType.values());
 
   @Test
   public void reportEvaluationForOneProcess() throws Exception {
@@ -95,12 +102,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
 
     assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
-    AggregationResultDto calculatedResult = evaluationResponse.getResult().getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(1000L));
-    assertThat(calculatedResult.getMax(), is(1000L));
-    assertThat(calculatedResult.getMin(), is(1000L));
-    assertThat(calculatedResult.getMedian(), is(1000L));
+    long calculatedResult = evaluationResponse.getResult().getData();
+    assertThat(calculatedResult, is(1000L));
   }
 
   @Test
@@ -141,16 +144,12 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
     assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
 
-    AggregationResultDto calculatedResult = evaluationResponse.getResult().getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(1000L));
-    assertThat(calculatedResult.getMax(), is(1000L));
-    assertThat(calculatedResult.getMin(), is(1000L));
-    assertThat(calculatedResult.getMedian(), is(1000L));
+    long calculatedResult = evaluationResponse.getResult().getData();
+    assertThat(calculatedResult, is(1000L));
   }
 
   @Test
-  public void evaluateReportForMultipleEvents() throws Exception {
+  public void evaluateReportForMultipleEventsWithAllAggregationTypes() throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -180,15 +179,12 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       .setEndFlowNodeId(END_EVENT)
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
       .build();
-    ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
+
+    final Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results =
+      evaluateDurationMapReportForAllAggTypes(reportData);
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(4000L));
-    assertThat(calculatedResult.getMax(), is(9000L));
-    assertThat(calculatedResult.getMin(), is(1000L));
-    assertThat(calculatedResult.getMedian(), is(2000L));
+    assertAggregationResults(results);
   }
 
   @Test
@@ -214,12 +210,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(2000L));
-    assertThat(calculatedResult.getMax(), is(2000L));
-    assertThat(calculatedResult.getMin(), is(2000L));
-    assertThat(calculatedResult.getMedian(), is(2000L));
+    long calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(2000L));
   }
 
   /**
@@ -248,12 +240,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(0L));
-    assertThat(calculatedResult.getMax(), is(0L));
-    assertThat(calculatedResult.getMin(), is(0L));
-    assertThat(calculatedResult.getMedian(), is(0L));
+    long calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(0L));
   }
 
   private void setActivityStartDatesToNull() {
@@ -300,12 +288,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(0L));
-    assertThat(calculatedResult.getMax(), is(0L));
-    assertThat(calculatedResult.getMin(), is(0L));
-    assertThat(calculatedResult.getMedian(), is(0L));
+    long calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(0L));
   }
 
   @Test
@@ -332,12 +316,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(0L));
-    assertThat(calculatedResult.getMax(), is(0L));
-    assertThat(calculatedResult.getMin(), is(0L));
-    assertThat(calculatedResult.getMedian(), is(0L));
+    long calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(0L));
   }
 
   @Test
@@ -364,12 +344,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(0L));
-    assertThat(calculatedResult.getMax(), is(0L));
-    assertThat(calculatedResult.getMin(), is(0L));
-    assertThat(calculatedResult.getMedian(), is(0L));
+    long calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(0L));
   }
 
   @Test
@@ -387,12 +363,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(0L));
-    assertThat(calculatedResult.getMax(), is(0L));
-    assertThat(calculatedResult.getMin(), is(0L));
-    assertThat(calculatedResult.getMedian(), is(0L));
+    long calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(0L));
   }
 
   @Test
@@ -422,15 +394,11 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
       .build();
 
-    ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
+    final Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results =
+      evaluateDurationMapReportForAllAggTypes(reportData);
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(4000L));
-    assertThat(calculatedResult.getMax(), is(9000L));
-    assertThat(calculatedResult.getMin(), is(1000L));
-    assertThat(calculatedResult.getMedian(), is(2000L));
+    assertAggregationResults(results);
   }
 
   @Test
@@ -464,15 +432,11 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
       .build();
 
-    ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
+    final Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results =
+      evaluateDurationMapReportForAllAggTypes(reportData);
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(4000L));
-    assertThat(calculatedResult.getMax(), is(9000L));
-    assertThat(calculatedResult.getMin(), is(1000L));
-    assertThat(calculatedResult.getMedian(), is(2000L));
+    assertAggregationResults(results);
   }
 
   @Test
@@ -489,7 +453,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNoneWithProcessPart(
+    ProcessReportDataDto reportData =
+      ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNoneWithProcessPart(
       processKey, ReportConstants.ALL_VERSIONS, START_EVENT, END_EVENT
     );
     reportData.setTenantIds(selectedTenants);
@@ -527,12 +492,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(1000L));
-    assertThat(calculatedResult.getMax(), is(1000L));
-    assertThat(calculatedResult.getMin(), is(1000L));
-    assertThat(calculatedResult.getMedian(), is(1000L));
+    long calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(1000L));
 
     // when
     reportData.setFilter(createVariableFilter("false"));
@@ -540,11 +501,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
 
     // then
     calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(0L));
-    assertThat(calculatedResult.getMax(), is(0L));
-    assertThat(calculatedResult.getMin(), is(0L));
-    assertThat(calculatedResult.getMedian(), is(0L));
+    assertThat(calculatedResult, is(0L));
   }
 
   private List<ProcessFilterDto> createVariableFilter(String value) {
@@ -607,6 +564,31 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     report.setOwner("something");
     updateReport(id, report);
     return id;
+  }
+
+  private Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> evaluateDurationMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
+
+    Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> resultsMap =
+      new HashMap<>();
+    aggregationTypes.forEach((AggregationType aggType) -> {
+      reportData.getConfiguration().setAggregationType(aggType);
+      ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluationResponse =
+        evaluateDurationNumberReport(reportData);
+      resultsMap.put(aggType, evaluationResponse);
+    });
+    return resultsMap;
+  }
+
+  private void assertAggregationResults(
+    Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results) {
+    assertThat(results.get(AVERAGE).getResult().getData(), is(notNullValue()));
+    assertThat(results.get(AVERAGE).getResult().getData(), is(4000L));
+    assertThat(results.get(MIN).getResult().getData(), is(notNullValue()));
+    assertThat(results.get(MIN).getResult().getData(), is(1000L));
+    assertThat(results.get(MAX).getResult().getData(), is(notNullValue()));
+    assertThat(results.get(MAX).getResult().getData(), is(9000L));
+    assertThat(results.get(MEDIAN).getResult().getData(), is(notNullValue()));
+    assertThat(results.get(MEDIAN).getResult().getData(), is(2000L));
   }
 
 }

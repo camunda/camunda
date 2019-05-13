@@ -8,10 +8,10 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.d
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
@@ -31,18 +31,15 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.report.command.process.util.GroupByDateVariableIntervalSelection
-  .createDateVariableAggregation;
+import static org.camunda.optimize.service.es.report.command.process.util.GroupByDateVariableIntervalSelection.createDateVariableAggregation;
 import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.RANGE_AGGREGATION;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabelForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldLabelForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -52,12 +49,12 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 public abstract class AbstractProcessInstanceDurationByVariableCommand
   extends ProcessReportCommand<SingleProcessMapDurationReportResult> {
 
-  private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
-
   public static final String NESTED_AGGREGATION = "nested";
   private static final String VARIABLES_AGGREGATION = "variables";
   public static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
   private static final String REVERSE_NESTED_AGGREGATION = "reverseNested";
+
+  protected AggregationStrategy aggregationStrategy;
 
   @Override
   protected SingleProcessMapDurationReportResult evaluate() {
@@ -140,9 +137,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
   }
 
   private AggregationBuilder addOperationsAggregation(AggregationBuilder aggregationBuilder) {
-    createOperationsAggregations()
-      .forEach(aggregationBuilder::subAggregation);
-    return aggregationBuilder;
+    return aggregationBuilder.subAggregation(createOperationsAggregation());
   }
 
   private ProcessDurationReportMapResultDto mapToReportResult(final SearchResponse response) {
@@ -152,12 +147,14 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
 
     MultiBucketsAggregation variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
-    if (variableTerms == null) variableTerms = filteredVariables.getAggregations().get(RANGE_AGGREGATION);
+    if (variableTerms == null) {
+      variableTerms = filteredVariables.getAggregations().get(RANGE_AGGREGATION);
+    }
 
-    final List<MapResultEntryDto<AggregationResultDto>> resultData = new ArrayList<>();
+    final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
     for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
       ReverseNested reverseNested = b.getAggregations().get(REVERSE_NESTED_AGGREGATION);
-      AggregationResultDto operationsResult = processAggregationOperation(reverseNested.getAggregations());
+      long operationsResult = processAggregationOperation(reverseNested.getAggregations());
       resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), operationsResult));
     }
 
@@ -173,8 +170,8 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
   }
 
 
-  protected abstract AggregationResultDto processAggregationOperation(Aggregations aggs);
+  protected abstract long processAggregationOperation(Aggregations aggs);
 
-  protected abstract List<AggregationBuilder> createOperationsAggregations();
+  protected abstract AggregationBuilder createOperationsAggregation();
 
 }

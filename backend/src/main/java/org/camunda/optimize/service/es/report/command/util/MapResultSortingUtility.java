@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.command.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
@@ -41,12 +40,10 @@ public class MapResultSortingUtility {
 
   public static void sortResultData(final SortingDto sorting,
                                     final SingleProcessMapDurationReportResult resultData) {
-    final List<MapResultEntryDto<AggregationResultDto>> mapResultEntryDtos = sortResultData(
+    final List<MapResultEntryDto<Long>> mapResultEntryDtos = sortResultData(
       sorting,
       resultData.getResultAsDto().getData(),
-      entry -> entry.getValue().getResultForGivenAggregationType(
-        resultData.getReportDefinition().getData().getConfiguration().getAggregationType()
-      )
+      MapResultEntryDto::getValue
     );
     resultData.getResultAsDto().setData(mapResultEntryDtos);
   }

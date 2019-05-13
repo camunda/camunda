@@ -9,11 +9,11 @@ import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -26,10 +26,15 @@ import org.junit.Test;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -40,6 +45,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
 
   public static final String PROCESS_DEFINITION_KEY = "123";
   private static final String TEST_ACTIVITY = "testActivity";
+
+  private final List<AggregationType> aggregationTypes = Arrays.asList(AggregationType.values());
 
   @Test
   public void reportEvaluationForOneProcess() throws Exception {
@@ -75,12 +82,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     assertThat(resultReportDataDto.getParameters().getProcessPart(), is(nullValue()));
 
     assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
-    AggregationResultDto calculatedResult = evaluationResponse.getResult().getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(1000L));
-    assertThat(calculatedResult.getMax(), is(1000L));
-    assertThat(calculatedResult.getMin(), is(1000L));
-    assertThat(calculatedResult.getMedian(), is(1000L));
+    long calculatedResult = evaluationResponse.getResult().getData();
+    assertThat(calculatedResult, is(1000L));
   }
 
   @Test
@@ -115,12 +118,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
 
-    AggregationResultDto calculatedResult = evaluationResponse.getResult().getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(1000L));
-    assertThat(calculatedResult.getMax(), is(1000L));
-    assertThat(calculatedResult.getMin(), is(1000L));
-    assertThat(calculatedResult.getMedian(), is(1000L));
+    long calculatedResult = evaluationResponse.getResult().getData();
+    assertThat(calculatedResult, is(1000L));
   }
 
   @Test
@@ -156,13 +155,48 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
 
     // then
     assertThat(resultDto.getData(), is(notNullValue()));
-    AggregationResultDto calculatedResult = resultDto.getData();
+    Long calculatedResult = resultDto.getData();
     assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(4000L));
-    assertThat(calculatedResult.getMin(), is(1000L));
-    assertThat(calculatedResult.getMax(), is(9000L));
-    assertThat(calculatedResult.getMedian(), is(2000L));
+    assertThat(calculatedResult, is(4000L));
   }
+
+  @Test
+  public void evaluateReportForMultipleEventsWithAllAggregationTypes() throws Exception {
+    // given
+    OffsetDateTime startDate = OffsetDateTime.now();
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    ProcessInstanceEngineDto processInstanceDto2 =
+      engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    ProcessInstanceEngineDto processInstanceDto3 =
+      engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    Map<String, OffsetDateTime> startDatesToUpdate = new HashMap<>();
+    startDatesToUpdate.put(processInstanceDto.getId(), startDate);
+    startDatesToUpdate.put(processInstanceDto2.getId(), startDate);
+    startDatesToUpdate.put(processInstanceDto3.getId(), startDate);
+    engineDatabaseRule.updateProcessInstanceStartDates(startDatesToUpdate);
+    Map<String, OffsetDateTime> endDatesToUpdate = new HashMap<>();
+    endDatesToUpdate.put(processInstanceDto.getId(), startDate.plusSeconds(1));
+    endDatesToUpdate.put(processInstanceDto2.getId(), startDate.plusSeconds(2));
+    endDatesToUpdate.put(processInstanceDto3.getId(), startDate.plusSeconds(9));
+    engineDatabaseRule.updateProcessInstanceEndDates(endDatesToUpdate);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+      .build();
+
+    final Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results =
+      evaluateDurationMapReportForAllAggTypes(reportDataDto);
+
+    // then
+    assertAggregationResults(results);
+  }
+
 
   @Test
   public void noAvailableProcessInstancesReturnsZero() {
@@ -177,12 +211,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(0L));
-    assertThat(calculatedResult.getMax(), is(0L));
-    assertThat(calculatedResult.getMin(), is(0L));
-    assertThat(calculatedResult.getMedian(), is(0L));
+    long calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(0L));
   }
 
   @Test
@@ -211,15 +241,11 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .build();
 
-    ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportDataDto).getResult();
+    final Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results =
+      evaluateDurationMapReportForAllAggTypes(reportDataDto);
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(4000L));
-    assertThat(calculatedResult.getMax(), is(9000L));
-    assertThat(calculatedResult.getMin(), is(1000L));
-    assertThat(calculatedResult.getMedian(), is(2000L));
+    assertAggregationResults(results);
   }
 
   @Test
@@ -251,15 +277,11 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .build();
 
-    ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportDataDto).getResult();
+    final Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results =
+      evaluateDurationMapReportForAllAggTypes(reportDataDto);
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(4000L));
-    assertThat(calculatedResult.getMax(), is(9000L));
-    assertThat(calculatedResult.getMin(), is(1000L));
-    assertThat(calculatedResult.getMedian(), is(2000L));
+    assertAggregationResults(results);
   }
 
   @Test
@@ -318,12 +340,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
     // then
-    AggregationResultDto calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(1000L));
-    assertThat(calculatedResult.getMax(), is(1000L));
-    assertThat(calculatedResult.getMin(), is(1000L));
-    assertThat(calculatedResult.getMedian(), is(1000L));
+    long calculatedResult = resultDto.getData();
+    assertThat(calculatedResult, is(1000L));
 
     // when
     reportData.setFilter(ProcessFilterBuilder
@@ -337,11 +355,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
 
     // then
     calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult.getAvg(), is(0L));
-    assertThat(calculatedResult.getMax(), is(0L));
-    assertThat(calculatedResult.getMin(), is(0L));
-    assertThat(calculatedResult.getMedian(), is(0L));
+    assertThat(calculatedResult, is(0L));
   }
 
   @Test
@@ -408,4 +422,28 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     return id;
   }
 
+  private Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> evaluateDurationMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
+
+    Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> resultsMap =
+      new HashMap<>();
+    aggregationTypes.forEach((AggregationType aggType) -> {
+      reportData.getConfiguration().setAggregationType(aggType);
+      ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluationResponse =
+        evaluateDurationNumberReport(reportData);
+      resultsMap.put(aggType, evaluationResponse);
+    });
+    return resultsMap;
+  }
+
+  private void assertAggregationResults(
+    Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results) {
+    assertThat(results.get(AVERAGE).getResult().getData(), is(notNullValue()));
+    assertThat(results.get(AVERAGE).getResult().getData(), is(4000L));
+    assertThat(results.get(MIN).getResult().getData(), is(notNullValue()));
+    assertThat(results.get(MIN).getResult().getData(), is(1000L));
+    assertThat(results.get(MAX).getResult().getData(), is(notNullValue()));
+    assertThat(results.get(MAX).getResult().getData(), is(9000L));
+    assertThat(results.get(MEDIAN).getResult().getData(), is(notNullValue()));
+    assertThat(results.get(MEDIAN).getResult().getData(), is(2000L));
+  }
 }

@@ -72,7 +72,7 @@ public class CombinedProcessReportResult
           limit,
           offset,
           (CombinedProcessReportResultDto<ProcessDurationReportMapResultDto>) reportResult,
-          r -> new String[]{r.getReportDefinition().getName(), "", "", "", "", ""},
+          r -> new String[]{r.getReportDefinition().getName(), "", ""},
           evaluationResult -> new SingleProcessMapDurationReportResult(
             evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
           )
@@ -94,7 +94,7 @@ public class CombinedProcessReportResult
           1,
           0,
           (CombinedProcessReportResultDto<ProcessDurationReportNumberResultDto>) reportResult,
-          r -> new String[]{r.getReportDefinition().getName(), "", "", "", ""},
+          r -> new String[]{r.getReportDefinition().getName(), ""},
           evaluationResult -> new SingleProcessNumberDurationReportResult(
             evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
           )

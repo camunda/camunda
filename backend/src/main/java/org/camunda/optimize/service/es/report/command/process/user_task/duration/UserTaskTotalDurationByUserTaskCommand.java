@@ -5,9 +5,15 @@
  */
 package org.camunda.optimize.service.es.report.command.process.user_task.duration;
 
+import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 
 public class UserTaskTotalDurationByUserTaskCommand extends AbstractUserTaskDurationByUserTaskCommand {
+
+
+  public UserTaskTotalDurationByUserTaskCommand(final AggregationStrategy strategy) {
+    super(strategy);
+  }
 
   @Override
   protected String getDurationFieldName() {

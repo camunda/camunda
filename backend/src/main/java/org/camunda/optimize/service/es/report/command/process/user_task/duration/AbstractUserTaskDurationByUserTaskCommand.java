@@ -6,9 +6,9 @@
 package org.camunda.optimize.service.es.report.command.process.user_task.duration;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.UserTaskGroupingCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
@@ -23,15 +23,12 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.percentiles.tdigest.ParsedTDigestPercentiles;
-import org.elasticsearch.search.aggregations.metrics.stats.ParsedStats;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLong;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ACTIVITY_ID;
@@ -40,16 +37,19 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.percentiles;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.stats;
 
 public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTaskGroupingCommand {
 
   private static final String USER_TASK_ID_TERMS_AGGREGATION = "tasks";
   private static final String USER_TASKS_AGGREGATION = "userTasks";
   private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
-  private static final String STATS_DURATION_AGGREGATION = "statsAggregatedDuration";
-  private static final String MEDIAN_DURATION_AGGREGATION = "medianAggregatedDuration";
+
+  protected AggregationStrategy aggregationStrategy;
+
+  public AbstractUserTaskDurationByUserTaskCommand(AggregationStrategy strategy) {
+    aggregationStrategy = strategy;
+  }
+
 
   @Override
   protected SingleProcessMapDurationReportResult evaluate() {
@@ -108,13 +108,7 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
               .size(configurationService.getEsAggregationBucketLimit())
               .field(USER_TASKS + "." + USER_TASK_ACTIVITY_ID)
               .subAggregation(
-                stats(STATS_DURATION_AGGREGATION)
-                  .field(USER_TASKS + "." + getDurationFieldName())
-              )
-              .subAggregation(
-                percentiles(MEDIAN_DURATION_AGGREGATION)
-                  .percentiles(50)
-                  .field(USER_TASKS + "." + getDurationFieldName())
+                aggregationStrategy.getAggregationBuilder(USER_TASKS + "." + getDurationFieldName())
               )
           )
       );
@@ -128,18 +122,10 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms byTaskIdAggregation = filteredUserTasks.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
 
-    final List<MapResultEntryDto<AggregationResultDto>> resultData = new ArrayList<>();
+    final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
     for (Terms.Bucket b : byTaskIdAggregation.getBuckets()) {
-      ParsedStats statsAggregation = b.getAggregations().get(STATS_DURATION_AGGREGATION);
-      ParsedTDigestPercentiles medianAggregation = b.getAggregations().get(MEDIAN_DURATION_AGGREGATION);
-
-      AggregationResultDto aggregationResultDto = new AggregationResultDto(
-        mapToLong(statsAggregation.getMin()),
-        mapToLong(statsAggregation.getMax()),
-        mapToLong(statsAggregation.getAvg()),
-        mapToLong(medianAggregation)
-      );
-      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), aggregationResultDto));
+      final Long value = aggregationStrategy.getValue(b.getAggregations());
+      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), value));
     }
 
     resultDto.setData(resultData);

@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.service.export;
 
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.slf4j.Logger;
@@ -151,27 +151,20 @@ public class CSVUtils {
     return result;
   }
 
-  public static List<String[]> mapOperationValues(List<MapResultEntryDto<AggregationResultDto>> values,
-                                                  Integer limit,
-                                                  Integer offset) {
-    List<String[]> result = new ArrayList<>();
 
-    int currentPosition = 0;
-    for (MapResultEntryDto<AggregationResultDto> value : values) {
-      boolean limitNotExceeded = isLimitNotExceeded(limit, result);
-      boolean offsetPassed = isOffsetPassed(offset, currentPosition);
-      if ((offset == null && limitNotExceeded) || (offsetPassed && limitNotExceeded)) {
-        String[] line = new String[5];
-        line[0] = value.getKey();
-        line[1] = value.getValue().getMin().toString();
-        line[2] = value.getValue().getMax().toString();
-        line[3] = value.getValue().getAvg().toString();
-        line[4] = value.getValue().getMedian().toString();
-        result.add(line);
-      }
-      currentPosition = currentPosition + 1;
+  public static String mapAggregationType(AggregationType aggregationType){
+    switch (aggregationType) {
+      case MEDIAN:
+        return "median";
+      case AVERAGE:
+        return "average";
+      case MIN:
+        return "minimum";
+      case MAX:
+        return "maximum";
+      default:
+        throw new IllegalStateException("Uncovered type: " + aggregationType);
     }
-    return result;
   }
 
   private static String stripOffPrefix(final String currentKey, final String prefix) {

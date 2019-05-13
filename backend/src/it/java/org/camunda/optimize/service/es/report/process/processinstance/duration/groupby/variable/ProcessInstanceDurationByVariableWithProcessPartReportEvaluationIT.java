@@ -6,9 +6,6 @@
 package org.camunda.optimize.service.es.report.process.processinstance.duration.groupby.variable;
 
 import com.google.common.collect.Lists;
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -19,7 +16,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.AggregationResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -33,7 +29,6 @@ import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionI
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
@@ -45,23 +40,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-@RunWith(JUnitParamsRunner.class)
 public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   private static final String START_LOOP = "mergeExclusiveGateway";
   private static final String END_LOOP = "splittingGateway";
   private static final String TEST_ACTIVITY = "testActivity";
+
+  private final List<AggregationType> aggregationTypes = Arrays.asList(AggregationType.values());
 
   @Test
   public void reportEvaluationForOneProcess() throws Exception {
@@ -108,9 +105,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(result.getData().size(), is(1));
-    final AggregationResultDto calculatedResult = result.getDataEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult, is(calculateExpectedValueGivenDurations(1000L)));
+    final Long calculatedResult = result.getDataEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue();
+    assertThat(calculatedResult, is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
   }
 
   @Test
@@ -157,9 +153,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData().size(), is(1));
-    final AggregationResultDto calculatedResult = result.getDataEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue();
-    assertThat(calculatedResult, is(notNullValue()));
-    assertThat(calculatedResult, is(calculateExpectedValueGivenDurations(1000L)));
+    final Long calculatedResult = result.getDataEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue();
+    assertThat(calculatedResult, is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
   }
 
   @Test
@@ -194,11 +189,11 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(result.getData().size(), is(2));
     assertThat(
       result.getDataEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue(),
-      is(calculateExpectedValueGivenDurations(1000L, 2000L, 9000L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 2000L, 9000L))
     );
     assertThat(
       result.getDataEntryForKey(DEFAULT_VARIABLE_VALUE + 2).get().getValue(),
-      is(calculateExpectedValueGivenDurations(1000L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L))
     );
   }
 
@@ -238,7 +233,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData.size(), is(3));
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
@@ -248,13 +243,60 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     );
   }
 
-  private static Object[] aggregationTypes() {
-    return AggregationType.values();
+
+  @Test
+  public void testCustomOrderOnResultValueIsApplied() throws SQLException {
+    // given
+    OffsetDateTime startDate = OffsetDateTime.now();
+    ProcessDefinitionEngineDto processEngineDto = deploySimpleServiceTaskProcess();
+    startThreeProcessInstances(startDate, processEngineDto, Arrays.asList(1, 2, 9));
+
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 2);
+    ProcessInstanceEngineDto processInstanceDto4 = engineRule.startProcessInstance(processEngineDto.getId(), variables);
+    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto4.getId(), startDate);
+    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto4.getId(), startDate.plusSeconds(1));
+
+    variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 3);
+    ProcessInstanceEngineDto processInstanceDto5 = engineRule.startProcessInstance(processEngineDto.getId(), variables);
+    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto5.getId(), startDate);
+    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto5.getId(), startDate.plusSeconds(1));
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    aggregationTypes.forEach((AggregationType aggType) -> {
+      // when
+      final ProcessReportDataDto reportData = ProcessReportDataBuilder
+        .createReportData()
+        .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART)
+        .setProcessDefinitionKey(processEngineDto.getKey())
+        .setProcessDefinitionVersion(processEngineDto.getVersionAsString())
+        .setVariableName(DEFAULT_VARIABLE_NAME)
+        .setVariableType(DEFAULT_VARIABLE_TYPE)
+        .setStartFlowNodeId(START_EVENT)
+        .setEndFlowNodeId(END_EVENT)
+        .build();
+      reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+      reportData.getConfiguration().setAggregationType(aggType);
+      final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+
+      // then
+      assertThat(result.getIsComplete(), is(true));
+      final List<MapResultEntryDto<Long>> resultData = result.getData();
+      assertThat(resultData.size(), is(3));
+      final List<Long> bucketValues = resultData.stream()
+        .map(MapResultEntryDto::getValue)
+        .collect(Collectors.toList());
+      assertThat(
+        bucketValues,
+        contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
+      );
+    });
   }
 
   @Test
-  @Parameters(method = "aggregationTypes")
-  public void testCustomOrderOnResultValueIsApplied(final AggregationType aggregationType) throws SQLException {
+  public void testEvaluationResultForAllAggregationTypes() throws SQLException {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processEngineDto = deploySimpleServiceTaskProcess();
@@ -285,21 +327,21 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    reportData.getConfiguration().setAggregationType(aggregationType);
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
+
+    final Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> results =
+      evaluateDurationMapReportForAllAggTypes(reportData);
+
 
     // then
-    assertThat(result.getIsComplete(), is(true));
-    final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
-    assertThat(resultData.size(), is(3));
-    final List<Long> bucketValues = resultData.stream()
-      .map(entry -> entry.getValue().getResultForGivenAggregationType(aggregationType))
-      .collect(Collectors.toList());
-    assertThat(
-      bucketValues,
-      contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
-    );
+    aggregationTypes.forEach((AggregationType aggType) -> {
+      final ProcessDurationReportMapResultDto resultDto = results.get(aggType).getResult();
+      assertThat(resultDto.getData().size(), is(3));
+      assertThat(
+        resultDto.getDataEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue(),
+        is(calculateExpectedValueGivenDurations(1000L, 9000L, 2000L).get(aggType))
+      );
+    });
   }
 
   @Test
@@ -329,7 +371,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setEndFlowNodeId(END_EVENT)
       .build();
 
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+      reportData);
 
     // then
     final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
@@ -367,7 +410,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(resultDto.getData().size(), is(1));
     assertThat(
       resultDto.getDataEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue(),
-      is(calculateExpectedValueGivenDurations(2000L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(2000L))
     );
   }
 
@@ -479,7 +522,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+      reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -492,7 +536,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(resultDto.getData().size(), is(1));
     assertThat(
       resultDto.getDataEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue(),
-      is(calculateExpectedValueGivenDurations(1000L, 9000L, 2000L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 9000L, 2000L))
     );
   }
 
@@ -527,7 +571,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(resultDto.getData().size(), is(1));
     assertThat(
       resultDto.getDataEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue(),
-      is(calculateExpectedValueGivenDurations(1000L, 9000L, 2000L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 9000L, 2000L))
     );
   }
 
@@ -545,9 +589,10 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByVariableWithProcessPart(
-      processKey, ReportConstants.ALL_VERSIONS, DEFAULT_VARIABLE_NAME, VariableType.STRING, START_EVENT, END_EVENT
-    );
+    ProcessReportDataDto reportData =
+      ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByVariableWithProcessPart(
+        processKey, ReportConstants.ALL_VERSIONS, DEFAULT_VARIABLE_NAME, VariableType.STRING, START_EVENT, END_EVENT
+      );
     reportData.setTenantIds(selectedTenants);
     ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
@@ -588,7 +633,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(resultDto.getData().size(), is(1));
     assertThat(
       resultDto.getDataEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue(),
-      is(calculateExpectedValueGivenDurations(1000L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L))
     );
 
     // when
@@ -605,7 +650,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(resultDto.getData().size(), is(1));
     assertThat(
       resultDto.getDataEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue(),
-      is(calculateExpectedValueGivenDurations(4000L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(4000L))
     );
   }
 
@@ -638,7 +683,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setEndFlowNodeId(END_EVENT)
       .build();
 
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+      reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -648,7 +694,10 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
-    assertThat(resultDto.getDataEntryForKey("1").get().getValue(), is(calculateExpectedValueGivenDurations(1000L)));
+    assertThat(
+      resultDto.getDataEntryForKey("1").get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L))
+    );
   }
 
   @Test
@@ -681,7 +730,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(reportData);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+      reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -691,7 +741,10 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
-    assertThat(resultDto.getDataEntryForKey("bar1").get().getValue(), is(calculateExpectedValueGivenDurations(1000L)));
+    assertThat(
+      resultDto.getDataEntryForKey("bar1").get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L))
+    );
   }
 
   @Test
@@ -731,17 +784,18 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
       // then
       assertThat(result.getData(), is(notNullValue()));
-      final List<MapResultEntryDto<AggregationResultDto>> resultData = result.getData();
+      final List<MapResultEntryDto<Long>> resultData = result.getData();
       assertThat(resultData.size(), is(1));
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
 
-        String dateAsString = embeddedOptimizeRule.getDateTimeFormatter().format(temporal.atZoneSameInstant(ZoneId.systemDefault()));
+        String dateAsString = embeddedOptimizeRule.getDateTimeFormatter()
+          .format(temporal.atZoneSameInstant(ZoneId.systemDefault()));
         assertThat(resultData.get(0).getKey(), is(dateAsString));
-        assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurations(1000L)));
+        assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
       } else {
         assertThat(resultData.get(0).getKey(), is(entry.getValue().toString()));
-        assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurations(1000L)));
+        assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
       }
     }
   }
@@ -866,16 +920,18 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     engineDatabaseRule.updateActivityInstanceEndDates(endDatesToUpdate);
   }
 
-  private AggregationResultDto calculateExpectedValueGivenDurations(final Long... setDuration) {
-    final DescriptiveStatistics statistics = new DescriptiveStatistics();
-    Stream.of(setDuration).map(Long::doubleValue).forEach(statistics::addValue);
 
-    return new AggregationResultDto(
-      Math.round(statistics.getMin()),
-      Math.round(statistics.getMax()),
-      Math.round(statistics.getMean()),
-      Math.round(statistics.getPercentile(50.0D))
-    );
+  private Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> evaluateDurationMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
+
+    Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> resultsMap =
+      new HashMap<>();
+    aggregationTypes.forEach((AggregationType aggType) -> {
+      reportData.getConfiguration().setAggregationType(aggType);
+      ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
+        evaluateDurationMapReport(reportData);
+      resultsMap.put(aggType, evaluationResponse);
+    });
+    return resultsMap;
   }
 
 }

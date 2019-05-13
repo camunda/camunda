@@ -8,7 +8,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.result.dur
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
-public class ProcessDurationReportMapResultDto extends ProcessReportMapResult<AggregationResultDto> {
+public class ProcessDurationReportMapResultDto extends ProcessReportMapResult<Long> {
 
   @Override
   public ResultType getType() {
