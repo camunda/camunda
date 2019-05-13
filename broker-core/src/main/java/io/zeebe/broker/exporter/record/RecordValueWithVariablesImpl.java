@@ -18,30 +18,47 @@
 package io.zeebe.broker.exporter.record;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.exporter.api.record.RecordValueWithVariables;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public abstract class RecordValueWithVariablesImpl extends RecordValueImpl
     implements RecordValueWithVariables {
-  protected final String variables;
+
+  @JsonIgnore private final Supplier<String> variablesSupplier;
+  @JsonIgnore private final Supplier<Map<String, Object>> variableMapSupplier;
+
+  @JsonIgnore private String variables = null;
+  @JsonIgnore private Map<String, Object> variableMap = null;
 
   public RecordValueWithVariablesImpl(
-      final ExporterObjectMapper objectMapper, final String variables) {
+      final ExporterObjectMapper objectMapper,
+      final Supplier<String> variablesSupplier,
+      final Supplier<Map<String, Object>> variableMapSupplier) {
     super(objectMapper);
-    this.variables = variables;
+    this.variablesSupplier = variablesSupplier;
+    this.variableMapSupplier = variableMapSupplier;
   }
 
   @Override
+  @JsonProperty
   public String getVariables() {
+    if (variables == null) {
+      variables = variablesSupplier.get();
+    }
     return variables;
   }
 
   @Override
   @JsonIgnore
   public Map<String, Object> getVariablesAsMap() {
-    return objectMapper.fromJsonAsMap(variables);
+    if (variableMap == null) {
+      variableMap = variableMapSupplier.get();
+    }
+    return variableMap;
   }
 
   @Override

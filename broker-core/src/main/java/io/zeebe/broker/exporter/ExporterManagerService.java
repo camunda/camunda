@@ -93,7 +93,6 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
     } else {
       final ExporterDirectorContext context =
           new ExporterDirectorContext()
-              .eventFilter((event -> true))
               .id(EXPORTER_PROCESSOR_ID)
               .name(PROCESSOR_NAME)
               .logStream(partition.getLogStream())

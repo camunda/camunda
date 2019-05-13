@@ -142,7 +142,7 @@ public class ElasticsearchExporterConfiguration {
         && shouldIndexValueType(metadata.getValueType());
   }
 
-  private boolean shouldIndexValueType(ValueType valueType) {
+  public boolean shouldIndexValueType(ValueType valueType) {
     switch (valueType) {
       case DEPLOYMENT:
         return index.deployment;
@@ -171,7 +171,7 @@ public class ElasticsearchExporterConfiguration {
     }
   }
 
-  private boolean shouldIndexRecordType(RecordType recordType) {
+  public boolean shouldIndexRecordType(RecordType recordType) {
     switch (recordType) {
       case EVENT:
         return index.event;

@@ -25,6 +25,7 @@ import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.processor.AsyncSnapshotDirector;
 import io.zeebe.engine.processor.EventFilter;
+import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.spi.Exporter;
@@ -32,6 +33,8 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -48,9 +51,12 @@ import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -80,9 +86,9 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   private final SnapshotController snapshotController;
   private final String name;
   private final ExporterDirectorContext context;
-  private final EventFilter eventFilter;
   private final RetryStrategy exportingRetryStrategy;
   private final RetryStrategy recordWrapStrategy;
+  private EventFilter eventFilter;
   private ExportersState state;
 
   private ExporterMetrics metrics;
@@ -101,7 +107,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     this.logStream = context.getLogStream();
     this.partitionId = logStream.getPartitionId();
     this.logStreamReader = context.getLogStreamReader();
-    this.eventFilter = context.getEventFilter();
     this.exportingRetryStrategy = new AbortableRetryStrategy(actor);
     this.recordWrapStrategy = new EndlessRetryStrategy(actor);
 
@@ -146,6 +151,10 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
       for (final ExporterContainer container : containers) {
         container.exporter.configure(container.context);
       }
+
+      eventFilter = createEventFilter(containers);
+      LOG.info("Set event filter for exporters: {}", eventFilter);
+
     } catch (final Throwable e) {
       onFailure();
       LangUtil.rethrowUnchecked(e);
@@ -175,6 +184,28 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
 
   public long getLowestExporterPosition() {
     return state.getLowestPosition();
+  }
+
+  private ExporterEventFilter createEventFilter(List<ExporterContainer> containers) {
+
+    final List<Context.RecordFilter> recordFilters =
+        containers.stream().map(c -> c.context.getFilter()).collect(Collectors.toList());
+
+    final Map<RecordType, Boolean> acceptRecordTypes =
+        Arrays.stream(RecordType.values())
+            .collect(
+                Collectors.toMap(
+                    Function.identity(),
+                    type -> recordFilters.stream().anyMatch(f -> f.acceptType(type))));
+
+    final Map<ValueType, Boolean> acceptValueTypes =
+        Arrays.stream(ValueType.values())
+            .collect(
+                Collectors.toMap(
+                    Function.identity(),
+                    type -> recordFilters.stream().anyMatch(f -> f.acceptValue(type))));
+
+    return new ExporterEventFilter(acceptRecordTypes, acceptValueTypes);
   }
 
   private void onFailure() {
@@ -376,6 +407,12 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     private String getId() {
       return context.getConfiguration().getId();
     }
+
+    private boolean acceptRecord(RecordMetadata metadata) {
+      final Context.RecordFilter filter = context.getFilter();
+      return filter.acceptType(metadata.getRecordType())
+          && filter.acceptValue(metadata.getValueType());
+    }
   }
 
   private class RecordExporter {
@@ -414,7 +451,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
         final ExporterContainer container = containers.get(exporterIndex);
 
         try {
-          if (container.position < record.getPosition()) {
+          if (container.position < record.getPosition() && container.acceptRecord(rawMetadata)) {
             container.exporter.export(record);
           }
 
@@ -426,6 +463,39 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
       }
 
       return true;
+    }
+  }
+
+  private class ExporterEventFilter implements EventFilter {
+
+    private final RecordMetadata metadata = new RecordMetadata();
+    private final Map<RecordType, Boolean> acceptRecordTypes;
+    private final Map<ValueType, Boolean> acceptValueTypes;
+
+    ExporterEventFilter(
+        Map<RecordType, Boolean> acceptRecordTypes, Map<ValueType, Boolean> acceptValueTypes) {
+      this.acceptRecordTypes = acceptRecordTypes;
+      this.acceptValueTypes = acceptValueTypes;
+    }
+
+    @Override
+    public boolean applies(LoggedEvent event) {
+      event.readMetadata(metadata);
+
+      final RecordType recordType = metadata.getRecordType();
+      final ValueType valueType = metadata.getValueType();
+
+      return acceptRecordTypes.get(recordType) && acceptValueTypes.get(valueType);
+    }
+
+    @Override
+    public String toString() {
+      return "ExporterEventFilter{"
+          + "acceptRecordTypes="
+          + acceptRecordTypes
+          + ", acceptValueTypes="
+          + acceptValueTypes
+          + '}';
     }
   }
 }

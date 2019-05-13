@@ -20,17 +20,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
+import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.exporter.ExporterTestHarness;
 import io.zeebe.util.ZbLogger;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
@@ -134,12 +133,9 @@ public class ElasticsearchExporterTest {
         };
 
     // when - then
-    for (ValueType valueType : valueTypes) {
-      final Record record =
-          testHarness.export(
-              r -> r.getMetadata().setValueType(valueType).setRecordType(RecordType.EVENT));
-      verify(esClient).index(record);
-    }
+    final Context.RecordFilter filter = testHarness.getContext().getFilter();
+
+    assertThat(Arrays.stream(valueTypes).map(filter::acceptValue)).containsOnly(true);
   }
 
   @Test
@@ -177,12 +173,9 @@ public class ElasticsearchExporterTest {
         };
 
     // when - then
-    for (ValueType valueType : valueTypes) {
-      final Record record =
-          testHarness.export(
-              r -> r.getMetadata().setValueType(valueType).setRecordType(RecordType.EVENT));
-      verify(esClient, never()).index(record);
-    }
+    final Context.RecordFilter filter = testHarness.getContext().getFilter();
+
+    assertThat(Arrays.stream(valueTypes).map(filter::acceptValue)).containsOnly(false);
   }
 
   @Test
@@ -217,12 +210,9 @@ public class ElasticsearchExporterTest {
         new RecordType[] {RecordType.COMMAND, RecordType.EVENT, RecordType.COMMAND_REJECTION};
 
     // when - then
-    for (RecordType recordType : recordTypes) {
-      final Record record =
-          testHarness.export(
-              r -> r.getMetadata().setValueType(ValueType.DEPLOYMENT).setRecordType(recordType));
-      verify(esClient).index(record);
-    }
+    final Context.RecordFilter filter = testHarness.getContext().getFilter();
+
+    assertThat(Arrays.stream(recordTypes).map(filter::acceptType)).containsOnly(true);
   }
 
   @Test
@@ -239,12 +229,9 @@ public class ElasticsearchExporterTest {
         new RecordType[] {RecordType.COMMAND, RecordType.EVENT, RecordType.COMMAND_REJECTION};
 
     // when - then
-    for (RecordType recordType : recordTypes) {
-      final Record record =
-          testHarness.export(
-              r -> r.getMetadata().setValueType(ValueType.DEPLOYMENT).setRecordType(recordType));
-      verify(esClient, never()).index(record);
-    }
+    final Context.RecordFilter filter = testHarness.getContext().getFilter();
+
+    assertThat(Arrays.stream(recordTypes).map(filter::acceptType)).containsOnly(false);
   }
 
   @Test

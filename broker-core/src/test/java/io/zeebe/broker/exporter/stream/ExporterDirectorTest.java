@@ -19,11 +19,7 @@ package io.zeebe.broker.exporter.stream;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.broker.exporter.util.ControlledTestExporter;
@@ -32,17 +28,20 @@ import io.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExporterConfi
 import io.zeebe.engine.Loggers;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -163,6 +162,45 @@ public class ExporterDirectorTest {
     assertThat(configuration.x).isEqualTo(x);
     assertThat(configuration.nested.bar).isEqualTo(bar);
     assertThat(configuration.nested.y).isEqualTo(y);
+  }
+
+  @Test
+  public void shouldApplyRecordFilter() {
+    // given
+    exporters
+        .get(0)
+        .onConfigure(
+            withFilter(
+                Arrays.asList(RecordType.COMMAND, RecordType.EVENT),
+                Arrays.asList(ValueType.DEPLOYMENT)));
+
+    exporters
+        .get(1)
+        .onConfigure(
+            withFilter(
+                Arrays.asList(RecordType.EVENT),
+                Arrays.asList(ValueType.DEPLOYMENT, ValueType.JOB)));
+
+    startExporterDirector(exporterDescriptors);
+
+    // when
+    final long deploymentCommand =
+        rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+    final long deploymentEvent = rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+    rule.writeEvent(IncidentIntent.CREATED, new IncidentRecord());
+    final long jobEvent = rule.writeEvent(JobIntent.CREATED, new JobRecord());
+
+    // then
+    waitUntil(() -> exporters.get(1).getExportedRecords().size() == 2);
+
+    assertThat(exporters.get(0).getExportedRecords())
+        .extracting(Record::getPosition)
+        .hasSize(2)
+        .contains(deploymentCommand, deploymentEvent);
+    assertThat(exporters.get(1).getExportedRecords())
+        .extracting(Record::getPosition)
+        .hasSize(2)
+        .contains(deploymentEvent, jobEvent);
   }
 
   @Test
@@ -341,5 +379,22 @@ public class ExporterDirectorTest {
   private long writeEvent() {
     final DeploymentRecord event = new DeploymentRecord();
     return rule.writeEvent(DeploymentIntent.CREATED, event);
+  }
+
+  private Consumer<Context> withFilter(List<RecordType> acceptedTypes, List<ValueType> valueTypes) {
+    return context -> {
+      context.setFilter(
+          new Context.RecordFilter() {
+            @Override
+            public boolean acceptType(RecordType recordType) {
+              return acceptedTypes.contains(recordType);
+            }
+
+            @Override
+            public boolean acceptValue(ValueType valueType) {
+              return valueTypes.contains(valueType);
+            }
+          });
+    };
   }
 }

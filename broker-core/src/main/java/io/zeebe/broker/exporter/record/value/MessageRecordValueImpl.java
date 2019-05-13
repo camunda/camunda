@@ -20,7 +20,9 @@ package io.zeebe.broker.exporter.record.value;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueWithVariablesImpl;
 import io.zeebe.exporter.api.record.value.MessageRecordValue;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class MessageRecordValueImpl extends RecordValueWithVariablesImpl
     implements MessageRecordValue {
@@ -31,12 +33,13 @@ public class MessageRecordValueImpl extends RecordValueWithVariablesImpl
 
   public MessageRecordValueImpl(
       final ExporterObjectMapper objectMapper,
-      final String variables,
+      Supplier<String> variablesSupplier,
+      Supplier<Map<String, Object>> variableMapSupplier,
       final String name,
       final String messageId,
       final String correlationKey,
       final long timeToLive) {
-    super(objectMapper, variables);
+    super(objectMapper, variablesSupplier, variableMapSupplier);
     this.name = name;
     this.messageId = messageId;
     this.correlationKey = correlationKey;
@@ -101,7 +104,7 @@ public class MessageRecordValueImpl extends RecordValueWithVariablesImpl
         + ", timeToLive="
         + timeToLive
         + ", variables='"
-        + variables
+        + getVariables()
         + '\''
         + '}';
   }

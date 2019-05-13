@@ -18,7 +18,6 @@
 package io.zeebe.broker.exporter.stream;
 
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
-import io.zeebe.engine.processor.EventFilter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.spi.SnapshotController;
@@ -31,7 +30,6 @@ public class ExporterDirectorContext {
   private String name;
 
   private LogStream logStream;
-  private EventFilter eventFilter;
   private LogStreamReader logStreamReader;
 
   private Collection<ExporterDescriptor> descriptors;
@@ -50,10 +48,6 @@ public class ExporterDirectorContext {
 
   public LogStream getLogStream() {
     return logStream;
-  }
-
-  public EventFilter getEventFilter() {
-    return eventFilter;
   }
 
   public LogStreamReader getLogStreamReader() {
@@ -88,11 +82,6 @@ public class ExporterDirectorContext {
 
   public ExporterDirectorContext logStream(LogStream logStream) {
     this.logStream = logStream;
-    return this;
-  }
-
-  public ExporterDirectorContext eventFilter(EventFilter eventFilter) {
-    this.eventFilter = eventFilter;
     return this;
   }
 
