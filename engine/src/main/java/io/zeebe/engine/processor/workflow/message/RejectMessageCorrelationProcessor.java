@@ -39,6 +39,7 @@ public class RejectMessageCorrelationProcessor
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
+  private MessageSubscription subscription;
 
   public RejectMessageCorrelationProcessor(
       final MessageState messageState,
@@ -71,16 +72,13 @@ public class RejectMessageCorrelationProcessor
     }
     messageState.removeMessageCorrelation(messageKey, workflowInstanceKey);
 
-    findSubscriptionToCorrelate(
-        record, streamWriter, sideEffect, subscriptionRecord, messageKey, workflowInstanceKey);
+    findSubscriptionToCorrelate(sideEffect, subscriptionRecord, messageKey, workflowInstanceKey);
 
     streamWriter.appendFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.REJECTED, record.getValue());
   }
 
   private void findSubscriptionToCorrelate(
-      final TypedRecord<MessageSubscriptionRecord> record,
-      final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect,
       final MessageSubscriptionRecord subscriptionRecord,
       final long messageKey,
@@ -101,7 +99,7 @@ public class RejectMessageCorrelationProcessor
             subscription.setMessageKey(messageKey);
             subscription.setMessageVariables(message.getVariables());
 
-            correlateMessage(streamWriter, subscription, sideEffect);
+            correlateMessage(subscription, sideEffect);
             return false;
           }
           return true;
@@ -109,9 +107,7 @@ public class RejectMessageCorrelationProcessor
   }
 
   private void correlateMessage(
-      final TypedStreamWriter streamWriter,
-      final MessageSubscription subscription,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final MessageSubscription subscription, final Consumer<SideEffectProducer> sideEffect) {
     subscriptionState.updateToCorrelatingState(
         subscription,
         subscription.getMessageVariables(),
@@ -119,8 +115,13 @@ public class RejectMessageCorrelationProcessor
         subscription.getMessageKey());
     messageState.putMessageCorrelation(
         subscription.getMessageKey(), subscription.getWorkflowInstanceKey());
+    this.subscription = subscription;
 
-    commandSender.correlateWorkflowInstanceSubscription(
+    sideEffect.accept(this::sendCorrelateCommand);
+  }
+
+  private boolean sendCorrelateCommand() {
+    return commandSender.correlateWorkflowInstanceSubscription(
         subscription.getWorkflowInstanceKey(),
         subscription.getElementInstanceKey(),
         subscription.getMessageName(),
