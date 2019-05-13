@@ -11,14 +11,17 @@ import Panel from 'modules/components/Panel';
 import DefaultButton from 'modules/components/Button';
 import BasicInput from 'modules/components/Input';
 import BasicTextarea from 'modules/components/Textarea';
+import {ReactComponent as DefaultEdit} from 'modules/components/Icon/edit.svg';
 import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
 import {ReactComponent as DefaultClose} from 'modules/components/Icon/close.svg';
 import {ReactComponent as DefaultCheck} from 'modules/components/Icon/check.svg';
+import {ReactComponent as DefaultModal} from 'modules/components/Icon/modal.svg';
 
 export const Variables = themed(styled(Panel)`
   flex: 1;
   font-size: 14px;
   overflow: auto;
+  overflow-x: hidden;
   border-left: none;
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.8)',
@@ -69,10 +72,11 @@ export const TD = themed(styled.td`
   })};
   font-weight: ${props => (props.isBold ? 'bold' : 'normal')};
   padding-left: 17px;
-  padding-top: 8px;
-  padding-bottom: 6px;
+  padding-top: 11px;
+  padding-bottom: 9px;
   height: 32px;
   min-width: 191px;
+  max-width: 500px;
 
   &:not(:nth-child(2)) {
     white-space: nowrap;
@@ -140,8 +144,31 @@ export const TextInput = styled(BasicInput)`
   min-width: 181px;
 `;
 
+export const DisplayText = styled.div`
+  max-height: 70px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-width: calc(100% - 44px);
+  max-width: calc(100% - 44px);
+`;
+
+export const EditTextarea = styled(BasicTextarea)`
+  padding: 7px 11px 5px 7px;
+  font-size: 14px;
+  height: auto;
+  width: auto;
+  min-height: 31px;
+  /* 4 is the max number of displayed rows */
+  max-height: ${4 * 26 + 'px'};
+  resize: vertical;
+  min-width: calc(100% - 18px);
+  max-width: calc(100% - 18px);
+`;
+
 export const Textarea = styled(BasicTextarea)`
   padding: 4px 11px 5px 8px;
+  margin-top: 1px;
+  font-size: 14px;
   position: absolute;
   top: 2px;
   left: 9px;
@@ -157,10 +184,11 @@ export const EditButtonsTD = styled.td`
   display: flex;
   justify-content: flex-end;
   padding: 2px 21px;
-  padding-top: 11.2px;
+  padding-top: 11px;
 `;
 
 export const EditInputTD = styled.td`
+  padding: 3px 0px;
   padding-left: 9px;
   position: relative;
 
@@ -200,5 +228,13 @@ export const CloseIcon = themed(styled(DefaultClose)`
 `);
 
 export const CheckIcon = themed(styled(DefaultCheck)`
+  ${iconStyle}
+`);
+
+export const EditIcon = themed(styled(DefaultEdit)`
+  ${iconStyle}
+`);
+
+export const ModalIcon = themed(styled(DefaultModal)`
   ${iconStyle}
 `);

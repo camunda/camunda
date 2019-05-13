@@ -20,36 +20,128 @@ export default function Variables({
   isEditable,
   setEditMode
 }) {
+  const CONST = {EDIT: 'edit', ADD: 'add'};
+
   const [key, setKey] = useState('');
   const [value, setValue] = useState('');
+  const [mode, setMode] = useState('');
 
   const variablesContentRef = createRef();
 
-  function toggleIsEdit() {
-    setEditMode(!isEditMode);
-
-    // clear fields
-    if (isEditMode) {
-      setKey('');
-      setValue('');
-    }
+  function closeEdit() {
+    setEditMode(false);
+    setKey('');
+    setValue('');
+    setMode('');
   }
 
   function saveVariable() {
     onVariableUpdate(key, value);
-    toggleIsEdit();
+    closeEdit();
+  }
+
+  function handleOpenAddVariable() {
+    setEditMode(true);
+    setMode(CONST.ADD);
+  }
+
+  function handleOpenEditVariable(name, value) {
+    setEditMode(true);
+    setMode(CONST.EDIT);
+    setKey(name);
+    setValue(value);
   }
 
   // scroll to the bottom of the table if the variables inputs got added
   useEffect(
     () => {
-      if (isEditMode) {
+      if (isEditMode && mode === CONST.ADD) {
         variablesContentRef.current.scrollTop =
           variablesContentRef.current.scrollHeight;
       }
     },
     [isEditMode]
   );
+
+  function renderEditButtons(customCondition = false) {
+    return (
+      <>
+        <Styled.EditButton title="Open Modal">
+          <Styled.ModalIcon />
+        </Styled.EditButton>
+
+        <Styled.EditButton
+          title="Exit edit mode"
+          data-test="exit-edit-inline-btn"
+          onClick={closeEdit}
+        >
+          <Styled.CloseIcon />
+        </Styled.EditButton>
+        <Styled.EditButton
+          data-test="save-var-btn"
+          title="save variable"
+          disabled={!value || !isValidJSON(value) || customCondition}
+          onClick={saveVariable}
+        >
+          <Styled.CheckIcon />
+        </Styled.EditButton>
+      </>
+    );
+  }
+
+  function renderInlineEdit(propValue) {
+    const charactersPerRow = 65;
+    const requiredRows = Math.ceil(propValue.length / charactersPerRow);
+    const displayedRows = requiredRows > 4 ? 4 : requiredRows;
+    const valueHasntChanged = propValue === value;
+    return (
+      <>
+        <Styled.EditInputTD>
+          <Styled.EditTextarea
+            rows={displayedRows}
+            cols={charactersPerRow}
+            autoFocus
+            placeholder="Value"
+            value={value}
+            onChange={e => setValue(e.target.value)}
+          />
+        </Styled.EditInputTD>
+        <Styled.EditButtonsTD>
+          {renderEditButtons(valueHasntChanged)}
+        </Styled.EditButtonsTD>
+      </>
+    );
+  }
+
+  function renderInlineAdd() {
+    const variableAlreadyExists =
+      !!variables.map(variable => variable.name).filter(name => name === key)
+        .length > 0;
+    return (
+      <Styled.TR data-test="add-key-row">
+        <Styled.EditInputTD>
+          <Styled.TextInput
+            type="text"
+            placeholder="Variable"
+            value={key}
+            onChange={e => setKey(e.target.value)}
+          />
+        </Styled.EditInputTD>
+
+        <Styled.EditInputTD>
+          <Styled.Textarea
+            autoFocus
+            placeholder="Value"
+            value={value}
+            onChange={e => setValue(e.target.value)}
+          />
+        </Styled.EditInputTD>
+        <Styled.EditButtonsTD>
+          {renderEditButtons(variableAlreadyExists)}
+        </Styled.EditButtonsTD>
+      </Styled.TR>
+    );
+  }
 
   return (
     <Styled.Variables>
@@ -68,51 +160,40 @@ export default function Variables({
               </Styled.TR>
             </Styled.THead>
             <tbody>
-              {variables.map(({name, value, hasActiveOperation}) => (
+              {variables.map(({name, value: propValue, hasActiveOperation}) => (
                 <Styled.TR
                   key={name}
                   data-test={name}
                   hasActiveOperation={hasActiveOperation}
                 >
                   <Styled.TD isBold={true}>{name}</Styled.TD>
-                  <Styled.TD>{value}</Styled.TD>
-                  <Styled.EditButtonsTD>
-                    {hasActiveOperation && <ActionStatus.Spinner />}
-                  </Styled.EditButtonsTD>
+                  {key === name && mode === CONST.EDIT ? (
+                    renderInlineEdit(propValue)
+                  ) : (
+                    <>
+                      <Styled.TD>
+                        <Styled.DisplayText>{propValue}</Styled.DisplayText>
+                      </Styled.TD>
+                      <Styled.EditButtonsTD>
+                        {hasActiveOperation ? (
+                          <ActionStatus.Spinner />
+                        ) : (
+                          <Styled.EditButton
+                            title="Enter edit mode"
+                            data-test="enter-edit-btn"
+                            onClick={() =>
+                              handleOpenEditVariable(name, propValue)
+                            }
+                          >
+                            <Styled.EditIcon />
+                          </Styled.EditButton>
+                        )}
+                      </Styled.EditButtonsTD>
+                    </>
+                  )}
                 </Styled.TR>
               ))}
-              {isEditMode && (
-                <Styled.TR data-test="add-key-row">
-                  <Styled.EditInputTD>
-                    <Styled.TextInput
-                      type="text"
-                      placeholder="Variable"
-                      value={key}
-                      onChange={e => setKey(e.target.value)}
-                    />
-                  </Styled.EditInputTD>
-                  <Styled.EditInputTD>
-                    <Styled.Textarea
-                      placeholder="Value"
-                      value={value}
-                      onChange={e => setValue(e.target.value)}
-                    />
-                  </Styled.EditInputTD>
-                  <Styled.EditButtonsTD>
-                    <Styled.EditButton title="Exit edit mode">
-                      <Styled.CloseIcon onClick={toggleIsEdit} />
-                    </Styled.EditButton>
-                    <Styled.EditButton
-                      data-test="save-var-btn"
-                      title="Update variable"
-                      disabled={!value || !isValidJSON(value)}
-                      onClick={saveVariable}
-                    >
-                      <Styled.CheckIcon />
-                    </Styled.EditButton>
-                  </Styled.EditButtonsTD>
-                </Styled.TR>
-              )}
+              {mode === CONST.ADD && renderInlineAdd()}
             </tbody>
           </Styled.Table>
         )}
@@ -121,9 +202,9 @@ export default function Variables({
         <Styled.Button
           title="Add variable"
           size="small"
-          data-test="add-var-btn"
-          onClick={toggleIsEdit}
-          disabled={isEditMode || !isEditable}
+          data-test="enter-add-btn"
+          onClick={() => handleOpenAddVariable()}
+          disabled={!!mode || !isEditable}
         >
           <Styled.Plus /> Add Variable
         </Styled.Button>
