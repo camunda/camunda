@@ -28,6 +28,7 @@ public class MessageSubscriptionRecord extends UnpackedObject implements Workflo
 
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
+  private final LongProperty messageKeyProp = new LongProperty("messageKey");
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
   private final BooleanProperty closeOnCorrelateProp =
@@ -36,6 +37,7 @@ public class MessageSubscriptionRecord extends UnpackedObject implements Workflo
   public MessageSubscriptionRecord() {
     this.declareProperty(workflowInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
+        .declareProperty(messageKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(closeOnCorrelateProp);
@@ -83,6 +85,15 @@ public class MessageSubscriptionRecord extends UnpackedObject implements Workflo
 
   public MessageSubscriptionRecord setCloseOnCorrelate(boolean closeOnCorrelate) {
     this.closeOnCorrelateProp.setValue(closeOnCorrelate);
+    return this;
+  }
+
+  public long getMessageKey() {
+    return messageKeyProp.getValue();
+  }
+
+  public MessageSubscriptionRecord setMessageKey(long messageKey) {
+    this.messageKeyProp.setValue(messageKey);
     return this;
   }
 }

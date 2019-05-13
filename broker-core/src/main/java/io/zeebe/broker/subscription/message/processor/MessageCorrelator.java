@@ -48,6 +48,7 @@ public class MessageCorrelator {
   private Consumer<SideEffectProducer> sideEffect;
   private MessageSubscriptionRecord subscriptionRecord;
   private MessageSubscription subscription;
+  private long messageKey;
 
   public void correlateNextMessage(
       MessageSubscription subscription,
@@ -63,21 +64,20 @@ public class MessageCorrelator {
 
   private boolean correlateMessage(final Message message) {
     // correlate the first message which is not correlated to the workflow instance yet
-
+    messageKey = message.getKey();
     final boolean isCorrelatedBefore =
         messageState.existMessageCorrelation(
-            message.getKey(), subscriptionRecord.getWorkflowInstanceKey());
+            messageKey, subscriptionRecord.getWorkflowInstanceKey());
 
     if (!isCorrelatedBefore) {
       subscriptionState.updateToCorrelatingState(
-          subscription, message.getVariables(), ActorClock.currentTimeMillis());
+          subscription, message.getVariables(), ActorClock.currentTimeMillis(), messageKey);
 
       // send the correlate instead of acknowledge command
       messageVariables.wrap(message.getVariables());
       sideEffect.accept(this::sendCorrelateCommand);
 
-      messageState.putMessageCorrelation(
-          message.getKey(), subscriptionRecord.getWorkflowInstanceKey());
+      messageState.putMessageCorrelation(messageKey, subscriptionRecord.getWorkflowInstanceKey());
     }
 
     return isCorrelatedBefore;
@@ -88,6 +88,7 @@ public class MessageCorrelator {
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getMessageName(),
+        messageKey,
         messageVariables);
   }
 }

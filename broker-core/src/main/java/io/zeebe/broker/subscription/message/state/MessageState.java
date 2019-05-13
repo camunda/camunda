@@ -144,6 +144,13 @@ public class MessageState {
     return correlatedMessageColumnFamily.exists(messageWorkflowKey);
   }
 
+  public void removeMessageCorrelation(long messageKey, long workflowInstanceKey) {
+    this.messageKey.wrapLong(messageKey);
+    this.workflowInstanceKey.wrapLong(workflowInstanceKey);
+
+    correlatedMessageColumnFamily.delete(messageWorkflowKey);
+  }
+
   public void visitMessages(
       final DirectBuffer name, final DirectBuffer correlationKey, final MessageVisitor visitor) {
 
@@ -159,7 +166,7 @@ public class MessageState {
         });
   }
 
-  private Message getMessage(long messageKey) {
+  public Message getMessage(long messageKey) {
     this.messageKey.wrapLong(messageKey);
     return messageColumnFamily.get(this.messageKey);
   }

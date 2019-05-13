@@ -51,11 +51,13 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
+import org.mockito.ArgumentCaptor;
 
 public class WorkflowInstanceStreamProcessorTest {
 
@@ -421,12 +423,25 @@ public class WorkflowInstanceStreamProcessorTest {
         .isEqualTo(WorkflowInstanceSubscriptionIntent.CORRELATE);
     assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
 
-    verify(streamProcessorRule.getMockSubscriptionCommandSender(), timeout(5_000).times(2))
+    final ArgumentCaptor<DirectBuffer> captor = ArgumentCaptor.forClass(DirectBuffer.class);
+
+    verify(streamProcessorRule.getMockSubscriptionCommandSender(), timeout(5_000))
         .correlateMessageSubscription(
             eq(subscription.getSubscriptionPartitionId()),
             eq(subscription.getWorkflowInstanceKey()),
             eq(subscription.getElementInstanceKey()),
+            captor.capture());
+    BufferUtil.equals(captor.getValue(), subscription.getMessageName());
+
+    verify(streamProcessorRule.getMockSubscriptionCommandSender(), timeout(5_000))
+        .rejectCorrelateMessageSubscription(
+            eq(subscription.getWorkflowInstanceKey()),
+            eq(subscription.getElementInstanceKey()),
+            eq(subscription.getMessageKey()),
+            captor.capture(),
             any());
+
+    BufferUtil.equals(captor.getValue(), subscription.getMessageName());
   }
 
   @Test
@@ -645,6 +660,7 @@ public class WorkflowInstanceStreamProcessorTest {
         .setSubscriptionPartitionId(START_PARTITION_ID)
         .setWorkflowInstanceKey(catchEvent.getValue().getWorkflowInstanceKey())
         .setElementInstanceKey(catchEvent.getKey())
+        .setMessageKey(3L)
         .setMessageName(wrapString("order canceled"));
   }
 }

@@ -383,6 +383,20 @@ public class MessageStateTest {
     assertThat(messageState.existMessageCorrelation(1L, 3L)).isFalse();
   }
 
+  @Test
+  public void shouldRemoveMessageCorrelation() {
+    // given
+    final long messageKey = 6L;
+    final long workflowInstanceKey = 9L;
+    messageState.putMessageCorrelation(messageKey, workflowInstanceKey);
+
+    // when
+    messageState.removeMessageCorrelation(messageKey, workflowInstanceKey);
+
+    // then
+    assertThat(messageState.existMessageCorrelation(messageKey, workflowInstanceKey)).isFalse();
+  }
+
   private Message createMessage(long key, String name, String correlationKey) {
     return new Message(
         key,
