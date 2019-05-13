@@ -67,7 +67,7 @@
 
     <!-- maven plugins -->
     <plugin.version.antrun>1.8</plugin.version.antrun>
-    <plugin.version.appassembler>2.0.0</plugin.version.appassembler>
+    <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.build-helper>3.0.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.0.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.8.1</plugin.version.compiler>
