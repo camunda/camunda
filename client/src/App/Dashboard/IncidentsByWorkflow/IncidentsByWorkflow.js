@@ -11,7 +11,14 @@ import Collapse from '../Collapse';
 import IncidentByWorkflow from './IncidentByWorkflow';
 
 import * as Styled from './styled';
-import {getUrl, getTitle} from './service';
+import {
+  getUrl,
+  getTitle,
+  getGroupTitle,
+  getLabel,
+  getGroupLabel,
+  getButtonTitle
+} from './service';
 
 function getVersions(workflows = []) {
   return workflows.map(item => item.version).join(', ');
@@ -43,18 +50,25 @@ export default class IncidentsByWorkflow extends React.Component {
     return (
       <ul>
         {items.map(item => {
+          const totalInstancesCount =
+            item.instancesWithActiveIncidentsCount + item.activeInstancesCount;
+
           return (
             <Styled.VersionLi key={item.workflowId}>
               <Styled.IncidentLink
                 to={getUrl(item.bpmnProcessId, item.version)}
                 title={getTitle(
                   workflowName,
-                  item.version,
-                  item.instancesWithActiveIncidentsCount
+                  totalInstancesCount,
+                  item.version
                 )}
               >
                 <IncidentByWorkflow
-                  label={`Version ${item.version}`}
+                  label={getLabel(
+                    workflowName,
+                    totalInstancesCount,
+                    item.version
+                  )}
                   incidentsCount={item.instancesWithActiveIncidentsCount}
                   activeCount={item.activeInstancesCount}
                   perUnit
@@ -70,14 +84,20 @@ export default class IncidentsByWorkflow extends React.Component {
   renderIncidentByWorkflow = item => {
     const versions = getVersions(item.workflows);
     const name = item.workflowName || item.bpmnProcessId;
+    const totalInstancesCount =
+      item.instancesWithActiveIncidentsCount + item.activeInstancesCount;
 
     return (
       <Styled.IncidentLink
         to={getUrl(item.bpmnProcessId, versions)}
-        title={getTitle(name, versions, item.instancesWithActiveIncidentsCount)}
+        title={getGroupTitle(name, totalInstancesCount, item.workflows.length)}
       >
         <IncidentByWorkflow
-          label={`${name} – Version ${versions}`}
+          label={getGroupLabel(
+            name,
+            totalInstancesCount,
+            item.workflows.length
+          )}
           incidentsCount={item.instancesWithActiveIncidentsCount}
           activeCount={item.activeInstancesCount}
         />
@@ -96,6 +116,9 @@ export default class IncidentsByWorkflow extends React.Component {
           const IncidentByWorkflowComponent = this.renderIncidentByWorkflow(
             item
           );
+          const totalInstancesCount =
+            item.instancesWithActiveIncidentsCount + item.activeInstancesCount;
+
           return (
             <Styled.Li
               key={item.bpmnProcessId}
@@ -107,9 +130,7 @@ export default class IncidentsByWorkflow extends React.Component {
                 <Collapse
                   content={this.renderIncidentsPerVersion(name, item.workflows)}
                   header={IncidentByWorkflowComponent}
-                  buttonTitle={`Expand ${
-                    item.instancesWithActiveIncidentsCount
-                  } Instances with Incidents of Workflow ${name}`}
+                  buttonTitle={getButtonTitle(name, totalInstancesCount)}
                 />
               )}
             </Styled.Li>

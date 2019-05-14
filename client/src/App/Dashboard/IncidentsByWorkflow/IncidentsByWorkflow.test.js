@@ -85,7 +85,7 @@ describe('IncidentsByWorkflow', () => {
       '/instances?filter={"workflow":"loanProcess","version":"1","incidents":true}'
     );
     expect(statisticsAnchor.props().title).toBe(
-      'View 16 Instances with Incidents in version 1 of Workflow loanProcess'
+      'View 138 Instances in 1 Version of Workflow loanProcess'
     );
 
     expect(nodeIncidentByWorkflow.props().label).toContain(
@@ -129,7 +129,7 @@ describe('IncidentsByWorkflow', () => {
 
     // collapse button node
     expect(collapseNode.props().buttonTitle).toBe(
-      'Expand 65 Instances with Incidents of Workflow Order process'
+      'Expand 201 Instances of Workflow Order process'
     );
 
     // header anchor
@@ -137,7 +137,7 @@ describe('IncidentsByWorkflow', () => {
       '/instances?filter={"workflow":"orderProcess","version":"all","incidents":true}'
     );
     expect(headerNode.props().title).toBe(
-      'View 65 Instances with Incidents in versions 1, 2 of Workflow Order process'
+      'View 201 Instances in 2 Versions of Workflow Order process'
     );
 
     expect(headerStatistic.props().label).toContain(

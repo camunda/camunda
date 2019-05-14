@@ -4,6 +4,6 @@ exports[`IncidentsByWorkflow should pass the right data to IncidentByWorkflow 1`
 <IncidentStatistic
   activeCount={122}
   incidentsCount={16}
-  label="loanProcess – Version 1"
+  label="loanProcess – 138 Instances in 1 Version"
 />
 `;

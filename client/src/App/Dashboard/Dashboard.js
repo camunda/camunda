@@ -116,7 +116,7 @@ class Dashboard extends Component {
           </MetricPanel>
           <Styled.TitleWrapper>
             <Styled.Tile data-test="incidents-byWorkflow">
-              <Styled.TileTitle>Incidents by Workflow</Styled.TileTitle>
+              <Styled.TileTitle>Instances by Workflow</Styled.TileTitle>
               <Styled.TileContent>
                 {this.state.isDataLoaded &&
                   this.renderEmptyList(

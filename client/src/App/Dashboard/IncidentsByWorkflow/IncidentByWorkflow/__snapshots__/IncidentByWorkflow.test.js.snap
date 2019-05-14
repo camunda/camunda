@@ -3,17 +3,24 @@
 exports[`IncidentByWorkflow should display the right data 1`] = `
 <div>
   <Themed(Styled(withStrippedProps(Component)))>
-    <styled.div>
+    <Themed(styled.div)
+      hasIncidents={true}
+    >
       10
-    </styled.div>
+    </Themed(styled.div)>
     <Themed(styled.div)>
       someLabel
     </Themed(styled.div)>
-    <styled.div>
+    <Themed(styled.div)
+      hasActive={true}
+    >
       8
-    </styled.div>
+    </Themed(styled.div)>
   </Themed(Styled(withStrippedProps(Component)))>
   <styled.div>
+    <Themed(styled.div)
+      hasActive={true}
+    />
     <styled.div
       style={
         Object {

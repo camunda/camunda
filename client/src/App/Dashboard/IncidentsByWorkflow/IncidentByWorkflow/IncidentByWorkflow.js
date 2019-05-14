@@ -13,20 +13,28 @@ function IncidentStatistic(props) {
   const incidentsBarRatio =
     (100 * incidentsCount) / (activeCount + incidentsCount);
 
+  const hasIncidents = incidentsCount > 0;
+  const hasActive = activeCount > 0;
+
   return (
     <div className={props.className}>
       <Styled.Wrapper perUnit={props.perUnit}>
-        <Styled.IncidentsCount>{incidentsCount}</Styled.IncidentsCount>
+        <Styled.IncidentsCount hasIncidents={hasIncidents}>
+          {incidentsCount}
+        </Styled.IncidentsCount>
         <Styled.Label>{label}</Styled.Label>
-        <Styled.ActiveCount>{activeCount}</Styled.ActiveCount>
+        <Styled.ActiveCount hasActive={hasActive}>
+          {activeCount}
+        </Styled.ActiveCount>
       </Styled.Wrapper>
-      <Styled.Bar>
+      <Styled.BarContainer perUnit={props.perUnit}>
+        <Styled.Bar hasActive={hasActive} />
         <Styled.IncidentsBar
           style={{
             width: `${incidentsBarRatio}%`
           }}
         />
-      </Styled.Bar>
+      </Styled.BarContainer>
     </div>
   );
 }

@@ -22,7 +22,9 @@ export const Wrapper = themed(styled(withStrippedProps(['perUnit'])('div'))`
   }};
 
   font-family: IBMPlexSans;
-  font-size: 14px;
+  font-size: ${({perUnit}) => {
+    return perUnit ? '13px' : '14px';
+  }};
   font-weight: ${({perUnit}) => {
     return perUnit ? '400' : '600';
   }};
@@ -42,7 +44,7 @@ export const Label = styled.div`
 
 export const IncidentBar = themed(styled.div`
   display: flex;
-  height: 3px;
+  height: 2px;
   align-items: stretch;
   background: ${themeStyle({
     dark: Colors.uiDark05,

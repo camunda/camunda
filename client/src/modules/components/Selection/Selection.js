@@ -12,6 +12,7 @@ import {TransitionGroup} from 'modules/components/Transition';
 
 import {OPERATION_STATE, OPERATION_TYPE} from 'modules/constants';
 import {getWorkflowName, getLatestOperation} from 'modules/utils/instance';
+import pluralSuffix from 'modules/utils/pluralSuffix';
 import {BADGE_TYPE} from 'modules/constants';
 
 import * as Styled from './styled.js';
@@ -129,9 +130,10 @@ export default class Selection extends React.Component {
             id={`${idString}-toggle`}
             aria-expanded={isOpen}
             aria-controls={idString}
-            aria-label={`Selection ${selectionId}, holding ${instanceCount} Instance${
-              instanceCount !== 1 ? 's' : ''
-            }`}
+            aria-label={`Selection ${selectionId}, holding ${pluralSuffix(
+              instanceCount,
+              'Instance'
+            )}`}
           >
             <Styled.Headline>Selection {selectionId}</Styled.Headline>
             <Styled.Badge isExpanded={isOpen} type={BADGE_TYPE.SELECTIONS}>
@@ -197,9 +199,7 @@ export default class Selection extends React.Component {
       <Styled.Footer>
         <Styled.MoreInstances>
           {numberOfNotShownInstances > 0 &&
-            `${numberOfNotShownInstances} more Instance${
-              numberOfNotShownInstances !== 1 ? 's' : ''
-            }`}
+            pluralSuffix(numberOfNotShownInstances, 'more Instance')}
         </Styled.MoreInstances>
       </Styled.Footer>
     );

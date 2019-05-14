@@ -6,17 +6,17 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import pluralSuffix from 'modules/utils/pluralSuffix';
 
 import * as Styled from './styled';
 
 export default function IncidentsBar({id, count, onClick, isArrowFlipped}) {
   const isOnlyOne = count === 1;
-  const errorMessage = `There ${isOnlyOne ? 'is' : 'are'} ${count} Incident${
-    isOnlyOne ? '' : 's'
-  } in Instance ${id}. `;
-  const title = `View ${count} Incident${
-    isOnlyOne ? '' : 's'
-  } in Instance ${id}. `;
+  const errorMessage = `There ${isOnlyOne ? 'is' : 'are'} ${pluralSuffix(
+    count,
+    'Incident'
+  )} in Instance ${id}. `;
+  const title = `View ${pluralSuffix(count, 'Incident')} in Instance ${id}. `;
 
   return (
     <Styled.IncidentsBar

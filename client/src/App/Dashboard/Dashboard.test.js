@@ -131,7 +131,7 @@ describe('Dashboard', () => {
 
       expect(IncidentsByWorkflow.length).toBe(1);
       expect(IncidentsByWorkflow.find(Styled.TileTitle).text()).toBe(
-        'Incidents by Workflow'
+        'Instances by Workflow'
       );
     });
 
