@@ -18,9 +18,12 @@ package io.zeebe.broker.it.clustering;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.cluster.MemberId;
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.engine.EngineService;
 import io.zeebe.broker.it.DataDeleteTest;
 import io.zeebe.broker.it.GrpcClientRule;
+import io.zeebe.broker.logstreams.state.DefaultOnDemandSnapshotReplication;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.engine.Loggers;
 import io.zeebe.model.bpmn.Bpmn;
@@ -134,6 +137,39 @@ public class SnapshotReplicationTest {
 
     // then
     takeSnapshotAndAssertDataWasDeleted(followers);
+  }
+
+  @Test
+  public void shouldReplicateOnDemand() {
+    // given
+    final int leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
+    final List<Broker> otherBrokers = clusteringRule.getOtherBrokerObjects(leaderNodeId);
+    final Broker stoppedBroker = otherBrokers.get(0);
+    clusteringRule.stopBroker(stoppedBroker.getConfig().getCluster().getNodeId());
+
+    client.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
+    final Broker leader = clusteringRule.getBroker(leaderNodeId);
+    clusteringRule.getClock().addTime(Duration.ofSeconds(DataDeleteTest.SNAPSHOT_PERIOD_SECONDS));
+
+    waitForValidSnapshotAtBroker(leader);
+    for (Broker broker : otherBrokers) {
+      if (!broker.equals(stoppedBroker)) {
+        waitForValidSnapshotAtBroker(broker);
+      }
+    }
+
+    // when
+    clusteringRule.restartBroker(stoppedBroker.getConfig().getCluster().getNodeId());
+
+    new DefaultOnDemandSnapshotReplication(
+            clusteringRule.getAtomixCluster().getCommunicationService(),
+            1,
+            EngineService.PROCESSOR_NAME,
+            null)
+        .request(MemberId.from(String.valueOf(leaderNodeId)));
+
+    // then
+    waitForValidSnapshotAtBroker(stoppedBroker);
   }
 
   private void takeSnapshotAndAssertDataWasDeleted(final List<Broker> followers) {
