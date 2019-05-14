@@ -98,6 +98,23 @@ public class BufferedLogStreamReader implements LogStreamReader {
   }
 
   @Override
+  public boolean seekToNextEvent(long position) {
+
+    if (position <= -1) {
+      seekToFirstEvent();
+      return true;
+    }
+
+    final boolean found = seek(position);
+    if (found && hasNext()) {
+      next();
+      return true;
+    }
+
+    return false;
+  }
+
+  @Override
   public boolean seek(final long position) {
     if (state == IteratorState.WRAP_NOT_CALLED) {
       throw new IllegalStateException("Iterator not initialized");

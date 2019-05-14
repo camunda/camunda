@@ -53,6 +53,14 @@ public interface LogStreamReader extends Iterator<LoggedEvent>, CloseableSilentl
   void wrap(LogStream log, long position);
 
   /**
+   * Seeks to the event after the given position. On negative position it seeks to the first event.
+   *
+   * @param position the position which should be used
+   * @return <code>true</code>, if the position is negative or exists
+   */
+  boolean seekToNextEvent(long position);
+
+  /**
    * Seek to the given log position if exists. Otherwise, it seek to the next position after this.
    *
    * @param position the position in the log to seek to

@@ -23,21 +23,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 
-import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
-import io.zeebe.engine.processor.EventProcessor;
-import io.zeebe.engine.processor.StreamProcessor;
-import io.zeebe.engine.processor.StreamProcessorContext;
-import io.zeebe.engine.processor.StreamProcessorController;
-import io.zeebe.engine.processor.StreamProcessorFactory;
-import io.zeebe.engine.processor.StreamProcessorService;
-import io.zeebe.engine.processor.StreamProcessors;
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.state.StateStorageFactory;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -46,8 +36,6 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.SnapshotController;
-import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
@@ -72,15 +60,11 @@ import io.zeebe.protocol.intent.Intent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.rules.TemporaryFolder;
@@ -236,7 +220,7 @@ public class TestStreams {
     return new FluentLogWriter(logStream);
   }
 
-  protected StateStorageFactory getStateStorageFactory() {
+  public StateStorageFactory getStateStorageFactory() {
     if (stateStorageFactory == null) {
       final File rocksDBDirectory = new File(storageDirectory.getRoot(), "state");
       if (!rocksDBDirectory.exists()) {
@@ -249,318 +233,12 @@ public class TestStreams {
     return stateStorageFactory;
   }
 
-  public StreamProcessorControl initStreamProcessor(
-      final String log,
-      final int streamProcessorId,
-      final ZeebeDbFactory zeebeDbFactory,
-      final StreamProcessorFactory streamProcessorFactory) {
-    final LogStream stream = getLogStream(log);
-
-    final StreamProcessorControlImpl control =
-        new StreamProcessorControlImpl(
-            stream, zeebeDbFactory, streamProcessorFactory, streamProcessorId);
-
-    closeables.manage(control);
-
-    return control;
-  }
-
-  protected class StreamProcessorControlImpl implements StreamProcessorControl, AutoCloseable {
-
-    private final StreamProcessorFactory factory;
-    private final int streamProcessorId;
-    private final LogStream stream;
-    private final ZeebeDbFactory zeebeDbFactory;
-
-    protected final SuspendableStreamProcessor currentStreamProcessor;
-    protected StreamProcessorController currentController;
-    protected StreamProcessorService currentStreamProcessorService;
-    protected SnapshotController currentSnapshotController;
-
-    public StreamProcessorControlImpl(
-        final LogStream stream,
-        final ZeebeDbFactory zeebeDbFactory,
-        final StreamProcessorFactory streamProcessorFactory,
-        final int streamProcessorId) {
-      this.stream = stream;
-      this.zeebeDbFactory = zeebeDbFactory;
-      this.currentStreamProcessor = new SuspendableStreamProcessor();
-      this.factory = streamProcessorFactory;
-      this.streamProcessorId = streamProcessorId;
-    }
-
-    @Override
-    public void unblock() {
-      currentStreamProcessor.resume();
-    }
-
-    @Override
-    public boolean isBlocked() {
-      return currentController.isSuspended();
-    }
-
-    @Override
-    public void blockAfterEvent(final Predicate<LoggedEvent> test) {
-      currentStreamProcessor.blockAfterEvent(test);
-    }
-
-    @Override
-    public void blockAfterJobEvent(final Predicate<TypedRecord<JobRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isJobRecord(e)
-                  && test.test(CopiedTypedEvent.toTypedEvent(e, JobRecord.class)));
-    }
-
-    @Override
-    public void blockAfterDeploymentEvent(final Predicate<TypedRecord<DeploymentRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isDeploymentRecord(e)
-                  && test.test(CopiedTypedEvent.toTypedEvent(e, DeploymentRecord.class)));
-    }
-
-    @Override
-    public void blockAfterWorkflowInstanceRecord(
-        final Predicate<TypedRecord<WorkflowInstanceRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isWorkflowInstanceRecord(e)
-                  && test.test(CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceRecord.class)));
-    }
-
-    @Override
-    public void blockAfterWorkflowInstanceCreationRecord(
-        final Predicate<TypedRecord<WorkflowInstanceCreationRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isWorkflowInstanceCreationRecord(e)
-                  && test.test(
-                      CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceCreationRecord.class)));
-    }
-
-    @Override
-    public void blockAfterIncidentEvent(final Predicate<TypedRecord<IncidentRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isIncidentRecord(e)
-                  && test.test(CopiedTypedEvent.toTypedEvent(e, IncidentRecord.class)));
-    }
-
-    @Override
-    public void blockAfterMessageEvent(final Predicate<TypedRecord<MessageRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isMessageRecord(e)
-                  && test.test(CopiedTypedEvent.toTypedEvent(e, MessageRecord.class)));
-    }
-
-    @Override
-    public void blockAfterMessageSubscriptionEvent(
-        final Predicate<TypedRecord<MessageSubscriptionRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isMessageSubscriptionRecord(e)
-                  && test.test(CopiedTypedEvent.toTypedEvent(e, MessageSubscriptionRecord.class)));
-    }
-
-    @Override
-    public void blockAfterWorkflowInstanceSubscriptionEvent(
-        final Predicate<TypedRecord<WorkflowInstanceSubscriptionRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isWorkflowInstanceSubscriptionRecord(e)
-                  && test.test(
-                      CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceSubscriptionRecord.class)));
-    }
-
-    @Override
-    public void blockAfterTimerEvent(final Predicate<TypedRecord<TimerRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isTimerRecord(e)
-                  && test.test(CopiedTypedEvent.toTypedEvent(e, TimerRecord.class)));
-    }
-
-    @Override
-    public void blockAfterMessageStartEventSubscriptionRecord(
-        final Predicate<TypedRecord<MessageStartEventSubscriptionRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isMessageStartEventSubscriptionRecord(e)
-                  && test.test(
-                      CopiedTypedEvent.toTypedEvent(e, MessageStartEventSubscriptionRecord.class)));
-    }
-
-    @Override
-    public void close() {
-      if (currentController != null && currentController.isOpened()) {
-        currentStreamProcessorService.close();
-      }
-
-      currentStreamProcessorService = null;
-      currentController = null;
-      currentStreamProcessor.wrap(null, null);
-    }
-
-    @Override
-    public void start() {
-      currentStreamProcessorService = buildStreamProcessorController();
-      currentController = currentStreamProcessorService.getController();
-    }
-
-    @Override
-    public void restart() {
-      close();
-      start();
-    }
-
-    @Override
-    public SnapshotController getSnapshotController() {
-      return currentSnapshotController;
-    }
-
-    private StreamProcessorService buildStreamProcessorController() {
-      final String name = "processor";
-
-      final StateStorage stateStorage = getStateStorageFactory().create(streamProcessorId, name);
-      currentSnapshotController = spy(new StateSnapshotController(zeebeDbFactory, stateStorage));
-
-      final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
-
-      final StreamProcessorService processorService =
-          StreamProcessors.createStreamProcessor(name, streamProcessorId)
-              .logStream(stream)
-              .snapshotController(currentSnapshotController)
-              .actorScheduler(actorScheduler)
-              .serviceContainer(serviceContainer)
-              .streamProcessorFactory(
-                  (actor, zeebeDb, dbContext) -> {
-                    currentStreamProcessor.wrap(
-                        factory.createProcessor(actor, zeebeDb, dbContext), openFuture);
-                    return currentStreamProcessor;
-                  })
-              .build()
-              .join();
-      openFuture.join();
-      return processorService;
-    }
-  }
-
-  public static class SuspendableStreamProcessor implements StreamProcessor {
-    protected StreamProcessor wrappedProcessor;
-
-    protected AtomicReference<Predicate<LoggedEvent>> blockAfterCondition =
-        new AtomicReference<>(null);
-
-    private final RecordMetadata metadata = new RecordMetadata();
-    private final ErrorRecord errorRecord = new ErrorRecord();
-    protected boolean blockAfterCurrentEvent;
-    private StreamProcessorContext context;
-    private ActorFuture<Void> openFuture;
-
-    public void wrap(StreamProcessor streamProcessor, ActorFuture<Void> openFuture) {
-      wrappedProcessor = streamProcessor;
-      this.openFuture = openFuture;
-    }
-
-    public void resume() {
-      context
-          .getActorControl()
-          .call(
-              () -> {
-                context.resumeController();
-              });
-    }
-
-    public void blockAfterEvent(final Predicate<LoggedEvent> test) {
-      this.blockAfterCondition.set(test);
-    }
-
-    @Override
-    public EventProcessor onEvent(final LoggedEvent event) {
-      final Predicate<LoggedEvent> suspensionCondition = this.blockAfterCondition.get();
-      blockAfterCurrentEvent = suspensionCondition != null && suspensionCondition.test(event);
-
-      final EventProcessor actualProcessor = wrappedProcessor.onEvent(event);
-
-      return new EventProcessor() {
-
-        @Override
-        public void processEvent() {
-          if (actualProcessor != null) {
-            actualProcessor.processEvent();
-          }
-        }
-
-        @Override
-        public void onError(Throwable throwable) {
-          if (actualProcessor != null) {
-            actualProcessor.onError(throwable);
-          }
-        }
-
-        @Override
-        public boolean executeSideEffects() {
-          return actualProcessor == null || actualProcessor.executeSideEffects();
-        }
-
-        @Override
-        public long writeEvent(final LogStreamRecordWriter writer) {
-          final long result = actualProcessor != null ? actualProcessor.writeEvent(writer) : 0;
-
-          if (blockAfterCurrentEvent) {
-            blockAfterCurrentEvent = false;
-            context.suspendController();
-          }
-          return result;
-        }
-      };
-    }
-
-    @Override
-    public long getPositionToRecoverFrom() {
-      return wrappedProcessor.getPositionToRecoverFrom();
-    }
-
-    @Override
-    public void onOpen(final StreamProcessorContext context) {
-      this.context = context;
-      wrappedProcessor.onOpen(this.context);
-      openFuture.complete(null);
-    }
-
-    @Override
-    public void onRecovered() {
-      wrappedProcessor.onRecovered();
-    }
-
-    @Override
-    public void onClose() {
-      wrappedProcessor.onClose();
-    }
-
-    @Override
-    public long getFailedPosition(LoggedEvent currentEvent) {
-      metadata.reset();
-      currentEvent.readMetadata(metadata);
-
-      if (metadata.getValueType() == ValueType.ERROR) {
-        currentEvent.readValue(errorRecord);
-        return errorRecord.getErrorEventPosition();
-      }
-      return -1;
-    }
-  }
-
   public static class FluentLogWriter {
 
     protected RecordMetadata metadata = new RecordMetadata();
     protected UnpackedObject value;
     protected LogStream logStream;
     protected long key = -1;
-    private long sourceRecordPosition = -1;
-    private int producerId = -1;
 
     public FluentLogWriter(final LogStream logStream) {
       this.logStream = logStream;
@@ -570,26 +248,6 @@ public class TestStreams {
 
     public FluentLogWriter intent(final Intent intent) {
       this.metadata.intent(intent);
-      return this;
-    }
-
-    public FluentLogWriter requestId(final long requestId) {
-      this.metadata.requestId(requestId);
-      return this;
-    }
-
-    public FluentLogWriter producerId(final int producerId) {
-      this.producerId = producerId;
-      return this;
-    }
-
-    public FluentLogWriter sourceRecordPosition(final long sourceRecordPosition) {
-      this.sourceRecordPosition = sourceRecordPosition;
-      return this;
-    }
-
-    public FluentLogWriter requestStreamId(final int requestStreamId) {
-      this.metadata.requestStreamId(requestStreamId);
       return this;
     }
 
@@ -617,8 +275,8 @@ public class TestStreams {
     public long write() {
       final LogStreamRecordWriter writer = new LogStreamWriterImpl(logStream);
 
-      writer.sourceRecordPosition(sourceRecordPosition);
-      writer.producerId(producerId);
+      writer.sourceRecordPosition(-1);
+      writer.producerId(-1);
 
       if (key >= 0) {
         writer.key(key);

@@ -64,7 +64,7 @@ public class AsyncSnapshotDirector extends Actor {
   private final LongSupplier commitPositionSupplier;
   private final String name;
   private final Duration snapshotRate;
-  private final StreamProcessorMetrics metrics;
+  private final SnapshotMetrics metrics;
   private final String processorName;
   private final int maxSnapshots;
   private final Consumer<Long> oldDataRemover;
@@ -76,7 +76,7 @@ public class AsyncSnapshotDirector extends Actor {
 
   private long lastValidSnapshotPosition;
 
-  AsyncSnapshotDirector(
+  public AsyncSnapshotDirector(
       String name,
       Duration snapshotRate,
       Supplier<ActorFuture<Long>> asyncLastProcessedPositionSupplier,
@@ -85,7 +85,7 @@ public class AsyncSnapshotDirector extends Actor {
       Consumer<ActorCondition> conditionRegistration,
       Consumer<ActorCondition> conditionCheckOut,
       LongSupplier commitPositionSupplier,
-      StreamProcessorMetrics metrics,
+      SnapshotMetrics metrics,
       int maxSnapshots,
       Consumer<Long> oldDataRemover) {
     this.asyncLastProcessedPositionSupplier = asyncLastProcessedPositionSupplier;

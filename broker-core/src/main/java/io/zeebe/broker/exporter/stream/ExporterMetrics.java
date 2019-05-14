@@ -1,5 +1,5 @@
 /*
- * Zeebe Workflow Engine
+ * Zeebe Broker Core
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,40 +15,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.engine.processor;
+package io.zeebe.broker.exporter.stream;
 
+import io.zeebe.engine.processor.SnapshotMetrics;
 import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.metrics.MetricsManager;
 
-public class StreamProcessorMetrics {
-  private final Metric eventsProcessedCountMetric;
-  private final Metric eventsWrittenCountMetric;
+public class ExporterMetrics {
+  private final Metric eventsExportedCountMetric;
   private final Metric eventsSkippedCountMetric;
   private final SnapshotMetrics snapshotMetrics;
 
-  public StreamProcessorMetrics(
+  public ExporterMetrics(
       final MetricsManager metricsManager, final String processorName, final String partitionId) {
-    eventsProcessedCountMetric =
+    eventsExportedCountMetric =
         metricsManager
-            .newMetric("streamprocessor_events_count")
+            .newMetric("exporter_events_count")
             .type("counter")
             .label("processor", processorName)
-            .label("action", "processed")
-            .label("partition", partitionId)
-            .create();
-
-    eventsWrittenCountMetric =
-        metricsManager
-            .newMetric("streamprocessor_events_count")
-            .type("counter")
-            .label("processor", processorName)
-            .label("action", "written")
+            .label("action", "exported")
             .label("partition", partitionId)
             .create();
 
     eventsSkippedCountMetric =
         metricsManager
-            .newMetric("streamprocessor_events_count")
+            .newMetric("exporter_events_count")
             .type("counter")
             .label("processor", processorName)
             .label("action", "skipped")
@@ -59,22 +50,17 @@ public class StreamProcessorMetrics {
   }
 
   public void close() {
-    eventsProcessedCountMetric.close();
+    eventsExportedCountMetric.close();
     eventsSkippedCountMetric.close();
-    eventsWrittenCountMetric.close();
     snapshotMetrics.close();
   }
 
-  public void incrementEventsProcessedCount() {
-    eventsProcessedCountMetric.incrementOrdered();
+  public void incrementEventsExportedCount() {
+    eventsExportedCountMetric.incrementOrdered();
   }
 
   public void incrementEventsSkippedCount() {
     eventsSkippedCountMetric.incrementOrdered();
-  }
-
-  public void incrementEventsWrittenCount() {
-    eventsWrittenCountMetric.incrementOrdered();
   }
 
   public SnapshotMetrics getSnapshotMetrics() {
