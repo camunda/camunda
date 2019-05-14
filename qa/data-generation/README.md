@@ -10,9 +10,15 @@ BPMN symbols. The process instance instantiation is done
 with variables containing each possible variable type in Camunda.
 
 Before you can start the data generation the Camunda BPM platform
-must have already been started. To then start the data generation,
-just execute the following command from the module root directory:
+must have already been started.  
 
+**Important note:** the user operations log will only be written to the Engine if the property `restrictUserOperationLogToAuthenticatedUsers` is set to false in the configuration. So before generating data with this module, you need to add the following line to the properties section of your Engine configuration:
+```
+<property name="restrictUserOperationLogToAuthenticatedUsers">false</property>
+
+```
+To then start the data generation,
+just execute the following command from the module root directory:
 ```
 mvn clean compile exec:java
 ```
