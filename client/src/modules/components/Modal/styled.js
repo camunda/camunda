@@ -42,6 +42,7 @@ export const Transition = themed(styled(TransitionComponent)`
     transition: opacity ${({timeout}) => timeout + 'ms'};
 
     > div {
+      /* 'perspective' prevents a glitch in chrome which shifts content 1px after the transition ended */
       transform: scale(1) perspective(1px);
       transition: transform ${({timeout}) => timeout + 'ms'};
     }
@@ -72,7 +73,6 @@ export const Transition = themed(styled(TransitionComponent)`
 `);
 
 export const ModalContent = themed(styled(Panel)`
-  /* transform: scale(0.9); */
   width: 80%;
   height: 90%;
   border: 1px solid
