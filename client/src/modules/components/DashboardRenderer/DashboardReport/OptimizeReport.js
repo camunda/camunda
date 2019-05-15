@@ -44,7 +44,11 @@ export default themed(
           },
           async e => {
             const {errorMessage, reportDefinition} = await e.json();
-            this.setState({loading: false, data: reportDefinition, error: errorMessage});
+            this.setState({
+              loading: false,
+              data: reportDefinition,
+              error: !reportDefinition && errorMessage
+            });
           }
         );
       };

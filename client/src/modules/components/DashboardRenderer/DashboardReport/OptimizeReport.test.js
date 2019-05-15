@@ -69,10 +69,9 @@ it('should not provide a link to the report when link is disabled', async () => 
   expect(node).toIncludeText('Report Name');
 });
 
-it('should display the name of a failing report and the error message', async () => {
+it('should display the name of a failing report', async () => {
   loadReport.mockReturnValue({
     json: () => ({
-      errorMessage: 'Is failing',
       reportDefinition: {name: 'Failing Name'}
     })
   });
@@ -83,5 +82,20 @@ it('should display the name of a failing report and the error message', async ()
   await node.instance().loadReport();
 
   expect(node).toIncludeText('Failing Name');
+});
+
+it('should display an error message if there is an error and no report is returned', async () => {
+  loadReport.mockReturnValue({
+    json: () => ({
+      errorMessage: 'Is failing',
+      reportDefinition: null
+    })
+  });
+
+  const node = shallow(
+    <OptimizeReport {...props} mightFail={(data, success, fail) => fail(data)} disableNameLink />
+  );
+
+  await node.instance().loadReport();
   expect(node.find('NoDataNotice').prop('children')).toBe('Is failing');
 });
