@@ -13,7 +13,7 @@ def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
   return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}"
 }
 
-static String mavenElasticsearchIntegrationTestAgent(esVersion, cambpmVersion = '7.10.0') {
+static String mavenElasticsearchIntegrationTestAgent(esVersion = "6.2.0", cambpmVersion = "7.10.0") {
   return """
 apiVersion: v1
 kind: Pod
@@ -116,7 +116,7 @@ spec:
 """
 }
 
-static String mavenElasticsearchAWSIntegrationTestAgent(cambpmVersion = '7.10.0') {
+static String mavenElasticsearchAWSIntegrationTestAgent(cambpmVersion = "7.10.0") {
   return """
 apiVersion: v1
 kind: Pod
@@ -273,7 +273,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-6.3.1_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("6.3.1")
+              yaml mavenElasticsearchIntegrationTestAgent("6.3.1", "${params.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -291,7 +291,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-6.4.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("6.4.0")
+              yaml mavenElasticsearchIntegrationTestAgent("6.4.0", "${params.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -309,7 +309,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-6.5.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("6.5.0")
+              yaml mavenElasticsearchIntegrationTestAgent("6.5.0", "${params.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -327,7 +327,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-AWS_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchAWSIntegrationTestAgent()
+              yaml mavenElasticsearchAWSIntegrationTestAgent("${params.CAMBPM_VERSION}")
             }
           }
           steps {

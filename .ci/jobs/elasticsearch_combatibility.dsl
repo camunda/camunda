@@ -12,7 +12,7 @@ pipelineJob('elasticsearch_compatibility') {
 
   parameters {
     stringParam('BRANCH', 'master', 'Branch to use for elasticsearch compatibility tests.')
-    stringParam('CAMBPM_VERSION', '7.10.0', 'Camunda BPM version to use.')
+    stringParam('CAMBPM_VERSION', '7.11.0-alpha4', 'Camunda BPM version to use.')
   }
 
   triggers {

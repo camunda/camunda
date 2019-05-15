@@ -6,7 +6,7 @@ def static MAVEN_DOCKER_IMAGE(String javaVersion) { return "maven:3.6.0-jdk-${ja
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "registry.camunda.cloud/camunda-bpm-platform-ee:${cambpmVersion}" }
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) { return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}" }
 
-static String mavenIntegrationTestAgent(javaVersion = "8", esVersion = "6.2.0", cambpmVersion = '7.10.0') {
+static String mavenIntegrationTestAgent(javaVersion = "8", esVersion = "6.2.0", cambpmVersion = "7.10.0") {
   return """
 apiVersion: v1
 kind: Pod
@@ -160,7 +160,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-JDK11_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenIntegrationTestAgent("11")
+              yaml mavenIntegrationTestAgent("11", "${params.ES_VERSION}", "${params.CAMBPM_VERSION}")
             }
           }
           steps {

@@ -12,7 +12,7 @@ pipelineJob('query-performance-tests') {
 
   parameters {
     stringParam('BRANCH', 'master', 'Branch to use for performance tests.')
-    stringParam('CAMBPM_VERSION', '7.10.0', 'Camunda BPM version to use.')
+    stringParam('CAMBPM_VERSION', '7.11.0-alpha4', 'Camunda BPM version to use.')
     stringParam('ES_VERSION', '6.2.0', 'Elasticsearch version to use.')
   }
 
