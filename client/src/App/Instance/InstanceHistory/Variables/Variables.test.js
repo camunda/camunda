@@ -30,21 +30,24 @@ function mountNode(props = {}) {
   );
 }
 
-describe('Variables', () => {
-  it('should render proper message for non existing variables', () => {
-    // given
-    const node = mountNode({variables: null});
+/* Helper function as node.setProps() changes only props of the rootNode, here: <ThemeProvider>*/
+const setProps = (node, WrappedComponent, updatedProps) => {
+  return node.setProps({
+    children: <WrappedComponent {...updatedProps} />
+  });
+};
 
-    // then
-    expect(node.contains(NULL_PLACEHOLDER)).toBe(true);
+describe('Variables', () => {
+  let node;
+  let variables;
+  beforeEach(() => {
+    // given
+    variables = createVariables();
+    node = mountNode({variables});
   });
 
-  it('should render proper message for empty variables', () => {
-    // given
-    const node = mountNode({variables: []});
-
-    // then
-    expect(node.contains(EMPTY_PLACEHOLDER)).toBe(true);
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should render variables table', () => {
@@ -64,24 +67,278 @@ describe('Variables', () => {
     });
   });
 
-  describe('add variable', () => {
-    it('should disable add button when variables are not editable', () => {
+  describe('Messages', () => {
+    it('should render proper message for non existing variables', () => {
       // given
-      const node = mountNode({isEditable: false});
+      const node = mountNode({variables: null});
 
       // then
-      expect(
-        node.find("button[data-test='add-var-btn']").prop('disabled')
-      ).toBe(true);
+      expect(node.contains(NULL_PLACEHOLDER)).toBe(true);
     });
 
-    it('should show adding variable inputs', () => {
+    it('should render proper message for empty variables', () => {
       // given
-      const node = mountNode({isEditMode: true});
+      const node = mountNode({variables: []});
 
       // then
-      expect(node.find('input[type="text"]')).toHaveLength(1);
-      expect(node.find('textarea')).toHaveLength(1);
+      expect(node.contains(EMPTY_PLACEHOLDER)).toBe(true);
+    });
+  });
+
+  describe('Disable "Add Variable" button', () => {
+    it('should disable when no editable variable', () => {
+      // given
+      const variables = createVariables();
+
+      // when
+      const node = mountNode({variables, isEditable: false});
+
+      // then
+      const addButton = node.find("button[data-test='enter-add-btn']");
+      expect(addButton.prop('disabled')).toBe(true);
+    });
+
+    it('should disable when editing variable', () => {
+      // given
+      const variables = createVariables();
+      const node = mountNode({variables, isEditable: true});
+
+      const openInlineEditButtons = node.find(
+        "button[data-test='enter-edit-btn']"
+      );
+
+      // when
+      openInlineEditButtons.first().simulate('click');
+      node.update();
+
+      // then
+      const addButton = node.find("button[data-test='enter-add-btn']");
+      expect(addButton.prop('disabled')).toBe(true);
+    });
+
+    it('should disable when adding variable', () => {
+      // given
+      const variables = createVariables();
+      const node = mountNode({variables, isEditable: true});
+      const addButton = node.find("button[data-test='enter-add-btn']");
+
+      // when
+      addButton.simulate('click');
+      node.update();
+
+      // then
+      const updatedAddButton = node.find("button[data-test='enter-add-btn']");
+      expect(updatedAddButton.prop('disabled')).toBe(true);
+    });
+  });
+
+  describe('Add variable', () => {
+    it('should show add variable inputs', () => {
+      // when
+      node.find("button[data-test='enter-add-btn']").simulate('click');
+
+      // then
+      expect(node.find('input[data-test="add-key"]')).toHaveLength(1);
+      expect(node.find('textarea[data-test="add-value"]')).toHaveLength(1);
+    });
+
+    it('should expose that a variable is being added by the user', () => {
+      // given
+      const newVariable = 'newVariable';
+      const newValue = '1234';
+
+      const addButton = node.find("button[data-test='enter-add-btn']");
+
+      // when
+      addButton.simulate('click');
+      expect(mockProps.setEditMode.mock.calls[0][0]).toBe(true);
+
+      setProps(node, Variables, {
+        ...mockProps,
+        variables,
+        isEditMode: true
+      });
+      node.update();
+
+      node
+        .find("input[data-test='add-key']")
+        .simulate('change', {target: {value: newVariable}});
+      node
+        .find("textarea[data-test='add-value']")
+        .simulate('change', {target: {value: newValue}});
+
+      // then
+      node.find("button[data-test='save-var-inline-btn']").simulate('click');
+      expect(mockProps.setEditMode.mock.calls[1][0]).toBe(false);
+    });
+
+    it('should expose the new key-value pair', () => {
+      const newVariable = 'newVariable';
+      const newValue = '1234';
+
+      node.find("button[data-test='enter-add-btn']").simulate('click');
+
+      node
+        .find("input[data-test='add-key']")
+        .simulate('change', {target: {value: newVariable}});
+      node
+        .find("textarea[data-test='add-value']")
+        .simulate('change', {target: {value: newValue}});
+
+      node.find("button[data-test='save-var-inline-btn']").simulate('click');
+
+      expect(mockProps.onVariableUpdate).toHaveBeenCalledWith(
+        newVariable,
+        newValue
+      );
+    });
+
+    describe('disable save button', () => {
+      beforeEach(() => {
+        //given
+        node.find("button[data-test='enter-add-btn']").simulate('click');
+      });
+
+      it('should not allow to save empty values', () => {
+        // then
+        expect(
+          node.find("button[data-test='save-var-inline-btn']").prop('disabled')
+        ).toBe(true);
+      });
+
+      it('should not allow to save invalid values', () => {
+        const variable = 'variableName';
+        // key must be a string to be valid JSON;
+        const invalidJSONObject = {invalidKey: 'value'};
+
+        // when
+        node
+          .find("input[data-test='add-key']")
+          .simulate('change', {target: {value: variable}});
+        node
+          .find("textarea[data-test='add-value']")
+          .simulate('change', {target: {value: invalidJSONObject}});
+
+        // then
+        expect(
+          node.find("button[data-test='save-var-inline-btn']").prop('disabled')
+        ).toBe(true);
+      });
+
+      it('should not allow to save variables which key already exists', () => {
+        const alreadyExistingVariable = 'clientNo';
+        const newValue = '1234';
+
+        // when
+        node
+          .find("input[data-test='add-key']")
+          .simulate('change', {target: {value: alreadyExistingVariable}});
+        node
+          .find("textarea[data-test='add-value']")
+          .simulate('change', {target: {value: newValue}});
+
+        // then
+        expect(
+          node.find("button[data-test='save-var-inline-btn']").prop('disabled')
+        ).toBe(true);
+      });
+    });
+  });
+
+  describe('Edit variable', () => {
+    it('should show edit in-line buttons', () => {
+      const openInlineEditButtons = node.find(
+        "button[data-test='enter-edit-btn']"
+      );
+      expect(openInlineEditButtons).toHaveLength(3);
+    });
+
+    it('should show an inline edit functionality', () => {
+      // given
+      const openInlineEditButtons = node.find(
+        "button[data-test='enter-edit-btn']"
+      );
+      // when
+      openInlineEditButtons.first().simulate('click');
+
+      // then
+      expect(node.find("textarea[data-test='edit-value']")).toExist();
+      expect(node.find("button[data-test='open-modal-btn']")).toExist();
+      expect(node.find("button[data-test='exit-edit-inline-btn']")).toExist();
+      expect(node.find("button[data-test='save-var-inline-btn']")).toExist();
+    });
+
+    it('should expose that a variable is being edited by the user', () => {
+      // given
+      const openInlineEditButtons = node.find(
+        "button[data-test='enter-edit-btn']"
+      );
+
+      expect(mockProps.isEditMode).toBe(false);
+      // when
+      // edit mode is true
+      openInlineEditButtons.first().simulate('click');
+      expect(mockProps.setEditMode).toHaveBeenCalledWith(!mockProps.isEditMode);
+
+      // then
+      // edit mode is false
+      node.find("button[data-test='save-var-inline-btn']").simulate('click');
+      expect(mockProps.setEditMode).toHaveBeenCalledWith(!mockProps.isEditMode);
+    });
+
+    describe('disable save button', () => {
+      beforeEach(() => {
+        const openInlineEditButtons = node.find(
+          "button[data-test='enter-edit-btn']"
+        );
+        //given
+        openInlineEditButtons.first().simulate('click');
+      });
+
+      it('should not allow to save empty values', () => {
+        // given
+        const emptyValue = '';
+
+        node
+          .find("textarea[data-test='edit-value']")
+          .simulate('change', {target: {value: emptyValue}});
+
+        // then
+        node.find("button[data-test='save-var-inline-btn']").simulate('click');
+
+        expect(
+          node.find("button[data-test='save-var-inline-btn']").prop('disabled')
+        ).toBe(true);
+      });
+
+      it('should not allow to save invalid values', () => {
+        // given
+        // key must be a string to be valid JSON;
+        const invalidJSONObject = {invalidKey: 'value'};
+
+        // when
+        node
+          .find("textarea[data-test='edit-value']")
+          .simulate('change', {target: {value: invalidJSONObject}});
+
+        // then
+        expect(
+          node.find("button[data-test='save-var-inline-btn']").prop('disabled')
+        ).toBe(true);
+      });
+
+      it('should not allow to save an unmodified value', () => {
+        const unmodifiedValue = variables[0].value;
+        // when
+        node
+          .find("textarea[data-test='edit-value']")
+          .simulate('change', {target: {value: unmodifiedValue}});
+
+        // then
+        expect(
+          node.find("button[data-test='save-var-inline-btn']").prop('disabled')
+        ).toBe(true);
+      });
     });
   });
 });

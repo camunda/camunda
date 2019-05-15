@@ -66,7 +66,7 @@ export default function Variables({
   function renderEditButtons(customCondition = false) {
     return (
       <>
-        <Styled.EditButton title="Open Modal">
+        <Styled.EditButton title="Open Modal" data-test="open-modal-btn">
           <Styled.ModalIcon />
         </Styled.EditButton>
 
@@ -78,7 +78,7 @@ export default function Variables({
           <Styled.CloseIcon />
         </Styled.EditButton>
         <Styled.EditButton
-          data-test="save-var-btn"
+          data-test="save-var-inline-btn"
           title="save variable"
           disabled={!value || !isValidJSON(value) || customCondition}
           onClick={saveVariable}
@@ -101,6 +101,7 @@ export default function Variables({
             rows={displayedRows}
             cols={charactersPerRow}
             autoFocus
+            data-test="edit-value"
             placeholder="Value"
             value={value}
             onChange={e => setValue(e.target.value)}
@@ -122,15 +123,16 @@ export default function Variables({
         <Styled.EditInputTD>
           <Styled.TextInput
             type="text"
+            data-test="add-key"
             placeholder="Variable"
             value={key}
             onChange={e => setKey(e.target.value)}
           />
         </Styled.EditInputTD>
-
         <Styled.EditInputTD>
           <Styled.Textarea
             autoFocus
+            data-test="add-value"
             placeholder="Value"
             value={value}
             onChange={e => setValue(e.target.value)}
