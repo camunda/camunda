@@ -17,27 +17,29 @@
  */
 package io.zeebe.engine.util;
 
+import static io.zeebe.engine.processor.StreamProcessorServiceNames.streamProcessorService;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
-import io.zeebe.engine.processor.EventProcessor;
+import io.zeebe.engine.processor.CommandResponseWriter;
+import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessor;
-import io.zeebe.engine.processor.StreamProcessorContext;
-import io.zeebe.engine.processor.StreamProcessorController;
-import io.zeebe.engine.processor.StreamProcessorFactory;
-import io.zeebe.engine.processor.StreamProcessorService;
-import io.zeebe.engine.processor.StreamProcessors;
-import io.zeebe.engine.processor.TypedRecord;
+import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
+import io.zeebe.engine.processor.TypedEventRegistry;
+import io.zeebe.engine.processor.TypedRecordProcessorFactory;
+import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.state.StateStorageFactory;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -46,7 +48,6 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.msgpack.UnpackedObject;
@@ -54,20 +55,6 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
-import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -79,8 +66,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.rules.TemporaryFolder;
@@ -88,25 +73,11 @@ import org.mockito.internal.util.reflection.FieldSetter;
 import org.mockito.stubbing.Answer;
 
 public class TestStreams {
+
   protected static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
 
   static {
-    VALUE_TYPES.put(DeploymentRecord.class, ValueType.DEPLOYMENT);
-    VALUE_TYPES.put(IncidentRecord.class, ValueType.INCIDENT);
-    VALUE_TYPES.put(JobRecord.class, ValueType.JOB);
-    VALUE_TYPES.put(WorkflowInstanceRecord.class, ValueType.WORKFLOW_INSTANCE);
-    VALUE_TYPES.put(MessageRecord.class, ValueType.MESSAGE);
-    VALUE_TYPES.put(MessageSubscriptionRecord.class, ValueType.MESSAGE_SUBSCRIPTION);
-    VALUE_TYPES.put(
-        MessageStartEventSubscriptionRecord.class, ValueType.MESSAGE_START_EVENT_SUBSCRIPTION);
-    VALUE_TYPES.put(
-        WorkflowInstanceSubscriptionRecord.class, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
-    VALUE_TYPES.put(JobBatchRecord.class, ValueType.JOB_BATCH);
-    VALUE_TYPES.put(TimerRecord.class, ValueType.TIMER);
-    VALUE_TYPES.put(VariableRecord.class, ValueType.VARIABLE);
-    VALUE_TYPES.put(VariableDocumentRecord.class, ValueType.VARIABLE_DOCUMENT);
-    VALUE_TYPES.put(WorkflowInstanceCreationRecord.class, ValueType.WORKFLOW_INSTANCE_CREATION);
-    VALUE_TYPES.put(ErrorRecord.class, ValueType.ERROR);
+    TypedEventRegistry.EVENT_REGISTRY.forEach((v, c) -> VALUE_TYPES.put(c, v));
 
     VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
   }
@@ -115,11 +86,14 @@ public class TestStreams {
   protected final AutoCloseableRule closeables;
   private final ServiceContainer serviceContainer;
 
-  protected Map<String, LogStream> managedLogs = new HashMap<>();
+  private final Map<String, LogStream> managedLogs = new HashMap<>();
+  private final Map<String, StateSnapshotController> snapshotControllerMap = new HashMap<>();
 
   protected ActorScheduler actorScheduler;
 
   protected StateStorageFactory stateStorageFactory;
+  public static final String PROCESSOR_NAME = "processor";
+  private final CommandResponseWriter mockCommandResponseWriter;
 
   public TestStreams(
       final TemporaryFolder storageDirectory,
@@ -130,6 +104,22 @@ public class TestStreams {
     this.closeables = closeables;
     this.serviceContainer = serviceContainer;
     this.actorScheduler = actorScheduler;
+
+    mockCommandResponseWriter = mock(CommandResponseWriter.class);
+    when(mockCommandResponseWriter.intent(any())).thenReturn(mockCommandResponseWriter);
+    when(mockCommandResponseWriter.key(anyLong())).thenReturn(mockCommandResponseWriter);
+    when(mockCommandResponseWriter.partitionId(anyInt())).thenReturn(mockCommandResponseWriter);
+    when(mockCommandResponseWriter.recordType(any())).thenReturn(mockCommandResponseWriter);
+    when(mockCommandResponseWriter.rejectionType(any())).thenReturn(mockCommandResponseWriter);
+    when(mockCommandResponseWriter.rejectionReason(any())).thenReturn(mockCommandResponseWriter);
+    when(mockCommandResponseWriter.valueType(any())).thenReturn(mockCommandResponseWriter);
+    when(mockCommandResponseWriter.valueWriter(any())).thenReturn(mockCommandResponseWriter);
+
+    when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
+  }
+
+  public CommandResponseWriter getMockedResponseWriter() {
+    return mockCommandResponseWriter;
   }
 
   public LogStream createLogStream(final String name) {
@@ -150,14 +140,15 @@ public class TestStreams {
     final StateStorage stateStorage = new StateStorage(index, snapshots);
 
     final LogStream logStream =
-        LogStreams.createFsLogStream(partitionId)
-            .logRootPath(segments.getAbsolutePath())
-            .serviceContainer(serviceContainer)
-            .logName(name)
-            .deleteOnClose(true)
-            .indexStateStorage(stateStorage)
-            .build()
-            .join();
+        spy(
+            LogStreams.createFsLogStream(partitionId)
+                .logRootPath(segments.getAbsolutePath())
+                .serviceContainer(serviceContainer)
+                .logName(name)
+                .deleteOnClose(true)
+                .indexStateStorage(stateStorage)
+                .build()
+                .join());
 
     // Create distributed log service
     final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);
@@ -253,308 +244,61 @@ public class TestStreams {
     return stateStorageFactory;
   }
 
-  public StreamProcessorControl initStreamProcessor(
+  public StreamProcessor startStreamProcessor(
       final String log,
       final int streamProcessorId,
       final ZeebeDbFactory zeebeDbFactory,
-      final StreamProcessorFactory streamProcessorFactory) {
+      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     final LogStream stream = getLogStream(log);
-
-    final StreamProcessorControlImpl control =
-        new StreamProcessorControlImpl(
-            stream, zeebeDbFactory, streamProcessorFactory, streamProcessorId);
-
-    closeables.manage(control);
-
-    return control;
+    return buildStreamProcessorController(
+        streamProcessorId, stream, zeebeDbFactory, typedRecordProcessorFactory);
   }
 
-  protected class StreamProcessorControlImpl implements StreamProcessorControl, AutoCloseable {
+  private StreamProcessor buildStreamProcessorController(
+      int streamProcessorId,
+      LogStream stream,
+      ZeebeDbFactory zeebeDbFactory,
+      TypedRecordProcessorFactory factory) {
 
-    private final StreamProcessorFactory factory;
-    private final int streamProcessorId;
-    private final LogStream stream;
-    private final ZeebeDbFactory zeebeDbFactory;
+    final StateStorage stateStorage =
+        getStateStorageFactory().create(streamProcessorId, PROCESSOR_NAME);
+    final StateSnapshotController currentSnapshotController =
+        spy(new StateSnapshotController(zeebeDbFactory, stateStorage));
+    snapshotControllerMap.put(stream.getLogName(), currentSnapshotController);
 
-    protected final SuspendableStreamProcessor currentStreamProcessor;
-    protected StreamProcessorController currentController;
-    protected StreamProcessorService currentStreamProcessorService;
-    protected SnapshotController currentSnapshotController;
+    final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
 
-    public StreamProcessorControlImpl(
-        final LogStream stream,
-        final ZeebeDbFactory zeebeDbFactory,
-        final StreamProcessorFactory streamProcessorFactory,
-        final int streamProcessorId) {
-      this.stream = stream;
-      this.zeebeDbFactory = zeebeDbFactory;
-      this.currentStreamProcessor = new SuspendableStreamProcessor();
-      this.factory = streamProcessorFactory;
-      this.streamProcessorId = streamProcessorId;
-    }
-
-    @Override
-    public void unblock() {
-      currentStreamProcessor.resume();
-    }
-
-    @Override
-    public boolean isBlocked() {
-      return currentController.isSuspended();
-    }
-
-    @Override
-    public void blockAfterEvent(final Predicate<LoggedEvent> test) {
-      currentStreamProcessor.blockAfterEvent(test);
-    }
-
-    @Override
-    public void blockAfterJobEvent(final Predicate<TypedRecord<JobRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isJobRecord(e)
-                  && test.test(CopiedTypedEvent.toTypedEvent(e, JobRecord.class)));
-    }
-
-    @Override
-    public void blockAfterDeploymentEvent(final Predicate<TypedRecord<DeploymentRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isDeploymentRecord(e)
-                  && test.test(CopiedTypedEvent.toTypedEvent(e, DeploymentRecord.class)));
-    }
-
-    @Override
-    public void blockAfterWorkflowInstanceRecord(
-        final Predicate<TypedRecord<WorkflowInstanceRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isWorkflowInstanceRecord(e)
-                  && test.test(CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceRecord.class)));
-    }
-
-    @Override
-    public void blockAfterWorkflowInstanceCreationRecord(
-        final Predicate<TypedRecord<WorkflowInstanceCreationRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isWorkflowInstanceCreationRecord(e)
-                  && test.test(
-                      CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceCreationRecord.class)));
-    }
-
-    @Override
-    public void blockAfterIncidentEvent(final Predicate<TypedRecord<IncidentRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isIncidentRecord(e)
-                  && test.test(CopiedTypedEvent.toTypedEvent(e, IncidentRecord.class)));
-    }
-
-    @Override
-    public void blockAfterMessageEvent(final Predicate<TypedRecord<MessageRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isMessageRecord(e)
-                  && test.test(CopiedTypedEvent.toTypedEvent(e, MessageRecord.class)));
-    }
-
-    @Override
-    public void blockAfterMessageSubscriptionEvent(
-        final Predicate<TypedRecord<MessageSubscriptionRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isMessageSubscriptionRecord(e)
-                  && test.test(CopiedTypedEvent.toTypedEvent(e, MessageSubscriptionRecord.class)));
-    }
-
-    @Override
-    public void blockAfterWorkflowInstanceSubscriptionEvent(
-        final Predicate<TypedRecord<WorkflowInstanceSubscriptionRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isWorkflowInstanceSubscriptionRecord(e)
-                  && test.test(
-                      CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceSubscriptionRecord.class)));
-    }
-
-    @Override
-    public void blockAfterTimerEvent(final Predicate<TypedRecord<TimerRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isTimerRecord(e)
-                  && test.test(CopiedTypedEvent.toTypedEvent(e, TimerRecord.class)));
-    }
-
-    @Override
-    public void blockAfterMessageStartEventSubscriptionRecord(
-        final Predicate<TypedRecord<MessageStartEventSubscriptionRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isMessageStartEventSubscriptionRecord(e)
-                  && test.test(
-                      CopiedTypedEvent.toTypedEvent(e, MessageStartEventSubscriptionRecord.class)));
-    }
-
-    @Override
-    public void close() {
-      if (currentController != null && currentController.isOpened()) {
-        currentStreamProcessorService.close();
-      }
-
-      currentStreamProcessorService = null;
-      currentController = null;
-      currentStreamProcessor.wrap(null, null);
-    }
-
-    @Override
-    public void start() {
-      currentStreamProcessorService = buildStreamProcessorController();
-      currentController = currentStreamProcessorService.getController();
-    }
-
-    @Override
-    public void restart() {
-      close();
-      start();
-    }
-
-    @Override
-    public SnapshotController getSnapshotController() {
-      return currentSnapshotController;
-    }
-
-    private StreamProcessorService buildStreamProcessorController() {
-      final String name = "processor";
-
-      final StateStorage stateStorage = getStateStorageFactory().create(streamProcessorId, name);
-      currentSnapshotController = spy(new StateSnapshotController(zeebeDbFactory, stateStorage));
-
-      final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
-
-      final StreamProcessorService processorService =
-          StreamProcessors.createStreamProcessor(name, streamProcessorId)
-              .logStream(stream)
-              .snapshotController(currentSnapshotController)
-              .actorScheduler(actorScheduler)
-              .serviceContainer(serviceContainer)
-              .streamProcessorFactory(
-                  (actor, zeebeDb, dbContext) -> {
-                    currentStreamProcessor.wrap(
-                        factory.createProcessor(actor, zeebeDb, dbContext), openFuture);
-                    return currentStreamProcessor;
-                  })
-              .build()
-              .join();
-      openFuture.join();
-      return processorService;
-    }
+    final StreamProcessor processorService =
+        StreamProcessor.builder(streamProcessorId, PROCESSOR_NAME)
+            .logStream(stream)
+            .snapshotController(currentSnapshotController)
+            .actorScheduler(actorScheduler)
+            .serviceContainer(serviceContainer)
+            .commandResponseWriter(mockCommandResponseWriter)
+            .streamProcessorFactory(
+                (context) -> {
+                  final TypedRecordProcessors processors = factory.createProcessors(context);
+                  processors.withListener(
+                      new StreamProcessorLifecycleAware() {
+                        @Override
+                        public void onOpen(ReadonlyProcessingContext context) {
+                          openFuture.complete(null);
+                        }
+                      });
+                  return processors;
+                })
+            .build()
+            .join();
+    openFuture.join();
+    return processorService;
   }
 
-  public static class SuspendableStreamProcessor implements StreamProcessor {
-    protected StreamProcessor wrappedProcessor;
+  public StateSnapshotController getStateSnapshotController(String stream) {
+    return snapshotControllerMap.get(stream);
+  }
 
-    protected AtomicReference<Predicate<LoggedEvent>> blockAfterCondition =
-        new AtomicReference<>(null);
-
-    private final RecordMetadata metadata = new RecordMetadata();
-    private final ErrorRecord errorRecord = new ErrorRecord();
-    protected boolean blockAfterCurrentEvent;
-    private StreamProcessorContext context;
-    private ActorFuture<Void> openFuture;
-
-    public void wrap(StreamProcessor streamProcessor, ActorFuture<Void> openFuture) {
-      wrappedProcessor = streamProcessor;
-      this.openFuture = openFuture;
-    }
-
-    public void resume() {
-      context
-          .getActorControl()
-          .call(
-              () -> {
-                context.resumeController();
-              });
-    }
-
-    public void blockAfterEvent(final Predicate<LoggedEvent> test) {
-      this.blockAfterCondition.set(test);
-    }
-
-    @Override
-    public EventProcessor onEvent(final LoggedEvent event) {
-      final Predicate<LoggedEvent> suspensionCondition = this.blockAfterCondition.get();
-      blockAfterCurrentEvent = suspensionCondition != null && suspensionCondition.test(event);
-
-      final EventProcessor actualProcessor = wrappedProcessor.onEvent(event);
-
-      return new EventProcessor() {
-
-        @Override
-        public void processEvent() {
-          if (actualProcessor != null) {
-            actualProcessor.processEvent();
-          }
-        }
-
-        @Override
-        public void onError(Throwable throwable) {
-          if (actualProcessor != null) {
-            actualProcessor.onError(throwable);
-          }
-        }
-
-        @Override
-        public boolean executeSideEffects() {
-          return actualProcessor == null || actualProcessor.executeSideEffects();
-        }
-
-        @Override
-        public long writeEvent(final LogStreamRecordWriter writer) {
-          final long result = actualProcessor != null ? actualProcessor.writeEvent(writer) : 0;
-
-          if (blockAfterCurrentEvent) {
-            blockAfterCurrentEvent = false;
-            context.suspendController();
-          }
-          return result;
-        }
-      };
-    }
-
-    @Override
-    public long getPositionToRecoverFrom() {
-      return wrappedProcessor.getPositionToRecoverFrom();
-    }
-
-    @Override
-    public void onOpen(final StreamProcessorContext context) {
-      this.context = context;
-      wrappedProcessor.onOpen(this.context);
-      openFuture.complete(null);
-    }
-
-    @Override
-    public void onRecovered() {
-      wrappedProcessor.onRecovered();
-    }
-
-    @Override
-    public void onClose() {
-      wrappedProcessor.onClose();
-    }
-
-    @Override
-    public long getFailedPosition(LoggedEvent currentEvent) {
-      metadata.reset();
-      currentEvent.readMetadata(metadata);
-
-      if (metadata.getValueType() == ValueType.ERROR) {
-        currentEvent.readValue(errorRecord);
-        return errorRecord.getErrorEventPosition();
-      }
-      return -1;
-    }
+  public void closeProcessor(String streamName) {
+    serviceContainer.removeService(streamProcessorService(streamName, PROCESSOR_NAME)).join();
   }
 
   public static class FluentLogWriter {

@@ -18,7 +18,7 @@
 package io.zeebe.engine.processor.workflow.message;
 
 import io.zeebe.engine.processor.KeyGenerator;
-import io.zeebe.engine.processor.TypedEventStreamProcessorBuilder;
+import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.EventScopeInstanceState;
@@ -33,7 +33,7 @@ import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 public class MessageEventProcessors {
 
   public static void addMessageProcessors(
-      TypedEventStreamProcessorBuilder typedProcessorBuilder,
+      TypedRecordProcessors typedRecordProcessors,
       ZeebeState zeebeState,
       SubscriptionCommandSender subscriptionCommandSender) {
 
@@ -45,7 +45,7 @@ public class MessageEventProcessors {
         zeebeState.getWorkflowState().getEventScopeInstanceState();
     final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
 
-    typedProcessorBuilder
+    typedRecordProcessors
         .onCommand(
             ValueType.MESSAGE,
             MessageIntent.PUBLISH,

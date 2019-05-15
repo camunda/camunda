@@ -21,9 +21,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.engine.processor.TypedRecord;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
-import io.zeebe.engine.util.StreamProcessorControl;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -44,37 +42,29 @@ public class DeploymentCreateProcessorTest {
   @Rule
   public StreamProcessorRule rule = new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION + 1);
 
-  private StreamProcessorControl streamProcessor;
   private WorkflowState workflowState;
 
   @Before
   public void setUp() {
     MockitoAnnotations.initMocks(this);
-    streamProcessor =
-        rule.initTypedStreamProcessor(
-            (typedEventStreamProcessorBuilder, zeebeDb, dbContext) -> {
-              final ZeebeState zeebeState = new ZeebeState(zeebeDb, dbContext);
-              workflowState = zeebeState.getWorkflowState();
-
-              DeploymentEventProcessors.addDeploymentCreateProcessor(
-                  typedEventStreamProcessorBuilder, workflowState);
-              return typedEventStreamProcessorBuilder.build();
-            });
+    rule.startTypedStreamProcessor(
+        (typedRecordProcessors, zeebeState) -> {
+          workflowState = zeebeState.getWorkflowState();
+          DeploymentEventProcessors.addDeploymentCreateProcessor(
+              typedRecordProcessors, workflowState);
+          return typedRecordProcessors;
+        });
   }
 
   @Test
   public void shouldRejectTwoCreatingCommands() {
     // given
-    streamProcessor.blockAfterDeploymentEvent(
-        r -> r.getMetadata().getIntent() == DeploymentIntent.CREATE);
-    streamProcessor.start();
-
     creatingDeployment();
-    waitUntil(() -> streamProcessor.isBlocked());
 
     // when
+    waitUntil(
+        () -> rule.events().onlyDeploymentRecords().withIntent(DeploymentIntent.CREATED).exists());
     creatingDeployment();
-    streamProcessor.unblock();
 
     // then
     waitUntil(() -> rule.events().onlyDeploymentRecords().count() >= 4);
@@ -99,16 +89,12 @@ public class DeploymentCreateProcessorTest {
   @Test
   public void shouldNotRejectTwoCreatingCommandsWithDifferentKeys() {
     // given
-    streamProcessor.blockAfterDeploymentEvent(
-        r -> r.getMetadata().getIntent() == DeploymentIntent.CREATE);
-    streamProcessor.start();
-
     creatingDeployment(4);
-    waitUntil(() -> streamProcessor.isBlocked());
 
     // when
+    waitUntil(
+        () -> rule.events().onlyDeploymentRecords().withIntent(DeploymentIntent.CREATED).exists());
     creatingDeployment(8);
-    streamProcessor.unblock();
 
     // then
     waitUntil(() -> rule.events().onlyDeploymentRecords().count() >= 4);

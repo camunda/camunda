@@ -29,9 +29,7 @@ import static org.mockito.Mockito.when;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
-import io.zeebe.engine.util.StreamProcessorControl;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -53,7 +51,6 @@ public class TransformingDeploymentCreateProcessorTest {
 
   @Rule public StreamProcessorRule rule = new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION);
 
-  private StreamProcessorControl streamProcessor;
   private WorkflowState workflowState;
   private SubscriptionCommandSender mockSubscriptionCommandSender;
 
@@ -72,25 +69,20 @@ public class TransformingDeploymentCreateProcessorTest {
             anyInt(), anyLong(), anyLong(), any(DirectBuffer.class)))
         .thenReturn(true);
 
-    streamProcessor =
-        rule.initTypedStreamProcessor(
-            (typedEventStreamProcessorBuilder, zeebeDb, dbContext) -> {
-              final ZeebeState zeebeState = new ZeebeState(zeebeDb, dbContext);
-              workflowState = zeebeState.getWorkflowState();
-
-              DeploymentEventProcessors.addTransformingDeploymentProcessor(
-                  typedEventStreamProcessorBuilder,
-                  zeebeState,
-                  new CatchEventBehavior(zeebeState, mockSubscriptionCommandSender, 1));
-
-              return typedEventStreamProcessorBuilder.build();
-            });
+    rule.startTypedStreamProcessor(
+        (typedRecordProcessors, zeebeState) -> {
+          workflowState = zeebeState.getWorkflowState();
+          DeploymentEventProcessors.addTransformingDeploymentProcessor(
+              typedRecordProcessors,
+              zeebeState,
+              new CatchEventBehavior(zeebeState, mockSubscriptionCommandSender, 1));
+          return typedRecordProcessors;
+        });
   }
 
   @Test
   public void shouldCreateDeploymentAndAddToWorkflowCache() {
     // given
-    streamProcessor.start();
 
     // when
     creatingDeployment();

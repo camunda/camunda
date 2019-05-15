@@ -17,6 +17,8 @@
  */
 package io.zeebe.engine.processor;
 
+import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
+
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
@@ -44,13 +46,12 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
   protected int producerId;
   protected long sourceRecordPosition = -1;
 
-  public TypedCommandWriterImpl(
-      final LogStream stream, final Map<ValueType, Class<? extends UnpackedObject>> eventRegistry) {
+  public TypedCommandWriterImpl(final LogStream stream) {
     this.stream = stream;
     metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
     this.batchWriter = new LogStreamBatchWriterImpl(stream);
     this.typeRegistry = new HashMap<>();
-    eventRegistry.forEach((e, c) -> typeRegistry.put(c, e));
+    EVENT_REGISTRY.forEach((e, c) -> typeRegistry.put(c, e));
   }
 
   public void configureSourceContext(final int producerId, final long sourceRecordPosition) {

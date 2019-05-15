@@ -19,9 +19,9 @@ package io.zeebe.engine.processor.workflow.job;
 
 import static io.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
+import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedCommandWriter;
-import io.zeebe.engine.processor.TypedStreamProcessor;
 import io.zeebe.engine.state.instance.JobState;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
@@ -40,12 +40,12 @@ public class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
   }
 
   @Override
-  public void onRecovered(final TypedStreamProcessor streamProcessor) {
+  public void onRecovered(final ReadonlyProcessingContext processingContext) {
     timer =
-        streamProcessor
+        processingContext
             .getActor()
             .runAtFixedRate(TIME_OUT_POLLING_INTERVAL, this::deactivateTimedOutJobs);
-    writer = streamProcessor.getEnvironment().buildCommandWriter();
+    writer = processingContext.getLogStreamWriter();
   }
 
   @Override

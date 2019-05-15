@@ -19,7 +19,7 @@ package io.zeebe.engine.processor.workflow.deployment;
 
 import static io.zeebe.protocol.intent.DeploymentIntent.CREATE;
 
-import io.zeebe.engine.processor.TypedEventStreamProcessorBuilder;
+import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
@@ -28,17 +28,16 @@ import io.zeebe.protocol.clientapi.ValueType;
 public class DeploymentEventProcessors {
 
   public static void addDeploymentCreateProcessor(
-      TypedEventStreamProcessorBuilder processorBuilder, WorkflowState workflowState) {
-    processorBuilder.onCommand(
+      TypedRecordProcessors typedRecordProcessors, WorkflowState workflowState) {
+    typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT, CREATE, new DeploymentCreateProcessor(workflowState));
   }
 
   public static void addTransformingDeploymentProcessor(
-      TypedEventStreamProcessorBuilder processorBuilder,
+      TypedRecordProcessors typedRecordProcessors,
       ZeebeState zeebeState,
       CatchEventBehavior catchEventBehavior) {
-
-    processorBuilder.onCommand(
+    typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT,
         CREATE,
         new TransformingDeploymentCreateProcessor(zeebeState, catchEventBehavior));

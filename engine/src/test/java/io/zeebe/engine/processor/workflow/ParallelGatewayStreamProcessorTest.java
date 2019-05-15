@@ -17,10 +17,7 @@
  */
 package io.zeebe.engine.processor.workflow;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
-
 import io.zeebe.engine.processor.TypedRecord;
-import io.zeebe.engine.util.StreamProcessorControl;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -28,14 +25,12 @@ import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.ParallelGateway;
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
-import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -50,13 +45,6 @@ public class ParallelGatewayStreamProcessorTest {
       new WorkflowInstanceStreamProcessorRule(envRule);
 
   @Rule public RuleChain chain = RuleChain.outerRule(envRule).around(streamProcessorRule);
-
-  private StreamProcessorControl streamProcessor;
-
-  @Before
-  public void setUp() {
-    streamProcessor = streamProcessorRule.getStreamProcessor();
-  }
 
   @Test
   public void shouldNotCompleteScopeWhenATokenWaitsAtAGateway() {
@@ -95,13 +83,7 @@ public class ParallelGatewayStreamProcessorTest {
 
     // when
     // waiting until the end event has been reached
-    streamProcessor.blockAfterWorkflowInstanceRecord(
-        r ->
-            r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED
-                && r.getValue().getBpmnElementType() == BpmnElementType.END_EVENT);
     streamProcessorRule.completeFirstJob();
-
-    waitUntil(() -> streamProcessor.isBlocked());
 
     // then
     // there should be no scope completing event

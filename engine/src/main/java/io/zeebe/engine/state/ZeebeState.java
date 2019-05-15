@@ -17,8 +17,6 @@
  */
 package io.zeebe.engine.state;
 
-import static io.zeebe.engine.processor.StreamProcessor.NO_EVENTS_PROCESSED;
-
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
@@ -38,6 +36,9 @@ import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.WorkflowInstanceRelated;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.WorkflowInstanceRelatedIntent;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 public class ZeebeState {
@@ -47,6 +48,7 @@ public class ZeebeState {
       "Blacklist workflow instance {}, due to previous errors.";
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
+  private static final long NO_EVENTS_PROCESSED = -1L;
 
   private final KeyState keyState;
   private final WorkflowState workflowState;
@@ -123,13 +125,6 @@ public class ZeebeState {
     return keyState;
   }
 
-  public void blacklist(long workflowInstanceKey) {
-    if (workflowInstanceKey >= 0) {
-      LOG.warn(BLACKLIST_INSTANCE_MESSAGE, workflowInstanceKey);
-      blackList.blacklist(workflowInstanceKey);
-    }
-  }
-
   public boolean isOnBlacklist(TypedRecord record) {
     final UnpackedObject value = record.getValue();
     if (value instanceof WorkflowInstanceRelated) {
@@ -139,6 +134,38 @@ public class ZeebeState {
       }
     }
     return false;
+  }
+
+  public boolean tryToBlacklist(TypedRecord<?> typedRecord, Consumer<Long> onBlacklistingInstance) {
+    final Intent intent = typedRecord.getMetadata().getIntent();
+    if (shouldBeBlacklisted(intent)) {
+      final UnpackedObject value = typedRecord.getValue();
+      if (value instanceof WorkflowInstanceRelated) {
+        final long workflowInstanceKey = ((WorkflowInstanceRelated) value).getWorkflowInstanceKey();
+        blacklist(workflowInstanceKey);
+        onBlacklistingInstance.accept(workflowInstanceKey);
+      }
+    }
+    return false;
+  }
+
+  private boolean shouldBeBlacklisted(Intent intent) {
+
+    if (intent instanceof WorkflowInstanceRelatedIntent) {
+      final WorkflowInstanceRelatedIntent workflowInstanceRelatedIntent =
+          (WorkflowInstanceRelatedIntent) intent;
+
+      return workflowInstanceRelatedIntent.shouldBlacklistInstanceOnError();
+    }
+
+    return false;
+  }
+
+  private void blacklist(long workflowInstanceKey) {
+    if (workflowInstanceKey >= 0) {
+      LOG.warn(BLACKLIST_INSTANCE_MESSAGE, workflowInstanceKey);
+      blackList.blacklist(workflowInstanceKey);
+    }
   }
 
   public void markAsProcessed(long position) {

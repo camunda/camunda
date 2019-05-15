@@ -22,65 +22,70 @@ import static io.zeebe.engine.processor.StreamProcessorServiceNames.streamProces
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.servicecontainer.ServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public class StreamProcessorBuilder {
-  protected int id;
-  protected String name;
 
-  protected LogStream logStream;
+  private TypedRecordProcessorFactory typedRecordProcessorFactory;
+  private final ProcessingContext processingContext;
 
-  protected ActorScheduler actorScheduler;
+  private ActorScheduler actorScheduler;
+  private ServiceContainer serviceContainer;
+  private final List<ServiceName<?>> additionalDependencies = new ArrayList<>();
+  private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
 
-  protected Duration snapshotPeriod;
-  protected SnapshotController snapshotController;
-
-  private LogStreamReader logStreamReader;
-  protected LogStreamRecordWriter logStreamWriter;
-
-  private EventFilter eventFilter;
-
-  protected ServiceContainer serviceContainer;
-  private List<ServiceName<?>> additionalDependencies;
-  private StreamProcessorFactory streamProcessorFactory;
   private int maxSnapshots;
   private boolean deleteDataOnSnapshot;
+  private Duration snapshotPeriod;
+  private SnapshotController snapshotController;
 
   public StreamProcessorBuilder(int id, String name) {
-    this.id = id;
-    this.name = name;
+    Objects.requireNonNull(name);
+
+    processingContext = new ProcessingContext().producerId(id).streamProcessorName(name);
   }
 
   public StreamProcessorBuilder streamProcessorFactory(
-      StreamProcessorFactory streamProcessorFactory) {
-    this.streamProcessorFactory = streamProcessorFactory;
+      TypedRecordProcessorFactory typedRecordProcessorFactory) {
+    this.typedRecordProcessorFactory = typedRecordProcessorFactory;
     return this;
   }
 
-  public StreamProcessorBuilder additionalDependencies(
-      List<ServiceName<?>> additionalDependencies) {
-    this.additionalDependencies = additionalDependencies;
-    return this;
-  }
-
-  public StreamProcessorBuilder logStream(LogStream stream) {
-    this.logStream = stream;
+  public StreamProcessorBuilder additionalDependencies(ServiceName<?> additionalDependencies) {
+    this.additionalDependencies.add(additionalDependencies);
     return this;
   }
 
   public StreamProcessorBuilder actorScheduler(ActorScheduler actorScheduler) {
     this.actorScheduler = actorScheduler;
+    return this;
+  }
+
+  public StreamProcessorBuilder serviceContainer(ServiceContainer serviceContainer) {
+    this.serviceContainer = serviceContainer;
+    return this;
+  }
+
+  public StreamProcessorBuilder logStream(LogStream stream) {
+    processingContext.logStream(stream);
+    return this;
+  }
+
+  /** @param eventFilter may be null to accept all events */
+  public StreamProcessorBuilder eventFilter(EventFilter eventFilter) {
+    processingContext.eventFilter(eventFilter);
     return this;
   }
 
@@ -99,36 +104,76 @@ public class StreamProcessorBuilder {
     return this;
   }
 
-  /** @param eventFilter may be null to accept all events */
-  public StreamProcessorBuilder eventFilter(EventFilter eventFilter) {
-    this.eventFilter = eventFilter;
-    return this;
-  }
-
-  public StreamProcessorBuilder serviceContainer(ServiceContainer serviceContainer) {
-    this.serviceContainer = serviceContainer;
-    return this;
-  }
-
   public StreamProcessorBuilder deleteDataOnSnapshot(final boolean deleteData) {
     this.deleteDataOnSnapshot = deleteData;
     return this;
   }
 
-  public ActorFuture<StreamProcessorService> build() {
+  public StreamProcessorBuilder commandResponseWriter(CommandResponseWriter commandResponseWriter) {
+    processingContext.commandResponseWriter(commandResponseWriter);
+    return this;
+  }
+
+  public TypedRecordProcessorFactory getTypedRecordProcessorFactory() {
+    return typedRecordProcessorFactory;
+  }
+
+  public ProcessingContext getProcessingContext() {
+    return processingContext;
+  }
+
+  public ActorScheduler getActorScheduler() {
+    return actorScheduler;
+  }
+
+  public ServiceContainer getServiceContainer() {
+    return serviceContainer;
+  }
+
+  public List<StreamProcessorLifecycleAware> getLifecycleListeners() {
+    return lifecycleListeners;
+  }
+
+  public int getMaxSnapshots() {
+    return maxSnapshots;
+  }
+
+  public boolean isDeleteDataOnSnapshot() {
+    return deleteDataOnSnapshot;
+  }
+
+  public Duration getSnapshotPeriod() {
+    return snapshotPeriod;
+  }
+
+  public SnapshotController getSnapshotController() {
+    return snapshotController;
+  }
+
+  public ActorFuture<StreamProcessor> build() {
     validate();
 
-    final StreamProcessorContext context = createContext();
-    final StreamProcessorController controller = new StreamProcessorController(context);
+    snapshotPeriod = snapshotPeriod == null ? Duration.ofMinutes(1) : snapshotPeriod;
 
+    final LogStream logStream = processingContext.getLogStream();
+    processingContext
+        .logStreamReader(new BufferedLogStreamReader(logStream))
+        .logStreamWriter(new TypedStreamWriterImpl(logStream));
+
+    final MetadataFilter metadataFilter = new VersionFilter();
+    final EventFilter eventFilter = new MetadataEventFilter(metadataFilter);
+    processingContext.eventFilter(eventFilter);
+
+    final StreamProcessor streamProcessor = new StreamProcessor(this);
+
+    final String streamProcessorName = processingContext.getStreamProcessorName();
     final String logName = logStream.getLogName();
 
-    final ServiceName<StreamProcessorService> serviceName = streamProcessorService(logName, name);
-    final StreamProcessorService service =
-        new StreamProcessorService(controller, serviceContainer, serviceName);
-    final ServiceBuilder<StreamProcessorService> serviceBuilder =
+    final ServiceName<StreamProcessor> serviceName =
+        streamProcessorService(logName, streamProcessorName);
+    final ServiceBuilder<StreamProcessor> serviceBuilder =
         serviceContainer
-            .createService(serviceName, service)
+            .createService(serviceName, streamProcessor)
             .dependency(LogStreamServiceNames.logStreamServiceName(logName))
             .dependency(LogStreamServiceNames.logWriteBufferServiceName(logName))
             .dependency(LogStreamServiceNames.logStorageServiceName(logName))
@@ -142,40 +187,44 @@ public class StreamProcessorBuilder {
   }
 
   private void validate() {
-    Objects.requireNonNull(streamProcessorFactory, "No stream processor factory provided.");
-    Objects.requireNonNull(logStream, "No log stream provided.");
+    Objects.requireNonNull(typedRecordProcessorFactory, "No stream processor factory provided.");
+
     Objects.requireNonNull(actorScheduler, "No task scheduler provided.");
     Objects.requireNonNull(serviceContainer, "No service container provided.");
     Objects.requireNonNull(snapshotController, "No snapshot controller provided.");
+    Objects.requireNonNull(processingContext.getLogStream(), "No log stream provided.");
+    Objects.requireNonNull(
+        processingContext.getCommandResponseWriter(), "No command response writer provided.");
   }
 
-  private StreamProcessorContext createContext() {
-    final StreamProcessorContext ctx = new StreamProcessorContext();
-    ctx.setId(id);
-    ctx.setName(name);
-    ctx.setStreamProcessorFactory(streamProcessorFactory);
+  private static class MetadataEventFilter implements EventFilter {
 
-    ctx.setLogStream(logStream);
+    protected final RecordMetadata metadata = new RecordMetadata();
+    protected final MetadataFilter metadataFilter;
 
-    ctx.setActorScheduler(actorScheduler);
-
-    ctx.setEventFilter(eventFilter);
-
-    if (snapshotPeriod == null) {
-      snapshotPeriod = Duration.ofMinutes(1);
+    MetadataEventFilter(MetadataFilter metadataFilter) {
+      this.metadataFilter = metadataFilter;
     }
 
-    ctx.setSnapshotPeriod(snapshotPeriod);
-    ctx.setMaxSnapshots(maxSnapshots);
-    ctx.setSnapshotController(snapshotController);
-    ctx.setDeleteDataOnSnapshot(deleteDataOnSnapshot);
+    @Override
+    public boolean applies(LoggedEvent event) {
+      event.readMetadata(metadata);
+      return metadataFilter.applies(metadata);
+    }
+  }
 
-    logStreamReader = new BufferedLogStreamReader();
-    ctx.setLogStreamReader(logStreamReader);
+  private final class VersionFilter implements MetadataFilter {
+    @Override
+    public boolean applies(RecordMetadata m) {
+      if (m.getProtocolVersion() > Protocol.PROTOCOL_VERSION) {
+        throw new RuntimeException(
+            String.format(
+                "Cannot handle event with version newer "
+                    + "than what is implemented by broker (%d > %d)",
+                m.getProtocolVersion(), Protocol.PROTOCOL_VERSION));
+      }
 
-    logStreamWriter = new LogStreamWriterImpl();
-    ctx.setLogStreamWriter(logStreamWriter);
-
-    return ctx;
+      return true;
+    }
   }
 }

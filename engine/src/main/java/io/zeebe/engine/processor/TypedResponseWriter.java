@@ -20,13 +20,8 @@ package io.zeebe.engine.processor;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.Intent;
-import org.agrona.DirectBuffer;
 
 public interface TypedResponseWriter {
-
-  void writeRejection(TypedRecord<?> rejection);
-
-  void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, DirectBuffer reason);
 
   void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason);
 

@@ -19,18 +19,14 @@ package io.zeebe.engine.processor;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.RecordStream;
 import io.zeebe.engine.util.Records;
-import io.zeebe.engine.util.StreamProcessorControl;
 import io.zeebe.engine.util.TestStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -54,14 +50,15 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.MockitoAnnotations;
 
 public class TypedStreamProcessorTest {
-  public static final String STREAM_NAME = "foo";
-  public static final int STREAM_PROCESSOR_ID = 144144;
+  private static final String STREAM_NAME = "foo";
+  private static final int STREAM_PROCESSOR_ID = 144144;
 
-  public TemporaryFolder tempFolder = new TemporaryFolder();
-  public AutoCloseableRule closeables = new AutoCloseableRule();
+  private final TemporaryFolder tempFolder = new TemporaryFolder();
+  private final AutoCloseableRule closeables = new AutoCloseableRule();
 
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
-  public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
+  private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
+  private final ServiceContainerRule serviceContainerRule =
+      new ServiceContainerRule(actorSchedulerRule);
 
   @Rule
   public RuleChain ruleChain =
@@ -70,36 +67,21 @@ public class TypedStreamProcessorTest {
           .around(serviceContainerRule)
           .around(closeables);
 
-  protected TestStreams streams;
+  private TestStreams streams;
   protected LogStream stream;
 
-  private StreamProcessorControl streamProcessorControl;
   private KeyGenerator keyGenerator;
-  private TypedStreamEnvironment env;
   private CommandResponseWriter mockCommandResponseWriter;
 
   @Before
   public void setUp() {
     MockitoAnnotations.initMocks(this);
 
-    mockCommandResponseWriter = mock(CommandResponseWriter.class);
-    when(mockCommandResponseWriter.intent(any())).thenReturn(mockCommandResponseWriter);
-    when(mockCommandResponseWriter.key(anyLong())).thenReturn(mockCommandResponseWriter);
-    when(mockCommandResponseWriter.partitionId(anyInt())).thenReturn(mockCommandResponseWriter);
-    when(mockCommandResponseWriter.recordType(any())).thenReturn(mockCommandResponseWriter);
-    when(mockCommandResponseWriter.rejectionType(any())).thenReturn(mockCommandResponseWriter);
-    when(mockCommandResponseWriter.rejectionReason(any())).thenReturn(mockCommandResponseWriter);
-    when(mockCommandResponseWriter.valueType(any())).thenReturn(mockCommandResponseWriter);
-    when(mockCommandResponseWriter.valueWriter(any())).thenReturn(mockCommandResponseWriter);
-
-    when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
-
     streams =
         new TestStreams(
             tempFolder, closeables, serviceContainerRule.get(), actorSchedulerRule.get());
-
+    mockCommandResponseWriter = streams.getMockedResponseWriter();
     stream = streams.createLogStream(STREAM_NAME);
-    env = new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), mockCommandResponseWriter);
 
     final AtomicLong key = new AtomicLong();
     keyGenerator = () -> key.getAndIncrement();
@@ -108,17 +90,13 @@ public class TypedStreamProcessorTest {
   @Test
   public void shouldWriteSourceEventAndProducerOnBatch() {
     // given
-    streamProcessorControl =
-        streams.initStreamProcessor(
-            STREAM_NAME,
-            STREAM_PROCESSOR_ID,
-            DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-            (actor, db, dbContext) ->
-                env.newStreamProcessor()
-                    .zeebeState(new ZeebeState(db, dbContext))
-                    .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new BatchProcessor())
-                    .build());
-    streamProcessorControl.start();
+    streams.startStreamProcessor(
+        STREAM_NAME,
+        STREAM_PROCESSOR_ID,
+        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        (processingContext) ->
+            TypedRecordProcessors.processors()
+                .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new BatchProcessor()));
     final long firstEventPosition =
         streams
             .newRecord(STREAM_NAME)
@@ -128,8 +106,6 @@ public class TypedStreamProcessorTest {
             .write();
 
     // when
-    streamProcessorControl.unblock();
-
     final LoggedEvent writtenEvent =
         TestUtil.doRepeatedly(
                 () ->
@@ -150,18 +126,14 @@ public class TypedStreamProcessorTest {
   @Test
   public void shouldSkipFailingEvent() {
     // given
-    streamProcessorControl =
-        streams.initStreamProcessor(
-            STREAM_NAME,
-            STREAM_PROCESSOR_ID,
-            DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-            (actor, db, dbContext) ->
-                env.newStreamProcessor()
-                    .zeebeState(new ZeebeState(db, dbContext))
-                    .onCommand(
-                        ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new ErrorProneProcessor())
-                    .build());
-    streamProcessorControl.start();
+    streams.startStreamProcessor(
+        STREAM_NAME,
+        STREAM_PROCESSOR_ID,
+        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        (processingContext) ->
+            TypedRecordProcessors.processors()
+                .onCommand(
+                    ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new ErrorProneProcessor()));
     final AtomicLong requestId = new AtomicLong(0);
     final AtomicInteger requestStreamId = new AtomicInteger(0);
 
@@ -197,8 +169,6 @@ public class TypedStreamProcessorTest {
             .write();
 
     // when
-    streamProcessorControl.unblock();
-
     final LoggedEvent writtenEvent =
         TestUtil.doRepeatedly(
                 () ->

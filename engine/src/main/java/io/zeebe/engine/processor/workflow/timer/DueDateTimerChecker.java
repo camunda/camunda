@@ -17,9 +17,8 @@
  */
 package io.zeebe.engine.processor.workflow.timer;
 
+import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
-import io.zeebe.engine.processor.TypedStreamEnvironment;
-import io.zeebe.engine.processor.TypedStreamProcessor;
 import io.zeebe.engine.processor.TypedStreamWriterImpl;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.TimerInstance;
@@ -104,15 +103,13 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
   }
 
   @Override
-  public void onOpen(final TypedStreamProcessor streamProcessor) {
-    this.actor = streamProcessor.getActor();
-
-    final TypedStreamEnvironment env = streamProcessor.getEnvironment();
-    streamWriter = new TypedStreamWriterImpl(env.getStream(), env.getEventRegistry());
+  public void onOpen(final ReadonlyProcessingContext processingContext) {
+    this.actor = processingContext.getActor();
+    streamWriter = new TypedStreamWriterImpl(processingContext.getLogStream());
   }
 
   @Override
-  public void onRecovered(final TypedStreamProcessor streamProcessor) {
+  public void onRecovered(final ReadonlyProcessingContext processingContext) {
     // check if timers are due after restart
     triggerTimers();
   }

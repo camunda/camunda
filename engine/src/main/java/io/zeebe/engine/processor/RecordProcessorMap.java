@@ -72,11 +72,6 @@ public class RecordProcessorMap {
     elements[index] = value;
   }
 
-  public boolean containsKey(RecordType key1, ValueType key2, int key3) {
-    final int index = mapToIndex(key1, key2, key3);
-    return index >= 0 && elements[index] != null;
-  }
-
   private int mapToIndex(RecordType key1, ValueType key2, int key3) {
     if (key3 >= intentCardinality) {
       return -1;

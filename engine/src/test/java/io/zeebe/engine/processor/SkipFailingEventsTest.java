@@ -33,9 +33,9 @@ import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.engine.util.MockTypedRecord;
 import io.zeebe.engine.util.RecordStream;
 import io.zeebe.engine.util.Records;
-import io.zeebe.engine.util.StreamProcessorControl;
 import io.zeebe.engine.util.TestStreams;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
@@ -88,30 +89,18 @@ public class SkipFailingEventsTest {
   protected LogStream stream;
 
   @Mock protected CommandResponseWriter commandResponseWriter;
-  private StreamProcessorControl streamProcessorControl;
   private KeyGenerator keyGenerator;
-  private TypedStreamEnvironment env;
   private ZeebeState zeebeState;
 
   @Before
   public void setUp() {
     MockitoAnnotations.initMocks(this);
 
-    when(commandResponseWriter.intent(any())).thenReturn(commandResponseWriter);
-    when(commandResponseWriter.key(anyLong())).thenReturn(commandResponseWriter);
-    when(commandResponseWriter.partitionId(anyInt())).thenReturn(commandResponseWriter);
-    when(commandResponseWriter.recordType(any())).thenReturn(commandResponseWriter);
-    when(commandResponseWriter.rejectionType(any())).thenReturn(commandResponseWriter);
-    when(commandResponseWriter.rejectionReason(any())).thenReturn(commandResponseWriter);
-    when(commandResponseWriter.valueType(any())).thenReturn(commandResponseWriter);
-    when(commandResponseWriter.valueWriter(any())).thenReturn(commandResponseWriter);
-
     streams =
         new TestStreams(
             tempFolder, closeables, serviceContainerRule.get(), actorSchedulerRule.get());
-
+    commandResponseWriter = streams.getMockedResponseWriter();
     stream = streams.createLogStream(STREAM_NAME);
-    env = new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), commandResponseWriter);
 
     final AtomicLong key = new AtomicLong();
     keyGenerator = () -> key.getAndIncrement();
@@ -120,53 +109,35 @@ public class SkipFailingEventsTest {
   @Test
   public void shouldWriteErrorEvent() {
     // given
-    final DumpProcessor dumpProcessor = spy(new DumpProcessor());
-    final ErrorProneProcessor processor = new ErrorProneProcessor();
+    final ErrorProneProcessor errorProneProcessor = new ErrorProneProcessor();
 
-    streamProcessorControl =
-        streams.initStreamProcessor(
-            STREAM_NAME,
-            STREAM_PROCESSOR_ID,
-            DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-            (actor, db, dbContext) -> {
-              zeebeState = new ZeebeState(db, dbContext);
-              return env.newStreamProcessor()
-                  .zeebeState(zeebeState)
-                  .onEvent(
-                      ValueType.WORKFLOW_INSTANCE,
-                      WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                      processor)
-                  .onEvent(
-                      ValueType.WORKFLOW_INSTANCE,
-                      WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-                      dumpProcessor)
-                  .build();
-            });
-    streamProcessorControl.start();
+    streams.startStreamProcessor(
+        STREAM_NAME,
+        STREAM_PROCESSOR_ID,
+        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        (processingContext) -> {
+          zeebeState = processingContext.getZeebeState();
+          return TypedRecordProcessors.processors()
+              .onEvent(
+                  ValueType.WORKFLOW_INSTANCE,
+                  WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+                  errorProneProcessor);
+        });
 
     final long failingEventPosition =
         streams
             .newRecord(STREAM_NAME)
-            .event(workflowInstance(1))
+            .event(Records.workflowInstance(1))
             .recordType(RecordType.EVENT)
             .intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .key(keyGenerator.nextKey())
             .write();
 
     // when
-    streamProcessorControl.unblock();
-
-    TestUtil.doRepeatedly(
-            () ->
-                streams
-                    .events(STREAM_NAME)
-                    .filter(e -> Records.isEvent(e, ValueType.ERROR, ErrorIntent.CREATED))
-                    .findFirst())
-        .until(o -> o.isPresent())
-        .get();
+    waitForRecordWhichSatisfies(e -> Records.isEvent(e, ValueType.ERROR, ErrorIntent.CREATED));
 
     // then
-    assertThat(processor.getProcessCount()).isEqualTo(1);
+    assertThat(errorProneProcessor.getProcessCount()).isEqualTo(1);
 
     final ErrorRecord errorRecord =
         new RecordStream(streams.events(STREAM_NAME)).onlyErrorRecords().getFirst().getValue();
@@ -179,49 +150,38 @@ public class SkipFailingEventsTest {
   @Test
   public void shouldWriteErrorEventWithNoMessage() {
     // given
-    streamProcessorControl =
-        streams.initStreamProcessor(
-            STREAM_NAME,
-            STREAM_PROCESSOR_ID,
-            DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-            (actor, db, dbContext) -> {
-              zeebeState = new ZeebeState(db, dbContext);
-              return env.newStreamProcessor()
-                  .zeebeState(zeebeState)
-                  .onEvent(
-                      ValueType.WORKFLOW_INSTANCE,
-                      WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                      new TypedRecordProcessor<UnpackedObject>() {
-                        @Override
-                        public void processRecord(
-                            TypedRecord<UnpackedObject> record,
-                            TypedResponseWriter responseWriter,
-                            TypedStreamWriter streamWriter) {
-                          throw new NullPointerException();
-                        }
-                      })
-                  .build();
-            });
-    streamProcessorControl.start();
+    streams.startStreamProcessor(
+        STREAM_NAME,
+        STREAM_PROCESSOR_ID,
+        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        (processingContext) -> {
+          zeebeState = processingContext.getZeebeState();
+          return TypedRecordProcessors.processors()
+              .onEvent(
+                  ValueType.WORKFLOW_INSTANCE,
+                  WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+                  new TypedRecordProcessor<UnpackedObject>() {
+                    @Override
+                    public void processRecord(
+                        TypedRecord<UnpackedObject> record,
+                        TypedResponseWriter responseWriter,
+                        TypedStreamWriter streamWriter) {
+                      throw new NullPointerException();
+                    }
+                  });
+        });
 
     final long failingEventPosition =
         streams
             .newRecord(STREAM_NAME)
-            .event(workflowInstance(1))
+            .event(Records.workflowInstance(1))
             .recordType(RecordType.EVENT)
             .intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .key(keyGenerator.nextKey())
             .write();
 
     // when
-    TestUtil.doRepeatedly(
-            () ->
-                streams
-                    .events(STREAM_NAME)
-                    .filter(e -> Records.isEvent(e, ValueType.ERROR, ErrorIntent.CREATED))
-                    .findFirst())
-        .until(o -> o.isPresent())
-        .get();
+    waitForRecordWhichSatisfies(e -> Records.isEvent(e, ValueType.ERROR, ErrorIntent.CREATED));
 
     // then
     final ErrorRecord errorRecord =
@@ -239,37 +199,31 @@ public class SkipFailingEventsTest {
     final DumpProcessor dumpProcessor = spy(new DumpProcessor());
     final ErrorProneProcessor processor = new ErrorProneProcessor();
 
-    streamProcessorControl =
-        streams.initStreamProcessor(
-            STREAM_NAME,
-            STREAM_PROCESSOR_ID,
-            DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-            (actor, db, dbContext) -> {
-              zeebeState = new ZeebeState(db, dbContext);
-              return env.newStreamProcessor()
-                  .zeebeState(zeebeState)
-                  .onEvent(
-                      ValueType.WORKFLOW_INSTANCE,
-                      WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                      processor)
-                  .onEvent(
-                      ValueType.WORKFLOW_INSTANCE,
-                      WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-                      dumpProcessor)
-                  .build();
-            });
-    streamProcessorControl.start();
+    streams.startStreamProcessor(
+        STREAM_NAME,
+        STREAM_PROCESSOR_ID,
+        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        (processingContext) -> {
+          zeebeState = processingContext.getZeebeState();
+          return TypedRecordProcessors.processors()
+              .onEvent(
+                  ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_ACTIVATING, processor)
+              .onEvent(
+                  ValueType.WORKFLOW_INSTANCE,
+                  WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+                  dumpProcessor);
+        });
 
     streams
         .newRecord(STREAM_NAME)
-        .event(workflowInstance(1))
+        .event(Records.workflowInstance(1))
         .recordType(RecordType.EVENT)
         .intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
         .key(keyGenerator.nextKey())
         .write();
     streams
         .newRecord(STREAM_NAME)
-        .event(workflowInstance(1))
+        .event(Records.workflowInstance(1))
         .recordType(RecordType.EVENT)
         .intent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
         .key(keyGenerator.nextKey())
@@ -278,27 +232,17 @@ public class SkipFailingEventsTest {
     // other instance
     streams
         .newRecord(STREAM_NAME)
-        .event(workflowInstance(2))
+        .event(Records.workflowInstance(2))
         .recordType(RecordType.EVENT)
         .intent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
         .key(keyGenerator.nextKey())
         .write();
-    // when
-    streamProcessorControl.unblock();
 
-    TestUtil.doRepeatedly(
-            () ->
-                streams
-                    .events(STREAM_NAME)
-                    .filter(
-                        e ->
-                            Records.isEvent(
-                                e,
-                                ValueType.WORKFLOW_INSTANCE,
-                                WorkflowInstanceIntent.ELEMENT_COMPLETED))
-                    .findFirst())
-        .until(o -> o.isPresent())
-        .get();
+    // when
+    waitForRecordWhichSatisfies(
+        e ->
+            Records.isEvent(
+                e, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_COMPLETED));
 
     // then
     assertThat(processor.getProcessCount()).isEqualTo(1);
@@ -306,7 +250,7 @@ public class SkipFailingEventsTest {
     final RecordMetadata metadata = new RecordMetadata();
     metadata.valueType(ValueType.WORKFLOW_INSTANCE);
     final MockTypedRecord<WorkflowInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, workflowInstance(1));
+        new MockTypedRecord<>(0, metadata, Records.workflowInstance(1));
     Assertions.assertThat(zeebeState.isOnBlacklist(mockTypedRecord)).isTrue();
 
     verify(dumpProcessor, times(1)).processRecord(any(), any(), any(), any());
@@ -321,7 +265,7 @@ public class SkipFailingEventsTest {
     final long failedPos =
         streams
             .newRecord(STREAM_NAME)
-            .event(job(1))
+            .event(Records.job(1))
             .recordType(RecordType.EVENT)
             .intent(JobIntent.ACTIVATED)
             .producerId(STREAM_PROCESSOR_ID)
@@ -329,7 +273,7 @@ public class SkipFailingEventsTest {
             .write();
     streams
         .newRecord(STREAM_NAME)
-        .event(error(1, failedPos))
+        .event(Records.error(1, failedPos))
         .recordType(RecordType.EVENT)
         .producerId(STREAM_PROCESSOR_ID)
         .sourceRecordPosition(failedPos)
@@ -338,40 +282,36 @@ public class SkipFailingEventsTest {
         .write();
 
     final CountDownLatch latch = new CountDownLatch(1);
-    streamProcessorControl =
-        streams.initStreamProcessor(
-            STREAM_NAME,
-            STREAM_PROCESSOR_ID,
-            DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-            (actor, db, dbContext) -> {
-              zeebeState = new ZeebeState(db, dbContext);
-              return env.newStreamProcessor()
-                  .zeebeState(zeebeState)
-                  .withListener(
-                      new StreamProcessorLifecycleAware() {
-                        @Override
-                        public void onRecovered(TypedStreamProcessor streamProcessor) {
-                          latch.countDown();
-                        }
-                      })
-                  .onEvent(ValueType.JOB, JobIntent.ACTIVATED, new DumpProcessor())
-                  .build();
-            });
+    streams.startStreamProcessor(
+        STREAM_NAME,
+        STREAM_PROCESSOR_ID,
+        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        (processingContext) -> {
+          zeebeState = processingContext.getZeebeState();
+          return TypedRecordProcessors.processors()
+              .withListener(
+                  new StreamProcessorLifecycleAware() {
+                    @Override
+                    public void onRecovered(ReadonlyProcessingContext ctx) {
+                      latch.countDown();
+                    }
+                  })
+              .onEvent(ValueType.JOB, JobIntent.ACTIVATED, new DumpProcessor());
+        });
 
     // when
-    streamProcessorControl.start();
     latch.await(2000, TimeUnit.MILLISECONDS);
 
     // then
     final RecordMetadata metadata = new RecordMetadata();
     metadata.valueType(ValueType.WORKFLOW_INSTANCE);
     final MockTypedRecord<WorkflowInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, workflowInstance(1));
+        new MockTypedRecord<>(0, metadata, Records.workflowInstance(1));
     waitUntil(() -> zeebeState.isOnBlacklist(mockTypedRecord));
   }
 
   @Test
-  public void shouldNotBlacklistInstance() {
+  public void shouldNotBlacklistInstanceOnCommand() {
     // given
     when(commandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     final List<Long> processedInstances = new ArrayList<>();
@@ -385,7 +325,9 @@ public class SkipFailingEventsTest {
                   TypedStreamWriter streamWriter) {
                 processedInstances.add(record.getValue().getWorkflowInstanceKey());
                 streamWriter.appendFollowUpEvent(
-                    record.getKey(), WorkflowInstanceIntent.ELEMENT_COMPLETED, workflowInstance(2));
+                    record.getKey(),
+                    WorkflowInstanceIntent.ELEMENT_COMPLETED,
+                    Records.workflowInstance(2));
               }
             });
     final TypedRecordProcessor<JobRecord> errorProneProcessor =
@@ -399,31 +341,27 @@ public class SkipFailingEventsTest {
           }
         };
 
-    streamProcessorControl =
-        streams.initStreamProcessor(
-            STREAM_NAME,
-            STREAM_PROCESSOR_ID,
-            DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-            (actor, db, dbContext) -> {
-              zeebeState = new ZeebeState(db, dbContext);
-              return env.newStreamProcessor()
-                  .zeebeState(zeebeState)
-                  .onCommand(ValueType.JOB, JobIntent.CREATE, errorProneProcessor)
-                  .onEvent(ValueType.JOB, JobIntent.ACTIVATED, dumpProcessor)
-                  .build();
-            });
-    streamProcessorControl.start();
+    streams.startStreamProcessor(
+        STREAM_NAME,
+        STREAM_PROCESSOR_ID,
+        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        (processingContext) -> {
+          zeebeState = processingContext.getZeebeState();
+          return TypedRecordProcessors.processors()
+              .onCommand(ValueType.JOB, JobIntent.COMPLETE, errorProneProcessor)
+              .onEvent(ValueType.JOB, JobIntent.ACTIVATED, dumpProcessor);
+        });
 
     streams
         .newRecord(STREAM_NAME)
-        .event(job(1))
+        .event(Records.job(1))
         .recordType(RecordType.COMMAND)
         .intent(JobIntent.COMPLETE)
         .key(keyGenerator.nextKey())
         .write();
     streams
         .newRecord(STREAM_NAME)
-        .event(job(1))
+        .event(Records.job(1))
         .recordType(RecordType.EVENT)
         .intent(JobIntent.ACTIVATED)
         .key(keyGenerator.nextKey())
@@ -432,33 +370,23 @@ public class SkipFailingEventsTest {
     // other instance
     streams
         .newRecord(STREAM_NAME)
-        .event(job(2))
+        .event(Records.job(2))
         .recordType(RecordType.EVENT)
         .intent(JobIntent.ACTIVATED)
         .key(keyGenerator.nextKey())
         .write();
-    // when
-    streamProcessorControl.unblock();
 
-    TestUtil.doRepeatedly(
-            () ->
-                streams
-                    .events(STREAM_NAME)
-                    .filter(
-                        e ->
-                            Records.isEvent(
-                                e,
-                                ValueType.WORKFLOW_INSTANCE,
-                                WorkflowInstanceIntent.ELEMENT_COMPLETED))
-                    .findFirst())
-        .until(o -> o.isPresent())
-        .get();
+    // when
+    waitForRecordWhichSatisfies(
+        e ->
+            Records.isEvent(
+                e, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_COMPLETED));
 
     // then
     final RecordMetadata metadata = new RecordMetadata();
     metadata.valueType(ValueType.WORKFLOW_INSTANCE);
     final MockTypedRecord<WorkflowInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, workflowInstance(1));
+        new MockTypedRecord<>(0, metadata, Records.workflowInstance(1));
     Assertions.assertThat(zeebeState.isOnBlacklist(mockTypedRecord)).isFalse();
 
     verify(dumpProcessor, times(2)).processRecord(any(), any(), any(), any());
@@ -482,88 +410,47 @@ public class SkipFailingEventsTest {
             }
             processedInstances.add(record.getValue().getWorkflowInstanceKey());
             streamWriter.appendFollowUpEvent(
-                record.getKey(), TimerIntent.CREATED, timer(TimerInstance.NO_ELEMENT_INSTANCE));
+                record.getKey(),
+                TimerIntent.CREATED,
+                Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
           }
         };
 
-    streamProcessorControl =
-        streams.initStreamProcessor(
-            STREAM_NAME,
-            STREAM_PROCESSOR_ID,
-            DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-            (actor, db, dbContext) -> {
-              zeebeState = new ZeebeState(db, dbContext);
-              return env.newStreamProcessor()
-                  .zeebeState(zeebeState)
-                  .onCommand(ValueType.TIMER, TimerIntent.CREATE, errorProneProcessor)
-                  .build();
-            });
-    streamProcessorControl.start();
+    streams.startStreamProcessor(
+        STREAM_NAME,
+        STREAM_PROCESSOR_ID,
+        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        (processingContext) -> {
+          zeebeState = processingContext.getZeebeState();
+          return TypedRecordProcessors.processors()
+              .onCommand(ValueType.TIMER, TimerIntent.CREATE, errorProneProcessor);
+        });
 
     streams
         .newRecord(STREAM_NAME)
-        .event(timer(TimerInstance.NO_ELEMENT_INSTANCE))
+        .event(Records.timer(TimerInstance.NO_ELEMENT_INSTANCE))
         .recordType(RecordType.COMMAND)
         .intent(TimerIntent.CREATE)
         .key(keyGenerator.nextKey())
         .write();
     streams
         .newRecord(STREAM_NAME)
-        .event(timer(TimerInstance.NO_ELEMENT_INSTANCE))
+        .event(Records.timer(TimerInstance.NO_ELEMENT_INSTANCE))
         .recordType(RecordType.COMMAND)
         .intent(TimerIntent.CREATE)
         .key(keyGenerator.nextKey())
         .write();
 
     // when
-    streamProcessorControl.unblock();
-    TestUtil.doRepeatedly(
-            () ->
-                streams
-                    .events(STREAM_NAME)
-                    .filter(e -> Records.isEvent(e, ValueType.TIMER, TimerIntent.CREATED))
-                    .findFirst())
-        .until(o -> o.isPresent())
-        .get();
+    waitForRecordWhichSatisfies(e -> Records.isEvent(e, ValueType.TIMER, TimerIntent.CREATED));
 
     // then
     final RecordMetadata metadata = new RecordMetadata();
     metadata.valueType(ValueType.TIMER);
     final MockTypedRecord<TimerRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, timer(TimerInstance.NO_ELEMENT_INSTANCE));
+        new MockTypedRecord<>(0, metadata, Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
     Assertions.assertThat(zeebeState.isOnBlacklist(mockTypedRecord)).isFalse();
     assertThat(processedInstances).containsExactly((long) TimerInstance.NO_ELEMENT_INSTANCE);
-  }
-
-  protected WorkflowInstanceRecord workflowInstance(final int instanceKey) {
-    final WorkflowInstanceRecord event = new WorkflowInstanceRecord();
-    event.setWorkflowInstanceKey(instanceKey);
-    return event;
-  }
-
-  protected ErrorRecord error(final int instanceKey, final long pos) {
-    final ErrorRecord event = new ErrorRecord();
-    event.initErrorRecord(new Exception("expected"), pos);
-    event.setWorkflowInstanceKey(instanceKey);
-    return event;
-  }
-
-  protected JobRecord job(final int instanceKey) {
-    final JobRecord event = new JobRecord();
-    event.getHeaders().setWorkflowInstanceKey(instanceKey);
-    return event;
-  }
-
-  protected TimerRecord timer(final int instanceKey) {
-    final TimerRecord event = new TimerRecord();
-    event
-        .setWorkflowInstanceKey(instanceKey)
-        .setElementInstanceKey(instanceKey)
-        .setDueDate(1245)
-        .setHandlerNodeId(BufferUtil.wrapString("foo"))
-        .setRepetitions(0)
-        .setWorkflowKey(1);
-    return event;
   }
 
   protected static class ErrorProneProcessor
@@ -597,5 +484,11 @@ public class SkipFailingEventsTest {
       streamWriter.appendFollowUpEvent(
           record.getKey(), WorkflowInstanceIntent.ELEMENT_COMPLETED, record.getValue());
     }
+  }
+
+  private void waitForRecordWhichSatisfies(Predicate<LoggedEvent> filter) {
+    TestUtil.doRepeatedly(() -> streams.events(STREAM_NAME).filter(filter).findFirst())
+        .until(o -> o.isPresent())
+        .get();
   }
 }

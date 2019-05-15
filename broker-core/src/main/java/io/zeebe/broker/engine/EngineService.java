@@ -21,14 +21,15 @@ import io.atomix.core.Atomix;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
-import io.zeebe.broker.engine.StreamProcessorServiceFactory.Builder;
 import io.zeebe.broker.engine.impl.DeploymentDistributorImpl;
 import io.zeebe.broker.engine.impl.SubscriptionCommandSenderImpl;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriterImpl;
-import io.zeebe.engine.processor.TypedEventStreamProcessorBuilder;
-import io.zeebe.engine.processor.TypedStreamEnvironment;
-import io.zeebe.engine.processor.TypedStreamProcessor;
+import io.zeebe.engine.processor.ProcessingContext;
+import io.zeebe.engine.processor.StreamProcessor;
+import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.BpmnStepProcessor;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
 import io.zeebe.engine.processor.workflow.WorkflowEventProcessors;
@@ -48,11 +49,15 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ServerTransport;
+import io.zeebe.util.DurationUtil;
 import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.ActorScheduler;
+import java.time.Duration;
 
 public class EngineService implements Service<EngineService> {
 
@@ -60,26 +65,33 @@ public class EngineService implements Service<EngineService> {
 
   private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
   private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
-  private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector =
-      new Injector<>();
   private final Injector<Atomix> atomixInjector = new Injector<>();
 
   private final ClusterCfg clusterCfg;
-  private StreamProcessorServiceFactory streamProcessorServiceFactory;
+  private final ServiceContainer serviceContainer;
+  private final Duration snapshotPeriod;
+  private final int maxSnapshots;
+
   private ServerTransport clientApiTransport;
   private TopologyManager topologyManager;
   private Atomix atomix;
   private final ServiceGroupReference<Partition> partitionsGroupReference =
       ServiceGroupReference.<Partition>create().onAdd(this::startEngineForPartition).build();
+  private ActorScheduler scheduler;
 
-  public EngineService(final ClusterCfg clusterCfg) {
-    this.clusterCfg = clusterCfg;
+  public EngineService(ServiceContainer serviceContainer, BrokerCfg brokerCfg) {
+    clusterCfg = brokerCfg.getCluster();
+
+    this.serviceContainer = serviceContainer;
+    final DataCfg dataCfg = brokerCfg.getData();
+    this.snapshotPeriod = DurationUtil.parse(dataCfg.getSnapshotPeriod());
+    this.maxSnapshots = dataCfg.getMaxSnapshots();
   }
 
   @Override
   public void start(final ServiceStartContext serviceContext) {
+    this.scheduler = serviceContext.getScheduler();
     this.clientApiTransport = clientApiTransportInjector.getValue();
-    this.streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
     this.topologyManager = topologyManagerInjector.getValue();
     this.atomix = atomixInjector.getValue();
   }
@@ -88,65 +100,61 @@ public class EngineService implements Service<EngineService> {
       final ServiceName<Partition> partitionServiceName, final Partition partition) {
     final int partitionId = partition.getPartitionId();
 
-    final Builder streamProcessorServiceBuilder =
-        streamProcessorServiceFactory
-            .createService(partition, partitionServiceName)
-            .processorId(partitionId)
-            .processorName(PROCESSOR_NAME);
-
-    streamProcessorServiceBuilder
+    final LogStream logStream = partition.getLogStream();
+    StreamProcessor.builder(partitionId, PROCESSOR_NAME)
+        .logStream(logStream)
+        .actorScheduler(scheduler)
+        .additionalDependencies(partitionServiceName)
         .snapshotController(partition.getProcessorSnapshotController())
+        .maxSnapshots(maxSnapshots)
+        .snapshotPeriod(snapshotPeriod)
+        .serviceContainer(serviceContainer)
+        .commandResponseWriter(new CommandResponseWriterImpl(clientApiTransport.getOutput()))
         .streamProcessorFactory(
-            (actor, zeebeDb, dbContext) -> {
-              final ZeebeState zeebeState = new ZeebeState(partitionId, zeebeDb, dbContext);
-              final TypedStreamEnvironment streamEnvironment =
-                  new TypedStreamEnvironment(
-                      partition.getLogStream(),
-                      new CommandResponseWriterImpl(clientApiTransport.getOutput()));
-
-              return createTypedStreamProcessor(actor, partitionId, streamEnvironment, zeebeState);
+            (processingContext) -> {
+              final ActorControl actor = processingContext.getActor();
+              final ZeebeState zeebeState = processingContext.getZeebeState();
+              return createTypedStreamProcessor(actor, partitionId, zeebeState, processingContext);
             })
         .deleteDataOnSnapshot(true)
         .build();
   }
 
-  public TypedStreamProcessor createTypedStreamProcessor(
+  public TypedRecordProcessors createTypedStreamProcessor(
       ActorControl actor,
       int partitionId,
-      TypedStreamEnvironment streamEnvironment,
-      ZeebeState zeebeState) {
-    final TypedEventStreamProcessorBuilder typedProcessorBuilder =
-        streamEnvironment.newStreamProcessor().zeebeState(zeebeState);
+      ZeebeState zeebeState,
+      ProcessingContext processingContext) {
+    final TypedRecordProcessors typedRecordProcessors = TypedRecordProcessors.processors();
+    final LogStream stream = processingContext.getLogStream();
 
-    addDistributeDeploymentProcessors(actor, zeebeState, streamEnvironment, typedProcessorBuilder);
+    addDistributeDeploymentProcessors(actor, zeebeState, stream, typedRecordProcessors);
 
     final SubscriptionCommandSenderImpl subscriptionCommandSender =
         new SubscriptionCommandSenderImpl(atomix);
-    subscriptionCommandSender.init(topologyManager, actor, streamEnvironment.getStream());
+    subscriptionCommandSender.init(topologyManager, actor, stream);
     final CatchEventBehavior catchEventBehavior =
         new CatchEventBehavior(
             zeebeState, subscriptionCommandSender, clusterCfg.getPartitionsCount());
 
     addDeploymentRelatedProcessorAndServices(
-        catchEventBehavior, partitionId, zeebeState, typedProcessorBuilder);
-    addMessageProcessors(subscriptionCommandSender, zeebeState, typedProcessorBuilder);
+        catchEventBehavior, partitionId, zeebeState, typedRecordProcessors);
+    addMessageProcessors(subscriptionCommandSender, zeebeState, typedRecordProcessors);
 
     final BpmnStepProcessor stepProcessor =
         addWorkflowProcessors(
-            zeebeState, typedProcessorBuilder, subscriptionCommandSender, catchEventBehavior);
-    addIncidentProcessors(zeebeState, stepProcessor, typedProcessorBuilder);
-    addJobProcessors(zeebeState, typedProcessorBuilder);
+            zeebeState, typedRecordProcessors, subscriptionCommandSender, catchEventBehavior);
+    addIncidentProcessors(zeebeState, stepProcessor, typedRecordProcessors);
+    addJobProcessors(zeebeState, typedRecordProcessors);
 
-    return typedProcessorBuilder.build();
+    return typedRecordProcessors;
   }
 
   private void addDistributeDeploymentProcessors(
       ActorControl actor,
       ZeebeState zeebeState,
-      TypedStreamEnvironment streamEnvironment,
-      TypedEventStreamProcessorBuilder typedEventStreamProcessorBuilder) {
-    final LogStream stream = streamEnvironment.getStream();
-    final LogStreamWriterImpl logStreamWriter = new LogStreamWriterImpl(stream);
+      LogStream stream,
+      TypedRecordProcessors typedRecordProcessors) {
 
     final TopologyPartitionListenerImpl partitionListener =
         new TopologyPartitionListenerImpl(actor);
@@ -157,21 +165,23 @@ public class EngineService implements Service<EngineService> {
             clusterCfg, atomix, partitionListener, zeebeState.getDeploymentState(), actor);
     final DeploymentDistributeProcessor deploymentDistributeProcessor =
         new DeploymentDistributeProcessor(
-            zeebeState.getDeploymentState(), logStreamWriter, deploymentDistributor);
+            zeebeState.getDeploymentState(),
+            new LogStreamWriterImpl(stream),
+            deploymentDistributor);
 
-    typedEventStreamProcessorBuilder.onCommand(
+    typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
   }
 
   private BpmnStepProcessor addWorkflowProcessors(
       ZeebeState zeebeState,
-      TypedEventStreamProcessorBuilder typedProcessorBuilder,
+      TypedRecordProcessors typedRecordProcessors,
       SubscriptionCommandSenderImpl subscriptionCommandSender,
       CatchEventBehavior catchEventBehavior) {
     final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getWorkflowState());
     return WorkflowEventProcessors.addWorkflowProcessors(
-        typedProcessorBuilder,
         zeebeState,
+        typedRecordProcessors,
         subscriptionCommandSender,
         catchEventBehavior,
         timerChecker);
@@ -181,17 +191,17 @@ public class EngineService implements Service<EngineService> {
       CatchEventBehavior catchEventBehavior,
       int partitionId,
       ZeebeState zeebeState,
-      TypedEventStreamProcessorBuilder typedProcessorBuilder) {
+      TypedRecordProcessors typedRecordProcessors) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
     final boolean isDeploymentPartition = partitionId == Protocol.DEPLOYMENT_PARTITION;
     if (isDeploymentPartition) {
       DeploymentEventProcessors.addTransformingDeploymentProcessor(
-          typedProcessorBuilder, zeebeState, catchEventBehavior);
+          typedRecordProcessors, zeebeState, catchEventBehavior);
     } else {
-      DeploymentEventProcessors.addDeploymentCreateProcessor(typedProcessorBuilder, workflowState);
+      DeploymentEventProcessors.addDeploymentCreateProcessor(typedRecordProcessors, workflowState);
     }
 
-    typedProcessorBuilder.onEvent(
+    typedRecordProcessors.onEvent(
         ValueType.DEPLOYMENT,
         DeploymentIntent.CREATED,
         new DeploymentCreatedProcessor(workflowState, isDeploymentPartition));
@@ -200,21 +210,21 @@ public class EngineService implements Service<EngineService> {
   private void addIncidentProcessors(
       ZeebeState zeebeState,
       BpmnStepProcessor stepProcessor,
-      TypedEventStreamProcessorBuilder typedProcessorBuilder) {
-    IncidentEventProcessors.addProcessors(typedProcessorBuilder, zeebeState, stepProcessor);
+      TypedRecordProcessors typedRecordProcessors) {
+    IncidentEventProcessors.addProcessors(typedRecordProcessors, zeebeState, stepProcessor);
   }
 
   private void addJobProcessors(
-      ZeebeState zeebeState, TypedEventStreamProcessorBuilder typedProcessorBuilder) {
-    JobEventProcessors.addJobProcessors(typedProcessorBuilder, zeebeState);
+      ZeebeState zeebeState, TypedRecordProcessors typedRecordProcessors) {
+    JobEventProcessors.addJobProcessors(typedRecordProcessors, zeebeState);
   }
 
   private void addMessageProcessors(
       SubscriptionCommandSenderImpl subscriptionCommandSender,
       ZeebeState zeebeState,
-      TypedEventStreamProcessorBuilder typedProcessorBuilder) {
+      TypedRecordProcessors typedRecordProcessors) {
     MessageEventProcessors.addMessageProcessors(
-        typedProcessorBuilder, zeebeState, subscriptionCommandSender);
+        typedRecordProcessors, zeebeState, subscriptionCommandSender);
   }
 
   @Override
@@ -228,10 +238,6 @@ public class EngineService implements Service<EngineService> {
 
   public ServiceGroupReference<Partition> getPartitionsGroupReference() {
     return partitionsGroupReference;
-  }
-
-  public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector() {
-    return streamProcessorServiceFactoryInjector;
   }
 
   public Injector<TopologyManager> getTopologyManagerInjector() {

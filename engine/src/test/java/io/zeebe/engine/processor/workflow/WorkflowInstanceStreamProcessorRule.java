@@ -26,17 +26,15 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedRecord;
-import io.zeebe.engine.processor.TypedStreamProcessor;
 import io.zeebe.engine.processor.workflow.job.JobEventProcessors;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processor.workflow.timer.DueDateTimerChecker;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.util.CopiedTypedEvent;
 import io.zeebe.engine.util.Records;
-import io.zeebe.engine.util.StreamProcessorControl;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.engine.util.TypedRecordStream;
 import io.zeebe.model.bpmn.Bpmn;
@@ -84,9 +82,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
 
   private SubscriptionCommandSender mockSubscriptionCommandSender;
 
-  private StreamProcessorControl streamProcessor;
   private WorkflowState workflowState;
-  private ZeebeState zeebeState;
   private ActorControl actor;
 
   public WorkflowInstanceStreamProcessorRule(StreamProcessorRule streamProcessorRule) {
@@ -114,26 +110,20 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
             anyLong(), anyLong(), anyLong(), any(), any()))
         .thenReturn(true);
 
-    streamProcessor =
-        environmentRule.runTypedStreamProcessor(
-            (typedEventStreamProcessorBuilder, zeebeDb, dbContext) -> {
-              zeebeState = new ZeebeState(zeebeDb, dbContext);
-              workflowState = zeebeState.getWorkflowState();
-              WorkflowEventProcessors.addWorkflowProcessors(
-                  typedEventStreamProcessorBuilder,
-                  zeebeState,
-                  mockSubscriptionCommandSender,
-                  new CatchEventBehavior(zeebeState, mockSubscriptionCommandSender, 1),
-                  new DueDateTimerChecker(workflowState));
+    environmentRule.startTypedStreamProcessor(
+        (typedRecordProcessors, zeebeState) -> {
+          workflowState = zeebeState.getWorkflowState();
+          WorkflowEventProcessors.addWorkflowProcessors(
+              zeebeState,
+              typedRecordProcessors,
+              mockSubscriptionCommandSender,
+              new CatchEventBehavior(zeebeState, mockSubscriptionCommandSender, 1),
+              new DueDateTimerChecker(workflowState));
 
-              JobEventProcessors.addJobProcessors(typedEventStreamProcessorBuilder, zeebeState);
-              typedEventStreamProcessorBuilder.withListener(this);
-              return typedEventStreamProcessorBuilder.build();
-            });
-  }
-
-  public StreamProcessorControl getStreamProcessor() {
-    return streamProcessor;
+          JobEventProcessors.addJobProcessors(typedRecordProcessors, zeebeState);
+          typedRecordProcessors.withListener(this);
+          return typedRecordProcessors;
+        });
   }
 
   public void deploy(final BpmnModelInstance modelInstance, int deploymentKey, int version) {
@@ -236,17 +226,6 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
             .orElse(null);
   }
 
-  private TypedRecord<WorkflowInstanceRecord> awaitAndGetFirstRecordInState(
-      final WorkflowInstanceIntent state) {
-    awaitFirstRecordInState(state);
-    return environmentRule
-        .events()
-        .onlyWorkflowInstanceRecords()
-        .withIntent(state)
-        .findFirst()
-        .get();
-  }
-
   private TypedRecord<JobRecord> awaitAndGetFirstRecordInState(final JobIntent state) {
     awaitFirstRecordInState(state);
     return environmentRule.events().onlyJobRecords().withIntent(state).findFirst().get();
@@ -319,12 +298,12 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
   }
 
   @Override
-  public void onOpen(TypedStreamProcessor streamProcessor) {
-    actor = streamProcessor.getActor();
+  public void onOpen(ReadonlyProcessingContext processingContext) {
+    actor = processingContext.getActor();
   }
 
   @Override
-  public void onRecovered(TypedStreamProcessor streamProcessor) {
+  public void onRecovered(ReadonlyProcessingContext processingContext) {
     // recovered
   }
 

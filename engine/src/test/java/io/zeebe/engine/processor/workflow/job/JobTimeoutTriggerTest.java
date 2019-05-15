@@ -19,12 +19,10 @@ package io.zeebe.engine.processor.workflow.job;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-import io.zeebe.engine.processor.TypedStreamEnvironment;
-import io.zeebe.engine.processor.TypedStreamProcessor;
+import io.zeebe.engine.processor.ProcessingContext;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.instance.JobState;
 import io.zeebe.engine.util.ZeebeStateRule;
@@ -54,13 +52,9 @@ public class JobTimeoutTriggerTest {
     final JobState jobState = stateRule.getZeebeState().getJobState();
     jobTimeoutTrigger = new JobTimeoutTrigger(jobState);
 
-    final TypedStreamProcessor streamProcessor = mock(TypedStreamProcessor.class);
-    when(streamProcessor.getActor()).thenReturn(someActor);
-    final TypedStreamEnvironment environment = mock(TypedStreamEnvironment.class);
-    when(environment.buildCommandWriter()).thenReturn(typedStreamWriter);
-    when(streamProcessor.getEnvironment()).thenReturn(environment);
-
-    jobTimeoutTrigger.onRecovered(streamProcessor);
+    final ProcessingContext processingContext =
+        new ProcessingContext().actor(someActor).logStreamWriter(typedStreamWriter);
+    jobTimeoutTrigger.onRecovered(processingContext);
 
     jobState.activate(0, newJobRecord());
     jobState.activate(1, newJobRecord());

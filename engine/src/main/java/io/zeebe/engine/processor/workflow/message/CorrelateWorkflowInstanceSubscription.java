@@ -18,11 +18,11 @@
 package io.zeebe.engine.processor.workflow.message;
 
 import io.zeebe.engine.processor.KeyGenerator;
+import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.SideEffectProducer;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessor;
 import io.zeebe.engine.processor.TypedResponseWriter;
-import io.zeebe.engine.processor.TypedStreamProcessor;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.ZeebeState;
@@ -74,8 +74,8 @@ public final class CorrelateWorkflowInstanceSubscription
   }
 
   @Override
-  public void onOpen(final TypedStreamProcessor streamProcessor) {
-    final ActorControl actor = streamProcessor.getActor();
+  public void onOpen(final ReadonlyProcessingContext processingContext) {
+    final ActorControl actor = processingContext.getActor();
 
     final PendingWorkflowInstanceSubscriptionChecker pendingSubscriptionChecker =
         new PendingWorkflowInstanceSubscriptionChecker(
