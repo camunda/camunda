@@ -61,12 +61,7 @@ export default class CollectionItem extends React.Component {
           </Button>
           <div className="collections" />
           <div className="operations">
-            <Button
-              title="Edit Collection"
-              onClick={() =>
-                setCollectionToUpdate({id, name, data: {entities: entities.map(({id}) => id)}})
-              }
-            >
+            <Button title="Edit Collection" onClick={() => setCollectionToUpdate({id, name})}>
               <Icon title="Edit Collection" type="edit" className="editLink" />
             </Button>
             <Button

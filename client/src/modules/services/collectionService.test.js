@@ -5,10 +5,9 @@
  */
 
 import {getEntitiesCollections, toggleEntityCollection} from './collectionService';
-import {updateEntity} from './entityService';
-jest.mock('./entityService', () => ({
-  updateEntity: jest.fn()
-}));
+import {removeEntityFromCollection, addEntityToCollection} from './entityService';
+
+jest.mock('./entityService');
 
 const collection = {
   id: 'aCollectionId',
@@ -52,14 +51,10 @@ it('should call passed load data function', async () => {
 
 it('should correctly add report to a collection', async () => {
   await toggleEntityCollection(jest.fn())(processReport, collection, false);
-  expect(updateEntity).toHaveBeenCalledWith('collection', 'aCollectionId', {
-    data: {entities: ['reportID1', 'reportID2', 'reportID3']}
-  });
+  expect(addEntityToCollection).toHaveBeenCalledWith('reportID3', 'aCollectionId');
 });
 
 it('should correctly remove report to a collection', async () => {
   await toggleEntityCollection(jest.fn())(processReport, collection, true);
-  expect(updateEntity).toHaveBeenCalledWith('collection', 'aCollectionId', {
-    data: {entities: ['reportID1', 'reportID2']}
-  });
+  expect(removeEntityFromCollection).toHaveBeenCalledWith('reportID3', 'aCollectionId');
 });

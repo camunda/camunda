@@ -40,7 +40,7 @@ it('should invoke onConfirm on save button click', async () => {
 
   node.find('.confirm').simulate('click');
 
-  expect(props.onConfirm).toHaveBeenCalledWith({id: 'aCollectionId', name: 'aCollectionName'});
+  expect(props.onConfirm).toHaveBeenCalledWith('aCollectionName');
 });
 
 it('should disable save button if report name is empty', async () => {

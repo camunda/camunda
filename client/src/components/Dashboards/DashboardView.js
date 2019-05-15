@@ -125,8 +125,8 @@ export default themed(
       });
     };
 
-    createCollection = async collection => {
-      await createEntity('collection', collection);
+    createCollection = async name => {
+      await createEntity('collection', {name, data: {entities: [this.props.id]}});
       await this.loadCollections();
       this.setState({creatingCollection: false});
     };
@@ -265,7 +265,7 @@ export default themed(
           </div>
           {creatingCollection && (
             <EditCollectionModal
-              collection={{data: {entities: [id]}}}
+              collection={{}}
               onClose={() => this.setState({creatingCollection: false})}
               onConfirm={this.createCollection}
             />

@@ -4,20 +4,16 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {updateEntity} from './entityService';
+import {removeEntityFromCollection, addEntityToCollection} from './entityService';
 
 export function toggleEntityCollection(loadCollections) {
   return async function(entity, collection, isRemove) {
-    const collectionEntitiesIds = collection.data.entities.map(entity => entity.id);
-
-    const change = {data: {}};
     if (isRemove) {
-      change.data.entities = collectionEntitiesIds.filter(id => id !== entity.id);
+      await removeEntityFromCollection(entity.id, collection.id);
     } else {
-      change.data.entities = [...collectionEntitiesIds, entity.id];
+      await addEntityToCollection(entity.id, collection.id);
     }
 
-    await updateEntity('collection', collection.id, change);
     await loadCollections();
   };
 }

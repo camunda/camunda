@@ -95,17 +95,17 @@ class OverviewStore extends Component {
     this.loadData();
   };
 
-  updateOrCreateCollection = collection => {
+  updateOrCreateCollection = name => {
     const editCollection = this.state.updating;
     if (editCollection.id) {
       this.props.mightFail(
-        updateEntity('collection', editCollection.id, collection),
+        updateEntity('collection', editCollection.id, {name}),
         this.finishCollectionUpdate,
         this.showError
       );
     } else {
       this.props.mightFail(
-        createEntity('collection', collection),
+        createEntity('collection', {...editCollection, name}),
         this.finishCollectionUpdate,
         this.showError
       );

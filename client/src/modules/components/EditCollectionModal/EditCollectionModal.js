@@ -29,7 +29,7 @@ export default class EditCollectionModal extends Component {
 
   onConfirm = () => {
     this.setState({loading: true});
-    this.props.onConfirm({...this.props.collection, name: this.state.name});
+    this.props.onConfirm(this.state.name);
   };
 
   handleKeyPress = evt => {

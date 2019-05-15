@@ -46,3 +46,11 @@ export async function updateEntity(type, id, data, options = {}) {
 export async function deleteEntity(type, id) {
   return await del(`api/${type}/${id}`, {force: true});
 }
+
+export async function addEntityToCollection(entityId, collectionId) {
+  return await post(`api/collection/${collectionId}/entity`, {entityId});
+}
+
+export async function removeEntityFromCollection(entityId, collectionId) {
+  return await del(`api/collection/${collectionId}/entity/${entityId}`);
+}

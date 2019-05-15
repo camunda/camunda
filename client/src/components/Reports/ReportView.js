@@ -108,8 +108,8 @@ export default class ReportView extends Component {
     this.setState({creatingCollection: true});
   };
 
-  createCollection = async collection => {
-    await createEntity('collection', collection);
+  createCollection = async name => {
+    await createEntity('collection', {name, data: {entities: [this.props.report.id]}});
     await this.loadCollections();
     this.setState({creatingCollection: false});
   };
@@ -209,7 +209,7 @@ export default class ReportView extends Component {
         </div>
         {creatingCollection && (
           <EditCollectionModal
-            collection={{data: {entities: [report.id]}}}
+            collection={{}}
             onClose={() => this.setState({creatingCollection: false})}
             onConfirm={this.createCollection}
           />
