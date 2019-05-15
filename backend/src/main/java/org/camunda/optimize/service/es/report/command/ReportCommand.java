@@ -94,9 +94,14 @@ public abstract class ReportCommand<R extends ReportEvaluationResult, RD extends
     return query;
   }
 
-  private static QueryBuilder createTenantIdQuery(final SingleReportDataDto reportData, final String tenantField) {
+  public static QueryBuilder createTenantIdQuery(final SingleReportDataDto reportData, final String tenantField) {
+    final List<String> tenantIds = reportData.getTenantIds();
+    return createTenantIdQuery(tenantField, tenantIds);
+  }
+
+  public static QueryBuilder createTenantIdQuery(final String tenantField, final List<String> tenantIds) {
     final AtomicBoolean includeNoneTenant = new AtomicBoolean(false);
-    final List<String> tenantIdTerms = reportData.getTenantIds().stream()
+    final List<String> tenantIdTerms = tenantIds.stream()
       .peek(id -> {
         if (id == null) {
           includeNoneTenant.set(true);

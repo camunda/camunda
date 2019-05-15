@@ -12,7 +12,6 @@ import junitparams.Parameters;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -27,13 +26,8 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
@@ -42,10 +36,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_RESOURCES_RESOURCE_ID;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GLOBAL;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
@@ -58,24 +48,14 @@ import static org.junit.Assert.assertThat;
 
 
 @RunWith(JUnitParamsRunner.class)
-public class ReportAuthorizationIT {
+public class ReportAuthorizationIT extends AbstractResourceAuthorizationIT {
 
   public static final String PROCESS_KEY = "aprocess";
   public static final String DECISION_KEY = "aDecision";
-  public static final String KERMIT_USER = "kermit";
 
   private static final Object[] definitionType() {
     return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
   }
-
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
   @Parameters(method = "definitionType")
@@ -310,7 +290,7 @@ public class ReportAuthorizationIT {
     final String notAuthorizedProcessDefinitionKey = "notAuthorizedProcess";
     addKermitUserAndGrantAccessToOptimize();
     deployAndStartSimpleProcessDefinition(authorizedProcessDefinitionKey);
-    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, authorizedProcessDefinitionKey);
+    grantSingleResourceAuthorizationForKermit(authorizedProcessDefinitionKey, RESOURCE_TYPE_PROCESS_DEFINITION);
     deployAndStartSimpleProcessDefinition(notAuthorizedProcessDefinitionKey);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -337,41 +317,8 @@ public class ReportAuthorizationIT {
     assertThat(flowNodeToCount.size(), is(2));
   }
 
-  private void grantSingleResourceAuthorizationsForUser(String userId,
-                                                        String resourceId,
-                                                        int resourceType) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(resourceType);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(resourceId);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
-    authorizationDto.setUserId(userId);
-    engineRule.createAuthorization(authorizationDto);
-  }
-
-  private void addGlobalAuthorizationForResource(int resourceType) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(resourceType);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GLOBAL);
-    authorizationDto.setUserId("*");
-    engineRule.createAuthorization(authorizationDto);
-  }
-
   private String getDefinitionKey(final int definitionResourceType) {
     return definitionResourceType == RESOURCE_TYPE_PROCESS_DEFINITION ? PROCESS_KEY : DECISION_KEY;
-  }
-
-
-  private void grantSingleDefinitionAuthorizationsForUser(String userId, String definitionKey) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(RESOURCE_TYPE_PROCESS_DEFINITION);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(definitionKey);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
-    authorizationDto.setUserId(userId);
-    engineRule.createAuthorization(authorizationDto);
   }
 
   private String createNewSingleMapReport(String processDefinitionKey) {
@@ -512,11 +459,6 @@ public class ReportAuthorizationIT {
           .buildUpdateSingleDecisionReportRequest(id, (SingleDecisionReportDefinitionDto) updatedReport)
           .execute();
     }
-  }
-
-  private void addKermitUserAndGrantAccessToOptimize() {
-    engineRule.addUser(KERMIT_USER, KERMIT_USER);
-    engineRule.grantUserOptimizeAccess(KERMIT_USER);
   }
 
 }

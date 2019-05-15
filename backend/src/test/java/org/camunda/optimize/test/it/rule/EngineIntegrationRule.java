@@ -542,10 +542,6 @@ public class EngineIntegrationRule extends TestWatcher {
     return getProcessDefinitionEngineDto(deploymentDto, client);
   }
 
-  private DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance, CloseableHttpClient client) {
-    return deployProcess(bpmnModelInstance, client, null);
-  }
-
   private DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance,
                                       CloseableHttpClient client,
                                       String tenantId) {

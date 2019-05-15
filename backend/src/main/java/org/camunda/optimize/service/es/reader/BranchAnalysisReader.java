@@ -17,8 +17,10 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.service.ProcessDefinitionService;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
+import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.security.TenantAuthorizationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -29,6 +31,7 @@ import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.ForbiddenException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,6 +45,7 @@ import java.util.Set;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -55,40 +59,50 @@ public class BranchAnalysisReader {
 
   private RestHighLevelClient esClient;
   private ProcessDefinitionService definitionService;
+  private TenantAuthorizationService tenantAuthorizationService;
   private ProcessQueryFilterEnhancer queryFilterEnhancer;
 
-  public BranchAnalysisDto branchAnalysis(String userId, BranchAnalysisQueryDto request) {
+  public BranchAnalysisDto branchAnalysis(final String userId, final BranchAnalysisQueryDto request) {
     ValidationHelper.validate(request);
-    log.debug("Performing branch analysis on process definition with key [{}] and version [{}]",
+    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, request.getTenantIds())) {
+      throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
+    }
+
+    log.debug(
+      "Performing branch analysis on process definition with key [{}] and version [{}]",
       request.getProcessDefinitionKey(),
       request.getProcessDefinitionVersion()
     );
-    
+
     final BranchAnalysisDto result = new BranchAnalysisDto();
-    getBpmnModelInstance(userId, request.getProcessDefinitionKey(), request.getProcessDefinitionVersion())
-      .ifPresent(bpmnModelInstance -> {
-        final List<FlowNode> gatewayOutcomes = fetchGatewayOutcomes(bpmnModelInstance, request.getGateway());
-        final Set<String> activityIdsWithMultipleIncomingSequenceFlows =
-          extractFlowNodesWithMultipleIncomingSequenceFlows(bpmnModelInstance);
+    getBpmnModelInstance(
+      userId, request.getProcessDefinitionKey(), request.getProcessDefinitionVersion(), request.getTenantIds()
+    ).ifPresent(bpmnModelInstance -> {
+      final List<FlowNode> gatewayOutcomes = fetchGatewayOutcomes(bpmnModelInstance, request.getGateway());
+      final Set<String> activityIdsWithMultipleIncomingSequenceFlows =
+        extractFlowNodesWithMultipleIncomingSequenceFlows(bpmnModelInstance);
 
-        for (FlowNode activity : gatewayOutcomes) {
-          Set<String> activitiesToExcludeFromBranchAnalysis =
-            extractActivitiesToExclude(gatewayOutcomes, activityIdsWithMultipleIncomingSequenceFlows, activity.getId(), request.getEnd());
-          BranchAnalysisOutcomeDto branchAnalysis = branchAnalysis(activity, request, activitiesToExcludeFromBranchAnalysis);
-          result.getFollowingNodes().put(branchAnalysis.getActivityId(), branchAnalysis);
-        }
+      for (FlowNode activity : gatewayOutcomes) {
+        final Set<String> activitiesToExcludeFromBranchAnalysis = extractActivitiesToExclude(
+          gatewayOutcomes, activityIdsWithMultipleIncomingSequenceFlows, activity.getId(), request.getEnd()
+        );
+        final BranchAnalysisOutcomeDto branchAnalysis = branchAnalysis(
+          activity, request, activitiesToExcludeFromBranchAnalysis
+        );
+        result.getFollowingNodes().put(branchAnalysis.getActivityId(), branchAnalysis);
+      }
 
-        result.setEndEvent(request.getEnd());
-        result.setTotal(calculateActivityCount(request.getEnd(), request, Collections.emptySet()));
-      });
+      result.setEndEvent(request.getEnd());
+      result.setTotal(calculateActivityCount(request.getEnd(), request, Collections.emptySet()));
+    });
 
     return result;
   }
 
-  private Set<String> extractActivitiesToExclude(List<FlowNode> gatewayOutcomes,
-                                                 Set<String> activityIdsWithMultipleIncomingSequenceFlows,
-                                                 String currentActivityId,
-                                                 String endEventActivityId) {
+  private Set<String> extractActivitiesToExclude(final List<FlowNode> gatewayOutcomes,
+                                                 final Set<String> activityIdsWithMultipleIncomingSequenceFlows,
+                                                 final String currentActivityId,
+                                                 final String endEventActivityId) {
     Set<String> activitiesToExcludeFromBranchAnalysis = new HashSet<>();
     for (FlowNode gatewayOutgoingNode : gatewayOutcomes) {
       String activityId = gatewayOutgoingNode.getId();
@@ -101,7 +115,9 @@ public class BranchAnalysisReader {
     return activitiesToExcludeFromBranchAnalysis;
   }
 
-  private BranchAnalysisOutcomeDto branchAnalysis(FlowNode flowNode, BranchAnalysisQueryDto request, Set<String> activitiesToExclude) {
+  private BranchAnalysisOutcomeDto branchAnalysis(final FlowNode flowNode,
+                                                  final BranchAnalysisQueryDto request,
+                                                  final Set<String> activitiesToExclude) {
 
     BranchAnalysisOutcomeDto result = new BranchAnalysisOutcomeDto();
     result.setActivityId(flowNode.getId());
@@ -111,38 +127,42 @@ public class BranchAnalysisReader {
     return result;
   }
 
-  private long calculateReachedEndEventActivityCount(String activityId, BranchAnalysisQueryDto request, Set<String> activitiesToExclude) {
-    BoolQueryBuilder query = boolQuery()
-      .must(termQuery(PROCESS_DEFINITION_KEY, request.getProcessDefinitionKey()))
-      .must(termQuery(PROCESS_DEFINITION_VERSION, request.getProcessDefinitionVersion()))
+  private long calculateReachedEndEventActivityCount(final String activityId,
+                                                     final BranchAnalysisQueryDto request,
+                                                     final Set<String> activitiesToExclude) {
+    final BoolQueryBuilder query = buildBaseQuery(request, activitiesToExclude)
       .must(createMustMatchActivityIdQuery(request.getGateway()))
       .must(createMustMatchActivityIdQuery(activityId))
-      .must(createMustMatchActivityIdQuery(request.getEnd())
-      );
-    excludeActivities(activitiesToExclude, query);
-
+      .must(createMustMatchActivityIdQuery(request.getEnd()));
     return executeQuery(request, query);
   }
 
-  private long calculateActivityCount(String activityId, BranchAnalysisQueryDto request, Set<String> activitiesToExclude) {
-    BoolQueryBuilder query = boolQuery()
-      .must(termQuery(PROCESS_DEFINITION_KEY, request.getProcessDefinitionKey()))
-      .must(termQuery(PROCESS_DEFINITION_VERSION, request.getProcessDefinitionVersion()))
+  private long calculateActivityCount(final String activityId,
+                                      final BranchAnalysisQueryDto request,
+                                      final Set<String> activitiesToExclude) {
+    final BoolQueryBuilder query = buildBaseQuery(request, activitiesToExclude)
       .must(createMustMatchActivityIdQuery(request.getGateway()))
       .must(createMustMatchActivityIdQuery(activityId));
-    excludeActivities(activitiesToExclude, query);
-
     return executeQuery(request, query);
   }
 
-  private void excludeActivities(Set<String> activitiesToExclude, BoolQueryBuilder query) {
+  private BoolQueryBuilder buildBaseQuery(final BranchAnalysisQueryDto request, final Set<String> activitiesToExclude) {
+    final BoolQueryBuilder query = boolQuery()
+      .must(ReportCommand.createTenantIdQuery(TENANT_ID, request.getTenantIds()))
+      .must(termQuery(PROCESS_DEFINITION_KEY, request.getProcessDefinitionKey()))
+      .must(termQuery(PROCESS_DEFINITION_VERSION, request.getProcessDefinitionVersion()));
+    excludeActivities(activitiesToExclude, query);
+    return query;
+  }
+
+  private void excludeActivities(final Set<String> activitiesToExclude,
+                                 final BoolQueryBuilder query) {
     for (String excludeActivityId : activitiesToExclude) {
-      query
-        .mustNot(createMustMatchActivityIdQuery(excludeActivityId));
+      query.mustNot(createMustMatchActivityIdQuery(excludeActivityId));
     }
   }
 
-  private NestedQueryBuilder createMustMatchActivityIdQuery(String activityId) {
+  private NestedQueryBuilder createMustMatchActivityIdQuery(final String activityId) {
     return nestedQuery(
       ProcessInstanceType.EVENTS,
       termQuery("events.activityId", activityId),
@@ -150,7 +170,7 @@ public class BranchAnalysisReader {
     );
   }
 
-  private long executeQuery(BranchAnalysisQueryDto request, BoolQueryBuilder query) {
+  private long executeQuery(final BranchAnalysisQueryDto request, final BoolQueryBuilder query) {
     queryFilterEnhancer.addFilterToQuery(query, request.getFilter());
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -178,7 +198,8 @@ public class BranchAnalysisReader {
     return searchResponse.getHits().getTotalHits();
   }
 
-  private List<FlowNode> fetchGatewayOutcomes(BpmnModelInstance bpmnModelInstance, String gatewayActivityId) {
+  private List<FlowNode> fetchGatewayOutcomes(final BpmnModelInstance bpmnModelInstance,
+                                              final String gatewayActivityId) {
     List<FlowNode> result = new ArrayList<>();
     FlowNode flowNode = bpmnModelInstance.getModelElementById(gatewayActivityId);
     for (SequenceFlow sequence : flowNode.getOutgoing()) {
@@ -187,18 +208,27 @@ public class BranchAnalysisReader {
     return result;
   }
 
-  private Optional<BpmnModelInstance> getBpmnModelInstance(String userId, String definitionKey, String definitionVersion) {
-    return definitionService.getProcessDefinitionXml(userId, definitionKey, definitionVersion)
+  private Optional<BpmnModelInstance> getBpmnModelInstance(final String userId,
+                                                           final String definitionKey,
+                                                           final String definitionVersion,
+                                                           final List<String> tenantIds) {
+    final Optional<String> processDefinitionXml = tenantIds.stream()
+      .map(tenantId -> definitionService.getProcessDefinitionXml(userId, definitionKey, definitionVersion, tenantId))
+      .filter(Optional::isPresent)
+      .findFirst()
+      .orElse(definitionService.getProcessDefinitionXml(userId, definitionKey, definitionVersion));
+
+    return processDefinitionXml
       .map(xml -> Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes())));
   }
 
-  private Set<String> extractFlowNodesWithMultipleIncomingSequenceFlows(BpmnModelInstance bpmnModelInstance) {
+  private Set<String> extractFlowNodesWithMultipleIncomingSequenceFlows(final BpmnModelInstance bpmnModelInstance) {
     Collection<SequenceFlow> sequenceFlowCollection = bpmnModelInstance.getModelElementsByType(SequenceFlow.class);
     Set<String> activitiesWithOneIncomingSequenceFlow = new HashSet<>();
     Set<String> activityIdsWithMultipleIncomingSequenceFlows = new HashSet<>();
     for (SequenceFlow sequenceFlow : sequenceFlowCollection) {
       String targetActivityId = sequenceFlow.getTarget().getId();
-      if(activitiesWithOneIncomingSequenceFlow.contains(targetActivityId) ){
+      if (activitiesWithOneIncomingSequenceFlow.contains(targetActivityId)) {
         activityIdsWithMultipleIncomingSequenceFlows.add(targetActivityId);
       } else {
         activitiesWithOneIncomingSequenceFlow.add(targetActivityId);

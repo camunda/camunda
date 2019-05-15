@@ -13,17 +13,11 @@ import java.util.List;
 
 @Data
 public class BranchAnalysisQueryDto {
-  /**
-   * The end event the branch analysis is referred to.
-   */
-  protected String end;
+  private String end;
+  private String gateway;
+  private String processDefinitionKey;
+  private String processDefinitionVersion;
+  private List<String> tenantIds = new ArrayList<>();
 
-  /**
-   * The gateway the branch analysis is referred to.
-   */
-  protected String gateway;
-  protected String processDefinitionKey;
-  protected String processDefinitionVersion;
-
-  protected List<ProcessFilterDto> filter = new ArrayList<>();
+  private List<ProcessFilterDto> filter = new ArrayList<>();
 }
