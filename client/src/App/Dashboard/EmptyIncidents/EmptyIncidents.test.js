@@ -15,7 +15,7 @@ describe('EmptyIncidents', () => {
   });
 
   it('should display a success message', () => {
-    const node = shallow(<EmptyIncidents label="someLabel" type="success" />);
+    const node = shallow(<EmptyIncidents label="someLabel" type="info" />);
     expect(node).toMatchSnapshot();
   });
 });

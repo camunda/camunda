@@ -2,9 +2,8 @@
 
 exports[`EmptyIncidents should display a success message 1`] = `
 <Themed(styled.div)>
-  <Styled(ReactComponent) />
   <Themed(styled.span)
-    type="success"
+    type="info"
   >
     someLabel
   </Themed(styled.span)>

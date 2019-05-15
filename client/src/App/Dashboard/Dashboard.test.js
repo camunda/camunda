@@ -165,9 +165,9 @@ describe('Dashboard', () => {
 
       expect(node.find(EmptyIncidents).length).toBe(1);
       expect(node.find(EmptyIncidents).props().label).toBe(
-        'There are no instances with incident.'
+        'There are no Workflows.'
       );
-      expect(node.find(EmptyIncidents).props().type).toBe('success');
+      expect(node.find(EmptyIncidents).props().type).toBe('info');
 
       expect(node.find(IncidentsByWorkflow).length).toBe(0);
 
@@ -190,7 +190,7 @@ describe('Dashboard', () => {
 
       expect(node.find(EmptyIncidents).length).toBe(1);
       expect(node.find(EmptyIncidents).props().label).toBe(
-        'Incidents by Workflow could not be fetched.'
+        'Instances by Workflow could not be fetched.'
       );
       expect(node.find(EmptyIncidents).props().type).toBe('warning');
 
@@ -242,9 +242,9 @@ describe('Dashboard', () => {
 
       expect(node.find(EmptyIncidents).length).toBe(1);
       expect(node.find(EmptyIncidents).props().label).toBe(
-        'There are no instances with incident.'
+        'There are no Workflows.'
       );
-      expect(node.find(EmptyIncidents).props().type).toBe('success');
+      expect(node.find(EmptyIncidents).props().type).toBe('info');
 
       expect(node.find(IncidentsByError).length).toBe(0);
 

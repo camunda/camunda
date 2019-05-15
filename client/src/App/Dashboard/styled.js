@@ -64,6 +64,7 @@ export const TileTitle = themed(styled.h2`
 `);
 
 export const TileContent = styled.div`
+  position: relative;
   overflow: auto;
   height: 644px;
 `;

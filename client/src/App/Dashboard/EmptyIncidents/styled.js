@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 import {ReactComponent as Check} from 'modules/components/Icon/check.svg';
 import {ReactComponent as Warning} from 'modules/components/Icon/warning-message-icon.svg';
@@ -24,10 +24,30 @@ export const EmptyIncidents = themed(styled.div`
   })};
 `);
 
-export const Label = themed(styled.span`
-  color: ${({type}) =>
-    type === 'success' ? Colors.allIsWell : Colors.incidentsAndErrors};
+const errorStyle = css`
+  color: ${Colors.incidentsAndErrors};
   opacity: 0.9;
+`;
+
+const infoDarkStyle = css`
+  color: #ffffff;
+  opacity: 0.8;
+`;
+
+const infoLightStyle = css`
+  color: ${Colors.uiLight08};
+  opacity: 0.8;
+`;
+
+export const Label = themed(styled.span`
+  ${({type}) =>
+    type === 'info'
+      ? themeStyle({
+          dark: infoDarkStyle,
+          light: infoLightStyle
+        })
+      : errorStyle}
+
   font-family: IBMPlexSans;
   font-size: 16px;
 `);
