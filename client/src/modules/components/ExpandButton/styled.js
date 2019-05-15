@@ -4,26 +4,16 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
 
-import withStrippedProps from 'modules/utils/withStrippedProps';
-import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
 import {ReactComponent as Right} from 'modules/components/Icon/right.svg';
 import {themed, getExpandButtonTheme as getTheme} from 'modules/theme';
 import {Transition as TransitionComponent} from 'modules/components/Transition';
 
-const iconStyle = css`
+export const ArrowIcon = styled(Right)`
   width: 16px;
   height: 16px;
   object-fit: contain;
-`;
-
-export const DownIcon = styled(withStrippedProps(['isSelected'])(Down))`
-  ${iconStyle};
-`;
-
-export const RightIcon = styled(withStrippedProps(['isSelected'])(Right))`
-  ${iconStyle};
 `;
 
 export const Icon = themed(styled.div`
@@ -56,7 +46,7 @@ export const Button = themed(styled.button`
   padding: 0;
   background: transparent;
 
-  :hover {
+  &:hover {
     ${Icon.WrappedComponent}::before {
       // hover background color/opacity
       ${props => getTheme(props.expandTheme).hover.background[props.theme]}
@@ -70,7 +60,7 @@ export const Button = themed(styled.button`
     }
   }
 
-  :active {
+  &:active {
     ${Icon.WrappedComponent}::before {
       // active background color/opacity
       ${props => getTheme(props.expandTheme).active.background[props.theme]}

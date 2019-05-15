@@ -17,10 +17,10 @@ describe('ExpandButton', () => {
     );
 
     // when
-    const RightIconNode = node.find(Styled.RightIcon);
+    const ArrowIconNode = node.find(Styled.ArrowIcon);
 
     // then
-    expect(RightIconNode).toExist();
+    expect(ArrowIconNode).toExist();
   });
 
   it('should render provided children inside the button', () => {
@@ -33,12 +33,12 @@ describe('ExpandButton', () => {
     );
 
     // when
-    const RightIconNode = node.find(Styled.RightIcon);
+    const ArrowIconNode = node.find(Styled.ArrowIcon);
     const ChildNode1 = node.find('#child1');
     const ChildNode2 = node.find('#child2');
 
     // then
-    expect(RightIconNode).toExist();
+    expect(ArrowIconNode).toExist();
     expect(ChildNode1).toExist();
     expect(ChildNode2).toExist();
     expect(node.children()).toHaveLength(3);

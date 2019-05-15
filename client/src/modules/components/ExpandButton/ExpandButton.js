@@ -9,15 +9,19 @@ import PropTypes from 'prop-types';
 import * as Styled from './styled';
 import {ExpandButtonThemes} from 'modules/theme';
 
-export default function ExpandButton({children, isExpanded, ...props}) {
+export default function ExpandButton({
+  children,
+  isExpanded,
+  expandTheme,
+  ...props
+}) {
   return (
     <Styled.Button {...props}>
       <Styled.Transition timeout={400} in={isExpanded} appear>
-        <Styled.Icon expandTheme={props.expandTheme}>
-          <Styled.RightIcon />
+        <Styled.Icon expandTheme={expandTheme}>
+          <Styled.ArrowIcon />
         </Styled.Icon>
       </Styled.Transition>
-
       {children}
     </Styled.Button>
   );
