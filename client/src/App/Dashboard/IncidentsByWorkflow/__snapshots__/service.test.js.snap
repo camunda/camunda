@@ -29,3 +29,7 @@ exports[`service getTitle should get title for multiple instances 1`] = `"View 1
 exports[`service getTitle should get title for no instances 1`] = `"View 0 Instances in Version 6 of Workflow myProcessName"`;
 
 exports[`service getTitle should get title for single instance 1`] = `"View 1 Instance in Version 2 of Workflow myProcessName"`;
+
+exports[`service getUrl should get url - all versions, no finished instances 1`] = `"/instances?filter={\\"workflow\\":\\"Process_2\\",\\"version\\":\\"all\\",\\"incidents\\":true,\\"active\\":true}"`;
+
+exports[`service getUrl should get url - single version, finished instances 1`] = `"/instances?filter={\\"workflow\\":\\"Process_1\\",\\"version\\":\\"1\\",\\"incidents\\":true,\\"active\\":true,\\"completed\\":true,\\"canceled\\":true}"`;

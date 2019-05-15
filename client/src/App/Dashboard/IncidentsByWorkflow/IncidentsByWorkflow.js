@@ -20,10 +20,6 @@ import {
   getButtonTitle
 } from './service';
 
-function getVersions(workflows = []) {
-  return workflows.map(item => item.version).join(', ');
-}
-
 export default class IncidentsByWorkflow extends React.Component {
   static propTypes = {
     incidents: PropTypes.arrayOf(
@@ -56,7 +52,11 @@ export default class IncidentsByWorkflow extends React.Component {
           return (
             <Styled.VersionLi key={item.workflowId}>
               <Styled.IncidentLink
-                to={getUrl(item.bpmnProcessId, item.version)}
+                to={getUrl({
+                  bpmnProcessId: item.bpmnProcessId,
+                  versions: [item],
+                  hasFinishedInstances: totalInstancesCount === 0
+                })}
                 title={getTitle(
                   workflowName,
                   totalInstancesCount,
@@ -82,14 +82,17 @@ export default class IncidentsByWorkflow extends React.Component {
   };
 
   renderIncidentByWorkflow = item => {
-    const versions = getVersions(item.workflows);
     const name = item.workflowName || item.bpmnProcessId;
     const totalInstancesCount =
       item.instancesWithActiveIncidentsCount + item.activeInstancesCount;
 
     return (
       <Styled.IncidentLink
-        to={getUrl(item.bpmnProcessId, versions)}
+        to={getUrl({
+          bpmnProcessId: item.bpmnProcessId,
+          versions: item.workflows,
+          hasFinishedInstances: totalInstancesCount === 0
+        })}
         title={getGroupTitle(name, totalInstancesCount, item.workflows.length)}
       >
         <IncidentByWorkflow

@@ -54,6 +54,40 @@ const mockIncidentsByWorkflow = [
         activeInstancesCount: 123
       }
     ]
+  },
+  {
+    bpmnProcessId: 'noIncidentsProcess',
+    workflowName: 'Without Incidents Process',
+    instancesWithActiveIncidentsCount: 0,
+    activeInstancesCount: 23,
+    workflows: [
+      {
+        bpmnProcessId: 'noIncidentsProcess',
+        workflowId: '3',
+        version: 1,
+        name: 'Without Incidents Process',
+        errorMessage: null,
+        instancesWithActiveIncidentsCount: 0,
+        activeInstancesCount: 23
+      }
+    ]
+  },
+  {
+    bpmnProcessId: 'noInstancesProcess',
+    workflowName: 'Without Instances Process',
+    instancesWithActiveIncidentsCount: 0,
+    activeInstancesCount: 0,
+    workflows: [
+      {
+        bpmnProcessId: 'noInstancesProcess',
+        workflowId: '2',
+        version: 1,
+        name: 'Without Instances Process',
+        errorMessage: null,
+        instancesWithActiveIncidentsCount: 0,
+        activeInstancesCount: 0
+      }
+    ]
   }
 ];
 
@@ -82,7 +116,7 @@ describe('IncidentsByWorkflow', () => {
     const statisticsAnchor = nodeIncidentByWorkflow.parent();
 
     expect(statisticsAnchor.props().to).toBe(
-      '/instances?filter={"workflow":"loanProcess","version":"1","incidents":true}'
+      '/instances?filter={"workflow":"loanProcess","version":"1","incidents":true,"active":true}'
     );
     expect(statisticsAnchor.props().title).toBe(
       'View 138 Instances in 1 Version of Workflow loanProcess'
@@ -111,8 +145,10 @@ describe('IncidentsByWorkflow', () => {
     );
     const firstStatistic = node.find('[data-test="incident-byWorkflow-0"]');
     const secondStatistic = node.find('[data-test="incident-byWorkflow-1"]');
+    const thirdStatistic = node.find('[data-test="incident-byWorkflow-2"]');
     expect(firstStatistic.find(IncidentByWorkflow).length).toBe(1);
     expect(secondStatistic.find(Collapse).length).toBe(1);
+    expect(thirdStatistic.find(IncidentByWorkflow).length).toBe(1);
   });
 
   it('passes the right data to the statistics collapse', () => {
@@ -134,7 +170,7 @@ describe('IncidentsByWorkflow', () => {
 
     // header anchor
     expect(headerNode.props().to).toBe(
-      '/instances?filter={"workflow":"orderProcess","version":"all","incidents":true}'
+      '/instances?filter={"workflow":"orderProcess","version":"all","incidents":true,"active":true}'
     );
     expect(headerNode.props().title).toBe(
       'View 201 Instances in 2 Versions of Workflow Order process'
@@ -175,6 +211,74 @@ describe('IncidentsByWorkflow', () => {
     );
     expect(versionStatisticNode.props().activeCount).toBe(
       mockIncidentsByWorkflow[1].workflows[0].activeInstancesCount
+    );
+  });
+
+  it('should pass the right data to workflow without incidents', () => {
+    const node = shallow(
+      <IncidentsByWorkflow incidents={mockIncidentsByWorkflow} />
+    );
+
+    const workflowNode = node
+      .find('[data-test="incident-byWorkflow-2"]')
+      .dive();
+
+    const nodeIncidentByWorkflow = workflowNode.find(IncidentByWorkflow);
+    const statisticsAnchor = nodeIncidentByWorkflow.parent();
+
+    expect(statisticsAnchor.props().to).toBe(
+      '/instances?filter={"workflow":"noIncidentsProcess","version":"1","incidents":true,"active":true}'
+    );
+    expect(statisticsAnchor.props().title).toBe(
+      'View 23 Instances in 1 Version of Workflow Without Incidents Process'
+    );
+
+    expect(nodeIncidentByWorkflow.props().label).toContain(
+      mockIncidentsByWorkflow[2].workflowName ||
+        mockIncidentsByWorkflow[2].bpmnProcessId
+    );
+    expect(nodeIncidentByWorkflow.props().label).toContain(
+      mockIncidentsByWorkflow[2].workflows[0].version
+    );
+    expect(nodeIncidentByWorkflow.props().incidentsCount).toBe(
+      mockIncidentsByWorkflow[2].instancesWithActiveIncidentsCount
+    );
+    expect(nodeIncidentByWorkflow.props().activeCount).toBe(
+      mockIncidentsByWorkflow[2].activeInstancesCount
+    );
+  });
+
+  it('should pass the right data to workflow without instances', () => {
+    const node = shallow(
+      <IncidentsByWorkflow incidents={mockIncidentsByWorkflow} />
+    );
+
+    const workflowNode = node
+      .find('[data-test="incident-byWorkflow-3"]')
+      .dive();
+
+    const nodeIncidentByWorkflow = workflowNode.find(IncidentByWorkflow);
+    const statisticsAnchor = nodeIncidentByWorkflow.parent();
+
+    expect(statisticsAnchor.props().to).toBe(
+      '/instances?filter={"workflow":"noInstancesProcess","version":"1","incidents":true,"active":true,"completed":true,"canceled":true}'
+    );
+    expect(statisticsAnchor.props().title).toBe(
+      'View 0 Instances in 1 Version of Workflow Without Instances Process'
+    );
+
+    expect(nodeIncidentByWorkflow.props().label).toContain(
+      mockIncidentsByWorkflow[3].workflowName ||
+        mockIncidentsByWorkflow[3].bpmnProcessId
+    );
+    expect(nodeIncidentByWorkflow.props().label).toContain(
+      mockIncidentsByWorkflow[3].workflows[0].version
+    );
+    expect(nodeIncidentByWorkflow.props().incidentsCount).toBe(
+      mockIncidentsByWorkflow[3].instancesWithActiveIncidentsCount
+    );
+    expect(nodeIncidentByWorkflow.props().activeCount).toBe(
+      mockIncidentsByWorkflow[3].activeInstancesCount
     );
   });
 });

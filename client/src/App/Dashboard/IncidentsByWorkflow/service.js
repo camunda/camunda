@@ -6,9 +6,24 @@
 
 import pluralSuffix from 'modules/utils/pluralSuffix';
 
-export function getUrl(bpmnProcessId, version) {
-  const urlVersion = version.toString().includes(',') ? 'all' : version;
-  return `/instances?filter={"workflow":"${bpmnProcessId}","version":"${urlVersion}","incidents":true}`;
+export function getUrl({bpmnProcessId, versions, hasFinishedInstances}) {
+  const versionId = versions.length === 1 ? versions[0].version : 'all';
+
+  const filter = {
+    workflow: bpmnProcessId,
+    version: versionId.toString(),
+    incidents: true,
+    active: true
+  };
+
+  if (hasFinishedInstances) {
+    Object.assign(filter, {
+      completed: true,
+      canceled: true
+    });
+  }
+
+  return `/instances?filter=${JSON.stringify(filter)}`;
 }
 
 export function getGroupTitle(workflowName, instancesCount, versionsCount) {

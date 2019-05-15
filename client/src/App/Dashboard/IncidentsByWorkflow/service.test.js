@@ -9,7 +9,8 @@ import {
   getGroupTitle,
   getLabel,
   getGroupLabel,
-  getButtonTitle
+  getButtonTitle,
+  getUrl
 } from './service';
 
 describe('service', () => {
@@ -110,6 +111,27 @@ describe('service', () => {
       const title = getButtonTitle('myProcessName', 0);
 
       expect(title).toMatchSnapshot();
+    });
+  });
+
+  describe('getUrl', () => {
+    it('should get url - single version, finished instances', () => {
+      const url = getUrl({
+        bpmnProcessId: 'Process_1',
+        versions: [{version: 1}],
+        hasFinishedInstances: true
+      });
+
+      expect(url).toMatchSnapshot();
+    });
+
+    it('should get url - all versions, no finished instances', () => {
+      const url = getUrl({
+        bpmnProcessId: 'Process_2',
+        versions: [{version: 1}, {version: 2}]
+      });
+
+      expect(url).toMatchSnapshot();
     });
   });
 });
