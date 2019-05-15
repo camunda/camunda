@@ -10,26 +10,22 @@ import {Button} from 'components';
 import NodeSelectionModal from './NodeSelectionModal';
 import './VisibleNodesFilter.scss';
 
-export default class NodeFilter extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      open: false
-    };
-  }
-
-  close = evt => {
-    this.setState({open: false});
+export default class VisibleNodesFilter extends React.Component {
+  state = {
+    open: false
   };
+
+  close = evt => this.setState({open: false});
+  open = evt => this.setState({open: true});
 
   render() {
     const {combined, data} = this.props.report;
     if (!combined && data.groupBy.type === 'flowNodes') {
       return (
         <div className="VisibleNodesFilter">
-          <fieldset className="NodeFilter">
+          <fieldset>
             <legend>Selected nodes to display</legend>
-            <Button onClick={() => this.setState({open: true})}>Show Flow Nodes...</Button>
+            <Button onClick={this.open}>Show Flow Nodes...</Button>
           </fieldset>
           {this.state.open && <NodeSelectionModal {...this.props} onClose={this.close} />}
         </div>

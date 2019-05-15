@@ -26,18 +26,16 @@ export default class NodeSelectionModal extends Component {
   }
 
   toggleNode = toggledNode => {
-    if (this.state.selectedNodes.includes(toggledNode.id)) {
-      this.setState({
-        selectedNodes: this.state.selectedNodes.filter(node => node !== toggledNode.id)
-      });
-    } else {
-      this.setState({
-        selectedNodes: this.state.selectedNodes.concat([toggledNode.id])
-      });
-    }
+    this.setState(({selectedNodes}) => {
+      if (selectedNodes.includes(toggledNode.id)) {
+        return {selectedNodes: selectedNodes.filter(node => node !== toggledNode.id)};
+      } else {
+        return {selectedNodes: selectedNodes.concat([toggledNode.id])};
+      }
+    });
   };
 
-  applyFilter = () => {
+  applyConfiguration = () => {
     const selected = this.state.selectedNodes;
     const hiddenNodes = getFlowNodesKeys(this.props.report).filter(key => !selected.includes(key));
 
@@ -66,13 +64,13 @@ export default class NodeSelectionModal extends Component {
   render() {
     return (
       <Modal
-        open={true}
+        open
         onClose={this.props.onClose}
-        onConfirm={this.isNodeSelected() ? this.applyFilter : undefined}
+        onConfirm={this.isNodeSelected() ? this.applyConfiguration : undefined}
         className="NodeSelectionModal"
         size="max"
       >
-        <Modal.Header>Add Flow Node Filter</Modal.Header>
+        <Modal.Header>Show Flow Nodes</Modal.Header>
         <Modal.Content className="modalContent">
           <div className="diagramActions">
             <p>Selected nodes appear in the visualization.</p>
@@ -95,7 +93,7 @@ export default class NodeSelectionModal extends Component {
             type="primary"
             color="blue"
             disabled={!this.isNodeSelected()}
-            onClick={this.applyFilter}
+            onClick={this.applyConfiguration}
           >
             Apply
           </Button>
