@@ -14,7 +14,7 @@
     <version.camunda>${camunda.engine.version}</version.camunda>
     <failOnMissingWebXml>false</failOnMissingWebXml>
     <allure.version>1.5.4</allure.version>
-    <aspectj.version>1.9.2</aspectj.version>
+    <aspectj.version>1.9.4</aspectj.version>
   </properties>
 
   <dependencies>
