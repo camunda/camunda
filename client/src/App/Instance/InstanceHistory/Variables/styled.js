@@ -8,6 +8,7 @@ import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 import Panel from 'modules/components/Panel';
+import ActionStatus from 'modules/components/ActionStatus/ActionStatus.js';
 import DefaultButton from 'modules/components/Button';
 import BasicInput from 'modules/components/Input';
 import BasicTextarea from 'modules/components/Textarea';
@@ -17,11 +18,13 @@ import {ReactComponent as DefaultClose} from 'modules/components/Icon/close.svg'
 import {ReactComponent as DefaultCheck} from 'modules/components/Icon/check.svg';
 import {ReactComponent as DefaultModal} from 'modules/components/Icon/modal.svg';
 
+export const Spinner = styled(ActionStatus.Spinner)`
+  margin-top: 4px;
+`;
+
 export const Variables = themed(styled(Panel)`
   flex: 1;
   font-size: 14px;
-  overflow: auto;
-  overflow-x: hidden;
   border-left: none;
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.8)',
@@ -30,9 +33,16 @@ export const Variables = themed(styled(Panel)`
 `);
 
 export const VariablesContent = styled(Panel.Body)`
-  position: relative;
-  overflow: auto;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
   border-top: none;
+`;
+
+export const TableScroll = styled.div`
+  overflow-y: auto;
 `;
 
 export const Placeholder = themed(styled.span`
@@ -49,10 +59,9 @@ export const Placeholder = themed(styled.span`
 `);
 
 export const Table = themed(styled.table`
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
+  margin-top: 45px;
+  margin-bottom: 47px;
   border-spacing: 0;
   border-collapse: collapse;
 `);
@@ -72,12 +81,8 @@ export const TD = themed(styled.td`
   })};
   font-weight: ${props => (props.isBold ? 'bold' : 'normal')};
   padding-left: 17px;
-  padding-top: 11px;
-  padding-bottom: 9px;
+  padding-right: 9px;
   height: 32px;
-  min-width: 191px;
-  max-width: 500px;
-
   &:not(:nth-child(2)) {
     white-space: nowrap;
   }
@@ -101,26 +106,59 @@ const rowWithActiveOperationStyle = css`
 export const TR = themed(styled.tr`
   border-width: 1px 0;
   border-style: solid;
+
   border-color: ${themeStyle({
     dark: Colors.uiDark04,
     light: Colors.uiLight05
   })};
 
+  &:first-child {
+    border-top: none;
+  }
+
   &:last-child {
     border-bottom: none;
+  }
+
+  > td:first-child {
+    min-width: 200px;
   }
 
   ${({hasActiveOperation}) =>
     !hasActiveOperation ? '' : rowWithActiveOperationStyle};
 `);
-
-export const THead = styled.thead`
+export const THead = themed(styled.thead`
   tr:first-child {
+    position: absolute;
+    width: 100%;
+    top: 0;
+
+    border-bottom: 1px solid
+      ${themeStyle({
+        dark: Colors.uiDark04,
+        light: Colors.uiLight05
+      })};
+    background: ${themeStyle({
+      dark: Colors.uiDark02,
+      light: Colors.uiLight04
+    })};
+    z-index: 2;
     border-top: none;
+    height: 45px;
+    border-top: none;
+    > th {
+      padding-top: 21px;
+    }
+    > th:first-child {
+      min-width: 200px;
+    }
   }
-`;
+`);
 
 export const VariablesFooter = styled(Panel.Footer)`
+  position: absolute;
+  bottom: 0;
+
   display: flex;
   align-items: center;
   height: 41px;
@@ -141,55 +179,51 @@ export const Plus = styled(DefaultPlus)`
 
 export const TextInput = styled(BasicInput)`
   height: 26px;
-  min-width: 181px;
+  padding-top: 6px;
+  font-size: 14px;
+  max-width: 181px;
 `;
 
 export const DisplayText = styled.div`
-  max-height: 70px;
+  padding: 4px 0px;
+  max-height: 80px;
   overflow-y: auto;
-  overflow-x: hidden;
-  min-width: calc(100% - 44px);
-  max-width: calc(100% - 44px);
+`;
+
+const textAreaStyles = css`
+  min-height: 26px;
+  max-height: 80px;
+  resize: vertical;
+  font-size: 14px;
 `;
 
 export const EditTextarea = styled(BasicTextarea)`
-  padding: 7px 11px 5px 7px;
-  font-size: 14px;
+  padding: 2px 11px 2px 7px;
   height: auto;
-  width: auto;
-  min-height: 31px;
-  /* 4 is the max number of displayed rows */
-  max-height: ${4 * 26 + 'px'};
-  resize: vertical;
-  min-width: calc(100% - 18px);
-  max-width: calc(100% - 18px);
+  ${textAreaStyles};
 `;
 
-export const Textarea = styled(BasicTextarea)`
-  padding: 4px 11px 5px 8px;
-  margin-top: 1px;
-  font-size: 14px;
-  position: absolute;
-  top: 2px;
-  left: 9px;
+export const AddTextarea = styled(BasicTextarea)`
+  padding: 3px 11px 5px 8px;
   height: 26px;
-  min-height: 26px;
-  max-height: 72px;
-  width: calc(100% - 18px);
-  min-width: calc(100% - 18px);
-  max-width: calc(100% - 18px);
+  ${textAreaStyles};
 `;
 
 export const EditButtonsTD = styled.td`
+  height: 32px;
+  padding-right: 21px;
+  padding-top: 6px;
   display: flex;
   justify-content: flex-end;
-  padding: 2px 21px;
-  padding-top: 11px;
+  width: 100px;
+`;
+
+export const AddButtonsTD = styled(EditButtonsTD)`
+  padding-top: 9px;
 `;
 
 export const EditInputTD = styled.td`
-  padding: 3px 0px;
-  padding-left: 9px;
+  padding: 3px 9px;
   position: relative;
 
   &:not(:nth-child(2)) {

@@ -8,6 +8,7 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Footer = themed(styled.div`
+  z-index: 1;
   height: 38px;
   width: 100%;
   padding: 10px 20px;

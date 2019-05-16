@@ -7,7 +7,7 @@
 import React, {createRef, useState, useEffect} from 'react';
 import PropTypes from 'prop-types';
 
-import ActionStatus from 'modules/components/ActionStatus/ActionStatus.js';
+// import ActionStatus from 'modules/components/ActionStatus/ActionStatus.js';
 import {isValidJSON} from 'modules/utils';
 
 import {EMPTY_PLACEHOLDER, NULL_PLACEHOLDER} from './constants';
@@ -69,7 +69,6 @@ export default function Variables({
         <Styled.EditButton title="Open Modal" data-test="open-modal-btn">
           <Styled.ModalIcon />
         </Styled.EditButton>
-
         <Styled.EditButton
           title="Exit edit mode"
           data-test="exit-edit-inline-btn"
@@ -122,6 +121,7 @@ export default function Variables({
       <Styled.TR data-test="add-key-row">
         <Styled.EditInputTD>
           <Styled.TextInput
+            autoFocus
             type="text"
             data-test="add-key"
             placeholder="Variable"
@@ -130,17 +130,16 @@ export default function Variables({
           />
         </Styled.EditInputTD>
         <Styled.EditInputTD>
-          <Styled.Textarea
-            autoFocus
+          <Styled.AddTextarea
             data-test="add-value"
             placeholder="Value"
             value={value}
             onChange={e => setValue(e.target.value)}
           />
         </Styled.EditInputTD>
-        <Styled.EditButtonsTD>
+        <Styled.AddButtonsTD>
           {renderEditButtons(variableAlreadyExists)}
-        </Styled.EditButtonsTD>
+        </Styled.AddButtonsTD>
       </Styled.TR>
     );
   }
@@ -153,51 +152,57 @@ export default function Variables({
             {!variables ? NULL_PLACEHOLDER : EMPTY_PLACEHOLDER}
           </Styled.Placeholder>
         ) : (
-          <Styled.Table>
-            <Styled.THead>
-              <Styled.TR>
-                <Styled.TH>Variable</Styled.TH>
-                <Styled.TH>Value</Styled.TH>
-                <Styled.TH />
-              </Styled.TR>
-            </Styled.THead>
-            <tbody>
-              {variables.map(({name, value: propValue, hasActiveOperation}) => (
-                <Styled.TR
-                  key={name}
-                  data-test={name}
-                  hasActiveOperation={hasActiveOperation}
-                >
-                  <Styled.TD isBold={true}>{name}</Styled.TD>
-                  {key === name && mode === CONST.EDIT ? (
-                    renderInlineEdit(propValue)
-                  ) : (
-                    <>
-                      <Styled.TD>
-                        <Styled.DisplayText>{propValue}</Styled.DisplayText>
-                      </Styled.TD>
-                      <Styled.EditButtonsTD>
-                        {hasActiveOperation ? (
-                          <ActionStatus.Spinner />
-                        ) : (
-                          <Styled.EditButton
-                            title="Enter edit mode"
-                            data-test="enter-edit-btn"
-                            onClick={() =>
-                              handleOpenEditVariable(name, propValue)
-                            }
-                          >
-                            <Styled.EditIcon />
-                          </Styled.EditButton>
-                        )}
-                      </Styled.EditButtonsTD>
-                    </>
-                  )}
+          <Styled.TableScroll>
+            <Styled.Table>
+              <Styled.THead>
+                <Styled.TR>
+                  <Styled.TH>Variable</Styled.TH>
+                  <Styled.TH>Value</Styled.TH>
+                  <Styled.TH />
                 </Styled.TR>
-              ))}
-              {mode === CONST.ADD && renderInlineAdd()}
-            </tbody>
-          </Styled.Table>
+              </Styled.THead>
+              <tbody>
+                {variables.map(
+                  ({name, value: propValue, hasActiveOperation}) => (
+                    <Styled.TR
+                      key={name}
+                      data-test={name}
+                      hasActiveOperation={hasActiveOperation}
+                    >
+                      <Styled.TD isBold={true}>{name}</Styled.TD>
+                      {key === name && mode === CONST.EDIT ? (
+                        renderInlineEdit(propValue, name)
+                      ) : (
+                        <>
+                          <Styled.TD>
+                            <Styled.DisplayText ref={e => setRowRefs(e, name)}>
+                              {propValue}
+                            </Styled.DisplayText>
+                          </Styled.TD>
+                          <Styled.EditButtonsTD>
+                            {hasActiveOperation ? (
+                              <Styled.Spinner />
+                            ) : (
+                              <Styled.EditButton
+                                title="Enter edit mode"
+                                data-test="enter-edit-btn"
+                                onClick={() =>
+                                  handleOpenEditVariable(name, propValue)
+                                }
+                              >
+                                <Styled.EditIcon />
+                              </Styled.EditButton>
+                            )}
+                          </Styled.EditButtonsTD>
+                        </>
+                      )}
+                    </Styled.TR>
+                  )
+                )}
+                {mode === CONST.ADD && renderInlineAdd()}
+              </tbody>
+            </Styled.Table>
+          </Styled.TableScroll>
         )}
       </Styled.VariablesContent>
       <Styled.VariablesFooter>
