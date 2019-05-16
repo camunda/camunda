@@ -130,7 +130,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   private OperationReader operationReader;
 
   private Long initialBatchOperationMaxSize;
-  private String workflowId;
+
   private ZeebeClient zeebeClient;
 
   @Before
@@ -147,7 +147,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     this.mockMvc = mockMvcTestRule.getMockMvc();
     this.initialBatchOperationMaxSize = operateProperties.getBatchOperationMaxSize();
-    workflowId = deployWorkflow("demoProcess_v_2.bpmn");
+    deployWorkflow("demoProcess_v_2.bpmn");
     zeebeClient = zeebeRule.getClientRule().getClient();
   }
 

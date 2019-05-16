@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 
 import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
+import org.springframework.util.StringUtils;
 
 public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
 
@@ -42,14 +43,18 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
   }
 
   public String getWorkflowName() {
-    if(workflowName == null || workflowName.isEmpty()) {
+    if (StringUtils.isEmpty(workflowName)) {
       return bpmnProcessId;
     }
     return workflowName;
   }
 
   public void setWorkflowName(String workflowName) {
-    this.workflowName = workflowName;
+    if (StringUtils.isEmpty(workflowName) && bpmnProcessId != null) {
+      this.workflowName = bpmnProcessId;
+    } else {
+      this.workflowName = workflowName;
+    }
   }
 
   public Integer getWorkflowVersion() {
@@ -144,4 +149,5 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
     result = 31 * result + (joinRelation != null ? joinRelation.hashCode() : 0);
     return result;
   }
+  
 }

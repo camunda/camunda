@@ -56,6 +56,9 @@ public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
   public void testWorkflowDoesNotExist() {
     final String demoProcessName = workflowCache.getWorkflowName("1");
     assertThat(demoProcessName).isNull();
+    
+    final String processNameDefault = workflowCache.getWorkflowNameOrDefaultValue("2","default_value");
+    assertThat(processNameDefault).isEqualTo("default_value");
 
     final Integer demoProcessVersion = workflowCache.getWorkflowVersion("1");
     assertThat(demoProcessVersion).isNull();

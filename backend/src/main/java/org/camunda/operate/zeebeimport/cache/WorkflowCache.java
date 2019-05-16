@@ -27,8 +27,12 @@ public class WorkflowCache {
 
   @Autowired
   private WorkflowReader workflowReader;
-
+  
   public String getWorkflowName(String workflowId) {
+    return getWorkflowNameOrDefaultValue(workflowId,null);
+  }
+
+  public String getWorkflowNameOrDefaultValue(String workflowId, String defaultValue) {
     final WorkflowEntity cachedWorkflowData = cache.get(workflowId);
     if (cachedWorkflowData != null) {
       return cachedWorkflowData.getName();
@@ -38,7 +42,7 @@ public class WorkflowCache {
         putToCache(workflowId, newValue);
         return newValue.getName();
       } else {
-        return null;
+        return defaultValue;
       }
     }
   }
