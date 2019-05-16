@@ -70,20 +70,22 @@ class Reports extends React.Component {
                   />
                 ))}
             </ul>
-            {filteredReports.length > 5 &&
-              !searchQuery &&
-              (this.state.limit ? (
-                <>
-                  {reports.length} Reports.{' '}
-                  <Button type="link" onClick={() => this.setState({limit: false})}>
-                    Show all...
+            <div className="showAll">
+              {filteredReports.length > 5 &&
+                !searchQuery &&
+                (this.state.limit ? (
+                  <>
+                    {reports.length} Reports.{' '}
+                    <Button type="link" onClick={() => this.setState({limit: false})}>
+                      Show all...
+                    </Button>
+                  </>
+                ) : (
+                  <Button type="link" onClick={() => this.setState({limit: true})}>
+                    Show less...
                   </Button>
-                </>
-              ) : (
-                <Button type="link" onClick={() => this.setState({limit: true})}>
-                  Show less...
-                </Button>
-              ))}
+                ))}
+            </div>
           </>
         )}
       </div>

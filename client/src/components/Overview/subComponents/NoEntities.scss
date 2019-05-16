@@ -1,14 +1,15 @@
 .NoEntities {
-  font-style: italic;
   display: flex;
   flex-direction: column;
   justify-content: center;
   text-align: center;
   padding: 12px 0;
   height: 148px;
+  font-style: italic;
 
   .createLink {
     margin-top: 14px;
     align-self: center;
+    font-style: normal;
   }
 }

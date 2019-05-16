@@ -5,6 +5,11 @@
 .Reports {
   margin-bottom: 80px;
   margin-left: 30px;
+
+  .showAll {
+    font-size: 14px;
+    margin: 24px 0;
+  }
 }
 
 .Overview {
@@ -23,17 +28,23 @@
 
   .ToggleCollapse {
     background: none;
-    border: none;
+    border: 1px solid transparent;
     box-shadow: none;
     padding: 0;
     text-align: left;
     color: inherit;
     display: flex;
 
+    &.focus-visible {
+      border: 1px solid $cam-blue;
+      box-shadow: 0 0 5px rgba($cam-blue, 1);
+    }
+
     .collapseIcon {
       position: absolute;
       left: 0px;
       margin-top: 10px;
+      fill: #6a727e;
       &.right {
         transform: rotate(-90deg);
       }
@@ -42,17 +53,20 @@
 
   .fixed {
     top: 0px;
-    max-width: inherit;
+    left: 0px;
+    padding: 0 20px;
     width: 100%;
     position: fixed;
     padding-top: 48px;
-    background: #fff;
+    background: transparent;
     z-index: 1;
 
     .header {
       max-width: 1024px;
       margin: 0px auto;
-      margin-top: 40px;
+      padding-top: 40px;
+      padding-bottom: 20px;
+      background: #fff;
     }
 
     :after {
@@ -116,6 +130,11 @@
         box-shadow: none;
 
         &:not(:valid) ~ .searchClear {
+          display: none;
+        }
+
+        // remove x clear button in edge browser
+        &::-ms-clear {
           display: none;
         }
       }
@@ -193,7 +212,27 @@
         background: #f7f7f7;
 
         .operations {
-          visibility: visible;
+          opacity: 1;
+        }
+
+        .CollectionsDropdown {
+          .Button {
+            .downIcon,
+            .noCollection {
+              visibility: visible;
+            }
+          }
+        }
+      }
+
+      &:not(:hover) {
+        .CollectionsDropdown {
+          .Button:not(:focus) {
+            .noCollection,
+            .noCollection ~ .downIcon {
+              visibility: hidden;
+            }
+          }
         }
       }
 
@@ -209,7 +248,7 @@
           padding: 10px;
           border-right: 1px solid #ededed;
           margin-right: 10px;
-          max-width: 50px;
+          width: 50px;
         }
 
         .textInfo {
@@ -279,9 +318,13 @@
         display: flex;
         flex-shrink: 0;
         align-self: center;
-        visibility: hidden;
+        opacity: 0;
         min-width: 130px;
         justify-content: flex-end;
+
+        &:focus-within {
+          opacity: 1;
+        }
 
         > * {
           width: 32px;
@@ -301,6 +344,10 @@
           }
           &:active {
             background: rgba(#d8dce3, 0.8);
+          }
+          &:focus {
+            outline: none;
+            box-shadow: 0 0 5px rgba($cam-blue, 1);
           }
         }
 
