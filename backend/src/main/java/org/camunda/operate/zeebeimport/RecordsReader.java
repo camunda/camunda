@@ -101,6 +101,8 @@ public class RecordsReader {
   @Autowired
   private BeanFactory beanFactory;
 
+  private ImportListener importListener;
+  
   public RecordsReader(int partitionId, ImportValueType importValueType, int queueSize) {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
@@ -158,7 +160,7 @@ public class RecordsReader {
       JavaType valueType = objectMapper.getTypeFactory().constructParametricType(RecordImpl.class, importValueType.getRecordValueClass());
       final List<Record> result = ElasticsearchUtil.mapSearchHits(searchResponse.getHits().getHits(), objectMapper, valueType);
 
-      return new ImportBatch(partitionId, importValueType, result);
+      return new ImportBatch(partitionId, importValueType, result, importListener);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
       logger.error(message, e);
@@ -253,6 +255,10 @@ public class RecordsReader {
 
   public BlockingQueue<Callable<Boolean>> getImportJobs() {
     return importJobs;
+  }
+
+  public void setImportListener(ImportListener importListener) {
+    this.importListener = importListener;
   }
 }
 

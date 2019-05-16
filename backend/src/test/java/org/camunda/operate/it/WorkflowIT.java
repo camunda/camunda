@@ -15,7 +15,6 @@ import org.camunda.operate.rest.dto.WorkflowGroupDto;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,9 +44,6 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private WorkflowReader workflowReader;
-
-  @Autowired
-  private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
 
   @Autowired
   @Qualifier("workflowIsDeployedCheck")

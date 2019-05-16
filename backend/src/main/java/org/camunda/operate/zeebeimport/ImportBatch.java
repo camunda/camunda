@@ -6,6 +6,10 @@
 package org.camunda.operate.zeebeimport;
 
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.zeebe.exporter.api.record.Record;
 
 /**
@@ -13,16 +17,21 @@ import io.zeebe.exporter.api.record.Record;
  */
 public class ImportBatch {
 
+  private static final Logger logger = LoggerFactory.getLogger(ImportBatch.class);
+  
   private int partitionId;
 
   private ImportValueType importValueType;
 
   private List<Record> records;
 
-  public ImportBatch(int partitionId, ImportValueType importValueType, List<Record> records) {
+  private ImportListener importListener;
+  
+  public ImportBatch(int partitionId, ImportValueType importValueType, List<Record> records, ImportListener importListener) {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
     this.records = records;
+    this.importListener = importListener;
   }
 
   public int getPartitionId() {
@@ -51,6 +60,16 @@ public class ImportBatch {
 
   public int getRecordsCount() {
     return records.size();
+  }
+
+  public void finished() {
+    int imported = getRecordsCount();
+    importListener.finished(imported);
+  }
+
+  public void failed() {
+    int failed = getRecordsCount();
+    importListener.failed(failed);
   }
 
 }

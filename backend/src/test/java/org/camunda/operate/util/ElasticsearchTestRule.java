@@ -23,7 +23,6 @@ import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
-import org.camunda.operate.es.schema.indices.IndexCreator;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
@@ -32,7 +31,6 @@ import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebeimport.ImportValueType;
 import org.camunda.operate.zeebeimport.ZeebeImporter;
-import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
 import org.camunda.operate.zeebeimport.RecordsReader;
 import org.camunda.operate.zeebeimport.RecordsReaderHolder;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -63,9 +61,6 @@ public class ElasticsearchTestRule extends TestWatcher {
   protected RestHighLevelClient zeebeEsClient;
 
   @Autowired
-  private List<IndexCreator> typeMappingCreators;
-
-  @Autowired
   private ListViewTemplate listViewTemplate;
 
   @Autowired
@@ -87,9 +82,6 @@ public class ElasticsearchTestRule extends TestWatcher {
   private ZeebeImporter zeebeImporter;
 
   @Autowired
-  private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
-
-  @Autowired
   private RecordsReaderHolder recordsReaderHolder;
 
   @Autowired
@@ -98,7 +90,9 @@ public class ElasticsearchTestRule extends TestWatcher {
   Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
 
   protected boolean failed = false;
-
+  
+  int waitingRound = 1;
+  
   @Override
   protected void failed(Throwable e, Description description) {
     super.failed(e, description);
@@ -137,7 +131,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       int totalCount = 0;
       int emptyAttempts = 0;
       do {
-        Thread.sleep(500L);
+        Thread.sleep(800L);
         entitiesCount = zeebeImporter.performOneRoundOfImport();
         totalCount += entitiesCount;
         if (entitiesCount > 0) {
@@ -220,30 +214,45 @@ public class ElasticsearchTestRule extends TestWatcher {
       logger.error(e.getMessage(), e);
     }
   }
-
-
+  
   public void processAllRecordsAndWait(Predicate<Object[]> waitTill, Object... arguments) {
-    try {
-      int emptyAttempts = 0;
-      boolean found = waitTill.test(arguments);
-      while(!found && emptyAttempts < 5) {
-        Thread.sleep(300L);
+    int maxRounds = 500;
+    boolean found = waitTill.test(arguments);
+    long start = System.currentTimeMillis();
+    while (!found && waitingRound < maxRounds) {
+      zeebeImporter.resetCounters();
+      try {
+        zeebeImporter.performOneRoundOfImport();
+      } catch (Exception e) {
+        logger.error(e.getMessage(), e);
+      }
+      long shouldImportCount = zeebeImporter.getScheduledImportCount();
+      long imported = zeebeImporter.getImportedCount();
+      while (shouldImportCount != 0 && imported < shouldImportCount) {
         try {
+          Thread.sleep(500L);
           zeebeImporter.performOneRoundOfImport();
         } catch (Exception e) {
+          waitingRound = 1;
+          zeebeImporter.resetCounters();
           logger.error(e.getMessage(), e);
         }
-        found = waitTill.test(arguments);
-        if (!found) {
-          emptyAttempts++;
-          Thread.sleep(500L);
-        }
+        shouldImportCount = zeebeImporter.getScheduledImportCount();
+        imported = zeebeImporter.getImportedCount();
       }
-      if (emptyAttempts == 5) {
-        logTimeout();
+      if(shouldImportCount!=0) {
+        logger.debug("Imported {} of {} records", imported, shouldImportCount);
       }
-    } catch (Exception e) {
-      logger.error(e.getMessage(), e);
+      found = waitTill.test(arguments);
+      waitingRound++;
+    }
+    if(found) {
+      logger.debug("Conditions met in round {} ({} ms).", waitingRound--, System.currentTimeMillis()-start);
+    }
+    waitingRound = 1;
+    zeebeImporter.resetCounters();
+    if (waitingRound >=  maxRounds) {
+      logTimeout();
     }
   }
 

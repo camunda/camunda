@@ -10,7 +10,6 @@ import javax.annotation.PreDestroy;
 import org.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,7 +18,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
-public class ZeebeImporter extends Thread  {
+public class ZeebeImporter extends Thread implements ImportListener  {
 
   private static final Logger logger = LoggerFactory.getLogger(ZeebeImporter.class);
 
@@ -36,8 +35,9 @@ public class ZeebeImporter extends Thread  {
   @Autowired
   private RecordsReaderHolder recordsReaderHolder;
 
-  @Autowired
-  private BeanFactory beanFactory;
+  private Long allRecordsCount = 0L;
+
+  private Long imported = 0L;
 
   public void startImportingData() {
     if (operateProperties.isStartLoadingDataOnStartup()) {
@@ -68,8 +68,10 @@ public class ZeebeImporter extends Thread  {
   public int performOneRoundOfImport() throws IOException {
     int countRecords = 0;
     for (RecordsReader recordsReader: recordsReaderHolder.getActiveRecordsReaders()) {
+      recordsReader.setImportListener(this);
       countRecords += importOneBatch(recordsReader);
     }
+    allRecordsCount +=countRecords;
     return countRecords;
   }
 
@@ -105,6 +107,29 @@ public class ZeebeImporter extends Thread  {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
+  }
+
+  public long getImportedCount() {
+    return imported.longValue();
+  }
+  
+  public long getScheduledImportCount() {
+    return allRecordsCount.longValue();
+  }
+
+  @Override
+  public void finished(int count) {
+      imported += count;
+  }
+
+  @Override
+  public void failed(int count) {
+    logger.info("Failed to import {} records.",count); 
+  }
+
+  public void resetCounters() {
+     imported = 0L;
+     allRecordsCount = 0L;
   }
 
 }

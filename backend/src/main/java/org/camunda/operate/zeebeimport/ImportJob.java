@@ -44,12 +44,15 @@ public class ImportJob implements Callable<Boolean> {
       final long lastProcessedPosition = importBatch.getRecords().get(importBatch.getRecordsCount() - 1).getPosition();
       importPositionHolder.recordLatestLoadedPosition(importBatch.getImportValueType().getAliasTemplate(),
           importBatch.getPartitionId(), lastProcessedPosition);
+      importBatch.finished();
       return true;
     } catch (PersistenceException e) {
       logger.error(e.getMessage(), e);
+      importBatch.failed();
       return false;
     } catch (Exception ex) {
       logger.error(ex.getMessage(), ex);
+      importBatch.failed();
       return false;
     }
   }
