@@ -46,7 +46,7 @@
     <version.httpasyncclient>4.1.4</version.httpasyncclient>
     <version.httpclient>4.5.8</version.httpclient>
     <version.httpcomponents>4.4.11</version.httpcomponents>
-    <version.jackson>2.9.8</version.jackson>
+    <version.jackson>2.9.9</version.jackson>
     <version.jmh>1.21</version.jmh>
     <version.junit>4.12</version.junit>
     <version.log4j>2.11.2</version.log4j>
