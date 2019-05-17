@@ -67,8 +67,8 @@ spec:
             -XX:+UseCGroupMemoryLimitForHeap
       resources:
         limits:
-          cpu: 4
-          memory: 8Gi
+          cpu: 2
+          memory: 4Gi
         requests:
           cpu: 500m
           memory: 1Gi
@@ -119,6 +119,20 @@ spec:
         requests:
           cpu: 2
           memory: 2Gi
+    - name: operate
+      image: gcr.io/ci-30-162810/camunda-operate:latest
+      env:
+        - name: JAVA_TOOL_OPTIONS
+          value: |
+            -XX:+UnlockExperimentalVMOptions
+            -XX:+UseCGroupMemoryLimitForHeap
+      resources:
+        limits:
+          cpu: 2
+          memory: 8Gi
+        requests:
+          cpu: 1
+          memory: 4Gi
   volumes:
   - name: configdir
     emptyDir: {}
@@ -195,7 +209,7 @@ pipeline {
                 """)
                 // Restore Snapshot
                 sh ("""
-                    echo \$(curl -sq -XPOST 'http://localhost:9200/_snapshot/my_gcs_repository/snapshot_1/_restore?wait_for_completion=true')
+                    echo \$(curl -sq -XPOST 'http://localhost:9200/_snapshot/my_gcs_repository/snapshot_2/_restore?wait_for_completion=true')
                 """)
             }
           }
@@ -206,25 +220,7 @@ pipeline {
       steps {
         container('maven') {
           // Generate Data
-          sh ("mvn -B -s settings.xml -f qa/import-performance-tests -P -docker verify")
-        }
-      }
-    }
-    stage('Upload snapshot') {
-      steps {
-        container('maven') {
-          // Create repository
-          sh ("""
-                echo \$(curl -qs -H "Content-Type: application/json" -d '{ "type": "gcs", "settings": { "bucket": "operate-data", "client": "operate_ci_service_account" }}' -XPUT "http://localhost:9200/_snapshot/my_gcs_repository")
-            """)
-          // Delete previous Snapshot
-          sh ("""
-                echo \$(curl -qs -XDELETE "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_2")
-            """)
-          // Trigger Snapshot
-          sh ("""
-                echo \$(curl -qs -XPUT "http://localhost:9200/_snapshot/my_gcs_repository/snapshot_2?wait_for_completion=true")
-            """)
+          sh ("mvn -B -s settings.xml -f qa/query-performance-tests -P -docker verify")
         }
       }
     }

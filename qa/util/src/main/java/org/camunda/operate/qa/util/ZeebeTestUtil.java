@@ -6,6 +6,7 @@
 package org.camunda.operate.qa.util;
 
 import java.time.Duration;
+import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.zeebe.client.ZeebeClient;
@@ -19,6 +20,8 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 public abstract class ZeebeTestUtil {
 
   private static final Logger logger = LoggerFactory.getLogger(ZeebeTestUtil.class);
+
+  private static Random random = new Random();
 
   public static String deployWorkflow(ZeebeClient client, BpmnModelInstance workflowModel, String resourceName) {
     DeployWorkflowCommandStep1 deployWorkflowCommandStep1 = client.newDeployCommand()
@@ -69,13 +72,18 @@ public abstract class ZeebeTestUtil {
     jobWorker.close();
   }
 
+  public static void failTask(ZeebeClient client, String jobType, String workerName, int incidentCount) {
+    failTask(client, jobType, workerName, null, incidentCount);
+  }
+
   public static void failTask(ZeebeClient client, String jobType, String workerName, String errorMessage, int incidentCount) {
     final int[] countFailed = { 0 };
     JobWorker jobWorker = client.newWorker()
       .jobType(jobType)
       .handler((jobClient, activatedJob) -> {
+        final String error = errorMessage == null ? "Error " + random.nextInt(50) : errorMessage;
         if (countFailed[0] < incidentCount) {
-          client.newFailCommand(activatedJob.getKey()).retries(0).errorMessage(errorMessage).send().join();
+          client.newFailCommand(activatedJob.getKey()).retries(0).errorMessage(error).send().join();
           countFailed[0]++;
           if (countFailed[0] % 1000 == 0) {
             logger.info("{} jobs failed ", countFailed[0]);

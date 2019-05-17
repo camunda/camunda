@@ -1,0 +1,51 @@
+[
+  {
+    "title": "Resolve incidents on some complex query",
+    "url": "/api/workflow-instances/operation",
+    "method": "POST",
+    "body": {
+      "queries": [
+        {
+          "running": true,
+          "active": true,
+          "incidents": true,
+          "variable": {
+            "name": "var1",
+            "value": "\"value1\""
+          }
+        },
+        {
+          "running": true,
+          "active": true,
+          "incidents": true,
+          "ids": ["${workflowInstanceIds}"]
+        },
+        {
+          "running": true,
+          "active": true,
+          "incidents": true,
+          "activityId": "task2"
+        }
+      ],
+      "operationType": "RESOLVE_INCIDENT"
+    }
+  },
+  {
+    "title": "Cancel all instances",
+    "url": "/api/workflow-instances/operation",
+    "method": "POST",
+    "body": {
+      "queries": [
+        {
+          "running": true,
+          "active": true,
+          "incidents": true,
+          "finished": true,
+          "completed": true,
+          "canceled": true
+        }
+      ],
+      "operationType": "CANCEL_WORKFLOW_INSTANCE"
+    }
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "title": "Activity instance tree",
+    "url": "/api/activity-instances",
+    "method": "POST",
+    "body": {
+      "workflowInstanceId": "${workflowInstanceId}"
+    }
+  }
+]

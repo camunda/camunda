@@ -1,0 +1,7 @@
+[
+  {
+    "title": "Core statistics",
+    "url": "/api/workflow-instances/core-statistics",
+    "method": "GET"
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "title": "Incidents statistics by workflow",
+    "url": "/api/incidents/byWorkflow",
+    "method": "GET"
+  },
+  {
+    "title": "Incidents statistics by error message",
+    "url": "/api/incidents/byError",
+    "method": "GET"
+  }
+]

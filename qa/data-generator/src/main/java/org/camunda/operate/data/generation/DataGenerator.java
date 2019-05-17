@@ -52,7 +52,7 @@ public class DataGenerator {
 
   private void createIncidents(String jobType) {
     final int incidentCount = dataGeneratorProperties.getIncidentCount();
-    ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", "Error", incidentCount);
+    ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", incidentCount);
     logger.info("{} incidents created", dataGeneratorProperties.getIncidentCount());
   }
 

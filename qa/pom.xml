@@ -16,6 +16,7 @@
     <module>util</module>
     <module>data-generator</module>
     <module>import-performance-tests</module>
+    <module>query-performance-tests</module>
   </modules>
 
 </project>
