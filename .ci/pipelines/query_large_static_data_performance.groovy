@@ -203,6 +203,10 @@ pipeline {
         stage('Import ES Snapshot') {
           steps {
             container('maven') {
+                // Delete existing indices
+                sh ("""
+                    echo \$(curl -sq -H "Content-Type: application/json" -XDELETE "http://localhost:9200/_all")
+                """)
                 // Create repository
                 sh ("""
                     echo \$(curl -sq -H "Content-Type: application/json" -d '{ "type": "gcs", "settings": { "bucket": "operate-data", "client": "operate_ci_service_account" }}' -XPUT "http://localhost:9200/_snapshot/my_gcs_repository")
