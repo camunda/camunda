@@ -21,20 +21,10 @@ import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.exporter.api.record.value.job.Headers;
-import io.zeebe.test.util.MsgPackUtil;
 
 public class JobAssert {
 
   public static final String PROCESS_ID = "process";
-
-  public static void assertJobRecord(Record<JobRecordValue> createJobCmd) {
-    Assertions.assertThat(createJobCmd.getValue()).hasRetries(5).hasType("bar");
-  }
-
-  public static void assertJobVariables(Record<JobRecordValue> event, String expectedVariables) {
-    final byte[] variables = MsgPackUtil.asMsgPackReturnArray(event.getValue().getVariables());
-    MsgPackUtil.assertEquality(variables, expectedVariables);
-  }
 
   public static void assertJobHeaders(long workflowInstanceKey, Record<JobRecordValue> jobRecord) {
     final Headers headers = jobRecord.getValue().getHeaders();

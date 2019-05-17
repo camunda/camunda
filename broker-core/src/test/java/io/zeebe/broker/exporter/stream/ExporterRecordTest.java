@@ -43,9 +43,6 @@ import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
 import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.broker.exporter.util.ControlledTestExporter;
-import io.zeebe.broker.util.StreamProcessorRule;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.RecordValue;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
@@ -111,10 +108,7 @@ public class ExporterRecordTest {
   private static final DirectBuffer VARIABLES_MSGPACK =
       new UnsafeBuffer(OBJECT_MAPPER.toMsgpack(VARIABLES));
 
-  @Rule
-  public StreamProcessorRule rule =
-      new StreamProcessorRule(
-          PARTITION_ID, DefaultZeebeDbFactory.defaultFactory(ExporterColumnFamilies.class));
+  @Rule public ExporterRule rule = new ExporterRule(PARTITION_ID);
 
   private ControlledTestExporter exporter;
 
@@ -518,7 +512,9 @@ public class ExporterRecordTest {
   private void assertRecordExported(
       final Intent intent, final UnpackedObject record, final RecordValue expectedRecordValue) {
     // setup stream processor
-    rule.runStreamProcessor((actor, db, dbContext) -> createStreamProcessor(db));
+    final List<ExporterDescriptor> exporterDescriptors =
+        Collections.singletonList(createMockedExporter());
+    rule.startExporterDirector(exporterDescriptors);
 
     // write event
     final long position = rule.writeEvent(intent, record);
@@ -550,13 +546,6 @@ public class ExporterRecordTest {
         .hasValueType(metadata.getValueType());
 
     assertThat(actualRecord).hasValue(expectedRecordValue);
-  }
-
-  private ExporterStreamProcessor createStreamProcessor(ZeebeDb<ExporterColumnFamilies> db) {
-    final List<ExporterDescriptor> exporterDescriptors =
-        Collections.singletonList(createMockedExporter());
-
-    return new ExporterStreamProcessor(db, db.createContext(), PARTITION_ID, exporterDescriptors);
   }
 
   private ExporterDescriptor createMockedExporter() {

@@ -9,7 +9,7 @@
   </Appenders>
 
   <Loggers>
-    <Logger name="io.zeebe" level="info"/>
+    <Logger name="io.zeebe" level="debug"/>
     <Logger name="io.atomix" level="warn"/>
 
     <Root level="info">

@@ -28,8 +28,6 @@ import java.util.function.Consumer;
 
 public class EmbeddedBrokerConfigurator {
 
-  public static final Consumer<BrokerCfg> NOOP = cfg -> {};
-
   public static final Consumer<BrokerCfg> DEBUG_EXPORTER =
       cfg -> cfg.getExporters().add(DebugLogExporter.defaultConfig(false));
 

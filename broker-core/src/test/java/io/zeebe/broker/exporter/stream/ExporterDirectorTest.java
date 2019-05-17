@@ -29,10 +29,7 @@ import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.zeebe.broker.exporter.util.PojoConfigurationExporter;
 import io.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExporterConfiguration;
-import io.zeebe.broker.util.StreamProcessorControl;
-import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.engine.Loggers;
-import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -51,7 +48,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.verification.VerificationWithTimeout;
 
-public class ExporterStreamProcessorTest {
+public class ExporterDirectorTest {
 
   private static final int PARTITION_ID = 1;
 
@@ -60,15 +57,12 @@ public class ExporterStreamProcessorTest {
 
   private static final VerificationWithTimeout TIMEOUT = timeout(5_000);
 
-  @Rule
-  public StreamProcessorRule rule =
-      new StreamProcessorRule(
-          PARTITION_ID, DefaultZeebeDbFactory.defaultFactory(ExporterColumnFamilies.class));
+  @Rule public ExporterRule rule = new ExporterRule(PARTITION_ID);
 
   private final List<ControlledTestExporter> exporters = new ArrayList<>();
   private final List<ExporterDescriptor> exporterDescriptors = new ArrayList<>();
 
-  private ExporterStreamProcessorState state;
+  private ExportersState state;
 
   @Before
   public void init() {
@@ -90,24 +84,14 @@ public class ExporterStreamProcessorTest {
     exporterDescriptors.add(descriptor);
   }
 
-  private StreamProcessorControl startStreamProcessor(
-      List<ExporterDescriptor> exporterDescriptors) {
-    return rule.runStreamProcessor(
-        (actor, db, dbContext) -> {
-          final ExporterStreamProcessor streamProcessor =
-              new ExporterStreamProcessor(
-                  db, db.createContext(), PARTITION_ID, exporterDescriptors);
-
-          state = streamProcessor.getState();
-
-          return streamProcessor;
-        });
+  private void startExporterDirector(List<ExporterDescriptor> exporterDescriptors) {
+    rule.startExporterDirector(exporterDescriptors);
   }
 
   @Test
   public void shouldConfigureAllExportersProperlyOnStart() {
     // when
-    startStreamProcessor(exporterDescriptors);
+    startExporterDirector(exporterDescriptors);
 
     // then
     verify(exporters.get(0), TIMEOUT).open(any());
@@ -138,10 +122,10 @@ public class ExporterStreamProcessorTest {
   @Test
   public void shouldCloseAllExportersOnClose() {
     // given
-    final StreamProcessorControl control = startStreamProcessor(exporterDescriptors);
+    startExporterDirector(exporterDescriptors);
 
     // when
-    control.close();
+    rule.closeExporterDirector();
 
     // then
     verify(exporters.get(0), TIMEOUT).close();
@@ -169,9 +153,10 @@ public class ExporterStreamProcessorTest {
         new ExporterDescriptor(
             "instantiateConfiguration", PojoConfigurationExporter.class, arguments);
 
-    startStreamProcessor(Collections.singletonList(descriptor));
+    startExporterDirector(Collections.singletonList(descriptor));
 
     // then
+    waitUntil(() -> PojoConfigurationExporter.configuration != null);
     final PojoExporterConfiguration configuration = PojoConfigurationExporter.configuration;
 
     assertThat(configuration.foo).isEqualTo(foo);
@@ -193,16 +178,14 @@ public class ExporterStreamProcessorTest {
               }
             });
 
-    final StreamProcessorControl control = startStreamProcessor(exporterDescriptors);
+    startExporterDirector(exporterDescriptors);
 
     // when
     final long eventPosition1 = writeEvent();
     final long eventPosition2 = writeEvent();
 
-    control.blockAfterEvent(e -> e.getPosition() == eventPosition2);
-    waitUntil(control::isBlocked);
-
     // then
+    waitUntil(() -> failCount.get() <= -2);
     assertThat(exporters.get(0).getExportedRecords())
         .extracting(Record::getPosition)
         .containsExactly(eventPosition1, eventPosition2);
@@ -227,7 +210,7 @@ public class ExporterStreamProcessorTest {
             });
 
     // when
-    startStreamProcessor(exporterDescriptors);
+    startExporterDirector(exporterDescriptors);
 
     writeEvent();
 
@@ -242,7 +225,7 @@ public class ExporterStreamProcessorTest {
   @Test
   public void shouldRecoverPositionsFromState() {
     // given
-    final StreamProcessorControl control = startStreamProcessor(exporterDescriptors);
+    startExporterDirector(exporterDescriptors);
 
     final long eventPosition1 = writeEvent();
     final long eventPosition2 = writeEvent();
@@ -253,17 +236,15 @@ public class ExporterStreamProcessorTest {
     exporters.get(0).getController().updateLastExportedRecordPosition(eventPosition2);
     exporters.get(1).getController().updateLastExportedRecordPosition(eventPosition1);
 
-    control.close();
-
+    rule.closeExporterDirector();
     exporters.get(0).getExportedRecords().clear();
     exporters.get(1).getExportedRecords().clear();
 
     // then
-    control.blockAfterEvent(e -> e.getPosition() >= eventPosition2);
-    control.start();
-    waitUntil(control::isBlocked);
+    startExporterDirector(exporterDescriptors);
 
     // then
+    waitUntil(() -> exporters.get(1).getExportedRecords().size() >= 1);
     assertThat(exporters.get(0).getExportedRecords()).hasSize(0);
     assertThat(exporters.get(1).getExportedRecords())
         .extracting(Record::getPosition)
@@ -274,7 +255,7 @@ public class ExporterStreamProcessorTest {
   @Test
   public void shouldUpdateLastExportedPositionOnClose() {
     // given
-    final StreamProcessorControl control = startStreamProcessor(exporterDescriptors);
+    startExporterDirector(exporterDescriptors);
 
     final long eventPosition1 = writeEvent();
     final long eventPosition2 = writeEvent();
@@ -289,16 +270,14 @@ public class ExporterStreamProcessorTest {
                 exporters.get(0).getController().updateLastExportedRecordPosition(eventPosition1));
 
     // when
-    control.close();
-
+    rule.closeExporterDirector();
     exporters.get(0).getExportedRecords().clear();
     exporters.get(1).getExportedRecords().clear();
 
-    control.blockAfterEvent(e -> e.getPosition() == eventPosition2);
-    control.start();
-    waitUntil(control::isBlocked);
+    startExporterDirector(exporterDescriptors);
 
     // then
+    waitUntil(() -> exporters.get(1).getExportedRecords().size() >= 2);
     assertThat(exporters.get(0).getExportedRecords())
         .extracting(Record::getPosition)
         .hasSize(1)
@@ -312,32 +291,32 @@ public class ExporterStreamProcessorTest {
   @Test
   public void shouldRemoveExporterFromState() {
     // given
-    final StreamProcessorControl control = startStreamProcessor(exporterDescriptors);
+    startExporterDirector(exporterDescriptors);
 
     final long eventPosition = writeEvent();
-
     waitUntil(() -> exporters.get(0).getExportedRecords().size() == 1);
     waitUntil(() -> exporters.get(1).getExportedRecords().size() == 1);
 
     exporters.get(0).getController().updateLastExportedRecordPosition(eventPosition);
     exporters.get(1).getController().updateLastExportedRecordPosition(eventPosition);
 
-    control.close();
+    rule.closeExporterDirector();
 
     // when
-    startStreamProcessor(Collections.singletonList(exporterDescriptors.get(0)));
+    startExporterDirector(Collections.singletonList(exporterDescriptors.get(0)));
 
     verify(exporters.get(0), TIMEOUT.times(2)).open(any());
 
     // then
-    assertThat(state.getPosition(EXPORTER_ID_1)).isEqualTo(eventPosition);
-    assertThat(state.getPosition(EXPORTER_ID_2)).isEqualTo(-1);
+    final ExportersState exportersState = rule.getExportersState();
+    assertThat(exportersState.getPosition(EXPORTER_ID_1)).isEqualTo(eventPosition);
+    assertThat(exportersState.getPosition(EXPORTER_ID_2)).isEqualTo(-1);
   }
 
   @Test
   public void shouldRecoverFromStartWithNonUpdatingExporter() {
     // given
-    final StreamProcessorControl control = startStreamProcessor(exporterDescriptors);
+    startExporterDirector(exporterDescriptors);
     final long eventPosition = writeEvent();
 
     waitUntil(() -> exporters.get(0).getExportedRecords().size() == 1);
@@ -346,15 +325,13 @@ public class ExporterStreamProcessorTest {
     exporters.get(1).getController().updateLastExportedRecordPosition(eventPosition);
 
     // when
-    control.close();
+    rule.closeExporterDirector();
     exporters.get(0).getExportedRecords().clear();
     exporters.get(1).getExportedRecords().clear();
-
-    control.blockAfterEvent(e -> e.getPosition() == eventPosition);
-    control.start();
-    waitUntil(control::isBlocked);
+    startExporterDirector(exporterDescriptors);
 
     // then
+    waitUntil(() -> exporters.get(0).getExportedRecords().size() >= 1);
     assertThat(exporters.get(0).getExportedRecords())
         .extracting(Record::getPosition)
         .containsExactly(eventPosition);

@@ -19,7 +19,6 @@ package io.zeebe.broker.util;
 
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import java.util.stream.Stream;
@@ -34,21 +33,6 @@ public class TypedRecordStream<T extends UnpackedObject>
   @Override
   protected TypedRecordStream<T> supply(Stream<TypedRecord<T>> wrappedStream) {
     return new TypedRecordStream<>(wrappedStream);
-  }
-
-  public TypedRecordStream<T> onlyCommands() {
-    return new TypedRecordStream<>(
-        filter(r -> r.getMetadata().getRecordType() == RecordType.COMMAND));
-  }
-
-  public TypedRecordStream<T> onlyEvents() {
-    return new TypedRecordStream<>(
-        filter(r -> r.getMetadata().getRecordType() == RecordType.EVENT));
-  }
-
-  public TypedRecordStream<T> onlyRejections() {
-    return new TypedRecordStream<>(
-        filter(r -> r.getMetadata().getRecordType() == RecordType.COMMAND_REJECTION));
   }
 
   public TypedRecordStream<T> withIntent(Intent intent) {

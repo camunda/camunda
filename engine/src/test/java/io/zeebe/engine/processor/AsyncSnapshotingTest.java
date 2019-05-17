@@ -112,7 +112,7 @@ public class AsyncSnapshotingTest {
         actorCondition -> logStream.registerOnCommitPositionUpdatedCondition(actorCondition),
         actorCondition -> logStream.removeOnCommitPositionUpdatedCondition(actorCondition),
         () -> logStream.getCommitPosition(),
-        mock(StreamProcessorMetrics.class),
+        mock(SnapshotMetrics.class),
         MAX_SNAPSHOTS,
         mockDeleteCallback::noop);
   }

@@ -17,24 +17,30 @@
  */
 package io.zeebe.broker.exporter;
 
+import static io.zeebe.broker.exporter.ExporterServiceNames.exporterDirectorServiceName;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.engine.StreamProcessorServiceFactory;
 import io.zeebe.broker.exporter.jar.ExporterJarLoadException;
 import io.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.zeebe.broker.exporter.repo.ExporterRepository;
 import io.zeebe.broker.exporter.stream.ExporterColumnFamilies;
-import io.zeebe.broker.exporter.stream.ExporterStreamProcessor;
-import io.zeebe.broker.exporter.stream.ExporterStreamProcessorState;
+import io.zeebe.broker.exporter.stream.ExporterDirector;
+import io.zeebe.broker.exporter.stream.ExporterDirectorContext;
+import io.zeebe.broker.exporter.stream.ExportersState;
+import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.SnapshotController;
-import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.util.DurationUtil;
 import java.util.List;
 import org.slf4j.Logger;
 
@@ -45,20 +51,18 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
 
-  private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector =
-      new Injector<>();
-
   private final ServiceGroupReference<Partition> partitionsGroupReference =
       ServiceGroupReference.<Partition>create().onAdd(this::startExporter).build();
 
   private final List<ExporterCfg> exporterCfgs;
   private final ExporterRepository exporterRepository;
+  private final DataCfg dataCfg;
 
-  private StreamProcessorServiceFactory streamProcessorServiceFactory;
-  private Partition partition;
+  private ServiceStartContext startContext;
 
-  public ExporterManagerService(List<ExporterCfg> exporterCfgs) {
-    this.exporterCfgs = exporterCfgs;
+  public ExporterManagerService(BrokerCfg brokerCfg) {
+    this.dataCfg = brokerCfg.getData();
+    this.exporterCfgs = brokerCfg.getExporters();
     this.exporterRepository = new ExporterRepository();
   }
 
@@ -69,7 +73,7 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
 
   @Override
   public void start(ServiceStartContext startContext) {
-    this.streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
+    this.startContext = startContext;
     // load and validate exporters
     for (ExporterCfg exporterCfg : exporterCfgs) {
       try {
@@ -80,42 +84,38 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
     }
   }
 
-  @Override
-  public void stop(final ServiceStopContext stopContext) {
-    if (partition != null) {
-      partition.getLogStream().setExporterPositionSupplier(null);
-    }
-  }
-
   private void startExporter(ServiceName<Partition> partitionName, Partition partition) {
     final SnapshotController snapshotController = partition.getExporterSnapshotController();
-    this.partition = partition;
 
     if (exporterRepository.getExporters().isEmpty()) {
       clearExporterState(snapshotController);
       partition.getLogStream().setExporterPositionSupplier(() -> Long.MAX_VALUE);
-
     } else {
-      streamProcessorServiceFactory
-          .createService(partition, partitionName)
-          .processorId(EXPORTER_PROCESSOR_ID)
-          .processorName(PROCESSOR_NAME)
-          .snapshotController(snapshotController)
-          .streamProcessorFactory(
-              (actor, zeebeDb, dbContext) -> {
-                final ExporterStreamProcessor exporterStreamProcessor =
-                    new ExporterStreamProcessor(
-                        zeebeDb,
-                        dbContext,
-                        partition.getPartitionId(),
-                        exporterRepository.getExporters().values());
-                partition
-                    .getLogStream()
-                    .setExporterPositionSupplier(exporterStreamProcessor::getPositionToRecoverFrom);
-                return exporterStreamProcessor;
-              })
-          .deleteDataOnSnapshot(false)
-          .build();
+      final ExporterDirectorContext context =
+          new ExporterDirectorContext()
+              .eventFilter((event -> true))
+              .id(EXPORTER_PROCESSOR_ID)
+              .name(PROCESSOR_NAME)
+              .logStream(partition.getLogStream())
+              .snapshotController(snapshotController)
+              .maxSnapshots(dataCfg.getMaxSnapshots())
+              .descriptors(exporterRepository.getExporters().values())
+              .logStreamReader(new BufferedLogStreamReader())
+              .snapshotPeriod(DurationUtil.parse(dataCfg.getSnapshotPeriod()));
+
+      final LogStream logStream = partition.getLogStream();
+      final String logName = logStream.getLogName();
+
+      final ExporterDirector director = new ExporterDirector(context);
+      startContext
+          .createService(exporterDirectorServiceName(partition.getPartitionId()), director)
+          .dependency(LogStreamServiceNames.logStreamServiceName(logName))
+          .dependency(LogStreamServiceNames.logWriteBufferServiceName(logName))
+          .dependency(LogStreamServiceNames.logStorageServiceName(logName))
+          .dependency(LogStreamServiceNames.logBlockIndexServiceName(logName))
+          .dependency(partitionName)
+          .install();
+      logStream.setExporterPositionSupplier(director::getLowestExporterPosition);
     }
   }
 
@@ -129,8 +129,7 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
       // TODO (saig0): don't open and recover the latest snapshot in the service - #2353
       final long snapshotPosition = snapshotController.recover();
       final ZeebeDb<ExporterColumnFamilies> db = snapshotController.openDb();
-      final ExporterStreamProcessorState state =
-          new ExporterStreamProcessorState(db, db.createContext());
+      final ExportersState state = new ExportersState(db, db.createContext());
 
       state.visitPositions(
           (exporterId, position) -> {
@@ -153,10 +152,6 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
         LOG.error("Unexpected exception happened on closing snapshot controller.", e);
       }
     }
-  }
-
-  public Injector<StreamProcessorServiceFactory> getStreamProcessorServiceFactoryInjector() {
-    return streamProcessorServiceFactoryInjector;
   }
 
   public ServiceGroupReference<Partition> getPartitionsGroupReference() {

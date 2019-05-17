@@ -25,7 +25,7 @@ import io.atomix.cluster.messaging.ClusterEventService;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.engine.EngineService;
 import io.zeebe.broker.exporter.stream.ExporterColumnFamilies;
-import io.zeebe.broker.exporter.stream.ExporterStreamProcessorState;
+import io.zeebe.broker.exporter.stream.ExportersState;
 import io.zeebe.broker.logstreams.state.DefaultOnDemandSnapshotReplication;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.db.ZeebeDb;
@@ -150,8 +150,7 @@ public class Partition implements Service<Partition> {
       if (exporterSnapshotController.getValidSnapshotsCount() > 0) {
         exporterSnapshotController.recover();
         final ZeebeDb zeebeDb = exporterSnapshotController.openDb();
-        final ExporterStreamProcessorState exporterState =
-            new ExporterStreamProcessorState(zeebeDb, zeebeDb.createContext());
+        final ExportersState exporterState = new ExportersState(zeebeDb, zeebeDb.createContext());
 
         final long lowestPosition = exporterState.getLowestPosition();
 

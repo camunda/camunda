@@ -33,11 +33,11 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class ExporterStateTest {
+public class ExportersStateTest {
 
   private final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private ExporterStreamProcessorState state;
+  private ExportersState state;
 
   @Rule
   public final RuleChain chain = RuleChain.outerRule(temporaryFolder).around(autoCloseableRule);
@@ -48,7 +48,7 @@ public class ExporterStateTest {
   public void setup() throws Exception {
     final File dbDirectory = temporaryFolder.newFolder();
     db = DefaultZeebeDbFactory.defaultFactory(ExporterColumnFamilies.class).createDb(dbDirectory);
-    state = new ExporterStreamProcessorState(db, db.createContext());
+    state = new ExportersState(db, db.createContext());
   }
 
   @After

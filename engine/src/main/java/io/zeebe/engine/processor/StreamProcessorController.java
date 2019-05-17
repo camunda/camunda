@@ -36,10 +36,9 @@ import org.slf4j.Logger;
 
 public class StreamProcessorController extends Actor {
 
-  private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
-
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
-      "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover with processor '%s'.";
+      "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
+  private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
   private final StreamProcessorFactory streamProcessorFactory;
   private final boolean deleteDataOnSnapshot;
@@ -164,22 +163,18 @@ public class StreamProcessorController extends Actor {
   }
 
   private long recoverFromSnapshot() throws Exception {
-    final long lowerBoundSnapshotPosition = snapshotController.recover();
+    snapshotController.recover();
     final ZeebeDb zeebeDb = snapshotController.openDb();
 
     dbContext = zeebeDb.createContext();
     streamProcessor = streamProcessorFactory.createProcessor(actor, zeebeDb, dbContext);
 
     final long snapshotPosition = streamProcessor.getPositionToRecoverFrom();
-    logStreamReader.seekToFirstEvent(); // reset seek position
-    if (lowerBoundSnapshotPosition > -1 && snapshotPosition > -1) {
-      final boolean found = logStreamReader.seek(snapshotPosition);
-      if (found && logStreamReader.hasNext()) {
-        logStreamReader.seek(snapshotPosition + 1);
-      } else {
-        throw new IllegalStateException(
-            String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, snapshotPosition, getName()));
-      }
+
+    final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
+    if (failedToRecoverReader) {
+      throw new IllegalStateException(
+          String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, snapshotPosition, getName()));
     }
 
     LOG.info(
@@ -203,7 +198,7 @@ public class StreamProcessorController extends Actor {
             logStream::registerOnCommitPositionUpdatedCondition,
             logStream::removeOnCommitPositionUpdatedCondition,
             logStream::getCommitPosition,
-            metrics,
+            metrics.getSnapshotMetrics(),
             maxSnapshots,
             deleteDataOnSnapshot ? logStream::delete : pos -> {});
 
@@ -241,7 +236,6 @@ public class StreamProcessorController extends Actor {
     if (!isFailed()) {
       actor.run(
           () -> {
-            final LogStream logStream = streamProcessorContext.logStream;
             if (asyncSnapshotDirector != null) {
               actor.runOnCompletionBlockingCurrentPhase(
                   asyncSnapshotDirector.enforceSnapshotCreation(

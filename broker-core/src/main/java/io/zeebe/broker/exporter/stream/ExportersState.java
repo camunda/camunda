@@ -26,15 +26,14 @@ import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongArrayList;
 
-public class ExporterStreamProcessorState {
+public class ExportersState {
   public static final long VALUE_NOT_FOUND = -1;
 
   private final DbString exporterId;
   private final DbLong position;
   private final ColumnFamily<DbString, DbLong> exporterPositionColumnFamily;
 
-  public ExporterStreamProcessorState(
-      ZeebeDb<ExporterColumnFamilies> zeebeDb, DbContext dbContext) {
+  public ExportersState(ZeebeDb<ExporterColumnFamilies> zeebeDb, DbContext dbContext) {
     exporterId = new DbString();
     position = new DbLong();
     exporterPositionColumnFamily =
@@ -46,11 +45,6 @@ public class ExporterStreamProcessorState {
     setPosition(position);
   }
 
-  public void setPosition(final DirectBuffer exporterId, final long position) {
-    this.exporterId.wrapBuffer(exporterId);
-    setPosition(position);
-  }
-
   private void setPosition(long position) {
     this.position.wrapLong(position);
     exporterPositionColumnFamily.put(this.exporterId, this.position);
@@ -58,12 +52,6 @@ public class ExporterStreamProcessorState {
 
   public void setPositionIfGreater(final String exporterId, final long position) {
     this.exporterId.wrapString(exporterId);
-
-    setPositionIfGreater(position);
-  }
-
-  public void setPositionIfGreater(final DirectBuffer exporterId, final long position) {
-    this.exporterId.wrapBuffer(exporterId);
 
     setPositionIfGreater(position);
   }
