@@ -10,7 +10,7 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 
 import * as Styled from './styled';
 
-export default function IncidentsBar({id, count, onClick, isArrowFlipped}) {
+export default function IncidentsBanner({id, count, onClick, isArrowFlipped}) {
   const isOnlyOne = count === 1;
   const errorMessage = `There ${isOnlyOne ? 'is' : 'are'} ${pluralSuffix(
     count,
@@ -19,18 +19,18 @@ export default function IncidentsBar({id, count, onClick, isArrowFlipped}) {
   const title = `View ${pluralSuffix(count, 'Incident')} in Instance ${id}. `;
 
   return (
-    <Styled.IncidentsBar
+    <Styled.IncidentsBanner
       onClick={onClick}
       title={title}
       isExpanded={isArrowFlipped}
-      expandTheme="incidentsBar"
+      expandTheme="incidentsBanner"
     >
       {errorMessage}
-    </Styled.IncidentsBar>
+    </Styled.IncidentsBanner>
   );
 }
 
-IncidentsBar.propTypes = {
+IncidentsBanner.propTypes = {
   id: PropTypes.string.isRequired,
   count: PropTypes.number.isRequired,
   onClick: PropTypes.func,

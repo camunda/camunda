@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {mount} from 'enzyme';
-import IncidentsBar from './IncidentsBar';
+import IncidentsBanner from './IncidentsBanner';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 
 const mockProps = {
@@ -19,11 +19,11 @@ const mockProps = {
 const mountComponent = mockProps =>
   mount(
     <ThemeProvider>
-      <IncidentsBar {...mockProps} />
+      <IncidentsBanner {...mockProps} />
     </ThemeProvider>
   );
 
-describe('IncidentsBar', () => {
+describe('IncidentsBanner', () => {
   it('should show the right text for 1 incident', () => {
     const node = mountComponent(mockProps);
     expect(node.text()).toContain('There is 1 Incident in Instance 1.');

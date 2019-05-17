@@ -8,7 +8,7 @@ import React, {useState, useEffect, useMemo, useRef} from 'react';
 import {isEqual} from 'lodash';
 
 import PropTypes from 'prop-types';
-import IncidentsBar from './IncidentsBar';
+import IncidentsBanner from './IncidentsBanner';
 import IncidentsOverlay from './IncidentsOverlay';
 import IncidentsTable from './IncidentsTable';
 import IncidentsFilter from './IncidentsFilter';
@@ -145,7 +145,7 @@ function IncidentsWrapper(props) {
 
   return (
     <>
-      <IncidentsBar
+      <IncidentsBanner
         id={instance.id}
         count={incidentsCount}
         onClick={handleToggle}

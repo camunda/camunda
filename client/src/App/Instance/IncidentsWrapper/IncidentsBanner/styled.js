@@ -10,7 +10,7 @@ import {Colors} from 'modules/theme';
 
 import BasicExpandButton from 'modules/components/ExpandButton';
 
-export const IncidentsBar = styled(BasicExpandButton)`
+export const IncidentsBanner = styled(BasicExpandButton)`
   display: flex;
   align-items: center;
   position: relative;

@@ -17,7 +17,7 @@ import Pill from 'modules/components/Pill';
 import IncidentsWrapper from './IncidentsWrapper';
 import IncidentsOverlay from './IncidentsOverlay';
 import IncidentsTable from './IncidentsTable';
-import IncidentsBar from './IncidentsBar';
+import IncidentsBanner from './IncidentsBanner';
 import IncidentsFilter from './IncidentsFilter';
 
 const incidentsMock = createIncidentTableProps();
@@ -67,26 +67,26 @@ describe('IncidentsWrapper', () => {
     expect(node.find(IncidentsOverlay)).not.toExist();
   });
 
-  it('should render the IncidentsBar', () => {
+  it('should render the IncidentsBanner', () => {
     const node = mountNode(mockProps);
-    const bar = node.find(IncidentsBar);
+    const bar = node.find(IncidentsBanner);
 
     expect(bar).toExist();
     expect(bar.props().id).toEqual(mockProps.instance.id);
     expect(bar.props().count).toEqual(mockProps.incidentsCount);
   });
 
-  it('should toggle the IncidentsOverlay when clicking on the IncidentsBar', () => {
+  it('should toggle the IncidentsOverlay when clicking on the IncidentsBanner', () => {
     const node = mountNode(mockProps);
     expect(node.find(IncidentsOverlay).length).toEqual(0);
 
     // open overlay
-    node.find(IncidentsBar).simulate('click');
+    node.find(IncidentsBanner).simulate('click');
 
     expect(node.find(IncidentsOverlay).length).toEqual(1);
 
     // close overlay
-    node.find(IncidentsBar).simulate('click');
+    node.find(IncidentsBanner).simulate('click');
 
     node.update();
 
@@ -97,7 +97,7 @@ describe('IncidentsWrapper', () => {
     const node = mountNode(mockProps);
 
     // open overlay
-    node.find(IncidentsBar).simulate('click');
+    node.find(IncidentsBanner).simulate('click');
     node.update();
 
     const IncidentsTableNode = node.find(IncidentsTable);
@@ -108,7 +108,7 @@ describe('IncidentsWrapper', () => {
     const node = mountNode(mockProps);
 
     // open overlay
-    node.find(IncidentsBar).simulate('click');
+    node.find(IncidentsBanner).simulate('click');
     node.update();
 
     const IncidentsFilterNode = node.find(IncidentsFilter);
@@ -121,7 +121,7 @@ describe('IncidentsWrapper', () => {
       const node = mountNode(mockProps);
 
       // open overlay
-      node.find(IncidentsBar).simulate('click');
+      node.find(IncidentsBanner).simulate('click');
       node.update();
 
       const IncidentsTableNode = node.find(IncidentsTable);
@@ -135,7 +135,7 @@ describe('IncidentsWrapper', () => {
       const node = mountNode(mockProps);
 
       // open overlay
-      node.find(IncidentsBar).simulate('click');
+      node.find(IncidentsBanner).simulate('click');
       node.update();
 
       const IncidentsTableNode = node.find(IncidentsTable);
@@ -171,7 +171,7 @@ describe('IncidentsWrapper', () => {
     beforeEach(() => {
       // when
       node = mountNode(mockProps);
-      node.find(IncidentsBar).simulate('click');
+      node.find(IncidentsBanner).simulate('click');
       node.update();
     });
 
