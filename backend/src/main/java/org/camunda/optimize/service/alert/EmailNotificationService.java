@@ -5,41 +5,35 @@
  */
 package org.camunda.optimize.service.alert;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.SimpleEmail;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-
+@AllArgsConstructor
 @Component
+@Slf4j
 public class EmailNotificationService implements NotificationService {
-  private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private ConfigurationService configurationService;
-
-  @Autowired
-  public EmailNotificationService(final ConfigurationService configurationService) {
-    this.configurationService = configurationService;
-  }
+  private final ConfigurationService configurationService;
 
   @Override
   public void notifyRecipient(String text, String destination) {
-    logger.debug("sending email [{}] to [{}]", text, destination);
+    log.debug("sending email [{}] to [{}]", text, destination);
     if (configurationService.getEmailEnabled()) {
       try {
         sendEmail(destination, text);
       } catch (EmailException e) {
-        logger.error("Was not able to send email from [{}] to [{}]!",
+        log.error("Was not able to send email from [{}] to [{}]!",
             configurationService.getAlertEmailAddress(),
             destination,
             e);
       }
     } else {
-      logger.warn("The email service is not enabled and thus no email could be send. " +
+      log.warn("The email service is not enabled and thus no email could be send. " +
           "Please check the Optimize documentation on how to enable email notifications!");
     }
   }

@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.security;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.AuthenticationResultDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -20,36 +19,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class AuthenticationService {
-
-  private static final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
 
   private final EngineAuthenticationProvider engineAuthenticationProvider;
   private final EngineContextFactory engineContextFactory;
   private final SessionService sessionService;
   private final ApplicationAuthorizationService applicationAuthorizationService;
 
-  @Autowired
-  public AuthenticationService(final EngineAuthenticationProvider engineAuthenticationProvider,
-                               final EngineContextFactory engineContextFactory, final SessionService sessionService,
-                               final ApplicationAuthorizationService applicationAuthorizationService) {
-    this.engineAuthenticationProvider = engineAuthenticationProvider;
-    this.engineContextFactory = engineContextFactory;
-    this.sessionService = sessionService;
-    this.applicationAuthorizationService = applicationAuthorizationService;
-  }
-
   /**
    * Authenticates user and checks for optimize authorization.
-   * 
-   * @throws ForbiddenException
-   *           if no engine that authenticates the user also authorizes the user
-   * @throws NotAuthorizedException
-   *           if no engine authenticates the user
+   *
+   * @throws ForbiddenException     if no engine that authenticates the user also authorizes the user
+   * @throws NotAuthorizedException if no engine authenticates the user
    */
   public String authenticateUser(CredentialsDto credentials) throws ForbiddenException, NotAuthorizedException {
-   
+
     List<AuthenticationResultDto> authenticationResults = new ArrayList<>();
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
 
@@ -72,14 +59,14 @@ public class AuthenticationService {
     if (userWasAuthenticated) {
       // could not find an engine that grants optimize permission
       String errorMessage = "The user [" + credentials.getUsername() + "] is not authorized to "
-          + "access Optimize.\n Please check the Camunda Admin configuration to change user "
-          + "authorizations in at least one process engine.";
-      logger.warn(errorMessage);
+        + "access Optimize.\n Please check the Camunda Admin configuration to change user "
+        + "authorizations in at least one process engine.";
+      log.warn(errorMessage);
       throw new ForbiddenException(errorMessage);
     } else {
       // could not find an engine that authenticates user
       String authenticationErrorMessage = createNotAuthenticatedErrorMessage(authenticationResults);
-      logger.warn(authenticationErrorMessage);
+      log.warn(authenticationErrorMessage);
       throw new NotAuthorizedException(authenticationErrorMessage, "ignored");
     }
   }

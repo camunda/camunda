@@ -25,7 +25,7 @@ public class TenantImportIndexHandler extends AllEntitiesBasedImportIndexHandler
 
   private Map<String, TenantEngineDto> alreadyImportedTenants = new HashMap<>();
 
-  public TenantImportIndexHandler(EngineContext engineContext) {
+  public TenantImportIndexHandler(final EngineContext engineContext) {
     super(engineContext);
   }
 

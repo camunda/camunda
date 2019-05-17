@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -27,9 +29,6 @@ import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
@@ -52,21 +51,14 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROC
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class ReportReader {
-  private static final Logger logger = LoggerFactory.getLogger(ReportReader.class);
 
-  private RestHighLevelClient esClient;
-  private ConfigurationService configurationService;
-  private ObjectMapper objectMapper;
-
-  @Autowired
-  public ReportReader(RestHighLevelClient esClient, ConfigurationService configurationService,
-                      ObjectMapper objectMapper) {
-    this.esClient = esClient;
-    this.configurationService = configurationService;
-    this.objectMapper = objectMapper;
-  }
+  private final RestHighLevelClient esClient;
+  private final ConfigurationService configurationService;
+  private final ObjectMapper objectMapper;
 
   /**
    * Obtain report by it's ID from elasticsearch
@@ -76,7 +68,7 @@ public class ReportReader {
    *                                  exist or deserialization was not successful.
    */
   public ReportDefinitionDto getReport(String reportId) {
-    logger.debug("Fetching report with id [{}]", reportId);
+    log.debug("Fetching report with id [{}]", reportId);
     MultiGetResponse multiGetItemResponses = performGetReportRequest(reportId);
 
     Optional<ReportDefinitionDto> result = Optional.empty();
@@ -92,7 +84,7 @@ public class ReportReader {
     if (!result.isPresent()) {
       String reason = "Was not able to retrieve report with id [" + reportId + "]"
         + "from Elasticsearch. Report does not exist.";
-      logger.error(reason);
+      log.error(reason);
       throw new NotFoundException(reason);
     }
     return result.get();
@@ -121,14 +113,14 @@ public class ReportReader {
       multiGetItemResponses = esClient.mget(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format("Could not fetch report with id [%s]", reportId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
     return multiGetItemResponses;
   }
 
   public SingleProcessReportDefinitionDto getSingleProcessReport(String reportId) {
-    logger.debug("Fetching single process report with id [{}]", reportId);
+    log.debug("Fetching single process report with id [{}]", reportId);
     GetRequest getRequest = new GetRequest(
         getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
         SINGLE_PROCESS_REPORT_TYPE,
@@ -139,7 +131,7 @@ public class ReportReader {
       getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format("Could not fetch single process report with id [%s]", reportId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -148,17 +140,17 @@ public class ReportReader {
       try {
         return objectMapper.readValue(responseAsString, SingleProcessReportDefinitionDto.class);
       } catch (IOException e) {
-        logger.error("Was not able to retrieve single process report with id [{}] from Elasticsearch.", reportId);
+        log.error("Was not able to retrieve single process report with id [{}] from Elasticsearch.", reportId);
         throw new OptimizeRuntimeException("Can't fetch alert");
       }
     } else {
-      logger.error("Was not able to retrieve single process report with id [{}] from Elasticsearch.", reportId);
+      log.error("Was not able to retrieve single process report with id [{}] from Elasticsearch.", reportId);
       throw new NotFoundException("Single process report does not exist!");
     }
   }
 
   public SingleDecisionReportDefinitionDto getSingleDecisionReport(String reportId) {
-    logger.debug("Fetching single decision report with id [{}]", reportId);
+    log.debug("Fetching single decision report with id [{}]", reportId);
     GetRequest getRequest = new GetRequest(
         getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
         SINGLE_DECISION_REPORT_TYPE,
@@ -169,7 +161,7 @@ public class ReportReader {
       getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format("Could not fetch single decision report with id [%s]", reportId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -178,17 +170,17 @@ public class ReportReader {
       try {
         return objectMapper.readValue(responseAsString, SingleDecisionReportDefinitionDto.class);
       } catch (IOException e) {
-        logger.error("Was not able to retrieve single decision report with id [{}] from Elasticsearch.", reportId);
+        log.error("Was not able to retrieve single decision report with id [{}] from Elasticsearch.", reportId);
         throw new OptimizeRuntimeException("Can't fetch alert");
       }
     } else {
-      logger.error("Was not able to retrieve single decision report with id [{}] from Elasticsearch.", reportId);
+      log.error("Was not able to retrieve single decision report with id [{}] from Elasticsearch.", reportId);
       throw new NotFoundException("single decision report does not exist!");
     }
   }
 
   public List<ReportDefinitionDto> getAllReports() {
-    logger.debug("Fetching all available reports");
+    log.debug("Fetching all available reports");
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.matchAllQuery())
       .size(LIST_FETCH_LIMIT);
@@ -205,7 +197,7 @@ public class ReportReader {
     try {
       scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      logger.error("Was not able to retrieve reports!", e);
+      log.error("Was not able to retrieve reports!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve reports!", e);
     }
 
@@ -219,7 +211,7 @@ public class ReportReader {
   }
 
   public List<SingleProcessReportDefinitionDto> getAllSingleProcessReportsForIds(List<String> reportIds) {
-    logger.debug("Fetching all available single process reports for ids [{}]", reportIds);
+    log.debug("Fetching all available single process reports for ids [{}]", reportIds);
 
     String[] reportIdsAsArray = reportIds.toArray(new String[0]);
 
@@ -239,7 +231,7 @@ public class ReportReader {
                         "There is a mismatch here. Maybe one report does not exist?",
                       reportIds, fetchedReportIds
         );
-      logger.error(errorMessage);
+      log.error(errorMessage);
       throw new NotFoundException(errorMessage);
     }
     return singleReportDefinitionDtos;
@@ -260,7 +252,7 @@ public class ReportReader {
           + "it was not possible to deserialize a hit from Elasticsearch!"
           + " Hit response from Elasticsearch: "
           + sourceAsString;
-        logger.error(reason, e);
+        log.error(reason, e);
         throw new OptimizeRuntimeException(reason, e);
       }
     }
@@ -281,14 +273,14 @@ public class ReportReader {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format("Was not able to fetch reports for ids [%s]", Arrays.asList(reportIdsAsArray));
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
     return searchResponse;
   }
 
   public List<CombinedReportDefinitionDto> findFirstCombinedReportsForSimpleReport(String simpleReportId) {
-    logger.debug("Fetching first combined reports using simpleReport with id {}", simpleReportId);
+    log.debug("Fetching first combined reports using simpleReport with id {}", simpleReportId);
 
     final NestedQueryBuilder getCombinedReportsBySimpleReportIdQuery = nestedQuery(
       DATA,
@@ -315,7 +307,7 @@ public class ReportReader {
         "Was not able to fetch combined reports that contain report with id [%s]",
         simpleReportId
       );
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
     return ElasticsearchHelper.mapHits(searchResponse.getHits(), CombinedReportDefinitionDto.class, objectMapper);
@@ -331,7 +323,7 @@ public class ReportReader {
       } catch (IOException e) {
         String reason = "While retrieving report with id [" + reportId + "]"
           + "could not deserialize report from Elasticsearch!";
-        logger.error(reason, e);
+        log.error(reason, e);
         throw new OptimizeRuntimeException(reason);
       }
     }

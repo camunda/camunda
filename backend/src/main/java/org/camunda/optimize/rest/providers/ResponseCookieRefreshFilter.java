@@ -5,11 +5,11 @@
  */
 package org.camunda.optimize.rest.providers;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Priority;
@@ -22,6 +22,7 @@ import javax.ws.rs.ext.Provider;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
+@AllArgsConstructor
 @Secured
 @Provider
 @Priority(Priorities.AUTHENTICATION)
@@ -31,15 +32,6 @@ public class ResponseCookieRefreshFilter implements ContainerResponseFilter {
   private final SessionService sessionService;
   private final ConfigurationService configurationService;
   private final AuthCookieService authCookieService;
-
-  @Autowired
-  public ResponseCookieRefreshFilter(final SessionService sessionService,
-                                     final ConfigurationService configurationService,
-                                     final AuthCookieService authCookieService) {
-    this.sessionService = sessionService;
-    this.configurationService = configurationService;
-    this.authCookieService = authCookieService;
-  }
 
   @Override
   public void filter(final ContainerRequestContext requestContext, final ContainerResponseContext responseContext) {

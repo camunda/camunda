@@ -10,17 +10,20 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.EngineEntityFetcher;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 
 import javax.ws.rs.ClientErrorException;
 import java.util.ArrayList;
 import java.util.List;
 
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto> extends EngineEntityFetcher {
 
   @Autowired
   private BackoffCalculator backoffCalculator;
 
-  RetryBackoffEngineEntityFetcher(EngineContext engineContext) {
+  protected RetryBackoffEngineEntityFetcher(final EngineContext engineContext) {
     super(engineContext);
   }
 

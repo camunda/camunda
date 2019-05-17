@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.service.es.schema.type.AlertType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -20,9 +22,6 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
@@ -33,26 +32,17 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 
-
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class AlertReader {
-  private static final Logger logger = LoggerFactory.getLogger(AlertReader.class);
 
-  private RestHighLevelClient esClient;
-  private ConfigurationService configurationService;
-  private ObjectMapper objectMapper;
-
-  @Autowired
-  public AlertReader(RestHighLevelClient esClient,
-                     ConfigurationService configurationService,
-                     ObjectMapper objectMapper) {
-    this.esClient = esClient;
-    this.configurationService = configurationService;
-    this.objectMapper = objectMapper;
-  }
+  private final RestHighLevelClient esClient;
+  private final ConfigurationService configurationService;
+  private final ObjectMapper objectMapper;
 
   public List<AlertDefinitionDto> getStoredAlerts() {
-    logger.debug("getting all stored alerts");
+    log.debug("getting all stored alerts");
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.matchAllQuery());
@@ -68,7 +58,7 @@ public class AlertReader {
     try {
       scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      logger.error("Was not able to retrieve stored alerts!", e);
+      log.error("Was not able to retrieve stored alerts!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve stored alerts!", e);
     }
 
@@ -82,7 +72,7 @@ public class AlertReader {
   }
 
   public AlertDefinitionDto findAlert(String alertId) {
-    logger.debug("Fetching alert with id [{}]", alertId);
+    log.debug("Fetching alert with id [{}]", alertId);
     GetRequest getRequest = new GetRequest(
         getOptimizeIndexAliasForType(ALERT_TYPE),
         ALERT_TYPE,
@@ -93,7 +83,7 @@ public class AlertReader {
       getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format("Could not fetch alert with id [%s]", alertId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -112,7 +102,7 @@ public class AlertReader {
   }
 
   public List<AlertDefinitionDto> findFirstAlertsForReport(String reportId) {
-    logger.debug("Fetching first {} alerts using report with id {}", LIST_FETCH_LIMIT, reportId);
+    log.debug("Fetching first {} alerts using report with id {}", LIST_FETCH_LIMIT, reportId);
 
     final QueryBuilder query = QueryBuilders.termQuery(AlertType.REPORT_ID, reportId);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -128,7 +118,7 @@ public class AlertReader {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format("Was not able to fetch alerts for report with id [%s]", reportId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -136,7 +126,7 @@ public class AlertReader {
   }
 
   private void logError(String alertId) {
-    logger.error("Was not able to retrieve alert with id [{}] from Elasticsearch.", alertId);
+    log.error("Was not able to retrieve alert with id [{}] from Elasticsearch.", alertId);
   }
 
 }

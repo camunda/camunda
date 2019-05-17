@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.engine.importing;
 
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
@@ -28,35 +29,23 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@RequiredArgsConstructor
 @Component
 public class EngineImportSchedulerFactory implements ConfigurationReloadable {
   private static final Logger logger = LoggerFactory.getLogger(EngineImportSchedulerFactory.class);
 
-  private ImportIndexHandlerProvider importIndexHandlerProvider;
-  private BeanFactory beanFactory;
-  private EngineContextFactory engineContextFactory;
-  private ConfigurationService configurationService;
-
-  @Autowired
-  public EngineImportSchedulerFactory(final ImportIndexHandlerProvider importIndexHandlerProvider,
-                                      final BeanFactory beanFactory,
-                                      final EngineContextFactory engineContextFactory,
-                                      final ConfigurationService configurationService) {
-    this.importIndexHandlerProvider = importIndexHandlerProvider;
-    this.beanFactory = beanFactory;
-    this.engineContextFactory = engineContextFactory;
-    this.configurationService = configurationService;
-  }
+  private final ImportIndexHandlerProvider importIndexHandlerProvider;
+  private final BeanFactory beanFactory;
+  private final EngineContextFactory engineContextFactory;
+  private final ConfigurationService configurationService;
 
   private List<EngineImportScheduler> schedulers;
-
 
   private List<EngineImportScheduler> buildSchedulers() {
     final List<EngineImportScheduler> result = new ArrayList<>();

@@ -14,11 +14,10 @@ import org.springframework.stereotype.Component;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
- @Component
- @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
- public class BackoffCalculator {
+@Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+public class BackoffCalculator {
   private static final double BACKOFF_MULTIPLIER = 1.5;
-
 
   private long currentTimeToWait;
   private long initialBackoff;
@@ -26,7 +25,7 @@ import java.time.temporal.ChronoUnit;
   private long maximumBackoff;
 
   @Autowired
-  public BackoffCalculator(ConfigurationService configurationService) {
+  public BackoffCalculator(final ConfigurationService configurationService) {
     this(configurationService.getMaximumBackoff(), configurationService.getInitialBackoff());
   }
 

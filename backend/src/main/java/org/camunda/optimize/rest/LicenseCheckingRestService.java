@@ -5,11 +5,11 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AllArgsConstructor;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.license.LicenseManager;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
@@ -19,13 +19,12 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-
+@AllArgsConstructor
 @Path("/license")
 @Component
 public class LicenseCheckingRestService {
 
-  @Autowired
-  private LicenseManager licenseManager;
+  private final LicenseManager licenseManager;
 
   @POST
   @Path("/validate-and-store")

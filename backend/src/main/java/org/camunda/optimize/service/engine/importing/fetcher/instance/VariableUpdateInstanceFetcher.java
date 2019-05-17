@@ -26,17 +26,17 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class VariableUpdateInstanceFetcher extends
-  RetryBackoffEngineEntityFetcher<HistoricVariableUpdateInstanceDto> {
+public class VariableUpdateInstanceFetcher extends RetryBackoffEngineEntityFetcher<HistoricVariableUpdateInstanceDto> {
 
   private DateTimeFormatter dateTimeFormatter;
+
+  public VariableUpdateInstanceFetcher(final EngineContext engineContext) {
+    super(engineContext);
+  }
 
   @PostConstruct
   public void init() {
     dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
-  }
-  public VariableUpdateInstanceFetcher(EngineContext engineContext) {
-    super(engineContext);
   }
 
   public List<HistoricVariableUpdateInstanceDto> fetchVariableInstanceUpdates(TimestampBasedImportPage page) {
@@ -63,7 +63,8 @@ public class VariableUpdateInstanceFetcher extends
     return entries;
   }
 
-  private List<HistoricVariableUpdateInstanceDto> performGetVariableInstanceUpdateRequest(OffsetDateTime timeStamp, long pageSize) {
+  private List<HistoricVariableUpdateInstanceDto> performGetVariableInstanceUpdateRequest(OffsetDateTime timeStamp,
+                                                                                          long pageSize) {
     return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(VARIABLE_UPDATE_ENDPOINT)

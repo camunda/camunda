@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.WebappsEndpointDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.GET;
@@ -18,12 +18,12 @@ import javax.ws.rs.core.MediaType;
 import java.util.HashMap;
 import java.util.Map;
 
+@AllArgsConstructor
 @Path("/camunda")
 @Component
 public class CamundaRestService {
 
-  @Autowired
-  private ConfigurationService configurationService;
+  private final ConfigurationService configurationService;
 
   /**
    * Provides endpoint link to the Camunda Webapplications if enabled.

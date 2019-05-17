@@ -34,7 +34,6 @@ public class DecisionDefinitionXmlEngineImportMediator
     super(engineContext);
   }
 
-
   @PostConstruct
   public void init() {
     importIndexHandler = provider.getDecisionDefinitionXmlImportIndexHandler(engineContext.getEngineAlias());

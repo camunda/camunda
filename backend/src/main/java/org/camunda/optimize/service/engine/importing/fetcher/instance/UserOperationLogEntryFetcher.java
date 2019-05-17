@@ -31,13 +31,13 @@ public class UserOperationLogEntryFetcher extends RetryBackoffEngineEntityFetche
 
   private DateTimeFormatter dateTimeFormatter;
 
+  public UserOperationLogEntryFetcher(final EngineContext engineContext) {
+    super(engineContext);
+  }
+
   @PostConstruct
   public void init() {
     dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
-  }
-  
-  public UserOperationLogEntryFetcher(final EngineContext engineContext) {
-    super(engineContext);
   }
 
   public List<UserOperationLogEntryEngineDto> fetchUserOperationLogEntries(final TimestampBasedImportPage page) {

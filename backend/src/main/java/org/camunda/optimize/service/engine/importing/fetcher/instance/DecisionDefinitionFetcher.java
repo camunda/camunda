@@ -8,7 +8,6 @@ package org.camunda.optimize.service.engine.importing.fetcher.instance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -24,7 +23,6 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionDefinitionFetcher extends RetryBackoffEngineEntityFetcher<DecisionDefinitionEngineDto> {
 
-  @Autowired
   public DecisionDefinitionFetcher(final EngineContext engineContext) {
     super(engineContext);
   }

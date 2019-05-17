@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.engine.importing.index.handler;
 
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
@@ -13,6 +14,8 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 
 import javax.annotation.PostConstruct;
 import java.time.Instant;
@@ -21,6 +24,8 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
+@RequiredArgsConstructor
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class TimestampBasedImportIndexHandler
   implements ImportIndexHandler<TimestampBasedImportPage, TimestampBasedImportIndexDto> {
 
@@ -30,14 +35,10 @@ public abstract class TimestampBasedImportIndexHandler
   private TimestampBasedImportIndexReader importIndexReader;
   @Autowired
   protected ConfigurationService configurationService;
+  protected final EngineContext engineContext;
 
   private OffsetDateTime persistedTimestampOfLastEntity = getTimestampBeforeEngineExisted();
   private OffsetDateTime timestampOfLastEntity = persistedTimestampOfLastEntity;
-  protected EngineContext engineContext;
-
-  public TimestampBasedImportIndexHandler(EngineContext engineContext) {
-    this.engineContext = engineContext;
-  }
 
   @PostConstruct
   protected void init() {

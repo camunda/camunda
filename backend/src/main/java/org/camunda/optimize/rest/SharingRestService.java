@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
@@ -20,7 +21,6 @@ import org.camunda.optimize.service.exceptions.SharingNotAllowedException;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
@@ -35,18 +35,14 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+@AllArgsConstructor
 @Path("/share")
 @Component
 public class SharingRestService {
 
-  @Autowired
-  private SharingService sharingService;
-
-  @Autowired
-  private ConfigurationService configurationService;
-
-  @Autowired
-  private SessionService sessionService;
+  private final SharingService sharingService;
+  private final ConfigurationService configurationService;
+  private final SessionService sessionService;
 
   @POST
   @Secured

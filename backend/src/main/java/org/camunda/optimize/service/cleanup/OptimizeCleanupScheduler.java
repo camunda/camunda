@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.OptimizeCleanupConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
@@ -20,9 +19,10 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class OptimizeCleanupScheduler {
-  private final static Logger logger = LoggerFactory.getLogger(OptimizeCleanupScheduler.class);
 
   private final ConfigurationService configurationService;
   private final List<OptimizeCleanupService> cleanupServices;
@@ -30,16 +30,9 @@ public class OptimizeCleanupScheduler {
   private ThreadPoolTaskScheduler taskScheduler;
   private ScheduledFuture<?> scheduledTrigger;
 
-  @Autowired
-  public OptimizeCleanupScheduler(final ConfigurationService configurationService,
-                                  final List<OptimizeCleanupService> cleanupServices) {
-    this.configurationService = configurationService;
-    this.cleanupServices = cleanupServices;
-  }
-
   @PostConstruct
   public void init() {
-    logger.info("Initializing OptimizeCleanupScheduler");
+    log.info("Initializing OptimizeCleanupScheduler");
     getCleanupConfiguration().validate();
     if (getCleanupConfiguration().getEnabled()) {
       startCleanupScheduling();
@@ -47,7 +40,7 @@ public class OptimizeCleanupScheduler {
   }
 
   public synchronized void startCleanupScheduling() {
-    logger.info("Starting cleanup scheduling");
+    log.info("Starting cleanup scheduling");
     if (this.taskScheduler == null) {
       this.taskScheduler = new ThreadPoolTaskScheduler();
       this.taskScheduler.initialize();
@@ -63,7 +56,7 @@ public class OptimizeCleanupScheduler {
 
   @PreDestroy
   public synchronized void stopCleanupScheduling() {
-    logger.info("Stopping cleanup scheduling");
+    log.info("Stopping cleanup scheduling");
     if (scheduledTrigger != null) {
       this.scheduledTrigger.cancel(true);
       this.scheduledTrigger = null;
@@ -75,19 +68,19 @@ public class OptimizeCleanupScheduler {
   }
 
   public void runCleanup() {
-    logger.info("Running optimize history cleanup...");
+    log.info("Running optimize history cleanup...");
     final OffsetDateTime startTime = OffsetDateTime.now();
 
     cleanupServices.forEach(optimizeCleanupService -> {
       try {
         optimizeCleanupService.doCleanup(startTime);
       } catch (Exception e) {
-        logger.error("Exceution of cleanupService {} failed", optimizeCleanupService.getClass().getSimpleName(), e);
+        log.error("Exceution of cleanupService {} failed", optimizeCleanupService.getClass().getSimpleName(), e);
       }
     });
 
     final long durationSeconds = OffsetDateTime.now().minusSeconds(startTime.toEpochSecond()).toEpochSecond();
-    logger.info("Finished optimize history cleanup in {}s", durationSeconds);
+    log.info("Finished optimize history cleanup in {}s", durationSeconds);
   }
 
   public List<OptimizeCleanupService> getCleanupServices() {

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -42,7 +43,6 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -71,6 +71,7 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskTotalDurationGroupByUserTaskReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskWorkDurationGroupByUserTaskReport;
 
+@RequiredArgsConstructor
 @Component
 public class SingleReportEvaluator {
 
@@ -100,23 +101,6 @@ public class SingleReportEvaluator {
   protected final RestHighLevelClient esClient;
   protected final IntervalAggregationService intervalAggregationService;
   protected final ProcessDefinitionReader processDefinitionReader;
-
-  @Autowired
-  public SingleReportEvaluator(final ConfigurationService configurationService,
-                               final ObjectMapper objectMapper,
-                               final ProcessQueryFilterEnhancer processQueryFilterEnhancer,
-                               final DecisionQueryFilterEnhancer decisionQueryFilterEnhancer,
-                               final RestHighLevelClient esClient,
-                               final IntervalAggregationService intervalAggregationService,
-                               final ProcessDefinitionReader processDefinitionReader) {
-    this.configurationService = configurationService;
-    this.objectMapper = objectMapper;
-    this.processQueryFilterEnhancer = processQueryFilterEnhancer;
-    this.decisionQueryFilterEnhancer = decisionQueryFilterEnhancer;
-    this.esClient = esClient;
-    this.intervalAggregationService = intervalAggregationService;
-    this.processDefinitionReader = processDefinitionReader;
-  }
 
   private static void addCountProcessInstanceFrequencyReports() {
     commandSuppliers.put(

@@ -25,7 +25,6 @@ public class ProcessDefinitionImportIndexHandler extends AllEntitiesBasedImportI
 
   private Set<String> alreadyImportedIds = new HashSet<>();
 
-
   public ProcessDefinitionImportIndexHandler(EngineContext engineContext) {
     super(engineContext);
   }

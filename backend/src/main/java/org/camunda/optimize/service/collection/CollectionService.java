@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.collection;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
@@ -21,9 +22,6 @@ import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.relations.DashboardReferencingService;
 import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.core.MultivaluedMap;
@@ -32,20 +30,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@AllArgsConstructor
 @Component
 public class CollectionService implements ReportReferencingService, DashboardReferencingService {
 
-  private static final Logger logger = LoggerFactory.getLogger(CollectionService.class);
-
   private final CollectionWriter collectionWriter;
   private final CollectionReader collectionReader;
-
-  @Autowired
-  public CollectionService(final CollectionWriter collectionWriter,
-                           final CollectionReader collectionReader) {
-    this.collectionWriter = collectionWriter;
-    this.collectionReader = collectionReader;
-  }
 
   public IdDto createNewCollectionAndReturnId(String userId) {
     return collectionWriter.createNewCollectionAndReturnId(userId);

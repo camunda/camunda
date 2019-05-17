@@ -16,7 +16,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -26,13 +25,11 @@ import org.springframework.stereotype.Component;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
-
 @Component
 public class ObjectMapperFactory {
-  private DateTimeFormatter optimizeDateTimeFormatter;
-  private DateTimeFormatter engineDateTimeFormatter;
+  private final DateTimeFormatter optimizeDateTimeFormatter;
+  private final DateTimeFormatter engineDateTimeFormatter;
 
-  @Autowired
   public ObjectMapperFactory(final DateTimeFormatter optimizeDateTimeFormatter,
                              final ConfigurationService configurationService) {
     this.optimizeDateTimeFormatter = optimizeDateTimeFormatter;

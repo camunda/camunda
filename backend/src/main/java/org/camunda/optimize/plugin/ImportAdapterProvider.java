@@ -6,12 +6,19 @@
 package org.camunda.optimize.plugin;
 
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
 public class ImportAdapterProvider extends PluginProvider<VariableImportAdapter> {
+
+  public ImportAdapterProvider(final ConfigurationService configurationService,
+                               final DefaultListableBeanFactory beanFactory) {
+    super(configurationService, beanFactory);
+  }
 
   @Override
   protected Class<VariableImportAdapter> getPluginClass() {

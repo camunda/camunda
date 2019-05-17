@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
@@ -18,7 +17,6 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ST
 @Component
 public class StartDateQueryFilter extends DateQueryFilter implements QueryFilter<DateFilterDataDto> {
 
-  @Autowired
   public StartDateQueryFilter(final DateTimeFormatter formatter) {
     super(formatter);
   }

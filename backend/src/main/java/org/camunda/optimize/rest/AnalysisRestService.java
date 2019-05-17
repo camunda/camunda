@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
 import org.camunda.optimize.service.security.SessionService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
@@ -21,14 +21,13 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
+@AllArgsConstructor
 @Secured
 @Component
 @Path("/analysis")
 public class AnalysisRestService {
-  @Autowired
-  private BranchAnalysisReader branchAnalysisReader;
 
-  @Autowired
+  private BranchAnalysisReader branchAnalysisReader;
   private SessionService sessionService;
 
   /**

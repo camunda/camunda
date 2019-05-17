@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.license;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.OptimizeLicenseKey;
@@ -20,9 +22,6 @@ import org.elasticsearch.action.support.replication.ReplicationResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -39,20 +38,18 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LICENSE_TYP
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class LicenseManager {
 
   private static final String OPTIMIZE_LICENSE_FILE = "OptimizeLicense.txt";
-  private static final Logger logger = LoggerFactory.getLogger(LicenseManager.class);
   private final String licenseDocumentId = "license";
+
   private final RestHighLevelClient esClient;
+
   private LicenseKey licenseKey = new OptimizeLicenseKey();
   private String optimizeLicense;
-
-  @Autowired
-  public LicenseManager(RestHighLevelClient esClient) {
-    this.esClient = esClient;
-  }
 
   @PostConstruct
   public void init() {
@@ -104,7 +101,7 @@ public class LicenseManager {
       indexResponse = esClient.index(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = "Could not store license in Elasticsearch. Maybe Optimize is not connected to Elasticsearch?";
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
     boolean licenseWasStored = indexResponse.getShardInfo().getFailed() == 0;
@@ -117,32 +114,33 @@ public class LicenseManager {
         reason.append(failure.reason()).append("\n");
       }
       String errorMessage = String.format("Could not store license to Elasticsearch. Reason: %s", reason.toString());
-      logger.error(errorMessage);
+      log.error(errorMessage);
       throw new OptimizeException(errorMessage);
     }
   }
 
   private String retrieveLicense() throws InvalidLicenseException {
     if (optimizeLicense == null) {
-      logger.info("\n############### Heads up ################\n" +
-                     "You tried to access Optimize, but no valid license could be\n" +
-                     "found. Please enter a valid license key!  If you already have \n" +
-                     "a valid key you can have a look here, how to add it to Optimize:\n" +
-                     "\n" +
-                     "https://docs.camunda.org/optimize/"+ Version.getMajorAndMinor(Version.VERSION) +"/user-guide/license/ \n" +
-                     "\n" +
-                     "In case you don't have a valid license, feel free to contact us at:\n" +
-                     "\n" +
-                     "https://camunda.com/contact/\n" +
-                     "\n" +
-                     "You will now be redirected to the license page...");
+      log.info("\n############### Heads up ################\n" +
+                 "You tried to access Optimize, but no valid license could be\n" +
+                 "found. Please enter a valid license key!  If you already have \n" +
+                 "a valid key you can have a look here, how to add it to Optimize:\n" +
+                 "\n" +
+                 "https://docs.camunda.org/optimize/" + Version.getMajorAndMinor(Version.VERSION) + "/user-guide" +
+                 "/license/ \n" +
+                 "\n" +
+                 "In case you don't have a valid license, feel free to contact us at:\n" +
+                 "\n" +
+                 "https://camunda.com/contact/\n" +
+                 "\n" +
+                 "You will now be redirected to the license page...");
       throw new InvalidLicenseException("No license stored in Optimize. Please provide a valid Optimize license");
     }
     return optimizeLicense;
   }
 
   private String retrieveStoredOptimizeLicense() {
-    logger.debug("Retrieving stored optimize license!");
+    log.debug("Retrieving stored optimize license!");
     GetRequest getRequest =
       new GetRequest(getOptimizeIndexAliasForType(LICENSE_TYPE), LICENSE_TYPE, licenseDocumentId);
 
@@ -151,7 +149,7 @@ public class LicenseManager {
       getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = "Could not retrieve license from Elasticsearch.";
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 

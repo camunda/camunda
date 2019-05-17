@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -13,7 +14,6 @@ import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.util.ValidationHelper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
@@ -29,16 +29,14 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
+@AllArgsConstructor
 @Path("/alert")
 @Component
 @Secured
 public class AlertRestService {
 
-  @Autowired
-  private AlertService alertService;
-
-  @Autowired
-  private SessionService sessionService;
+  private final AlertService alertService;
+  private final SessionService sessionService;
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)

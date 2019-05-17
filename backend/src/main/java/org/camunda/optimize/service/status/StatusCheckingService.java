@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.status;
 
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.engine.ProcessEngineDto;
 import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
@@ -17,7 +18,6 @@ import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.core.GenericType;
@@ -27,23 +27,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@RequiredArgsConstructor
 @Component
 public class StatusCheckingService {
 
-  private RestHighLevelClient esClient;
-  private ConfigurationService configurationService;
-  private EngineContextFactory engineContextFactory;
-  private EngineImportSchedulerFactory engineImportSchedulerFactory;
-
-  @Autowired
-  public StatusCheckingService(RestHighLevelClient esClient, ConfigurationService configurationService,
-                               EngineContextFactory engineContextFactory,
-                               EngineImportSchedulerFactory engineImportSchedulerFactory) {
-    this.esClient = esClient;
-    this.configurationService = configurationService;
-    this.engineContextFactory = engineContextFactory;
-    this.engineImportSchedulerFactory = engineImportSchedulerFactory;
-  }
+  private final RestHighLevelClient esClient;
+  private final ConfigurationService configurationService;
+  private final EngineContextFactory engineContextFactory;
+  private final EngineImportSchedulerFactory engineImportSchedulerFactory;
 
   public StatusWithProgressDto getConnectionStatusWithProgress() {
     StatusWithProgressDto result = new StatusWithProgressDto();
@@ -77,7 +68,10 @@ public class StatusCheckingService {
         .request(MediaType.APPLICATION_JSON)
         .get();
       boolean hasCorrectResponseCode = response.getStatus() == 200;
-      boolean engineIsRunning = engineWithEngineNameIsRunning(response, configurationService.getEngineName(engineContext.getEngineAlias()));
+      boolean engineIsRunning = engineWithEngineNameIsRunning(
+        response,
+        configurationService.getEngineName(engineContext.getEngineAlias())
+      );
       isConnected = hasCorrectResponseCode && engineIsRunning;
     } catch (Exception ignored) {
       // do nothing
@@ -86,7 +80,8 @@ public class StatusCheckingService {
   }
 
   private boolean engineWithEngineNameIsRunning(Response response, String engineName) {
-    List<ProcessEngineDto> engineNames = response.readEntity(new GenericType<List<ProcessEngineDto>>() {});
+    List<ProcessEngineDto> engineNames = response.readEntity(new GenericType<List<ProcessEngineDto>>() {
+    });
     return engineNames.stream().anyMatch(e -> e.getName().equals(engineName));
   }
 
@@ -104,12 +99,4 @@ public class StatusCheckingService {
     return isConnected;
   }
 
-
-  public EngineContextFactory getEngineContextFactory() {
-    return engineContextFactory;
-  }
-
-  public void setEngineContextFactory(EngineContextFactory engineContextFactory) {
-    this.engineContextFactory = engineContextFactory;
-  }
 }

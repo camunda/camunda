@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report;
 
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
@@ -26,7 +27,6 @@ import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationExcept
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -36,22 +36,15 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 @Component
 public abstract class ReportEvaluationHandler {
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private ReportReader reportReader;
-  private SingleReportEvaluator singleReportEvaluator;
-  private CombinedReportEvaluator combinedReportEvaluator;
-
-  @Autowired
-  public ReportEvaluationHandler(ReportReader reportReader, SingleReportEvaluator singleReportEvaluator,
-                                 CombinedReportEvaluator combinedReportEvaluator) {
-    this.reportReader = reportReader;
-    this.singleReportEvaluator = singleReportEvaluator;
-    this.combinedReportEvaluator = combinedReportEvaluator;
-  }
+  private final ReportReader reportReader;
+  private final SingleReportEvaluator singleReportEvaluator;
+  private final CombinedReportEvaluator combinedReportEvaluator;
 
   public ReportEvaluationResult evaluateSavedReport(String userId, String reportId) {
     ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);

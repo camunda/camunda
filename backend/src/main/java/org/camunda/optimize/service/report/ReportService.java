@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.report;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportDefinitionUpdateDto;
@@ -32,9 +34,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.camunda.optimize.service.util.ValidationHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -46,29 +45,16 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportUtil.copyDefinitionMetaDataToUpdate;
 
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class ReportService {
 
-  private final static Logger logger = LoggerFactory.getLogger(ReportService.class);
-
-  private ReportWriter reportWriter;
-  private ReportReader reportReader;
-  private AuthorizationCheckReportEvaluationHandler reportEvaluator;
-  private DefinitionAuthorizationService authorizationService;
-  private ReportRelationService reportRelationService;
-
-  @Autowired
-  public ReportService(final ReportWriter reportWriter,
-                       final ReportReader reportReader,
-                       final AuthorizationCheckReportEvaluationHandler reportEvaluator,
-                       final DefinitionAuthorizationService authorizationService,
-                       final ReportRelationService reportRelationService) {
-    this.reportWriter = reportWriter;
-    this.reportReader = reportReader;
-    this.reportEvaluator = reportEvaluator;
-    this.authorizationService = authorizationService;
-    this.reportRelationService = reportRelationService;
-  }
+  private final ReportWriter reportWriter;
+  private final ReportReader reportReader;
+  private final AuthorizationCheckReportEvaluationHandler reportEvaluator;
+  private final DefinitionAuthorizationService authorizationService;
+  private final ReportRelationService reportRelationService;
 
   public ConflictResponseDto getReportDeleteConflictingItemsWithAuthorizationCheck(String userId, String reportId) {
     ReportDefinitionDto currentReportVersion = getReportWithAuthorizationCheck(reportId, userId);
@@ -150,7 +136,7 @@ public class ReportService {
               "The following report ids are not combinable: [%s]",
             reportId, updatedReport.getName(), data.getReportIds()
           );
-        logger.error(errorMessage);
+        log.error(errorMessage);
         throw new OptimizeRuntimeException(errorMessage);
       }
     }

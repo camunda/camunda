@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.VariableReader;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.glassfish.jersey.internal.util.collection.MultivaluedStringMap;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
@@ -27,6 +27,7 @@ import java.util.List;
 import static org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil.adjustVariableValuesToQueryParameters;
 import static org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil.adjustVariablesToQueryParameters;
 
+@AllArgsConstructor
 @Path("/variables")
 @Secured
 @Component
@@ -43,8 +44,7 @@ public class VariableRestService {
   public static final String ORDER_BY = "orderBy";
   public static final String VALUE_FILTER = "valueFilter";
 
-  @Autowired
-  private VariableReader variableReader;
+  private final VariableReader variableReader;
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)

@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.engine.GroupDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -29,7 +28,6 @@ public class TenantAuthorizationService extends AbstractCachingAuthorizationServ
 
   private Set<String> defaultTenantIds;
 
-  @Autowired
   public TenantAuthorizationService(final ApplicationAuthorizationService applicationAuthorizationService,
                                     final EngineContextFactory engineContextFactory,
                                     final ConfigurationService configurationService) {

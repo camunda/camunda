@@ -7,15 +7,13 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RunningActivityInstanceWriter extends AbstractActivityInstanceWriter {
 
-  @Autowired
-  public RunningActivityInstanceWriter(RestHighLevelClient esClient,
-                                       ObjectMapper objectMapper) {
+  public RunningActivityInstanceWriter(final RestHighLevelClient esClient,
+                                       final ObjectMapper objectMapper) {
     super(esClient, objectMapper);
   }
 

@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.service.security;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
 import org.camunda.optimize.service.es.reader.TerminatedUserSessionReader;
 import org.camunda.optimize.service.es.writer.TerminatedUserSessionWriter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
@@ -23,9 +22,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class TerminatedSessionService {
-  private static final Logger logger = LoggerFactory.getLogger(TerminatedSessionService.class);
 
   private static final int CLEANUP_INTERVAL_HOURS = 8;
 
@@ -35,15 +35,6 @@ public class TerminatedSessionService {
 
   private ThreadPoolTaskScheduler cleanupTaskExecutor;
   private ScheduledFuture<?> scheduledCleanup;
-
-  @Autowired
-  public TerminatedSessionService(final TerminatedUserSessionReader terminatedUserSessionReader,
-                                  final TerminatedUserSessionWriter terminatedUserSessionWriter,
-                                  final ConfigurationService configurationService) {
-    this.terminatedUserSessionReader = terminatedUserSessionReader;
-    this.terminatedUserSessionWriter = terminatedUserSessionWriter;
-    this.configurationService = configurationService;
-  }
 
   @PostConstruct
   public synchronized void initScheduledCleanup() {
@@ -85,7 +76,7 @@ public class TerminatedSessionService {
   }
 
   public void cleanup() {
-    logger.debug("Cleaning up terminated user sessions.");
+    log.debug("Cleaning up terminated user sessions.");
     terminatedUserSessionWriter.deleteTerminatedUserSessionsOlderThan(
       LocalDateUtil.getCurrentDateTime()
         .minus(configurationService.getTokenLifeTimeMinutes(), ChronoUnit.MINUTES)

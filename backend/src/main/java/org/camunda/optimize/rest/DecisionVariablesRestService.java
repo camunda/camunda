@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.DecisionVariableReader;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.glassfish.jersey.internal.util.collection.MultivaluedStringMap;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.GET;
@@ -24,6 +24,7 @@ import java.util.List;
 
 import static org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil.adjustVariableValuesToQueryParameters;
 
+@AllArgsConstructor
 @Path("/decision-variables")
 @Secured
 @Component
@@ -37,8 +38,7 @@ public class DecisionVariablesRestService {
   public static final String RESULT_OFFSET = "resultOffset";
   public static final String VALUE_FILTER = "valueFilter";
 
-  @Autowired
-  private DecisionVariableReader decisionVariableReader;
+  private final DecisionVariableReader decisionVariableReader;
 
   @GET
   @Path("/inputs/values")

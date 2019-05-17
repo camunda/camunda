@@ -5,18 +5,18 @@
  */
 package org.camunda.optimize.test.it.factory;
 
+import lombok.RequiredArgsConstructor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
+@RequiredArgsConstructor
 public class MockElasticsearchRestClientFactory implements FactoryBean<RestHighLevelClient> {
 
   private RestHighLevelClient spyedInstance;
 
-  @Autowired
-  private ApplicationContext applicationContext;
+  private final ApplicationContext applicationContext;
 
   @Override
   public RestHighLevelClient getObject() {

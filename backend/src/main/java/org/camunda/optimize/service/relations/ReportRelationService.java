@@ -7,7 +7,6 @@ package org.camunda.optimize.service.relations;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -18,10 +17,8 @@ import java.util.Set;
 @Component
 public class ReportRelationService {
 
+  private final List<ReportReferencingService> referencingServices;
 
-  private List<ReportReferencingService> referencingServices;
-
-  @Autowired
   @Lazy
   public ReportRelationService(final List<ReportReferencingService> referencingServices) {
 

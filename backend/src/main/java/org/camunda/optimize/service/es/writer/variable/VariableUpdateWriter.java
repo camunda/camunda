@@ -11,7 +11,6 @@ import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
@@ -22,10 +21,9 @@ import java.util.Map;
 @Component
 public class VariableUpdateWriter extends VariableWriter {
 
-  @Autowired
-  public VariableUpdateWriter(RestHighLevelClient esClient,
-                              ObjectMapper objectMapper,
-                              DateTimeFormatter dateTimeFormatter) {
+  public VariableUpdateWriter(final RestHighLevelClient esClient,
+                              final ObjectMapper objectMapper,
+                              final DateTimeFormatter dateTimeFormatter) {
     super(esClient, objectMapper, dateTimeFormatter);
   }
 

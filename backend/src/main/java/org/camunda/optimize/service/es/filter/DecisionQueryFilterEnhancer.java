@@ -5,33 +5,25 @@
  */
 package org.camunda.optimize.service.es.filter;
 
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.InputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.OutputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 @Component
 public class DecisionQueryFilterEnhancer implements QueryFilterEnhancer<DecisionFilterDto> {
 
   private final EvaluationDateQueryFilter evaluationDateQueryFilter;
   private final DecisionInputVariableQueryFilter decisionInputVariableQueryFilter;
   private final DecisionOutputVariableQueryFilter decisionOutputVariableQueryFilter;
-
-  @Autowired
-  public DecisionQueryFilterEnhancer(final EvaluationDateQueryFilter evaluationDateQueryFilter,
-                                     final DecisionInputVariableQueryFilter decisionInputVariableQueryFilter,
-                                     final DecisionOutputVariableQueryFilter decisionOutputVariableQueryFilter) {
-    this.evaluationDateQueryFilter = evaluationDateQueryFilter;
-    this.decisionInputVariableQueryFilter = decisionInputVariableQueryFilter;
-    this.decisionOutputVariableQueryFilter = decisionOutputVariableQueryFilter;
-  }
 
   @Override
   public void addFilterToQuery(final BoolQueryBuilder query, final List<DecisionFilterDto> filter) {

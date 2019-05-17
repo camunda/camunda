@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.filter;
 
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
@@ -17,42 +18,24 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Runn
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 @Component
 public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFilterDto> {
 
-  @Autowired
-  private StartDateQueryFilter startDateQueryFilter;
-
-  @Autowired
-  private EndDateQueryFilter endDateQueryFilter;
-
-  @Autowired
-  private ProcessVariableQueryFilter variableQueryFilter;
-
-  @Autowired
-  private ExecutedFlowNodeQueryFilter executedFlowNodeQueryFilter;
-
-  @Autowired
-  private DurationQueryFilter durationQueryFilter;
-
-  @Autowired
-  private RunningInstancesOnlyQueryFilter runningInstancesOnlyQueryFilter;
-
-  @Autowired
-  private CompletedInstancesOnlyQueryFilter completedInstancesOnlyQueryFilter;
-
-  @Autowired
-  private CanceledInstancesOnlyQueryFilter canceledInstancesOnlyQueryFilter;
-
-  @Autowired
-  private NonCanceledInstancesOnlyQueryFilter nonCanceledInstancesOnlyQueryFilter;
-
+  private final StartDateQueryFilter startDateQueryFilter;
+  private final EndDateQueryFilter endDateQueryFilter;
+  private final ProcessVariableQueryFilter variableQueryFilter;
+  private final ExecutedFlowNodeQueryFilter executedFlowNodeQueryFilter;
+  private final DurationQueryFilter durationQueryFilter;
+  private final RunningInstancesOnlyQueryFilter runningInstancesOnlyQueryFilter;
+  private final CompletedInstancesOnlyQueryFilter completedInstancesOnlyQueryFilter;
+  private final CanceledInstancesOnlyQueryFilter canceledInstancesOnlyQueryFilter;
+  private final NonCanceledInstancesOnlyQueryFilter nonCanceledInstancesOnlyQueryFilter;
 
   @Override
   public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto> filter) {

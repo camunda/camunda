@@ -6,12 +6,19 @@
 package org.camunda.optimize.plugin;
 
 import org.camunda.optimize.plugin.importing.variable.DecisionOutputImportAdapter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
 public class DecisionOutputImportAdapterProvider extends PluginProvider<DecisionOutputImportAdapter> {
+
+  public DecisionOutputImportAdapterProvider(final ConfigurationService configurationService,
+                                             final DefaultListableBeanFactory beanFactory) {
+    super(configurationService, beanFactory);
+  }
 
   @Override
   protected Class<DecisionOutputImportAdapter> getPluginClass() {

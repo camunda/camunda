@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.AuthenticationService;
 import org.camunda.optimize.service.security.SessionService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
@@ -27,6 +27,7 @@ import javax.ws.rs.core.Response;
  * Basic implementation of authentication tokens creation based on user credentials.
  * Please note that authentication token validation/refresh is performed in request filters.
  */
+@AllArgsConstructor
 @Path("/authentication")
 @Component
 public class AuthenticationRestService {
@@ -34,15 +35,6 @@ public class AuthenticationRestService {
   private final AuthenticationService authenticationService;
   private final AuthCookieService authCookieService;
   private final SessionService sessionService;
-
-  @Autowired
-  public AuthenticationRestService(final AuthenticationService authenticationService,
-                                   final AuthCookieService authCookieService,
-                                   final SessionService sessionService) {
-    this.authenticationService = authenticationService;
-    this.authCookieService = authCookieService;
-    this.sessionService = sessionService;
-  }
 
   /**
    * Authenticate an user given his credentials.

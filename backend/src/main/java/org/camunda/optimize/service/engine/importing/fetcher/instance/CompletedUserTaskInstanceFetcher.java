@@ -31,12 +31,13 @@ public class CompletedUserTaskInstanceFetcher extends RetryBackoffEngineEntityFe
 
   private DateTimeFormatter dateTimeFormatter;
 
+  public CompletedUserTaskInstanceFetcher(final EngineContext engineContext) {
+    super(engineContext);
+  }
+
   @PostConstruct
   public void init() {
     dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
-  }
-  public CompletedUserTaskInstanceFetcher(final EngineContext engineContext) {
-    super(engineContext);
   }
 
   public List<HistoricUserTaskInstanceDto> fetchCompletedUserTaskInstances(final TimestampBasedImportPage page) {

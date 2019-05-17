@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.schema;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.metadata.Version;
@@ -19,9 +21,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -31,9 +30,10 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TYPE;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class ElasticsearchMetadataService {
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchMetadataService.class);
 
   private static final String ID = "1";
   private static final String ERROR_MESSAGE_ES_REQUEST = "Could not write Optimize version to Elasticsearch.";
@@ -41,11 +41,6 @@ public class ElasticsearchMetadataService {
   private static final String CURRENT_OPTIMIZE_VERSION = Version.VERSION;
 
   private final ObjectMapper objectMapper;
-
-  @Autowired
-  public ElasticsearchMetadataService(final ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
-  }
 
   public void initMetadataVersionIfMissing(final RestHighLevelClient esClient) {
     readMetadata(esClient).orElseGet(() -> {
@@ -90,13 +85,13 @@ public class ElasticsearchMetadataService {
           );
           result = Optional.ofNullable(parsed);
         } catch (IOException e) {
-          logger.error("can't parse metadata", e);
+          log.error("can't parse metadata", e);
         }
       } else if (totalHits > 1) {
         throw new OptimizeRuntimeException("Metadata search returned [" + totalHits + "] hits");
       }
     } catch (IOException | ElasticsearchException e) {
-      logger.info(
+      log.info(
         "Was not able to retrieve metaData index, schema might not have been initialized yet if this is the first " +
           "startup!"
       );
@@ -117,11 +112,11 @@ public class ElasticsearchMetadataService {
 
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)
         && !indexResponse.getResult().equals(IndexResponse.Result.UPDATED)) {
-        logger.error(ERROR_MESSAGE_ES_REQUEST);
+        log.error(ERROR_MESSAGE_ES_REQUEST);
         throw new OptimizeRuntimeException(ERROR_MESSAGE_ES_REQUEST);
       }
     } catch (IOException e) {
-      logger.error(ERROR_MESSAGE_ES_REQUEST, e);
+      log.error(ERROR_MESSAGE_ES_REQUEST, e);
       throw new OptimizeRuntimeException(ERROR_MESSAGE_ES_REQUEST, e);
     }
   }

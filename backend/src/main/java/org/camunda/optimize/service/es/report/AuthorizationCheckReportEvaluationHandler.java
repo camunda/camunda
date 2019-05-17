@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 
@@ -22,7 +21,6 @@ public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationH
 
   private final DefinitionAuthorizationService authorizationService;
 
-  @Autowired
   public AuthorizationCheckReportEvaluationHandler(final ReportReader reportReader,
                                                    final SingleReportEvaluator singleReportEvaluator,
                                                    final CombinedReportEvaluator combinedReportEvaluator,

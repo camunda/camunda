@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.engine.importing.index.handler;
 
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
@@ -12,12 +13,14 @@ import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 
 import javax.annotation.PostConstruct;
 import java.util.Optional;
 
-@Component
+@RequiredArgsConstructor
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class AllEntitiesBasedImportIndexHandler
   implements ImportIndexHandler<AllEntitiesBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
@@ -26,12 +29,9 @@ public abstract class AllEntitiesBasedImportIndexHandler
   @Autowired
   protected ConfigurationService configurationService;
 
-  private long importIndex = 0;
-  protected EngineContext engineContext;
+  protected final EngineContext engineContext;
 
-  public AllEntitiesBasedImportIndexHandler(EngineContext engineContext) {
-    this.engineContext = engineContext;
-  }
+  private long importIndex = 0;
 
   @PostConstruct
   protected void init() {
@@ -40,7 +40,10 @@ public abstract class AllEntitiesBasedImportIndexHandler
 
   public void readIndexFromElasticsearch() {
     Optional<AllEntitiesBasedImportIndexDto> storedIndex =
-      importIndexReader.getImportIndex(EsHelper.constructKey(getElasticsearchImportIndexType(), engineContext.getEngineAlias()));
+      importIndexReader.getImportIndex(EsHelper.constructKey(
+        getElasticsearchImportIndexType(),
+        engineContext.getEngineAlias()
+      ));
     if (storedIndex.isPresent()) {
       importIndex = storedIndex.get().getImportIndex();
     }

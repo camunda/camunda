@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest.engine;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.plugin.EngineRestFilterProvider;
 import org.camunda.optimize.plugin.engine.rest.EngineRestFilter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -12,7 +13,6 @@ import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.glassfish.jersey.client.ClientProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -27,25 +27,16 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.util.EngineVersionChecker.checkEngineVersionSupport;
 
-
+@AllArgsConstructor
 @Component
 public class EngineContextFactory {
   private static final Logger logger = LoggerFactory.getLogger(EngineContextFactory.class);
 
-  private ConfigurationService configurationService;
-  private EngineObjectMapperContextResolver engineObjectMapperContextResolver;
-  private EngineRestFilterProvider engineRestFilterProvider;
+  private final ConfigurationService configurationService;
+  private final EngineObjectMapperContextResolver engineObjectMapperContextResolver;
+  private final EngineRestFilterProvider engineRestFilterProvider;
 
   private List<EngineContext> configuredEngines;
-
-  @Autowired
-  public EngineContextFactory(ConfigurationService configurationService,
-                              EngineObjectMapperContextResolver engineObjectMapperContextResolver,
-                              EngineRestFilterProvider engineRestFilterProvider) {
-    this.configurationService = configurationService;
-    this.engineObjectMapperContextResolver = engineObjectMapperContextResolver;
-    this.engineRestFilterProvider = engineRestFilterProvider;
-  }
 
   @PostConstruct
   public void init() {

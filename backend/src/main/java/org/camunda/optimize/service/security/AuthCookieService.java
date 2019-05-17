@@ -7,10 +7,9 @@ package org.camunda.optimize.service.security;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
@@ -23,10 +22,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class AuthCookieService {
-  private static final Logger logger = LoggerFactory.getLogger(AuthCookieService.class);
 
   public static final String AUTH_COOKIE_TOKEN_VALUE_PREFIX = "Bearer ";
   public static String OPTIMIZE_AUTHORIZATION = "X-Optimize-Authorization";
@@ -35,13 +34,8 @@ public class AuthCookieService {
 
   private final ConfigurationService configurationService;
 
-  @Autowired
-  AuthCookieService(final ConfigurationService configurationService) {
-    this.configurationService = configurationService;
-  }
-
   public NewCookie createDeleteOptimizeAuthCookie() {
-    logger.trace("Deleting Optimize authentication cookie.");
+    log.trace("Deleting Optimize authentication cookie.");
     return new NewCookie(
       OPTIMIZE_AUTHORIZATION,
       "",
@@ -55,7 +49,7 @@ public class AuthCookieService {
   }
 
   public String createNewOptimizeAuthCookie(final String securityToken) {
-    logger.trace("Creating Optimize authentication cookie.");
+    log.trace("Creating Optimize authentication cookie.");
     NewCookie newCookie = new NewCookie(
       OPTIMIZE_AUTHORIZATION,
       AuthCookieService.createOptimizeAuthCookieValue(securityToken),
@@ -108,7 +102,7 @@ public class AuthCookieService {
       final DecodedJWT decoded = JWT.decode(token);
       return Optional.of(getTokenAttributeFunction.apply(decoded));
     } catch (Exception e) {
-      logger.debug("Could not decode security token to extract attribute!", e);
+      log.debug("Could not decode security token to extract attribute!", e);
     }
     return Optional.empty();
   }

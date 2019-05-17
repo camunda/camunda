@@ -22,7 +22,6 @@ import java.util.Set;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionDefinitionXmlFetcher extends RetryBackoffEngineEntityFetcher<DecisionDefinitionXmlEngineDto> {
 
-
   public DecisionDefinitionXmlFetcher(final EngineContext engineContext) {
     super(engineContext);
   }

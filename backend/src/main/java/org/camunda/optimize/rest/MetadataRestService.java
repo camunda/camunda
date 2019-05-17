@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.OptimizeVersionDto;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
@@ -16,12 +16,12 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+@AllArgsConstructor
 @Path("/meta")
 @Component
 public class MetadataRestService {
 
-  @Autowired
-  private OptimizeVersionService versionService;
+  private final OptimizeVersionService versionService;
 
   /**
    * Returns the current Optimize version.

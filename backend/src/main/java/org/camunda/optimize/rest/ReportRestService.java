@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -19,7 +20,6 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.validation.constraints.NotNull;
@@ -39,7 +39,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
 import java.util.List;
 
-
+@AllArgsConstructor
 @Secured
 @Path("/report")
 @Component
@@ -47,14 +47,6 @@ public class ReportRestService {
 
   private final ReportService reportService;
   private final SessionService sessionService;
-
-  @Autowired
-  public ReportRestService(ReportService reportService,
-                           SessionService sessionService) {
-    this.reportService = reportService;
-    this.sessionService = sessionService;
-  }
-
 
   /**
    * Creates an empty new single process report.

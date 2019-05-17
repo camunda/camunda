@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.export.ExportService;
 import org.camunda.optimize.service.security.SessionService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.GET;
@@ -26,17 +26,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-
+@AllArgsConstructor
 @Path("/export")
 @Secured
 @Component
 public class ExportRestService {
 
-  @Autowired
-  private ExportService exportService;
-
-  @Autowired
-  private SessionService sessionService;
+  private final ExportService exportService;
+  private final SessionService sessionService;
 
   @GET
   // octet stream on success, json on potential error

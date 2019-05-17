@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -13,19 +15,17 @@ import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.service.util.ESVersionChecker.checkESVersionSupport;
 
+@RequiredArgsConstructor
+@Slf4j
 public class SchemaInitializingElasticsearchRestClientFactory
   implements FactoryBean<RestHighLevelClient>, DisposableBean {
-  private final static Logger logger = LoggerFactory.getLogger(SchemaInitializingElasticsearchRestClientFactory.class);
 
   private RestHighLevelClient esClient;
 
@@ -33,24 +33,14 @@ public class SchemaInitializingElasticsearchRestClientFactory
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final BackoffCalculator backoffCalculator;
 
-  @Autowired
-  public SchemaInitializingElasticsearchRestClientFactory(final ConfigurationService configurationService,
-                                                          final ElasticSearchSchemaManager elasticSearchSchemaManager,
-                                                          final BackoffCalculator backoffCalculator) {
-    this.configurationService = configurationService;
-    this.elasticSearchSchemaManager = elasticSearchSchemaManager;
-    this.backoffCalculator = backoffCalculator;
-  }
-
-
   @Override
   public RestHighLevelClient getObject() throws IOException {
     if (esClient == null) {
-      logger.info("Initializing Elasticsearch rest client...");
+      log.info("Initializing Elasticsearch rest client...");
       esClient = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
 
       waitForElasticsearch(esClient);
-      logger.info("Elasticsearch client has successfully been started");
+      log.info("Elasticsearch client has successfully been started");
 
       elasticSearchSchemaManager.validateExistingSchemaVersion(esClient);
       elasticSearchSchemaManager.initializeSchema(esClient);
@@ -65,12 +55,12 @@ public class SchemaInitializingElasticsearchRestClientFactory
         isConnected = getNumberOfClusterNodes(esClient) > 0;
         if (!isConnected) {
           long sleepTime = backoffCalculator.calculateSleepTime();
-          logger.info("No elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
+          log.info("No elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
           Thread.sleep(sleepTime);
         }
       } catch (Exception e) {
         String message = "Can't connect to Elasticsearch. Please check the connection!";
-        logger.error(message, e);
+        log.error(message, e);
         throw new OptimizeRuntimeException(message, e);
       }
     }
@@ -81,7 +71,7 @@ public class SchemaInitializingElasticsearchRestClientFactory
     try {
       return esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT).getNumberOfNodes();
     } catch (IOException e) {
-      logger.error("Failed getting number of cluster nodes.", e);
+      log.error("Failed getting number of cluster nodes.", e);
       return 0;
     }
   }
@@ -102,7 +92,7 @@ public class SchemaInitializingElasticsearchRestClientFactory
       try {
         esClient.close();
       } catch (IOException e) {
-        logger.error("Could not close Elasticsearch client", e);
+        log.error("Could not close Elasticsearch client", e);
       }
     }
   }

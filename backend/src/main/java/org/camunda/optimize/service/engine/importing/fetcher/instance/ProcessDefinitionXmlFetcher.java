@@ -20,9 +20,7 @@ import java.util.Set;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessDefinitionXmlFetcher
-  extends RetryBackoffEngineEntityFetcher<ProcessDefinitionXmlEngineDto> {
-
+public class ProcessDefinitionXmlFetcher extends RetryBackoffEngineEntityFetcher<ProcessDefinitionXmlEngineDto> {
 
   public ProcessDefinitionXmlFetcher(EngineContext engineContext) {
     super(engineContext);

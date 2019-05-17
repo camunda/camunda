@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.reader;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
@@ -28,9 +30,6 @@ import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuil
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -55,10 +54,10 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class VariableReader {
-
-  private final Logger logger = LoggerFactory.getLogger(VariableReader.class);
 
   private static final String FILTER_FOR_NAME_AGGREGATION = "filterForName";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
@@ -67,21 +66,17 @@ public class VariableReader {
   private static final String STRING_VARIABLE_VALUE_NGRAM = "nGramField";
   private static final String STRING_VARIABLE_VALUE_LOWERCASE = "lowercaseField";
 
-  private RestHighLevelClient esClient;
-  private ConfigurationService configurationService;
-
-  @Autowired
-  public VariableReader(RestHighLevelClient esClient, ConfigurationService configurationService) {
-    this.esClient = esClient;
-    this.configurationService = configurationService;
-  }
+  private final RestHighLevelClient esClient;
+  private final ConfigurationService configurationService;
 
   public List<VariableRetrievalDto> getVariables(String processDefinitionKey,
                                                  String processDefinitionVersion,
                                                  String namePrefix) {
-    logger.debug("Fetching variables for process definition with key [{}] and version [{}]",
+    log.debug(
+      "Fetching variables for process definition with key [{}] and version [{}]",
       processDefinitionKey,
-      processDefinitionVersion);
+      processDefinitionVersion
+    );
 
     BoolQueryBuilder query = buildProcessDefinitionBaseQuery(processDefinitionKey, processDefinitionVersion);
 
@@ -104,7 +99,7 @@ public class VariableReader {
         processDefinitionKey,
         processDefinitionVersion
       );
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
     Aggregations aggregations = searchResponse.getAggregations();
@@ -178,9 +173,11 @@ public class VariableReader {
                                         String name,
                                         String type,
                                         String valueFilter) {
-    logger.debug("Fetching variable values for process definition with key [{}] and version [{}]",
+    log.debug(
+      "Fetching variable values for process definition with key [{}] and version [{}]",
       processDefinitionKey,
-      processDefinitionVersion);
+      processDefinitionVersion
+    );
 
     String variableFieldLabel = ProcessVariableHelper.variableTypeToFieldLabel(type);
 
@@ -204,7 +201,7 @@ public class VariableReader {
         name,
         type
       );
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -252,7 +249,7 @@ public class VariableReader {
                                                                      String variableFieldLabel,
                                                                      String valueFilter) {
     BoolQueryBuilder filterQuery = boolQuery()
-        .must(termQuery(getNestedVariableNameFieldLabel(variableFieldLabel), name));
+      .must(termQuery(getNestedVariableNameFieldLabel(variableFieldLabel), name));
     addValueFilter(variableFieldLabel, valueFilter, filterQuery);
     return filter(
       FILTER_FOR_NAME_AGGREGATION,
@@ -267,18 +264,18 @@ public class VariableReader {
           /*
             using the slow wildcard query for uncommonly large filter strings (> 10 chars)
           */
-          ? wildcardQuery(
-              getMultiFieldName(variableFieldLabel, STRING_VARIABLE_VALUE_LOWERCASE),
-              buildWildcardQuery(valueFilter)
-          )
+        ? wildcardQuery(
+        getMultiFieldName(variableFieldLabel, STRING_VARIABLE_VALUE_LOWERCASE),
+        buildWildcardQuery(valueFilter)
+      )
           /*
             using Elasticsearch nGrams to filter for strings < 10 chars,
             because it's fast but increasing the number of chars makes the index bigger
           */
-          : termQuery(
-                  getMultiFieldName(variableFieldLabel, STRING_VARIABLE_VALUE_NGRAM),
-                  valueFilter
-          );
+        : termQuery(
+        getMultiFieldName(variableFieldLabel, STRING_VARIABLE_VALUE_NGRAM),
+        valueFilter
+      );
 
       filterQuery.must(filter);
     }

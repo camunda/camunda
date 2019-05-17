@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.service.security;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.AuthenticationResultDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ProcessingException;
@@ -20,19 +19,20 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class EngineAuthenticationProvider {
 
   public static final String INVALID_CREDENTIALS_ERROR_MESSAGE =
     "The provided credentials are invalid. Please check your username and password.";
   public static final String CONNECTION_WAS_REFUSED_ERROR =
     "Connection to engine was refused! Please check if the engine is still running.";
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  @Autowired
-  private ConfigurationService configurationService;
+  private final ConfigurationService configurationService;
 
-  public AuthenticationResultDto performAuthenticationCheck(CredentialsDto credentialsDto, EngineContext engineContext) {
+  public AuthenticationResultDto performAuthenticationCheck(CredentialsDto credentialsDto,
+                                                            EngineContext engineContext) {
     try {
       Response response = engineContext.getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()))
@@ -48,7 +48,7 @@ public class EngineAuthenticationProvider {
         }
         return authResult;
       } else {
-        logger.error(
+        log.error(
           "Could not validate user [{}] against the engine [{}]. " +
             "Maybe you did not provide a user or password or the user is locked",
           credentialsDto.getUsername(),

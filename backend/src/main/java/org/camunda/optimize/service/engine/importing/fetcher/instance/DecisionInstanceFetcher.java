@@ -30,13 +30,13 @@ public class DecisionInstanceFetcher extends RetryBackoffEngineEntityFetcher<His
 
   private DateTimeFormatter dateTimeFormatter;
 
+  public DecisionInstanceFetcher(final EngineContext engineContext) {
+    super(engineContext);
+  }
+
   @PostConstruct
   public void init() {
     dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
-  }
-
-  public DecisionInstanceFetcher(final EngineContext engineContext) {
-    super(engineContext);
   }
 
   public List<HistoricDecisionInstanceDto> fetchHistoricDecisionInstances(final TimestampBasedImportPage page) {

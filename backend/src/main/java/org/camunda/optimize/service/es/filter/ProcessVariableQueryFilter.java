@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.filter;
 
+import lombok.RequiredArgsConstructor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
@@ -20,7 +21,6 @@ import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
@@ -44,13 +44,13 @@ import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+@RequiredArgsConstructor
 @Component
 public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDataDto> {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired
-  private DateTimeFormatter formatter;
+  private final DateTimeFormatter formatter;
 
   @Override
   public void addFilters(BoolQueryBuilder query, List<VariableFilterDataDto> variables) {

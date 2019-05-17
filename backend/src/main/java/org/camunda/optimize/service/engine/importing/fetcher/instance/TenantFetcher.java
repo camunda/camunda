@@ -25,11 +25,10 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 public class TenantFetcher extends RetryBackoffEngineEntityFetcher<TenantEngineDto> {
 
   // @formatter:off
-  public static final GenericType<List<TenantEngineDto>> TENANT_LIST_TYPE =
-    new GenericType<List<TenantEngineDto>>() {};
+  public static final GenericType<List<TenantEngineDto>> TENANT_LIST_TYPE = new GenericType<List<TenantEngineDto>>() {};
   // @formatter:on
 
-  public TenantFetcher(EngineContext engineContext) {
+  public TenantFetcher(final EngineContext engineContext) {
     super(engineContext);
   }
 

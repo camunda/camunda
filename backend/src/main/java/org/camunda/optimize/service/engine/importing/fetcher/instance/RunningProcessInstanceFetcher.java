@@ -26,17 +26,17 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class RunningProcessInstanceFetcher extends
-  RetryBackoffEngineEntityFetcher<HistoricProcessInstanceDto> {
+public class RunningProcessInstanceFetcher extends RetryBackoffEngineEntityFetcher<HistoricProcessInstanceDto> {
 
   private DateTimeFormatter dateTimeFormatter;
+
+  public RunningProcessInstanceFetcher(final EngineContext engineContext) {
+    super(engineContext);
+  }
 
   @PostConstruct
   public void init() {
     dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
-  }
-  public RunningProcessInstanceFetcher(EngineContext engineContext) {
-    super(engineContext);
   }
 
   public List<HistoricProcessInstanceDto> fetchRunningProcessInstances(TimestampBasedImportPage page) {

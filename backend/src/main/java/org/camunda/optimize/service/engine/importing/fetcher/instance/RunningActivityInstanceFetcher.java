@@ -26,18 +26,17 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class RunningActivityInstanceFetcher
-  extends RetryBackoffEngineEntityFetcher<HistoricActivityInstanceEngineDto> {
+public class RunningActivityInstanceFetcher extends RetryBackoffEngineEntityFetcher<HistoricActivityInstanceEngineDto> {
 
   private DateTimeFormatter dateTimeFormatter;
+
+  public RunningActivityInstanceFetcher(final EngineContext engineContext) {
+    super(engineContext);
+  }
 
   @PostConstruct
   public void init() {
     dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
-  }
-
-  public RunningActivityInstanceFetcher(EngineContext engineContext) {
-    super(engineContext);
   }
 
   public List<HistoricActivityInstanceEngineDto> fetchRunningActivityInstances(TimestampBasedImportPage page) {
@@ -64,7 +63,8 @@ public class RunningActivityInstanceFetcher
     return entries;
   }
 
-  private List<HistoricActivityInstanceEngineDto> performRunningActivityInstanceRequest(OffsetDateTime timeStamp, long pageSize) {
+  private List<HistoricActivityInstanceEngineDto> performRunningActivityInstanceRequest(OffsetDateTime timeStamp,
+                                                                                        long pageSize) {
     return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(RUNNING_ACTIVITY_INSTANCE_ENDPOINT)

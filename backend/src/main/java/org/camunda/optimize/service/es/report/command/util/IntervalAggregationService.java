@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.report.command.util;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -22,9 +24,6 @@ import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilde
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregator;
 import org.elasticsearch.search.aggregations.metrics.stats.Stats;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -42,21 +41,16 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class IntervalAggregationService {
 
   private static final String STATS_AGGREGATION = "minMaxValueOfData";
   public static final String RANGE_AGGREGATION = "rangeAggregation";
-  private static final Logger logger = LoggerFactory.getLogger(IntervalAggregationService.class);
 
-  private RestHighLevelClient esClient;
-  private DateTimeFormatter dateTimeFormatter;
-
-  @Autowired
-  public IntervalAggregationService(RestHighLevelClient esClient, DateTimeFormatter dateTimeFormatter) {
-    this.esClient = esClient;
-    this.dateTimeFormatter = dateTimeFormatter;
-  }
+  private final RestHighLevelClient esClient;
+  private final DateTimeFormatter dateTimeFormatter;
 
   public DateHistogramInterval getDateHistogramInterval(GroupByDateUnit interval) throws OptimizeException {
     switch (interval) {
@@ -73,7 +67,7 @@ public class IntervalAggregationService {
       case MINUTE:
         return DateHistogramInterval.MINUTE;
       default:
-        logger.error("Unknown interval [{}]. Please state a valid interval", interval);
+        log.error("Unknown interval [{}]. Please state a valid interval", interval);
         throw new OptimizeException("Unknown interval used. Please state a valid interval.");
     }
   }
@@ -99,7 +93,7 @@ public class IntervalAggregationService {
       response = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = "Could not automatically determine interval of group by date on field [" + field + "]!";
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
     return response.getAggregations().get(STATS_AGGREGATION);

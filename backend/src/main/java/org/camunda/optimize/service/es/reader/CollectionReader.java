@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
@@ -24,9 +26,6 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
@@ -48,24 +47,16 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
 
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class CollectionReader {
-  private static final Logger logger = LoggerFactory.getLogger(CollectionReader.class);
   private final RestHighLevelClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
-  @Autowired
-  public CollectionReader(RestHighLevelClient esClient,
-                          final ConfigurationService configurationService,
-                          final ObjectMapper objectMapper) {
-    this.esClient = esClient;
-    this.configurationService = configurationService;
-    this.objectMapper = objectMapper;
-  }
-
   public SimpleCollectionDefinitionDto getCollection(String collectionId) {
-    logger.debug("Fetching collection with id [{}]", collectionId);
+    log.debug("Fetching collection with id [{}]", collectionId);
     GetRequest getRequest = new GetRequest(
       getOptimizeIndexAliasForType(COLLECTION_TYPE),
       COLLECTION_TYPE,
@@ -77,7 +68,7 @@ public class CollectionReader {
       getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format("Could not fetch collection with id [%s]", collectionId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -87,11 +78,11 @@ public class CollectionReader {
         return objectMapper.readValue(responseAsString, SimpleCollectionDefinitionDto.class);
       } catch (IOException e) {
         String reason = "Could not deserialize collection information for collection " + collectionId;
-        logger.error("Was not able to retrieve collection with id [{}] from Elasticsearch. Reason: reason");
+        log.error("Was not able to retrieve collection with id [{}] from Elasticsearch. Reason: reason");
         throw new OptimizeRuntimeException(reason, e);
       }
     } else {
-      logger.error("Was not able to retrieve collection with id [{}] from Elasticsearch.", collectionId);
+      log.error("Was not able to retrieve collection with id [{}] from Elasticsearch.", collectionId);
       throw new NotFoundException("Collection does not exist! Tried to retried collection with id " + collectionId);
     }
   }
@@ -102,14 +93,14 @@ public class CollectionReader {
       .stream()
       .collect(toMap(CollectionEntity::getId, r -> r));
 
-    logger.debug("Mapping all available entity collections to resolved entity collections.");
+    log.debug("Mapping all available entity collections to resolved entity collections.");
     return allCollections.stream()
       .map(c -> mapToResolvedCollection(c, entityIdToEntityMap))
       .collect(Collectors.toList());
   }
 
   private List<CollectionEntity> getAllEntities() {
-    logger.debug("Fetching all available entities for collections");
+    log.debug("Fetching all available entities for collections");
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.matchAllQuery())
       .size(LIST_FETCH_LIMIT);
@@ -127,7 +118,7 @@ public class CollectionReader {
     try {
       scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      logger.error("Was not able to retrieve collection entities!", e);
+      log.error("Was not able to retrieve collection entities!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve entities!", e);
     }
 
@@ -168,7 +159,7 @@ public class CollectionReader {
   }
 
   private List<SimpleCollectionDefinitionDto> getAllCollections() {
-    logger.debug("Fetching all available collections");
+    log.debug("Fetching all available collections");
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.matchAllQuery())
@@ -184,7 +175,7 @@ public class CollectionReader {
     try {
       scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      logger.error("Was not able to retrieve collections!", e);
+      log.error("Was not able to retrieve collections!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve collections!", e);
     }
 
@@ -198,7 +189,7 @@ public class CollectionReader {
   }
 
   public List<SimpleCollectionDefinitionDto> findFirstCollectionsForEntity(String entityId) {
-    logger.debug("Fetching collections using entity with id {}", entityId);
+    log.debug("Fetching collections using entity with id {}", entityId);
 
     final QueryBuilder getCollectionByEntityIdQuery = QueryBuilders.boolQuery()
       .filter(QueryBuilders.nestedQuery(
@@ -219,7 +210,7 @@ public class CollectionReader {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format("Was not able to fetch collections for entity with id [%s]", entityId);
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 

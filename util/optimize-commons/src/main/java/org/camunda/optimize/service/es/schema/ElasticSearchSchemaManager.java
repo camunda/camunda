@@ -7,6 +7,8 @@ package org.camunda.optimize.service.es.schema;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -28,9 +30,6 @@ import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.rest.RestStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -43,30 +42,19 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.OPT
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getVersionedOptimizeIndexNameForTypeMapping;
 
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class ElasticSearchSchemaManager {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticSearchSchemaManager.class);
   private static final String INDEX_READ_ONLY_SETTING = "index.blocks.read_only_allow_delete";
   private static final ToXContent.Params XCONTENT_PARAMS_FLAT_SETTINGS =
     new ToXContent.MapParams(Collections.singletonMap("flat_settings", "true"));
 
   private final ElasticsearchMetadataService metadataService;
-
-  private ConfigurationService configurationService;
-  private List<TypeMappingCreator> mappings;
-  private ObjectMapper objectMapper;
-
-  @Autowired
-  public ElasticSearchSchemaManager(final ElasticsearchMetadataService metadataService,
-                                    final ConfigurationService configurationService,
-                                    final List<TypeMappingCreator> mappings,
-                                    final ObjectMapper objectMapper) {
-    this.metadataService = metadataService;
-    this.configurationService = configurationService;
-    this.mappings = mappings;
-    this.objectMapper = objectMapper;
-  }
+  private final ConfigurationService configurationService;
+  private final List<TypeMappingCreator> mappings;
+  private final ObjectMapper objectMapper;
 
   public void validateExistingSchemaVersion(final RestHighLevelClient esClient) {
     metadataService.validateSchemaVersionCompatibility(esClient);
@@ -75,9 +63,9 @@ public class ElasticSearchSchemaManager {
   public void initializeSchema(final RestHighLevelClient esClient) {
     unblockIndices(esClient);
     if (!schemaAlreadyExists(esClient)) {
-      logger.info("Initializing Optimize schema...");
+      log.info("Initializing Optimize schema...");
       createOptimizeIndices(esClient);
-      logger.info("Optimize schema initialized successfully.");
+      log.info("Optimize schema initialized successfully.");
     } else {
       updateAllMappingsAndDynamicSettings(esClient);
     }
@@ -134,7 +122,7 @@ public class ElasticSearchSchemaManager {
           esClient.indices().create(request, RequestOptions.DEFAULT);
         } catch (ElasticsearchStatusException e) {
           if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains("resource_already_exists_exception")) {
-            logger.debug("index {} already exists, updating mapping and dynamic settings.", indexName);
+            log.debug("index {} already exists, updating mapping and dynamic settings.", indexName);
             updateIndexDynamicSettingsAndMappings(esClient, mapping);
           } else {
             throw e;
@@ -142,7 +130,7 @@ public class ElasticSearchSchemaManager {
         }
       } catch (Exception e) {
         String message = String.format("Could not create Index [%s]", indexName);
-        logger.warn(message, e);
+        log.warn(message, e);
         throw new OptimizeRuntimeException(message, e);
       }
     }
@@ -159,11 +147,11 @@ public class ElasticSearchSchemaManager {
 
 
   private void updateAllMappingsAndDynamicSettings(RestHighLevelClient esClient) {
-    logger.info("Updating Optimize schema...");
+    log.info("Updating Optimize schema...");
     for (TypeMappingCreator mapping : mappings) {
       updateIndexDynamicSettingsAndMappings(esClient, mapping);
     }
-    logger.info("Finished updating Optimize schema.");
+    log.info("Finished updating Optimize schema.");
   }
 
   private void unblockIndices(RestHighLevelClient esClient) {
@@ -179,7 +167,7 @@ public class ElasticSearchSchemaManager {
       responseBodyAsMap = objectMapper.readValue(responseBody, new TypeReference<Map<String, Map>>() {
       });
     } catch (Exception e) {
-      logger.error("Could not retrieve index settings!", e);
+      log.error("Could not retrieve index settings!", e);
       throw new OptimizeRuntimeException("Could not retrieve index settings!", e);
     }
     boolean indexBlocked = false;
@@ -189,13 +177,13 @@ public class ElasticSearchSchemaManager {
       if (Boolean.parseBoolean(indexSettingsMap.get(INDEX_READ_ONLY_SETTING))
         && entry.getKey().contains(OPTIMIZE_INDEX_PREFIX)) {
         indexBlocked = true;
-        logger.info("Found blocked Optimize Elasticsearch indices");
+        log.info("Found blocked Optimize Elasticsearch indices");
         break;
       }
     }
 
     if (indexBlocked) {
-      logger.info("Unblocking Elasticsearch indices...");
+      log.info("Unblocking Elasticsearch indices...");
       UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest(OPTIMIZE_INDEX_PREFIX + "*");
       updateSettingsRequest.settings(Settings.builder().put(INDEX_READ_ONLY_SETTING, false));
       try {
@@ -251,7 +239,7 @@ public class ElasticSearchSchemaManager {
     try {
       return IndexSettingsBuilder.buildAllSettings(configurationService);
     } catch (IOException e) {
-      logger.error("Could not create settings!", e);
+      log.error("Could not create settings!", e);
       throw new OptimizeRuntimeException("Could not create index settings");
     }
   }

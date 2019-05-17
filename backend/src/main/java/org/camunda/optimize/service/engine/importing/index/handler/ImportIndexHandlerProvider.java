@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.engine.importing.index.handler;
 
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.CompletedActivityInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.CompletedProcessInstanceImportIndexHandler;
@@ -20,7 +21,6 @@ import org.camunda.optimize.service.engine.importing.index.handler.impl.TenantIm
 import org.camunda.optimize.service.engine.importing.index.handler.impl.UserOperationLogInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableUpdateInstanceImportIndexHandler;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -28,11 +28,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@RequiredArgsConstructor
 @Component
 public class ImportIndexHandlerProvider {
 
-  @Autowired
-  private BeanFactory beanFactory;
+  private final BeanFactory beanFactory;
 
   private Map<String, EngineImportIndexHandlerProvider> engineImportIndexHandlerProviderMap = new HashMap<>();
 

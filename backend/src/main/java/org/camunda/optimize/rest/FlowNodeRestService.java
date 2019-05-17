@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
 import org.camunda.optimize.rest.providers.CacheRequest;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
@@ -23,17 +22,13 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Optional;
 
+@AllArgsConstructor
 @Path("/flow-node")
 @Component
+@Slf4j
 public class FlowNodeRestService {
-  private static final Logger logger = LoggerFactory.getLogger(FlowNodeRestService.class);
 
   private final ProcessDefinitionReader processDefinitionReader;
-
-  @Autowired
-  public FlowNodeRestService(final ProcessDefinitionReader processDefinitionReader) {
-    this.processDefinitionReader = processDefinitionReader;
-  }
 
   @POST
   @Path("/flowNodeNames")
@@ -55,7 +50,7 @@ public class FlowNodeRestService {
         result.setFlowNodeNames(processDefinitionXmlDto.get().getFlowNodeNames());
       }
     } else {
-      logger.debug(
+      log.debug(
         "No process definition found for key {} and version {}, returning empty result.",
         request.getProcessDefinitionKey(),
         request.getProcessDefinitionVersion()

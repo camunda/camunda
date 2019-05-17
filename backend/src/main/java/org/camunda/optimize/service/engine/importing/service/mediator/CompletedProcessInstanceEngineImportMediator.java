@@ -26,13 +26,13 @@ public class CompletedProcessInstanceEngineImportMediator
   extends TimestampBasedImportMediator<CompletedProcessInstanceImportIndexHandler, HistoricProcessInstanceDto> {
 
   private CompletedProcessInstanceFetcher engineEntityFetcher;
+
   @Autowired
   private CompletedProcessInstanceWriter completedProcessInstanceWriter;
 
   public CompletedProcessInstanceEngineImportMediator(EngineContext engineContext) {
     super(engineContext);
   }
-
 
   @PostConstruct
   public void init() {

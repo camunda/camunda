@@ -6,26 +6,21 @@
 package org.camunda.optimize.test.it.factory;
 
 import com.google.common.collect.ImmutableList;
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.TerminatedSessionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.annotation.Autowired;
 
-
+@RequiredArgsConstructor
 public class SpyTokenServiceFactory implements FactoryBean<SessionService> {
   private SessionService sessionService;
 
-  @Autowired
-  private ConfigurationService configurationService;
-
-  @Autowired
-  private TerminatedSessionService terminatedSessionService;
-
-  @Autowired
-  private DefinitionAuthorizationService authorizationService;
+  private final ConfigurationService configurationService;
+  private final TerminatedSessionService terminatedSessionService;
+  private final DefinitionAuthorizationService authorizationService;
 
   @Override
   public SessionService getObject() throws Exception {

@@ -21,10 +21,9 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessDefinitionFetcher
-  extends RetryBackoffEngineEntityFetcher<ProcessDefinitionEngineDto> {
+public class ProcessDefinitionFetcher extends RetryBackoffEngineEntityFetcher<ProcessDefinitionEngineDto> {
 
-  public ProcessDefinitionFetcher(EngineContext engineContext) {
+  public ProcessDefinitionFetcher(final EngineContext engineContext) {
     super(engineContext);
   }
 

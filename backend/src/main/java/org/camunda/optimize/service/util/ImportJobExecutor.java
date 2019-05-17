@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class ImportJobExecutor {
 
-  private Logger logger = LoggerFactory.getLogger(getClass());
+  protected Logger logger = LoggerFactory.getLogger(getClass());
 
   @PostConstruct
   public void init() {

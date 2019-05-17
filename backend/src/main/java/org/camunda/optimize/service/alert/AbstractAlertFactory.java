@@ -13,7 +13,6 @@ import org.quartz.JobKey;
 import org.quartz.SimpleTrigger;
 import org.quartz.Trigger;
 import org.quartz.TriggerKey;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.quartz.JobDetailFactoryBean;
 
@@ -29,8 +28,11 @@ import static org.quartz.TriggerBuilder.newTrigger;
 
 public abstract class AbstractAlertFactory<T extends Job> {
 
-  @Autowired
-  private ApplicationContext applicationContext;
+  private final ApplicationContext applicationContext;
+
+  protected AbstractAlertFactory(final ApplicationContext applicationContext) {
+    this.applicationContext = applicationContext;
+  }
 
   private long durationInMs(AlertInterval checkInterval) {
     ChronoUnit parsedUnit = unitOf(checkInterval.getUnit());

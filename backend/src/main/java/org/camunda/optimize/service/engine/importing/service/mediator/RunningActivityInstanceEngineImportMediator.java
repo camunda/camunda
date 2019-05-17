@@ -32,7 +32,6 @@ public class RunningActivityInstanceEngineImportMediator
 
   private RunningActivityInstanceImportService runningActivityInstanceImportService;
 
-
   public RunningActivityInstanceEngineImportMediator(EngineContext engineContext) {
     super(engineContext);
   }

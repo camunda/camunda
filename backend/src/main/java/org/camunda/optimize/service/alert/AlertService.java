@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.alert;
 
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -36,7 +37,6 @@ import org.quartz.Trigger;
 import org.quartz.TriggerKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.stereotype.Component;
@@ -52,31 +52,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-
+@RequiredArgsConstructor
 @Component
 public class AlertService implements ReportReferencingService {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired
-  private ApplicationContext applicationContext;
-
-  @Autowired
-  private AlertReader alertReader;
-
-  @Autowired
-  private AlertWriter alertWriter;
-
-  @Autowired
-  private ConfigurationService configurationService;
-
-  @Autowired
-  private AlertReminderJobFactory alertReminderJobFactory;
-
-  @Autowired
-  private AlertCheckJobFactory alertCheckJobFactory;
-
-  @Autowired
-  private ReportService reportService;
+  private final ApplicationContext applicationContext;
+  private final AlertReader alertReader;
+  private final AlertWriter alertWriter;
+  private final ConfigurationService configurationService;
+  private final AlertReminderJobFactory alertReminderJobFactory;
+  private final AlertCheckJobFactory alertCheckJobFactory;
+  private final ReportService reportService;
 
   private SchedulerFactoryBean schedulerFactoryBean;
 

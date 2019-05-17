@@ -20,7 +20,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -57,9 +56,8 @@ public class CompletedUserTaskInstanceWriter extends AbstractUserTaskWriter {
     .map(fieldKey -> String.format("existingTask.%s = newUserTask.%s;\n", fieldKey, fieldKey))
     .collect(Collectors.joining());
 
-  private RestHighLevelClient esClient;
+  private final RestHighLevelClient esClient;
 
-  @Autowired
   public CompletedUserTaskInstanceWriter(final RestHighLevelClient esClient,
                                          final ObjectMapper objectMapper) {
     super(objectMapper);

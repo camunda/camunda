@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.alert;
 
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.es.reader.AlertReader;
@@ -17,34 +19,29 @@ import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobKey;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 
 import java.util.Optional;
 
-@Component
+@NoArgsConstructor
+@Slf4j
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class AlertJob implements Job {
   private static final String HTTP_PREFIX = "http://";
   private static final String HTTPS_PREFIX = "https://";
-  private Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
   private ConfigurationService configurationService;
-
   @Autowired
   private NotificationService notificationService;
-
   @Autowired
   private AlertReader alertReader;
-
   @Autowired
   private ReportReader reportReader;
-
   @Autowired
   private AlertWriter alertWriter;
-
   @Autowired
   private PlainReportEvaluationHandler reportEvaluator;
 
@@ -52,7 +49,7 @@ public class AlertJob implements Job {
   public void execute(JobExecutionContext jobExecutionContext) {
     JobDataMap dataMap = jobExecutionContext.getJobDetail().getJobDataMap();
     String alertId = dataMap.getString("alertId");
-    logger.debug("executing status check for alert [{}]", alertId);
+    log.debug("executing status check for alert [{}]", alertId);
 
     AlertDefinitionDto alert = alertReader.findAlert(alertId);
 
@@ -87,7 +84,7 @@ public class AlertJob implements Job {
 
       jobExecutionContext.setResult(alertJobResult);
     } catch (Exception e) {
-      logger.error("error while processing alert [{}] for report [{}]", alertId, alert.getReportId(), e);
+      log.error("error while processing alert [{}] for report [{}]", alertId, alert.getReportId(), e);
     }
 
   }
@@ -136,7 +133,7 @@ public class AlertJob implements Job {
     AlertJobResult alertJobResult = new AlertJobResult(alert);
 
     if (haveToNotify) {
-      logger.debug("Sending reminder notification!");
+      log.debug("Sending reminder notification!");
       alertWriter.writeAlertStatus(true, alertId);
 
       notificationService.notifyRecipient(

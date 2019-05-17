@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
@@ -13,7 +14,6 @@ import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefini
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.security.SessionService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.validation.constraints.NotNull;
@@ -31,21 +31,13 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 import java.util.List;
 
-
+@AllArgsConstructor
 @Secured
 @Path("/collection")
 @Component
 public class CollectionRestService {
-
   private final CollectionService collectionService;
   private final SessionService sessionService;
-
-  @Autowired
-  public CollectionRestService(final CollectionService collectionService,
-                               final SessionService sessionService) {
-    this.collectionService = collectionService;
-    this.sessionService = sessionService;
-  }
 
   /**
    * Creates an empty collection.

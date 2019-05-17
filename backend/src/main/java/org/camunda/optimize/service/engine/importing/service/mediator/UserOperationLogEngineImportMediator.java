@@ -27,6 +27,7 @@ public class UserOperationLogEngineImportMediator
   extends TimestampBasedImportMediator<UserOperationLogInstanceImportIndexHandler, UserOperationLogEntryEngineDto> {
 
   private UserOperationLogEntryFetcher engineEntityFetcher;
+
   @Autowired
   private UserOperationsLogEntryWriter userOperationsLogEntryWriter;
   @Autowired

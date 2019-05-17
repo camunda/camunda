@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.rest.providers;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Priority;
@@ -22,6 +22,7 @@ import javax.ws.rs.ext.Provider;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+@AllArgsConstructor
 @Secured
 @Provider
 @Priority(Priorities.AUTHENTICATION)
@@ -34,14 +35,8 @@ public class RequestAuthenticationFilter implements ContainerRequestFilter {
   private static final String LOG_IN = "/login";
   private static final String STATUS = "status";
 
-  private SessionService sessionService;
-  private AuthCookieService authCookieService;
-
-  @Autowired
-  public RequestAuthenticationFilter(SessionService sessionService, AuthCookieService authCookieService) {
-    this.sessionService = sessionService;
-    this.authCookieService = authCookieService;
-  }
+  private final SessionService sessionService;
+  private final AuthCookieService authCookieService;
 
   @Override
   public void filter(ContainerRequestContext requestContext) {

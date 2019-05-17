@@ -7,11 +7,15 @@ package org.camunda.optimize.service.alert;
 
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-
 
 @Component
 public class AlertCheckJobFactory extends AbstractAlertFactory<AlertJob> {
+
+  public AlertCheckJobFactory(final ApplicationContext applicationContext) {
+    super(applicationContext);
+  }
 
   protected String getTriggerGroup() {
     return "statusCheck-trigger";

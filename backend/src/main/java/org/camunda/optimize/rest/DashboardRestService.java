@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
@@ -13,7 +14,6 @@ import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.security.SessionService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
@@ -32,18 +32,14 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
 import java.util.List;
 
-
+@AllArgsConstructor
 @Secured
 @Path("/dashboard")
 @Component
 public class DashboardRestService {
 
-
-  @Autowired
-  private DashboardService dashboardService;
-
-  @Autowired
-  private SessionService sessionService;
+  private final DashboardService dashboardService;
+  private final SessionService sessionService;
 
   /**
    * Creates an empty dashboard.

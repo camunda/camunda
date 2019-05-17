@@ -27,6 +27,7 @@ public class ProcessDefinitionEngineImportMediator
 
   private ProcessDefinitionFetcher engineEntityFetcher;
   private ProcessDefinitionImportService definitionImportService;
+
   @Autowired
   private ProcessDefinitionWriter processDefinitionWriter;
 

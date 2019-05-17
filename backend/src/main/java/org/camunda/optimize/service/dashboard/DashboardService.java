@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.dashboard;
 
+import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
@@ -18,9 +19,6 @@ import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.relations.DashboardRelationService;
 import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -28,25 +26,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-
+@AllArgsConstructor
 @Component
 public class DashboardService implements ReportReferencingService {
 
-  private static final Logger logger = LoggerFactory.getLogger(DashboardService.class);
-
-  private DashboardWriter dashboardWriter;
-  private DashboardReader dashboardReader;
-
-  private DashboardRelationService dashboardRelationService;
-
-  @Autowired
-  public DashboardService(DashboardWriter dashboardWriter,
-                          DashboardReader dashboardReader,
-                          DashboardRelationService dashboardRelationService) {
-    this.dashboardWriter = dashboardWriter;
-    this.dashboardReader = dashboardReader;
-    this.dashboardRelationService = dashboardRelationService;
-  }
+  private final DashboardWriter dashboardWriter;
+  private final DashboardReader dashboardReader;
+  private final DashboardRelationService dashboardRelationService;
 
   public IdDto createNewDashboardAndReturnId(String userId) {
     return dashboardWriter.createNewDashboardAndReturnId(userId);

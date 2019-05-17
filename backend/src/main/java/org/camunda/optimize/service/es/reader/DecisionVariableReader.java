@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.reader;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
@@ -25,9 +27,6 @@ import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -50,29 +49,24 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class DecisionVariableReader {
-
-  private static final Logger logger = LoggerFactory.getLogger(DecisionVariableReader.class);
 
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
   private static final String VALUE_AGGREGATION = "values";
   private static final String VARIABLE_VALUE_NGRAM = "nGramField";
   private static final String VARIABLE_VALUE_LOWERCASE = "lowercaseField";
 
-  private RestHighLevelClient esClient;
-
-  @Autowired
-  public DecisionVariableReader(final RestHighLevelClient esClient) {
-    this.esClient = esClient;
-  }
+  private final RestHighLevelClient esClient;
 
   public List<String> getInputVariableValues(final String decisionDefinitionKey,
                                              final String decisionDefinitionVersion,
                                              final String variableId,
                                              final VariableType variableType,
                                              final String valueFilter) {
-    logger.debug(
+    log.debug(
       "Fetching input variable values for decision definition with key [{}] and version [{}]",
       decisionDefinitionKey,
       decisionDefinitionVersion
@@ -88,7 +82,7 @@ public class DecisionVariableReader {
                                               final String variableId,
                                               final VariableType variableType,
                                               final String valueFilter) {
-    logger.debug(
+    log.debug(
       "Fetching output variable values for decision definition with key [{}] and version [{}]",
       decisionDefinitionKey,
       decisionDefinitionVersion
@@ -125,7 +119,7 @@ public class DecisionVariableReader {
       final String reason = String.format(
         "Was not able to fetch values for %s variable [%s] ", variableType, variableId
       );
-      logger.error(reason, e);
+      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
   }

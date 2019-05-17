@@ -15,13 +15,14 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 
 import javax.annotation.PostConstruct;
 import java.util.Optional;
 import java.util.Set;
 
-@Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class ScrollBasedImportIndexHandler
   implements ImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
 

@@ -33,7 +33,6 @@ public class RunningProcessInstanceEngineImportMediator
     super(engineContext);
   }
 
-
   @PostConstruct
   public void init() {
     importIndexHandler = provider.getRunningProcessInstanceImportIndexHandler(engineContext.getEngineAlias());

@@ -6,12 +6,19 @@
 package org.camunda.optimize.plugin;
 
 import org.camunda.optimize.plugin.engine.rest.EngineRestFilter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
 public class EngineRestFilterProvider extends PluginProvider<EngineRestFilter> {
+
+  public EngineRestFilterProvider(final ConfigurationService configurationService,
+                                  final DefaultListableBeanFactory beanFactory) {
+    super(configurationService, beanFactory);
+  }
 
   @Override
   protected Class<EngineRestFilter> getPluginClass() {

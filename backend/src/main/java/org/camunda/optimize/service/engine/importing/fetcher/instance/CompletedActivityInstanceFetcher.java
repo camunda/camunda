@@ -31,12 +31,13 @@ public class CompletedActivityInstanceFetcher
 
   private DateTimeFormatter dateTimeFormatter;
 
+  public CompletedActivityInstanceFetcher(final EngineContext engineContext) {
+    super(engineContext);
+  }
+
   @PostConstruct
   public void init() {
     dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
-  }
-  public CompletedActivityInstanceFetcher(EngineContext engineContext) {
-    super(engineContext);
   }
 
   public List<HistoricActivityInstanceEngineDto> fetchCompletedActivityInstances(TimestampBasedImportPage page) {

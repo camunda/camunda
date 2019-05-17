@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.engine.importing.service.mediator;
 
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.CombinedImportIndexesDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
@@ -17,8 +18,6 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 import org.camunda.optimize.service.util.ImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -32,19 +31,15 @@ import java.util.List;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+@Slf4j
 public class StoreIndexesEngineImportMediator implements EngineImportMediator {
-
-  private static final Logger logger = LoggerFactory.getLogger(StoreIndexesEngineImportMediator.class);
 
   @Autowired
   private ImportIndexWriter importIndexWriter;
-
   @Autowired
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-
   @Autowired
   protected ConfigurationService configurationService;
-
   @Autowired
   protected ImportIndexHandlerProvider provider;
 
@@ -78,7 +73,7 @@ public class StoreIndexesEngineImportMediator implements EngineImportMediator {
         CombinedImportIndexesDto importIndexes = createStoreIndexJob();
         importService.executeImport(importIndexes);
       } catch (Exception e) {
-        logger.error("Could execute import for storing index information!", e);
+        log.error("Could execute import for storing index information!", e);
       }
     }
   }

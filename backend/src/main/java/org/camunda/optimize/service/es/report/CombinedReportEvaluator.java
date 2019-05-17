@@ -17,7 +17,6 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.elasticsearch.search.aggregations.metrics.stats.Stats;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
@@ -30,11 +29,11 @@ import java.util.Optional;
 public class CombinedReportEvaluator {
   private static final Logger logger = LoggerFactory.getLogger(CombinedReportEvaluator.class);
 
-  private SingleReportEvaluatorForCombinedReports singleReportEvaluator;
-  private DateTimeFormatter dateTimeFormatter;
+  private final SingleReportEvaluatorForCombinedReports singleReportEvaluator;
+  private final DateTimeFormatter dateTimeFormatter;
 
-  @Autowired
-  public CombinedReportEvaluator(SingleReportEvaluator singleReportEvaluator, DateTimeFormatter dateTimeFormatter) {
+  public CombinedReportEvaluator(final SingleReportEvaluator singleReportEvaluator,
+                                 final DateTimeFormatter dateTimeFormatter) {
     this.singleReportEvaluator = new SingleReportEvaluatorForCombinedReports(singleReportEvaluator);
     this.dateTimeFormatter = dateTimeFormatter;
   }

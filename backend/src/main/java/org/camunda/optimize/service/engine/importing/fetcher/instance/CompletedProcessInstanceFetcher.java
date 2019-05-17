@@ -31,12 +31,13 @@ public class CompletedProcessInstanceFetcher extends
 
   private DateTimeFormatter dateTimeFormatter;
 
+  public CompletedProcessInstanceFetcher(final EngineContext engineContext) {
+    super(engineContext);
+  }
+
   @PostConstruct
   public void init() {
     dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
-  }
-  public CompletedProcessInstanceFetcher(EngineContext engineContext) {
-    super(engineContext);
   }
 
   public List<HistoricProcessInstanceDto> fetchCompletedProcessInstances(TimestampBasedImportPage page) {

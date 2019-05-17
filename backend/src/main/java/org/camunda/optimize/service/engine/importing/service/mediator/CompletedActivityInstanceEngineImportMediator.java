@@ -30,11 +30,9 @@ public class CompletedActivityInstanceEngineImportMediator
   @Autowired
   private CompletedActivityInstanceWriter completedActivityInstanceWriter;
 
-
   public CompletedActivityInstanceEngineImportMediator(EngineContext engineContext) {
     super(engineContext);
   }
-
 
   @PostConstruct
   public void init() {

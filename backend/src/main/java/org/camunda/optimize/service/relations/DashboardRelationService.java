@@ -7,7 +7,6 @@ package org.camunda.optimize.service.relations;
 
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -18,9 +17,8 @@ import java.util.Set;
 @Component
 public class DashboardRelationService {
 
-  private List<DashboardReferencingService> referenceServices;
+  private final List<DashboardReferencingService> referenceServices;
 
-  @Autowired
   @Lazy
   public DashboardRelationService(final List<DashboardReferencingService> referenceServices) {
     this.referenceServices = referenceServices;

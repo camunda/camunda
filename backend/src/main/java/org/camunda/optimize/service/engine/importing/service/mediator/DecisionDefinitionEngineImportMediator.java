@@ -22,7 +22,8 @@ import java.util.List;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DecisionDefinitionEngineImportMediator extends BackoffImportMediator<DecisionDefinitionImportIndexHandler> {
+public class DecisionDefinitionEngineImportMediator
+  extends BackoffImportMediator<DecisionDefinitionImportIndexHandler> {
 
   @Autowired
   private DecisionDefinitionWriter processDefinitionWriter;

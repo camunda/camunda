@@ -30,7 +30,6 @@ public class TenantImportMediator extends BackoffImportMediator<TenantImportInde
   private TenantFetcher engineEntityFetcher;
   private TenantImportService tenantImportService;
 
-  @Autowired
   public TenantImportMediator(final EngineContext engineContext) {
     super(engineContext);
   }

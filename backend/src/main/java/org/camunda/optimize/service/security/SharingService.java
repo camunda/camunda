@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.security;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
@@ -25,9 +27,6 @@ import org.camunda.optimize.service.relations.DashboardReferencingService;
 import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.ValidationHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -39,28 +38,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class SharingService implements ReportReferencingService, DashboardReferencingService {
-  private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private SharingWriter sharingWriter;
-  private SharingReader sharingReader;
-  private PlainReportEvaluationHandler reportEvaluationHandler;
-  private DashboardService dashboardService;
-  private ReportService reportService;
-
-  @Autowired
-  public SharingService(final SharingWriter sharingWriter,
-                        final SharingReader sharingReader,
-                        final PlainReportEvaluationHandler reportEvaluationHandler,
-                        final ReportService reportService,
-                        final DashboardService dashboardService) {
-    this.sharingWriter = sharingWriter;
-    this.sharingReader = sharingReader;
-    this.reportService = reportService;
-    this.reportEvaluationHandler = reportEvaluationHandler;
-    this.dashboardService = dashboardService;
-  }
+  private final SharingWriter sharingWriter;
+  private final SharingReader sharingReader;
+  private final PlainReportEvaluationHandler reportEvaluationHandler;
+  private final DashboardService dashboardService;
+  private final ReportService reportService;
 
   public IdDto createNewReportShareIfAbsent(ReportShareDto createSharingDto, String userId) {
     validateAndCheckAuthorization(createSharingDto, userId);
@@ -225,7 +212,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     } else {
       String reason = "Cannot evaluate report [" + reportId +
         "] for shared dashboard id [" + dashboardShareId + "]. Given report is not contained in dashboard.";
-      logger.error(reason);
+      log.error(reason);
       throw new OptimizeRuntimeException(reason);
     }
 

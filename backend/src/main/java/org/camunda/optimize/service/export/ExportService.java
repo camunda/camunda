@@ -6,12 +6,10 @@
 package org.camunda.optimize.service.export;
 
 import com.opencsv.CSVWriter;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedWriter;
@@ -23,14 +21,12 @@ import java.util.Set;
 
 
 @Component
+@Slf4j
 public class ExportService {
-
-  private static final Logger logger = LoggerFactory.getLogger(ExportService.class);
 
   private final AuthorizationCheckReportEvaluationHandler reportService;
   private final ConfigurationService configurationService;
 
-  @Autowired
   public ExportService(final AuthorizationCheckReportEvaluationHandler reportService,
                        final ConfigurationService configurationService) {
     this.reportService = reportService;
@@ -39,7 +35,7 @@ public class ExportService {
 
   public Optional<byte[]> getCsvBytesForEvaluatedReportResult(final String userId, String reportId,
                                                               final Set<String> excludedColumns) {
-    logger.debug("Exporting report with id [{}] as csv.", reportId);
+    log.debug("Exporting report with id [{}] as csv.", reportId);
     final Integer exportCsvLimit = configurationService.getExportCsvLimit();
     final Integer exportCsvOffset = configurationService.getExportCsvOffset();
 
@@ -48,7 +44,7 @@ public class ExportService {
     try {
       reportResult = reportService.evaluateSavedReport(userId, reportId);
     } catch (Exception e) {
-      logger.debug("Could not evaluate report to export the result to csv!", e);
+      log.debug("Could not evaluate report to export the result to csv!", e);
       return Optional.empty();
     }
     List<String[]> resultAsCsv = reportResult.getResultAsCsv(exportCsvLimit, exportCsvOffset, excludedColumns);
@@ -69,7 +65,7 @@ public class ExportService {
       bytes = arrayOutputStream.toByteArray();
       arrayOutputStream.close();
     } catch (Exception e) {
-      logger.error("can't write CSV to buffer", e);
+      log.error("can't write CSV to buffer", e);
     }
     return bytes;
   }
