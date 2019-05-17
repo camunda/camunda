@@ -46,6 +46,8 @@ export const Button = themed(styled.button`
   padding: 0;
   background: transparent;
 
+  border-radius: 50%;
+
   &:hover {
     ${Icon.WrappedComponent}::before {
       // hover background color/opacity

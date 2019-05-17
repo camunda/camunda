@@ -15,6 +15,7 @@ export const IncidentsBar = styled(BasicExpandButton)`
   align-items: center;
   position: relative;
   z-index: 4;
+  border-radius: 0;
 
   height: ${INCIDENTS_BAR_HEIGHT}px;
   padding: 0 20px 0 17px;

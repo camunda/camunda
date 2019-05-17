@@ -16,8 +16,4 @@ export const ExpandButton = styled(BasicExpandButton)`
   position: absolute;
   top: 14px;
   left: 0;
-
-  &:focus {
-    border-radius: 50%;
-  }
 `;
