@@ -107,10 +107,7 @@ describe('Dashboard', () => {
     expect(headerNode.prop('incidentsCount')).toBe(mockState.counts.incidents);
   });
 
-  describe('MetricsPanel', () => {
-    it('should render three MetricTile components', async () => {
-      expect(node.find(MetricPanel).children().length).toBe(3);
-    });
+  describe('MetricPanel', () => {
     it('should render MetricPanel component', () => {
       expect(node.find(MetricPanel)).toHaveLength(1);
     });

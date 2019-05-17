@@ -6,9 +6,29 @@
 
 import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
-import withStrippedProps from 'modules/utils/withStrippedProps';
 
-export const Wrapper = themed(styled(withStrippedProps(['perUnit'])('div'))`
+const FONT_STYLES = {
+  small: css`
+    font-weight: 400;
+    font-size: 13px;
+  `,
+  medium: css`
+    font-weight: 600;
+    font-size: 14px;
+  `,
+  large: css`
+    font-weight: 600;
+    font-size: 30px;
+  `
+};
+
+const BAR_HEIGHTS = {
+  small: '3px',
+  medium: '5px',
+  large: '15px'
+};
+
+export const Wrapper = themed(styled('div')`
   display: flex;
   padding: 0;
 
@@ -18,8 +38,8 @@ export const Wrapper = themed(styled(withStrippedProps(['perUnit'])('div'))`
   })};
 
   font-family: IBMPlexSans;
-  font-size: ${({perUnit}) => (perUnit ? '13px' : '14px')};
-  font-weight: ${({perUnit}) => (perUnit ? '400' : '600')}};
+
+  ${({size}) => FONT_STYLES[size]}
   line-height: 1.71;
 `);
 
@@ -79,7 +99,7 @@ const greyBarStyle = css`
 export const BarContainer = styled.div`
   position: relative;
   > div {
-    height: ${props => (props.perUnit ? '3px' : '5px')};
+    height: ${({size}) => BAR_HEIGHTS[size]};
   }
 `;
 

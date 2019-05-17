@@ -74,8 +74,8 @@ const ExpandButtonThemes = {
       }
     }
   },
-  // incidentsBar is used in the red incidents bar in instance view
-  incidentsBar: {
+  // incidentsBanner is used in the red incidents banner in instance view
+  incidentsBanner: {
     default: {
       // transparent background
       background: {dark: '', light: ''},

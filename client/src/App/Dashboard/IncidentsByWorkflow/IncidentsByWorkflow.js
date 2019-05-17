@@ -8,7 +8,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import Collapse from '../Collapse';
-import IncidentByWorkflow from './IncidentByWorkflow';
+import InstancesBar from 'modules/components/InstancesBar';
 
 import * as Styled from './styled';
 import {
@@ -63,7 +63,7 @@ export default class IncidentsByWorkflow extends React.Component {
                   item.version
                 )}
               >
-                <IncidentByWorkflow
+                <InstancesBar
                   label={getLabel(
                     workflowName,
                     totalInstancesCount,
@@ -71,7 +71,7 @@ export default class IncidentsByWorkflow extends React.Component {
                   )}
                   incidentsCount={item.instancesWithActiveIncidentsCount}
                   activeCount={item.activeInstancesCount}
-                  perUnit
+                  size="small"
                 />
               </Styled.IncidentLink>
             </Styled.VersionLi>
@@ -95,7 +95,7 @@ export default class IncidentsByWorkflow extends React.Component {
         })}
         title={getGroupTitle(name, totalInstancesCount, item.workflows.length)}
       >
-        <IncidentByWorkflow
+        <InstancesBar
           label={getGroupLabel(
             name,
             totalInstancesCount,
@@ -103,6 +103,7 @@ export default class IncidentsByWorkflow extends React.Component {
           )}
           incidentsCount={item.instancesWithActiveIncidentsCount}
           activeCount={item.activeInstancesCount}
+          size="medium"
         />
       </Styled.IncidentLink>
     );

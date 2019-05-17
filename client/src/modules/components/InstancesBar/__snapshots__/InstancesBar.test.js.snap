@@ -1,8 +1,10 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`IncidentByWorkflow should display the right data 1`] = `
+exports[`InstancesBar should display the right data 1`] = `
 <div>
-  <Themed(Styled(withStrippedProps(Component)))>
+  <Themed(styled.div)
+    size="small"
+  >
     <Themed(styled.div)
       hasIncidents={true}
     >
@@ -16,8 +18,10 @@ exports[`IncidentByWorkflow should display the right data 1`] = `
     >
       8
     </Themed(styled.div)>
-  </Themed(Styled(withStrippedProps(Component)))>
-  <styled.div>
+  </Themed(styled.div)>
+  <styled.div
+    size="small"
+  >
     <Themed(styled.div)
       hasActive={true}
     />

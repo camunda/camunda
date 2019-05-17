@@ -10,7 +10,6 @@ import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 
 import Header from '../Header';
 import MetricPanel from './MetricPanel';
-import MetricTile from './MetricTile';
 import IncidentsByWorkflow from './IncidentsByWorkflow';
 import IncidentsByError from './IncidentsByError';
 import EmptyIncidents from './EmptyIncidents';
@@ -20,11 +19,7 @@ import {
   fetchIncidentsByError
 } from 'modules/api/incidents/incidents';
 import {parseFilterForRequest} from 'modules/utils/filter';
-import {
-  FILTER_SELECTION,
-  DASHBOARD_LABELS,
-  PAGE_TITLE
-} from 'modules/constants';
+import {FILTER_SELECTION, PAGE_TITLE} from 'modules/constants';
 
 import * as Styled from './styled.js';
 
@@ -88,7 +83,6 @@ class Dashboard extends Component {
 
   render() {
     const {running, incidents} = this.state.counts;
-    const tiles = ['running', 'active', 'incidents'];
 
     return (
       <Fragment>
@@ -99,16 +93,10 @@ class Dashboard extends Component {
         />
         <Styled.Dashboard>
           <VisuallyHiddenH1>Camunda Operate Dashboard</VisuallyHiddenH1>
-          <MetricPanel>
-            {tiles.map(tile => (
-              <MetricTile
-                key={tile}
-                value={this.state.counts[tile]}
-                label={DASHBOARD_LABELS[tile]}
-                type={tile}
-              />
-            ))}
-          </MetricPanel>
+          <MetricPanel
+            runningInstancesCount={running}
+            incidentsCount={incidents}
+          />
           <Styled.TitleWrapper>
             <Styled.Tile data-test="incidents-byWorkflow">
               <Styled.TileTitle>Instances by Workflow</Styled.TileTitle>

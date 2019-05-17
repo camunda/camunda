@@ -8,8 +8,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import * as Styled from './styled.js';
 
-function IncidentStatistic(props) {
-  const {label, activeCount, incidentsCount} = props;
+function InstancesBar(props) {
+  const {label, activeCount, incidentsCount, size} = props;
   const incidentsBarRatio =
     (100 * incidentsCount) / (activeCount + incidentsCount);
 
@@ -18,7 +18,7 @@ function IncidentStatistic(props) {
 
   return (
     <div className={props.className}>
-      <Styled.Wrapper perUnit={props.perUnit}>
+      <Styled.Wrapper size={size}>
         <Styled.IncidentsCount hasIncidents={hasIncidents}>
           {incidentsCount}
         </Styled.IncidentsCount>
@@ -27,7 +27,7 @@ function IncidentStatistic(props) {
           {activeCount}
         </Styled.ActiveCount>
       </Styled.Wrapper>
-      <Styled.BarContainer perUnit={props.perUnit}>
+      <Styled.BarContainer size={size}>
         <Styled.Bar hasActive={hasActive} />
         <Styled.IncidentsBar
           style={{
@@ -39,12 +39,12 @@ function IncidentStatistic(props) {
   );
 }
 
-IncidentStatistic.propTypes = {
-  label: PropTypes.string.isRequired,
+InstancesBar.propTypes = {
+  label: PropTypes.string,
   activeCount: PropTypes.number.isRequired,
   incidentsCount: PropTypes.number.isRequired,
   className: PropTypes.string,
-  perUnit: PropTypes.bool
+  size: PropTypes.oneOf(['small', 'medium', 'large']).isRequired
 };
 
-export default IncidentStatistic;
+export default InstancesBar;

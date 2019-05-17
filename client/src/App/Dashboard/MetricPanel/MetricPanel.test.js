@@ -10,22 +10,125 @@ import {shallow} from 'enzyme';
 import MetricPanel from './MetricPanel';
 import * as Styled from './styled.js';
 
-const Panel = (
-  <MetricPanel>
-    <span />
-    <span />
-    <span />
-  </MetricPanel>
-);
-
 describe('MetricPanel', () => {
-  it('should render a list', () => {
-    const node = shallow(Panel);
-    node.find(Styled.Ul);
+  describe('Title', () => {
+    it('should render title containing instances count', () => {
+      // given
+      const props = {runningInstancesCount: 12, incidentsCount: 11};
+
+      // when
+      const node = shallow(<MetricPanel {...props} />);
+      const titleNode = node.find(Styled.Title);
+
+      // then
+      const expectedCount = props.runningInstancesCount + props.incidentsCount;
+
+      expect(titleNode).toExist();
+      expect(titleNode.text()).toEqual(
+        `${expectedCount} Running Instances in total`
+      );
+    });
+
+    it('should render correct link (if no instances)', () => {
+      // given
+      const props = {runningInstancesCount: 12, incidentsCount: 11};
+
+      // when
+      const node = shallow(<MetricPanel {...props} />);
+      const titleNode = node.find(Styled.Title);
+
+      // then
+      expect(titleNode.props().to).toEqual(
+        '/instances?filter={"active":true,"incidents":true}'
+      );
+    });
+
+    it('should render correct link (if instances)', () => {
+      // given
+      const props = {runningInstancesCount: 0, incidentsCount: 0};
+
+      // when
+      const node = shallow(<MetricPanel {...props} />);
+      const titleNode = node.find(Styled.Title);
+
+      // then
+      expect(titleNode.props().to).toEqual(
+        '/instances?filter={"active":true,"incidents":true,"completed":true,"canceled":true}'
+      );
+    });
   });
 
-  it('should render all props as children of list', () => {
-    const node = shallow(Panel);
-    expect(node.find(Styled.Ul).children().length).toBe(3);
+  describe('Label', () => {
+    it('should pass correct link to incident label (if incidents)', () => {
+      // given
+      const props = {runningInstancesCount: 5, incidentsCount: 5};
+
+      // when
+      const node = shallow(<MetricPanel {...props} />);
+      const IncidentsLabelNode = node.find(Styled.Label).at(0);
+
+      // then
+      expect(IncidentsLabelNode.props().to).toEqual(
+        '/instances?filter={"incidents":true}'
+      );
+    });
+
+    it('should pass correct link to incident label (if no incidents)', () => {
+      // given
+      const props = {runningInstancesCount: 5, incidentsCount: 0};
+
+      // when
+      const node = shallow(<MetricPanel {...props} />);
+      const IncidentsLabelNode = node.find(Styled.Label).at(0);
+
+      // then
+      expect(IncidentsLabelNode.props().to).toEqual(
+        '/instances?filter={"incidents":true}'
+      );
+    });
+
+    it('should pass correct link to active instances label (if instances)', () => {
+      // given
+      const props = {runningInstancesCount: 5, incidentsCount: 5};
+
+      // when
+      const node = shallow(<MetricPanel {...props} />);
+      const ActiveInstancesLabelNode = node.find(Styled.Label).at(1);
+
+      // then
+      expect(ActiveInstancesLabelNode.props().to).toEqual(
+        '/instances?filter={"active":true}'
+      );
+    });
+
+    it('should pass correct link to active instances label (if no instances)', () => {
+      // given
+      const props = {runningInstancesCount: 0, incidentsCount: 5};
+
+      // when
+      const node = shallow(<MetricPanel {...props} />);
+      const ActiveInstancesLabelNode = node.find(Styled.Label).at(1);
+
+      // then
+      expect(ActiveInstancesLabelNode.props().to).toEqual(
+        '/instances?filter={"active":true}'
+      );
+    });
+  });
+
+  it('should pass panel data to InstancesBar', () => {
+    const props = {runningInstancesCount: 4, incidentsCount: 2};
+
+    const node = shallow(<MetricPanel {...props} />);
+
+    const InstancesBarNode = node.find(Styled.InstancesBar);
+
+    expect(InstancesBarNode).toExist();
+
+    const InstancesBarProps = InstancesBarNode.props();
+
+    expect(InstancesBarProps.activeCount).toEqual(props.runningInstancesCount);
+    expect(InstancesBarProps.incidentsCount).toEqual(props.incidentsCount);
+    expect(InstancesBarProps.incidentsCount).toEqual(props.incidentsCount);
   });
 });

@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import IncidentsByWorkflow from './IncidentsByWorkflow';
-import IncidentByWorkflow from './IncidentByWorkflow';
+import InstancesBar from 'modules/components/InstancesBar';
 import Collapse from '../Collapse';
 import * as Styled from './styled';
 
@@ -108,12 +108,12 @@ describe('IncidentsByWorkflow', () => {
     expect(node.find(Styled.Li).length).toBe(mockIncidentsByWorkflow.length);
   });
 
-  it('should pass the right data to IncidentByWorkflow', () => {
+  it('should pass the right data to InstancesBar', () => {
     const node = shallow(
       <IncidentsByWorkflow incidents={mockIncidentsByWorkflow} />
     );
-    const nodeIncidentByWorkflow = node.find(IncidentByWorkflow).at(0);
-    const statisticsAnchor = nodeIncidentByWorkflow.parent();
+    const nodeInstancesBar = node.find(InstancesBar).at(0);
+    const statisticsAnchor = nodeInstancesBar.parent();
 
     expect(statisticsAnchor.props().to).toBe(
       '/instances?filter={"workflow":"loanProcess","version":"1","incidents":true,"active":true}'
@@ -122,21 +122,21 @@ describe('IncidentsByWorkflow', () => {
       'View 138 Instances in 1 Version of Workflow loanProcess'
     );
 
-    expect(nodeIncidentByWorkflow.props().label).toContain(
+    expect(nodeInstancesBar.props().label).toContain(
       mockIncidentsByWorkflow[0].workflowName ||
         mockIncidentsByWorkflow[0].bpmnProcessId
     );
-    expect(nodeIncidentByWorkflow.props().label).toContain(
+    expect(nodeInstancesBar.props().label).toContain(
       mockIncidentsByWorkflow[0].workflows[0].version
     );
-    expect(nodeIncidentByWorkflow.props().incidentsCount).toBe(
+    expect(nodeInstancesBar.props().incidentsCount).toBe(
       mockIncidentsByWorkflow[0].instancesWithActiveIncidentsCount
     );
-    expect(nodeIncidentByWorkflow.props().activeCount).toBe(
+    expect(nodeInstancesBar.props().activeCount).toBe(
       mockIncidentsByWorkflow[0].activeInstancesCount
     );
 
-    expect(nodeIncidentByWorkflow).toMatchSnapshot();
+    expect(nodeInstancesBar).toMatchSnapshot();
   });
 
   it('should render a statistics/collapsable statistics based on number of versions', () => {
@@ -146,9 +146,9 @@ describe('IncidentsByWorkflow', () => {
     const firstStatistic = node.find('[data-test="incident-byWorkflow-0"]');
     const secondStatistic = node.find('[data-test="incident-byWorkflow-1"]');
     const thirdStatistic = node.find('[data-test="incident-byWorkflow-2"]');
-    expect(firstStatistic.find(IncidentByWorkflow).length).toBe(1);
+    expect(firstStatistic.find(InstancesBar).length).toBe(1);
     expect(secondStatistic.find(Collapse).length).toBe(1);
-    expect(thirdStatistic.find(IncidentByWorkflow).length).toBe(1);
+    expect(thirdStatistic.find(InstancesBar).length).toBe(1);
   });
 
   it('passes the right data to the statistics collapse', () => {
@@ -160,7 +160,7 @@ describe('IncidentsByWorkflow', () => {
     const headerCollapseNode = collapseNode.props().header;
     const contentCollapseNode = collapseNode.props().content;
     const headerNode = shallow(headerCollapseNode);
-    const headerStatistic = headerNode.find(IncidentByWorkflow);
+    const headerStatistic = headerNode.find(InstancesBar);
     const contentNode = shallow(contentCollapseNode);
 
     // collapse button node
@@ -197,15 +197,15 @@ describe('IncidentsByWorkflow', () => {
     expect(contentNode.find(Styled.VersionLi).length).toBe(2);
 
     // should render two statistics
-    expect(contentNode.find(IncidentByWorkflow).length).toBe(2);
+    expect(contentNode.find(InstancesBar).length).toBe(2);
     // should pass the right props to a statistic
 
-    const versionStatisticNode = contentNode.find(IncidentByWorkflow).at(0);
+    const versionStatisticNode = contentNode.find(InstancesBar).at(0);
 
     expect(versionStatisticNode.props().label).toContain(
       `Version ${mockIncidentsByWorkflow[1].workflows[0].version}`
     );
-    expect(versionStatisticNode.props().perUnit).toBe(true);
+    expect(versionStatisticNode.props().size).toBe('small');
     expect(versionStatisticNode.props().incidentsCount).toBe(
       mockIncidentsByWorkflow[1].workflows[0].instancesWithActiveIncidentsCount
     );
@@ -223,8 +223,8 @@ describe('IncidentsByWorkflow', () => {
       .find('[data-test="incident-byWorkflow-2"]')
       .dive();
 
-    const nodeIncidentByWorkflow = workflowNode.find(IncidentByWorkflow);
-    const statisticsAnchor = nodeIncidentByWorkflow.parent();
+    const nodeInstancesBar = workflowNode.find(InstancesBar);
+    const statisticsAnchor = nodeInstancesBar.parent();
 
     expect(statisticsAnchor.props().to).toBe(
       '/instances?filter={"workflow":"noIncidentsProcess","version":"1","incidents":true,"active":true}'
@@ -233,17 +233,17 @@ describe('IncidentsByWorkflow', () => {
       'View 23 Instances in 1 Version of Workflow Without Incidents Process'
     );
 
-    expect(nodeIncidentByWorkflow.props().label).toContain(
+    expect(nodeInstancesBar.props().label).toContain(
       mockIncidentsByWorkflow[2].workflowName ||
         mockIncidentsByWorkflow[2].bpmnProcessId
     );
-    expect(nodeIncidentByWorkflow.props().label).toContain(
+    expect(nodeInstancesBar.props().label).toContain(
       mockIncidentsByWorkflow[2].workflows[0].version
     );
-    expect(nodeIncidentByWorkflow.props().incidentsCount).toBe(
+    expect(nodeInstancesBar.props().incidentsCount).toBe(
       mockIncidentsByWorkflow[2].instancesWithActiveIncidentsCount
     );
-    expect(nodeIncidentByWorkflow.props().activeCount).toBe(
+    expect(nodeInstancesBar.props().activeCount).toBe(
       mockIncidentsByWorkflow[2].activeInstancesCount
     );
   });
@@ -257,8 +257,8 @@ describe('IncidentsByWorkflow', () => {
       .find('[data-test="incident-byWorkflow-3"]')
       .dive();
 
-    const nodeIncidentByWorkflow = workflowNode.find(IncidentByWorkflow);
-    const statisticsAnchor = nodeIncidentByWorkflow.parent();
+    const nodeInstancesBar = workflowNode.find(InstancesBar);
+    const statisticsAnchor = nodeInstancesBar.parent();
 
     expect(statisticsAnchor.props().to).toBe(
       '/instances?filter={"workflow":"noInstancesProcess","version":"1","incidents":true,"active":true,"completed":true,"canceled":true}'
@@ -267,17 +267,17 @@ describe('IncidentsByWorkflow', () => {
       'View 0 Instances in 1 Version of Workflow Without Instances Process'
     );
 
-    expect(nodeIncidentByWorkflow.props().label).toContain(
+    expect(nodeInstancesBar.props().label).toContain(
       mockIncidentsByWorkflow[3].workflowName ||
         mockIncidentsByWorkflow[3].bpmnProcessId
     );
-    expect(nodeIncidentByWorkflow.props().label).toContain(
+    expect(nodeInstancesBar.props().label).toContain(
       mockIncidentsByWorkflow[3].workflows[0].version
     );
-    expect(nodeIncidentByWorkflow.props().incidentsCount).toBe(
+    expect(nodeInstancesBar.props().incidentsCount).toBe(
       mockIncidentsByWorkflow[3].instancesWithActiveIncidentsCount
     );
-    expect(nodeIncidentByWorkflow.props().activeCount).toBe(
+    expect(nodeInstancesBar.props().activeCount).toBe(
       mockIncidentsByWorkflow[3].activeInstancesCount
     );
   });
