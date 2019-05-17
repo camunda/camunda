@@ -21,6 +21,7 @@ public class SingleReportConfigurationDto {
 
   private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
   private AggregationType aggregationType = AggregationType.AVERAGE;
+  private List<String> hiddenNodes = new ArrayList<>();
   private Boolean showInstanceCount = false;
   private Boolean pointMarkers = true;
   private Integer precision = null;
@@ -48,6 +49,7 @@ public class SingleReportConfigurationDto {
     SingleReportConfigurationDto that = (SingleReportConfigurationDto) o;
     return Objects.equals(color, that.color) &&
       Objects.equals(aggregationType, that.aggregationType) &&
+      Objects.equals(hiddenNodes, that.hiddenNodes) &&
       Objects.equals(showInstanceCount, that.showInstanceCount) &&
       Objects.equals(pointMarkers, that.pointMarkers) &&
       Objects.equals(precision, that.precision) &&
@@ -70,6 +72,7 @@ public class SingleReportConfigurationDto {
     return Objects.hash(
       color,
       aggregationType,
+      hiddenNodes,
       showInstanceCount,
       pointMarkers,
       precision,

@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
 
 
 public class UpgradeFrom24To25 implements Upgrade {
@@ -38,15 +39,7 @@ public class UpgradeFrom24To25 implements Upgrade {
   @Override
   public void performUpgrade() {
     try {
-      UpgradePlan upgradePlan = UpgradePlanBuilder.createUpgradePlan()
-        .fromVersion(FROM_VERSION)
-        .toVersion(TO_VERSION)
-        .addUpgradeStep(new UpdateDataStep(
-          SINGLE_DECISION_REPORT_TYPE,
-          QueryBuilders.matchAllQuery(),
-          getMigrate25ReportViewStructureScript()
-        ))
-        .build();
+      UpgradePlan upgradePlan = buildUpgradePlan();
       upgradePlan.execute();
     } catch (Exception e) {
       logger.error("Error while executing upgrade", e);
@@ -54,9 +47,19 @@ public class UpgradeFrom24To25 implements Upgrade {
     }
   }
 
-  public static String getMigrate25ReportViewStructureScript() {
-    // @formatter:off
-    return
+  public static UpgradePlan buildUpgradePlan() {
+    return UpgradePlanBuilder.createUpgradePlan()
+      .fromVersion(FROM_VERSION)
+      .toVersion(TO_VERSION)
+      .addUpgradeStep(createChangeSingleDecisionReportViewStructureStep())
+      .addUpgradeStep(createAddHiddenNodesFieldToReportConfigStep(SINGLE_DECISION_REPORT_TYPE))
+      .addUpgradeStep(createAddHiddenNodesFieldToReportConfigStep(SINGLE_PROCESS_REPORT_TYPE))
+      .build();
+  }
+
+  private static UpdateDataStep createChangeSingleDecisionReportViewStructureStep() {
+    String script =
+      // @formatter:off
       "def reportData = ctx._source.data;\n" +
       "if (reportData.view != null) {\n" +
       "  if (reportData.view.operation != null) {\n" +
@@ -67,5 +70,25 @@ public class UpgradeFrom24To25 implements Upgrade {
       "  reportData.view.remove('operation');\n"+
       "}\n";
     // @formatter:on
+    return new UpdateDataStep(
+      SINGLE_DECISION_REPORT_TYPE,
+      QueryBuilders.matchAllQuery(),
+      script
+    );
+  }
+
+  private static UpdateDataStep createAddHiddenNodesFieldToReportConfigStep(String type) {
+    String script =
+      // @formatter:off
+      "def reportData = ctx._source.data;\n" +
+      "if (reportData.configuration != null) {\n" +
+      "  reportData.configuration.hiddenNodes = new ArrayList();" +
+      "}\n";
+      // @formatter:on
+    return new UpdateDataStep(
+      type,
+      QueryBuilders.matchAllQuery(),
+      script
+    );
   }
 }

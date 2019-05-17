@@ -6,9 +6,8 @@
 package org.camunda.optimize.upgrade;
 
 import com.google.common.collect.Lists;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty;
-import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.report.AbstractReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleDecisionReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleProcessReportType;
@@ -23,18 +22,17 @@ import java.io.IOException;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.main.impl.UpgradeFrom24To25.buildUpgradePlan;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
-public class UpgradeSingleDecisionReportDataIT extends AbstractUpgradeIT {
+public class UpgradeSingleProcessReportDataIT extends AbstractUpgradeIT {
   private static final String FROM_VERSION = "2.4.0";
   private static final String TO_VERSION = "2.5.0";
 
-  private static final DecisionDefinitionType DECISION_DEFINITION_TYPE = new DecisionDefinitionType();
-  private static final AbstractReportType SINGLE_DECISION_REPORT_TYPE = new SingleDecisionReportType();
+  private static final ProcessDefinitionType PROCESS_DEFINITION_TYPE = new ProcessDefinitionType();
+  private static final AbstractReportType SINGLE_PROCESS_REPORT_TYPE = new SingleProcessReportType();
 
-  private static final String REPORT_VERSION_24_ID = "8fb66435-1d7d-41fa-b95e-e3ba7536d218";
+  private static final String REPORT_VERSION_24_ID = "1aedc93f-7b8d-45a6-8a3c-cd14f4847152";
 
 
   @Before
@@ -44,30 +42,15 @@ public class UpgradeSingleDecisionReportDataIT extends AbstractUpgradeIT {
 
     initSchema(Lists.newArrayList(
       METADATA_TYPE,
-      DECISION_DEFINITION_TYPE,
       new SingleDecisionReportType(),
       new SingleProcessReportType()
     ));
 
     setMetadataIndexVersion(FROM_VERSION);
 
-    executeBulk("steps/configuration_upgrade/24-single-decision-report-bulk");
+    executeBulk("steps/configuration_upgrade/24-single-process-report-bulk");
   }
 
-
-  @Test
-  public void rawDataViewOperationFieldHasBeenMovedToViewPropertyField() throws Exception {
-    //given
-    UpgradePlan upgradePlan = buildUpgradePlan();
-
-    // when
-    upgradePlan.execute();
-
-    // then
-    final SingleDecisionReportDefinitionDto report = getSingleDecisionReportDefinitionDataById();
-
-    assertThat(report.getData().getView().getProperty(), is(DecisionViewProperty.RAW_DATA));
-  }
 
   @Test
   public void reportConfigurationHasHiddenNodesField() throws Exception {
@@ -78,25 +61,24 @@ public class UpgradeSingleDecisionReportDataIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final SingleDecisionReportDefinitionDto report = getSingleDecisionReportDefinitionDataById();
+    final SingleProcessReportDefinitionDto report = getSingleProcessReportDefinitionDataById();
 
     assertThat(report.getData().getConfiguration().getHiddenNodes(), notNullValue());
   }
 
-
   private String getReportIndexAlias() {
-    return getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE.getType());
+    return getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE.getType());
   }
 
-  private SingleDecisionReportDefinitionDto getSingleDecisionReportDefinitionDataById() throws
-                                                                                        IOException {
+  private SingleProcessReportDefinitionDto getSingleProcessReportDefinitionDataById() throws
+                                                                                      IOException {
     final GetResponse reportResponse = restClient.get(
-      new GetRequest(getReportIndexAlias(), SINGLE_DECISION_REPORT_TYPE.getType(),
-                     UpgradeSingleDecisionReportDataIT.REPORT_VERSION_24_ID
+      new GetRequest(getReportIndexAlias(), SINGLE_PROCESS_REPORT_TYPE.getType(),
+                     UpgradeSingleProcessReportDataIT.REPORT_VERSION_24_ID
       ), RequestOptions.DEFAULT
     );
     return objectMapper.readValue(
-      reportResponse.getSourceAsString(), SingleDecisionReportDefinitionDto.class
+      reportResponse.getSourceAsString(), SingleProcessReportDefinitionDto.class
     );
   }
 
