@@ -2,7 +2,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: cambpm
-  namespace: performance-optimize
+  namespace: ${NAMESPACE}
 spec:
   selector:
     app: cambpm

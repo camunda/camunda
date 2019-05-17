@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: performance-optimize-camunda-cambpm-cloud
-  namespace: performance-optimize
+  namespace: ${NAMESPACE}
   labels:
     app: cambpm
 spec:
@@ -33,7 +33,7 @@ spec:
             - name: JAVA_OPTS
               value: "-Xms4g -Xmx4g -XX:MaxMetaspaceSize=256m"
             - name: WAIT_FOR
-              value: postgres.performance-optimize:5432
+              value: postgres:5432
             - name: DB_DRIVER
               value: "org.postgresql.Driver"
             - name: DB_USERNAME
@@ -41,7 +41,7 @@ spec:
             - name: DB_PASSWORD
               value: "camunda"
             - name: DB_URL
-              value: "jdbc:postgresql://postgres.performance-optimize:5432/engine"
+              value: "jdbc:postgresql://postgres:5432/engine"
           ports:
             - containerPort: 8080
               name: cambpm-http

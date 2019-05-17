@@ -2,7 +2,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: optimize
-  namespace: performance-optimize
+  namespace: ${NAMESPACE}
 spec:
   selector:
     app: optimize

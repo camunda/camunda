@@ -84,6 +84,7 @@ pipeline {
   environment {
     NEXUS = credentials("camunda-nexus")
     REGISTRY = credentials('repository-camunda-cloud')
+    NAMESPACE = "${env.JOB_BASE_NAME}-${env.BUILD_ID}"
   }
 
   options {
@@ -102,52 +103,11 @@ pipeline {
         container('gcloud') {
             sh ("""
                 # install jq
-                apk add --no-cache jq
+                apk add --no-cache jq gettext
                 # kubectl
                 gcloud components install kubectl --quiet
-
-                kubectl apply -f .ci/podSpecs/performanceTests/ns.yml
-                kubectl create secret docker-registry registry-camunda-cloud-secret --namespace performance-optimize --docker-server=https://registry.camunda.cloud --docker-username="${REGISTRY_USR}" --docker-password="${REGISTRY_PSW}" --docker-email=ci@camunda.com
-
-                kubectl apply -f .ci/podSpecs/performanceTests/rbac.yml
                 
-                # Spawning postgres
-                kubectl apply -f .ci/podSpecs/performanceTests/postgresql-cfg.yml
-                kubectl apply -f .ci/podSpecs/performanceTests/postgresql.yml
-                # The following command does not work due to https://github.com/kubernetes/kubernetes/issues/52653
-                # Can be removed when we migrate to kubernetes version > 1.12.0
-                #kubectl rollout status -f .ci/podSpecs/performanceTests/postgresql.yml --watch=true
-                while ! nc -z -w 3 postgres.performance-optimize 5432; do
-                  sleep 15
-                done
-
-                # Import data in postgresql
-                POD_NAME=\$(kubectl get po -n performance-optimize | grep postgres | cut -f1 -d' ')
-                kubectl exec -n performance-optimize \$POD_NAME -c gcloud -it -- gsutil -q -m cp gs://camunda-ops/optimize/${SQL_DUMP} /db_dump/dump.sqlc
-                kubectl exec -n performance-optimize \$POD_NAME -c postgresql -it -- pg_restore --clean --if-exists -v -j 16 -h localhost -U camunda -d engine /db_dump/dump.sqlc
-
-                #Spawning elasticsearch
-                kubectl apply -f .ci/podSpecs/performanceTests/elasticsearch-cfg.yml
-                kubectl apply -f .ci/podSpecs/performanceTests/elasticsearch.yml
-                # The following command does not work due to https://github.com/kubernetes/kubernetes/issues/52653
-                # Can be removed when we migrate to kubernetes version > 1.12.0
-                #kubectl rollout status -f .ci/podSpecs/performanceTests/elasticsearch.yml --watch=true
-                while ! nc -z -w 3 elasticsearch.performance-optimize 9200; do
-                  sleep 15
-                done
-
-                #Spawning cambpm
-                kubectl apply -f .ci/podSpecs/performanceTests/cambpm-cfg.yml
-                kubectl apply -f .ci/podSpecs/performanceTests/cambpm.yml
-
-                kubectl rollout status -f .ci/podSpecs/performanceTests/cambpm.yml --watch=true
-
-                #Spawning optimize
-                kubectl apply -f .ci/podSpecs/performanceTests/optimize-cfg.yml
-                kubectl -n performance-optimize create configmap performance-optimize-camunda-cloud --from-file=.ci/podSpecs/performanceTests/optimize-config/
-                kubectl apply -f .ci/podSpecs/performanceTests/optimize.yml
-
-                kubectl rollout status -f .ci/podSpecs/performanceTests/optimize.yml --watch=true
+                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${REGISTRY_USR}" "${REGISTRY_PSW}" "${SQL_DUMP}"
             """)
         }
       }
@@ -156,31 +116,17 @@ pipeline {
       steps {
         container('gcloud') {
           sh ("""
-                #Monitoring Import of optimize-import (Should be true till data got imported)
-                IMPORTING="true"
-                until [ \$IMPORTING = "false" ]; do
-                    # note each call here is followed by `|| true` to not let the whole script fail if the curl call fails due short downtimes of pods
-                    curl -s -X POST 'http://elasticsearch.performance-optimize:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0,"aggs": {"events": {"nested": {"path": "events"},"aggs": {"event_count": {"value_count": {"field": "events.id"}}}}}}' || true
-                    curl -s -X POST 'http://elasticsearch.performance-optimize:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0,"aggs": {"userTasks": {"nested": {"path": "userTasks"},"aggs": {"user_task_count": {"value_count": {"field": "userTasks.id"}}}}}}' || true
-                    curl -s -X POST 'http://elasticsearch.performance-optimize:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0, "aggs": {"stringVariables": {"nested": {"path": "stringVariables" }, "aggs": { "variable_count": { "value_count": { "field": "stringVariables.id" } } } }, "integerVariables": { "nested": { "path": "integerVariables" }, "aggs": { "variable_count": { "value_count": { "field": "integerVariables.id" } } } }, "longVariables": { "nested": { "path": "longVariables" }, "aggs": { "variable_count": { "value_count": { "field": "longVariables.id" } } } }, "shortVariables": { "nested": { "path": "shortVariables" }, "aggs": { "variable_count": { "value_count": { "field": "shortVariables.id" } } } }, "doubleVariables": { "nested": { "path": "doubleVariables" }, "aggs": { "variable_count": { "value_count": { "field": "doubleVariables.id" } } } }, "dateVariables": { "nested": { "path": "dateVariables" }, "aggs": { "variable_count": { "value_count": { "field": "dateVariables.id" } } } }, "booleanVariables": { "nested": { "path": "booleanVariables" }, "aggs": { "variable_count": { "value_count": { "field": "booleanVariables.id" } } } } }}' || true
-                    curl -s -X GET 'http://elasticsearch.performance-optimize:9200/optimize-decision-instance/_search?size=0' || true
-                    curl -s -X GET 'http://elasticsearch.performance-optimize:9200/optimize-timestamp-based-import-index/_search?size=20' || true
-                    curl -s 'http://elasticsearch.performance-optimize:9200/_cat/indices?v' || true
-                    IMPORTING=\$(curl 'http://optimize.performance-optimize:8090/api/status' | jq '.isImporting."camunda-bpm"') || true
-                    sleep 60
-                done
+                bash .ci/podSpecs/performanceTests/wait-for-import-to-finish.sh "${NAMESPACE}"
                 
-                sleep 60
-
                 # assert expected counts
                 # note each call here is followed by `|| true` to not let the whole script fail if the curl call fails due short downtimes of pods
-                NUMBER_OF_PROCESS_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.performance-optimize:9200/optimize-process-instance/_search?size=0' | jq '.hits.total') || true
-                NUMBER_OF_ACTIVITY_INSTANCES=\$(curl -s -X POST 'http://elasticsearch.performance-optimize:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0,"aggs": {"events": {"nested": {"path": "events"},"aggs": {"event_count": {"value_count": {"field": "events.id"}}}}}}' | jq '.aggregations.events.doc_count') || true
-                NUMBER_OF_USER_TASKS=\$(curl -s -X POST 'http://elasticsearch.performance-optimize:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0,"aggs": {"userTasks": {"nested": {"path": "userTasks"},"aggs": {"user_task_Count": {"value_count": {"field": "userTasks.id"}}}}}}' | jq '.aggregations.userTasks.doc_count') || true
-                NUMBER_OF_VARIABLES=\$(curl -s -X POST 'http://elasticsearch.performance-optimize:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{ "size": 0, "aggs": { "stringVariables": { "nested": { "path": "stringVariables" }, "aggs": { "variable_count": { "value_count": { "field": "stringVariables.id" } } } }, "integerVariables": { "nested": { "path": "integerVariables" }, "aggs": { "variable_count": { "value_count": { "field": "integerVariables.id" } } } }, "longVariables": { "nested": { "path": "longVariables" }, "aggs": { "variable_count": { "value_count": { "field": "longVariables.id" } } } }, "shortVariables": { "nested": { "path": "shortVariables" }, "aggs": { "variable_count": { "value_count": { "field": "shortVariables.id" } } } }, "doubleVariables": { "nested": { "path": "doubleVariables" }, "aggs": { "variable_count": { "value_count": { "field": "doubleVariables.id" } } } }, "dateVariables": { "nested": { "path": "dateVariables" }, "aggs": { "variable_count": { "value_count": { "field": "dateVariables.id" } } } }, "booleanVariables": { "nested": { "path": "booleanVariables" }, "aggs": { "variable_count": { "value_count": { "field": "booleanVariables.id" } } } } }}' | jq 'reduce (.aggregations | .. | objects | .doc_count | select(. != null)) as \$total (0; . + \$total)') || true
-                NUMBER_OF_DECISION_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.performance-optimize:9200/optimize-decision-instance/_search?size=0' | jq '.hits.total') || true
+                NUMBER_OF_PROCESS_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search?size=0' | jq '.hits.total') || true
+                NUMBER_OF_ACTIVITY_INSTANCES=\$(curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0,"aggs": {"events": {"nested": {"path": "events"},"aggs": {"event_count": {"value_count": {"field": "events.id"}}}}}}' | jq '.aggregations.events.doc_count') || true
+                NUMBER_OF_USER_TASKS=\$(curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0,"aggs": {"userTasks": {"nested": {"path": "userTasks"},"aggs": {"user_task_Count": {"value_count": {"field": "userTasks.id"}}}}}}' | jq '.aggregations.userTasks.doc_count') || true
+                NUMBER_OF_VARIABLES=\$(curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{ "size": 0, "aggs": { "stringVariables": { "nested": { "path": "stringVariables" }, "aggs": { "variable_count": { "value_count": { "field": "stringVariables.id" } } } }, "integerVariables": { "nested": { "path": "integerVariables" }, "aggs": { "variable_count": { "value_count": { "field": "integerVariables.id" } } } }, "longVariables": { "nested": { "path": "longVariables" }, "aggs": { "variable_count": { "value_count": { "field": "longVariables.id" } } } }, "shortVariables": { "nested": { "path": "shortVariables" }, "aggs": { "variable_count": { "value_count": { "field": "shortVariables.id" } } } }, "doubleVariables": { "nested": { "path": "doubleVariables" }, "aggs": { "variable_count": { "value_count": { "field": "doubleVariables.id" } } } }, "dateVariables": { "nested": { "path": "dateVariables" }, "aggs": { "variable_count": { "value_count": { "field": "dateVariables.id" } } } }, "booleanVariables": { "nested": { "path": "booleanVariables" }, "aggs": { "variable_count": { "value_count": { "field": "booleanVariables.id" } } } } }}' | jq 'reduce (.aggregations | .. | objects | .doc_count | select(. != null)) as \$total (0; . + \$total)') || true
+                NUMBER_OF_DECISION_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-decision-instance/_search?size=0' | jq '.hits.total') || true
                
-                # note each call here is followed by `|| error=true` to not let the whole script fail if one assert fails
+                # note: each call here is followed by `|| error=true` to not let the whole script fail if one assert fails
                 # a final if block checks if there was an error and will let the script fail
                 echo "NUMBER_OF_PROCESS_INSTANCES"
                 test "\$NUMBER_OF_PROCESS_INSTANCES" = "${EXPECTED_NUMBER_OF_PROCESS_INSTANCES}" || error=true
@@ -210,7 +156,7 @@ pipeline {
     }
     always {
       container('gcloud') {
-          sh ("kubectl delete -f .ci/podSpecs/performanceTests/ns.yml")
+          sh ("bash .ci/podSpecs/performanceTests/kill.sh \"${NAMESPACE}\"")
       }
     }
   }

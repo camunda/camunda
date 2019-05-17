@@ -2,7 +2,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: elasticsearch
-  namespace: performance-optimize
+  namespace: ${NAMESPACE}
 spec:
   selector:
     app: elasticsearch

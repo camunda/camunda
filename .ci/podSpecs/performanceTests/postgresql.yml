@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgresql
-  namespace: performance-optimize
+  namespace: ${NAMESPACE}
   labels:
     app: postgresql
 spec:

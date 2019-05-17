@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: performance-optimize-camunda-cloud
-  namespace: performance-optimize
+  namespace: ${NAMESPACE}
 spec:
   progressDeadlineSeconds: 1800
   replicas: 1
@@ -37,7 +37,7 @@ spec:
             -Xmx4g
             -XX:MaxMetaspaceSize=128m
         - name: WAIT_FOR
-          value: "elasticsearch.performance-optimize:9200"
+          value: "elasticsearch:9200"
         - name: WAIT_FOR_TIMEOUT
           value: "60"
         ports:

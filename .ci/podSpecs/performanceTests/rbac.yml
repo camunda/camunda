@@ -2,7 +2,7 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: Role
 metadata:
   name: performance-optimize-readonly
-  namespace: performance-optimize
+  namespace: ${NAMESPACE}
 rules:
   - apiGroups: [""]
     resources: ["namespaces"]
@@ -27,7 +27,7 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: RoleBinding
 metadata:
   name: performance-optimize-readonly
-  namespace: performance-optimize
+  namespace: ${NAMESPACE}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
