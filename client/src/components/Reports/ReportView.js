@@ -209,7 +209,6 @@ export default class ReportView extends Component {
         </div>
         {creatingCollection && (
           <EditCollectionModal
-            collection={{}}
             onClose={() => this.setState({creatingCollection: false})}
             onConfirm={this.createCollection}
           />

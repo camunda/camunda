@@ -83,3 +83,7 @@ export default class EditCollectionModal extends Component {
     );
   }
 }
+
+EditCollectionModal.defaultProps = {
+  collection: {}
+};
