@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
-  package="io.zeebe.engine.state" id="5" version="1"
+  package="io.zeebe.engine.state" id="7" version="1"
   semanticVersion="0.1.0" description="Zeebe Cluster Management Protocol" byteOrder="littleEndian">
 
   <types>
