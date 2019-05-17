@@ -215,24 +215,18 @@
           opacity: 1;
         }
 
-        .CollectionsDropdown {
-          .Button {
-            .downIcon,
-            .noCollection {
-              visibility: visible;
-            }
+        .CollectionsDropdown .Button {
+          .downIcon,
+          .noCollection {
+            visibility: visible;
           }
         }
       }
 
-      &:not(:hover) {
-        .CollectionsDropdown {
-          .Button:not(:focus) {
-            .noCollection,
-            .noCollection ~ .downIcon {
-              visibility: hidden;
-            }
-          }
+      &:not(:hover) .CollectionsDropdown .Button:not(:focus) {
+        .noCollection,
+        .noCollection ~ .downIcon {
+          visibility: hidden;
         }
       }
 
