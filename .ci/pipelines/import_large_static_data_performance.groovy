@@ -76,7 +76,7 @@ spec:
       image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.7.0
       env:
         - name: ES_JAVA_OPTS
-          value: '-Xms512m -Xmx512m'
+          value: '-Xms4g -Xmx4g'
         - name: cluster.name
           value: docker-cluster
         - name: discovery.type
@@ -118,7 +118,7 @@ spec:
           memory: 8Gi
         requests:
           cpu: 2
-          memory: 2Gi
+          memory: 4Gi
   volumes:
   - name: configdir
     emptyDir: {}
@@ -213,6 +213,10 @@ pipeline {
     stage('Upload snapshot') {
       steps {
         container('maven') {
+          //Delete Zeebe indices
+          sh ("""
+                echo \$(curl -sq -H "Content-Type: application/json" -XDELETE "http://localhost:9200/zeebe-record*")
+            """)
           // Create repository
           sh ("""
                 echo \$(curl -qs -H "Content-Type: application/json" -d '{ "type": "gcs", "settings": { "bucket": "operate-data", "client": "operate_ci_service_account" }}' -XPUT "http://localhost:9200/_snapshot/my_gcs_repository")

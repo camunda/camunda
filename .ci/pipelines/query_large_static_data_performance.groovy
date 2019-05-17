@@ -76,7 +76,7 @@ spec:
       image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.7.0
       env:
         - name: ES_JAVA_OPTS
-          value: '-Xms512m -Xmx512m'
+          value: '-Xms4g -Xmx4g'
         - name: cluster.name
           value: docker-cluster
         - name: discovery.type
@@ -118,7 +118,7 @@ spec:
           memory: 8Gi
         requests:
           cpu: 2
-          memory: 2Gi
+          memory: 4Gi
     - name: operate
       image: gcr.io/ci-30-162810/camunda-operate:latest
       env:
