@@ -71,6 +71,7 @@
   <sbe:message name="LogReplicationRequest" id="16">
     <field name="fromPosition" id="0" type="uint64"/>
     <field name="toPosition" id="1" type="uint64"/>
+    <field name="includeFromPosition" id="2" type="BooleanType"/>
   </sbe:message>
 
   <sbe:message name="LogReplicationResponse" id="17">

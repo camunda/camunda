@@ -20,6 +20,7 @@ package io.zeebe.broker.logstreams.restore;
 import static io.zeebe.clustering.management.LogReplicationRequestEncoder.fromPositionNullValue;
 import static io.zeebe.clustering.management.LogReplicationRequestEncoder.toPositionNullValue;
 
+import io.zeebe.clustering.management.BooleanType;
 import io.zeebe.clustering.management.LogReplicationRequestDecoder;
 import io.zeebe.clustering.management.LogReplicationRequestEncoder;
 import io.zeebe.distributedlog.restore.log.LogReplicationRequest;
@@ -36,6 +37,7 @@ public class SbeLogReplicationRequest
 
   private long fromPosition;
   private long toPosition;
+  private boolean includeFromPosition;
 
   public SbeLogReplicationRequest() {}
 
@@ -44,9 +46,10 @@ public class SbeLogReplicationRequest
     wrap(other);
   }
 
-  public SbeLogReplicationRequest(long fromPosition, long toPosition) {
+  public SbeLogReplicationRequest(long fromPosition, long toPosition, boolean includeFromPosition) {
     this.fromPosition = fromPosition;
     this.toPosition = toPosition;
+    this.includeFromPosition = includeFromPosition;
   }
 
   public SbeLogReplicationRequest(byte[] serialized) {
@@ -59,17 +62,22 @@ public class SbeLogReplicationRequest
     super.wrap(buffer, offset, length);
     fromPosition = decoder.fromPosition();
     toPosition = decoder.toPosition();
+    includeFromPosition = decoder.includeFromPosition() == BooleanType.TRUE;
   }
 
   public void wrap(LogReplicationRequest other) {
     setFromPosition(other.getFromPosition());
     setToPosition(other.getToPosition());
+    setIncludeFromPosition(other.includeFromPosition());
   }
 
   @Override
   public void write(MutableDirectBuffer buffer, int offset) {
     super.write(buffer, offset);
-    encoder.fromPosition(fromPosition).toPosition(toPosition);
+    encoder
+        .fromPosition(fromPosition)
+        .toPosition(toPosition)
+        .includeFromPosition(includeFromPosition ? BooleanType.TRUE : BooleanType.FALSE);
   }
 
   @Override
@@ -77,6 +85,7 @@ public class SbeLogReplicationRequest
     super.reset();
     fromPosition = fromPositionNullValue();
     toPosition = toPositionNullValue();
+    includeFromPosition = false;
   }
 
   @Override
@@ -95,6 +104,15 @@ public class SbeLogReplicationRequest
 
   public void setToPosition(long toPosition) {
     this.toPosition = toPosition;
+  }
+
+  @Override
+  public boolean includeFromPosition() {
+    return includeFromPosition;
+  }
+
+  public void setIncludeFromPosition(boolean include) {
+    this.includeFromPosition = include;
   }
 
   public static byte[] serialize(LogReplicationRequest request) {

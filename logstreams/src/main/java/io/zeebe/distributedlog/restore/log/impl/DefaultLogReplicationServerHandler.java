@@ -49,7 +49,7 @@ public class DefaultLogReplicationServerHandler implements LogReplicationServer.
   public final LogReplicationResponse onReplicationRequest(LogReplicationRequest request) {
     final DefaultLogReplicationResponse response = new DefaultLogReplicationResponse();
 
-    if (seekToRequestedPositionExclusive(request.getFromPosition())) {
+    if (seekToRequestedPosition(request.getFromPosition(), !request.includeFromPosition())) {
       long lastReadPosition = reader.getPosition();
       int offset = 0;
 
@@ -81,14 +81,16 @@ public class DefaultLogReplicationServerHandler implements LogReplicationServer.
     return response;
   }
 
-  private boolean seekToRequestedPositionExclusive(long position) {
+  private boolean seekToRequestedPosition(long position, boolean skipEventAtPosition) {
     if (position == -1) {
       reader.seekToFirstEvent();
       return true;
     }
 
     if (reader.seek(position) && reader.hasNext()) {
-      reader.next();
+      if (skipEventAtPosition) {
+        reader.next();
+      }
       return true;
     }
 

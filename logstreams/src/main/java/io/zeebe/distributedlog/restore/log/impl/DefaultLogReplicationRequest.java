@@ -20,12 +20,24 @@ import io.zeebe.distributedlog.restore.log.LogReplicationRequest;
 public class DefaultLogReplicationRequest implements LogReplicationRequest {
   private long fromPosition;
   private long toPosition;
+  private boolean includeFromPosition;
 
   public DefaultLogReplicationRequest() {}
 
   public DefaultLogReplicationRequest(long fromPosition, long toPosition) {
+    this(fromPosition, toPosition, false);
+  }
+
+  public DefaultLogReplicationRequest(
+      long fromPosition, long toPosition, boolean includeFromPosition) {
     this.fromPosition = fromPosition;
     this.toPosition = toPosition;
+    this.includeFromPosition = includeFromPosition;
+  }
+
+  @Override
+  public boolean includeFromPosition() {
+    return includeFromPosition;
   }
 
   @Override
@@ -53,6 +65,8 @@ public class DefaultLogReplicationRequest implements LogReplicationRequest {
         + fromPosition
         + ", toPosition="
         + toPosition
+        + ", includeFromPosition="
+        + includeFromPosition
         + '}';
   }
 }
