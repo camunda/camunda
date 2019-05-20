@@ -396,7 +396,7 @@ public class FsLogStorageTest {
     fsLogStorage.append(ByteBuffer.wrap(MSG));
     fsLogStorage.close();
 
-    try (final FileChannel fileChannel = FileUtil.openChannel(fsStorageConfig.fileName(0), false)) {
+    try (FileChannel fileChannel = FileUtil.openChannel(fsStorageConfig.fileName(0), false)) {
       final long originalFileSize = fileChannel.size();
 
       // append the underlying file
@@ -420,7 +420,7 @@ public class FsLogStorageTest {
     fsLogStorage.append(ByteBuffer.wrap(MSG));
     fsLogStorage.close();
 
-    try (final FileChannel fileChannel = FileUtil.openChannel(fsStorageConfig.fileName(0), false)) {
+    try (FileChannel fileChannel = FileUtil.openChannel(fsStorageConfig.fileName(0), false)) {
       final long fileSize = fileChannel.size();
 
       // remove bytes of the underlying file
