@@ -24,19 +24,14 @@ export function getFormatter(viewProperty) {
 }
 
 export function processResult({data, result}) {
-  const {
-    view,
-    configuration: {aggregationType}
-  } = data;
-
   const filteredResult = filterResult(result, data);
-  if (view.property.toLowerCase().includes('duration')) {
+  if (data.view.property.toLowerCase().includes('duration')) {
     if (filteredResult.type === 'durationNumber') {
-      return {...filteredResult, data: filteredResult.data[aggregationType]};
+      return {...filteredResult, data: filteredResult.data};
     }
     if (filteredResult.type === 'durationMap') {
       const newData = filteredResult.data.map(entry => {
-        return {...entry, value: entry.value[aggregationType]};
+        return {...entry, value: entry.value};
       });
 
       return {...filteredResult, data: newData};

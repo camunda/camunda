@@ -68,7 +68,8 @@ export default class Configuration extends React.Component {
         yLabel: '',
         color: ColorPicker.dark.steelBlue,
         hiddenNodes: []
-      })
+      }),
+      true
     );
   };
 

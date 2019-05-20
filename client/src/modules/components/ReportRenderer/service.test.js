@@ -15,14 +15,11 @@ it('should process duration reports', () => {
           property: 'duration',
           entity: 'processInstance'
         },
-        configuration: {aggregationType: 'max'}
+        configuration: {}
       },
       result: {
         type: 'durationMap',
-        data: [
-          {key: '2015-03-25T12:00:00Z', value: {min: 1, median: 2, avg: 3, max: 4}},
-          {key: '2015-03-26T12:00:00Z', value: {min: 5, median: 6, avg: 7, max: 8}}
-        ]
+        data: [{key: '2015-03-25T12:00:00Z', value: 4}, {key: '2015-03-26T12:00:00Z', value: 8}]
       }
     })
   ).toEqual({

@@ -85,7 +85,7 @@ function findMaxDurationAcrossReports(result) {
     if (typeof report.result.data === 'number') {
       return report.result.data;
     }
-    return Math.max(...Object.values(report.result.data));
+    return Math.max(...Object.values(report.result.data).map(({value}) => value));
   });
 
   return Math.max(...reportsMaxDurations);

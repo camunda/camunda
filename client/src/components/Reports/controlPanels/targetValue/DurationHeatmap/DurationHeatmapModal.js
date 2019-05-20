@@ -141,9 +141,7 @@ export default class DurationHeatmapModal extends React.Component {
       const resultEntry = resultObj[id];
       return [
         this.state.nodeNames[id],
-        formatters.duration(
-          (resultEntry && resultEntry[this.props.report.data.configuration.aggregationType]) || 0
-        ),
+        formatters.duration(resultEntry || 0),
         <React.Fragment>
           <div className="selection">
             <Input
