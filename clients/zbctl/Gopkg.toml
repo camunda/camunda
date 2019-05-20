@@ -28,7 +28,7 @@ ignored = ["github.com/zeebe-io/zeebe/clients/go*"]
 
 [[constraint]]
   name = "github.com/spf13/cobra"
-  version = "=0.0.3"
+  version = "=0.0.4"
 
 [prune]
   go-tests = true
