@@ -7,7 +7,6 @@
 import React, {createRef, useState, useEffect} from 'react';
 import PropTypes from 'prop-types';
 
-// import ActionStatus from 'modules/components/ActionStatus/ActionStatus.js';
 import {isValidJSON} from 'modules/utils';
 
 import {EMPTY_PLACEHOLDER, NULL_PLACEHOLDER} from './constants';
@@ -88,17 +87,13 @@ export default function Variables({
     );
   }
 
-  function renderInlineEdit(propValue) {
-    const charactersPerRow = 65;
-    const requiredRows = Math.ceil(propValue.length / charactersPerRow);
-    const displayedRows = requiredRows > 4 ? 4 : requiredRows;
+  function renderInlineEdit(propValue, name) {
     const valueHasntChanged = propValue === value;
     return (
       <>
         <Styled.EditInputTD>
           <Styled.EditTextarea
-            rows={displayedRows}
-            cols={charactersPerRow}
+            rows="1"
             autoFocus
             data-test="edit-value"
             placeholder="Value"
@@ -175,9 +170,7 @@ export default function Variables({
                       ) : (
                         <>
                           <Styled.TD>
-                            <Styled.DisplayText ref={e => setRowRefs(e, name)}>
-                              {propValue}
-                            </Styled.DisplayText>
+                            <Styled.DisplayText>{propValue}</Styled.DisplayText>
                           </Styled.TD>
                           <Styled.EditButtonsTD>
                             {hasActiveOperation ? (
