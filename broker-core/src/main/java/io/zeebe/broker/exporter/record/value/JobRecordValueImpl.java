@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.exporter.record.value;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueWithVariablesImpl;
 import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
@@ -25,32 +27,36 @@ import io.zeebe.exporter.api.record.value.job.Headers;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class JobRecordValueImpl extends RecordValueWithVariablesImpl implements JobRecordValue {
   private final String type;
   private final String worker;
   private final Instant deadline;
   private final HeadersImpl headers;
-  private final Map<String, Object> customHeaders;
   private final int retries;
   private final String errorMessage;
 
+  @JsonIgnore private final Supplier<Map<String, Object>> customHeaderSupplier;
+  @JsonIgnore private Map<String, Object> customHeaders;
+
   public JobRecordValueImpl(
       final ExporterObjectMapper objectMapper,
-      final String variables,
+      Supplier<String> variablesSupplier,
+      Supplier<Map<String, Object>> variableMapSupplier,
       final String type,
       final String worker,
       final Instant deadline,
       final HeadersImpl headers,
-      final Map<String, Object> customHeaders,
+      final Supplier<Map<String, Object>> customHeaderSupplier,
       final int retries,
       final String errorMessage) {
-    super(objectMapper, variables);
+    super(objectMapper, variablesSupplier, variableMapSupplier);
     this.type = type;
     this.worker = worker;
     this.deadline = deadline;
     this.headers = headers;
-    this.customHeaders = customHeaders;
+    this.customHeaderSupplier = customHeaderSupplier;
     this.retries = retries;
     this.errorMessage = errorMessage;
   }
@@ -66,7 +72,11 @@ public class JobRecordValueImpl extends RecordValueWithVariablesImpl implements 
   }
 
   @Override
+  @JsonProperty
   public Map<String, Object> getCustomHeaders() {
+    if (customHeaders == null) {
+      customHeaders = customHeaderSupplier.get();
+    }
     return customHeaders;
   }
 
@@ -131,14 +141,14 @@ public class JobRecordValueImpl extends RecordValueWithVariablesImpl implements 
         + ", headers="
         + headers
         + ", customHeaders="
-        + customHeaders
+        + getCustomHeaders()
         + ", retries="
         + retries
         + ", errorMessage='"
         + errorMessage
         + '\''
         + ", variables='"
-        + variables
+        + getVariables()
         + '\''
         + '}';
   }

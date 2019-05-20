@@ -18,12 +18,13 @@
 package io.zeebe.broker.exporter.record;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.RecordMetadata;
 import io.zeebe.exporter.api.record.RecordValue;
-import io.zeebe.logstreams.log.LoggedEvent;
 import java.time.Instant;
+import java.util.function.Supplier;
 
 public class RecordImpl<T extends RecordValue> implements Record<T> {
   private final long key;
@@ -33,7 +34,9 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   private final long sourceRecordPosition;
 
   private final RecordMetadata metadata;
-  private final T value;
+
+  @JsonIgnore private final Supplier<T> valueSupplier;
+  @JsonIgnore private T value = null;
 
   @JsonIgnore private final ExporterObjectMapper objectMapper;
 
@@ -45,7 +48,7 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
       int producerId,
       long sourceRecordPosition,
       RecordMetadata metadata,
-      T value) {
+      Supplier<T> valueSupplier) {
     this.objectMapper = objectMapper;
     this.key = key;
     this.position = position;
@@ -53,23 +56,7 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
     this.producerId = producerId;
     this.sourceRecordPosition = sourceRecordPosition;
     this.metadata = metadata;
-    this.value = value;
-  }
-
-  public static <U extends RecordValue> RecordImpl<U> ofLoggedEvent(
-      final ExporterObjectMapper objectMapper,
-      final LoggedEvent event,
-      final RecordMetadataImpl metadata,
-      final U value) {
-    return new RecordImpl<>(
-        objectMapper,
-        event.getKey(),
-        event.getPosition(),
-        Instant.ofEpochMilli(event.getTimestamp()),
-        event.getProducerId(),
-        event.getSourceEventPosition(),
-        metadata,
-        value);
+    this.valueSupplier = valueSupplier;
   }
 
   @Override
@@ -103,7 +90,11 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   }
 
   @Override
+  @JsonProperty
   public T getValue() {
+    if (value == null) {
+      value = valueSupplier.get();
+    }
     return value;
   }
 
@@ -132,7 +123,7 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
         + ", metadata="
         + metadata
         + ", value="
-        + value
+        + getValue()
         + '}';
   }
 }

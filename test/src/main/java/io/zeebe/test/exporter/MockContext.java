@@ -23,6 +23,7 @@ public class MockContext implements Context {
 
   private Logger logger;
   private Configuration configuration;
+  private RecordFilter filter;
 
   public MockContext() {}
 
@@ -45,7 +46,16 @@ public class MockContext implements Context {
     return configuration;
   }
 
+  @Override
+  public void setFilter(RecordFilter filter) {
+    this.filter = filter;
+  }
+
   public void setConfiguration(Configuration configuration) {
     this.configuration = configuration;
+  }
+
+  public RecordFilter getFilter() {
+    return filter;
   }
 }

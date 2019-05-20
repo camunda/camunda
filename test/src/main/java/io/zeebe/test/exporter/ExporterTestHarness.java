@@ -48,6 +48,7 @@ public class ExporterTestHarness {
   private final Exporter exporter;
   private final int partitionId = 0;
 
+  private MockContext context;
   private long position = 1;
 
   /** @param exporter the exporter to be tested */
@@ -121,7 +122,8 @@ public class ExporterTestHarness {
     final MockConfiguration<T> configuration = new MockConfiguration<>(config);
     configuration.setId(id);
 
-    exporter.configure(newContext(configuration));
+    context = newContext(configuration);
+    exporter.configure(context);
   }
 
   /**
@@ -234,6 +236,10 @@ public class ExporterTestHarness {
     return controller;
   }
 
+  public MockContext getContext() {
+    return context;
+  }
+
   /**
    * Returns the last exported record's position; note that this is <em>not</em> the last updated
    * record position, as updated by the exporter, but simply the position of that last record handed
@@ -263,7 +269,8 @@ public class ExporterTestHarness {
       final MockConfiguration<Object> configuration = new MockConfiguration<>();
       configuration.setId(id);
       configuration.setArguments(config.get().getArgs());
-      exporter.configure(newContext(configuration));
+      context = newContext(configuration);
+      exporter.configure(context);
     } else {
       throw new IllegalArgumentException(String.format("No exporter with ID %s found", id));
     }

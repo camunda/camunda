@@ -233,7 +233,8 @@ public class ExporterRecordTest {
     final JobRecordValue recordValue =
         new JobRecordValueImpl(
             OBJECT_MAPPER,
-            VARIABLES_JSON,
+            () -> VARIABLES_JSON,
+            () -> VARIABLES,
             type,
             worker,
             Instant.ofEpochMilli(deadline),
@@ -244,7 +245,7 @@ public class ExporterRecordTest {
                 workflowInstanceKey,
                 workflowKey,
                 workflowDefinitionVersion),
-            customHeaders,
+            () -> customHeaders,
             retries,
             "failed message");
 
@@ -270,7 +271,13 @@ public class ExporterRecordTest {
 
     final MessageRecordValue recordValue =
         new MessageRecordValueImpl(
-            OBJECT_MAPPER, VARIABLES_JSON, messageName, messageId, correlationKey, timeToLive);
+            OBJECT_MAPPER,
+            () -> VARIABLES_JSON,
+            () -> VARIABLES,
+            messageName,
+            messageId,
+            correlationKey,
+            timeToLive);
 
     // then
     assertRecordExported(MessageIntent.PUBLISHED, record, recordValue);
@@ -357,7 +364,12 @@ public class ExporterRecordTest {
 
     final WorkflowInstanceSubscriptionRecordValue recordValue =
         new WorkflowInstanceSubscriptionRecordValueImpl(
-            OBJECT_MAPPER, VARIABLES_JSON, messageName, workflowInstanceKey, activityInstanceKey);
+            OBJECT_MAPPER,
+            () -> VARIABLES_JSON,
+            () -> VARIABLES,
+            messageName,
+            workflowInstanceKey,
+            activityInstanceKey);
 
     // then
     assertRecordExported(WorkflowInstanceSubscriptionIntent.OPENED, record, recordValue);
@@ -409,7 +421,8 @@ public class ExporterRecordTest {
     final JobRecordValueImpl jobRecordValue =
         new JobRecordValueImpl(
             OBJECT_MAPPER,
-            VARIABLES_JSON,
+            () -> VARIABLES_JSON,
+            () -> VARIABLES,
             type,
             worker,
             Instant.ofEpochMilli(1000L),
@@ -420,7 +433,7 @@ public class ExporterRecordTest {
                 workflowInstanceKey,
                 workflowKey,
                 workflowDefinitionVersion),
-            Collections.emptyMap(),
+            () -> Collections.emptyMap(),
             3,
             "failed message");
 
@@ -458,7 +471,7 @@ public class ExporterRecordTest {
 
     final VariableRecordValue recordValue =
         new VariableRecordValueImpl(
-            OBJECT_MAPPER, name, value, scopeKey, workflowInstanceKey, workflowKey);
+            OBJECT_MAPPER, name, () -> value, scopeKey, workflowInstanceKey, workflowKey);
 
     // then
     assertRecordExported(VariableIntent.CREATED, record, recordValue);
@@ -478,7 +491,8 @@ public class ExporterRecordTest {
             .setDocument(MsgPackUtil.asMsgPack(document));
 
     final VariableDocumentRecordValue recordValue =
-        new VariableDocumentRecordValueImpl(OBJECT_MAPPER, scopeKey, updateSemantics, document);
+        new VariableDocumentRecordValueImpl(
+            OBJECT_MAPPER, scopeKey, updateSemantics, () -> document);
 
     // then
     assertRecordExported(VariableDocumentIntent.UPDATED, record, recordValue);
@@ -503,7 +517,7 @@ public class ExporterRecordTest {
 
     final WorkflowInstanceCreationRecordValue recordValue =
         new WorkflowInstanceCreationRecordValueImpl(
-            OBJECT_MAPPER, processId, version, key, instanceKey, variables);
+            OBJECT_MAPPER, processId, version, key, instanceKey, () -> variables);
 
     // then
     assertRecordExported(WorkflowInstanceCreationIntent.CREATED, record, recordValue);

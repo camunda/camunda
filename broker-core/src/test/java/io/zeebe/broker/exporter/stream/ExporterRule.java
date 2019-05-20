@@ -109,7 +109,6 @@ public class ExporterRule implements TestRule {
 
     final ExporterDirectorContext context =
         new ExporterDirectorContext()
-            .eventFilter((event -> true))
             .id(EXPORTER_PROCESSOR_ID)
             .name(PROCESSOR_NAME)
             .logStream(stream)
@@ -148,9 +147,17 @@ public class ExporterRule implements TestRule {
   }
 
   public long writeEvent(Intent intent, UnpackedObject value) {
+    return writeRecord(RecordType.EVENT, intent, value);
+  }
+
+  public long writeCommand(Intent intent, UnpackedObject value) {
+    return writeRecord(RecordType.COMMAND, intent, value);
+  }
+
+  public long writeRecord(RecordType recordType, Intent intent, UnpackedObject value) {
     return streams
         .newRecord(STREAM_NAME)
-        .recordType(RecordType.EVENT)
+        .recordType(recordType)
         .intent(intent)
         .event(value)
         .write();
