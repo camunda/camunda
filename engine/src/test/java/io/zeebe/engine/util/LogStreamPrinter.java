@@ -47,7 +47,7 @@ public class LogStreamPrinter {
     sb.append(logStream.getPartitionId());
     sb.append(":\n");
 
-    try (final LogStreamReader streamReader = new BufferedLogStreamReader(logStream)) {
+    try (LogStreamReader streamReader = new BufferedLogStreamReader(logStream)) {
       streamReader.seekToFirstEvent();
 
       while (streamReader.hasNext()) {

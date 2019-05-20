@@ -21,7 +21,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
 
 public interface DeploymentDistributor {
-  ActorFuture<Void> pushDeployment(final long key, final long position, final DirectBuffer buffer);
+  ActorFuture<Void> pushDeployment(long key, long position, DirectBuffer buffer);
 
-  PendingDeploymentDistribution removePendingDeployment(final long key);
+  PendingDeploymentDistribution removePendingDeployment(long key);
 }

@@ -45,7 +45,7 @@ public interface StreamProcessorControl {
   void blockAfterWorkflowInstanceRecord(Predicate<TypedRecord<WorkflowInstanceRecord>> test);
 
   void blockAfterWorkflowInstanceCreationRecord(
-      final Predicate<TypedRecord<WorkflowInstanceCreationRecord>> test);
+      Predicate<TypedRecord<WorkflowInstanceCreationRecord>> test);
 
   void blockAfterIncidentEvent(Predicate<TypedRecord<IncidentRecord>> test);
 
@@ -59,7 +59,7 @@ public interface StreamProcessorControl {
   void blockAfterTimerEvent(Predicate<TypedRecord<TimerRecord>> test);
 
   void blockAfterMessageStartEventSubscriptionRecord(
-      final Predicate<TypedRecord<MessageStartEventSubscriptionRecord>> test);
+      Predicate<TypedRecord<MessageStartEventSubscriptionRecord>> test);
 
   /**
    * @return true if the event to block on has been processed and the stream processor won't handle

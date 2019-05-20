@@ -42,47 +42,45 @@ import org.agrona.DirectBuffer;
  */
 public interface SubscriptionCommandSender {
   boolean openMessageSubscription(
-      final int subscriptionPartitionId,
-      final long workflowInstanceKey,
-      final long elementInstanceKey,
-      final DirectBuffer messageName,
-      final DirectBuffer correlationKey,
-      final boolean closeOnCorrelate);
+      int subscriptionPartitionId,
+      long workflowInstanceKey,
+      long elementInstanceKey,
+      DirectBuffer messageName,
+      DirectBuffer correlationKey,
+      boolean closeOnCorrelate);
 
   boolean openWorkflowInstanceSubscription(
-      final long workflowInstanceKey,
-      final long elementInstanceKey,
-      final DirectBuffer messageName,
-      final boolean closeOnCorrelate);
+      long workflowInstanceKey,
+      long elementInstanceKey,
+      DirectBuffer messageName,
+      boolean closeOnCorrelate);
 
   boolean correlateWorkflowInstanceSubscription(
-      final long workflowInstanceKey,
-      final long elementInstanceKey,
-      final DirectBuffer messageName,
+      long workflowInstanceKey,
+      long elementInstanceKey,
+      DirectBuffer messageName,
       long messageKey,
-      final DirectBuffer variables);
+      DirectBuffer variables);
 
   boolean correlateMessageSubscription(
-      final int subscriptionPartitionId,
-      final long workflowInstanceKey,
-      final long elementInstanceKey,
-      final DirectBuffer messageName);
+      int subscriptionPartitionId,
+      long workflowInstanceKey,
+      long elementInstanceKey,
+      DirectBuffer messageName);
 
   boolean closeMessageSubscription(
-      final int subscriptionPartitionId,
-      final long workflowInstanceKey,
-      final long elementInstanceKey,
-      final DirectBuffer messageName);
+      int subscriptionPartitionId,
+      long workflowInstanceKey,
+      long elementInstanceKey,
+      DirectBuffer messageName);
 
   boolean closeWorkflowInstanceSubscription(
-      final long workflowInstanceKey,
-      final long elementInstanceKey,
-      final DirectBuffer messageName);
+      long workflowInstanceKey, long elementInstanceKey, DirectBuffer messageName);
 
   boolean rejectCorrelateMessageSubscription(
-      final long workflowInstanceKey,
-      final long elementInstanceKey,
-      final long messageKey,
-      final DirectBuffer messageName,
-      final DirectBuffer correlationKey);
+      long workflowInstanceKey,
+      long elementInstanceKey,
+      long messageKey,
+      DirectBuffer messageName,
+      DirectBuffer correlationKey);
 }

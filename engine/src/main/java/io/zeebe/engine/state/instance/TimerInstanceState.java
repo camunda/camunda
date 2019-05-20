@@ -124,6 +124,6 @@ public class TimerInstanceState {
 
   @FunctionalInterface
   public interface TimerVisitor {
-    boolean visit(final TimerInstance timer);
+    boolean visit(TimerInstance timer);
   }
 }
