@@ -1,11 +1,11 @@
 # Install
 
-This page guides you through the initial installation of your Zeebe broker. In case you are looking for more detailed information on how to set up and operate Zeebe, make sure to check out the [Operations Guide](/operations/README.html) as well.
+This page guides you through the initial installation of a Zeebe broker for development purposes. In case you are looking for more detailed information on how to set up and operate Zeebe, make sure to check out the [Operations Guide](/operations/README.html) as well.
 
 There are different ways to install Zeebe:
 
 * [Download a distribution](#download-a-distribution)
-* [Using Docker](#using-docker)
+* [Using Docker](#using-docker) (Recommended)
 
 ## Prerequisites
 
@@ -43,6 +43,14 @@ Once the Zeebe broker has started, it should produce the following output:
 
 ## Using Docker
 
+The easiest way to try Zeebe is using Docker. Using Docker provides you with a consistent environment, and we recommend it for development.
+
+### Docker configurations for docker-compose
+
+Docker configurations for starting a single Zeebe broker using `docker-compose`, optionally with Operate and Simple Monitor, are available in the [zeebe-docker-compose](https://github.com/zeebe-io/zeebe-docker-compose/blob/master/README.md) repository. Further instructions for using these configurations are in [the README.md in that repository](https://github.com/zeebe-io/zeebe-docker-compose/blob/master/README.md).
+
+### Using Docker without docker-compose
+
 You can run Zeebe with Docker:
 
 ```bash
@@ -53,7 +61,7 @@ docker run --name zeebe -p 26500:26500 camunda/zeebe:latest
 
 - `26500`: Gateway API
 - `26501`: Client API
-- `26502`: Management API for broker to broker communcation
+- `26502`: Management API for broker to broker communication
 - `26503`: Replication API for broker to broker replication
 - `26504`: Subscription API for message correlation
 
