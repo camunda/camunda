@@ -146,11 +146,6 @@
       <groupId>uk.co.real-logic</groupId>
       <artifactId>sbe-tool</artifactId>
     </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>atomix-cluster</artifactId>
-    </dependency>
   </dependencies>
 
   <build>
@@ -193,7 +188,6 @@
           </executableDependency>
           <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
           <arguments>
-            <argument>${project.build.resources[0].directory}/management-schema.xml</argument>
             <argument>${project.build.resources[0].directory}/subscription-schema.xml</argument>
           </arguments>
           <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>

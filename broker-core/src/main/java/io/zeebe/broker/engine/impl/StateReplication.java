@@ -1,5 +1,5 @@
 /*
- * Zeebe Workflow Engine
+ * Zeebe Broker Core
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.engine.state.replication;
+package io.zeebe.broker.engine.impl;
 
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.Subscription;
