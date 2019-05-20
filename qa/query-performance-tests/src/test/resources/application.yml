@@ -8,4 +8,4 @@ camunda.operate.qa.queries:
     host: localhost
     port: 9200
     prefix: operate
-  timeout: 5000
+  timeout: 3000

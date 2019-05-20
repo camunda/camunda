@@ -6,6 +6,9 @@
 package org.camunda.operate.qa.performance;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -13,15 +16,22 @@ import javax.annotation.PostConstruct;
 import org.apache.http.HttpHost;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
-import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 /**
  * This class helps to resolv placeholders in JSON query files. On startup it reads the required data from Elasticsearch.
@@ -49,8 +59,8 @@ public class ParametersResolver {
   @Autowired
   private ObjectMapper objectMapper;
 
-  private List<String> workflowInstanceIds;
-  private List<String> workflowIds;
+  private List<String> workflowInstanceIds = new ArrayList<>();
+  private List<String> workflowIds = new ArrayList<>();
 
   private Random random = new Random();
 
@@ -63,13 +73,18 @@ public class ParametersResolver {
 
   private void initWorkflowInstanceIds() {
     try {
+      final ConstantScoreQueryBuilder isWorkflowInstanceQuery = constantScoreQuery(termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION));
       final String listViewAlias = getAlias(ListViewTemplate.INDEX_NAME);
-      SearchRequest searchRequest =
-          new SearchRequest(listViewAlias).source(new SearchSourceBuilder()
+      final SearchSourceBuilder searchSourceBuilder =
+          new SearchSourceBuilder()
+              .query(isWorkflowInstanceQuery)
               .fetchSource(false)
-              .from(0)
-              .size(50));
-      workflowInstanceIds = ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
+              .from(0).size(50);
+      SearchRequest searchRequest =
+          new SearchRequest(listViewAlias).source(searchSourceBuilder);
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchHits hits = response.getHits();
+      workflowInstanceIds.addAll(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2)));
     } catch (IOException ex) {
       throw new RuntimeException("Error occurred when reading workflowInstanceIds from Elasticsearch", ex);
     }
@@ -78,12 +93,16 @@ public class ParametersResolver {
   private void initWorkflowIds() {
     try {
       final String workflowAlias = getAlias(WorkflowIndex.INDEX_NAME);
-      SearchRequest searchRequest =
-          new SearchRequest(workflowAlias).source(new SearchSourceBuilder()
+      final SearchSourceBuilder searchSourceBuilder =
+          new SearchSourceBuilder()
               .fetchSource(false)
               .from(0)
-              .size(50));
-      workflowIds = ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
+              .size(50);
+      SearchRequest searchRequest =
+          new SearchRequest(workflowAlias).source(searchSourceBuilder);
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchHits hits = response.getHits();
+      workflowIds.addAll(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2)));
     } catch (IOException ex) {
       throw new RuntimeException("Error occurred when reading workflowIds from Elasticsearch", ex);
     }

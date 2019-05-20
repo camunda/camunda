@@ -21,6 +21,8 @@ public class TestQuery {
 
   private JsonNode body;
 
+  private String ignore;
+
   public String getTitle() {
     return title;
   }
@@ -61,6 +63,14 @@ public class TestQuery {
 
   public void setBody(JsonNode node) {
     this.body = node;
+  }
+
+  public String getIgnore() {
+    return ignore;
+  }
+
+  public void setIgnore(String ignore) {
+    this.ignore = ignore;
   }
 
   @Override

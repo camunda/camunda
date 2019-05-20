@@ -39,6 +39,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static junit.framework.TestCase.fail;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * The tests reads QUERIES_PATH folder and parse all files contained there, reading queries to tested ({@see TestQuery}).
@@ -63,7 +64,7 @@ public class QueryPerformanceTest {
   @Value("${camunda.operate.qa.queries.operate.password}")
   private String password;
 
-  @Value("${camunda.operate.qa.queries.timeout:5000L}")
+  @Value("${camunda.operate.qa.queries.timeout:3000L}")
   private long timeout;
 
   @Autowired
@@ -120,6 +121,8 @@ public class QueryPerformanceTest {
 
   @Test
   public void testQuery () {
+    assumeTrue(testQuery.getIgnore(), testQuery.getIgnore() == null);
+
 //    logger.info("Running query {}", testQuery.getTitle());
     parametersResolver.replacePlaceholdersInQuery(testQuery);
 

@@ -126,6 +126,8 @@ spec:
           value: |
             -XX:+UnlockExperimentalVMOptions
             -XX:+UseCGroupMemoryLimitForHeap
+        - name: camunda.operate.operationExecutor.executorEnabled
+          value: false
       resources:
         limits:
           cpu: 2
@@ -180,7 +182,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
     timestamps()
-    timeout(time: 2, unit: 'HOURS')
+    timeout(time: 1, unit: 'HOURS')
   }
 
   stages {
