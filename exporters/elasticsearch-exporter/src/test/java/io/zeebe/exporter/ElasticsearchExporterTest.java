@@ -20,7 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.record.Record;
@@ -179,24 +182,6 @@ public class ElasticsearchExporterTest {
   }
 
   @Test
-  public void shouldIgnoreUnknownValueType() {
-    // given
-    config.index.event = true;
-    createAndOpenExporter();
-
-    // when
-    final Record record =
-        testHarness.export(
-            r ->
-                r.getMetadata()
-                    .setValueType(ValueType.SBE_UNKNOWN)
-                    .setRecordType(RecordType.EVENT));
-
-    // then
-    verify(esClient, never()).index(record);
-  }
-
-  @Test
   public void shouldExportEnabledRecordTypes() {
     // given
     config.index.command = true;
@@ -232,25 +217,6 @@ public class ElasticsearchExporterTest {
     final Context.RecordFilter filter = testHarness.getContext().getFilter();
 
     assertThat(Arrays.stream(recordTypes).map(filter::acceptType)).containsOnly(false);
-  }
-
-  @Test
-  public void shouldIgnoreUnknownRecordType() {
-    // given
-    config.index.deployment = true;
-    final ElasticsearchExporter exporter = createAndOpenExporter();
-
-    // when
-    createAndOpenExporter();
-    final Record record =
-        testHarness.export(
-            r ->
-                r.getMetadata()
-                    .setValueType(ValueType.DEPLOYMENT)
-                    .setRecordType(RecordType.SBE_UNKNOWN));
-
-    // then
-    verify(esClient, never()).index(record);
   }
 
   @Test
@@ -313,11 +279,9 @@ public class ElasticsearchExporterTest {
   }
 
   @Test
-  public void shouldUpdatePositionAfterDelayEvenIfNoRecordsAreExported() {
+  public void shouldUpdatePositionAfterDelay() {
     // given
-    // scenario: events are not exported but still their position should be recorded
-    config.index.event = false;
-    config.index.workflowInstance = false;
+    config.index.event = true;
     createAndOpenExporter();
 
     // when
@@ -330,8 +294,8 @@ public class ElasticsearchExporterTest {
             .export(4);
     testHarness.getController().runScheduledTasks(Duration.ofSeconds(config.bulk.delay));
 
-    // then no record was indexed but the exporter record position was updated
-    verify(esClient, never()).index(any());
+    // then record was indexed and the exporter record position was updated
+    verify(esClient, times(4)).index(any());
     assertThat(testHarness.getController().getPosition()).isEqualTo(exported.get(3).getPosition());
   }
 

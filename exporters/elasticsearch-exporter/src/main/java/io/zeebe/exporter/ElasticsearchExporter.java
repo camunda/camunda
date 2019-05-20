@@ -80,6 +80,7 @@ public class ElasticsearchExporter implements Exporter {
       createIndexTemplates();
     }
 
+    client.index(record);
     lastPosition = record.getPosition();
 
     if (client.shouldFlush()) {
