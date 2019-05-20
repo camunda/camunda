@@ -27,7 +27,7 @@
 
     <!-- EXTERNAL LIBS -->
     <version.agrona>1.0.0</version.agrona>
-    <version.animal-sniffer>1.17</version.animal-sniffer>
+    <version.animal-sniffer>1.18</version.animal-sniffer>
     <version.assertj>3.12.2</version.assertj>
     <version.atomix>3.2.0-SNAPSHOT</version.atomix>
     <version.camunda>7.10.0</version.camunda>
