@@ -228,10 +228,10 @@ pipeline {
           // Generate Data
           sh ("mvn -B -s settings.xml -f qa/query-performance-tests -P -docker verify")
         }
-        post {
-          always {
-            junit testResults: 'qa/query-performance-tests/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
-          }
+      }
+      post {
+        always {
+          junit testResults: 'qa/query-performance-tests/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
         }
       }
     }
