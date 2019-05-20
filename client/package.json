@@ -36,6 +36,7 @@
     "test": "react-scripts test --verbose=false",
     "test:ci": "CI=true react-scripts test --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
     "e2e": "testcafe chrome e2e/tests/*.js",
+    "e2e:ci": "node scripts/e2e",
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",
     "start-backend": "node scripts/start-backend",
@@ -92,6 +93,7 @@
     "shelljs": "^0.8.3",
     "tarball-extract": "^0.0.6",
     "testcafe": "^1.1.4",
+    "testcafe-browser-provider-browserstack": "^1.8.0",
     "ws": "^7.0.0",
     "xml2js": "^0.4.19"
   },
