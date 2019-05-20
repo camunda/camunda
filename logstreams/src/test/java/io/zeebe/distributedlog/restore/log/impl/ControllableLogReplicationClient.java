@@ -19,7 +19,9 @@ import io.atomix.cluster.MemberId;
 import io.zeebe.distributedlog.restore.log.LogReplicationClient;
 import io.zeebe.distributedlog.restore.log.LogReplicationRequest;
 import io.zeebe.distributedlog.restore.log.LogReplicationResponse;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -30,11 +32,18 @@ public class ControllableLogReplicationClient implements LogReplicationClient {
     return requests;
   }
 
+  public List<LogReplicationRequest> requestLog = new ArrayList<>();
+
+  public List<LogReplicationRequest> getRequestLog() {
+    return requestLog;
+  }
+
   @Override
   public CompletableFuture<LogReplicationResponse> replicate(
       MemberId server, LogReplicationRequest request) {
     final CompletableFuture<LogReplicationResponse> result = new CompletableFuture<>();
     requests.put(request.getFromPosition(), result);
+    requestLog.add(request);
     return result;
   }
 

@@ -35,10 +35,13 @@ public interface LogReplicationServer extends AutoCloseable {
 
     /**
      * Each request will contain a range of event positions, and expect the returned events to have
-     * positions strictly contained within that range. Furthermore, the first event serialized in
-     * the response must be the next event right after the one at position equal to the request
-     * {@link LogReplicationRequest#getFromPosition()}. If no event is found locally at that
-     * position, the returned response must be invalid.
+     * positions strictly contained within that range. Furthermore, if {@link
+     * LogReplicationRequest#includeFromPosition()} is true the first event serialized in the
+     * response must be the event at position equal to request {@link
+     * LogReplicationRequest#getFromPosition()}, other the first event must be the the next event
+     * right after the one at position equal to the request {@link
+     * LogReplicationRequest#getFromPosition()}. If no event is found locally at that position, the
+     * returned response must be invalid.
      *
      * <p>Additionally, events must be serialized in the order they were read on the local log, and
      * the last event position must be less than or equal to the {@link

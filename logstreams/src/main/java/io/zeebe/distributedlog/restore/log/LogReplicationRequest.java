@@ -17,6 +17,9 @@ package io.zeebe.distributedlog.restore.log;
 
 public interface LogReplicationRequest {
 
+  /** @return true if the response must include {@link #getFromPosition()} */
+  boolean includeFromPosition();
+
   /** @return the position to replication from (exclusive) */
   long getFromPosition();
 

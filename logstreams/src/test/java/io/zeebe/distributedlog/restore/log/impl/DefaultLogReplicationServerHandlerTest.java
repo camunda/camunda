@@ -118,13 +118,36 @@ public class DefaultLogReplicationServerHandlerTest {
   }
 
   @Test
-  public void shouldReplicateFromRequestedPosition() {
+  public void shouldReplicateFromRequestedPositionExclusive() {
     // given
     final int requestedCount = 5;
     final EventRange events = new EventRange(EVENTS.subList(requestedCount, EVENTS.size()));
     final LogReplicationRequest request =
         new DefaultLogReplicationRequest(
             EVENTS.get(requestedCount - 1).getPosition(), events.lastPosition);
+    final DefaultLogReplicationServerHandler handler =
+        new DefaultLogReplicationServerHandler(LOG_STREAM_RULE.getLogStream());
+
+    // when
+    final LogReplicationResponse response = handler.onReplicationRequest(request);
+
+    // then
+    assertThat(deserialize(response.getSerializedEvents()).get(0).getPosition())
+        .isEqualTo(events.firstPosition);
+    assertThat(response.getToPosition()).isEqualTo(events.lastPosition);
+    assertThat(response.hasMoreAvailable()).isFalse();
+    assertThat(response.getSerializedEvents()).isEqualTo(events.serialized);
+    assertThat(response.isValid()).isTrue();
+  }
+
+  @Test
+  public void shouldReplicateFromRequestedPositionInclusive() {
+    // given
+    final int requestedCount = 5;
+    final EventRange events = new EventRange(EVENTS.subList(requestedCount, EVENTS.size()));
+    final LogReplicationRequest request =
+        new DefaultLogReplicationRequest(
+            EVENTS.get(requestedCount).getPosition(), events.lastPosition, true);
     final DefaultLogReplicationServerHandler handler =
         new DefaultLogReplicationServerHandler(LOG_STREAM_RULE.getLogStream());
 

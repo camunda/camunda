@@ -76,6 +76,22 @@ public class LogReplicatorTest {
   }
 
   @Test
+  public void shouldExcludeFromPositionWhenReplicateAgain() {
+    // given
+    final LogReplicationResponse response = newResponse(true, 2);
+
+    // when
+    final CompletableFuture<Long> result =
+        replicator.replicate(server, -1, response.getToPosition() + 1, true);
+    client.complete(-1, response);
+
+    // then
+    assertThat(client.getRequests()).hasSize(2);
+    assertThat(client.getRequestLog().get(0).includeFromPosition()).isTrue();
+    assertThat(client.getRequestLog().get(1).includeFromPosition()).isFalse();
+  }
+
+  @Test
   public void shouldNotReplicateAgainIfNoMoreAvailable() {
     // given
     final LogReplicationResponse response = newResponse(false, 2);

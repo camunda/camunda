@@ -45,14 +45,24 @@ public class LogReplicator {
   }
 
   public CompletableFuture<Long> replicate(MemberId server, long from, long to) {
+    return replicate(server, from, to, false);
+  }
+
+  public CompletableFuture<Long> replicate(
+      MemberId server, long from, long to, boolean includeFromPosition) {
     final CompletableFuture<Long> result = new CompletableFuture<>();
-    replicateInternal(server, from, to, result);
+    replicateInternal(server, from, to, includeFromPosition, result);
     return result;
   }
 
   private void replicateInternal(
-      MemberId server, long from, long to, CompletableFuture<Long> result) {
-    final LogReplicationRequest request = new DefaultLogReplicationRequest(from, to);
+      MemberId server,
+      long from,
+      long to,
+      boolean includeFromPosition,
+      CompletableFuture<Long> result) {
+    final LogReplicationRequest request =
+        new DefaultLogReplicationRequest(from, to, includeFromPosition);
     client
         .replicate(server, request)
         .whenCompleteAsync(
@@ -74,7 +84,7 @@ public class LogReplicator {
 
                 if (appendEvents(server, from, to, result, r)) {
                   if (r.getToPosition() < to && r.hasMoreAvailable()) {
-                    replicateInternal(server, r.getToPosition(), to, result);
+                    replicateInternal(server, r.getToPosition(), to, false, result);
                   } else {
                     result.complete(r.getToPosition());
                   }
