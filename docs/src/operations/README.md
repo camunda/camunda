@@ -1,5 +1,13 @@
 # Operations
 
+## Development
+
+We recommend using Docker during development. This gives you a consistent, repeatable development environment.
+
+## Production
+
+In Production, we recommend using Kubernetes and container images. This provides you with predictable and consistent configuration, and the ability to manage deployment using automation tools.
+
 ## The Monitor
 
 Zeebe provides a monitor to inspect workflow instances.
