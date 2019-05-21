@@ -21,7 +21,6 @@ import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
@@ -104,7 +103,6 @@ public class AsyncSnapshotDirector extends Actor {
 
   @Override
   protected void onActorStarting() {
-    actor.setSchedulingHints(SchedulingHints.ioBound());
     actor.runAtFixedRate(snapshotRate, prepareTakingSnapshot);
 
     commitCondition = actor.onCondition(getConditionNameForPosition(), this::onCommitCheck);

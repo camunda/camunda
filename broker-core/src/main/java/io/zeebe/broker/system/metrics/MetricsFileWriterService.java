@@ -23,11 +23,10 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.SchedulingHints;
 
 public class MetricsFileWriterService implements Service<MetricsFileWriter> {
   private MetricsFileWriter metricsFileWriter;
-  private MetricsCfg configuration;
+  private final MetricsCfg configuration;
 
   public MetricsFileWriterService(MetricsCfg cfg) {
     this.configuration = cfg;
@@ -43,7 +42,7 @@ public class MetricsFileWriterService implements Service<MetricsFileWriter> {
     metricsFileWriter =
         new MetricsFileWriter(
             configuration.getReportingIntervalDuration(), metricsFileName, metricsManager);
-    startContext.async(scheduler.submitActor(metricsFileWriter, true, SchedulingHints.ioBound()));
+    startContext.async(scheduler.submitActor(metricsFileWriter, true));
   }
 
   @Override

@@ -22,7 +22,6 @@ import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.util.sched.SchedulingHints;
 
 public class LogStorageAppenderService implements Service<LogStorageAppender> {
   private final Injector<Subscription> appenderSubscriptionInjector = new Injector<>();
@@ -48,8 +47,7 @@ public class LogStorageAppenderService implements Service<LogStorageAppender> {
             subscription,
             maxAppendBlockSize);
 
-    startContext.async(
-        startContext.getScheduler().submitActor(service, true, SchedulingHints.ioBound()));
+    startContext.async(startContext.getScheduler().submitActor(service, true));
   }
 
   @Override
