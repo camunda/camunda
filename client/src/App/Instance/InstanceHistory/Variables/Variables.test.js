@@ -39,11 +39,10 @@ const setProps = (node, WrappedComponent, updatedProps) => {
 
 describe('Variables', () => {
   let node;
-  let variables;
+
   beforeEach(() => {
     // given
-    variables = createVariables();
-    node = mountNode({variables});
+    node = mountNode();
   });
 
   afterEach(() => {
@@ -51,13 +50,9 @@ describe('Variables', () => {
   });
 
   it('should render variables table', () => {
-    // given
-    const variables = createVariables();
-    const node = mountNode({variables});
-
     // then
-    expect(node.find('tr')).toHaveLength(variables.length + 1);
-    variables.forEach(variable => {
+    expect(node.find('tr')).toHaveLength(mockProps.variables.length + 1);
+    mockProps.variables.forEach(variable => {
       const row = node.find(`tr[data-test="${variable.name}"]`);
       expect(row).toHaveLength(1);
       const columns = row.find('td');
@@ -87,11 +82,8 @@ describe('Variables', () => {
 
   describe('Disable "Add Variable" button', () => {
     it('should disable when no editable variable', () => {
-      // given
-      const variables = createVariables();
-
       // when
-      const node = mountNode({variables, isEditable: false});
+      const node = mountNode({isEditable: false});
 
       // then
       const addButton = node.find("button[data-test='enter-add-btn']");
@@ -100,8 +92,7 @@ describe('Variables', () => {
 
     it('should disable when editing variable', () => {
       // given
-      const variables = createVariables();
-      const node = mountNode({variables, isEditable: true});
+      const node = mountNode({isEditable: true});
 
       const openInlineEditButtons = node.find(
         "button[data-test='enter-edit-btn']"
@@ -118,8 +109,8 @@ describe('Variables', () => {
 
     it('should disable when adding variable', () => {
       // given
-      const variables = createVariables();
-      const node = mountNode({variables, isEditable: true});
+
+      const node = mountNode({isEditable: true});
       const addButton = node.find("button[data-test='enter-add-btn']");
 
       // when
@@ -155,7 +146,6 @@ describe('Variables', () => {
 
       setProps(node, Variables, {
         ...mockProps,
-        variables,
         isEditMode: true
       });
       node.update();
@@ -328,7 +318,7 @@ describe('Variables', () => {
       });
 
       it('should not allow to save an unmodified value', () => {
-        const unmodifiedValue = variables[0].value;
+        const unmodifiedValue = mockProps.variables[0].value;
         // when
         node
           .find("textarea[data-test='edit-value']")
