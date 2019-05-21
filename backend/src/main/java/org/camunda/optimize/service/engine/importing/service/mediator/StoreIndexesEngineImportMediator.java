@@ -7,7 +7,7 @@ package org.camunda.optimize.service.engine.importing.service.mediator;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
-import org.camunda.optimize.dto.optimize.importing.index.CombinedImportIndexesDto;
+import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
@@ -28,6 +28,8 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -70,7 +72,7 @@ public class StoreIndexesEngineImportMediator implements EngineImportMediator {
     if (canImport()) {
       dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
       try {
-        CombinedImportIndexesDto importIndexes = createStoreIndexJob();
+        List<ImportIndexDto> importIndexes = getIndexesToStore();
         importService.executeImport(importIndexes);
       } catch (Exception e) {
         log.error("Could execute import for storing index information!", e);
@@ -92,11 +94,10 @@ public class StoreIndexesEngineImportMediator implements EngineImportMediator {
     return OffsetDateTime.now().plusSeconds(configurationService.getImportIndexAutoStorageIntervalInSec());
   }
 
-  private CombinedImportIndexesDto createStoreIndexJob() {
-    CombinedImportIndexesDto importIndexesToStore = new CombinedImportIndexesDto();
-    importIndexesToStore.setAllEntitiesBasedImportIndexes(getAllEntitiesBasedImportIndexes());
-    importIndexesToStore.setDefinitionBasedIndexes(getDefinitionBasedImportIndexes());
-    return importIndexesToStore;
+  private List<ImportIndexDto> getIndexesToStore() {
+    return Stream
+      .concat(getAllEntitiesBasedImportIndexes().stream(), getDefinitionBasedImportIndexes().stream())
+      .collect(Collectors.toList());
   }
 
   private List<AllEntitiesBasedImportIndexDto> getAllEntitiesBasedImportIndexes() {

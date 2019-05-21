@@ -54,23 +54,27 @@ public abstract class ElasticsearchImportJob<OPT extends OptimizeDto> implements
   }
 
   protected void executeImport() {
-    boolean success = false;
-    while (!success) {
-      try {
-        final long persistStart = System.currentTimeMillis();
-        persistEntities(newOptimizeEntities);
-        final long persistEnd = System.currentTimeMillis();
-        logger.debug("Executing import to elasticsearch took [{}] ms", persistEnd - persistStart);
-        success = true;
-      } catch (Exception e) {
-        logger.error("Error while executing import to elasticsearch", e);
-        long sleepTime = backoffCalculator.calculateSleepTime();
+    if (!newOptimizeEntities.isEmpty()) {
+      boolean success = false;
+      do {
         try {
-          Thread.sleep(sleepTime);
-        } catch (InterruptedException exception) {
-          //
+          final long persistStart = System.currentTimeMillis();
+          persistEntities(newOptimizeEntities);
+          final long persistEnd = System.currentTimeMillis();
+          logger.debug("Executing import to elasticsearch took [{}] ms", persistEnd - persistStart);
+          success = true;
+        } catch (Exception e) {
+          logger.error("Error while executing import to elasticsearch", e);
+          long sleepTime = backoffCalculator.calculateSleepTime();
+          try {
+            Thread.sleep(sleepTime);
+          } catch (InterruptedException exception) {
+            //
+          }
         }
-      }
+      } while (!success);
+    } else {
+      logger.debug("Import job with no new entities, import bulk execution is skipped.");
     }
     callback.run();
   }

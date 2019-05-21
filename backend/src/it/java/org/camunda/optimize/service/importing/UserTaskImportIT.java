@@ -213,6 +213,20 @@ public class UserTaskImportIT {
   }
 
   @Test
+  public void importFinishesIfIndependentRunningUserTasksExist() throws IOException {
+    // given
+    engineRule.createIndependentUserTask();
+
+    // when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // then
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(0L));
+  }
+
+  @Test
   public void noSideEffectsByOtherProcessInstanceUserTasks() throws IOException {
     // given
     final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartTwoUserTasksProcess();
@@ -315,6 +329,21 @@ public class UserTaskImportIT {
       processInstanceDto.getUserTasks()
         .forEach(userTask -> assertThat(userTask.getUserOperations().size(), is(2)));
     }
+  }
+
+  @Test
+  public void importFinishesIfIndependentCompletesUserTasksWithOperationsExist() throws IOException {
+    // given
+    engineRule.createIndependentUserTask();
+    engineRule.finishAllUserTasks();
+
+    // when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // then
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(0L));
   }
 
   @Test

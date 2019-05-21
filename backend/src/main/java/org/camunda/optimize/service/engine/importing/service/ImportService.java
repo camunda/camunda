@@ -10,8 +10,9 @@ import java.util.List;
 public interface ImportService<T> {
 
   default void executeImport(List<T> pageOfEngineEntities) {
-    executeImport(pageOfEngineEntities, () -> {
-    });
+    // @formatter:off
+    executeImport(pageOfEngineEntities, () -> {});
+    // @formatter:on
   }
 
   void executeImport(List<T> pageOfEngineEntities, Runnable callback);

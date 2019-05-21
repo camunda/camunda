@@ -53,8 +53,7 @@ public abstract class TimestampBasedImportMediator<T extends TimestampBasedImpor
 
       importService.executeImport(allEntities, () -> importIndexHandler.updateTimestampOfLastEntity(timestamp));
     } else if (!entitiesLastTimestamp.isEmpty()) {
-      importService.executeImport(allEntities, () -> {
-      });
+      importService.executeImport(allEntities);
     }
 
     return entitiesNextPage.size() >= maxPageSize;

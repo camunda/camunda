@@ -78,12 +78,7 @@ public abstract class TimestampBasedImportMediatorTest {
     );
 
     // then
-    verify(importService, times(1)).executeImport(any(), any());
-    verify(importService).executeImport(any(), callbackLambdaCaptor.capture());
-
-    Runnable lambda = callbackLambdaCaptor.getValue();
-    lambda.run();
-
+    verify(importService, times(1)).executeImport(any());
     verify(importIndexHandler, times(0)).updateTimestampOfLastEntity(any());
   }
 

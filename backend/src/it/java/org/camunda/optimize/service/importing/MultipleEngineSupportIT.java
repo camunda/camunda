@@ -344,11 +344,11 @@ public class MultipleEngineSupportIT {
     deployAndStartDecisionDefinitionForAllEngines();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     embeddedOptimizeRule.stopOptimize();
     embeddedOptimizeRule.startOptimize();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
     SearchResponse searchResponse = performProcessDefinitionSearchRequest(TIMESTAMP_BASED_IMPORT_INDEX_TYPE);
