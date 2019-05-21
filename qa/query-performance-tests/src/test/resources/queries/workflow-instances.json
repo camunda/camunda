@@ -130,6 +130,27 @@
     }
   },
   {
+    "title": "Running instances Nth page filtered by workflow and error message sorted by version",
+    "url": "/api/workflow-instances",
+    "method": "POST",
+    "pathParams": "firstResult=1000&maxResults=100",
+    "body": {
+      "queries": [
+        {
+          "running": true,
+          "active": true,
+          "incidents": true,
+          "workflowIds": ["${workflowIds}"],
+          "errorMessage": "Error 1"
+        }
+      ],
+      "sorting": {
+        "sortBy": "workflowVersion",
+        "sortOrder": "asc"
+      }
+    }
+  },
+  {
     "title": "Running instances Nth page filtered by workflow sorted by workflow name desc",
     "url": "/api/workflow-instances",
     "method": "POST",
@@ -232,6 +253,30 @@
       ],
       "sorting": {
         "sortBy": "endDate",
+        "sortOrder": "asc"
+      }
+    }
+  },
+  {
+    "title": "All instances 1st page filtered by start date sorted by workflow name asc",
+    "url": "/api/workflow-instances",
+    "method": "POST",
+    "pathParams": "firstResult=0&maxResults=100",
+    "body": {
+      "queries": [
+        {
+          "running": true,
+          "active": true,
+          "incidents": true,
+          "finished": true,
+          "completed": true,
+          "canceled": true,
+          "startDateBefore": "${startDateBefore}",
+          "startDateAfter": "${startDateAfter}"
+        }
+      ],
+      "sorting": {
+        "sortBy": "workflowName",
         "sortOrder": "asc"
       }
     }

@@ -72,6 +72,26 @@
     }
   },
   {
+    "title": "Stats: Running instances Nth page filtered by error message sorted by version",
+    "url": "/api/workflow-instances/statistics",
+    "method": "POST",
+    "body": {
+      "queries": [
+        {
+          "running": true,
+          "active": true,
+          "incidents": true,
+          "workflowIds": ["${workflowId}"],
+          "errorMessage": "Error 1"
+        }
+      ],
+      "sorting": {
+        "sortBy": "workflowVersion",
+        "sortOrder": "asc"
+      }
+    }
+  },
+  {
     "title": "Stats: Running instances filtered by variable sorted by workflow version asc",
     "url": "/api/workflow-instances/statistics",
     "method": "POST",
@@ -153,6 +173,30 @@
       ],
       "sorting": {
         "sortBy": "id",
+        "sortOrder": "asc"
+      }
+    }
+  },
+  {
+    "title": "Stats: All instances 1st page filtered by start date sorted by workflow name asc",
+    "url": "/api/workflow-instances/statistics",
+    "method": "POST",
+    "body": {
+      "queries": [
+        {
+          "running": true,
+          "active": true,
+          "incidents": true,
+          "finished": true,
+          "completed": true,
+          "canceled": true,
+          "startDateBefore": "${startDateBefore}",
+          "startDateAfter": "${startDateAfter}",
+          "workflowIds": ["${workflowId}"]
+        }
+      ],
+      "sorting": {
+        "sortBy": "workflowName",
         "sortOrder": "asc"
       }
     }

@@ -6,6 +6,8 @@
 package org.camunda.operate.qa.performance;
 
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -14,8 +16,11 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import org.apache.http.HttpHost;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
+import org.camunda.operate.property.ElasticsearchProperties;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -44,8 +49,13 @@ public class ParametersResolver {
   private static final String WORKFLOW_INSTANCE_ID_PLACEHOLDER = "${workflowInstanceId}";
   private static final String WORKFLOW_IDS_PLACEHOLDER = "${workflowIds}";
   private static final String WORKFLOW_ID_PLACEHOLDER = "${workflowId}";
+  private static final String START_DATE_AFTER_PLACEHOLDER = "${startDateAfter}";
+  private static final String START_DATE_BEFORE_PLACEHOLDER = "${startDateBefore}";
 
   private RestHighLevelClient esClient;
+
+  @Autowired
+  private DateTimeFormatter df;
 
   @Value("${camunda.operate.qa.queries.elasticsearch.host:localhost}")
   private String elasticsearchHost;
@@ -61,6 +71,8 @@ public class ParametersResolver {
 
   private List<String> workflowInstanceIds = new ArrayList<>();
   private List<String> workflowIds = new ArrayList<>();
+  private String startDateBefore;
+  private String startDateAfter;
 
   private Random random = new Random();
 
@@ -69,6 +81,32 @@ public class ParametersResolver {
     esClient = new RestHighLevelClient(RestClient.builder(new HttpHost(elasticsearchHost, elasticsearchPort, "http")));
     initWorkflowInstanceIds();
     initWorkflowIds();
+    initStartDates();
+  }
+
+  private void initStartDates() {
+    try {
+      final ConstantScoreQueryBuilder isWorkflowInstanceQuery = constantScoreQuery(termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION));
+      final String listViewAlias = getAlias(ListViewTemplate.INDEX_NAME);
+      final SearchSourceBuilder searchSourceBuilder =
+          new SearchSourceBuilder()
+              .query(isWorkflowInstanceQuery)
+              .from(0).size(1)
+          .sort(ListViewTemplate.START_DATE);
+      SearchRequest searchRequest =
+          new SearchRequest(listViewAlias).source(searchSourceBuilder);
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchHits hits = response.getHits();
+      if (hits.getHits().length == 0) {
+        throw new RuntimeException("Error occurred when reading startDate from Elasticsearch: no records found");
+      }
+      final WorkflowInstanceForListViewEntity wi = ElasticsearchUtil
+          .fromSearchHit(hits.getHits()[0].getSourceAsString(), objectMapper, WorkflowInstanceForListViewEntity.class);
+      startDateAfter = wi.getStartDate().format(df);
+      startDateBefore = wi.getStartDate().plus(1, ChronoUnit.MINUTES).format(df);
+    } catch (IOException ex) {
+      throw new RuntimeException("Error occurred when reading workflowInstanceIds from Elasticsearch", ex);
+    }
   }
 
   private void initWorkflowInstanceIds() {
@@ -97,7 +135,7 @@ public class ParametersResolver {
           new SearchSourceBuilder()
               .fetchSource(false)
               .from(0)
-              .size(50);
+              .size(20);
       SearchRequest searchRequest =
           new SearchRequest(workflowAlias).source(searchSourceBuilder);
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -142,6 +180,12 @@ public class ParametersResolver {
     if (string != null && string.contains(WORKFLOW_ID_PLACEHOLDER)) {
       string = replacePlaceholderWithId(string, WORKFLOW_ID_PLACEHOLDER, workflowIds);
     }
+    if (string != null && string.contains(START_DATE_AFTER_PLACEHOLDER)) {
+      string = replacePlaceholderWithString(string, START_DATE_AFTER_PLACEHOLDER, startDateAfter);
+    }
+    if (string != null && string.contains(START_DATE_BEFORE_PLACEHOLDER)) {
+      string = replacePlaceholderWithString(string, START_DATE_BEFORE_PLACEHOLDER, startDateBefore);
+    }
     return string;
   }
 
@@ -153,7 +197,11 @@ public class ParametersResolver {
 
   private String replacePlaceholderWithId(String body, String placeholder, List<String> ids) {
     final String id = ids.get(random.nextInt(ids.size()));
-    body = body.replace(placeholder, id);
+    return replacePlaceholderWithString(body, placeholder, id);
+  }
+
+  private String replacePlaceholderWithString(String body, String placeholder, String value) {
+    body = body.replace(placeholder, value);
     return body;
   }
 
