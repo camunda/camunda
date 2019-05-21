@@ -8,10 +8,10 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import * as Styled from './styled.js';
 
-function IncidentByError({label, incidentsCount, className, perWorkflow}) {
+function IncidentByError({label, incidentsCount, className, perUnit}) {
   return (
     <div className={className}>
-      <Styled.Wrapper perWorkflow={perWorkflow}>
+      <Styled.Wrapper perUnit={perUnit}>
         <Styled.IncidentsCount>{incidentsCount}</Styled.IncidentsCount>
         <Styled.Label>{label}</Styled.Label>
       </Styled.Wrapper>
@@ -24,7 +24,7 @@ IncidentByError.propTypes = {
   label: PropTypes.string.isRequired,
   incidentsCount: PropTypes.number.isRequired,
   className: PropTypes.string,
-  perWorkflow: PropTypes.bool
+  perUnit: PropTypes.bool
 };
 
 export default IncidentByError;
