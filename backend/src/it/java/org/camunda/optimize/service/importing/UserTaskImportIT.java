@@ -76,7 +76,7 @@ public class UserTaskImportIT {
   }
 
   @Test
-  public void userTasksAreImported() throws IOException {
+  public void completedUserTasksAreImported() throws IOException {
     // given
     deployAndStartTwoUserTasksProcess();
     engineRule.finishAllUserTasks();
@@ -116,10 +116,9 @@ public class UserTaskImportIT {
   }
 
   @Test
-  public void onlyCompletedUserTasksAreImported() throws IOException {
-    // given
+  public void runningUserTaskIsImported() throws IOException {
+    // given (two user tasks, one is started)
     deployAndStartTwoUserTasksProcess();
-    engineRule.finishAllUserTasks();
 
     // when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -137,13 +136,56 @@ public class UserTaskImportIT {
         processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()),
         containsInAnyOrder(USER_TASK_1)
       );
+
+      processInstanceDto.getUserTasks().forEach(userTask -> {
+        assertThat(userTask.getId(), is(notNullValue()));
+        assertThat(userTask.getActivityId(), is(notNullValue()));
+        assertThat(userTask.getActivityInstanceId(), is(notNullValue()));
+        assertThat(userTask.getStartDate(), is(notNullValue()));
+        assertThat(userTask.getEndDate(), is(nullValue()));
+        assertThat(userTask.getTotalDurationInMs(), is(nullValue()));
+      });
+    }
+  }
+
+
+  @Test
+  public void runningAndCompletedUserTasksAreImported() throws IOException {
+    // given
+    deployAndStartTwoUserTasksProcess();
+    engineRule.finishAllUserTasks();
+
+    // when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // then
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    for (SearchHit searchHitFields : idsResp.getHits()) {
+      final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
+        searchHitFields.getSourceAsString(), ProcessInstanceDto.class
+      );
+      assertThat(processInstanceDto.getUserTasks().size(), is(2));
+      assertThat(
+        processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()),
+        containsInAnyOrder(USER_TASK_1, USER_TASK_2)
+      );
+
+      processInstanceDto.getUserTasks().forEach(userTask -> {
+        if (USER_TASK_1.equals(userTask.getActivityId())) {
+          assertThat(userTask.getEndDate(), is(notNullValue()));
+        } else {
+          assertThat(userTask.getEndDate(), is(nullValue()));
+        }
+      });
     }
   }
 
   @Test
   public void onlyUserTasksRelatedToProcessInstancesAreImported() throws IOException {
     // given
-    deployAndStartTwoUserTasksProcess();
+    deployAndStartOneUserTaskProcess();
     final UUID independentUserTaskId = engineRule.createIndependentUserTask();
     engineRule.finishAllUserTasks();
 
@@ -177,7 +219,7 @@ public class UserTaskImportIT {
     engineRule.finishAllUserTasks();
     engineRule.finishAllUserTasks();
 
-    final ProcessInstanceEngineDto processInstanceDto2 = deployAndStartTwoUserTasksProcess();
+    final ProcessInstanceEngineDto processInstanceDto2 = deployAndStartOneUserTaskProcess();
     // only first task finished
     engineRule.finishAllUserTasks();
 
@@ -254,7 +296,7 @@ public class UserTaskImportIT {
   @Test
   public void onlyUserOperationsRelatedToProcessInstancesAreImported() throws IOException {
     // given
-    deployAndStartTwoUserTasksProcess();
+    deployAndStartOneUserTaskProcess();
     engineRule.createIndependentUserTask();
     engineRule.finishAllUserTasks();
 
@@ -303,7 +345,7 @@ public class UserTaskImportIT {
   @Test
   public void idleTimeMetricIsCalculatedOnClaimOperationImport() throws IOException {
     // given
-    final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoUserTasksProcess();
+    final ProcessInstanceEngineDto processInstanceDto = deployAndStartOneUserTaskProcess();
     engineRule.finishAllUserTasks();
     final long idleDuration = 500;
     changeUserTaskIdleDuration(processInstanceDto, idleDuration);
@@ -359,6 +401,7 @@ public class UserTaskImportIT {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoUserTasksProcess();
     engineRule.finishAllUserTasks();
+    engineRule.finishAllUserTasks();
     final long workDuration = 500;
     changeUserTaskWorkDuration(processInstanceDto, workDuration);
 
@@ -411,6 +454,15 @@ public class UserTaskImportIT {
           }
         }
       });
+  }
+
+  private ProcessInstanceEngineDto deployAndStartOneUserTaskProcess() {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK_1)
+      .endEvent(END_EVENT)
+      .done();
+    return engineRule.deployAndStartProcess(processModel);
   }
 
   private ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess() {

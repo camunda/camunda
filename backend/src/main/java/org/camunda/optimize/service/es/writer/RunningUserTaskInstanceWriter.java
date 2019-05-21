@@ -20,6 +20,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -32,37 +33,35 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ACTIVITY_INSTANCE_ID;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_DELETE_REASON;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_DUE_DATE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_START_DATE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
 @Component
 @Slf4j
-public class CompletedUserTaskInstanceWriter extends AbstractUserTaskWriter {
+public class RunningUserTaskInstanceWriter extends AbstractUserTaskWriter {
   private static final ImmutableSet<String> FIELDS_TO_UPDATE = ImmutableSet.of(
-    USER_TASK_ACTIVITY_ID, USER_TASK_ACTIVITY_INSTANCE_ID, USER_TASK_TOTAL_DURATION,
-    USER_TASK_START_DATE, USER_TASK_END_DATE, USER_TASK_DUE_DATE, USER_TASK_DELETE_REASON
+    USER_TASK_ACTIVITY_ID, USER_TASK_ACTIVITY_INSTANCE_ID,
+    USER_TASK_START_DATE, USER_TASK_DUE_DATE
   );
   private static final String UPDATE_USER_TASK_FIELDS_SCRIPT = FIELDS_TO_UPDATE
     .stream()
     .map(fieldKey -> String.format("existingTask.%s = newUserTask.%s;\n", fieldKey, fieldKey))
     .collect(Collectors.joining());
 
-  private final RestHighLevelClient esClient;
+  private RestHighLevelClient esClient;
 
-  public CompletedUserTaskInstanceWriter(final RestHighLevelClient esClient,
-                                         final ObjectMapper objectMapper) {
+  @Autowired
+  public RunningUserTaskInstanceWriter(final RestHighLevelClient esClient,
+                                       final ObjectMapper objectMapper) {
     super(objectMapper);
     this.esClient = esClient;
   }
 
   public void importUserTaskInstances(final List<UserTaskInstanceDto> userTaskInstances) throws Exception {
-    log.debug("Writing [{}] completed user task instances to elasticsearch", userTaskInstances.size());
+    log.debug("Writing [{}] running user task instances to elasticsearch", userTaskInstances.size());
 
     final BulkRequest userTaskToProcessInstanceBulkRequest = new BulkRequest();
     userTaskToProcessInstanceBulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
@@ -81,7 +80,7 @@ public class CompletedUserTaskInstanceWriter extends AbstractUserTaskWriter {
     final BulkResponse bulkResponse = esClient.bulk(userTaskToProcessInstanceBulkRequest, RequestOptions.DEFAULT);
     if (bulkResponse.hasFailures()) {
       String errorMessage = String.format(
-        "There were failures while writing completed user task instances with message: %s",
+        "There were failures while writing running user task instances with message: %s",
         bulkResponse.buildFailureMessage()
       );
       throw new OptimizeRuntimeException(errorMessage);

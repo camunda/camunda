@@ -32,6 +32,7 @@ import java.util.List;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ACTIVITY_ID;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_END_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -101,6 +102,7 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
           FILTERED_USER_TASKS_AGGREGATION,
           boolQuery()
             .must(existsQuery(USER_TASKS + "." + getDurationFieldName()))
+            .must(existsQuery(USER_TASKS + "." + USER_TASK_END_DATE))
         )
           .subAggregation(
             AggregationBuilders
