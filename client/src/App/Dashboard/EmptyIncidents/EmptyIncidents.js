@@ -8,11 +8,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import * as Styled from './styled';
 
-function EmptyIncidents(props) {
+function EmptyIncidents({type, label}) {
   return (
     <Styled.EmptyIncidents>
-      {props.type === 'warning' && <Styled.WarningIcon />}
-      <Styled.Label type={props.type}>{props.label}</Styled.Label>
+      {type === 'warning' && <Styled.WarningIcon />}
+      <Styled.Label type={type}>{label}</Styled.Label>
     </Styled.EmptyIncidents>
   );
 }

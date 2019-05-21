@@ -66,32 +66,31 @@ export default class IncidentsByError extends React.Component {
     );
   };
 
-  renderIncidentByError = item => {
+  renderIncidentByError = (errorMessage, instancesWithErrorCount) => {
     const query = getFilterQueryString({
-      errorMessage: item.errorMessage,
+      errorMessage: errorMessage,
       incidents: true
     });
 
-    const title = `View ${item.instancesWithErrorCount} Instances with error ${
-      item.errorMessage
-    }`;
+    const title = `View ${instancesWithErrorCount} Instances with error ${errorMessage}`;
 
     return (
       <Styled.IncidentLink to={`/instances${query}`} title={title}>
         <IncidentByError
-          label={`${item.errorMessage}`}
-          incidentsCount={item.instancesWithErrorCount}
+          label={`${errorMessage}`}
+          incidentsCount={instancesWithErrorCount}
         />
       </Styled.IncidentLink>
     );
   };
 
   render() {
-    const {incidents} = this.props;
     return (
       <ul>
-        {incidents.map((item, index) => {
-          const IncidentByErrorComponent = this.renderIncidentByError(item);
+        {this.props.incidents.map((item, index) => {
+          const buttonTitle = `Expand ${
+            item.instancesWithErrorCount
+          } Instances with error "${item.errorMessage}"`;
 
           return (
             <Styled.Li
@@ -103,10 +102,11 @@ export default class IncidentsByError extends React.Component {
                   item.errorMessage,
                   item.workflows
                 )}
-                header={IncidentByErrorComponent}
-                buttonTitle={`Expand ${
+                header={this.renderIncidentByError(
+                  item.errorMessage,
                   item.instancesWithErrorCount
-                } Instances with error "${item.errorMessage}"`}
+                )}
+                buttonTitle={buttonTitle}
               />
             </Styled.Li>
           );

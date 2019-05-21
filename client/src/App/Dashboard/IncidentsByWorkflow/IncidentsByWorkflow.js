@@ -110,11 +110,9 @@ export default class IncidentsByWorkflow extends React.Component {
   };
 
   render() {
-    const {incidents} = this.props;
-
     return (
       <ul>
-        {incidents.map((item, index) => {
+        {this.props.incidents.map((item, index) => {
           const workflowsCount = item.workflows.length;
           const name = item.workflowName || item.bpmnProcessId;
           const IncidentByWorkflowComponent = this.renderIncidentByWorkflow(

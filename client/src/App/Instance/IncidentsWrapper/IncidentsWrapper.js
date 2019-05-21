@@ -149,7 +149,7 @@ function IncidentsWrapper(props) {
         id={instance.id}
         count={incidentsCount}
         onClick={handleToggle}
-        isArrowFlipped={isOpen}
+        isOpen={isOpen}
       />
       <Styled.Transition
         in={isOpen}

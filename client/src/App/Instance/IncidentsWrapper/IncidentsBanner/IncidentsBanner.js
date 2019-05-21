@@ -10,7 +10,7 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 
 import * as Styled from './styled';
 
-export default function IncidentsBanner({id, count, onClick, isArrowFlipped}) {
+export default function IncidentsBanner({id, count, onClick, isOpen}) {
   const isOnlyOne = count === 1;
   const errorMessage = `There ${isOnlyOne ? 'is' : 'are'} ${pluralSuffix(
     count,
@@ -22,7 +22,7 @@ export default function IncidentsBanner({id, count, onClick, isArrowFlipped}) {
     <Styled.IncidentsBanner
       onClick={onClick}
       title={title}
-      isExpanded={isArrowFlipped}
+      isExpanded={isOpen}
       expandTheme="incidentsBanner"
     >
       {errorMessage}
@@ -34,5 +34,5 @@ IncidentsBanner.propTypes = {
   id: PropTypes.string.isRequired,
   count: PropTypes.number.isRequired,
   onClick: PropTypes.func,
-  isArrowFlipped: PropTypes.bool
+  isOpen: PropTypes.bool
 };

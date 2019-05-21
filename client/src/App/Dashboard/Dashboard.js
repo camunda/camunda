@@ -41,7 +41,6 @@ class Dashboard extends Component {
     document.title = PAGE_TITLE.DASHBOARD;
     const counts = await this.fetchCounts();
     const incidents = await this.fetchIncidents();
-
     this.setState({counts, incidents, isDataLoaded: true});
   };
 
