@@ -42,7 +42,7 @@
     "jest-junit": "^6.3.0",
     "lint-staged": "^8.1.6",
     "prettier": "^1.15.3",
-    "react-scripts": "2.1.2",
+    "react-scripts": "3.0.1",
     "react-styleguidist": "^9.0.1"
   },
   "lint-staged": {
