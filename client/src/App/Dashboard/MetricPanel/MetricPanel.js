@@ -20,22 +20,24 @@ function getUrl({filter, hasFinishedInstances}) {
   return `/instances?filter=${JSON.stringify(filter)}`;
 }
 
-export default function MetricPanel({runningInstancesCount, incidentsCount}) {
-  const totalRunningInstancesCount = runningInstancesCount + incidentsCount;
-
+export default function MetricPanel({
+  runningInstancesCount,
+  activeInstancesCount,
+  incidentsCount
+}) {
   return (
     <Styled.Panel>
       <Styled.Title
         to={getUrl({
           filter: {active: true, incidents: true},
-          hasFinishedInstances: totalRunningInstancesCount === 0
+          hasFinishedInstances: runningInstancesCount === 0
         })}
       >
-        {totalRunningInstancesCount} Running Instances in total
+        {runningInstancesCount} Running Instances in total
       </Styled.Title>
       <Styled.InstancesBar
         incidentsCount={incidentsCount}
-        activeCount={runningInstancesCount}
+        activeCount={activeInstancesCount}
         size="large"
       />
       <Styled.LabelContainer>
@@ -60,5 +62,6 @@ export default function MetricPanel({runningInstancesCount, incidentsCount}) {
 
 MetricPanel.propTypes = {
   runningInstancesCount: PropTypes.number,
+  activeInstancesCount: PropTypes.number,
   incidentsCount: PropTypes.number
 };

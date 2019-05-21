@@ -14,18 +14,20 @@ describe('MetricPanel', () => {
   describe('Title', () => {
     it('should render title containing instances count', () => {
       // given
-      const props = {runningInstancesCount: 12, incidentsCount: 11};
+      const props = {
+        activeInstancesCount: 12,
+        incidentsCount: 11,
+        runningInstancesCount: 23
+      };
 
       // when
       const node = shallow(<MetricPanel {...props} />);
       const titleNode = node.find(Styled.Title);
 
       // then
-      const expectedCount = props.runningInstancesCount + props.incidentsCount;
-
       expect(titleNode).toExist();
       expect(titleNode.text()).toEqual(
-        `${expectedCount} Running Instances in total`
+        `${props.runningInstancesCount} Running Instances in total`
       );
     });
 
@@ -117,7 +119,11 @@ describe('MetricPanel', () => {
   });
 
   it('should pass panel data to InstancesBar', () => {
-    const props = {runningInstancesCount: 4, incidentsCount: 2};
+    const props = {
+      activeInstancesCount: 4,
+      incidentsCount: 2,
+      runningInstancesCount: 6
+    };
 
     const node = shallow(<MetricPanel {...props} />);
 
@@ -127,8 +133,7 @@ describe('MetricPanel', () => {
 
     const InstancesBarProps = InstancesBarNode.props();
 
-    expect(InstancesBarProps.activeCount).toEqual(props.runningInstancesCount);
-    expect(InstancesBarProps.incidentsCount).toEqual(props.incidentsCount);
+    expect(InstancesBarProps.activeCount).toEqual(props.activeInstancesCount);
     expect(InstancesBarProps.incidentsCount).toEqual(props.incidentsCount);
   });
 });

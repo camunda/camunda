@@ -82,7 +82,7 @@ class Dashboard extends Component {
   };
 
   render() {
-    const {running, incidents} = this.state.counts;
+    const {running, incidents, active} = this.state.counts;
 
     return (
       <Fragment>
@@ -95,6 +95,7 @@ class Dashboard extends Component {
           <VisuallyHiddenH1>Camunda Operate Dashboard</VisuallyHiddenH1>
           <MetricPanel
             runningInstancesCount={running}
+            activeInstancesCount={active}
             incidentsCount={incidents}
           />
           <Styled.TitleWrapper>
