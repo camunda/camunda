@@ -32,7 +32,6 @@ import io.zeebe.exporter.api.spi.Exporter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -50,7 +49,6 @@ import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -84,7 +82,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   private final LogStreamReader logStreamReader;
   private final RecordExporter recordExporter = new RecordExporter();
 
-  private final SnapshotController snapshotController;
+  private final ZeebeDb zeebeDb;
   private final String name;
   private final ExporterDirectorContext context;
   private final RetryStrategy exportingRetryStrategy;
@@ -111,7 +109,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     this.exportingRetryStrategy = new AbortableRetryStrategy(actor);
     this.recordWrapStrategy = new EndlessRetryStrategy(actor);
 
-    this.snapshotController = context.getSnapshotController();
+    this.zeebeDb = context.getZeebeDb();
   }
 
   @Override
@@ -165,9 +163,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     onSnapshotRecovered();
   }
 
-  private void recoverFromSnapshot() throws Exception {
-    snapshotController.recover();
-    final ZeebeDb zeebeDb = snapshotController.openDb();
+  private void recoverFromSnapshot() {
     this.state = new ExportersState(zeebeDb, zeebeDb.createContext());
 
     final long snapshotPosition = getLowestExporterPosition();
@@ -215,8 +211,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   }
 
   private void onSnapshotRecovered() {
-    installSnapshotting();
-
     onCommitPositionUpdatedCondition =
         actor.onCondition(
             getName() + "-on-commit-lastExportedPosition-updated", this::readNextEvent);
@@ -234,24 +228,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     clearExporterState();
 
     actor.submit(this::readNextEvent);
-  }
-
-  private void installSnapshotting() {
-    this.asyncSnapshotDirector =
-        new AsyncSnapshotDirector(
-            getName(),
-            context.getSnapshotPeriod(),
-            () -> actor.call(() -> lastExportedPosition),
-            () -> CompletableActorFuture.completed(NO_LAST_WRITTEN_EVENT_POSITION),
-            snapshotController,
-            logStream::registerOnCommitPositionUpdatedCondition,
-            logStream::removeOnCommitPositionUpdatedCondition,
-            logStream::getCommitPosition,
-            metrics.getSnapshotMetrics(),
-            context.getMaxSnapshots(),
-            NO_DATA_REMOVER);
-
-    actorScheduler.submitActor(asyncSnapshotDirector);
   }
 
   private void skipRecord() {
@@ -339,30 +315,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   @Override
   protected void onActorClosing() {
     metrics.close();
-
-    actor.run(
-        () -> {
-          if (asyncSnapshotDirector != null) {
-            actor.runOnCompletionBlockingCurrentPhase(
-                asyncSnapshotDirector.enforceSnapshotCreation(
-                    NO_LAST_WRITTEN_EVENT_POSITION, lastExportedPosition),
-                (v, ex) -> {
-                  try {
-                    asyncSnapshotDirector.close();
-                    snapshotController.close();
-                  } catch (Exception e) {
-                    LOG.error("Error on closing snapshotController.", e);
-                  }
-                });
-          } else {
-            try {
-              snapshotController.close();
-            } catch (Exception e) {
-              LOG.error("Error on closing snapshotController.", e);
-            }
-          }
-        });
-
     logStreamReader.close();
     if (onCommitPositionUpdatedCondition != null) {
       logStream.removeOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);

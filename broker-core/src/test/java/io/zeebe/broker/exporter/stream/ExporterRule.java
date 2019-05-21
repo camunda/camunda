@@ -27,6 +27,7 @@ import io.zeebe.broker.util.TestStreams;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
@@ -65,12 +66,12 @@ public class ExporterRule implements TestRule {
   private final RuleChain chain;
 
   private final ZeebeDbFactory zeebeDbFactory;
-  private ZeebeDb<ExporterColumnFamilies> capturedZeebeDb;
+  private ZeebeDb<ZbColumnFamilies> capturedZeebeDb;
 
   private TestStreams streams;
 
   public ExporterRule(int partitionId) {
-    this(partitionId, DefaultZeebeDbFactory.defaultFactory(ExporterColumnFamilies.class));
+    this(partitionId, DefaultZeebeDbFactory.defaultFactory(ZbColumnFamilies.class));
   }
 
   public ExporterRule(int partitionId, ZeebeDbFactory dbFactory) {
@@ -98,21 +99,16 @@ public class ExporterRule implements TestRule {
         streams.getStateStorageFactory().create(EXPORTER_PROCESSOR_ID, PROCESSOR_NAME);
     final StateSnapshotController snapshotController =
         spy(new StateSnapshotController(zeebeDbFactory, stateStorage));
+    capturedZeebeDb = spy(snapshotController.openDb());
 
-    doAnswer(
-            invocationOnMock -> {
-              capturedZeebeDb = (ZeebeDb<ExporterColumnFamilies>) invocationOnMock.callRealMethod();
-              return capturedZeebeDb;
-            })
-        .when(snapshotController)
-        .openDb();
+    doAnswer(invocationOnMock -> capturedZeebeDb).when(snapshotController).openDb();
 
     final ExporterDirectorContext context =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
             .name(PROCESSOR_NAME)
             .logStream(stream)
-            .snapshotController(snapshotController)
+            .zeebeDb(capturedZeebeDb)
             .maxSnapshots(1)
             .descriptors(exporterDescriptors)
             .logStreamReader(new BufferedLogStreamReader())
@@ -163,9 +159,10 @@ public class ExporterRule implements TestRule {
         .write();
   }
 
-  public void closeExporterDirector() {
-    capturedZeebeDb = null;
+  public void closeExporterDirector() throws Exception {
     serviceContainerRule.get().removeService(exporterDirectorServiceName(PARTITION_ID)).join();
+    capturedZeebeDb.close();
+    capturedZeebeDb = null;
   }
 
   private class SetupRule extends ExternalResource {

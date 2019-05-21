@@ -23,9 +23,7 @@ import java.util.function.Supplier;
 public class ControllableSnapshotRestoreContext implements SnapshotRestoreContext {
 
   private SnapshotReplication processorSnapshotReplicationConsumer;
-  private SnapshotReplication exporterSnapshotReplicationConsumer;
   private StateStorage processorStateStorage;
-  private StateStorage exporterStateStorage;
   private Supplier<Long> exporterPositionSupplier;
   private Supplier<Long> processorPositionSupplier;
 
@@ -34,17 +32,8 @@ public class ControllableSnapshotRestoreContext implements SnapshotRestoreContex
     this.processorSnapshotReplicationConsumer = processorSnapshotReplicationConsumer;
   }
 
-  public void setExporterSnapshotReplicationConsumer(
-      SnapshotReplication exporterSnapshotReplicationConsumer) {
-    this.exporterSnapshotReplicationConsumer = exporterSnapshotReplicationConsumer;
-  }
-
   public void setProcessorStateStorage(StateStorage processorStateStorage) {
     this.processorStateStorage = processorStateStorage;
-  }
-
-  public void setExporterStateStorage(StateStorage exporterStateStorage) {
-    this.exporterStateStorage = exporterStateStorage;
   }
 
   public void setExporterPositionSupplier(Supplier<Long> exporterPositionSupplier) {
@@ -56,23 +45,13 @@ public class ControllableSnapshotRestoreContext implements SnapshotRestoreContex
   }
 
   @Override
-  public SnapshotReplication createProcessorSnapshotReplicationConsumer(int partitionId) {
+  public SnapshotReplication createSnapshotReplicationConsumer(int partitionId) {
     return processorSnapshotReplicationConsumer;
   }
 
   @Override
-  public SnapshotReplication createExporterSnapshotReplicationConsumer(int partitionId) {
-    return exporterSnapshotReplicationConsumer;
-  }
-
-  @Override
-  public StateStorage getProcessorStateStorage(int partitionId) {
+  public StateStorage getStateStorage(int partitionId) {
     return processorStateStorage;
-  }
-
-  @Override
-  public StateStorage getExporterStateStorage(int partitionId) {
-    return exporterStateStorage;
   }
 
   @Override

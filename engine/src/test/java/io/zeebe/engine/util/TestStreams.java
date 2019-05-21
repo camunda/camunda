@@ -28,13 +28,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
+import io.zeebe.engine.processor.AsyncSnapshotDirector;
 import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
+import io.zeebe.engine.processor.SnapshotMetrics;
 import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedEventRegistry;
@@ -63,6 +66,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -73,6 +77,8 @@ import org.mockito.internal.util.reflection.FieldSetter;
 import org.mockito.stubbing.Answer;
 
 public class TestStreams {
+  private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
+  private static final int MAX_SNAPSHOTS = 1;
 
   protected static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
 
@@ -94,6 +100,8 @@ public class TestStreams {
   protected StateStorageFactory stateStorageFactory;
   public static final String PROCESSOR_NAME = "processor";
   private final CommandResponseWriter mockCommandResponseWriter;
+  private ZeebeDb zeebeDb;
+  private AsyncSnapshotDirector asyncSnapshotDirector;
 
   public TestStreams(
       final TemporaryFolder storageDirectory,
@@ -250,15 +258,39 @@ public class TestStreams {
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     final LogStream stream = getLogStream(log);
-    return buildStreamProcessorController(
-        streamProcessorId, stream, zeebeDbFactory, typedRecordProcessorFactory);
+    return buildStreamProcessor(
+        streamProcessorId,
+        stream,
+        zeebeDbFactory,
+        typedRecordProcessorFactory,
+        MAX_SNAPSHOTS,
+        SNAPSHOT_INTERVAL);
   }
 
-  private StreamProcessor buildStreamProcessorController(
+  public StreamProcessor startStreamProcessor(
+      final String log,
+      final int streamProcessorId,
+      final ZeebeDbFactory zeebeDbFactory,
+      final TypedRecordProcessorFactory typedRecordProcessorFactory,
+      final int maxSnapshot,
+      final Duration snapshotInterval) {
+    final LogStream stream = getLogStream(log);
+    return buildStreamProcessor(
+        streamProcessorId,
+        stream,
+        zeebeDbFactory,
+        typedRecordProcessorFactory,
+        maxSnapshot,
+        snapshotInterval);
+  }
+
+  private StreamProcessor buildStreamProcessor(
       int streamProcessorId,
       LogStream stream,
       ZeebeDbFactory zeebeDbFactory,
-      TypedRecordProcessorFactory factory) {
+      TypedRecordProcessorFactory factory,
+      final int maxSnapshot,
+      final Duration snapshotInterval) {
 
     final StateStorage stateStorage =
         getStateStorageFactory().create(streamProcessorId, PROCESSOR_NAME);
@@ -268,10 +300,11 @@ public class TestStreams {
 
     final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
 
+    zeebeDb = currentSnapshotController.openDb();
     final StreamProcessor processorService =
         StreamProcessor.builder(streamProcessorId, PROCESSOR_NAME)
             .logStream(stream)
-            .snapshotController(currentSnapshotController)
+            .zeebeDb(zeebeDb)
             .actorScheduler(actorScheduler)
             .serviceContainer(serviceContainer)
             .commandResponseWriter(mockCommandResponseWriter)
@@ -290,6 +323,19 @@ public class TestStreams {
             .build()
             .join();
     openFuture.join();
+
+    final SnapshotMetrics metrics =
+        new SnapshotMetrics(actorScheduler.getMetricsManager(), PROCESSOR_NAME, "1");
+    asyncSnapshotDirector =
+        new AsyncSnapshotDirector(
+            processorService,
+            currentSnapshotController,
+            stream,
+            snapshotInterval,
+            maxSnapshot,
+            metrics);
+    actorScheduler.submitActor(asyncSnapshotDirector);
+
     return processorService;
   }
 
@@ -297,8 +343,10 @@ public class TestStreams {
     return snapshotControllerMap.get(stream);
   }
 
-  public void closeProcessor(String streamName) {
+  public void closeProcessor(String streamName) throws Exception {
+    asyncSnapshotDirector.closeAsync().join();
     serviceContainer.removeService(streamProcessorService(streamName, PROCESSOR_NAME)).join();
+    zeebeDb.close();
   }
 
   public static class FluentLogWriter {

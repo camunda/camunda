@@ -61,19 +61,15 @@ public class BrokerRestoreServer implements RestoreServer {
     this.executor = Executors.newSingleThreadExecutor(r -> new Thread(r, "restore-server"));
   }
 
-  public CompletableFuture<Void> start(
-      LogStream logStream,
-      SnapshotController processorSnapshotController,
-      SnapshotController exporterSnapshotController) {
+  public CompletableFuture<Void> start(LogStream logStream, SnapshotController snapshotController) {
     final LogReplicationRequestHandler logReplicationHandler =
         new DefaultLogReplicationRequestHandler(logStream);
     final RestoreInfoRequestHandler restoreInfoHandler =
-        new DefaultRestoreInfoRequestHandler(logStream, processorSnapshotController);
+        new DefaultRestoreInfoRequestHandler(logStream, snapshotController);
     final SnapshotRequestHandler snapshotRequestHandler =
-        new DefaultSnapshotRequestHandler(processorSnapshotController, exporterSnapshotController);
+        new DefaultSnapshotRequestHandler(snapshotController);
     final SnapshotInfoRequestHandler snapshotInfoRequestHandler =
-        new DefaultSnapshotInfoRequestHandler(
-            processorSnapshotController, exporterSnapshotController);
+        new DefaultSnapshotInfoRequestHandler(snapshotController);
 
     return serve(logReplicationHandler)
         .thenCompose(nothing -> serve(restoreInfoHandler))

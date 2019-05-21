@@ -93,6 +93,10 @@ public class LogStreamRule extends ExternalResource {
 
   @Override
   protected void before() {
+    startLogStream();
+  }
+
+  public void startLogStream() {
     actorScheduler = new ActorSchedulerRule(clock).get();
     actorScheduler.start();
 
@@ -121,6 +125,10 @@ public class LogStreamRule extends ExternalResource {
 
   @Override
   protected void after() {
+    stopLogStream();
+  }
+
+  public void stopLogStream() {
     if (logStream != null) {
       logStream.close();
     }

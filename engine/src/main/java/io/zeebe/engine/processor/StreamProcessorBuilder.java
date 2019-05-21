@@ -19,11 +19,11 @@ package io.zeebe.engine.processor;
 
 import static io.zeebe.engine.processor.StreamProcessorServiceNames.streamProcessorService;
 
+import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.servicecontainer.ServiceBuilder;
@@ -47,13 +47,11 @@ public class StreamProcessorBuilder {
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
 
   private int maxSnapshots;
-  private boolean deleteDataOnSnapshot;
   private Duration snapshotPeriod;
-  private SnapshotController snapshotController;
+  private ZeebeDb zeebeDb;
 
   public StreamProcessorBuilder(int id, String name) {
     Objects.requireNonNull(name);
-
     processingContext = new ProcessingContext().producerId(id).streamProcessorName(name);
   }
 
@@ -99,18 +97,13 @@ public class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder snapshotController(SnapshotController snapshotController) {
-    this.snapshotController = snapshotController;
-    return this;
-  }
-
-  public StreamProcessorBuilder deleteDataOnSnapshot(final boolean deleteData) {
-    this.deleteDataOnSnapshot = deleteData;
-    return this;
-  }
-
   public StreamProcessorBuilder commandResponseWriter(CommandResponseWriter commandResponseWriter) {
     processingContext.commandResponseWriter(commandResponseWriter);
+    return this;
+  }
+
+  public StreamProcessorBuilder zeebeDb(final ZeebeDb zeebeDb) {
+    this.zeebeDb = zeebeDb;
     return this;
   }
 
@@ -138,16 +131,12 @@ public class StreamProcessorBuilder {
     return maxSnapshots;
   }
 
-  public boolean isDeleteDataOnSnapshot() {
-    return deleteDataOnSnapshot;
-  }
-
   public Duration getSnapshotPeriod() {
     return snapshotPeriod;
   }
 
-  public SnapshotController getSnapshotController() {
-    return snapshotController;
+  public ZeebeDb getZeebeDb() {
+    return zeebeDb;
   }
 
   public ActorFuture<StreamProcessor> build() {
@@ -188,13 +177,12 @@ public class StreamProcessorBuilder {
 
   private void validate() {
     Objects.requireNonNull(typedRecordProcessorFactory, "No stream processor factory provided.");
-
     Objects.requireNonNull(actorScheduler, "No task scheduler provided.");
     Objects.requireNonNull(serviceContainer, "No service container provided.");
-    Objects.requireNonNull(snapshotController, "No snapshot controller provided.");
     Objects.requireNonNull(processingContext.getLogStream(), "No log stream provided.");
     Objects.requireNonNull(
         processingContext.getCommandResponseWriter(), "No command response writer provided.");
+    Objects.requireNonNull(zeebeDb, "No database provided.");
   }
 
   private static class MetadataEventFilter implements EventFilter {

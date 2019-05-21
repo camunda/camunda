@@ -18,10 +18,9 @@
 package io.zeebe.broker.logstreams.restore;
 
 import io.atomix.cluster.messaging.ClusterEventService;
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.engine.EngineService;
 import io.zeebe.broker.engine.impl.StateReplication;
-import io.zeebe.broker.exporter.ExporterManagerService;
-import io.zeebe.broker.exporter.stream.ExporterColumnFamilies;
 import io.zeebe.broker.exporter.stream.ExportersState;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.distributedlog.StorageConfiguration;
@@ -47,32 +46,16 @@ public class BrokerSnapshotRestoreContext implements SnapshotRestoreContext {
   }
 
   @Override
-  public SnapshotReplication createProcessorSnapshotReplicationConsumer(int partitionId) {
+  public SnapshotReplication createSnapshotReplicationConsumer(int partitionId) {
     return new StateReplication(eventService, partitionId, EngineService.PROCESSOR_NAME);
   }
 
   @Override
-  public SnapshotReplication createExporterSnapshotReplicationConsumer(int partitionId) {
-    return new StateReplication(eventService, partitionId, ExporterManagerService.PROCESSOR_NAME);
-  }
-
-  @Override
-  public StateStorage getProcessorStateStorage(int partitionId) {
+  public StateStorage getStateStorage(int partitionId) {
     final StorageConfiguration configuration =
         LogstreamConfig.getConfig(localMemberId, partitionId).join();
     return new StateStorageFactory(configuration.getStatesDirectory())
         .create(partitionId, EngineService.PROCESSOR_NAME, "-restore-log");
-  }
-
-  @Override
-  public StateStorage getExporterStateStorage(int partitionId) {
-    final StorageConfiguration configuration =
-        LogstreamConfig.getConfig(localMemberId, partitionId).join();
-    return new StateStorageFactory(configuration.getStatesDirectory())
-        .create(
-            ExporterManagerService.EXPORTER_PROCESSOR_ID,
-            ExporterManagerService.PROCESSOR_NAME,
-            "-restore-log");
   }
 
   @Override
@@ -88,11 +71,7 @@ public class BrokerSnapshotRestoreContext implements SnapshotRestoreContext {
 
   private long getLowestReplicatedExportedPosition(StateStorage exporterStorage) {
     final SnapshotController exporterSnapshotController =
-        new StateSnapshotController(
-            DefaultZeebeDbFactory.defaultFactory(ExporterColumnFamilies.class),
-            exporterStorage,
-            null,
-            1);
+        new StateSnapshotController(DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, exporterStorage);
 
     try {
       if (exporterSnapshotController.getValidSnapshotsCount() > 0) {
@@ -100,12 +79,11 @@ public class BrokerSnapshotRestoreContext implements SnapshotRestoreContext {
         final ZeebeDb zeebeDb = exporterSnapshotController.openDb();
         final ExportersState exporterState = new ExportersState(zeebeDb, zeebeDb.createContext());
 
-        final long lowestPosition = exporterState.getLowestPosition();
-
-        return lowestPosition;
+        return exporterState.getLowestPosition();
       }
     } catch (Exception e) {
 
+      Loggers.CLUSTERING_LOGGER.trace("Exception on opening snapshot db", e);
     } finally {
       try {
         exporterSnapshotController.close();
@@ -118,8 +96,7 @@ public class BrokerSnapshotRestoreContext implements SnapshotRestoreContext {
 
   private long getLatestProcessedPosition(int partitionId, StateStorage stateStorage) {
     final SnapshotController processorSnapshotController =
-        new StateSnapshotController(
-            DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, stateStorage, null, 1);
+        new StateSnapshotController(DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, stateStorage);
 
     try {
       if (processorSnapshotController.getValidSnapshotsCount() > 0) {
@@ -128,9 +105,7 @@ public class BrokerSnapshotRestoreContext implements SnapshotRestoreContext {
         final ZeebeState processorState =
             new ZeebeState(partitionId, zeebeDb, zeebeDb.createContext());
 
-        final long lowestPosition = processorState.getLastSuccessfuProcessedRecordPosition();
-
-        return lowestPosition;
+        return processorState.getLastSuccessfulProcessedRecordPosition();
       }
     } catch (Exception e) {
 
