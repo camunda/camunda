@@ -131,10 +131,10 @@
                       <arg value="until $(nc -zv localhost 8090); do sleep 2; done" />
                     </exec>
 
-                    <echo message="Waiting for Optimize to populate ES..." />
+                    <echo message="Waiting for Optimize Import to finish..." />
                     <exec executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="until test $(/bin/bash -c ./getActivityInstanceCount.sh) -ge ${upgrade.expected.activityInstance.count}; do sleep 2; done" />
+                      <arg value="until test $(curl 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;') = &quot;false&quot;; do sleep 2; done" />
                     </exec>
 
                     <ac:if>
@@ -280,7 +280,7 @@
                     <!-- execute Optimize backend integration testsuite -->
                     <exec dir="${project.build.directory}/../../../" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="mvn -B verify -pl backend -Dskip.docker -Pproduction,it,engine-7.10 ${maven-settings} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
+                      <arg value="mvn -B clean verify -pl backend -Dskip.docker -Pproduction,it,engine-7.10 ${maven-settings} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
                     </exec>
                   </target>
                 </configuration>
