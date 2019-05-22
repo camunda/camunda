@@ -112,7 +112,7 @@ public class WorkflowInstanceRestService {
   @ApiOperation("Perform batch operation on selection (async)")
   @PostMapping("/operation")
   public OperationResponseDto batchOperation(
-      @RequestBody BatchOperationRequestDto batchOperationRequest) throws PersistenceException {
+      @RequestBody BatchOperationRequestDto batchOperationRequest) {
     return batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 

@@ -757,7 +757,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     final String expectedErrorMsg = String
       .format("Too many workflow instances are selected for batch operation. Maximum possible amount: %s", operateProperties.getBatchOperationMaxSize());
-    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo(expectedErrorMsg);
+    assertThat(mvcResult.getResolvedException().getMessage()).contains(expectedErrorMsg);
   }
 
   private MvcResult postBatchOperationWithOKResponse(ListViewQueryDto query, OperationType operationType) throws Exception {

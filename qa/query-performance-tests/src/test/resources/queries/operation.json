@@ -1,6 +1,6 @@
 [
   {
-    "ignore": "OPE-537",
+    "ignore": "OPE-564",
     "title": "Resolve incidents on some complex query",
     "url": "/api/workflow-instances/operation",
     "method": "POST",
@@ -32,7 +32,7 @@
     }
   },
   {
-    "ignore": "The batch operation is applied on too many instances",
+    "ignore": "OPE-564",
     "title": "Cancel all instances",
     "url": "/api/workflow-instances/operation",
     "method": "POST",

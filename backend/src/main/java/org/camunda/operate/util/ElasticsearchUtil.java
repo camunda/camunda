@@ -20,6 +20,7 @@ import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
@@ -234,9 +235,10 @@ public abstract class ElasticsearchUtil {
     }
 
     List<T> result = new ArrayList<>();
+    String scrollId = null;
     while (response.getHits().getHits().length != 0) {
       SearchHits hits = response.getHits();
-      String scrollId = response.getScrollId();
+      scrollId = response.getScrollId();
 
       result.addAll(mapSearchHits(hits.getHits(), objectMapper, clazz));
 
@@ -253,7 +255,56 @@ public abstract class ElasticsearchUtil {
 
     };
 
+    clearScroll(scrollId, esClient);
+
     return result;
+  }
+
+  public static void scrollWithoutResults(SearchRequest searchRequest, RestHighLevelClient esClient,
+    Consumer<SearchHits> searchHitsProcessor, Consumer<Aggregations> aggsProcessor,
+      Consumer<SearchHits> firstResponseConsumer) throws IOException {
+
+    searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+    SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+    firstResponseConsumer.accept(response.getHits());
+
+    //call aggregations processor
+    if (aggsProcessor != null) {
+      aggsProcessor.accept(response.getAggregations());
+    }
+
+    String scrollId = null;
+    while (response.getHits().getHits().length != 0) {
+      scrollId = response.getScrollId();
+
+      //call response processor
+      if (searchHitsProcessor != null) {
+        searchHitsProcessor.accept(response.getHits());
+      }
+
+      SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+      scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+
+      response = esClient
+        .scroll(scrollRequest, RequestOptions.DEFAULT);
+
+    };
+
+    clearScroll(scrollId, esClient);
+  }
+
+  private static void clearScroll(String scrollId, RestHighLevelClient esClient) {
+    if (scrollId != null) {
+      //clear the scroll
+      ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+      clearScrollRequest.addScrollId(scrollId);
+      try {
+        esClient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+      } catch (IOException e) {
+        logger.warn("Error occurred when clearing the scroll with id [{}]", scrollId);
+      }
+    }
   }
 
   public static List<String> scrollIdsToList(SearchRequest request, RestHighLevelClient esClient) throws IOException {
@@ -262,9 +313,11 @@ public abstract class ElasticsearchUtil {
     request.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
     SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
 
+    String scrollId = null;
+
     while (response.getHits().getHits().length != 0) {
       SearchHits hits = response.getHits();
-      String scrollId = response.getScrollId();
+      scrollId = response.getScrollId();
 
       result.addAll(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2)));      result.addAll(Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2)));
 
@@ -274,17 +327,23 @@ public abstract class ElasticsearchUtil {
       response = esClient
         .scroll(scrollRequest, RequestOptions.DEFAULT);
     }
+
+    clearScroll(scrollId, esClient);
+
     return result;
   }
+
   public static List<String> scrollFieldToList(SearchRequest request, String fieldName, RestHighLevelClient esClient) throws IOException {
     List<String> result = new ArrayList<>();
 
     request.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
     SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
 
+    String scrollId = null;
+
     while (response.getHits().getHits().length != 0) {
       SearchHits hits = response.getHits();
-      String scrollId = response.getScrollId();
+      scrollId = response.getScrollId();
 
       result.addAll(Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getSourceAsMap().get(fieldName).toString()), (list1, list2) -> list1.addAll(list2)));
 
@@ -294,6 +353,9 @@ public abstract class ElasticsearchUtil {
       response = esClient
         .scroll(scrollRequest, RequestOptions.DEFAULT);
     }
+
+    clearScroll(scrollId, esClient);
+
     return result;
   }
 
@@ -303,9 +365,11 @@ public abstract class ElasticsearchUtil {
     request.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
     SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
 
+    String scrollId = null;
+
     while (response.getHits().getHits().length != 0) {
       SearchHits hits = response.getHits();
-      String scrollId = response.getScrollId();
+      scrollId = response.getScrollId();
 
       result.addAll(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2)));
 
@@ -315,6 +379,9 @@ public abstract class ElasticsearchUtil {
       response = esClient
           .scroll(scrollRequest, RequestOptions.DEFAULT);
     }
+
+    clearScroll(scrollId, esClient);
+
     return result;
   }
 }
