@@ -14,6 +14,7 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl implemen
   private String errorMessage;
   private String bpmnProcessId;
   private String elementId;
+  private long workflowKey;
   private long workflowInstanceKey;
   private long elementInstanceKey;
   private long jobKey;
@@ -40,6 +41,11 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl implemen
   @Override
   public String getElementId() {
     return elementId;
+  }
+
+  @Override
+  public long getWorkflowKey() {
+    return workflowKey;
   }
 
   @Override
@@ -78,6 +84,10 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl implemen
     this.elementId = elementId;
   }
 
+  public void setWorkflowKey(long workflowKey) {
+    this.workflowKey = workflowKey;
+  }
+
   public void setWorkflowInstanceKey(long workflowInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
   }
@@ -105,6 +115,8 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl implemen
 
     IncidentRecordValueImpl that = (IncidentRecordValueImpl) o;
 
+    if (workflowKey != that.workflowKey)
+      return false;
     if (workflowInstanceKey != that.workflowInstanceKey)
       return false;
     if (elementInstanceKey != that.elementInstanceKey)
@@ -129,6 +141,7 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl implemen
     result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (elementId != null ? elementId.hashCode() : 0);
+    result = 31 * result + (int) (workflowKey ^ (workflowKey >>> 32));
     result = 31 * result + (int) (workflowInstanceKey ^ (workflowInstanceKey >>> 32));
     result = 31 * result + (int) (elementInstanceKey ^ (elementInstanceKey >>> 32));
     result = 31 * result + (int) (jobKey ^ (jobKey >>> 32));
@@ -139,7 +152,7 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl implemen
   @Override
   public String toString() {
     return "IncidentRecordValueImpl{" + "errorType='" + errorType + '\'' + ", errorMessage='" + errorMessage + '\'' + ", bpmnProcessId='" + bpmnProcessId + '\''
-        + ", elementId='" + elementId + '\'' + ", workflowInstanceKey=" + workflowInstanceKey + ", elementInstanceKey=" + elementInstanceKey + ", jobKey="
+        + ", elementId='" + elementId + '\'' + ", workflowKey=" + workflowKey + ", workflowInstanceKey=" + workflowInstanceKey + ", elementInstanceKey=" + elementInstanceKey + ", jobKey="
         + jobKey + ", variableScopeKey=" + variableScopeKey + "} " + super.toString();
   }
 }

@@ -39,11 +39,6 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   }
 
   @Override
-  public int getRaftTerm() {
-    return raftTerm;
-  }
-
-  @Override
   public int getProducerId() {
     return producerId;
   }
