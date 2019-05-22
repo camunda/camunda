@@ -6,8 +6,8 @@
 
 export function isValidJSON(text) {
   try {
-    const parsedValue = JSON.parse(text);
-    return true && typeof parsedValue === 'object';
+    JSON.parse(text);
+    return true;
   } catch (e) {
     return false;
   }

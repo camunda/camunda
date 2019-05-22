@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
 
 import {isValidJSON} from 'modules/utils';
 
-import Modal from 'modules/components/Modal';
+import CodeModal from 'modules/components/CodeModal';
 
 import {EMPTY_PLACEHOLDER, NULL_PLACEHOLDER} from './constants';
 import * as Styled from './styled';
@@ -54,6 +54,7 @@ export default function Variables({
   }
 
   function handleModalSave() {
+    setValue(value);
     onVariableUpdate(key, value);
     handleModalClose();
   }
@@ -84,7 +85,7 @@ export default function Variables({
   function renderEditButtons(customCondition = false) {
     return (
       <>
-        {isValidJSON(value) && (
+        {
           <Styled.EditButton
             title="Open Modal"
             data-test="open-modal-btn"
@@ -92,7 +93,7 @@ export default function Variables({
           >
             <Styled.ModalIcon />
           </Styled.EditButton>
-        )}
+        }
         <Styled.EditButton
           title="Exit edit mode"
           data-test="exit-edit-inline-btn"
@@ -161,35 +162,6 @@ export default function Variables({
           {renderEditButtons(variableAlreadyExists)}
         </Styled.AddButtonsTD>
       </Styled.TR>
-    );
-  }
-
-  function renderModal() {
-    return (
-      <Modal onModalClose={handleModalClose} isVisible={isModalVisible}>
-        <Modal.Header>{`Edit Variable "${key}"`}</Modal.Header>
-        <Styled.ModalBody>
-          <pre>
-            <Styled.LinesSeparator />
-            <code>
-              <Styled.CodeLine>{value}</Styled.CodeLine>)
-            </code>
-          </pre>
-        </Styled.ModalBody>
-        <Modal.Footer>
-          {/* <Modal.SecondaryButton title="Close Modal" onClick={handleModalClose}>
-            Close
-          </Modal.SecondaryButton> */}
-
-          <Modal.PrimaryButton
-            title="Save Variable"
-            disabled={!isValidJSON(value)}
-            onClick={handleModalSave}
-          >
-            Save
-          </Modal.PrimaryButton>
-        </Modal.Footer>
-      </Modal>
     );
   }
 
@@ -263,7 +235,15 @@ export default function Variables({
           <Styled.Plus /> Add Variable
         </Styled.Button>
       </Styled.VariablesFooter>
-      {isModalVisible && renderModal()}
+      {isModalVisible && (
+        <CodeModal
+          handleModalClose={handleModalClose}
+          handleModalSave={handleModalSave}
+          isModalVisible={isModalVisible}
+          headline="SomeHeadline"
+          content={value}
+        />
+      )}
     </Styled.Variables>
   );
 }
