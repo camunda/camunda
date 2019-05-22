@@ -11,11 +11,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
 import org.camunda.optimize.service.es.schema.TypeMappingCreator;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -23,6 +25,7 @@ import org.camunda.optimize.service.util.mapper.CustomDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomSerializer;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
@@ -30,9 +33,14 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.ToXContent;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -42,13 +50,12 @@ import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -68,8 +75,11 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+@Slf4j
 public class ElasticSearchIntegrationTestRule extends TestWatcher {
-  private static final Logger logger = LoggerFactory.getLogger(ElasticSearchIntegrationTestRule.class);
+  private static final ToXContent.Params XCONTENT_PARAMS_FLAT_SETTINGS = new ToXContent.MapParams(
+    Collections.singletonMap("flat_settings", "true")
+  );
 
   private static ObjectMapper objectMapper;
   private static RestHighLevelClient esClient;
@@ -86,48 +96,12 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   protected void starting(Description description) {
     initConfigurationService();
     initObjectMapper();
-    this.initEsClient();
+    initEsClient();
+    disableAutomaticIndexCreation();
     if (haveToClean) {
-      logger.info("Cleaning elasticsearch...");
+      log.info("Cleaning elasticsearch...");
       this.cleanAndVerify();
-      logger.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
-    }
-  }
-
-  private void initEsClient() {
-    if (esClient == null) {
-      esClient = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
-    }
-  }
-
-  private void initConfigurationService() {
-    if (configurationService == null) {
-      configurationService = new ConfigurationService();
-    }
-  }
-
-  private void initObjectMapper() {
-    if (objectMapper == null) {
-
-      DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
-      JavaTimeModule javaTimeModule = new JavaTimeModule();
-      javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(dateTimeFormatter));
-      javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(dateTimeFormatter));
-
-      objectMapper = Jackson2ObjectMapperBuilder
-        .json()
-        .modules(javaTimeModule)
-        .featuresToDisable(
-          SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
-          DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
-          DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-          DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES
-        )
-        .featuresToEnable(
-          JsonParser.Feature.ALLOW_COMMENTS,
-          SerializationFeature.INDENT_OUTPUT
-        )
-        .build();
+      log.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
     }
   }
 
@@ -347,6 +321,64 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     assureElasticsearchIsClean();
   }
 
+  public void disableCleanup() {
+    haveToClean = false;
+  }
+
+  private void initEsClient() {
+    if (esClient == null) {
+      esClient = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
+    }
+  }
+
+  private void initConfigurationService() {
+    if (configurationService == null) {
+      configurationService = new ConfigurationService();
+    }
+  }
+
+  private void initObjectMapper() {
+    if (objectMapper == null) {
+      DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+      JavaTimeModule javaTimeModule = new JavaTimeModule();
+      javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(dateTimeFormatter));
+      javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(dateTimeFormatter));
+
+      objectMapper = Jackson2ObjectMapperBuilder
+        .json()
+        .modules(javaTimeModule)
+        .featuresToDisable(
+          SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+          DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
+          DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+          DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES
+        )
+        .featuresToEnable(
+          JsonParser.Feature.ALLOW_COMMENTS,
+          SerializationFeature.INDENT_OUTPUT
+        )
+        .build();
+    }
+  }
+
+  private void disableAutomaticIndexCreation() {
+    Settings settings = Settings.builder()
+      .put("action.auto_create_index", false)
+      .build();
+    ClusterUpdateSettingsRequest clusterUpdateSettingsRequest = new ClusterUpdateSettingsRequest();
+    clusterUpdateSettingsRequest.persistentSettings(settings);
+    try (XContentBuilder builder = XContentFactory.jsonBuilder()) {
+      // low level request as we need body serialized with flat_settings option for AWS hosted elasticsearch support
+      Request request = new Request("PUT", "/_cluster/settings");
+      request.setJsonEntity(Strings.toString(
+        clusterUpdateSettingsRequest.toXContent(builder, XCONTENT_PARAMS_FLAT_SETTINGS)
+      ));
+      esClient.getLowLevelClient().performRequest(request);
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Could not update index settings!", e);
+    }
+  }
+
   private void addEntryToTracker(String type, String id) {
     if (!documentEntriesTracker.containsKey(type)) {
       List<String> idList = new LinkedList<>();
@@ -365,7 +397,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       deleteAllOptimizeData();
     } catch (Exception e) {
       //nothing to do
-      logger.error("can't clean optimize indexes", e);
+      log.error("can't clean optimize indexes", e);
     }
   }
 
@@ -387,9 +419,5 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public RestHighLevelClient getEsClient() {
     return esClient;
-  }
-
-  public void disableCleanup() {
-    haveToClean = false;
   }
 }

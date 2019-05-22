@@ -13,7 +13,6 @@ import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
@@ -24,16 +23,11 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.ToXContent;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -42,14 +36,12 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.OPT
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getVersionedOptimizeIndexNameForTypeMapping;
 
+
 @RequiredArgsConstructor
 @Component
 @Slf4j
 public class ElasticSearchSchemaManager {
-
   private static final String INDEX_READ_ONLY_SETTING = "index.blocks.read_only_allow_delete";
-  private static final ToXContent.Params XCONTENT_PARAMS_FLAT_SETTINGS =
-    new ToXContent.MapParams(Collections.singletonMap("flat_settings", "true"));
 
   private final ElasticsearchMetadataService metadataService;
   private final ConfigurationService configurationService;
@@ -102,7 +94,6 @@ public class ElasticSearchSchemaManager {
     }
   }
 
-
   /**
    * NOTE: create one alias and index per type
    * <p>
@@ -141,10 +132,7 @@ public class ElasticSearchSchemaManager {
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not refresh Optimize indices!", e);
     }
-
-    disableAutomaticIndexCreation(esClient);
   }
-
 
   private void updateAllMappingsAndDynamicSettings(RestHighLevelClient esClient) {
     log.info("Updating Optimize schema...");
@@ -191,24 +179,6 @@ public class ElasticSearchSchemaManager {
       } catch (IOException e) {
         throw new OptimizeRuntimeException("Could not unblock Elasticsearch indices!", e);
       }
-    }
-  }
-
-  private void disableAutomaticIndexCreation(RestHighLevelClient esClient) {
-    Settings settings = Settings.builder()
-      .put("action.auto_create_index", false)
-      .build();
-    ClusterUpdateSettingsRequest clusterUpdateSettingsRequest = new ClusterUpdateSettingsRequest();
-    clusterUpdateSettingsRequest.persistentSettings(settings);
-    try (XContentBuilder builder = XContentFactory.jsonBuilder()) {
-      // low level request as we need body serialized with flat_settings option for AWS hosted elasticsearch support
-      Request request = new Request("PUT", "/_cluster/settings");
-      request.setJsonEntity(Strings.toString(
-        clusterUpdateSettingsRequest.toXContent(builder, XCONTENT_PARAMS_FLAT_SETTINGS)
-      ));
-      esClient.getLowLevelClient().performRequest(request);
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Could not update index settings!", e);
     }
   }
 
