@@ -84,7 +84,6 @@ export default function Variables({
   function renderEditButtons(customCondition = false) {
     return (
       <>
-        {console.log(value, isValidJSON(value))}
         {isValidJSON(value) && (
           <Styled.EditButton
             title="Open Modal"
