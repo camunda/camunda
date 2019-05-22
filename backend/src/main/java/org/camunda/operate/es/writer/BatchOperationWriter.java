@@ -231,7 +231,7 @@ public class BatchOperationWriter {
    * @return
    * @throws PersistenceException
    */
-  public OperationResponseDto scheduleBatchOperation(BatchOperationRequestDto batchOperationRequest) throws PersistenceException {
+  public OperationResponseDto scheduleBatchOperation(BatchOperationRequestDto batchOperationRequest) {
 
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 
