@@ -5,12 +5,17 @@
  */
 package org.camunda.operate.zeebeimport.processors;
 
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperationType;
@@ -38,13 +43,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.IncidentIntent;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
 
 @Component
 public class ListViewZeebeRecordProcessor {
@@ -120,7 +124,9 @@ public class ListViewZeebeRecordProcessor {
   }
 
 
-  private WorkflowInstanceForListViewEntity updateWorkflowInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue, WorkflowInstanceForListViewEntity wiEntity) {
+  private WorkflowInstanceForListViewEntity updateWorkflowInstance(Record record, String intentStr, 
+                                                                   WorkflowInstanceRecordValueImpl recordValue,
+                                                                   WorkflowInstanceForListViewEntity wiEntity) {
     if (wiEntity == null) {
       wiEntity = new WorkflowInstanceForListViewEntity();
     }
@@ -130,9 +136,8 @@ public class ListViewZeebeRecordProcessor {
     wiEntity.setPartitionId(record.getMetadata().getPartitionId());
     wiEntity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
     wiEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
-    //find out workflow name and version
-    wiEntity.setWorkflowName(workflowCache.getWorkflowNameOrDefaultValue(wiEntity.getWorkflowId(),recordValue.getBpmnProcessId()));
-    wiEntity.setWorkflowVersion(workflowCache.getWorkflowVersionOrDefaultValue(wiEntity.getWorkflowId(),recordValue.getVersion()));
+
+    findOutWorkflowNameAndVersion(wiEntity, recordValue);
 
     if (intentStr.equals(ELEMENT_COMPLETED.name()) || intentStr.equals(ELEMENT_TERMINATED.name())) {
       wiEntity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
@@ -150,6 +155,11 @@ public class ListViewZeebeRecordProcessor {
     return wiEntity;
   }
 
+  private void findOutWorkflowNameAndVersion(WorkflowInstanceForListViewEntity entity, WorkflowInstanceRecordValueImpl recordValue) {
+    String workflowId = entity.getWorkflowId();
+    entity.setWorkflowName(workflowCache.getWorkflowNameOrDefaultValue(workflowId, recordValue.getBpmnProcessId()));
+    entity.setWorkflowVersion(workflowCache.getWorkflowVersionOrDefaultValue(workflowId, recordValue.getVersion()));
+  }
 
   private void updateActivityInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue, Map<Long, ActivityInstanceForListViewEntity> entities) {
     if (entities.get(record.getKey()) == null) {

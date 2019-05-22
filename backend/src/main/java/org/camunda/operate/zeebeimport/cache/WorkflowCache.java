@@ -46,7 +46,7 @@ public class WorkflowCache {
     if (cachedWorkflowData != null) {
       workflowName = cachedWorkflowData.getName();    
       if(StringUtils.isEmpty(workflowName)) {
-        logger.info("Cached WorkflowName is empty");
+        logger.debug("Cached WorkflowName is empty");
       }
     } else {
       final Optional<WorkflowEntity> workflowMaybe = findOrWaitWorkflow(workflowId, MAX_ATTEMPTS, WAIT_TIME);
@@ -57,7 +57,7 @@ public class WorkflowCache {
       }
     }
     if(StringUtils.isEmpty(workflowName)) {
-      logger.debug("WorkflowName is empty, use default value: {} ",defaultValue);
+      logger.info("WorkflowName is empty, use default value: {} ",defaultValue);
       workflowName = defaultValue;
     }
     return workflowName;
@@ -69,7 +69,7 @@ public class WorkflowCache {
     if (cachedWorkflowData != null) {
       workflowVersion = cachedWorkflowData.getVersion();
       if(workflowVersion==null || workflowVersion == 0) {
-        logger.info("Cached Workflow version is {} ",workflowVersion);
+        logger.debug("Cached Workflow version is {} ",workflowVersion);
       }
     } else {
       final Optional<WorkflowEntity> workflowMaybe = findOrWaitWorkflow(workflowId, MAX_ATTEMPTS, WAIT_TIME);
@@ -80,7 +80,7 @@ public class WorkflowCache {
       } 
     }
     if(workflowVersion == null) {
-      logger.info("Workflow version is null. Return default version {}",defaultValue);
+      logger.info("Workflow version is null, use default value: {}",defaultValue);
       workflowVersion = defaultValue;
     }
     return workflowVersion;
@@ -94,21 +94,21 @@ public class WorkflowCache {
     }
   }
 
-  public Optional<WorkflowEntity> findOrWaitWorkflow(String workflowId,int attempts,long sleepInMilliseconds) {
+  public Optional<WorkflowEntity> findOrWaitWorkflow(String workflowId, int attempts, long sleepInMilliseconds) {
     int attemptsCount = 0;
     Optional<WorkflowEntity> foundWorkflow = Optional.empty();
     while (!foundWorkflow.isPresent() && attemptsCount < attempts) {
       attemptsCount++;
       foundWorkflow = readWorkflowById(workflowId);
       if (!foundWorkflow.isPresent()) {
-        logger.info("{} attempts left. Waiting {} ms ...", attempts - attemptsCount, sleepInMilliseconds);
+        logger.debug("{} attempts left. Waiting {} ms.", attempts - attemptsCount, sleepInMilliseconds);
         try {
           Thread.sleep(sleepInMilliseconds);
         } catch (InterruptedException e) {
           logger.info(e.getMessage());
         }
-      }else {
-        logger.info("Found workflow after {} attempts. Waited {} ms ...", attemptsCount, (attemptsCount-1) * sleepInMilliseconds);
+      } else {
+        logger.debug("Found workflow after {} attempts. Waited {} ms.", attemptsCount, (attemptsCount - 1) * sleepInMilliseconds);
       }
     }
     return foundWorkflow;

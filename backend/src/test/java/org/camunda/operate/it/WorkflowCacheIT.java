@@ -62,6 +62,9 @@ public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
 
     final Integer demoProcessVersion = workflowCache.getWorkflowVersion("1");
     assertThat(demoProcessVersion).isNull();
+    
+    final Integer demoProcessVersionDefault = workflowCache.getWorkflowVersionOrDefaultValue("1",5);
+    assertThat(demoProcessVersionDefault).isEqualTo(5);
   }
 
   @Test
