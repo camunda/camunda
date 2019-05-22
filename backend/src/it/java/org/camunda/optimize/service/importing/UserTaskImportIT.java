@@ -335,7 +335,7 @@ public class UserTaskImportIT {
   public void importFinishesIfIndependentCompletesUserTasksWithOperationsExist() throws IOException {
     // given
     engineRule.createIndependentUserTask();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
 
     // when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
