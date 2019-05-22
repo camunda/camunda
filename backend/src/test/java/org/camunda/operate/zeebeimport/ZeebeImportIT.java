@@ -110,10 +110,12 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //when
     //1st load workflow instance index, then deployment
-    processAllEvents(10, ImportValueType.WORKFLOW_INSTANCE);
-    processAllEvents(2, ImportValueType.DEPLOYMENT);
+    //processAllEvents(10, ImportValueType.WORKFLOW_INSTANCE);
+    //processAllEvents(2, ImportValueType.DEPLOYMENT);
+    elasticsearchTestRule.processAllEvents(12);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
-
+    
+    
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getWorkflowId()).isEqualTo(workflowId);
