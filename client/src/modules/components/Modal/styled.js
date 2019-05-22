@@ -170,6 +170,7 @@ export const ModalFooter = themed(styled(Panel.Footer)`
   height: 63px;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   background-color: ${themeStyle({
     dark: Colors.uiDark02,
     light: Colors.uiLight04
@@ -180,6 +181,10 @@ export const ModalFooter = themed(styled(Panel.Footer)`
       light: Colors.uiLight05
     })};
   border-radius: 0 0 3px 3px;
+
+  & > button {
+    margin-left: 15px;
+  }
 `);
 
 export const CloseButton = styled(Button)`

@@ -69,16 +69,25 @@ export default class Modal extends React.Component {
     const focusableModalElements = this.modalRef.current.querySelectorAll(
       'a[href], button, textarea, input[type="text"], input[type="radio"], input[type="checkbox"], select'
     );
+
     const firstElement = focusableModalElements[0];
     const lastElement =
       focusableModalElements[focusableModalElements.length - 1];
+    const focusableElementIndex = [...focusableModalElements].indexOf(
+      document.activeElement
+    );
 
-    if (!e.shiftKey && document.activeElement !== firstElement) {
+    const isLastElement =
+      focusableElementIndex === focusableModalElements.length - 1;
+    const isFirstElement = focusableElementIndex === 0;
+    const isOutsideModal = focusableElementIndex < 0;
+
+    if (!e.shiftKey && (isLastElement || isOutsideModal)) {
       firstElement.focus();
-      return e.preventDefault();
+      e.preventDefault();
     }
 
-    if (e.shiftKey && document.activeElement !== lastElement) {
+    if (e.shiftKey && isFirstElement) {
       lastElement.focus();
       e.preventDefault();
     }
@@ -187,4 +196,36 @@ class ModalPrimaryButton extends React.Component {
   }
 }
 
+class ModalSecondatyButton extends React.Component {
+  static propTypes = {
+    addKeyHandler: PropTypes.func.isRequired,
+    className: PropTypes.string,
+    children: PropTypes.node
+  };
+
+  // componentDidMount() {
+  //   this.props.addKeyHandler(13, this.handleReturnKeyPress);
+  // }
+
+  // primaryButtonRef = React.createRef();
+
+  // handleReturnKeyPress = e => {
+  //   e.preventDefault();
+  //   this.primaryButtonRef.current.click();
+  // };
+
+  render() {
+    const {onModalClose, ...props} = this.props;
+    return (
+      <Button
+        // ref={this.primaryButtonRef}
+        color="secondary"
+        size="medium"
+        {...props}
+      />
+    );
+  }
+}
+
 Modal.PrimaryButton = withModal(ModalPrimaryButton);
+Modal.SecondaryButton = withModal(ModalSecondatyButton);

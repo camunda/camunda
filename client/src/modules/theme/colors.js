@@ -67,8 +67,10 @@ const Colors = {
 
   darkButton02: '#7f8289',
   darkButton03: '#34353a',
+  darkButton04: '#3c3d43',
   darkButton05: '#646670',
   darkButton06: '#2C2D31',
+  darkButton07: '#73777e',
 
   lightButton01: '#cdd4df',
   lightButton02: '#9ea9b7',
