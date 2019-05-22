@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -37,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -138,8 +140,12 @@ public class WorkflowZeebeRecordProcessor {
       workflowEntity.setResourceName(resourceName);
 
       InputStream is = new ByteArrayInputStream(byteArray);
-      final WorkflowEntity diagramData = extractDiagramData(is);
-      workflowEntity.setName(diagramData.getName());
+      final Optional<WorkflowEntity> diagramData = extractDiagramData(is);
+      if(!diagramData.isPresent() || StringUtils.isEmpty(diagramData.get().getName())){
+        workflowEntity.setName(workflow.getBpmnProcessId());
+      }else {
+        workflowEntity.setName(diagramData.get().getName());
+      }
     }
 
     return workflowEntity;
@@ -149,18 +155,15 @@ public class WorkflowZeebeRecordProcessor {
     return resources.stream().collect(Collectors.toMap(DeploymentResource::getResourceName, Function.identity()));
   }
 
-  public WorkflowEntity extractDiagramData(InputStream xmlInputStream) {
+  private Optional<WorkflowEntity> extractDiagramData(InputStream xmlInputStream) {
     SAXParser saxParser = getSAXParser();
     BpmnXmlParserHandler handler = new BpmnXmlParserHandler();
-
     try {
       saxParser.parse(xmlInputStream, handler);
-      return handler.getWorkflowEntity();
+      return Optional.of(handler.getWorkflowEntity());
     } catch (SAXException | IOException e) {
-      // just return null
+      return Optional.empty();
     }
-
-    return null;
   }
 
   @Bean
