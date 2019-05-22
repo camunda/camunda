@@ -58,7 +58,6 @@ public class EngineService implements Service<EngineService> {
   private final ClusterCfg clusterCfg;
   private final ServiceContainer serviceContainer;
   private final Duration snapshotPeriod;
-  private final int maxSnapshots;
   private ServiceStartContext serviceContext;
 
   private ServerTransport clientApiTransport;
@@ -73,7 +72,6 @@ public class EngineService implements Service<EngineService> {
     this.serviceContainer = serviceContainer;
     final DataCfg dataCfg = brokerCfg.getData();
     this.snapshotPeriod = DurationUtil.parse(dataCfg.getSnapshotPeriod());
-    this.maxSnapshots = dataCfg.getMaxSnapshots();
   }
 
   @Override
@@ -115,8 +113,7 @@ public class EngineService implements Service<EngineService> {
             partition.getPartitionId(),
             partition.getLogStream(),
             partition.getSnapshotController(),
-            snapshotPeriod,
-            maxSnapshots);
+            snapshotPeriod);
 
     final ServiceName<AsyncSnapshotingDirectorService> snapshotDirectorServiceName =
         StreamProcessorServiceNames.asyncSnapshotingDirectorService(logName, PROCESSOR_NAME);

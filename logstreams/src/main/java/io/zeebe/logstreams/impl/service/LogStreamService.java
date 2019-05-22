@@ -46,7 +46,6 @@ import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
 
@@ -74,8 +73,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
 
   private final AtomicBoolean restoring;
 
-  private Supplier<Long> exporterPositionSupplier;
-  private LogBlockIndexContext logBlockIndexContext;
+  private LogBlockIndexContext blockIndexContext;
 
   private ServiceStartContext serviceContext;
 
@@ -106,7 +104,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     serviceContext = startContext;
     logStorage = logStorageInjector.getValue();
     logBlockIndex = logBlockIndexInjector.getValue();
-    logBlockIndexContext = logBlockIndex.createLogBlockIndexContext();
+    blockIndexContext = logBlockIndex.createLogBlockIndexContext();
     logBlockIndexWriter = logBockIndexWriterInjector.getValue();
   }
 
@@ -237,23 +235,15 @@ public class LogStreamService implements LogStream, Service<LogStream> {
 
   @Override
   public void delete(long position) {
-    // supplier may have been removed due to service being stopped
-    if (exporterPositionSupplier == null) {
-      return;
-    }
-
-    final long lowestExportedPosition = exporterPositionSupplier.get();
-    position = Math.min(position, lowestExportedPosition);
-
-    final long blockAddress = logBlockIndex.lookupBlockAddress(logBlockIndexContext, position);
+    final long blockAddress = logBlockIndex.lookupBlockAddress(blockIndexContext, position);
 
     if (blockAddress != LogBlockIndex.VALUE_NOT_FOUND) {
       LOG.info(
-          "Delete data from logstream until position '{}' (address: '{}').",
+          "Delete data from log stream until position '{}' (address: '{}').",
           position,
           blockAddress);
 
-      logBlockIndex.deleteUpToPosition(logBlockIndexContext, position);
+      logBlockIndex.deleteUpToPosition(blockIndexContext, position);
       logStorage.delete(blockAddress);
     } else {
       LOG.debug(
@@ -277,11 +267,6 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   @Override
   public void removeOnCommitPositionUpdatedCondition(final ActorCondition condition) {
     onCommitPositionUpdatedConditions.removeConsumer(condition);
-  }
-
-  @Override
-  public void setExporterPositionSupplier(final Supplier<Long> supplier) {
-    exporterPositionSupplier = supplier;
   }
 
   public Injector<LogBlockIndex> getLogBlockIndexInjector() {

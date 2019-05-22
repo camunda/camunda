@@ -99,4 +99,8 @@ public class ExportersState {
     exporterId.wrapString(exporter);
     exporterPositionColumnFamily.delete(exporterId);
   }
+
+  public boolean hasExporters() {
+    return !exporterPositionColumnFamily.isEmpty();
+  }
 }

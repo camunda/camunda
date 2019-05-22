@@ -18,7 +18,10 @@ package io.zeebe.logstreams.state;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.logstreams.impl.Loggers;
+import io.zeebe.logstreams.impl.delete.DeletionService;
+import io.zeebe.logstreams.impl.delete.NoopDeletionService;
 import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.logstreams.spi.ValidSnapshotListener;
 import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
@@ -29,37 +32,37 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 /** Controls how snapshot/recovery operations are performed */
-public class StateSnapshotController implements SnapshotController {
+public class StateSnapshotController implements SnapshotController, ValidSnapshotListener {
   private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
+
+  private static final String ERROR_MSG_ENSURING_MAX_SNAPSHOT_COUNT =
+      "Unexpected exception occurred on ensuring maximum snapshot count.";
 
   private final StateStorage storage;
   private final ZeebeDbFactory zeebeDbFactory;
   private ZeebeDb db;
   private final ReplicationController replicationController;
+  private DeletionService deletionService = new NoopDeletionService();
+  private final int maxSnapshotCount;
 
   public StateSnapshotController(final ZeebeDbFactory rocksDbFactory, final StateStorage storage) {
     this(rocksDbFactory, storage, new NoneSnapshotReplication(), 1);
   }
 
   public StateSnapshotController(
+      final ZeebeDbFactory rocksDbFactory, final StateStorage storage, int maxSnapshotCount) {
+    this(rocksDbFactory, storage, new NoneSnapshotReplication(), maxSnapshotCount);
+  }
+
+  public StateSnapshotController(
       ZeebeDbFactory zeebeDbFactory,
       StateStorage storage,
       SnapshotReplication replication,
-      int maxSnapshots) {
+      int maxSnapshotCount) {
     this.storage = storage;
     this.zeebeDbFactory = zeebeDbFactory;
-    replicationController =
-        new ReplicationController(
-            replication,
-            storage,
-            () -> {
-              try {
-                ensureMaxSnapshotCount(maxSnapshots);
-              } catch (IOException ioe) {
-                LOG.error("Unexpected error occurred on ensuring max snapshot count.", ioe);
-              }
-            },
-            () -> getPositionToDelete(maxSnapshots));
+    this.maxSnapshotCount = maxSnapshotCount;
+    this.replicationController = new ReplicationController(replication, storage, this);
   }
 
   @Override
@@ -108,6 +111,7 @@ public class StateSnapshotController implements SnapshotController {
         snapshotDir.getAbsolutePath());
 
     Files.move(previousLocation.toPath(), snapshotDir.toPath());
+    onNewValidSnapshot();
   }
 
   public void replicateLatestSnapshot(Consumer<Runnable> executor) {
@@ -129,8 +133,12 @@ public class StateSnapshotController implements SnapshotController {
     }
   }
 
-  public void consumeReplicatedSnapshots(Consumer<Long> dataDeleteCallback) {
-    replicationController.consumeReplicatedSnapshots(dataDeleteCallback);
+  public void consumeReplicatedSnapshots() {
+    replicationController.consumeReplicatedSnapshots();
+  }
+
+  public void setDeletionService(DeletionService deletionService) {
+    this.deletionService = deletionService;
   }
 
   @Override
@@ -195,7 +203,19 @@ public class StateSnapshotController implements SnapshotController {
   }
 
   @Override
-  public void ensureMaxSnapshotCount(int maxSnapshotCount) throws IOException {
+  public void onNewValidSnapshot() {
+    try {
+      ensureMaxSnapshotCount();
+    } catch (IOException e) {
+      LOG.error(ERROR_MSG_ENSURING_MAX_SNAPSHOT_COUNT, e);
+    }
+
+    if (getValidSnapshotsCount() >= maxSnapshotCount) {
+      deletionService.delete(getPositionToDelete(maxSnapshotCount));
+    }
+  }
+
+  public void ensureMaxSnapshotCount() throws IOException {
     final List<File> snapshots = storage.listByPositionAsc();
     if (snapshots.size() > maxSnapshotCount) {
       final int oldestValidSnapshotIndex = snapshots.size() - maxSnapshotCount;
@@ -244,7 +264,6 @@ public class StateSnapshotController implements SnapshotController {
     }
   }
 
-  @Override
   public long getPositionToDelete(int maxSnapshotCount) {
     return storage.listByPositionDesc().stream()
         .skip(maxSnapshotCount - 1)

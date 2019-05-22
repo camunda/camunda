@@ -80,7 +80,7 @@ public class ClusteringRule extends ExternalResource {
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  protected final AutoCloseableRule closables = new AutoCloseableRule();
+  protected final AutoCloseableRule closeables = new AutoCloseableRule();
 
   // configuration
   private final int partitionCount;
@@ -147,7 +147,7 @@ public class ClusteringRule extends ExternalResource {
   @Override
   public Statement apply(final Statement base, final Description description) {
     Statement statement = recordingExporterTestWatcher.apply(base, description);
-    statement = closables.apply(statement, description);
+    statement = closeables.apply(statement, description);
     return super.apply(statement, description);
   }
 
@@ -174,7 +174,7 @@ public class ClusteringRule extends ExternalResource {
 
     } catch (Error e) {
       // If the previous waits timeouts, the brokers are not closed automatically.
-      closables.after();
+      closeables.after();
       throw e;
     }
   }
@@ -203,7 +203,7 @@ public class ClusteringRule extends ExternalResource {
     final File brokerBase = getBrokerBase(nodeId);
     final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
     final Broker broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), controlledClock);
-    closables.manage(broker);
+    closeables.manage(broker);
     return broker;
   }
 
@@ -249,7 +249,7 @@ public class ClusteringRule extends ExternalResource {
 
   private File createBrokerBase(int nodeId) {
     final File base = Files.newTemporaryFolder();
-    closables.manage(() -> FileUtil.deleteFolder(base.getAbsolutePath()));
+    closeables.manage(() -> FileUtil.deleteFolder(base.getAbsolutePath()));
     return base;
   }
 
@@ -280,8 +280,8 @@ public class ClusteringRule extends ExternalResource {
     atomixCluster.start().join();
 
     final Gateway gateway = new Gateway(gatewayCfg, atomixCluster);
-    closables.manage(gateway::stop);
-    closables.manage(atomixCluster::stop);
+    closeables.manage(gateway::stop);
+    closeables.manage(atomixCluster::stop);
     return gateway;
   }
 
@@ -289,12 +289,13 @@ public class ClusteringRule extends ExternalResource {
     final String contactPoint = gateway.getGatewayCfg().getNetwork().toSocketAddress().toString();
     final ZeebeClient client =
         ZeebeClient.newClientBuilder().brokerContactPoint(contactPoint).build();
-    closables.manage(client);
+    closeables.manage(client);
     return client;
   }
 
   @Override
   protected void after() {
+    closeables.after();
     brokerBases.clear();
     brokerCfgs.clear();
     brokers.clear();

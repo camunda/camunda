@@ -19,6 +19,7 @@ package io.zeebe.broker.engine;
 
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMessageHandler;
 import io.zeebe.engine.state.StateStorageFactory;
+import io.zeebe.logstreams.impl.delete.DeletionService;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class EngineServiceNames {
@@ -35,4 +36,9 @@ public class EngineServiceNames {
       SUBSCRIPTION_API_MESSAGE_HANDLER_SERVICE_NAME =
           ServiceName.newServiceName(
               "broker.subscriptionApi.messageHandler", SubscriptionCommandMessageHandler.class);
+
+  public static final ServiceName<DeletionService> leaderLogStreamDeletionService(int partitionId) {
+    return ServiceName.newServiceName(
+        String.format("logstream.%d.deletion", partitionId), DeletionService.class);
+  }
 }

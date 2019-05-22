@@ -205,11 +205,11 @@ public class LogBlockIndex {
    *
    * @param snapshotEventPosition last written position
    */
-  public void writeSnapshot(final long snapshotEventPosition, final int maxSnapshots) {
+  public void writeSnapshot(final long snapshotEventPosition) {
     stateSnapshotController.takeSnapshot(snapshotEventPosition);
 
     try {
-      stateSnapshotController.ensureMaxSnapshotCount(maxSnapshots);
+      stateSnapshotController.ensureMaxSnapshotCount();
     } catch (Exception e) {
       Loggers.SNAPSHOT_LOGGER.error(ERROR_MSG_ENSURING_MAX_SNAPSHOT_COUNT, e);
     }
