@@ -6,13 +6,18 @@
 package org.camunda.optimize.service.es.report.process.user_task;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
 import java.sql.SQLException;
 
+import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskTotalDurationMapGroupByUserTaskReport;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
 public class UserTaskTotalDurationByUserTaskReportEvaluationIT
   extends AbstractUserTaskDurationByUserTaskReportEvaluationIT {
@@ -47,5 +52,28 @@ public class UserTaskTotalDurationByUserTaskReportEvaluationIT
     return createUserTaskTotalDurationMapGroupByUserTaskReport(processDefinitionKey, version);
   }
 
+  @Override
+  protected void assertRunningExecutionStateResult(final ProcessDurationReportMapResultDto result) {
+    assertThat(
+      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
+      is(nullValue())
+    );
+    assertThat(
+      result.getDataEntryForKey(USER_TASK_2).get().getValue(),
+      is(nullValue())
+    );
+  }
+
+  @Override
+  protected void assertAllExecutionStateResult(final ProcessDurationReportMapResultDto result) {
+    assertThat(
+      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(100L))
+    );
+    assertThat(
+      result.getDataEntryForKey(USER_TASK_2).get().getValue(),
+      is(nullValue())
+    );
+  }
 
 }

@@ -97,7 +97,7 @@ public class UserTaskMediatorPermutationsImportIT {
   public void isFullyImported() throws IOException {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployUserTaskProcess();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
     final long idleDuration = 500;
     changeUserTaskIdleDuration(processInstanceDto, idleDuration);
 

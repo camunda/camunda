@@ -45,8 +45,8 @@ public class CompletedInstancesOnlyFilterIT {
     ProcessInstanceEngineDto firstProcInst = engineRule.startProcessInstance(userTaskProcess.getId());
     ProcessInstanceEngineDto secondProcInst = engineRule.startProcessInstance(userTaskProcess.getId());
     ProcessInstanceEngineDto thirdProcInst = engineRule.startProcessInstance(userTaskProcess.getId());
-    engineRule.finishAllUserTasks(firstProcInst.getId());
-    engineRule.finishAllUserTasks(secondProcInst.getId());
+    engineRule.finishAllRunningUserTasks(firstProcInst.getId());
+    engineRule.finishAllRunningUserTasks(secondProcInst.getId());
     
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();

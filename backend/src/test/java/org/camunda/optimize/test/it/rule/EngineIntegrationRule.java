@@ -188,19 +188,19 @@ public class EngineIntegrationRule extends TestWatcher {
     return taskId;
   }
 
-  public void finishAllUserTasks() {
-    finishAllUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  public void finishAllRunningUserTasks() {
+    finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  public void finishAllUserTasks(final String user, final String password) {
-    finishAllUserTasks(user, password, null);
+  public void finishAllRunningUserTasks(final String user, final String password) {
+    finishAllRunningUserTasks(user, password, null);
   }
 
-  public void finishAllUserTasks(final String processInstanceId) {
-    finishAllUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
+  public void finishAllRunningUserTasks(final String processInstanceId) {
+    finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
   }
 
-  public void finishAllUserTasks(final String user, final String password, final String processInstanceId) {
+  public void finishAllRunningUserTasks(final String user, final String password, final String processInstanceId) {
     final BasicCredentialsProvider credentialsProvider = getBasicCredentialsProvider(user, password);
     try (final CloseableHttpClient httpClient = HttpClientBuilder.create()
       .setDefaultCredentialsProvider(credentialsProvider).build()
@@ -208,6 +208,24 @@ public class EngineIntegrationRule extends TestWatcher {
       final List<TaskDto> tasks = getUserTasks(httpClient, processInstanceId);
       for (TaskDto task : tasks) {
         claimAndCompleteUserTask(httpClient, task);
+      }
+    } catch (IOException e) {
+      logger.error("Error while trying to create http client auth authentication!", e);
+    }
+  }
+
+  public void claimAllRunningUserTasks(final String processInstanceId) {
+    claimAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
+  }
+
+  public void claimAllRunningUserTasks(final String user, final String password, final String processInstanceId) {
+    final BasicCredentialsProvider credentialsProvider = getBasicCredentialsProvider(user, password);
+    try (final CloseableHttpClient httpClient = HttpClientBuilder.create()
+      .setDefaultCredentialsProvider(credentialsProvider).build()
+    ) {
+      final List<TaskDto> tasks = getUserTasks(httpClient, processInstanceId);
+      for (TaskDto task : tasks) {
+        claimUserTask(httpClient, user, task);
       }
     } catch (IOException e) {
       logger.error("Error while trying to create http client auth authentication!", e);
@@ -273,8 +291,13 @@ public class EngineIntegrationRule extends TestWatcher {
 
   private void claimUserTaskAsDefaultUser(final CloseableHttpClient authenticatingClient, final TaskDto task)
     throws IOException {
+    claimUserTask(authenticatingClient, DEFAULT_USERNAME, task);
+  }
+
+  private void claimUserTask(final CloseableHttpClient authenticatingClient, final String userId, final TaskDto task)
+    throws IOException {
     HttpPost claimPost = new HttpPost(getSecuredClaimTaskUri(task.getId()));
-    claimPost.setEntity(new StringEntity("{ \"userId\" : \"" + DEFAULT_USERNAME + "\" }"));
+    claimPost.setEntity(new StringEntity("{ \"userId\" : \"" + userId + "\" }"));
     claimPost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse response = authenticatingClient.execute(claimPost)) {
       if (response.getStatusLine().getStatusCode() != 204) {
@@ -1047,8 +1070,12 @@ public class EngineIntegrationRule extends TestWatcher {
     return deployAndStartDecisionDefinition(dmnModelInstance, null);
   }
 
-  public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(DmnModelInstance dmnModelInstance, String tenantId) {
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition(dmnModelInstance, tenantId);
+  public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(DmnModelInstance dmnModelInstance,
+                                                                      String tenantId) {
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition(
+      dmnModelInstance,
+      tenantId
+    );
     startDecisionInstance(decisionDefinitionEngineDto.getId());
     return decisionDefinitionEngineDto;
   }

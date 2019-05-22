@@ -608,7 +608,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto =
       deployAndStartSimpleUserTaskProcessWithVariables(variables);
-    engineRule.finishAllUserTasks(processInstanceDto.getId());
+    engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
     engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();

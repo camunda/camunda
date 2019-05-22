@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.command.process.flownode.duration;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
@@ -29,8 +30,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.addExecutionStateFilter;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_DURATION;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_TYPE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
@@ -67,7 +70,7 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(false)
-      .aggregation(createAggregation())
+      .aggregation(createAggregation(processReportData.getConfiguration().getFlowNodeExecutionState()))
       .size(0);
     SearchRequest searchRequest =
       new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
@@ -99,17 +102,22 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
     );
   }
 
-  private AggregationBuilder createAggregation() {
+
+  private AggregationBuilder createAggregation(FlowNodeExecutionState flowNodeExecutionState) {
     return
       nested(EVENTS, EVENTS_AGGREGATION)
         .subAggregation(
           filter(
             FILTERED_EVENTS_AGGREGATION,
-            boolQuery()
-              .mustNot(
-                termQuery(EVENTS + "." + ACTIVITY_TYPE, MI_BODY)
-              )
-              .must(existsQuery(EVENTS + "." + ACTIVITY_DURATION))
+            addExecutionStateFilter(
+              boolQuery()
+                .mustNot(
+                  termQuery(EVENTS + "." + ACTIVITY_TYPE, MI_BODY)
+                )
+                .must(existsQuery(EVENTS + "." + ACTIVITY_DURATION)),
+              flowNodeExecutionState,
+              EVENTS + "." + ACTIVITY_END_DATE
+            )
           )
             .subAggregation(
               terms(ACTIVITY_ID_TERMS_AGGREGATION)

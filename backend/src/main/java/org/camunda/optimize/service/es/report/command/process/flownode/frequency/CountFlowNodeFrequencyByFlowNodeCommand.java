@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.process.flownode.frequency;
 
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
@@ -28,7 +29,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.addExecutionStateFilter;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_END_DATE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_TYPE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -54,7 +59,7 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeCountGroupi
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(false)
-      .aggregation(createAggregation())
+      .aggregation(createAggregation(processReportData.getConfiguration().getFlowNodeExecutionState()))
       .size(0);
     SearchRequest searchRequest =
       new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
@@ -85,16 +90,20 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeCountGroupi
     );
   }
 
-  private AggregationBuilder createAggregation() {
+  private AggregationBuilder createAggregation(FlowNodeExecutionState flowNodeExecutionState) {
     // @formatter:off
     return
       nested("events", "events")
         .subAggregation(
             filter(
             "filteredEvents",
-            boolQuery()
-              .mustNot(
-                termQuery("events.activityType", MI_BODY)
+              addExecutionStateFilter(
+                 boolQuery()
+                .mustNot(
+                  termQuery(EVENTS + "." + ACTIVITY_TYPE, MI_BODY)
+                ),
+                flowNodeExecutionState,
+                EVENTS + "." + ACTIVITY_END_DATE
               )
           )
           .subAggregation(AggregationBuilders

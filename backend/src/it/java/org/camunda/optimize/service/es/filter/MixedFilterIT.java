@@ -57,7 +57,7 @@ public class MixedFilterIT {
       // this is the process instance that should be filtered
     ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), variables);
     final String expectedInstanceId = instanceEngineDto.getId();
-    engineRule.finishAllUserTasks(expectedInstanceId);
+    engineRule.finishAllRunningUserTasks(expectedInstanceId);
 
       // wrong not executed flow node
     engineRule.startProcessInstance(processDefinition.getId(), variables);
@@ -65,13 +65,13 @@ public class MixedFilterIT {
     // wrong variable
     variables.put("var", "anotherValue");
     instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), variables);
-    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    engineRule.finishAllRunningUserTasks(instanceEngineDto.getId());
 
     // wrong date
     Thread.sleep(1000L);
     variables.put("var", "value");
     instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), variables);
-    engineRule.finishAllUserTasks(instanceEngineDto.getId());
+    engineRule.finishAllRunningUserTasks(instanceEngineDto.getId());
     OffsetDateTime start = engineRule.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
     OffsetDateTime end = engineRule.getHistoricProcessInstance(instanceEngineDto.getId()).getEndTime();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();

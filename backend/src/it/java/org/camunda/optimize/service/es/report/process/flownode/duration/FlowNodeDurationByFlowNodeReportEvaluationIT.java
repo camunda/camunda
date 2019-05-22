@@ -11,6 +11,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -534,6 +535,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
+
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
@@ -553,6 +555,104 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(
       result.getDataEntryForKey(START_EVENT).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(100L))
+    );
+  }
+
+  @Test
+  public void evaluateReportWithExecutionStateRunning() throws SQLException {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData =
+      createFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        processDefinition.getKey(),
+        processDefinition.getVersionAsString()
+      );
+    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+      reportData);
+
+    // then
+    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(0L));
+    assertThat(
+      result.getDataEntryForKey(START_EVENT).get().getValue(),
+      is(nullValue())
+    );
+    assertThat(
+      result.getDataEntryForKey(USER_TASK).get().getValue(),
+      is(nullValue())
+    );
+  }
+
+  @Test
+  public void evaluateReportWithExecutionStateCompleted() throws SQLException {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData =
+      createFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        processDefinition.getKey(),
+        processDefinition.getVersionAsString()
+      );
+    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.COMPLETED);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+      reportData);
+
+    // then
+    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(1L));
+    assertThat(
+      result.getDataEntryForKey(START_EVENT).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(100L))
+    );
+  }
+
+  @Test
+  public void evaluateReportWithExecutionStateAll() throws SQLException {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData =
+      createFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        processDefinition.getKey(),
+        processDefinition.getVersionAsString()
+      );
+    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.ALL);
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+      reportData);
+
+    // then
+    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(1L));
+    assertThat(
+      result.getDataEntryForKey(START_EVENT).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(100L))
+    );
+    assertThat(
+      result.getDataEntryForKey(USER_TASK).get().getValue(),
+      is(nullValue())
     );
   }
 

@@ -258,7 +258,7 @@ public class VariableImportIT extends AbstractImportIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
-    engineRule.finishAllUserTasks(instanceDto.getId());
+    engineRule.finishAllRunningUserTasks(instanceDto.getId());
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 

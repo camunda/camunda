@@ -273,7 +273,7 @@ public class CombinedReportHandlingIT {
   public void canSaveAndEvaluateCombinedReportsWithUserTaskDurationReportsOfDifferentDurationViewProperties() {
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
     String totalDurationReportId = createNewSingleUserTaskTotalDurationMapReport(engineDto);
     String idleDurationReportId = createNewSingleUserTaskIdleDurationMapReport(engineDto);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -302,7 +302,7 @@ public class CombinedReportHandlingIT {
   public void canSaveAndEvaluateCombinedReportsWithUserTaskDurationAndProcessDurationReports() {
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
     String userTaskTotalDurationReportId = createNewSingleUserTaskTotalDurationMapReport(engineDto);
     String flowNodeDurationReportId = createNewSingleDurationMapReport(engineDto);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -620,7 +620,7 @@ public class CombinedReportHandlingIT {
   public void canEvaluateUnsavedCombinedReportWithProcessUserTaskTotalDurationMapReports() {
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
     String totalDurationReportId = createNewSingleUserTaskTotalDurationMapReport(engineDto);
     String totalDurationReportId2 = createNewSingleUserTaskTotalDurationMapReport(engineDto);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -642,7 +642,7 @@ public class CombinedReportHandlingIT {
   public void canEvaluateUnsavedCombinedReportWithProcessUserTaskTotalDurationAndUserTaskIdleDurationMapReports() {
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
     String totalDurationReportId = createNewSingleUserTaskTotalDurationMapReport(engineDto);
     String idleDurationReportId = createNewSingleUserTaskIdleDurationMapReport(engineDto);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -664,7 +664,7 @@ public class CombinedReportHandlingIT {
   public void canEvaluateUnsavedCombinedReportWithProcessDurationMapReportAndUserTaskTotalDurationMapReport() {
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
     String totalDurationReportId = createNewSingleDurationMapReport(engineDto);
     String idleDurationReportId = createNewSingleUserTaskIdleDurationMapReport(engineDto);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();

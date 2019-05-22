@@ -11,6 +11,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.AbstractServiceTaskBuilder;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
@@ -204,7 +205,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
   }
 
   @Test
-  public void runningActivitiesAreConsideredAsWell() {
+  public void evaluateReportWithExecutionStateRunning() {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -214,6 +215,47 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
       processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
+    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
+    ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getDataEntryForKey("startEvent").get().getValue(), is(0L));
+    assertThat(result.getDataEntryForKey("userTask").get().getValue(), is(1L));
+  }
+
+  @Test
+  public void evaluateReportWithExecutionStateCompleted() {
+    // given
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+      processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
+    );
+    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.COMPLETED);
+    ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getDataEntryForKey("startEvent").get().getValue(), is(1L));
+    assertThat(result.getDataEntryForKey("userTask").get().getValue(), is(0L));
+  }
+
+  @Test
+  public void evaluateReportWithExecutionStateAll() {
+    // given
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+      processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
+    );
+    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.ALL);
     ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then

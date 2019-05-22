@@ -79,8 +79,8 @@ public class UserTaskImportIT {
   public void completedUserTasksAreImported() throws IOException {
     // given
     deployAndStartTwoUserTasksProcess();
-    engineRule.finishAllUserTasks();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
+    engineRule.finishAllRunningUserTasks();
 
     // when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -153,7 +153,7 @@ public class UserTaskImportIT {
   public void runningAndCompletedUserTasksAreImported() throws IOException {
     // given
     deployAndStartTwoUserTasksProcess();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
 
     // when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -187,7 +187,7 @@ public class UserTaskImportIT {
     // given
     deployAndStartOneUserTaskProcess();
     final UUID independentUserTaskId = engineRule.createIndependentUserTask();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
 
     // when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -230,12 +230,12 @@ public class UserTaskImportIT {
   public void noSideEffectsByOtherProcessInstanceUserTasks() throws IOException {
     // given
     final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartTwoUserTasksProcess();
-    engineRule.finishAllUserTasks();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
+    engineRule.finishAllRunningUserTasks();
 
     final ProcessInstanceEngineDto processInstanceDto2 = deployAndStartOneUserTaskProcess();
     // only first task finished
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
 
     // when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -274,8 +274,8 @@ public class UserTaskImportIT {
   public void userOperationsAreImported() throws IOException {
     // given
     deployAndStartTwoUserTasksProcess();
-    engineRule.finishAllUserTasks();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
+    engineRule.finishAllRunningUserTasks();
 
     // when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -312,7 +312,7 @@ public class UserTaskImportIT {
     // given
     deployAndStartOneUserTaskProcess();
     engineRule.createIndependentUserTask();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
 
     // when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -375,7 +375,7 @@ public class UserTaskImportIT {
   public void idleTimeMetricIsCalculatedOnClaimOperationImport() throws IOException {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartOneUserTaskProcess();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
     final long idleDuration = 500;
     changeUserTaskIdleDuration(processInstanceDto, idleDuration);
 
@@ -429,8 +429,8 @@ public class UserTaskImportIT {
   public void workTimeMetricIsCalculatedOnClaimOperationImport() throws IOException {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoUserTasksProcess();
-    engineRule.finishAllUserTasks();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
+    engineRule.finishAllRunningUserTasks();
     final long workDuration = 500;
     changeUserTaskWorkDuration(processInstanceDto, workDuration);
 

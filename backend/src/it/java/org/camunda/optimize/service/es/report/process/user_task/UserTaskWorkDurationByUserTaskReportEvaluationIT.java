@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.process.user_task;
 
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -14,7 +15,11 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
+import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskWorkDurationMapGroupByUserTaskReport;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
 public class UserTaskWorkDurationByUserTaskReportEvaluationIT
   extends AbstractUserTaskDurationByUserTaskReportEvaluationIT {
@@ -43,13 +48,17 @@ public class UserTaskWorkDurationByUserTaskReportEvaluationIT
                                 final long duration) {
     engineRule.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
-        historicUserTaskInstanceDto ->
-          changeUserOperationClaimTimestamp(
-            processInstanceDto,
-            duration,
-            historicUserTaskInstanceDto
-          )
+        historicUserTaskInstanceDto -> {
+          if (historicUserTaskInstanceDto.getEndTime() != null) {
+            changeUserOperationClaimTimestamp(
+              processInstanceDto,
+              duration,
+              historicUserTaskInstanceDto
+            );
+          }
+        }
       );
+
   }
 
   @Override
@@ -71,5 +80,27 @@ public class UserTaskWorkDurationByUserTaskReportEvaluationIT
     }
   }
 
+  @Override
+  protected void assertRunningExecutionStateResult(final ProcessDurationReportMapResultDto result) {
+    assertThat(
+      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
+      is(nullValue())
+    );
+    assertThat(
+      result.getDataEntryForKey(USER_TASK_2).get().getValue(),
+      is(nullValue())
+    );
+  }
 
+  @Override
+  protected void assertAllExecutionStateResult(final ProcessDurationReportMapResultDto result) {
+    assertThat(
+      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(100L))
+    );
+    assertThat(
+      result.getDataEntryForKey(USER_TASK_2).get().getValue(),
+      is(nullValue())
+    );
+  }
 }

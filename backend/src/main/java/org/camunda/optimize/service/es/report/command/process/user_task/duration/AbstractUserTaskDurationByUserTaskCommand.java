@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.process.user_task.duration;
 
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.addExecutionStateFilter;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ACTIVITY_ID;
@@ -47,7 +49,7 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
 
   protected AggregationStrategy aggregationStrategy;
 
-  public AbstractUserTaskDurationByUserTaskCommand(AggregationStrategy strategy) {
+  AbstractUserTaskDurationByUserTaskCommand(AggregationStrategy strategy) {
     aggregationStrategy = strategy;
   }
 
@@ -65,7 +67,7 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(false)
-      .aggregation(createAggregation())
+      .aggregation(createAggregation(processReportData.getConfiguration().getFlowNodeExecutionState()))
       .size(0);
     final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
       .types(PROC_INSTANCE_TYPE)
@@ -95,14 +97,18 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
 
   protected abstract String getDurationFieldName();
 
-  private AggregationBuilder createAggregation() {
+
+  private AggregationBuilder createAggregation(FlowNodeExecutionState flowNodeExecutionState) {
     return nested(USER_TASKS, USER_TASKS_AGGREGATION)
       .subAggregation(
         filter(
           FILTERED_USER_TASKS_AGGREGATION,
-          boolQuery()
-            .must(existsQuery(USER_TASKS + "." + getDurationFieldName()))
-            .must(existsQuery(USER_TASKS + "." + USER_TASK_END_DATE))
+          addExecutionStateFilter(
+            boolQuery()
+              .must(existsQuery(USER_TASKS + "." + getDurationFieldName())),
+            flowNodeExecutionState,
+            USER_TASKS + "." + USER_TASK_END_DATE
+          )
         )
           .subAggregation(
             AggregationBuilders

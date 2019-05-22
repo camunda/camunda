@@ -289,7 +289,7 @@ public class ProcessImportIT extends AbstractImportIT {
     deployAndStartSimpleServiceTask();
 
     // when
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
@@ -334,7 +334,7 @@ public class ProcessImportIT extends AbstractImportIT {
     }
 
     // when
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
@@ -421,7 +421,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     //when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 

@@ -59,7 +59,7 @@ public class ImportIndexIT extends AbstractImportIT {
     // given
     deployAndStartUserTaskProcess();
     // we need finished ones
-    engineRule.finishAllUserTasks();
+    engineRule.finishAllRunningUserTasks();
     // as well as running
     deployAndStartUserTaskProcess();
     deployAndStartSimpleServiceTask();

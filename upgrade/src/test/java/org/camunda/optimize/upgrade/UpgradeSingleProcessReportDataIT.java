@@ -66,6 +66,20 @@ public class UpgradeSingleProcessReportDataIT extends AbstractUpgradeIT {
     assertThat(report.getData().getConfiguration().getHiddenNodes(), notNullValue());
   }
 
+  @Test
+  public void reportConfigurationHasExecutionStateField() throws Exception {
+    //given
+    UpgradePlan upgradePlan = buildUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    final SingleProcessReportDefinitionDto report = getSingleProcessReportDefinitionDataById();
+
+    assertThat(report.getData().getConfiguration().getFlowNodeExecutionState(), notNullValue());
+  }
+
   private String getReportIndexAlias() {
     return getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE.getType());
   }

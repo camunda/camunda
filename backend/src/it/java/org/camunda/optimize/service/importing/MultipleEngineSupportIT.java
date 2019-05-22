@@ -370,8 +370,8 @@ public class MultipleEngineSupportIT {
   }
 
   public void finishAllUserTasksForAllEngines() {
-    defaultEngineRule.finishAllUserTasks();
-    secondEngineRule.finishAllUserTasks();
+    defaultEngineRule.finishAllRunningUserTasks();
+    secondEngineRule.finishAllRunningUserTasks();
   }
 
   private void deployAndStartDecisionDefinitionForAllEngines() {

@@ -43,7 +43,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     OffsetDateTime processInstanceStartTime =
       engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
 
-    engineRule.finishAllUserTasks(processInstance.getId());
+    engineRule.finishAllRunningUserTasks(processInstance.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -79,7 +79,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     embeddedOptimizeRule.reloadConfiguration();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    engineRule.finishAllUserTasks(processInstance.getId());
+    engineRule.finishAllRunningUserTasks(processInstance.getId());
 
     OffsetDateTime processInstanceEndTime =
       engineRule.getHistoricProcessInstance(processInstance.getId()).getEndTime();

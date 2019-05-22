@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.main.impl;
 
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -52,8 +53,8 @@ public class UpgradeFrom24To25 implements Upgrade {
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
       .addUpgradeStep(createChangeSingleDecisionReportViewStructureStep())
-      .addUpgradeStep(createAddHiddenNodesFieldToReportConfigStep(SINGLE_DECISION_REPORT_TYPE))
-      .addUpgradeStep(createAddHiddenNodesFieldToReportConfigStep(SINGLE_PROCESS_REPORT_TYPE))
+      .addUpgradeStep(createNewConfigFieldsToReportConfigStep(SINGLE_DECISION_REPORT_TYPE))
+      .addUpgradeStep(createNewConfigFieldsToReportConfigStep(SINGLE_PROCESS_REPORT_TYPE))
       .build();
   }
 
@@ -77,12 +78,13 @@ public class UpgradeFrom24To25 implements Upgrade {
     );
   }
 
-  private static UpdateDataStep createAddHiddenNodesFieldToReportConfigStep(String type) {
+  private static UpdateDataStep createNewConfigFieldsToReportConfigStep(String type) {
     String script =
       // @formatter:off
       "def reportData = ctx._source.data;\n" +
       "if (reportData.configuration != null) {\n" +
       "  reportData.configuration.hiddenNodes = new ArrayList();" +
+      "  reportData.configuration.flowNodeExecutionState = '" + FlowNodeExecutionState.ALL + "';" +
       "}\n";
       // @formatter:on
     return new UpdateDataStep(

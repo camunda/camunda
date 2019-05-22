@@ -59,6 +59,10 @@ public class ReportConstants {
   public static final String MAX_AGGREGATION_TYPE = "max";
   public static final String MEDIAN_AGGREGATION_TYPE = "median";
 
+  public static final String RUNNING_FLOWNODE_EXECUTION_STATE = "running";
+  public static final String COMPLETED_FLOWNODE_EXECUTION_STATE = "completed";
+  public static final String ALL_FLOWNODE_EXECUTION_STATE = "all";
+
   // miscellaneous report constants
   public static final String ALL_VERSIONS = "ALL";
 
