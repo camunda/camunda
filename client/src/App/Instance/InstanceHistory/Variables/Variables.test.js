@@ -37,7 +37,7 @@ const setProps = (node, WrappedComponent, updatedProps) => {
   });
 };
 
-describe('Variables', () => {
+describe.skip('Variables', () => {
   let node;
 
   beforeEach(() => {
