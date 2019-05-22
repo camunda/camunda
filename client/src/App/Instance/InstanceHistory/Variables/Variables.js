@@ -9,6 +9,8 @@ import PropTypes from 'prop-types';
 
 import {isValidJSON} from 'modules/utils';
 
+import Modal from 'modules/components/Modal';
+
 import {EMPTY_PLACEHOLDER, NULL_PLACEHOLDER} from './constants';
 import * as Styled from './styled';
 
@@ -24,6 +26,7 @@ export default function Variables({
   const [key, setKey] = useState('');
   const [value, setValue] = useState('');
   const [mode, setMode] = useState('');
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const variablesContentRef = createRef();
 
@@ -37,6 +40,22 @@ export default function Variables({
   function saveVariable() {
     onVariableUpdate(key, value);
     closeEdit();
+  }
+
+  function handleModalOpen() {
+    setIsModalVisible(true);
+    setEditMode(true);
+    setMode(CONST.EDIT);
+  }
+
+  function handleModalClose() {
+    closeEdit();
+    setIsModalVisible(false);
+  }
+
+  function handleModalSave() {
+    onVariableUpdate(key, value);
+    handleModalClose();
   }
 
   function handleOpenAddVariable() {
@@ -65,9 +84,16 @@ export default function Variables({
   function renderEditButtons(customCondition = false) {
     return (
       <>
-        <Styled.EditButton title="Open Modal" data-test="open-modal-btn">
-          <Styled.ModalIcon />
-        </Styled.EditButton>
+        {console.log(value, isValidJSON(value))}
+        {isValidJSON(value) && (
+          <Styled.EditButton
+            title="Open Modal"
+            data-test="open-modal-btn"
+            onClick={() => handleModalOpen()}
+          >
+            <Styled.ModalIcon />
+          </Styled.EditButton>
+        )}
         <Styled.EditButton
           title="Exit edit mode"
           data-test="exit-edit-inline-btn"
@@ -136,6 +162,35 @@ export default function Variables({
           {renderEditButtons(variableAlreadyExists)}
         </Styled.AddButtonsTD>
       </Styled.TR>
+    );
+  }
+
+  function renderModal() {
+    return (
+      <Modal onModalClose={handleModalClose} isVisible={isModalVisible}>
+        <Modal.Header>{`Edit Variable "${key}"`}</Modal.Header>
+        <Styled.ModalBody>
+          <pre>
+            <Styled.LinesSeparator />
+            <code>
+              <Styled.CodeLine>{value}</Styled.CodeLine>)
+            </code>
+          </pre>
+        </Styled.ModalBody>
+        <Modal.Footer>
+          {/* <Modal.SecondaryButton title="Close Modal" onClick={handleModalClose}>
+            Close
+          </Modal.SecondaryButton> */}
+
+          <Modal.PrimaryButton
+            title="Save Variable"
+            disabled={!isValidJSON(value)}
+            onClick={handleModalSave}
+          >
+            Save
+          </Modal.PrimaryButton>
+        </Modal.Footer>
+      </Modal>
     );
   }
 
@@ -209,6 +264,7 @@ export default function Variables({
           <Styled.Plus /> Add Variable
         </Styled.Button>
       </Styled.VariablesFooter>
+      {isModalVisible && renderModal()}
     </Styled.Variables>
   );
 }

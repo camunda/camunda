@@ -12,6 +12,8 @@ import ActionStatus from 'modules/components/ActionStatus/ActionStatus.js';
 import DefaultButton from 'modules/components/Button';
 import BasicInput from 'modules/components/Input';
 import BasicTextarea from 'modules/components/Textarea';
+import Modal from 'modules/components/Modal';
+
 import {ReactComponent as DefaultEdit} from 'modules/components/Icon/edit.svg';
 import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
 import {ReactComponent as DefaultClose} from 'modules/components/Icon/close.svg';
@@ -271,4 +273,59 @@ export const EditIcon = themed(styled(DefaultEdit)`
 
 export const ModalIcon = themed(styled(DefaultModal)`
   ${iconStyle}
+`);
+
+export const ModalBody = themed(styled(Modal.Body)`
+  padding: 0;
+  position: relative;
+  counter-reset: line;
+  overflow: auto;
+
+  & pre {
+    margin: 0;
+  }
+`);
+
+export const CodeLine = themed(styled.p`
+  margin: 3px;
+  margin-left: 0;
+  line-height: 14px;
+  color: ${themeStyle({
+    dark: 'rgba(255, 255, 255, 0.9)',
+    light: Colors.uiLight06
+  })};
+  font-family: IBMPlexMono;
+  font-size: 14px;
+
+  &:before {
+    font-size: 12px;
+    box-sizing: border-box;
+    text-align: right;
+    counter-increment: line;
+    content: counter(line);
+    color: ${themeStyle({
+      dark: '#ffffff',
+      light: Colors.uiLight06
+    })};
+    display: inline-block;
+    width: 35px;
+    opacity: ${themeStyle({
+      dark: 0.5,
+      light: 0.65
+    })};
+    padding-right: 11px;
+    -webkit-user-select: none;
+  }
+`);
+
+export const LinesSeparator = themed(styled.span`
+  position: absolute;
+  top: 0;
+  left: 33px;
+  height: 100%;
+  width: 1px;
+  background-color: ${themeStyle({
+    dark: Colors.uiDark02,
+    light: Colors.uiLight05
+  })};
 `);
