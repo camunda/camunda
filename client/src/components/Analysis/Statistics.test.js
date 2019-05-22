@@ -57,6 +57,7 @@ const initialProps = {
   config: {
     filter: [],
     processDefinitionKey: null,
+    tenantIds: [],
     processDefinitionVersion: null
   },
   gateway: null,
@@ -67,6 +68,7 @@ const props = {
   config: {
     filter: [],
     processDefinitionKey: 'a',
+    tenantIds: [null],
     processDefinitionVersion: 1
   },
   gateway: {
@@ -97,7 +99,7 @@ it('should load updated correlation when selection or configuration changes', as
   await flushPromises();
 
   expect(loadCorrelationData).toHaveBeenCalled();
-  expect(loadCorrelationData.mock.calls[0][3]).toBe('g2');
+  expect(loadCorrelationData.mock.calls[0][4]).toBe('g2');
 
   loadCorrelationData.mockClear();
   node.setProps({config: {filter: ['aFilter']}});
@@ -105,7 +107,7 @@ it('should load updated correlation when selection or configuration changes', as
   await flushPromises();
 
   expect(loadCorrelationData).toHaveBeenCalled();
-  expect(loadCorrelationData.mock.calls[0][2]).toEqual(['aFilter']);
+  expect(loadCorrelationData.mock.calls[0][3]).toEqual(['aFilter']);
 });
 
 it('should create two Charts', async () => {

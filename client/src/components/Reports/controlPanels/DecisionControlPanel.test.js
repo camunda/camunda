@@ -44,6 +44,7 @@ const report = {
   data: {
     decisionDefinitionKey: 'aKey',
     decisionDefinitionVersion: 'aVersion',
+    tenantIds: [null],
     view: {property: 'rawData'},
     groupBy: {type: 'none', unit: null},
     visualization: 'table',
@@ -114,7 +115,7 @@ it('should reset variable groupby on definition change', async () => {
     />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', '1');
+  await node.find(DefinitionSelection).prop('onChange')('newDefinition', '1', []);
 
   expect(spy).toHaveBeenCalled();
   expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
@@ -134,7 +135,7 @@ it('should reset variable filters on definition change', async () => {
     />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', '1');
+  await node.find(DefinitionSelection).prop('onChange')('newDefinition', '1', []);
 
   expect(spy).toHaveBeenCalled();
   expect(spy.mock.calls[0][0].filter).toEqual({$set: [{type: 'evaluationDateTime'}]});
@@ -144,7 +145,7 @@ it('should reset definition specific configurations on definition change', async
   const spy = jest.fn();
   const node = shallow(<DecisionControlPanel report={report} updateReport={spy} />);
 
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', '1');
+  await node.find(DefinitionSelection).prop('onChange')('newDefinition', '1', []);
 
   expect(spy.mock.calls[0][0].configuration.excludedColumns).toBeDefined();
   expect(spy.mock.calls[0][0].configuration.columnOrder).toBeDefined();
@@ -163,22 +164,4 @@ it('should not crash when no decisionDefinition is selected', () => {
       }}
     />
   );
-});
-
-it('should show decision definition name', async () => {
-  extractDefinitionName.mockReturnValue('aName');
-
-  const node = await shallow(<DecisionControlPanel report={report} />);
-
-  expect(node.find(Popover).prop('title')).toContain('aName');
-});
-
-it('should change decision definition name if decision definition is updated', async () => {
-  extractDefinitionName.mockReturnValue('aName');
-  const node = await shallow(<DecisionControlPanel report={report} />);
-
-  extractDefinitionName.mockReturnValue('anotherName');
-  node.setProps({decisionDefinitionKey: 'bar'});
-
-  expect(node.find(Popover).prop('title')).toContain('anotherName');
 });

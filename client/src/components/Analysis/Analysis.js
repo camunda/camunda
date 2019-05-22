@@ -24,6 +24,7 @@ export default class Analysis extends React.Component {
       config: {
         processDefinitionKey: '',
         processDefinitionVersion: '',
+        tenantIds: [],
         filter: []
       },
       data: null,
@@ -91,6 +92,7 @@ export default class Analysis extends React.Component {
         data: await loadFrequencyData(
           config.processDefinitionKey,
           config.processDefinitionVersion,
+          config.tenantIds,
           config.filter
         )
       });
@@ -114,23 +116,24 @@ export default class Analysis extends React.Component {
   };
 
   updateConfig = async updates => {
-    const config = {
-      ...this.state.config,
-      ...updates
-    };
-    this.setState({config});
-
-    if (updates.processDefinitionKey && updates.processDefinitionVersion) {
+    if (updates.processDefinitionKey && updates.processDefinitionVersion && updates.tenantIds) {
       this.setState({
+        config: {...this.state.config, ...updates},
         xml: await loadProcessDefinitionXml(
-          config.processDefinitionKey,
-          config.processDefinitionVersion
+          updates.processDefinitionKey,
+          updates.processDefinitionVersion,
+          updates.tenantIds[0]
         ),
         gateway: null,
         endEvent: null
       });
-    } else if (!config.processDefinitionKey || !config.processDefinitionVersion) {
+    } else if (
+      !updates.processDefinitionKey ||
+      !updates.processDefinitionVersion ||
+      !updates.tenantIds
+    ) {
       this.setState({
+        config: {...this.state.config, ...updates},
         xml: null,
         gateway: null,
         endEvent: null

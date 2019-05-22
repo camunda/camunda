@@ -49,11 +49,13 @@ it('should load the process definition xml when the process definition id is upd
   const node = mount(<Analysis />);
 
   loadProcessDefinitionXml.mockClear();
-  node
-    .instance()
-    .updateConfig({processDefinitionKey: 'someKey', processDefinitionVersion: 'someVersion'});
+  node.instance().updateConfig({
+    processDefinitionKey: 'someKey',
+    processDefinitionVersion: 'someVersion',
+    tenantIds: ['a', 'b']
+  });
 
-  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('someKey', 'someVersion');
+  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('someKey', 'someVersion', 'a');
 });
 
 it('should load frequency data when the process definition key changes', async () => {
@@ -83,13 +85,15 @@ it('should load frequency data when the process definition version changes', asy
 it('should load updated frequency data when the filter changed', async () => {
   const node = mount(<Analysis />);
 
-  await node
-    .instance()
-    .updateConfig({processDefinitionKey: 'someKey', processDefinitionVersion: 'someVersion'});
+  await node.instance().updateConfig({
+    processDefinitionKey: 'someKey',
+    processDefinitionVersion: 'someVersion',
+    tenantIds: [null]
+  });
   loadFrequencyData.mockClear();
   await node.instance().updateConfig({filter: ['someFilter']});
 
-  expect(loadFrequencyData.mock.calls[0][2]).toEqual(['someFilter']);
+  expect(loadFrequencyData.mock.calls[0][3]).toEqual(['someFilter']);
 });
 
 it('should not try to load frequency data if no process definition is selected', () => {

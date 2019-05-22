@@ -29,19 +29,12 @@
         padding-top: 27px;
       }
 
-      .Labeled .label {
+      .label {
         color: #626262;
         font-size: 0.875em;
         margin-bottom: 5px;
+        display: block;
       }
-    }
-  }
-
-  .processDefinitionPopover {
-    width: 100%;
-
-    .Popover__button {
-      padding-left: 20px;
     }
   }
 }

@@ -113,23 +113,6 @@ it('should show the element id if an element has no name', () => {
   expect(node).toIncludeText('gatewayId');
 });
 
-it('should show initially show process definition name if xml is available', async () => {
-  extractDefinitionName.mockReturnValue('aName');
-
-  const node = await mount(<AnalysisControlPanel {...data} />);
-
-  expect(node.find('.AnalysisControlPanel__popover')).toIncludeText('aName');
-});
-
-it('should change process definition name if process definition xml is updated', async () => {
-  const node = await mount(<AnalysisControlPanel {...data} />);
-
-  extractDefinitionName.mockReturnValue('aName');
-  await node.setProps({xml: 'barXml'});
-
-  expect(node.find('.AnalysisControlPanel__popover')).toIncludeText('aName');
-});
-
 it('should disable gateway and EndEvent elements if no ProcDef selected', async () => {
   const node = await mount(<AnalysisControlPanel hoveredControl="gateway" {...emptyData} />);
 

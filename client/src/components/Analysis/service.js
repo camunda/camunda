@@ -6,22 +6,33 @@
 
 import {post} from 'request';
 
-export async function loadFrequencyData(processDefinitionKey, processDefinitionVersion, filter) {
+export async function loadFrequencyData(
+  processDefinitionKey,
+  processDefinitionVersion,
+  tenantIds,
+  filter
+) {
   const response = await post(
     'api/report/evaluate',
-    createFlowNodeFrequencyReport(processDefinitionKey, processDefinitionVersion, filter)
+    createFlowNodeFrequencyReport(processDefinitionKey, processDefinitionVersion, tenantIds, filter)
   );
 
   return await response.json();
 }
 
-function createFlowNodeFrequencyReport(processDefinitionKey, processDefinitionVersion, filter) {
+function createFlowNodeFrequencyReport(
+  processDefinitionKey,
+  processDefinitionVersion,
+  tenantIds,
+  filter
+) {
   return {
     combined: false,
     reportType: 'process',
     data: {
       processDefinitionKey,
       processDefinitionVersion,
+      tenantIds,
       filter,
       view: {
         entity: 'flowNode',
@@ -39,6 +50,7 @@ function createFlowNodeFrequencyReport(processDefinitionKey, processDefinitionVe
 export async function loadCorrelationData(
   processDefinitionKey,
   processDefinitionVersion,
+  tenantIds,
   filter,
   gateway,
   end
@@ -46,6 +58,7 @@ export async function loadCorrelationData(
   const response = await post('api/analysis/correlation', {
     processDefinitionKey,
     processDefinitionVersion,
+    tenantIds,
     filter,
     gateway,
     end

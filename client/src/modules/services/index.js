@@ -35,3 +35,7 @@ export function getRandomId() {
     .toString(36)
     .slice(2);
 }
+
+export function capitalize(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}

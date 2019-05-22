@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {Popover, DefinitionSelection, Labeled} from 'components';
+import {DefinitionSelection} from 'components';
 import {formatters} from 'services';
 
 import {Configuration} from './Configuration';
@@ -13,7 +13,7 @@ import ReportDropdown from './ReportDropdown';
 
 import {DecisionFilter} from './filter';
 
-import {reportConfig, loadDecisionDefinitionXml, extractDefinitionName} from 'services';
+import {reportConfig, loadDecisionDefinitionXml} from 'services';
 const {decision: decisionConfig} = reportConfig;
 
 export default class DecisionControlPanel extends React.Component {
@@ -50,25 +50,13 @@ export default class DecisionControlPanel extends React.Component {
     return null;
   }
 
-  createTitle = () => {
-    const {
-      decisionDefinitionKey,
-      decisionDefinitionVersion,
-      configuration: {xml}
-    } = this.props.report.data;
-    if (xml) {
-      return `${extractDefinitionName(decisionDefinitionKey, xml)} : ${decisionDefinitionVersion}`;
-    } else {
-      return 'Select Decision';
-    }
-  };
-
-  changeDefinition = async (key, version) => {
+  changeDefinition = async (key, version, tenants) => {
     const {groupBy, filter} = this.props.report.data;
 
     const change = {
       decisionDefinitionKey: {$set: key},
       decisionDefinitionVersion: {$set: version},
+      tenantIds: {$set: tenants},
       configuration: {
         excludedColumns: {$set: []},
         columnOrder: {
@@ -79,7 +67,9 @@ export default class DecisionControlPanel extends React.Component {
             variables: []
           }
         },
-        xml: {$set: key && version ? await loadDecisionDefinitionXml(key, version) : null}
+        xml: {
+          $set: key && version ? await loadDecisionDefinitionXml(key, version, tenants[0]) : null
+        }
       },
       filter: {
         $set: filter.filter(({type}) => type !== 'inputVariable' && type !== 'outputVariable')
@@ -112,17 +102,16 @@ export default class DecisionControlPanel extends React.Component {
       <div className="DecisionControlPanel ReportControlPanel">
         <ul>
           <li className="select">
-            <Labeled label="Decision Definition">
-              <Popover className="processDefinitionPopover" title={this.createTitle()}>
-                <DefinitionSelection
-                  type="decision"
-                  definitionKey={decisionDefinitionKey}
-                  definitionVersion={decisionDefinitionVersion}
-                  onChange={this.changeDefinition}
-                  enableAllVersionSelection
-                />
-              </Popover>
-            </Labeled>
+            <span className="label">Decision Definition</span>
+            <DefinitionSelection
+              type="decision"
+              definitionKey={decisionDefinitionKey}
+              definitionVersion={decisionDefinitionVersion}
+              tenants={data.tenantIds}
+              xml={xml}
+              onChange={this.changeDefinition}
+              enableAllVersionSelection
+            />
           </li>
           {['view', 'groupBy', 'visualization'].map((field, idx, fields) => {
             const previous = fields
@@ -131,22 +120,21 @@ export default class DecisionControlPanel extends React.Component {
 
             return (
               <li className="select" key={field}>
-                <Labeled label={formatters.convertCamelToSpaces(field)}>
-                  <ReportDropdown
-                    type="decision"
-                    field={field}
-                    value={data[field]}
-                    xml={xml}
-                    variables={this.state.variables}
-                    previous={previous}
-                    disabled={
-                      !decisionDefinitionKey ||
-                      !decisionDefinitionVersion ||
-                      previous.some(entry => !entry)
-                    }
-                    onChange={newValue => this.updateReport(field, newValue)}
-                  />
-                </Labeled>
+                <span className="label">{formatters.convertCamelToSpaces(field)}</span>
+                <ReportDropdown
+                  type="decision"
+                  field={field}
+                  value={data[field]}
+                  xml={xml}
+                  variables={this.state.variables}
+                  previous={previous}
+                  disabled={
+                    !decisionDefinitionKey ||
+                    !decisionDefinitionVersion ||
+                    previous.some(entry => !entry)
+                  }
+                  onChange={newValue => this.updateReport(field, newValue)}
+                />
               </li>
             );
           })}

@@ -4,15 +4,16 @@
   border: 1px solid #dfdfdf;
   padding: 12px;
   margin-bottom: 1em;
-}
 
-.AnalysisControlPanel__popover {
-  display: inline-block;
-  margin: 0 0.5em;
-  line-height: normal;
+  .DefinitionSelection {
+    display: inline-block;
+    margin: 0 0.5em;
+    line-height: normal;
+    width: auto;
 
-  .Popover__button {
-    padding-left: 20px;
+    .Popover__button {
+      padding-left: 20px;
+    }
   }
 }
 

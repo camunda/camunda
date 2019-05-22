@@ -53,6 +53,7 @@ const report = {
   data: {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: 'aVersion',
+    tenantIds: [],
     view: {entity: 'processInstance', property: 'frequency'},
     groupBy: {type: 'none', unit: null},
     visualization: 'number',
@@ -88,23 +89,6 @@ it('should not disable the groupBy and visualization Selects if view is selected
 
   expect(node.find(ReportDropdown).at(1)).not.toBeDisabled();
   expect(node.find(ReportDropdown).at(2)).not.toBeDisabled();
-});
-
-it('should show process definition name', async () => {
-  extractDefinitionName.mockReturnValue('aName');
-
-  const node = await shallow(<ReportControlPanel report={report} />);
-
-  expect(node.find('.processDefinitionPopover').prop('title')).toContain('aName');
-});
-
-it('should change process definition name if process definition is updated', async () => {
-  const node = await shallow(<ReportControlPanel report={report} />);
-
-  extractDefinitionName.mockReturnValue('aName');
-  node.setProps({processDefinitionKey: 'bar'});
-
-  expect(node.find('.processDefinitionPopover').prop('title')).toContain('aName');
 });
 
 it('should load the variables of the process', () => {
@@ -206,9 +190,9 @@ it('should load the process definition xml when a new definition is selected', a
 
   loadProcessDefinitionXml.mockClear();
 
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1);
+  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1, ['a', 'b']);
 
-  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('newDefinition', 1);
+  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('newDefinition', 1, 'a');
 });
 
 it('should remove incompatible filters when changing the process definition', async () => {
@@ -226,7 +210,7 @@ it('should remove incompatible filters when changing the process definition', as
     />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1);
+  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1, []);
 
   expect(spy.mock.calls[0][0].filter.$set).toEqual([{type: 'startDate'}]);
 });
@@ -240,7 +224,7 @@ it('should reset the groupby and visualization when changing process definition 
     />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1);
+  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1, []);
 
   expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
   expect(spy.mock.calls[0][0].visualization).toEqual({$set: null});
@@ -250,7 +234,7 @@ it('should reset definition specific configurations on definition change', async
   const spy = jest.fn();
   const node = shallow(<ReportControlPanel report={report} updateReport={spy} />);
 
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1);
+  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1, []);
 
   expect(spy.mock.calls[0][0].configuration.excludedColumns).toBeDefined();
   expect(spy.mock.calls[0][0].configuration.columnOrder).toBeDefined();

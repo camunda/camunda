@@ -165,6 +165,7 @@ export default class Statistics extends React.Component {
               data: await loadCorrelationData(
                 this.props.config.processDefinitionKey,
                 this.props.config.processDefinitionVersion,
+                this.props.config.tenantIds,
                 this.props.config.filter,
                 this.props.gateway.id,
                 this.props.endEvent.id

@@ -8,6 +8,7 @@ import React from 'react';
 import classnames from 'classnames';
 
 import {Button, Icon} from 'components';
+import {getRandomId} from 'services';
 
 import './Popover.scss';
 
@@ -15,6 +16,9 @@ export default class Popover extends React.Component {
   constructor(props) {
     super(props);
     this.initilizeFooterRef();
+
+    this.id = getRandomId();
+
     this.state = {
       open: false,
       dialogStyles: {}
@@ -48,7 +52,11 @@ export default class Popover extends React.Component {
     // so we know whether the click occured inside the popover,
     // in which case we do not want to close the popover
     setTimeout(() => {
-      if (!evt.inOverlay && !evt.target.closest('.Modal') && this.mounted) {
+      if (
+        !(evt.popoverChain || []).includes(this.id) &&
+        !evt.target.closest('.Modal') &&
+        this.mounted
+      ) {
         this.setState({
           open: false
         });
@@ -124,7 +132,8 @@ export default class Popover extends React.Component {
   };
 
   catchClick = evt => {
-    evt.nativeEvent.inOverlay = true;
+    evt.nativeEvent.popoverChain = evt.nativeEvent.popoverChain || [];
+    evt.nativeEvent.popoverChain.push(this.id);
   };
 
   render() {

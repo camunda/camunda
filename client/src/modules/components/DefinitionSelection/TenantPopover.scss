@@ -1,0 +1,20 @@
+.TenantPopover {
+  .Popover__dialog {
+    padding: 10px;
+    min-width: 221px;
+  }
+
+  .ButtonGroup {
+    margin-bottom: 15px;
+  }
+
+  fieldset {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+  }
+
+  .Switch {
+    transform: scale(0.75);
+    vertical-align: middle;
+  }
+}

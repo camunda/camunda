@@ -30,25 +30,35 @@ export async function getFlowNodeNames(processDefinitionKey, processDefinitionVe
 }
 
 export async function loadDefinitions(type) {
-  const response = await get(`api/${type}-definition/groupedByKey`);
+  const response = await get(`api/${type}-definition/definitionVersionsWithTenants`);
 
   return await response.json();
 }
 
-export async function loadProcessDefinitionXml(processDefinitionKey, processDefinitionVersion) {
-  const response = await get('api/process-definition/xml', {
+export async function loadProcessDefinitionXml(
+  processDefinitionKey,
+  processDefinitionVersion,
+  tenantId
+) {
+  const payload = {
     processDefinitionKey,
     processDefinitionVersion
-  });
+  };
+
+  if (tenantId) {
+    payload.tenantId = tenantId;
+  }
+  const response = await get('api/process-definition/xml', payload);
 
   return await response.text();
 }
 
-export async function loadDecisionDefinitionXml(key, version) {
-  const response = await get('api/decision-definition/xml', {
-    key,
-    version
-  });
+export async function loadDecisionDefinitionXml(key, version, tenantId) {
+  const payload = {key, version};
+  if (tenantId) {
+    payload.tenantId = tenantId;
+  }
+  const response = await get('api/decision-definition/xml', payload);
 
   return await response.text();
 }

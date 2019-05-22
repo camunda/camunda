@@ -7,9 +7,11 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {BPMNDiagram, LoadingIndicator, Labeled, Dropdown, Typeahead} from 'components';
+import {BPMNDiagram, LoadingIndicator, Popover, Dropdown, Typeahead} from 'components';
 
-import {loadDefinitions} from 'services';
+import {loadDefinitions, extractDefinitionName, capitalize} from 'services';
+
+import TenantPopover from './TenantPopover';
 
 import './DefinitionSelection.scss';
 
@@ -33,28 +35,22 @@ export default class DefinitionSelection extends React.Component {
     });
   };
 
-  changeKey = ({key}) => {
-    let version;
-    if (!key) {
-      version = '';
-    } else {
-      const selectedDefinition = this.getLatestDefinition(key);
-      version = selectedDefinition.version;
-    }
-    this.props.onChange(key, version);
+  changeKey = payload => {
+    const key = payload.key;
+    const selectedDefinition = this.getLatestDefinition(key);
+    const version = selectedDefinition.version;
+    const tenants = selectedDefinition.tenants.map(({id}) => id);
+
+    this.props.onChange(key, version, tenants);
   };
 
-  changeVersion = version => {
-    if (!version) {
-      // reset to please select
-      version = '';
-    }
-    this.props.onChange(this.props.definitionKey, version);
+  changeVersion = (version, tenants) => {
+    this.props.onChange(this.props.definitionKey, version, tenants.map(({id}) => id));
   };
 
   getLatestDefinition = key => {
     const selectedKeyGroup = this.findSelectedKeyGroup(key);
-    return selectedKeyGroup.versions[0];
+    return selectedKeyGroup.versions[1];
   };
 
   findSelectedKeyGroup = key => this.state.availableDefinitions.find(def => def.key === key);
@@ -73,7 +69,57 @@ export default class DefinitionSelection extends React.Component {
     if (this.props.definitionVersion) {
       return this.getVersion().toLowerCase();
     } else {
-      return '\u00A0';
+      return 'Select...';
+    }
+  };
+
+  getAvailableTenants = () => {
+    const definition = this.findSelectedKeyGroup(this.props.definitionKey);
+    if (definition) {
+      const version = definition.versions.find(
+        ({version}) => version === this.props.definitionVersion
+      );
+      if (version) {
+        return version.tenants;
+      }
+    }
+
+    return [];
+  };
+
+  getSelectedTenants = () => this.props.tenants;
+
+  changeTenants = tenantSelection => {
+    this.props.onChange(this.props.definitionKey, this.props.definitionVersion, tenantSelection);
+  };
+
+  createTitle = () => {
+    const {definitionKey, definitionVersion, xml, type} = this.props;
+
+    if (xml) {
+      const availableTenants = this.getAvailableTenants();
+      const selectedTenants = this.getSelectedTenants();
+
+      const definition = extractDefinitionName(definitionKey, xml);
+      const version = definitionVersion.toLowerCase();
+      let tenant = 'Multiple';
+      if (availableTenants.length === 1) {
+        tenant = null;
+      } else if (selectedTenants.length === availableTenants.length) {
+        tenant = 'All';
+      } else if (selectedTenants.length === 0) {
+        tenant = '-';
+      } else if (selectedTenants.length === 1) {
+        tenant = availableTenants.find(({id}) => id === selectedTenants[0]).name;
+      }
+
+      if (tenant) {
+        return `${definition} : ${version} : ${tenant}`;
+      } else {
+        return `${definition} : ${version}`;
+      }
+    } else {
+      return `Select ${capitalize(type)}`;
     }
   };
 
@@ -91,65 +137,78 @@ export default class DefinitionSelection extends React.Component {
       );
     }
 
+    const availableTenants = this.getAvailableTenants();
+
     return (
-      <div
-        className={classnames('DefinitionSelection', {
-          large: this.canRenderDiagram()
-        })}
-      >
-        <div className="selectionPanel">
-          <div className="dropdowns">
-            <Labeled label="Name">
-              <Typeahead
-                className="name"
-                initialValue={this.findSelectedKeyGroup(selectedKey)}
-                disabled={noDefinitions}
-                placeholder="Select..."
-                values={availableDefinitions}
-                onSelect={this.changeKey}
-                formatter={selectedDefinition =>
-                  selectedDefinition ? this.getNameForKey(selectedDefinition.key) : null
-                }
-              />
-            </Labeled>
-            <Labeled label="Version">
-              <Dropdown
-                label={this.createProcDefVersionTitle()}
-                className="version"
-                disabled={!selectedKey}
+      <Popover className="DefinitionSelection" title={this.createTitle()}>
+        <div
+          className={classnames('container', {
+            large: this.canRenderDiagram()
+          })}
+        >
+          <div className="selectionPanel">
+            <div className="dropdowns">
+              <div className="entry">
+                <span className="label">Name</span>
+                <Typeahead
+                  className="name"
+                  initialValue={this.findSelectedKeyGroup(selectedKey)}
+                  disabled={noDefinitions}
+                  placeholder="Select..."
+                  values={availableDefinitions}
+                  onSelect={this.changeKey}
+                  formatter={({name}) => name}
+                />
+              </div>
+              <div className="entry">
+                <span className="label">Version</span>
+                <Dropdown
+                  label={this.createProcDefVersionTitle()}
+                  className="version"
+                  disabled={!selectedKey}
+                >
+                  {this.renderAllVersions(selectedKey)}
+                </Dropdown>
+              </div>
+              <div
+                className={classnames('entry', {
+                  hidden: !selectedKey || availableTenants.length < 2
+                })}
               >
-                {this.props.enableAllVersionSelection && (
-                  <Dropdown.Option key="0" onClick={() => this.changeVersion('ALL')}>
-                    all
-                  </Dropdown.Option>
-                )}
-                {this.renderAllVersions(selectedKey)}
-              </Dropdown>
-            </Labeled>
-          </div>
-          {version === 'ALL' ? (
-            <div className="warning">
-              Note: data from the older versions can deviate, therefore the report data can be
-              inconsistent
+                <span className="label">Tenant</span>
+                <TenantPopover
+                  tenants={this.getAvailableTenants()}
+                  selected={this.getSelectedTenants()}
+                  onChange={this.changeTenants}
+                />
+              </div>
             </div>
-          ) : (
-            ''
+            {version === 'ALL' ? (
+              <div className="warning">
+                Note: data from the older versions can deviate, therefore the report data can be
+                inconsistent
+              </div>
+            ) : (
+              ''
+            )}
+          </div>
+          {this.canRenderDiagram() && (
+            <div className="diagram">
+              <BPMNDiagram xml={this.props.xml} disableNavigation />
+            </div>
           )}
         </div>
-        {this.canRenderDiagram() && (
-          <div className="diagram">
-            <BPMNDiagram xml={this.props.xml} disableNavigation />
-          </div>
-        )}
-      </div>
+      </Popover>
     );
   }
 
   renderAllVersions = key =>
     key &&
-    this.findSelectedKeyGroup(key).versions.map(({version}) => (
-      <Dropdown.Option key={version} onClick={() => this.changeVersion(version)}>
-        {version}
-      </Dropdown.Option>
-    ));
+    this.findSelectedKeyGroup(key)
+      .versions.filter(({version}) => this.props.enableAllVersionSelection || version !== 'ALL')
+      .map(({version, tenants}) => (
+        <Dropdown.Option key={version} onClick={() => this.changeVersion(version, tenants)}>
+          {version.toLowerCase()}
+        </Dropdown.Option>
+      ));
 }

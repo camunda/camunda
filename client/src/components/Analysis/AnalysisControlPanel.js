@@ -7,7 +7,7 @@
 import classnames from 'classnames';
 import update from 'immutability-helper';
 import React from 'react';
-import {ActionItem, Popover, DefinitionSelection} from 'components';
+import {ActionItem, DefinitionSelection} from 'components';
 
 import {extractDefinitionName, getFlowNodeNames} from 'services';
 
@@ -73,18 +73,6 @@ export default class AnalysisControlPanel extends React.Component {
     this.props.updateHover(element);
   };
 
-  createTitle = () => {
-    const {processDefinitionKey, processDefinitionVersion} = this.props;
-    const processDefintionName = this.state.processDefinitionName
-      ? this.state.processDefinitionName
-      : processDefinitionKey;
-    if (processDefintionName && processDefinitionVersion) {
-      return `${processDefintionName} : ${processDefinitionVersion}`;
-    } else {
-      return 'Select Process';
-    }
-  };
-
   isProcDefSelected = () => {
     return this.props.processDefinitionKey && this.props.processDefinitionVersion;
   };
@@ -120,23 +108,23 @@ export default class AnalysisControlPanel extends React.Component {
         <ul className="AnalysisControlPanel__list">
           <li className="AnalysisControlPanel__item summary">
             For
-            <Popover className="AnalysisControlPanel__popover" title={this.createTitle()}>
-              <DefinitionSelection
-                type="process"
-                definitionKey={this.props.processDefinitionKey}
-                definitionVersion={this.props.processDefinitionVersion}
-                xml={this.props.xml}
-                onChange={(key, version) =>
-                  this.props.onChange({
-                    processDefinitionKey: key,
-                    processDefinitionVersion: version,
-                    filter: this.props.filter.filter(
-                      ({type}) => type !== 'executedFlowNodes' && type !== 'variable'
-                    )
-                  })
-                }
-              />
-            </Popover>
+            <DefinitionSelection
+              type="process"
+              definitionKey={this.props.processDefinitionKey}
+              definitionVersion={this.props.processDefinitionVersion}
+              tenants={this.props.tenantIds}
+              xml={this.props.xml}
+              onChange={(key, version, tenantIds) =>
+                this.props.onChange({
+                  processDefinitionKey: key,
+                  processDefinitionVersion: version,
+                  tenantIds,
+                  filter: this.props.filter.filter(
+                    ({type}) => type !== 'executedFlowNodes' && type !== 'variable'
+                  )
+                })
+              }
+            />
             analyse how the branches of
             {this.renderInput({type: 'gateway', label: 'Gateway', bpmnKey: 'bpmn:Gateway'})}
             affect the probability that an instance reached

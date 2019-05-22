@@ -5,18 +5,12 @@
  */
 
 import React from 'react';
-import {Popover, DefinitionSelection, Labeled} from 'components';
+import {DefinitionSelection} from 'components';
 
 import ReportDropdown from './ReportDropdown';
 
 import {Filter} from './filter';
-import {
-  extractDefinitionName,
-  getFlowNodeNames,
-  reportConfig,
-  formatters,
-  loadProcessDefinitionXml
-} from 'services';
+import {getFlowNodeNames, reportConfig, formatters, loadProcessDefinitionXml} from 'services';
 
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
@@ -75,25 +69,13 @@ export default class ReportControlPanel extends React.Component {
     }
   }
 
-  createTitle = () => {
-    const {
-      processDefinitionKey,
-      processDefinitionVersion,
-      configuration: {xml}
-    } = this.props.report.data;
-    if (xml) {
-      return `${extractDefinitionName(processDefinitionKey, xml)} : ${processDefinitionVersion}`;
-    } else {
-      return 'Select Process';
-    }
-  };
-
-  changeDefinition = async (key, version) => {
+  changeDefinition = async (key, version, tenants) => {
     const {groupBy, filter} = this.props.report.data;
 
     const change = {
       processDefinitionKey: {$set: key},
       processDefinitionVersion: {$set: version},
+      tenantIds: {$set: tenants},
       parameters: {$set: {}},
       configuration: {
         excludedColumns: {$set: []},
@@ -111,7 +93,9 @@ export default class ReportControlPanel extends React.Component {
             values: {}
           }
         },
-        xml: {$set: key && version ? await loadProcessDefinitionXml(key, version) : null}
+        xml: {
+          $set: key && version ? await loadProcessDefinitionXml(key, version, tenants[0]) : null
+        }
       },
       filter: {$set: filter.filter(({type}) => type !== 'executedFlowNodes' && type !== 'variable')}
     };
@@ -134,19 +118,17 @@ export default class ReportControlPanel extends React.Component {
       <div className="ReportControlPanel">
         <ul>
           <li className="select">
-            <Labeled label="Process Definition">
-              <Popover className="processDefinitionPopover" title={this.createTitle()}>
-                <DefinitionSelection
-                  type="process"
-                  definitionKey={data.processDefinitionKey}
-                  definitionVersion={data.processDefinitionVersion}
-                  xml={data.configuration.xml}
-                  onChange={this.changeDefinition}
-                  renderDiagram
-                  enableAllVersionSelection
-                />
-              </Popover>
-            </Labeled>
+            <span className="label">Process Definition</span>
+            <DefinitionSelection
+              type="process"
+              definitionKey={data.processDefinitionKey}
+              definitionVersion={data.processDefinitionVersion}
+              tenants={data.tenantIds}
+              xml={data.configuration.xml}
+              onChange={this.changeDefinition}
+              renderDiagram
+              enableAllVersionSelection
+            />
           </li>
           {['view', 'groupBy', 'visualization'].map((field, idx, fields) => {
             const previous = fields
@@ -155,22 +137,21 @@ export default class ReportControlPanel extends React.Component {
 
             return (
               <li className="select" key={field}>
-                <Labeled label={formatters.convertCamelToSpaces(field)}>
-                  <ReportDropdown
-                    type="process"
-                    field={field}
-                    value={data[field]}
-                    xml={data.configuration.xml}
-                    variables={{variable: this.state.variables}}
-                    previous={previous}
-                    disabled={
-                      !data.processDefinitionKey ||
-                      !data.processDefinitionVersion ||
-                      previous.some(entry => !entry)
-                    }
-                    onChange={newValue => this.updateReport(field, newValue)}
-                  />
-                </Labeled>
+                <span className="label">{formatters.convertCamelToSpaces(field)}</span>
+                <ReportDropdown
+                  type="process"
+                  field={field}
+                  value={data[field]}
+                  xml={data.configuration.xml}
+                  variables={{variable: this.state.variables}}
+                  previous={previous}
+                  disabled={
+                    !data.processDefinitionKey ||
+                    !data.processDefinitionVersion ||
+                    previous.some(entry => !entry)
+                  }
+                  onChange={newValue => this.updateReport(field, newValue)}
+                />
               </li>
             );
           })}

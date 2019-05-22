@@ -21,16 +21,23 @@ jest.mock('services', () => {
     loadDefinitions: jest.fn().mockReturnValue([
       {
         key: 'foo',
+        name: 'Foo',
         versions: [
-          {id: 'procdef2', key: 'foo', version: '2'},
-          {id: 'procdef1', key: 'foo', version: '1'}
+          {tenants: [{id: null, name: 'Not defined'}], version: 'ALL'},
+          {tenants: [{id: null, name: 'Not defined'}], version: '2'},
+          {tenants: [{id: null, name: 'Not defined'}], version: '1'}
         ]
       },
       {
         key: 'bar',
-        versions: [{id: 'anotherProcDef', key: 'bar', version: '1'}]
+        name: 'Bar',
+        versions: [
+          {tenants: [{id: null, name: 'Not defined'}], version: 'ALL'},
+          {tenants: [{id: null, name: 'Not defined'}], version: '1'}
+        ]
       }
-    ])
+    ]),
+    extractDefinitionName: () => 'Definition'
   };
 });
 
@@ -38,6 +45,7 @@ const spy = jest.fn();
 
 const props = {
   type: 'process',
+  tenants: [],
   onChange: spy
 };
 
@@ -70,7 +78,7 @@ it('should update definition if versions is changed', async () => {
   spy.mockClear();
   const node = await shallow(<DefinitionSelection definitionKey="foo" {...props} />);
 
-  await node.instance().changeVersion('1');
+  await node.instance().changeVersion('1', []);
 
   expect(spy.mock.calls[0][1]).toBe('1');
 });
@@ -91,11 +99,13 @@ it('should set key and version, if process definition is already available', asy
   const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
 
   expect(node.find('.name')).toHaveProp('initialValue', {
-    key: 'foo',
     id: 'foo',
+    key: 'foo',
+    name: 'Foo',
     versions: [
-      {id: 'procdef2', key: 'foo', version: '2'},
-      {id: 'procdef1', key: 'foo', version: '1'}
+      {tenants: [{id: null, name: 'Not defined'}], version: 'ALL'},
+      {tenants: [{id: null, name: 'Not defined'}], version: '2'},
+      {tenants: [{id: null, name: 'Not defined'}], version: '1'}
     ]
   });
   expect(node.find('.version')).toHaveProp('label', '2');
@@ -109,7 +119,7 @@ it('should call onChange function on change of the definition', async () => {
   };
   const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
 
-  await node.instance().changeVersion('1');
+  await node.instance().changeVersion('1', []);
 
   expect(spy).toHaveBeenCalled();
 });
@@ -123,7 +133,7 @@ it('should render diagram if enabled and definition is selected', async () => {
     <DefinitionSelection renderDiagram {...definitionConfig} {...props} />
   );
 
-  expect(node).toIncludeText('Diagram');
+  expect(node.find('.diagram')).toExist();
 });
 
 it('should disable version selection, if no key is selected', async () => {
@@ -134,7 +144,9 @@ it('should disable version selection, if no key is selected', async () => {
 });
 
 it('should display all option in version selection if enabled', async () => {
-  const node = await shallow(<DefinitionSelection enableAllVersionSelection {...props} />);
+  const node = await shallow(
+    <DefinitionSelection {...props} enableAllVersionSelection definitionKey="foo" />
+  );
 
   expect(
     node
@@ -158,7 +170,7 @@ it('should not display all option in version selection if disabled', async () =>
 
 it('should show a note if the selected ProcDef version is ALL', async () => {
   const node = await shallow(
-    <DefinitionSelection enableAllVersionSelection definitionVersion="ALL" />
+    <DefinitionSelection {...props} enableAllVersionSelection definitionVersion="ALL" />
   );
 
   expect(node.find('.warning')).toExist();
@@ -181,4 +193,95 @@ it('should pass an id for every entry to the typeahead', async () => {
   const values = node.find('Typeahead').prop('values');
   expect(values[0].id).toBe('foo');
   expect(values[1].id).toBe('bar');
+});
+
+it('should construct a popover title', async () => {
+  const node = await shallow(<DefinitionSelection {...props} />);
+
+  expect(node.find('Popover')).toHaveProp('title', 'Select Process');
+
+  await node.setProps({
+    definitionKey: 'foo',
+    definitionVersion: '1',
+    xml: 'whatever',
+    tenants: [null]
+  });
+
+  expect(node.find('Popover')).toHaveProp('title', 'Definition : 1');
+});
+
+it('should hide the tenant selection if there is only one tenant', async () => {
+  const node = await shallow(<DefinitionSelection {...props} />);
+
+  expect(node.find('.dropdowns .entry').last()).toHaveClassName('hidden');
+});
+
+describe('tenants', () => {
+  beforeAll(() => {
+    loadDefinitions.mockReturnValue([
+      {
+        key: 'foo',
+        name: 'Foo',
+        versions: [
+          {
+            tenants: [
+              {id: 'a', name: 'Tenant A'},
+              {id: 'b', name: 'Tenant B'},
+              {id: null, name: 'Not defined'}
+            ],
+            version: 'ALL'
+          },
+          {
+            tenants: [
+              {id: 'a', name: 'Tenant A'},
+              {id: 'b', name: 'Tenant B'},
+              {id: null, name: 'Not defined'}
+            ],
+            version: '1'
+          }
+        ]
+      }
+    ]);
+  });
+
+  it('should construct a popover title for tenants', async () => {
+    const node = await shallow(<DefinitionSelection {...props} />);
+
+    expect(node.find('Popover')).toHaveProp('title', 'Select Process');
+
+    await node.setProps({
+      definitionKey: 'foo',
+      definitionVersion: '1',
+      xml: 'whatever',
+      tenants: []
+    });
+
+    expect(node.find('Popover')).toHaveProp('title', 'Definition : 1 : -');
+
+    await node.setProps({
+      tenants: ['a']
+    });
+
+    expect(node.find('Popover')).toHaveProp('title', 'Definition : 1 : Tenant A');
+
+    await node.setProps({
+      tenants: ['a', 'b']
+    });
+
+    expect(node.find('Popover')).toHaveProp('title', 'Definition : 1 : Multiple');
+    await node.setProps({
+      tenants: ['a', 'b', null]
+    });
+
+    expect(node.find('Popover')).toHaveProp('title', 'Definition : 1 : All');
+  });
+
+  it('should show a tenant selection component', async () => {
+    const node = await shallow(
+      <DefinitionSelection {...props} definitionKey="foo" definitionVersion="1" />
+    );
+
+    expect(node.find('.dropdowns .entry').last()).not.toHaveClassName('hidden');
+    expect(node.find('TenantPopover')).toExist();
+  });
 });

@@ -17,26 +17,17 @@ exports[`should display a sentence to describe what the user can do on this page
         className="AnalysisControlPanel__item summary"
       >
         For
-        <Popover
-          className="AnalysisControlPanel__popover"
-          title="Select Process"
+        <DefinitionSelection
+          definitionKey=""
+          definitionVersion=""
+          onChange={[Function]}
+          type="process"
+          xml={null}
         >
           <div>
-            Select Process
-             
-            <DefinitionSelection
-              definitionKey=""
-              definitionVersion=""
-              onChange={[Function]}
-              type="process"
-              xml={null}
-            >
-              <div>
-                DefinitionSelection
-              </div>
-            </DefinitionSelection>
+            DefinitionSelection
           </div>
-        </Popover>
+        </DefinitionSelection>
         analyse how the branches of
         <div
           className="AnalysisControlPanel__config"
