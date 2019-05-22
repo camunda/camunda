@@ -10,6 +10,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -102,14 +104,15 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   }
 
   private void failureHandler(HttpServletRequest request, HttpServletResponse response, AuthenticationException ex) throws IOException {
+    response.setCharacterEncoding("UTF-8");
     PrintWriter writer = response.getWriter();
-
     String jsonResponse = Json.createObjectBuilder()
       .add("message", ex.getMessage())
       .build()
       .toString();
 
     writer.append(jsonResponse);
+    
     response.setStatus(UNAUTHORIZED.value());
     response.setContentType(APPLICATION_JSON.getMimeType());
   }
