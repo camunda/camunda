@@ -142,7 +142,7 @@ public class ActorScheduler {
     private ActorThreadGroup cpuBoundActorGroup;
     private final double[] priorityQuotas = new double[] {0.60, 0.30, 0.10};
 
-    private int ioBoundThreadsCount = 2;
+    private int ioBoundThreadsCount = 0;
     private ActorThreadGroup ioBoundActorGroup;
 
     private ActorThreadFactory actorThreadFactory;

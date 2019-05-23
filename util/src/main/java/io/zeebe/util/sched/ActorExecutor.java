@@ -55,6 +55,9 @@ public class ActorExecutor {
   }
 
   public ActorFuture<Void> submitIoBoundTask(ActorTask task, boolean collectTaskMetrics) {
+    assert ioBoundThreads.numOfThreads > 0
+        : "Expected to have at least one IO Thread configured to submit an IO bound task to it, but there were none.";
+
     return submitTask(task, collectTaskMetrics, ioBoundThreads);
   }
 

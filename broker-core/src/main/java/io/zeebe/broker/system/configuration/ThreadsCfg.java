@@ -19,7 +19,6 @@ package io.zeebe.broker.system.configuration;
 
 public class ThreadsCfg implements ConfigurationEntry {
   private int cpuThreadCount = 2;
-  private int ioThreadCount = 0;
 
   public int getCpuThreadCount() {
     return cpuThreadCount;
@@ -29,21 +28,8 @@ public class ThreadsCfg implements ConfigurationEntry {
     this.cpuThreadCount = cpuThreads;
   }
 
-  public int getIoThreadCount() {
-    return ioThreadCount;
-  }
-
-  public void setIoThreadCount(int ioThreads) {
-    this.ioThreadCount = ioThreads;
-  }
-
   @Override
   public String toString() {
-    return "ThreadsCfg{"
-        + "cpuThreadCount="
-        + cpuThreadCount
-        + ", ioThreadCount="
-        + ioThreadCount
-        + '}';
+    return "ThreadsCfg{" + "cpuThreadCount=" + cpuThreadCount + '}';
   }
 }

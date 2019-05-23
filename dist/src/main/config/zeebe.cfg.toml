@@ -214,19 +214,12 @@
 
 # Controls the number of non-blocking CPU threads to be used. WARNING: You
 # should never specify a value that is larger than the number of physical cores
-# available. Good practice is to leave 1-2 cores for ioThreads and the operating
+# available. Good practice is to leave at least one for the operating
 # system (it has to run somewhere). For example, when running Zeebe on a machine
 # which has 4 cores, a good value would be 2.
 #
 # The default value is 2.
 #cpuThreadCount = 2
-
-# Controls the number of io threads to be used. These threads are used for
-# workloads that write data to disk. While writing, these threads are blocked
-# which means that they yield the CPU.
-#
-# The default value is 2.
-#ioThreadCount = 2
 
 [metrics]
 
