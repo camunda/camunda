@@ -31,7 +31,12 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.zeebe.util.StringUtil;
+
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
@@ -72,6 +77,8 @@ public class ParametersResolver {
   private List<String> workflowIds = new ArrayList<>();
   private String startDateBefore;
   private String startDateAfter;
+  
+  private final ConstantScoreQueryBuilder isWorkflowInstanceQuery = constantScoreQuery(termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION));
 
   private Random random = new Random();
 
@@ -85,7 +92,6 @@ public class ParametersResolver {
 
   private void initStartDates() {
     try {
-      final ConstantScoreQueryBuilder isWorkflowInstanceQuery = constantScoreQuery(termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION));
       final String listViewAlias = getAlias(ListViewTemplate.INDEX_NAME);
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder()
@@ -110,7 +116,6 @@ public class ParametersResolver {
 
   private void initWorkflowInstanceIds() {
     try {
-      final ConstantScoreQueryBuilder isWorkflowInstanceQuery = constantScoreQuery(termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION));
       final String listViewAlias = getAlias(ListViewTemplate.INDEX_NAME);
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder()
@@ -119,14 +124,12 @@ public class ParametersResolver {
               .from(0).size(50);
       SearchRequest searchRequest =
           new SearchRequest(listViewAlias).source(searchSourceBuilder);
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final SearchHits hits = response.getHits();
-      workflowInstanceIds.addAll(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2)));
+      workflowInstanceIds = requestIdsFor(searchRequest);
     } catch (IOException ex) {
       throw new RuntimeException("Error occurred when reading workflowInstanceIds from Elasticsearch", ex);
     }
   }
-
+  
   private void initWorkflowIds() {
     try {
       final String workflowAlias = getAlias(WorkflowIndex.INDEX_NAME);
@@ -137,12 +140,15 @@ public class ParametersResolver {
               .size(2);
       SearchRequest searchRequest =
           new SearchRequest(workflowAlias).source(searchSourceBuilder);
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final SearchHits hits = response.getHits();
-      workflowIds.addAll(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2)));
+      workflowIds = requestIdsFor(searchRequest);
     } catch (IOException ex) {
       throw new RuntimeException("Error occurred when reading workflowIds from Elasticsearch", ex);
     }
+  }
+  
+  private List<String> requestIdsFor(SearchRequest searchRequest) throws IOException{
+    final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
+    return new ArrayList<>(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2)));
   }
 
   public void replacePlaceholdersInQuery(TestQuery testQuery) {
@@ -165,24 +171,28 @@ public class ParametersResolver {
       throw new RuntimeException("Error occurred when replacing placeholders in queries", e);
     }
   }
+  
+  private boolean contains(String str, String substr) {
+      return str!=null && str.contains(substr);
+  }
 
   private String replacePlaceholdersInString(String string) throws IOException {
-    if (string != null && string.contains(WORKFLOW_INSTANCE_IDS_PLACEHOLDER)) {
+    if (contains(string,WORKFLOW_INSTANCE_IDS_PLACEHOLDER)) {
       string = replacePlaceholderWithIds(string, WORKFLOW_INSTANCE_IDS_PLACEHOLDER, workflowInstanceIds);
     }
-    if (string != null && string.contains(WORKFLOW_INSTANCE_ID_PLACEHOLDER)) {
-      string = replacePlaceholderWithId(string, WORKFLOW_INSTANCE_ID_PLACEHOLDER, workflowInstanceIds);
+    if (contains(string,WORKFLOW_INSTANCE_ID_PLACEHOLDER)) {
+      string = replacePlaceholderWithRandomId(string, WORKFLOW_INSTANCE_ID_PLACEHOLDER, workflowInstanceIds);
     }
-    if (string != null && string.contains(WORKFLOW_IDS_PLACEHOLDER)) {
+    if (contains(string,WORKFLOW_IDS_PLACEHOLDER)) {
       string = replacePlaceholderWithIds(string, WORKFLOW_IDS_PLACEHOLDER, workflowIds);
     }
-    if (string != null && string.contains(WORKFLOW_ID_PLACEHOLDER)) {
-      string = replacePlaceholderWithId(string, WORKFLOW_ID_PLACEHOLDER, workflowIds);
+    if (contains(string,WORKFLOW_ID_PLACEHOLDER)) {
+      string = replacePlaceholderWithRandomId(string, WORKFLOW_ID_PLACEHOLDER, workflowIds);
     }
-    if (string != null && string.contains(START_DATE_AFTER_PLACEHOLDER)) {
+    if (contains(string,START_DATE_AFTER_PLACEHOLDER)) {
       string = replacePlaceholderWithString(string, START_DATE_AFTER_PLACEHOLDER, startDateAfter);
     }
-    if (string != null && string.contains(START_DATE_BEFORE_PLACEHOLDER)) {
+    if (contains(string,START_DATE_BEFORE_PLACEHOLDER)) {
       string = replacePlaceholderWithString(string, START_DATE_BEFORE_PLACEHOLDER, startDateBefore);
     }
     return string;
@@ -194,7 +204,7 @@ public class ParametersResolver {
     return body;
   }
 
-  private String replacePlaceholderWithId(String body, String placeholder, List<String> ids) {
+  private String replacePlaceholderWithRandomId(String body, String placeholder, List<String> ids) {
     final String id = ids.get(random.nextInt(ids.size()));
     return replacePlaceholderWithString(body, placeholder, id);
   }

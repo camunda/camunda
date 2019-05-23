@@ -11,6 +11,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
 public class URLUtil {
@@ -30,7 +31,7 @@ public class URLUtil {
   }
 
   public URI getURL(String urlPart, String urlParams) {
-    if (urlParams == null || urlParams.isEmpty()) {
+    if (StringUtils.isEmpty(urlParams)) {
       return getURL(urlPart);
     }
     try {

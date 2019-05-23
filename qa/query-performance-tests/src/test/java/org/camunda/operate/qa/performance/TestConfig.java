@@ -7,13 +7,9 @@ package org.camunda.operate.qa.performance;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import org.apache.http.HttpHost;
 import org.camunda.operate.es.ElasticsearchConnector;
 import org.camunda.operate.property.ElasticsearchProperties;
 import org.camunda.operate.qa.performance.util.StatefulRestTemplate;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;

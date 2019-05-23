@@ -13,7 +13,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -21,6 +20,7 @@ import org.apache.http.client.CookieStore;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.camunda.operate.qa.performance.util.StatefulRestTemplate;
 import org.camunda.operate.qa.performance.util.URLUtil;
+import org.camunda.operate.util.CollectionUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -74,9 +74,6 @@ public class QueryPerformanceTest {
   @Autowired
   private ParametersResolver parametersResolver;
 
-  @Autowired
-  private ObjectMapper objectMapper;
-
   @Parameterized.Parameter
   public TestQuery testQuery;
 
@@ -90,17 +87,14 @@ public class QueryPerformanceTest {
     }
     //log in only once
     final CookieStore cookieStore = (CookieStore)restTemplate.getHttpContext().getAttribute(HttpClientContext.COOKIE_STORE);
-    if (cookieStore.getCookies().size() == 0) {
+    if (cookieStore.getCookies().isEmpty()) {
       login();
     }
   }
 
   private void login() {
-    //login
-    Map<String, Object> body = new HashMap<>();
-    body.put("username", username);
-    body.put("password", password);
-    HttpEntity<Map> requestEntity = new HttpEntity<>(body);
+    HttpEntity<Map<String,Object>> requestEntity = new HttpEntity<>(CollectionUtil.asMap("username",username,
+                                                                                         "password",password));
     ResponseEntity<Object> response = restTemplate.postForEntity(urlUtil.getURL("/api/login?username=demo&password=demo"), requestEntity, Object.class);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
   }
