@@ -22,7 +22,8 @@ This is a small overview of the contents of the different modules:
 - `transport` is our abstraction over network transports
 - `gateway` is the implementation of the gRPC gateway, using our SBE-based protocol to communicate with brokers
 - `gateway-protocol` is the gRPC definitions for the Zeebe client-to-gateway protocol
-- `db` is our RocksDB wrapper for state management
+- `zb-db` is our RocksDB wrapper for state management
+- `engine`  is the implementation of the event stream processor
 - `broker-core` contains the Zeebe broker which is the server side of Zeebe
 - `client-java` contains the Java Zeebe client
 
