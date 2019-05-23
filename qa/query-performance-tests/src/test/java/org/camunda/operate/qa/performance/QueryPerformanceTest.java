@@ -36,6 +36,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestContextManager;
 import org.springframework.web.client.HttpClientErrorException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static junit.framework.TestCase.fail;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,6 +74,9 @@ public class QueryPerformanceTest {
   @Autowired
   private ParametersResolver parametersResolver;
 
+  @Autowired
+  private ObjectMapper objectMapper;
+
   @Parameterized.Parameter
   public TestQuery testQuery;
 
@@ -104,6 +108,7 @@ public class QueryPerformanceTest {
   @Parameterized.Parameters(name = "{0}")
   public static Collection<TestQuery> readQueries() {
     final ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     Collection<TestQuery> result = new ArrayList<>();
     try (Stream<Path> paths = Files.walk(Paths.get(QueryPerformanceTest.class.getResource(QUERIES_PATH).toURI()))) {
       paths.filter(Files::isRegularFile).forEach(path -> {

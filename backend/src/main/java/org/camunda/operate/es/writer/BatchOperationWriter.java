@@ -306,7 +306,7 @@ public class BatchOperationWriter {
     for (String wiId : workflowInstanceIds) {
       if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
         final List<String> allIncidentsIds = incidentIds.get(wiId);
-        if (allIncidentsIds.size() != 0) {
+        if (allIncidentsIds != null && allIncidentsIds.size() != 0) {
           for (String incidentId: allIncidentsIds) {
             bulkRequest.add(getIndexOperationRequest(wiId, incidentId, operationType));
           }

@@ -244,7 +244,9 @@ public abstract class ElasticsearchUtil {
     searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
     SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
-    firstResponseConsumer.accept(response.getHits());
+    if (firstResponseConsumer != null) {
+      firstResponseConsumer.accept(response.getHits());
+    }
 
     //call aggregations processor
     if (aggsProcessor != null) {
