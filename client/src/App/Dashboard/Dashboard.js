@@ -10,12 +10,12 @@ import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 
 import Header from '../Header';
 import MetricPanel from './MetricPanel';
-import IncidentsByWorkflow from './IncidentsByWorkflow';
+import InstancesByWorkflow from './InstancesByWorkflow';
 import IncidentsByError from './IncidentsByError';
 import EmptyIncidents from './EmptyIncidents';
 import {fetchWorkflowCoreStatistics} from 'modules/api/instances';
 import {
-  fetchIncidentsByWorkflow,
+  fetchInstancesByWorkflow,
   fetchIncidentsByError
 } from 'modules/api/incidents/incidents';
 import {PAGE_TITLE} from 'modules/constants';
@@ -48,7 +48,7 @@ class Dashboard extends Component {
 
   fetchIncidents = async () => {
     return {
-      byWorkflow: await fetchIncidentsByWorkflow(),
+      byWorkflow: await fetchInstancesByWorkflow(),
       byError: await fetchIncidentsByError()
     };
   };
@@ -97,7 +97,7 @@ class Dashboard extends Component {
                   )}
                 {this.state.isDataLoaded &&
                   Boolean(this.state.incidents.byWorkflow.data.length) && (
-                    <IncidentsByWorkflow
+                    <InstancesByWorkflow
                       incidents={this.state.incidents.byWorkflow.data}
                     />
                   )}

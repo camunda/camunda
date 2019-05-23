@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`IncidentsByWorkflow should pass the right data to InstancesBar 1`] = `
+exports[`InstancesByWorkflow should pass the right data to InstancesBar 1`] = `
 <InstancesBar
   activeCount={122}
   incidentsCount={16}

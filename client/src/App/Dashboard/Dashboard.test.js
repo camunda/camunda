@@ -16,11 +16,11 @@ import * as apiIncidents from 'modules/api/incidents/incidents';
 import Dashboard from './Dashboard';
 import Header from '../Header';
 import MetricPanel from './MetricPanel';
-import IncidentsByWorkflow from './IncidentsByWorkflow';
+import InstancesByWorkflow from './InstancesByWorkflow';
 import EmptyIncidents from './EmptyIncidents';
 import IncidentsByError from './IncidentsByError';
 
-const mockIncidentsByWorkflow = {
+const mockInstancesByWorkflow = {
   data: [
     {
       bpmnProcessId: 'loanProcess',
@@ -82,13 +82,13 @@ const mockWorkflowCoreStatistics = {
 const mockApi = (mockData = {}) => {
   const {
     workflowCoreStatistics = mockWorkflowCoreStatistics,
-    incidentsByWorkflow = mockIncidentsByWorkflow,
+    InstancesByWorkflow = mockInstancesByWorkflow,
     incidentsByError = mockIncidentsByError
   } = mockData;
 
   api.fetchWorkflowCoreStatistics = mockResolvedAsyncFn(workflowCoreStatistics);
-  apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(
-    incidentsByWorkflow
+  apiIncidents.fetchInstancesByWorkflow = mockResolvedAsyncFn(
+    InstancesByWorkflow
   );
   apiIncidents.fetchIncidentsByError = mockResolvedAsyncFn(incidentsByError);
 };
@@ -144,11 +144,11 @@ describe('Dashboard', () => {
       const node = await shallowRenderDashboard();
 
       expect(node.text()).toContain('Instances by Workflow');
-      expect(node.find(IncidentsByWorkflow)).toExist();
+      expect(node.find(InstancesByWorkflow)).toExist();
     });
 
     it('should show empty state on fetch error', async () => {
-      await mockApi({incidentsByWorkflow: {data: [], error: 'fetchError'}});
+      await mockApi({InstancesByWorkflow: {data: [], error: 'fetchError'}});
       const node = await shallowRenderDashboard();
 
       const EmptyIncidentsNode = node
@@ -162,7 +162,7 @@ describe('Dashboard', () => {
     });
 
     it('should show empty state when no workflows', async () => {
-      await mockApi({incidentsByWorkflow: {data: [], error: null}});
+      await mockApi({InstancesByWorkflow: {data: [], error: null}});
       const node = await shallowRenderDashboard();
 
       const EmptyIncidentsNode = node

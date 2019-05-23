@@ -6,7 +6,7 @@
 
 import {get} from 'modules/request';
 
-export const fetchIncidentsByWorkflow = async () => {
+export const fetchInstancesByWorkflow = async () => {
   try {
     const response = await get('/api/incidents/byWorkflow');
     return {data: await response.json()};

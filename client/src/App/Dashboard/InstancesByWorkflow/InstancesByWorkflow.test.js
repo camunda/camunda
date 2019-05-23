@@ -6,12 +6,12 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-import IncidentsByWorkflow from './IncidentsByWorkflow';
+import InstancesByWorkflow from './InstancesByWorkflow';
 import InstancesBar from 'modules/components/InstancesBar';
 import Collapse from '../Collapse';
 import * as Styled from './styled';
 
-const mockIncidentsByWorkflow = [
+const mockInstancesByWorkflow = [
   {
     bpmnProcessId: 'loanProcess',
     workflowName: null,
@@ -91,10 +91,10 @@ const mockIncidentsByWorkflow = [
   }
 ];
 
-describe('IncidentsByWorkflow', () => {
+describe('InstancesByWorkflow', () => {
   it('should render a list', () => {
     const node = shallow(
-      <IncidentsByWorkflow incidents={mockIncidentsByWorkflow} />
+      <InstancesByWorkflow incidents={mockInstancesByWorkflow} />
     );
 
     expect(node.type()).toBe('ul');
@@ -102,15 +102,15 @@ describe('IncidentsByWorkflow', () => {
 
   it('should render an li for each incident statistic', () => {
     const node = shallow(
-      <IncidentsByWorkflow incidents={mockIncidentsByWorkflow} />
+      <InstancesByWorkflow incidents={mockInstancesByWorkflow} />
     );
 
-    expect(node.find(Styled.Li).length).toBe(mockIncidentsByWorkflow.length);
+    expect(node.find(Styled.Li).length).toBe(mockInstancesByWorkflow.length);
   });
 
   it('should pass the right data to InstancesBar', () => {
     const node = shallow(
-      <IncidentsByWorkflow incidents={mockIncidentsByWorkflow} />
+      <InstancesByWorkflow incidents={mockInstancesByWorkflow} />
     );
     const nodeInstancesBar = node.find(InstancesBar).at(0);
     const statisticsAnchor = nodeInstancesBar.parent();
@@ -123,17 +123,17 @@ describe('IncidentsByWorkflow', () => {
     );
 
     expect(nodeInstancesBar.props().label).toContain(
-      mockIncidentsByWorkflow[0].workflowName ||
-        mockIncidentsByWorkflow[0].bpmnProcessId
+      mockInstancesByWorkflow[0].workflowName ||
+        mockInstancesByWorkflow[0].bpmnProcessId
     );
     expect(nodeInstancesBar.props().label).toContain(
-      mockIncidentsByWorkflow[0].workflows[0].version
+      mockInstancesByWorkflow[0].workflows[0].version
     );
     expect(nodeInstancesBar.props().incidentsCount).toBe(
-      mockIncidentsByWorkflow[0].instancesWithActiveIncidentsCount
+      mockInstancesByWorkflow[0].instancesWithActiveIncidentsCount
     );
     expect(nodeInstancesBar.props().activeCount).toBe(
-      mockIncidentsByWorkflow[0].activeInstancesCount
+      mockInstancesByWorkflow[0].activeInstancesCount
     );
 
     expect(nodeInstancesBar).toMatchSnapshot();
@@ -141,7 +141,7 @@ describe('IncidentsByWorkflow', () => {
 
   it('should render a statistics/collapsable statistics based on number of versions', () => {
     const node = shallow(
-      <IncidentsByWorkflow incidents={mockIncidentsByWorkflow} />
+      <InstancesByWorkflow incidents={mockInstancesByWorkflow} />
     );
     const firstStatistic = node.find('[data-test="incident-byWorkflow-0"]');
     const secondStatistic = node.find('[data-test="incident-byWorkflow-1"]');
@@ -153,7 +153,7 @@ describe('IncidentsByWorkflow', () => {
 
   it('passes the right data to the statistics collapse', () => {
     const node = shallow(
-      <IncidentsByWorkflow incidents={mockIncidentsByWorkflow} />
+      <InstancesByWorkflow incidents={mockInstancesByWorkflow} />
     );
     const secondStatistic = node.find('[data-test="incident-byWorkflow-1"]');
     const collapseNode = secondStatistic.find(Collapse);
@@ -177,20 +177,20 @@ describe('IncidentsByWorkflow', () => {
     );
 
     expect(headerStatistic.props().label).toContain(
-      mockIncidentsByWorkflow[1].workflowName ||
-        mockIncidentsByWorkflow[1].bpmnProcessId
+      mockInstancesByWorkflow[1].workflowName ||
+        mockInstancesByWorkflow[1].bpmnProcessId
     );
     expect(headerStatistic.props().label).toContain(
-      mockIncidentsByWorkflow[1].workflows[0].version
+      mockInstancesByWorkflow[1].workflows[0].version
     );
     expect(headerStatistic.props().label).toContain(
-      mockIncidentsByWorkflow[1].workflows[1].version
+      mockInstancesByWorkflow[1].workflows[1].version
     );
     expect(headerStatistic.props().incidentsCount).toBe(
-      mockIncidentsByWorkflow[1].instancesWithActiveIncidentsCount
+      mockInstancesByWorkflow[1].instancesWithActiveIncidentsCount
     );
     expect(headerStatistic.props().activeCount).toBe(
-      mockIncidentsByWorkflow[1].activeInstancesCount
+      mockInstancesByWorkflow[1].activeInstancesCount
     );
     // should render a list with 2 items
     expect(contentNode.type()).toBe('ul');
@@ -203,20 +203,20 @@ describe('IncidentsByWorkflow', () => {
     const versionStatisticNode = contentNode.find(InstancesBar).at(0);
 
     expect(versionStatisticNode.props().label).toContain(
-      `Version ${mockIncidentsByWorkflow[1].workflows[0].version}`
+      `Version ${mockInstancesByWorkflow[1].workflows[0].version}`
     );
     expect(versionStatisticNode.props().size).toBe('small');
     expect(versionStatisticNode.props().incidentsCount).toBe(
-      mockIncidentsByWorkflow[1].workflows[0].instancesWithActiveIncidentsCount
+      mockInstancesByWorkflow[1].workflows[0].instancesWithActiveIncidentsCount
     );
     expect(versionStatisticNode.props().activeCount).toBe(
-      mockIncidentsByWorkflow[1].workflows[0].activeInstancesCount
+      mockInstancesByWorkflow[1].workflows[0].activeInstancesCount
     );
   });
 
   it('should pass the right data to workflow without incidents', () => {
     const node = shallow(
-      <IncidentsByWorkflow incidents={mockIncidentsByWorkflow} />
+      <InstancesByWorkflow incidents={mockInstancesByWorkflow} />
     );
 
     const workflowNode = node
@@ -234,23 +234,23 @@ describe('IncidentsByWorkflow', () => {
     );
 
     expect(nodeInstancesBar.props().label).toContain(
-      mockIncidentsByWorkflow[2].workflowName ||
-        mockIncidentsByWorkflow[2].bpmnProcessId
+      mockInstancesByWorkflow[2].workflowName ||
+        mockInstancesByWorkflow[2].bpmnProcessId
     );
     expect(nodeInstancesBar.props().label).toContain(
-      mockIncidentsByWorkflow[2].workflows[0].version
+      mockInstancesByWorkflow[2].workflows[0].version
     );
     expect(nodeInstancesBar.props().incidentsCount).toBe(
-      mockIncidentsByWorkflow[2].instancesWithActiveIncidentsCount
+      mockInstancesByWorkflow[2].instancesWithActiveIncidentsCount
     );
     expect(nodeInstancesBar.props().activeCount).toBe(
-      mockIncidentsByWorkflow[2].activeInstancesCount
+      mockInstancesByWorkflow[2].activeInstancesCount
     );
   });
 
   it('should pass the right data to workflow without instances', () => {
     const node = shallow(
-      <IncidentsByWorkflow incidents={mockIncidentsByWorkflow} />
+      <InstancesByWorkflow incidents={mockInstancesByWorkflow} />
     );
 
     const workflowNode = node
@@ -268,17 +268,17 @@ describe('IncidentsByWorkflow', () => {
     );
 
     expect(nodeInstancesBar.props().label).toContain(
-      mockIncidentsByWorkflow[3].workflowName ||
-        mockIncidentsByWorkflow[3].bpmnProcessId
+      mockInstancesByWorkflow[3].workflowName ||
+        mockInstancesByWorkflow[3].bpmnProcessId
     );
     expect(nodeInstancesBar.props().label).toContain(
-      mockIncidentsByWorkflow[3].workflows[0].version
+      mockInstancesByWorkflow[3].workflows[0].version
     );
     expect(nodeInstancesBar.props().incidentsCount).toBe(
-      mockIncidentsByWorkflow[3].instancesWithActiveIncidentsCount
+      mockInstancesByWorkflow[3].instancesWithActiveIncidentsCount
     );
     expect(nodeInstancesBar.props().activeCount).toBe(
-      mockIncidentsByWorkflow[3].activeInstancesCount
+      mockInstancesByWorkflow[3].activeInstancesCount
     );
   });
 });

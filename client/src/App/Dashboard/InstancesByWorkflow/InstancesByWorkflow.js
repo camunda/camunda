@@ -20,7 +20,7 @@ import {
   getButtonTitle
 } from './service';
 
-export default class IncidentsByWorkflow extends React.Component {
+export default class InstancesByWorkflow extends React.Component {
   static propTypes = {
     incidents: PropTypes.arrayOf(
       PropTypes.shape({
