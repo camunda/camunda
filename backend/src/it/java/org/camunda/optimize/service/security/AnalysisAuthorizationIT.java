@@ -153,10 +153,13 @@ public class AnalysisAuthorizationIT extends AbstractResourceAuthorizationIT {
   }
 
   private Response executeBranchAnalysisAsKermit(final ProcessDefinitionEngineDto processDefinition) {
-    return executeBranchAnalysisAsKermit(processDefinition, Collections.emptyList());
+    return executeBranchAnalysisAsKermit(
+      processDefinition, processDefinition.getTenantId().map(Collections::singletonList).orElse(Collections.emptyList())
+    );
   }
 
-  private Response executeBranchAnalysisAsKermit(final ProcessDefinitionEngineDto processDefinition, List<String> tenantIds) {
+  private Response executeBranchAnalysisAsKermit(final ProcessDefinitionEngineDto processDefinition,
+                                                 List<String> tenantIds) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)

@@ -66,6 +66,8 @@ public class DecisionDefinitionReader {
 
     if (tenantId != null) {
       query.must(termQuery(TENANT_ID, tenantId));
+    } else {
+      query.mustNot(existsQuery(TENANT_ID));
     }
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -80,9 +82,10 @@ public class DecisionDefinitionReader {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format(
-        "Was not able to fetch decision definition with key [%s] and version [%s]",
+        "Was not able to fetch decision definition with key [%s], version [%s] and tenantId [%s]",
         decisionDefinitionKey,
-        decisionDefinitionVersion
+        decisionDefinitionVersion,
+        tenantId
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

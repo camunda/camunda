@@ -199,6 +199,26 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
+  public void getSharedProcessDefinitionXmlByNullTenant() {
+    //given
+    final String firstTenantId = "tenant1";
+    ProcessDefinitionOptimizeDto firstTenantDefinition = addProcessDefinitionToElasticsearch(KEY, firstTenantId);
+    ProcessDefinitionOptimizeDto secondTenantDefinition = addProcessDefinitionToElasticsearch(KEY, null);
+
+    // when
+    String actualXml =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetProcessDefinitionXmlRequest(
+          secondTenantDefinition.getKey(), secondTenantDefinition.getVersion(), null
+        )
+        .execute(String.class, 200);
+
+    // then
+    assertThat(actualXml, is(secondTenantDefinition.getBpmn20Xml()));
+  }
+
+  @Test
   public void getProcessDefinitionXmlWithNullParameter() {
     //given
     ProcessDefinitionOptimizeDto expectedDto = addProcessDefinitionToElasticsearch(KEY);

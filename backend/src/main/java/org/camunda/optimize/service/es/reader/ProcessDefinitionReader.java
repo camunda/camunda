@@ -71,6 +71,8 @@ public class ProcessDefinitionReader {
 
     if (tenantId != null) {
       query.must(termQuery(TENANT_ID, tenantId));
+    } else {
+      query.mustNot(existsQuery(TENANT_ID));
     }
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -85,9 +87,10 @@ public class ProcessDefinitionReader {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format(
-        "Was not able to fetch process definition with key [%s] and version [%s]",
+        "Was not able to fetch process definition with key [%s], version [%s] and tenantId [%s]",
         processDefinitionKey,
-        processDefinitionVersion
+        processDefinitionVersion,
+        tenantId
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -103,9 +106,10 @@ public class ProcessDefinitionReader {
       }
     } else {
       log.debug(
-        "Could not find process definition xml with key [{}] and version [{}]",
+        "Could not find process definition xml with key [{}], version [{}] and tenantId [{}]",
         processDefinitionKey,
-        processDefinitionVersion
+        processDefinitionVersion,
+        tenantId
       );
     }
     return Optional.ofNullable(processDefinitionOptimizeDto);
