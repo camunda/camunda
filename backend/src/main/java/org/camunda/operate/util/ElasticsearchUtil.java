@@ -5,6 +5,8 @@
  */
 package org.camunda.operate.util;
 
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
@@ -19,7 +22,6 @@ import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -37,9 +39,9 @@ import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 public abstract class ElasticsearchUtil {
 
@@ -202,7 +204,7 @@ public abstract class ElasticsearchUtil {
 
   public static <T extends OperateEntity> List<T> scroll(SearchRequest searchRequest, Class<T> clazz, ObjectMapper objectMapper, RestHighLevelClient esClient,
     Consumer<SearchHits> searchHitsProcessor, Consumer<Aggregations> aggsProcessor) throws IOException {
-
+    
     searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
     SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
@@ -237,7 +239,7 @@ public abstract class ElasticsearchUtil {
     return result;
   }
 
-  public static void scrollWithoutResults(SearchRequest searchRequest, RestHighLevelClient esClient,
+  public static void scrollWith(SearchRequest searchRequest, RestHighLevelClient esClient,
     Consumer<SearchHits> searchHitsProcessor, Consumer<Aggregations> aggsProcessor,
       Consumer<SearchHits> firstResponseConsumer) throws IOException {
 
@@ -288,79 +290,43 @@ public abstract class ElasticsearchUtil {
 
   public static List<String> scrollIdsToList(SearchRequest request, RestHighLevelClient esClient) throws IOException {
     List<String> result = new ArrayList<>();
-
-    request.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-    SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
-
-    String scrollId = null;
-
-    while (response.getHits().getHits().length != 0) {
-      SearchHits hits = response.getHits();
-      scrollId = response.getScrollId();
-
-      result.addAll(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2)));      result.addAll(Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2)));
-
-      SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-      scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-
-      response = esClient
-        .scroll(scrollRequest, RequestOptions.DEFAULT);
-    }
-
-    clearScroll(scrollId, esClient);
-
+    
+    Consumer<SearchHits> collectIds = (hits) -> {
+      result.addAll(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2))); 
+      result.addAll(Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2)));
+    };
+    
+    scrollWith(request, esClient, collectIds, null, collectIds);
     return result;
   }
 
   public static List<String> scrollFieldToList(SearchRequest request, String fieldName, RestHighLevelClient esClient) throws IOException {
     List<String> result = new ArrayList<>();
+    
+    Consumer<SearchHits> collectFields = (hits) -> {
+        
+      result.addAll(Arrays.stream(hits.getHits()).collect(
+            ArrayList::new, 
+            (list, hit) -> list.add(hit.getSourceAsMap().get(fieldName).toString()),
+            (list1, list2) -> list1.addAll(list2)));
+        
+    };
 
-    request.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-    SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
-
-    String scrollId = null;
-
-    while (response.getHits().getHits().length != 0) {
-      SearchHits hits = response.getHits();
-      scrollId = response.getScrollId();
-
-      result.addAll(Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getSourceAsMap().get(fieldName).toString()), (list1, list2) -> list1.addAll(list2)));
-
-      SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-      scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-
-      response = esClient
-        .scroll(scrollRequest, RequestOptions.DEFAULT);
-    }
-
-    clearScroll(scrollId, esClient);
-
+    scrollWith(request, esClient, collectFields,null, collectFields);
     return result;
   }
 
   public static Set<String> scrollIdsToSet(SearchRequest request, RestHighLevelClient esClient) throws IOException {
     Set<String> result = new HashSet<>();
-
-    request.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-    SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
-
-    String scrollId = null;
-
-    while (response.getHits().getHits().length != 0) {
-      SearchHits hits = response.getHits();
-      scrollId = response.getScrollId();
-
-      result.addAll(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2)));
-
-      SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-      scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-
-      response = esClient
-          .scroll(scrollRequest, RequestOptions.DEFAULT);
-    }
-
-    clearScroll(scrollId, esClient);
-
+    Consumer<SearchHits> collectIds= (hits) -> {
+      
+      result.addAll(Arrays.stream(hits.getHits()).collect(
+          HashSet::new, 
+          (set, hit) -> set.add(hit.getId()),
+          (set1, set2) -> set1.addAll(set2)));
+        
+    };
+    scrollWith(request, esClient, collectIds, null, collectIds);
     return result;
   }
 }

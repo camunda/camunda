@@ -241,7 +241,7 @@ public class BatchOperationWriter {
         .source(searchSourceBuilder.size(batchSize).fetchSource(false));
     try {
       AtomicInteger operationsCount = new AtomicInteger();
-      ElasticsearchUtil.scrollWithoutResults(searchRequest, esClient,
+      ElasticsearchUtil.scrollWith(searchRequest, esClient,
         searchHits -> {
           try {
             final List<String> workflowInstanceIds = Arrays.stream(searchHits.getHits()).map(SearchHit::getId).collect(Collectors.toList());

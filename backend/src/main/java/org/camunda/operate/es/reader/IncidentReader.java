@@ -96,7 +96,7 @@ public class IncidentReader extends AbstractReader {
 
     Map<String, List<String>> result = new HashMap<>();
     try {
-      ElasticsearchUtil.scrollWithoutResults(searchRequest, esClient, searchHits -> {
+      ElasticsearchUtil.scrollWith(searchRequest, esClient, searchHits -> {
         for (SearchHit hit : searchHits.getHits()) {
           CollectionUtil.addToMap(result, hit.getSourceAsMap().get(IncidentTemplate.WORKFLOW_INSTANCE_ID).toString(), hit.getId());
         }
