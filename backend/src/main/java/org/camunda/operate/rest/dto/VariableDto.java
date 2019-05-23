@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.VariableEntity;
@@ -83,11 +84,15 @@ public class VariableDto {
     variable.setWorkflowInstanceId(variableEntity.getWorkflowInstanceId());
 
     if (operations != null && operations.size() > 0) {
-      variable.setHasActiveOperation(operations.stream().anyMatch(
-        o ->
+      List <OperationEntity> activeOperations = operations.stream().filter(o ->
           o.getState().equals(OperationState.SCHEDULED)
-            || o.getState().equals(OperationState.LOCKED)
-            || o.getState().equals(OperationState.SENT)));
+              || o.getState().equals(OperationState.LOCKED)
+              || o.getState().equals(OperationState.SENT))
+          .collect(Collectors.toList());
+      if (!activeOperations.isEmpty()) {
+        variable.setHasActiveOperation(true);
+        variable.setValue(activeOperations.get(activeOperations.size() - 1).getVariableValue());
+      }
     }
 
     return variable;

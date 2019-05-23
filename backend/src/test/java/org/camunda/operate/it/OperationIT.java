@@ -330,9 +330,16 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //when
     //we call UPDATE_VARIABLE operation on instance
     final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
-    postUpdateVariableOperation(workflowInstanceId, "a", "\"newValue\"");
+    final String varName = "a";
+    final String newVarValue = "\"newValue\"";
+    postUpdateVariableOperation(workflowInstanceId, varName, newVarValue);
 
-    //and execute the operation
+    //then variable with new value is returned
+    List<VariableDto> variables = variableReader.getVariables(workflowInstanceId, workflowInstanceId);
+    assertThat(variables).hasSize(1);
+    assertVariable(variables, varName, newVarValue, true);
+
+    //when execute the operation
     operationExecutor.executeOneBatch();
 
     //then
@@ -360,10 +367,9 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getEndDate()).isNotNull();
 
     //check variables
-    final List<VariableDto> variables = variableReader.getVariables(workflowInstanceId, workflowInstanceId);
+    variables = variableReader.getVariables(workflowInstanceId, workflowInstanceId);
     assertThat(variables).hasSize(1);
-    assertThat(variables.get(0).getName()).isEqualTo("a");
-    assertThat(variables.get(0).getValue()).isEqualTo("\"newValue\"");
+    assertVariable(variables, varName, newVarValue, false);
   }
 
   @Test
