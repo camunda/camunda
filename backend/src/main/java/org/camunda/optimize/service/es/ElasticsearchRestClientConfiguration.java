@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -15,40 +14,34 @@ import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.FactoryBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.service.util.ESVersionChecker.checkESVersionSupport;
 
-@RequiredArgsConstructor
+@Configuration
 @Slf4j
-public class SchemaInitializingElasticsearchRestClientFactory
-  implements FactoryBean<RestHighLevelClient>, DisposableBean {
+public class ElasticsearchRestClientConfiguration {
 
-  private RestHighLevelClient esClient;
+  @Bean(destroyMethod = "close")
+  public RestHighLevelClient restHighLevelClient(final ConfigurationService configurationService,
+                                                 final ElasticSearchSchemaManager elasticSearchSchemaManager,
+                                                 final BackoffCalculator backoffCalculator) throws IOException {
+    log.info("Initializing Elasticsearch rest client...");
+    RestHighLevelClient esClient = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
 
-  private final ConfigurationService configurationService;
-  private final ElasticSearchSchemaManager elasticSearchSchemaManager;
-  private final BackoffCalculator backoffCalculator;
+    waitForElasticsearch(esClient, backoffCalculator);
+    log.info("Elasticsearch client has successfully been started");
 
-  @Override
-  public RestHighLevelClient getObject() throws IOException {
-    if (esClient == null) {
-      log.info("Initializing Elasticsearch rest client...");
-      esClient = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
-
-      waitForElasticsearch(esClient);
-      log.info("Elasticsearch client has successfully been started");
-
-      elasticSearchSchemaManager.validateExistingSchemaVersion(esClient);
-      elasticSearchSchemaManager.initializeSchema(esClient);
-    }
+    elasticSearchSchemaManager.validateExistingSchemaVersion(esClient);
+    elasticSearchSchemaManager.initializeSchema(esClient);
     return esClient;
   }
 
-  private void waitForElasticsearch(RestHighLevelClient esClient) throws IOException {
+  private void waitForElasticsearch(final RestHighLevelClient esClient,
+                                    final BackoffCalculator backoffCalculator) throws IOException {
     boolean isConnected = false;
     while (!isConnected) {
       try {
@@ -67,7 +60,7 @@ public class SchemaInitializingElasticsearchRestClientFactory
     checkESVersionSupport(esClient);
   }
 
-  private int getNumberOfClusterNodes(RestHighLevelClient esClient) {
+  private int getNumberOfClusterNodes(final RestHighLevelClient esClient) {
     try {
       return esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT).getNumberOfNodes();
     } catch (IOException e) {
@@ -76,24 +69,4 @@ public class SchemaInitializingElasticsearchRestClientFactory
     }
   }
 
-  @Override
-  public Class<?> getObjectType() {
-    return RestHighLevelClient.class;
-  }
-
-  @Override
-  public boolean isSingleton() {
-    return true;
-  }
-
-  @Override
-  public void destroy() {
-    if (esClient != null) {
-      try {
-        esClient.close();
-      } catch (IOException e) {
-        log.error("Could not close Elasticsearch client", e);
-      }
-    }
-  }
 }

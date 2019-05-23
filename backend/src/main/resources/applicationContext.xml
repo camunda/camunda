@@ -18,10 +18,6 @@
 
   <bean id="configurationService" class="org.camunda.optimize.service.util.configuration.ConfigurationService"/>
 
-  <!--not declared as annotated component to be able to mock-->
-  <bean id="restHighLevelClient"
-        class="org.camunda.optimize.service.es.SchemaInitializingElasticsearchRestClientFactory"/>
-
   <util:list id="registeredPlugins" value-type="org.camunda.optimize.plugin.importing.variable.VariableImportAdapter"/>
 
 </beans>

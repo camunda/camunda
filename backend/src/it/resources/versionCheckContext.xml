@@ -11,6 +11,7 @@
     http://www.springframework.org/schema/util/spring-util.xsd">
 
   <context:annotation-config/>
+
   <context:component-scan base-package="org.camunda.optimize.service"/>
   <context:component-scan base-package="org.camunda.optimize.rest"/>
   <context:component-scan base-package="org.camunda.optimize.plugin"/>
@@ -19,13 +20,11 @@
     <constructor-arg>
       <list>
         <value>service-config.yaml</value>
-        <value>unit/unit-config.yaml</value>
+        <value>it/invalid-engine-config.yaml</value>
       </list>
     </constructor-arg>
   </bean>
 
   <util:list id="registeredPlugins" value-type="org.camunda.optimize.plugin.importing.variable.VariableImportAdapter"/>
-
-  <bean id="restHighLevelClient"  class="org.camunda.optimize.service.es.SchemaInitializingElasticsearchRestClientFactory"/>
 
 </beans>
