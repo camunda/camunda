@@ -17,7 +17,7 @@
  */
 package io.zeebe.engine.processor.workflow.incident;
 
-import io.zeebe.engine.processor.TypedEventStreamProcessorBuilder;
+import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.BpmnStepProcessor;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -26,10 +26,10 @@ import io.zeebe.protocol.intent.IncidentIntent;
 public class IncidentEventProcessors {
 
   public static void addProcessors(
-      TypedEventStreamProcessorBuilder typedEventStreamProcessorBuilder,
+      TypedRecordProcessors typedRecordProcessors,
       ZeebeState zeebeState,
       BpmnStepProcessor bpmnStepProcessor) {
-    typedEventStreamProcessorBuilder
+    typedRecordProcessors
         .onCommand(
             ValueType.INCIDENT, IncidentIntent.CREATE, new CreateIncidentProcessor(zeebeState))
         .onCommand(

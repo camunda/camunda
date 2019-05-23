@@ -17,7 +17,6 @@
  */
 package io.zeebe.engine.state;
 
-import io.zeebe.engine.processor.StreamProcessorContext;
 import io.zeebe.logstreams.state.StateStorage;
 import java.io.File;
 
@@ -53,9 +52,5 @@ public class StateStorageFactory {
     }
 
     return new StateStorage(runtimeDirectory, snapshotsDirectory);
-  }
-
-  public StateStorage create(final StreamProcessorContext context) {
-    return create(context.getId(), context.getName());
   }
 }

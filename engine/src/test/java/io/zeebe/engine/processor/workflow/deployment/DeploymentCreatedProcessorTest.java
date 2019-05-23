@@ -21,9 +21,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.engine.processor.TypedRecord;
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
-import io.zeebe.engine.util.StreamProcessorControl;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -48,32 +46,27 @@ public class DeploymentCreatedProcessorTest {
   @Rule
   public StreamProcessorRule rule = new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION + 1);
 
-  private StreamProcessorControl streamProcessor;
   private WorkflowState workflowState;
 
   @Before
   public void setUp() {
-    streamProcessor =
-        rule.initTypedStreamProcessor(
-            (typedEventStreamProcessorBuilder, zeebeDb, dbContext) -> {
-              final ZeebeState zeebeState = new ZeebeState(zeebeDb, dbContext);
-              workflowState = zeebeState.getWorkflowState();
+    rule.startTypedStreamProcessor(
+        (typedRecordProcessors, zeebeState) -> {
+          workflowState = zeebeState.getWorkflowState();
 
-              DeploymentEventProcessors.addDeploymentCreateProcessor(
-                  typedEventStreamProcessorBuilder, workflowState);
-              typedEventStreamProcessorBuilder.onEvent(
-                  ValueType.DEPLOYMENT,
-                  DeploymentIntent.CREATED,
-                  new DeploymentCreatedProcessor(workflowState, false));
-
-              return typedEventStreamProcessorBuilder.build();
-            });
+          DeploymentEventProcessors.addDeploymentCreateProcessor(
+              typedRecordProcessors, workflowState);
+          typedRecordProcessors.onEvent(
+              ValueType.DEPLOYMENT,
+              DeploymentIntent.CREATED,
+              new DeploymentCreatedProcessor(workflowState, false));
+          return typedRecordProcessors;
+        });
   }
 
   @Test
   public void shouldNotFailIfCantFindPreviousVersion() {
     // given
-    streamProcessor.start();
 
     // when
     writeMessageStartRecord(1, 2);
@@ -93,7 +86,6 @@ public class DeploymentCreatedProcessorTest {
   @Test
   public void shouldNotWriteCloseSubscriptionIfNotMessageStart() {
     // given
-    streamProcessor.start();
 
     // when
     writeNoneStartRecord(3, 1);
@@ -114,7 +106,6 @@ public class DeploymentCreatedProcessorTest {
   @Test
   public void shouldCloseSubscriptionWhenInCorrectOrder() {
     // given
-    streamProcessor.start();
 
     // when
     writeMessageStartRecord(3, 1);
@@ -137,21 +128,24 @@ public class DeploymentCreatedProcessorTest {
   @Test
   public void shouldIgnoreOutdatedDeployment() {
     // given
-    streamProcessor.start();
 
     // when
-    streamProcessor.blockAfterMessageStartEventSubscriptionRecord(
-        r ->
-            r.getValue().getWorkflowKey() == 5
-                && r.getMetadata().getIntent() == MessageStartEventSubscriptionIntent.OPEN);
     writeMessageStartRecord(5, 2);
-    waitUntil(() -> streamProcessor.isBlocked());
+    waitUntil(
+        () ->
+            rule.events()
+                .onlyMessageStartEventSubscriptionRecords()
+                .withIntent(MessageStartEventSubscriptionIntent.OPEN)
+                .exists());
 
-    streamProcessor.blockAfterDeploymentEvent(
-        r -> r.getKey() == 3 && r.getMetadata().getIntent() == DeploymentIntent.CREATED);
     writeMessageStartRecord(3, 1);
-    streamProcessor.unblock();
-    waitUntil(() -> streamProcessor.isBlocked());
+    waitUntil(
+        () ->
+            rule.events()
+                .onlyDeploymentRecords()
+                .withIntent(DeploymentIntent.CREATED)
+                .filter(d -> d.getKey() == 3)
+                .exists());
 
     // then
     Assertions.assertThat(
@@ -176,29 +170,27 @@ public class DeploymentCreatedProcessorTest {
   @Test
   public void shouldCloseSubscriptionEvenIfNotNextVersion() {
     // given
-    streamProcessor.start();
 
     // when
-    streamProcessor.blockAfterMessageStartEventSubscriptionRecord(
-        r ->
-            r.getValue().getWorkflowKey() == 3
-                && r.getMetadata().getIntent() == MessageStartEventSubscriptionIntent.OPEN);
     writeMessageStartRecord(3, 1);
-    waitUntil(() -> streamProcessor.isBlocked());
+    waitUntil(
+        () ->
+            rule.events()
+                .onlyMessageStartEventSubscriptionRecords()
+                .withIntent(MessageStartEventSubscriptionIntent.OPEN)
+                .exists());
 
-    streamProcessor.blockAfterMessageStartEventSubscriptionRecord(
-        r ->
-            r.getValue().getWorkflowKey() == 3
-                && r.getMetadata().getIntent() == MessageStartEventSubscriptionIntent.CLOSE);
     writeNoneStartRecord(7, 3);
-    streamProcessor.unblock();
-    waitUntil(() -> streamProcessor.isBlocked());
+    waitUntil(
+        () ->
+            rule.events()
+                .onlyMessageStartEventSubscriptionRecords()
+                .withIntent(MessageStartEventSubscriptionIntent.CLOSE)
+                .exists());
 
-    streamProcessor.blockAfterDeploymentEvent(
-        r -> r.getKey() == 5 && r.getMetadata().getIntent() == DeploymentIntent.CREATED);
     writeMessageStartRecord(5, 2);
-    streamProcessor.unblock();
-    waitUntil(() -> streamProcessor.isBlocked());
+    waitUntil(
+        () -> rule.events().onlyDeploymentRecords().withIntent(DeploymentIntent.CREATED).exists());
 
     // then
     Assertions.assertThat(

@@ -21,10 +21,9 @@ import io.zeebe.servicecontainer.ServiceName;
 
 public class StreamProcessorServiceNames {
 
-  public static final ServiceName<StreamProcessorService> streamProcessorService(
+  public static final ServiceName<StreamProcessor> streamProcessorService(
       String logName, String processorName) {
     return ServiceName.newServiceName(
-        String.format("logstream.%s.processor.%s", logName, processorName),
-        StreamProcessorService.class);
+        String.format("logstream.%s.processor.%s", logName, processorName), StreamProcessor.class);
   }
 }

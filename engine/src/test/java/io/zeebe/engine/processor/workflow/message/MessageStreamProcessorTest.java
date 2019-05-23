@@ -31,8 +31,6 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
-import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.util.StreamProcessorControl;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -55,8 +53,6 @@ public class MessageStreamProcessorTest {
 
   @Mock private SubscriptionCommandSender mockSubscriptionCommandSender;
 
-  private StreamProcessorControl streamProcessor;
-
   @Before
   public void setup() {
     MockitoAnnotations.initMocks(this);
@@ -73,14 +69,12 @@ public class MessageStreamProcessorTest {
             anyLong(), anyLong(), any(DirectBuffer.class)))
         .thenReturn(true);
 
-    streamProcessor =
-        rule.runTypedStreamProcessor(
-            (typedEventStreamProcessorBuilder, zeebeDb, dbContext) -> {
-              final ZeebeState zeebeState = new ZeebeState(zeebeDb, dbContext);
-              MessageEventProcessors.addMessageProcessors(
-                  typedEventStreamProcessorBuilder, zeebeState, mockSubscriptionCommandSender);
-              return typedEventStreamProcessorBuilder.build();
-            });
+    rule.startTypedStreamProcessor(
+        (typedRecordProcessors, zeebeState) -> {
+          MessageEventProcessors.addMessageProcessors(
+              typedRecordProcessors, zeebeState, mockSubscriptionCommandSender);
+          return typedRecordProcessors;
+        });
   }
 
   @Test
@@ -92,8 +86,6 @@ public class MessageStreamProcessorTest {
 
     // when
     rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
-
-    streamProcessor.unblock();
 
     // then
     final TypedRecord<MessageSubscriptionRecord> rejection =
@@ -118,20 +110,15 @@ public class MessageStreamProcessorTest {
     final MessageSubscriptionRecord subscription = messageSubscription();
     final MessageRecord message = message();
 
-    streamProcessor.blockAfterMessageEvent(
-        m -> m.getMetadata().getIntent() == MessageIntent.PUBLISHED);
-
     rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
     rule.writeCommand(MessageIntent.PUBLISH, message);
-
-    waitUntil(() -> streamProcessor.isBlocked());
+    waitUntil(
+        () -> rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).exists());
 
     // when
     rule.getClock()
         .addTime(
             MessageObserver.SUBSCRIPTION_CHECK_INTERVAL.plus(MessageObserver.SUBSCRIPTION_TIMEOUT));
-
-    streamProcessor.unblock();
 
     // then
     final long messageKey =
@@ -151,20 +138,20 @@ public class MessageStreamProcessorTest {
     final MessageSubscriptionRecord subscription = messageSubscription();
     final MessageRecord message = message();
 
-    streamProcessor.blockAfterMessageSubscriptionEvent(
-        m -> m.getMetadata().getIntent() == MessageSubscriptionIntent.OPENED);
-
     rule.writeCommand(MessageIntent.PUBLISH, message);
     rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
 
-    waitUntil(() -> streamProcessor.isBlocked());
+    waitUntil(
+        () ->
+            rule.events()
+                .onlyMessageSubscriptionRecords()
+                .withIntent(MessageSubscriptionIntent.OPENED)
+                .exists());
 
     // when
     rule.getClock()
         .addTime(
             MessageObserver.SUBSCRIPTION_CHECK_INTERVAL.plus(MessageObserver.SUBSCRIPTION_TIMEOUT));
-
-    streamProcessor.unblock();
 
     // then
     final long messageKey =
@@ -186,19 +173,17 @@ public class MessageStreamProcessorTest {
     final MessageRecord message = message();
 
     rule.writeCommand(MessageIntent.PUBLISH, message);
-
-    streamProcessor.blockAfterMessageSubscriptionEvent(
-        m -> m.getMetadata().getIntent() == MessageSubscriptionIntent.OPENED);
-
     rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
-
-    waitUntil(() -> streamProcessor.isBlocked());
+    waitUntil(
+        () ->
+            rule.events()
+                .onlyMessageSubscriptionRecords()
+                .withIntent(MessageSubscriptionIntent.OPENED)
+                .exists());
 
     // when
     rule.writeCommand(MessageSubscriptionIntent.CLOSE, subscription);
     rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
-
-    streamProcessor.unblock();
 
     // then
     final TypedRecord<MessageSubscriptionRecord> rejection =
@@ -214,19 +199,18 @@ public class MessageStreamProcessorTest {
   public void shouldRejectDuplicatedCloseMessageSubscription() {
     // given
     final MessageSubscriptionRecord subscription = messageSubscription();
-
-    streamProcessor.blockAfterMessageSubscriptionEvent(
-        m -> m.getMetadata().getIntent() == MessageSubscriptionIntent.OPENED);
-
     rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
 
-    waitUntil(() -> streamProcessor.isBlocked());
+    waitUntil(
+        () ->
+            rule.events()
+                .onlyMessageSubscriptionRecords()
+                .withIntent(MessageSubscriptionIntent.OPENED)
+                .exists());
 
     // when
     rule.writeCommand(MessageSubscriptionIntent.CLOSE, subscription);
     rule.writeCommand(MessageSubscriptionIntent.CLOSE, subscription);
-
-    streamProcessor.unblock();
 
     // then
     final TypedRecord<MessageSubscriptionRecord> rejection =
@@ -252,17 +236,12 @@ public class MessageStreamProcessorTest {
     final MessageSubscriptionRecord subscription = messageSubscription();
     final MessageRecord message = message();
 
-    streamProcessor.blockAfterMessageEvent(
-        m -> m.getMetadata().getIntent() == MessageIntent.PUBLISHED);
-
+    // when
     rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
     rule.writeCommand(MessageIntent.PUBLISH, message);
-
-    waitUntil(() -> streamProcessor.isBlocked());
-
-    // when
+    waitUntil(
+        () -> rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).exists());
     rule.writeCommand(MessageIntent.PUBLISH, message);
-    streamProcessor.unblock();
 
     // then
     final long messageKey =
@@ -282,20 +261,13 @@ public class MessageStreamProcessorTest {
     // given
     final MessageSubscriptionRecord subscription = messageSubscription();
     final MessageRecord message = message();
-
     subscription.setCloseOnCorrelate(false);
-    streamProcessor.blockAfterMessageEvent(
-        m -> m.getMetadata().getIntent() == MessageIntent.PUBLISHED);
 
+    // when
     rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
     rule.writeCommand(MessageIntent.PUBLISH, message);
     rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
-
-    waitUntil(() -> streamProcessor.isBlocked());
-
-    // when
     rule.writeCommand(MessageIntent.PUBLISH, message);
-    streamProcessor.unblock();
 
     // then
     waitUntil(
@@ -337,15 +309,17 @@ public class MessageStreamProcessorTest {
     final MessageRecord second = message().setVariables(asMsgPack("foo", "baz"));
 
     // when
-    streamProcessor.blockAfterMessageSubscriptionEvent(
-        m -> m.getMetadata().getIntent() == MessageSubscriptionIntent.OPENED);
-
     rule.writeCommand(MessageIntent.PUBLISH, first);
     rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
 
-    waitUntil(() -> streamProcessor.isBlocked());
+    waitUntil(
+        () ->
+            rule.events()
+                .onlyMessageSubscriptionRecords()
+                .withIntent(MessageSubscriptionIntent.OPENED)
+                .exists());
+
     rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
-    streamProcessor.unblock();
     rule.writeCommand(MessageIntent.PUBLISH, second);
 
     // then
@@ -360,16 +334,17 @@ public class MessageStreamProcessorTest {
     final MessageRecord second = message().setVariables(asMsgPack("foo", "baz"));
 
     // when
-    streamProcessor.blockAfterMessageSubscriptionEvent(
-        m -> m.getMetadata().getIntent() == MessageSubscriptionIntent.OPENED);
-
     rule.writeCommand(MessageIntent.PUBLISH, first);
     rule.writeCommand(MessageIntent.PUBLISH, second);
     rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
 
-    waitUntil(() -> streamProcessor.isBlocked());
+    waitUntil(
+        () ->
+            rule.events()
+                .onlyMessageSubscriptionRecords()
+                .withIntent(MessageSubscriptionIntent.OPENED)
+                .exists());
     rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
-    streamProcessor.unblock();
 
     // then
     assertAllMessagesReceived(subscription, first, second);
@@ -383,23 +358,26 @@ public class MessageStreamProcessorTest {
         messageSubscription().setElementInstanceKey(5L);
     final MessageSubscriptionRecord secondSubscription =
         messageSubscription().setElementInstanceKey(10L);
-    streamProcessor.blockAfterMessageSubscriptionEvent(
-        r ->
-            r.getMetadata().getIntent() == MessageSubscriptionIntent.OPENED
-                && r.getValue().getElementInstanceKey()
-                    == secondSubscription.getElementInstanceKey());
 
     // when
     rule.writeCommand(MessageIntent.PUBLISH, message);
     rule.writeCommand(MessageSubscriptionIntent.OPEN, firstSubscription);
     rule.writeCommand(MessageSubscriptionIntent.OPEN, secondSubscription);
-    waitUntil(streamProcessor::isBlocked);
+    waitUntil(
+        () ->
+            rule.events()
+                .onlyMessageSubscriptionRecords()
+                .withIntent(MessageSubscriptionIntent.OPENED)
+                .filter(
+                    r ->
+                        r.getValue().getElementInstanceKey()
+                            == secondSubscription.getElementInstanceKey())
+                .exists());
 
     final long messageKey =
         rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).getFirst().getKey();
     firstSubscription.setMessageKey(messageKey);
     rule.writeCommand(MessageSubscriptionIntent.REJECT, firstSubscription);
-    streamProcessor.unblock();
 
     // then
     verify(mockSubscriptionCommandSender, timeout(5_000))

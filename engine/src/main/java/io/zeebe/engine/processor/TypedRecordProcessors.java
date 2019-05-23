@@ -17,7 +17,6 @@
  */
 package io.zeebe.engine.processor;
 
-import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -25,63 +24,53 @@ import io.zeebe.protocol.intent.Intent;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TypedEventStreamProcessorBuilder {
-  protected final TypedStreamEnvironment environment;
+public final class TypedRecordProcessors {
 
-  protected RecordProcessorMap eventProcessors = new RecordProcessorMap();
-  protected List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
+  private final RecordProcessorMap recordProcessorMap = new RecordProcessorMap();
+  private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
 
-  private ZeebeState zeebeState;
+  private TypedRecordProcessors() {}
 
-  public TypedEventStreamProcessorBuilder(TypedStreamEnvironment environment) {
-    this.environment = environment;
+  public static TypedRecordProcessors processors() {
+    return new TypedRecordProcessors();
   }
 
   // TODO: could remove the ValueType argument as it follows from the intent
-  public TypedEventStreamProcessorBuilder onEvent(
+  public TypedRecordProcessors onEvent(
       ValueType valueType, Intent intent, TypedRecordProcessor<?> processor) {
     return onRecord(RecordType.EVENT, valueType, intent, processor);
   }
 
-  private TypedEventStreamProcessorBuilder onRecord(
+  private TypedRecordProcessors onRecord(
       RecordType recordType,
       ValueType valueType,
       Intent intent,
       TypedRecordProcessor<?> processor) {
-    eventProcessors.put(recordType, valueType, intent.value(), processor);
+    recordProcessorMap.put(recordType, valueType, intent.value(), processor);
 
     return this;
   }
 
-  public TypedEventStreamProcessorBuilder onCommand(
+  public TypedRecordProcessors onCommand(
       ValueType valueType, Intent intent, TypedRecordProcessor<?> processor) {
     return onRecord(RecordType.COMMAND, valueType, intent, processor);
   }
 
-  public <T extends UnpackedObject> TypedEventStreamProcessorBuilder onCommand(
+  public <T extends UnpackedObject> TypedRecordProcessors onCommand(
       ValueType valueType, Intent intent, CommandProcessor<T> commandProcessor) {
     return onCommand(valueType, intent, new CommandProcessorImpl<>(commandProcessor));
   }
 
-  public TypedEventStreamProcessorBuilder withListener(StreamProcessorLifecycleAware listener) {
+  public TypedRecordProcessors withListener(StreamProcessorLifecycleAware listener) {
     this.lifecycleListeners.add(listener);
     return this;
   }
 
-  /** Only required if a stream processor writes events to its own stream. */
-  public TypedEventStreamProcessorBuilder zeebeState(ZeebeState zeebeState) {
-    this.zeebeState = zeebeState;
-    return this;
+  public RecordProcessorMap getRecordProcessorMap() {
+    return recordProcessorMap;
   }
 
-  public TypedStreamProcessor build() {
-
-    return new TypedStreamProcessor(
-        environment.getCommandResponseWriter(),
-        eventProcessors,
-        lifecycleListeners,
-        environment.getEventRegistry(),
-        zeebeState,
-        environment);
+  public List<StreamProcessorLifecycleAware> getLifecycleListeners() {
+    return lifecycleListeners;
   }
 }

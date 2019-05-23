@@ -17,7 +17,6 @@
  */
 package io.zeebe.engine.processor;
 
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -36,8 +35,9 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCrea
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import java.util.EnumMap;
 
-public class TypedStreamEnvironment {
-  protected static final EnumMap<ValueType, Class<? extends UnpackedObject>> EVENT_REGISTRY =
+public class TypedEventRegistry {
+
+  public static final EnumMap<ValueType, Class<? extends UnpackedObject>> EVENT_REGISTRY =
       new EnumMap<>(ValueType.class);
 
   static {
@@ -57,46 +57,5 @@ public class TypedStreamEnvironment {
     EVENT_REGISTRY.put(ValueType.VARIABLE_DOCUMENT, VariableDocumentRecord.class);
     EVENT_REGISTRY.put(ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationRecord.class);
     EVENT_REGISTRY.put(ValueType.ERROR, ErrorRecord.class);
-  }
-
-  private final LogStream stream;
-  private final CommandResponseWriter commandResponseWriter;
-  private TypedStreamReader reader;
-
-  public TypedStreamEnvironment(
-      final LogStream stream, final CommandResponseWriter commandResponseWriter) {
-    this.commandResponseWriter = commandResponseWriter;
-    this.stream = stream;
-  }
-
-  public EnumMap<ValueType, Class<? extends UnpackedObject>> getEventRegistry() {
-    return EVENT_REGISTRY;
-  }
-
-  public CommandResponseWriter getCommandResponseWriter() {
-    return commandResponseWriter;
-  }
-
-  public LogStream getStream() {
-    return stream;
-  }
-
-  public TypedEventStreamProcessorBuilder newStreamProcessor() {
-    return new TypedEventStreamProcessorBuilder(this);
-  }
-
-  public TypedCommandWriter buildCommandWriter() {
-    return new TypedCommandWriterImpl(stream, EVENT_REGISTRY);
-  }
-
-  public TypedStreamReader buildStreamReader() {
-    return new TypedStreamReaderImpl(stream, EVENT_REGISTRY);
-  }
-
-  public TypedStreamReader getStreamReader() {
-    if (reader == null) {
-      reader = buildStreamReader();
-    }
-    return reader;
   }
 }

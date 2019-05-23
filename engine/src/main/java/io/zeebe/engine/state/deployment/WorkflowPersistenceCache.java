@@ -266,9 +266,7 @@ public class WorkflowPersistenceCache {
       updateInMemoryState(persistedWorkflow);
 
       final DeployedWorkflow deployedWorkflow = workflowsByKey.get(workflowKey);
-      if (deployedWorkflow != null) {
-        return deployedWorkflow;
-      }
+      return deployedWorkflow;
     }
     // does not exist in persistence and in memory state
     return null;

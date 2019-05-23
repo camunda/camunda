@@ -17,30 +17,24 @@
  */
 package io.zeebe.engine.util;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static io.zeebe.engine.util.Records.workflowInstance;
 
-import io.zeebe.db.DbContext;
-import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.engine.processor.StreamProcessor;
-import io.zeebe.engine.processor.StreamProcessorFactory;
-import io.zeebe.engine.processor.TypedEventStreamProcessorBuilder;
-import io.zeebe.engine.processor.TypedStreamEnvironment;
+import io.zeebe.engine.processor.TypedRecordProcessorFactory;
+import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.ZbLogger;
-import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.rules.ExternalResource;
@@ -56,7 +50,9 @@ public class StreamProcessorRule implements TestRule {
 
   private static final Logger LOG = new ZbLogger("io.zeebe.broker.test");
 
-  public static final int PARTITION_ID = 0;
+  private static final int PARTITION_ID = 0;
+  private static final int STREAM_PROCESSOR_ID = 1;
+
   // environment
   private final TemporaryFolder tempFolder = new TemporaryFolder();
   private final AutoCloseableRule closeables = new AutoCloseableRule();
@@ -67,10 +63,9 @@ public class StreamProcessorRule implements TestRule {
   private final ZeebeDbFactory zeebeDbFactory;
 
   // things provisioned by this rule
-  public static final String STREAM_NAME = "stream";
+  private static final String STREAM_NAME = "stream";
 
   private TestStreams streams;
-  private TypedStreamEnvironment streamEnvironment;
 
   private final SetupRule rule;
   private ZeebeState zeebeState;
@@ -103,43 +98,43 @@ public class StreamProcessorRule implements TestRule {
     return chain.apply(base, description);
   }
 
-  public StreamProcessorControl runStreamProcessor(StreamProcessorFactory factory) {
-    final StreamProcessorControl control = initStreamProcessor(factory);
-    control.start();
-    return control;
-  }
-
-  public StreamProcessorControl runTypedStreamProcessor(StreamProcessorTestFactory factory) {
-    final StreamProcessorControl control = initTypedStreamProcessor(factory);
-    control.start();
-    return control;
-  }
-
-  public StreamProcessorControl initStreamProcessor(StreamProcessorFactory factory) {
-    return streams.initStreamProcessor(STREAM_NAME, 0, zeebeDbFactory, factory);
-  }
-
-  public StreamProcessorControl initTypedStreamProcessor(StreamProcessorTestFactory factory) {
-
-    return streams.initStreamProcessor(
-        STREAM_NAME,
-        0,
-        zeebeDbFactory,
-        (actor, db, dbContext) -> {
-          zeebeState = new ZeebeState(db, dbContext);
-          final TypedEventStreamProcessorBuilder processorBuilder =
-              streamEnvironment.newStreamProcessor().zeebeState(zeebeState);
-
-          return factory.build(processorBuilder, db, dbContext);
+  public StreamProcessor startTypedStreamProcessor(StreamProcessorTestFactory factory) {
+    return startTypedStreamProcessor(
+        (processingContext) -> {
+          zeebeState = processingContext.getZeebeState();
+          return factory.build(TypedRecordProcessors.processors(), zeebeState);
         });
+  }
+
+  public StreamProcessor startTypedStreamProcessor(TypedRecordProcessorFactory factory) {
+    return streams.startStreamProcessor(
+        STREAM_NAME,
+        STREAM_PROCESSOR_ID,
+        zeebeDbFactory,
+        (processingContext -> {
+          zeebeState = processingContext.getZeebeState();
+          return factory.createProcessors(processingContext);
+        }));
+  }
+
+  public void closeStreamProcessor() {
+    streams.closeProcessor(STREAM_NAME);
+  }
+
+  public long getCommitPosition() {
+    return streams.getLogStream(STREAM_NAME).getCommitPosition();
+  }
+
+  public StateSnapshotController getStateSnapshotController() {
+    return streams.getStateSnapshotController(STREAM_NAME);
+  }
+
+  public CommandResponseWriter getCommandResponseWriter() {
+    return streams.getMockedResponseWriter();
   }
 
   public ControlledActorClock getClock() {
     return clock;
-  }
-
-  public ActorScheduler getActorScheduler() {
-    return actorSchedulerRule.get();
   }
 
   public ZeebeState getZeebeState() {
@@ -150,6 +145,91 @@ public class StreamProcessorRule implements TestRule {
     return new RecordStream(streams.events(STREAM_NAME));
   }
 
+  public void printAllRecords() {
+    final LogStream logStream = streams.getLogStream(STREAM_NAME);
+    LogStreamPrinter.printRecords(logStream);
+  }
+
+  private class SetupRule extends ExternalResource {
+
+    private final int partitionId;
+
+    SetupRule(int partitionId) {
+      this.partitionId = partitionId;
+    }
+
+    @Override
+    protected void before() {
+      streams =
+          new TestStreams(
+              tempFolder, closeables, serviceContainerRule.get(), actorSchedulerRule.get());
+      streams.createLogStream(STREAM_NAME, partitionId);
+    }
+  }
+
+  private class FailedTestRecordPrinter extends TestWatcher {
+
+    @Override
+    protected void failed(Throwable e, Description description) {
+      LOG.info("Test failed, following records where exported:");
+      printAllRecords();
+    }
+  }
+
+  @FunctionalInterface
+  public interface StreamProcessorTestFactory {
+    TypedRecordProcessors build(TypedRecordProcessors builder, ZeebeState zeebeState);
+  }
+
+  public long writeWorkflowInstanceEvent(WorkflowInstanceIntent intent) {
+    return writeWorkflowInstanceEvent(intent, 1);
+  }
+
+  public long writeWorkflowInstanceEventWithSource(
+      WorkflowInstanceIntent intent, int instanceKey, long sourceEventPosition) {
+    return streams
+        .newRecord(STREAM_NAME)
+        .event(workflowInstance(instanceKey))
+        .recordType(RecordType.EVENT)
+        .sourceRecordPosition(sourceEventPosition)
+        .intent(intent)
+        .producerId(STREAM_PROCESSOR_ID)
+        .write();
+  }
+
+  public long writeWorkflowInstanceEventWithDifferentProducerId(
+      WorkflowInstanceIntent intent, int instanceKey, int producer) {
+    return streams
+        .newRecord(STREAM_NAME)
+        .event(workflowInstance(instanceKey))
+        .recordType(RecordType.EVENT)
+        .intent(intent)
+        .producerId(producer)
+        .write();
+  }
+
+  public long writeWorkflowInstanceEventWithDifferentProducerIdAndSource(
+      WorkflowInstanceIntent intent, int instanceKey, int producer, long sourceEventPosition) {
+    return streams
+        .newRecord(STREAM_NAME)
+        .event(workflowInstance(instanceKey))
+        .recordType(RecordType.EVENT)
+        .sourceRecordPosition(sourceEventPosition)
+        .intent(intent)
+        .producerId(producer)
+        .write();
+  }
+
+  public long writeWorkflowInstanceEvent(WorkflowInstanceIntent intent, int instanceKey) {
+    return streams
+        .newRecord(STREAM_NAME)
+        .event(workflowInstance(instanceKey))
+        .recordType(RecordType.EVENT)
+        .intent(intent)
+        .producerId(STREAM_PROCESSOR_ID)
+        .write();
+  }
+
   public long writeEvent(long key, Intent intent, UnpackedObject value) {
     return streams
         .newRecord(STREAM_NAME)
@@ -157,6 +237,7 @@ public class StreamProcessorRule implements TestRule {
         .key(key)
         .intent(intent)
         .event(value)
+        .producerId(STREAM_PROCESSOR_ID)
         .write();
   }
 
@@ -166,6 +247,7 @@ public class StreamProcessorRule implements TestRule {
         .recordType(RecordType.EVENT)
         .intent(intent)
         .event(value)
+        .producerId(STREAM_PROCESSOR_ID)
         .write();
   }
 
@@ -186,58 +268,5 @@ public class StreamProcessorRule implements TestRule {
         .intent(intent)
         .event(value)
         .write();
-  }
-
-  public void printAllRecords() {
-    final LogStream logStream = streams.getLogStream(STREAM_NAME);
-    LogStreamPrinter.printRecords(logStream);
-  }
-
-  private class SetupRule extends ExternalResource {
-
-    private final int partitionId;
-
-    SetupRule(int partitionId) {
-      this.partitionId = partitionId;
-    }
-
-    @Override
-    protected void before() {
-
-      final CommandResponseWriter mockCommandResponseWriter = mock(CommandResponseWriter.class);
-      when(mockCommandResponseWriter.intent(any())).thenReturn(mockCommandResponseWriter);
-      when(mockCommandResponseWriter.key(anyLong())).thenReturn(mockCommandResponseWriter);
-      when(mockCommandResponseWriter.partitionId(anyInt())).thenReturn(mockCommandResponseWriter);
-      when(mockCommandResponseWriter.recordType(any())).thenReturn(mockCommandResponseWriter);
-      when(mockCommandResponseWriter.rejectionType(any())).thenReturn(mockCommandResponseWriter);
-      when(mockCommandResponseWriter.rejectionReason(any())).thenReturn(mockCommandResponseWriter);
-      when(mockCommandResponseWriter.valueType(any())).thenReturn(mockCommandResponseWriter);
-      when(mockCommandResponseWriter.valueWriter(any())).thenReturn(mockCommandResponseWriter);
-
-      when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
-
-      streams =
-          new TestStreams(
-              tempFolder, closeables, serviceContainerRule.get(), actorSchedulerRule.get());
-      streams.createLogStream(STREAM_NAME, partitionId);
-
-      streamEnvironment =
-          new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), mockCommandResponseWriter);
-    }
-  }
-
-  private class FailedTestRecordPrinter extends TestWatcher {
-
-    @Override
-    protected void failed(Throwable e, Description description) {
-      LOG.info("Test failed, following records where exported:");
-      printAllRecords();
-    }
-  }
-
-  @FunctionalInterface
-  public interface StreamProcessorTestFactory {
-    StreamProcessor build(
-        TypedEventStreamProcessorBuilder builder, ZeebeDb zeebeDb, DbContext dbContext);
   }
 }

@@ -18,7 +18,7 @@
 package io.zeebe.engine.processor.workflow;
 
 import io.zeebe.engine.processor.KeyGenerator;
-import io.zeebe.engine.processor.TypedEventStreamProcessorBuilder;
+import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.instance.CreateWorkflowInstanceProcessor;
 import io.zeebe.engine.processor.workflow.message.CloseWorkflowInstanceSubscription;
 import io.zeebe.engine.processor.workflow.message.CorrelateWorkflowInstanceSubscription;
@@ -54,35 +54,35 @@ public class WorkflowEventProcessors {
   }
 
   public static BpmnStepProcessor addWorkflowProcessors(
-      TypedEventStreamProcessorBuilder typedProcessorBuilder,
       ZeebeState zeebeState,
+      TypedRecordProcessors typedRecordProcessors,
       SubscriptionCommandSender subscriptionCommandSender,
       CatchEventBehavior catchEventBehavior,
       DueDateTimerChecker timerChecker) {
-    final WorkflowState workflowState = zeebeState.getWorkflowState();
     final WorkflowInstanceSubscriptionState subscriptionState =
         zeebeState.getWorkflowInstanceSubscriptionState();
 
-    final WorkflowEngineState workflowEngineState = new WorkflowEngineState(workflowState);
-    typedProcessorBuilder.withListener(workflowEngineState);
+    final WorkflowEngineState workflowEngineState =
+        new WorkflowEngineState(zeebeState.getWorkflowState());
+    typedRecordProcessors.withListener(workflowEngineState);
 
-    addWorkflowInstanceCommandProcessor(typedProcessorBuilder, workflowEngineState, zeebeState);
+    addWorkflowInstanceCommandProcessor(typedRecordProcessors, workflowEngineState, zeebeState);
 
     final BpmnStepProcessor bpmnStepProcessor =
         new BpmnStepProcessor(workflowEngineState, zeebeState, catchEventBehavior);
-    addBpmnStepProcessor(typedProcessorBuilder, bpmnStepProcessor);
+    addBpmnStepProcessor(typedRecordProcessors, bpmnStepProcessor);
 
     addMessageStreamProcessors(
-        typedProcessorBuilder, subscriptionState, subscriptionCommandSender, zeebeState);
-    addTimerStreamProcessors(typedProcessorBuilder, timerChecker, zeebeState, catchEventBehavior);
-    addVariableDocumentStreamProcessors(typedProcessorBuilder, zeebeState);
-    addWorkflowInstanceCreationStreamProcessors(typedProcessorBuilder, zeebeState);
+        typedRecordProcessors, subscriptionState, subscriptionCommandSender, zeebeState);
+    addTimerStreamProcessors(typedRecordProcessors, timerChecker, zeebeState, catchEventBehavior);
+    addVariableDocumentStreamProcessors(typedRecordProcessors, zeebeState);
+    addWorkflowInstanceCreationStreamProcessors(typedRecordProcessors, zeebeState);
 
     return bpmnStepProcessor;
   }
 
   private static void addWorkflowInstanceCommandProcessor(
-      final TypedEventStreamProcessorBuilder builder,
+      final TypedRecordProcessors typedRecordProcessors,
       WorkflowEngineState workflowEngineState,
       final ZeebeState zeebeState) {
 
@@ -90,27 +90,27 @@ public class WorkflowEventProcessors {
         new WorkflowInstanceCommandProcessor(workflowEngineState, zeebeState.getKeyGenerator());
 
     WORKFLOW_INSTANCE_COMMANDS.forEach(
-        intent -> builder.onCommand(ValueType.WORKFLOW_INSTANCE, intent, commandProcessor));
+        intent ->
+            typedRecordProcessors.onCommand(ValueType.WORKFLOW_INSTANCE, intent, commandProcessor));
   }
 
   private static void addBpmnStepProcessor(
-      TypedEventStreamProcessorBuilder streamProcessorBuilder,
-      BpmnStepProcessor bpmnStepProcessor) {
+      final TypedRecordProcessors typedRecordProcessors, BpmnStepProcessor bpmnStepProcessor) {
 
     Arrays.stream(WorkflowInstanceIntent.values())
         .filter(WorkflowEventProcessors::isWorkflowInstanceEvent)
         .forEach(
             intent ->
-                streamProcessorBuilder.onEvent(
+                typedRecordProcessors.onEvent(
                     ValueType.WORKFLOW_INSTANCE, intent, bpmnStepProcessor));
   }
 
   private static void addMessageStreamProcessors(
-      final TypedEventStreamProcessorBuilder streamProcessorBuilder,
+      final TypedRecordProcessors typedRecordProcessors,
       WorkflowInstanceSubscriptionState subscriptionState,
       SubscriptionCommandSender subscriptionCommandSender,
       ZeebeState zeebeState) {
-    streamProcessorBuilder
+    typedRecordProcessors
         .onCommand(
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
             WorkflowInstanceSubscriptionIntent.OPEN,
@@ -127,13 +127,13 @@ public class WorkflowEventProcessors {
   }
 
   private static void addTimerStreamProcessors(
-      final TypedEventStreamProcessorBuilder streamProcessorBuilder,
+      final TypedRecordProcessors typedRecordProcessors,
       DueDateTimerChecker timerChecker,
       ZeebeState zeebeState,
       CatchEventBehavior catchEventOutput) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
 
-    streamProcessorBuilder
+    typedRecordProcessors
         .onCommand(
             ValueType.TIMER, TimerIntent.CREATE, new CreateTimerProcessor(zeebeState, timerChecker))
         .onCommand(
@@ -145,25 +145,25 @@ public class WorkflowEventProcessors {
   }
 
   private static void addVariableDocumentStreamProcessors(
-      TypedEventStreamProcessorBuilder builder, ZeebeState zeebeState) {
+      final TypedRecordProcessors typedRecordProcessors, ZeebeState zeebeState) {
     final ElementInstanceState elementInstanceState =
         zeebeState.getWorkflowState().getElementInstanceState();
     final VariablesState variablesState = elementInstanceState.getVariablesState();
 
-    builder.onCommand(
+    typedRecordProcessors.onCommand(
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
         new UpdateVariableDocumentProcessor(elementInstanceState, variablesState));
   }
 
   private static void addWorkflowInstanceCreationStreamProcessors(
-      TypedEventStreamProcessorBuilder builder, ZeebeState zeebeState) {
+      final TypedRecordProcessors typedRecordProcessors, ZeebeState zeebeState) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
     final ElementInstanceState elementInstanceState = workflowState.getElementInstanceState();
     final VariablesState variablesState = elementInstanceState.getVariablesState();
     final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
 
-    builder.onCommand(
+    typedRecordProcessors.onCommand(
         ValueType.WORKFLOW_INSTANCE_CREATION,
         WorkflowInstanceCreationIntent.CREATE,
         new CreateWorkflowInstanceProcessor(

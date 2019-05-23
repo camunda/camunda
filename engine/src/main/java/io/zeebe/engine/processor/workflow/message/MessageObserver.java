@@ -17,9 +17,9 @@
  */
 package io.zeebe.engine.processor.workflow.message;
 
+import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
-import io.zeebe.engine.processor.TypedStreamEnvironment;
-import io.zeebe.engine.processor.TypedStreamProcessor;
+import io.zeebe.engine.processor.TypedStreamWriterImpl;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.engine.state.message.MessageSubscriptionState;
@@ -47,14 +47,15 @@ public class MessageObserver implements StreamProcessorLifecycleAware {
   }
 
   @Override
-  public void onOpen(TypedStreamProcessor streamProcessor) {
+  public void onOpen(ReadonlyProcessingContext processingContext) {
 
-    final ActorControl actor = streamProcessor.getActor();
-    final TypedStreamEnvironment env = streamProcessor.getEnvironment();
+    final ActorControl actor = processingContext.getActor();
 
+    final TypedStreamWriterImpl typedStreamWriter =
+        new TypedStreamWriterImpl(processingContext.getLogStream());
     final MessageTimeToLiveChecker timeToLiveChecker =
-        new MessageTimeToLiveChecker(env.buildCommandWriter(), messageState);
-    streamProcessor
+        new MessageTimeToLiveChecker(typedStreamWriter, messageState);
+    processingContext
         .getActor()
         .runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
 

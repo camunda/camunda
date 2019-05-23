@@ -17,8 +17,15 @@
  */
 package io.zeebe.engine.processor;
 
-public class StreamProcessors {
-  public static StreamProcessorBuilder createStreamProcessor(final String name, final int id) {
-    return new StreamProcessorBuilder(id, name);
-  }
+@FunctionalInterface
+public interface TypedRecordProcessorFactory {
+
+  /**
+   * Creates typed record processors with the given context.
+   *
+   * @param processingContext the processing context which contains value information to create
+   *     record processors
+   * @return the created typed record processors
+   */
+  TypedRecordProcessors createProcessors(ProcessingContext processingContext);
 }

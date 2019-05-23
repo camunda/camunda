@@ -19,11 +19,18 @@ package io.zeebe.engine.processor;
 
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDbTransaction;
+import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
+import io.zeebe.protocol.intent.ErrorIntent;
 import io.zeebe.util.exception.RecoverableException;
 import io.zeebe.util.retry.AbortableRetryStrategy;
 import io.zeebe.util.retry.RecoverableRetryStrategy;
@@ -31,7 +38,7 @@ import io.zeebe.util.retry.RetryStrategy;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
-import java.util.Objects;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
@@ -92,6 +99,8 @@ public final class ProcessingStateMachine {
       "Expected to successfully process event '{}' with processor '{}', but caught an exception. Skip this event.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING =
       "Expected to process event '{}' successfully on stream processor '{}', but caught recoverable exception. Retry processing.";
+  private static final String PROCESSING_ERROR_MESSAGE =
+      "Expected to process event '%s' without errors, but exception occurred with message '%s' .";
 
   private static final String LOG_ERROR_EVENT_COMMITTED =
       "Error event was committed, we continue with processing.";
@@ -100,19 +109,14 @@ public final class ProcessingStateMachine {
 
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
 
-  public static ProcessingStateMachineBuilder builder() {
-    return new ProcessingStateMachineBuilder();
-  }
-
   private final ActorControl actor;
   private final int producerId;
   private final String streamProcessorName;
   private final StreamProcessorMetrics metrics;
-  private final StreamProcessor streamProcessor;
   private final EventFilter eventFilter;
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
-  private final LogStreamRecordWriter logStreamWriter;
+  private final TypedStreamWriter logStreamWriter;
 
   private final DbContext dbContext;
   private final RetryStrategy writeRetryStrategy;
@@ -122,37 +126,51 @@ public final class ProcessingStateMachine {
   private final BooleanSupplier shouldProcessNext;
   private final BooleanSupplier abortCondition;
 
-  private ProcessingStateMachine(
-      StreamProcessorContext context,
+  protected final ZeebeState zeebeState;
+
+  private final ErrorRecord errorRecord = new ErrorRecord();
+  protected final RecordMetadata metadata = new RecordMetadata();
+  private final Map<ValueType, UnpackedObject> eventCache;
+  private final RecordProcessorMap recordProcessorMap;
+
+  private final TypedEventImpl typedEvent = new TypedEventImpl();
+  protected final TypedResponseWriterImpl responseWriter;
+  private SideEffectProducer sideEffectProducer;
+
+  public ProcessingStateMachine(
+      ProcessingContext context,
       StreamProcessorMetrics metrics,
-      StreamProcessor streamProcessor,
-      DbContext dbContext,
-      BooleanSupplier shouldProcessNext,
-      BooleanSupplier abortCondition) {
-    this.actor = context.getActorControl();
-    this.producerId = context.getId();
-    this.streamProcessorName = context.getName();
+      BooleanSupplier shouldProcessNext) {
+
+    this.actor = context.getActor();
+    this.producerId = context.getProducerId();
+    this.streamProcessorName = context.getStreamProcessorName();
     this.eventFilter = context.getEventFilter();
+    this.recordProcessorMap = context.getRecordProcessorMap();
+    this.eventCache = context.getEventCache();
     this.logStreamReader = context.getLogStreamReader();
-    this.logStreamWriter = context.logStreamWriter;
+    this.logStreamWriter = context.getLogStreamWriter();
     this.logStream = context.getLogStream();
+    this.zeebeState = context.getZeebeState();
+    this.dbContext = context.getDbContext();
+    this.abortCondition = context.getAbortCondition();
 
     this.metrics = metrics;
-    this.streamProcessor = streamProcessor;
-    this.dbContext = dbContext;
     this.writeRetryStrategy = new AbortableRetryStrategy(actor);
     this.sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
     this.updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
     this.shouldProcessNext = shouldProcessNext;
-    this.abortCondition = abortCondition;
+
+    this.responseWriter =
+        new TypedResponseWriterImpl(context.getCommandResponseWriter(), logStream.getPartitionId());
   }
 
   // current iteration
   private LoggedEvent currentEvent;
-  private EventProcessor eventProcessor;
+  private TypedRecordProcessor<?> currentProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
 
-  private long eventPosition = -1L;
+  private long writtenEventPosition = -1L;
   private long lastSuccessfulProcessedEventPosition = -1L;
   private long lastWrittenEventPosition = -1L;
 
@@ -167,7 +185,7 @@ public final class ProcessingStateMachine {
   void readNextEvent() {
     if (shouldProcessNext.getAsBoolean()
         && logStreamReader.hasNext()
-        && eventProcessor == null
+        && currentProcessor == null
         && logStream.getCommitPosition() >= errorRecordPosition) {
 
       if (onErrorHandling) {
@@ -186,22 +204,23 @@ public final class ProcessingStateMachine {
   }
 
   private void processEvent(final LoggedEvent event) {
-    try {
-      eventProcessor = streamProcessor.onEvent(event);
-    } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, event, streamProcessorName, e);
-      skipRecord();
-      return;
-    }
+    metadata.reset();
+    event.readMetadata(metadata);
 
-    if (eventProcessor == null) {
+    currentProcessor = chooseNextProcessor(event);
+    if (currentProcessor == null) {
       skipRecord();
       return;
     }
 
     try {
-      zeebeDbTransaction = dbContext.getCurrentTransaction();
-      zeebeDbTransaction.run(eventProcessor::processEvent);
+      final UnpackedObject value = eventCache.get(metadata.getValueType());
+      value.reset();
+      event.readValue(value);
+      typedEvent.wrap(event, metadata, value);
+
+      processInTransaction(typedEvent);
+
       metrics.incrementEventsProcessedCount();
       writeEvent();
     } catch (final RecoverableException recoverableException) {
@@ -216,6 +235,53 @@ public final class ProcessingStateMachine {
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, event, streamProcessorName, e);
       onError(e, this::writeEvent);
     }
+  }
+
+  private TypedRecordProcessor<?> chooseNextProcessor(LoggedEvent event) {
+    TypedRecordProcessor<?> typedRecordProcessor = null;
+
+    try {
+      typedRecordProcessor =
+          recordProcessorMap.get(
+              metadata.getRecordType(), metadata.getValueType(), metadata.getIntent().value());
+    } catch (final Exception e) {
+      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, event, streamProcessorName, e);
+    }
+
+    return typedRecordProcessor;
+  }
+
+  private void processInTransaction(final TypedEventImpl typedRecord) throws Exception {
+    zeebeDbTransaction = dbContext.getCurrentTransaction();
+    zeebeDbTransaction.run(
+        () -> {
+          final long position = typedRecord.getPosition();
+          resetOutput(position);
+
+          // default side effect is responses; can be changed by processor
+          sideEffectProducer = responseWriter;
+          final boolean isNotOnBlacklist = !zeebeState.isOnBlacklist(typedRecord);
+          if (isNotOnBlacklist) {
+            currentProcessor.processRecord(
+                position,
+                typedRecord,
+                responseWriter,
+                logStreamWriter,
+                this::setSideEffectProducer);
+          }
+
+          zeebeState.markAsProcessed(position);
+        });
+  }
+
+  private void resetOutput(long sourceRecordPosition) {
+    responseWriter.reset();
+    logStreamWriter.reset();
+    logStreamWriter.configureSourceContext(producerId, sourceRecordPosition);
+  }
+
+  public void setSideEffectProducer(final SideEffectProducer sideEffectProducer) {
+    this.sideEffectProducer = sideEffectProducer;
   }
 
   private void onError(Throwable processingException, Runnable nextStep) {
@@ -234,8 +300,8 @@ public final class ProcessingStateMachine {
             LOG.error(ERROR_MESSAGE_ROLLBACK_ABORTED, currentEvent, throwable);
           }
           try {
-            zeebeDbTransaction = dbContext.getCurrentTransaction();
-            zeebeDbTransaction.run(() -> eventProcessor.onError(processingException));
+            errorHandlingInTransaction(processingException);
+
             onErrorHandling = true;
             nextStep.run();
           } catch (Exception ex) {
@@ -244,14 +310,41 @@ public final class ProcessingStateMachine {
         });
   }
 
-  private void writeEvent() {
-    logStreamWriter.producerId(producerId).sourceRecordPosition(currentEvent.getPosition());
+  private void errorHandlingInTransaction(Throwable processingException) throws Exception {
+    zeebeDbTransaction = dbContext.getCurrentTransaction();
+    zeebeDbTransaction.run(
+        () -> {
+          final long position = typedEvent.getPosition();
+          resetOutput(position);
 
+          writeRejectionOnCommand(processingException);
+          errorRecord.initErrorRecord(processingException, position);
+
+          zeebeState.tryToBlacklist(typedEvent, errorRecord::setWorkflowInstanceKey);
+
+          logStreamWriter.appendFollowUpEvent(
+              typedEvent.getKey(), ErrorIntent.CREATED, errorRecord);
+        });
+  }
+
+  private void writeRejectionOnCommand(Throwable exception) {
+    final String errorMessage =
+        String.format(PROCESSING_ERROR_MESSAGE, typedEvent, exception.getMessage());
+    LOG.error(errorMessage, exception);
+
+    if (typedEvent.getMetadata().getRecordType() == RecordType.COMMAND) {
+      logStreamWriter.appendRejection(typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);
+      responseWriter.writeRejectionOnCommand(
+          typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);
+    }
+  }
+
+  private void writeEvent() {
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
-              eventPosition = eventProcessor.writeEvent(logStreamWriter);
-              return eventPosition >= 0;
+              writtenEventPosition = logStreamWriter.flush();
+              return writtenEventPosition >= 0;
             },
             abortCondition);
 
@@ -277,12 +370,12 @@ public final class ProcessingStateMachine {
               // needs to be directly after commit
               // so no other ActorJob can interfere between commit and update the positions
               if (onErrorHandling) {
-                errorRecordPosition = eventPosition;
+                errorRecordPosition = writtenEventPosition;
                 LOG.info(
                     LOG_ERROR_EVENT_WRITTEN, errorRecordPosition, logStream.getCommitPosition());
               }
               lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
-              lastWrittenEventPosition = eventPosition;
+              lastWrittenEventPosition = writtenEventPosition;
               return true;
             },
             abortCondition);
@@ -302,7 +395,7 @@ public final class ProcessingStateMachine {
 
   private void executeSideEffects() {
     final ActorFuture<Boolean> retryFuture =
-        sideEffectsRetryStrategy.runWithRetry(eventProcessor::executeSideEffects, abortCondition);
+        sideEffectsRetryStrategy.runWithRetry(sideEffectProducer::flush, abortCondition);
 
     actor.runOnCompletion(
         retryFuture,
@@ -312,7 +405,7 @@ public final class ProcessingStateMachine {
           }
 
           // continue with next event
-          eventProcessor = null;
+          currentProcessor = null;
           actor.submit(this::readNextEvent);
         });
   }
@@ -331,62 +424,5 @@ public final class ProcessingStateMachine {
 
   public ActorFuture<Long> getLastProcessedPositionAsync() {
     return actor.call(this::getLastSuccessfulProcessedEventPosition);
-  }
-
-  public static class ProcessingStateMachineBuilder {
-
-    private StreamProcessorMetrics metrics;
-    private StreamProcessor streamProcessor;
-
-    private StreamProcessorContext streamProcessorContext;
-    private DbContext dbContext;
-    private BooleanSupplier shouldProcessNext;
-    private BooleanSupplier abortCondition;
-
-    public ProcessingStateMachineBuilder setMetrics(StreamProcessorMetrics metrics) {
-      this.metrics = metrics;
-      return this;
-    }
-
-    public ProcessingStateMachineBuilder setStreamProcessor(StreamProcessor streamProcessor) {
-      this.streamProcessor = streamProcessor;
-      return this;
-    }
-
-    public ProcessingStateMachineBuilder setStreamProcessorContext(StreamProcessorContext context) {
-      this.streamProcessorContext = context;
-      return this;
-    }
-
-    public ProcessingStateMachineBuilder setDbContext(DbContext dbContext) {
-      this.dbContext = dbContext;
-      return this;
-    }
-
-    public ProcessingStateMachineBuilder setShouldProcessNext(BooleanSupplier shouldProcessNext) {
-      this.shouldProcessNext = shouldProcessNext;
-      return this;
-    }
-
-    public ProcessingStateMachineBuilder setAbortCondition(BooleanSupplier abortCondition) {
-      this.abortCondition = abortCondition;
-      return this;
-    }
-
-    public ProcessingStateMachine build() {
-      Objects.requireNonNull(streamProcessorContext);
-      Objects.requireNonNull(metrics);
-      Objects.requireNonNull(streamProcessor);
-      Objects.requireNonNull(dbContext);
-      Objects.requireNonNull(shouldProcessNext);
-      Objects.requireNonNull(abortCondition);
-      return new ProcessingStateMachine(
-          streamProcessorContext,
-          metrics,
-          streamProcessor,
-          dbContext,
-          shouldProcessNext,
-          abortCondition);
-    }
   }
 }

@@ -85,7 +85,7 @@ public abstract class SbeBufferWriterReader<
   }
 
   public byte[] toBytes() {
-    final byte bytes[] = new byte[getLength()];
+    final byte[] bytes = new byte[getLength()];
     final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
     write(buffer, 0);
     return bytes;

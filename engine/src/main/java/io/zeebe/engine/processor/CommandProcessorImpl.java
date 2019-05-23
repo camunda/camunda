@@ -43,8 +43,8 @@ public class CommandProcessorImpl<T extends UnpackedObject>
   }
 
   @Override
-  public void onOpen(final TypedStreamProcessor streamProcessor) {
-    this.keyGenerator = streamProcessor.getKeyGenerator();
+  public void onOpen(ReadonlyProcessingContext context) {
+    this.keyGenerator = context.getZeebeState().getKeyGenerator();
   }
 
   @Override

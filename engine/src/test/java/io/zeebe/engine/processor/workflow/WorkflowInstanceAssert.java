@@ -93,10 +93,9 @@ public class WorkflowInstanceAssert
     //   - is a non-terminating event
     final Optional<TypedRecord<WorkflowInstanceRecord>> firstViolatingRecord =
         actual.stream()
-            .filter(
-                r ->
-                    ((TypedEventImpl) r).getSourceEventPosition() > terminatingRecord.getPosition())
-            .map(r -> recordsByPosition.get(((TypedEventImpl) r).getSourceEventPosition()))
+            .map(r -> (TypedEventImpl) r)
+            .filter(r -> r.getSourceEventPosition() > terminatingRecord.getPosition())
+            .map(r -> recordsByPosition.get(r.getSourceEventPosition()))
             .filter(r -> r.getValue().getFlowScopeKey() == instanceKey)
             .filter(r -> isFlowEvaluatingState(r.getMetadata().getIntent()))
             .findFirst();

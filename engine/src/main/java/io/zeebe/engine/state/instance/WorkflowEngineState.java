@@ -17,10 +17,9 @@
  */
 package io.zeebe.engine.state.instance;
 
-import io.zeebe.engine.processor.StreamProcessorContext;
+import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedRecord;
-import io.zeebe.engine.processor.TypedStreamProcessor;
 import io.zeebe.engine.processor.workflow.UpdateVariableStreamWriter;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceLifecycle;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceMetrics;
@@ -42,18 +41,15 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
   }
 
   @Override
-  public void onOpen(TypedStreamProcessor streamProcessor) {
-    final StreamProcessorContext streamProcessorContext =
-        streamProcessor.getStreamProcessorContext();
-    final MetricsManager metricsManager =
-        streamProcessorContext.getActorScheduler().getMetricsManager();
-    final LogStream logStream = streamProcessorContext.getLogStream();
+  public void onOpen(ReadonlyProcessingContext processingContext) {
+    final MetricsManager metricsManager = processingContext.getMetricsManager();
+    final LogStream logStream = processingContext.getLogStream();
 
     this.metrics = new WorkflowInstanceMetrics(metricsManager, logStream.getPartitionId());
     this.elementInstanceState = workflowState.getElementInstanceState();
 
     final UpdateVariableStreamWriter updateVariableStreamWriter =
-        new UpdateVariableStreamWriter(streamProcessor.getStreamWriter());
+        new UpdateVariableStreamWriter(processingContext.getLogStreamWriter());
 
     elementInstanceState.getVariablesState().setListener(updateVariableStreamWriter);
   }

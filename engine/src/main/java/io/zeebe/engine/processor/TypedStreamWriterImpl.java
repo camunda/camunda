@@ -21,17 +21,14 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
-import java.util.Map;
 import java.util.function.Consumer;
 
 public class TypedStreamWriterImpl extends TypedCommandWriterImpl implements TypedStreamWriter {
 
-  public TypedStreamWriterImpl(
-      final LogStream stream, final Map<ValueType, Class<? extends UnpackedObject>> eventRegistry) {
-    super(stream, eventRegistry);
+  public TypedStreamWriterImpl(final LogStream stream) {
+    super(stream);
   }
 
   @Override

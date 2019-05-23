@@ -21,7 +21,6 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceStreamProcessorRule;
-import io.zeebe.engine.util.StreamProcessorControl;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -37,18 +36,14 @@ public class TimerStreamProcessorTest {
 
   private static final String PROCESS_ID = "process";
 
-  public StreamProcessorRule envRule = new StreamProcessorRule();
-  public WorkflowInstanceStreamProcessorRule streamProcessorRule =
+  private final StreamProcessorRule envRule = new StreamProcessorRule();
+  private final WorkflowInstanceStreamProcessorRule streamProcessorRule =
       new WorkflowInstanceStreamProcessorRule(envRule);
 
   @Rule public RuleChain chain = RuleChain.outerRule(envRule).around(streamProcessorRule);
 
-  private StreamProcessorControl streamProcessor;
-
   @Before
   public void setUp() {
-    streamProcessor = streamProcessorRule.getStreamProcessor();
-
     // given
     streamProcessorRule.deploy(
         Bpmn.createExecutableProcess(PROCESS_ID)
@@ -57,11 +52,8 @@ public class TimerStreamProcessorTest {
             .endEvent()
             .done());
 
-    streamProcessor.blockAfterTimerEvent(r -> r.getMetadata().getIntent() == TimerIntent.CREATED);
-
     streamProcessorRule.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
-
-    waitUntil(() -> streamProcessor.isBlocked());
+    waitUntil(() -> envRule.events().onlyTimerRecords().withIntent(TimerIntent.CREATED).exists());
   }
 
   @Test
@@ -70,10 +62,7 @@ public class TimerStreamProcessorTest {
     final TypedRecord<TimerRecord> timerRecord = timerRecordForActivity("timer");
 
     envRule.writeCommand(timerRecord.getKey(), TimerIntent.CANCEL, timerRecord.getValue());
-
     envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
-
-    streamProcessor.unblock();
 
     // then
     final TypedRecord<TimerRecord> rejection = findTimerCommandRejection();
@@ -89,10 +78,7 @@ public class TimerStreamProcessorTest {
     final TypedRecord<TimerRecord> timerRecord = timerRecordForActivity("timer");
 
     envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
-
     envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
-
-    streamProcessor.unblock();
 
     // then
     final TypedRecord<TimerRecord> rejection = findTimerCommandRejection();
@@ -108,10 +94,7 @@ public class TimerStreamProcessorTest {
     final TypedRecord<TimerRecord> timerRecord = timerRecordForActivity("timer");
 
     envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
-
     envRule.writeCommand(timerRecord.getKey(), TimerIntent.CANCEL, timerRecord.getValue());
-
-    streamProcessor.unblock();
 
     // then
     final TypedRecord<TimerRecord> rejection = findTimerCommandRejection();

@@ -17,7 +17,7 @@
  */
 package io.zeebe.engine.processor.workflow.job;
 
-import io.zeebe.engine.processor.TypedEventStreamProcessorBuilder;
+import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.JobState;
@@ -27,11 +27,11 @@ import io.zeebe.protocol.intent.JobIntent;
 
 public class JobEventProcessors {
   public static void addJobProcessors(
-      TypedEventStreamProcessorBuilder typedEventStreamProcessorBuilder, ZeebeState zeebeState) {
+      TypedRecordProcessors typedRecordProcessors, ZeebeState zeebeState) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
     final JobState jobState = zeebeState.getJobState();
 
-    typedEventStreamProcessorBuilder
+    typedRecordProcessors
         .onEvent(ValueType.JOB, JobIntent.CREATED, new JobCreatedProcessor(workflowState))
         .onEvent(ValueType.JOB, JobIntent.COMPLETED, new JobCompletedEventProcessor(workflowState))
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor(jobState))

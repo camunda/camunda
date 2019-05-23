@@ -22,16 +22,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.engine.processor.TypedEventImpl;
-import io.zeebe.engine.processor.TypedRecord;
-import io.zeebe.engine.processor.TypedRecordProcessor;
-import io.zeebe.engine.processor.TypedResponseWriter;
-import io.zeebe.engine.processor.TypedStreamProcessor.DelegatingEventProcessor;
-import io.zeebe.engine.processor.TypedStreamWriter;
-import io.zeebe.engine.processor.TypedStreamWriterImpl;
+import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.WorkflowInstanceRelated;
@@ -52,9 +45,7 @@ import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -62,7 +53,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-import org.mockito.Mock;
 
 @RunWith(Parameterized.class)
 public class BlacklistInstanceTest {
@@ -78,8 +68,6 @@ public class BlacklistInstanceTest {
 
   @Parameter(2)
   public boolean expectedToBlacklist;
-
-  private DelegatingEventProcessor delegatingEventProcessor;
 
   @Parameters(name = "{0} {1} should blacklist instance {2}")
   public static Object[][] parameters() {
@@ -229,40 +217,17 @@ public class BlacklistInstanceTest {
     };
   }
 
-  @Mock CommandResponseWriter responseWriter;
-
-  @Mock LogStream logStream;
-
-  @Mock TypedStreamWriterImpl typedStreamWriter;
-
   private long workflowInstanceKey;
 
   @Before
   public void setup() {
     initMocks(this);
-    delegatingEventProcessor =
-        new DelegatingEventProcessor(
-            0, responseWriter, logStream, typedStreamWriter, zeebeStateRule.getZeebeState());
     workflowInstanceKey = KEY_GENERATOR.getAndIncrement();
   }
 
   @Test
   public void shouldBlacklist() {
     // given
-    final AtomicBoolean processed = new AtomicBoolean(false);
-    final TypedRecordProcessor processor =
-        new TypedRecordProcessor() {
-          @Override
-          public void processRecord(
-              long position,
-              TypedRecord record,
-              TypedResponseWriter responseWriter,
-              TypedStreamWriter streamWriter,
-              Consumer sideEffect) {
-            processed.set(true);
-          }
-        };
-
     final RecordMetadata metadata = new RecordMetadata();
     metadata.intent(recordIntent);
     metadata.valueType(recordValueType);
@@ -271,21 +236,16 @@ public class BlacklistInstanceTest {
     when(loggedEvent.getPosition()).thenReturn(1024L);
 
     typedEvent.wrap(loggedEvent, metadata, new Value());
-    delegatingEventProcessor.wrap(processor, typedEvent, 1024);
 
     // when
-    delegatingEventProcessor.onError(new Exception("expected"));
+    final ZeebeState zeebeState = zeebeStateRule.getZeebeState();
+    zeebeState.tryToBlacklist(typedEvent, (workflowInstanceKey) -> {});
 
     // then
     metadata.intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     metadata.valueType(ValueType.WORKFLOW_INSTANCE);
     typedEvent.wrap(null, metadata, new Value());
-    assertThat(zeebeStateRule.getZeebeState().isOnBlacklist(typedEvent))
-        .isEqualTo(expectedToBlacklist);
-
-    delegatingEventProcessor.wrap(processor, typedEvent, 1025);
-    delegatingEventProcessor.processEvent();
-    assertThat(processed.get()).isEqualTo(!expectedToBlacklist);
+    assertThat(zeebeState.isOnBlacklist(typedEvent)).isEqualTo(expectedToBlacklist);
   }
 
   private final class Value extends UnpackedObject implements WorkflowInstanceRelated {

@@ -23,7 +23,10 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.buffer.BufferUtil;
@@ -148,5 +151,36 @@ public class Records {
     final RecordMetadata metadata = getMetadata(event);
 
     return metadata.getValueType() == type;
+  }
+
+  public static WorkflowInstanceRecord workflowInstance(final int instanceKey) {
+    final WorkflowInstanceRecord event = new WorkflowInstanceRecord();
+    event.setWorkflowInstanceKey(instanceKey);
+    return event;
+  }
+
+  public static ErrorRecord error(final int instanceKey, final long pos) {
+    final ErrorRecord event = new ErrorRecord();
+    event.initErrorRecord(new Exception("expected"), pos);
+    event.setWorkflowInstanceKey(instanceKey);
+    return event;
+  }
+
+  public static JobRecord job(final int instanceKey) {
+    final JobRecord event = new JobRecord();
+    event.getHeaders().setWorkflowInstanceKey(instanceKey);
+    return event;
+  }
+
+  public static TimerRecord timer(final int instanceKey) {
+    final TimerRecord event = new TimerRecord();
+    event
+        .setWorkflowInstanceKey(instanceKey)
+        .setElementInstanceKey(instanceKey)
+        .setDueDate(1245)
+        .setHandlerNodeId(BufferUtil.wrapString("foo"))
+        .setRepetitions(0)
+        .setWorkflowKey(1);
+    return event;
   }
 }

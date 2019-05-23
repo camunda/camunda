@@ -18,7 +18,6 @@
 package io.zeebe.broker.engine;
 
 import static io.zeebe.broker.engine.EngineServiceNames.ENGINE_SERVICE_NAME;
-import static io.zeebe.broker.engine.EngineServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
@@ -27,8 +26,6 @@ import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.util.DurationUtil;
-import java.time.Duration;
 
 public class EngineComponent implements Component {
 
@@ -37,18 +34,8 @@ public class EngineComponent implements Component {
     final ServiceContainer serviceContainer = context.getServiceContainer();
     final BrokerCfg brokerConfiguration = context.getBrokerConfiguration();
 
-    final Duration snapshotPeriod =
-        DurationUtil.parse(brokerConfiguration.getData().getSnapshotPeriod());
-    final int maxSnapshots = brokerConfiguration.getData().getMaxSnapshots();
-
-    final StreamProcessorServiceFactory streamProcessorFactory =
-        new StreamProcessorServiceFactory(serviceContainer, snapshotPeriod, maxSnapshots);
-    serviceContainer
-        .createService(STREAM_PROCESSOR_SERVICE_FACTORY, streamProcessorFactory)
-        .install();
-
     final EngineService streamProcessorService =
-        new EngineService(brokerConfiguration.getCluster());
+        new EngineService(serviceContainer, brokerConfiguration);
     serviceContainer
         .createService(ENGINE_SERVICE_NAME, streamProcessorService)
         .dependency(
@@ -57,9 +44,6 @@ public class EngineComponent implements Component {
         .dependency(
             ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE,
             streamProcessorService.getTopologyManagerInjector())
-        .dependency(
-            STREAM_PROCESSOR_SERVICE_FACTORY,
-            streamProcessorService.getStreamProcessorServiceFactoryInjector())
         .dependency(
             ClusterBaseLayerServiceNames.ATOMIX_SERVICE, streamProcessorService.getAtomixInjector())
         .groupReference(

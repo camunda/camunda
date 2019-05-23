@@ -22,10 +22,6 @@ import io.zeebe.engine.state.StateStorageFactory;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class EngineServiceNames {
-  public static final ServiceName<StreamProcessorServiceFactory> STREAM_PROCESSOR_SERVICE_FACTORY =
-      ServiceName.newServiceName(
-          "logstreams.processor-factory", StreamProcessorServiceFactory.class);
-
   public static final ServiceName<StateStorageFactory> stateStorageFactoryServiceName(
       String partitionName) {
     return ServiceName.newServiceName(

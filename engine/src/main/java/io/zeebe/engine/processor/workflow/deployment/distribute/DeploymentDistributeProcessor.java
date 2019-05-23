@@ -17,11 +17,11 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.distribute;
 
+import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.SideEffectProducer;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessor;
 import io.zeebe.engine.processor.TypedResponseWriter;
-import io.zeebe.engine.processor.TypedStreamProcessor;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.deployment.DeploymentsState;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
@@ -55,9 +55,9 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
   }
 
   @Override
-  public void onOpen(final TypedStreamProcessor streamProcessor) {
-    streamProcessorId = streamProcessor.getStreamProcessorContext().getId();
-    actor = streamProcessor.getActor();
+  public void onOpen(final ReadonlyProcessingContext processingContext) {
+    streamProcessorId = processingContext.getProducerId();
+    actor = processingContext.getActor();
     actor.submit(this::reprocessPendingDeployments);
   }
 

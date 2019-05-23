@@ -43,21 +43,6 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
   }
 
   @Override
-  public void writeRejection(TypedRecord<?> rejection) {
-
-    final RecordMetadata metadata = rejection.getMetadata();
-
-    stage(
-        RecordType.COMMAND_REJECTION,
-        metadata.getIntent(),
-        rejection.getKey(),
-        rejection.getMetadata().getRejectionType(),
-        rejection.getMetadata().getRejectionReason(),
-        rejection.getMetadata(),
-        rejection.getValue());
-  }
-
-  @Override
   public void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason) {
     final byte[] bytes = reason.getBytes(StandardCharsets.UTF_8);
     stringWrapper.wrap(bytes);
@@ -68,20 +53,6 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
         command.getKey(),
         type,
         stringWrapper,
-        command.getMetadata(),
-        command.getValue());
-  }
-
-  @Override
-  public void writeRejectionOnCommand(
-      TypedRecord<?> command, RejectionType type, DirectBuffer reason) {
-
-    stage(
-        RecordType.COMMAND_REJECTION,
-        command.getMetadata().getIntent(),
-        command.getKey(),
-        type,
-        reason,
         command.getMetadata(),
         command.getValue());
   }
