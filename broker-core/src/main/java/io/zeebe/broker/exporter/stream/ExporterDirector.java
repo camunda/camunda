@@ -48,6 +48,7 @@ import io.zeebe.util.retry.RetryStrategy;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
@@ -116,7 +117,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   @Override
   public void start(ServiceStartContext startContext) {
     actorScheduler = startContext.getScheduler();
-    startContext.async(actorScheduler.submitActor(this));
+    startContext.async(actorScheduler.submitActor(this, false, SchedulingHints.ioBound()));
   }
 
   @Override
