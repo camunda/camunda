@@ -22,7 +22,6 @@ import {flushPromises, mockResolvedAsyncFn} from 'modules/testUtils';
 import {DEFAULT_FILTER, FILTER_SELECTION} from 'modules/constants';
 import {getFilterQueryString} from 'modules/utils/filter';
 
-import {apiKeys, filtersMap} from './constants';
 import * as Styled from './styled.js';
 
 const USER = {
@@ -31,7 +30,10 @@ const USER = {
     lastname: 'Prosciutto'
   }
 };
-const INSTANCES_COUNT = 23;
+
+const RUNNING_COUNT = 23;
+const ACTIVE_COUNT = 10;
+const INCIDENTS_COUNT = 13;
 
 // component mocks
 // avoid loop of redirects when testing handleLogout
@@ -55,7 +57,13 @@ const mockCollapsablePanelProps = {
 // api mocks
 api.fetchUser = mockResolvedAsyncFn(USER);
 api.logout = mockResolvedAsyncFn();
-instancesApi.fetchWorkflowInstancesCount = mockResolvedAsyncFn(INSTANCES_COUNT);
+instancesApi.fetchWorkflowCoreStatistics = mockResolvedAsyncFn({
+  data: {
+    running: RUNNING_COUNT,
+    active: ACTIVE_COUNT,
+    withIncidents: INCIDENTS_COUNT
+  }
+});
 
 describe('Header', () => {
   const mountComponent = component =>
@@ -75,7 +83,7 @@ describe('Header', () => {
   };
   beforeEach(() => {
     api.fetchUser.mockClear();
-    instancesApi.fetchWorkflowInstancesCount.mockClear();
+    instancesApi.fetchWorkflowCoreStatistics.mockClear();
   });
 
   describe('localState values', () => {
@@ -109,7 +117,7 @@ describe('Header', () => {
       expect(InstancesLinkNode).toExist();
       expect(InstancesLinkNode.text()).toContain('Running Instances');
       expect(InstancesLinkNode.find(Badge).text()).toBe(
-        INSTANCES_COUNT.toString()
+        RUNNING_COUNT.toString()
       );
       expect(InstancesLinkNode.find(Badge).props().type).toBe(
         'RUNNING_INSTANCES'
@@ -129,7 +137,7 @@ describe('Header', () => {
       expect(IncidentsLinkNode).toExist();
       expect(IncidentsLinkNode.text()).toContain('Incidents');
       expect(IncidentsLinkNode.find(Badge).text()).toBe(
-        INSTANCES_COUNT.toString().toString()
+        INCIDENTS_COUNT.toString().toString()
       );
       expect(IncidentsLinkNode.find(Badge).props().type).toBe('INCIDENTS');
 
@@ -210,7 +218,7 @@ describe('Header', () => {
           .find('[data-test="header-link-filters"]')
           .find(Badge)
           .text()
-      ).toEqual(INSTANCES_COUNT.toString());
+      ).toEqual(RUNNING_COUNT.toString());
     });
 
     it("should get filterCount, selectionCount & instancesInSelectionsCount from localState if it's not provided by the props", async () => {
@@ -294,25 +302,22 @@ describe('Header', () => {
       await flushPromises();
       node.update();
 
-      apiKeys.forEach(async key => {
-        // then
-        expect(instancesApi.fetchWorkflowInstancesCount).toBeCalledWith(
-          filtersMap[key]
-        );
-      });
+      // then
+      expect(instancesApi.fetchWorkflowCoreStatistics).toBeCalled();
+
       // then
       expect(
         node
           .find('[data-test="header-link-instances"]')
           .find('Badge')
           .text()
-      ).toEqual(INSTANCES_COUNT.toString());
+      ).toEqual(RUNNING_COUNT.toString());
       expect(
         node
           .find('[data-test="header-link-incidents"]')
           .find('Badge')
           .text()
-      ).toEqual(INSTANCES_COUNT.toString());
+      ).toEqual(INCIDENTS_COUNT.toString());
     });
   });
 

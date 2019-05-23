@@ -6,270 +6,211 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-
-import {PAGE_TITLE} from 'modules/constants';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 
-import Dashboard from './Dashboard';
-import MetricPanel from './MetricPanel';
-import Header from '../Header';
-import IncidentsByWorkflow from './IncidentsByWorkflow';
-import IncidentsByError from './IncidentsByError';
-import EmptyIncidents from './EmptyIncidents';
-import * as Styled from './styled';
+import {PAGE_TITLE} from 'modules/constants';
 
 import * as api from 'modules/api/instances/instances';
 import * as apiIncidents from 'modules/api/incidents/incidents';
 
-const mockIncidentsByWorkflow = [
-  {
-    bpmnProcessId: 'loanProcess',
-    workflowName: null,
-    instancesWithActiveIncidentsCount: 16,
-    activeInstancesCount: 122,
-    workflows: [
-      {
-        bpmnProcessId: 'loanProcess',
-        workflowId: '3',
-        version: 1,
-        name: null,
-        errorMessage: null,
-        instancesWithActiveIncidentsCount: 16,
-        activeInstancesCount: 122
-      }
-    ]
-  }
-];
+import Dashboard from './Dashboard';
+import Header from '../Header';
+import MetricPanel from './MetricPanel';
+import IncidentsByWorkflow from './IncidentsByWorkflow';
+import EmptyIncidents from './EmptyIncidents';
+import IncidentsByError from './IncidentsByError';
 
-const mockIncidentsByError = [
-  {
-    errorMessage: "JSON path '$.paid' has no result.",
-    instancesWithErrorCount: 36,
-    workflows: [
-      {
-        workflowId: '6',
-        version: 2,
-        name: 'Order process',
-        bpmnProcessId: 'orderProcess',
-        errorMessage: "JSON path '$.paid' has no result.",
-        instancesWithActiveIncidentsCount: 27,
-        activeInstancesCount: null
-      },
-      {
-        workflowId: '1',
-        version: 1,
-        name: 'Order process',
-        bpmnProcessId: 'orderProcess',
-        errorMessage: "JSON path '$.paid' has no result.",
-        instancesWithActiveIncidentsCount: 9,
-        activeInstancesCount: null
-      }
-    ]
+const mockIncidentsByWorkflow = {
+  data: [
+    {
+      bpmnProcessId: 'loanProcess',
+      workflowName: null,
+      instancesWithActiveIncidentsCount: 16,
+      activeInstancesCount: 122,
+      workflows: [
+        {
+          bpmnProcessId: 'loanProcess',
+          workflowId: '3',
+          version: 1,
+          name: null,
+          errorMessage: null,
+          instancesWithActiveIncidentsCount: 16,
+          activeInstancesCount: 122
+        }
+      ]
+    }
+  ]
+};
+
+const mockIncidentsByError = {
+  data: [
+    {
+      errorMessage: "JSON path '$.paid' has no result.",
+      instancesWithErrorCount: 36,
+      workflows: [
+        {
+          workflowId: '6',
+          version: 2,
+          name: 'Order process',
+          bpmnProcessId: 'orderProcess',
+          errorMessage: "JSON path '$.paid' has no result.",
+          instancesWithActiveIncidentsCount: 27,
+          activeInstancesCount: null
+        },
+        {
+          workflowId: '1',
+          version: 1,
+          name: 'Order process',
+          bpmnProcessId: 'orderProcess',
+          errorMessage: "JSON path '$.paid' has no result.",
+          instancesWithActiveIncidentsCount: 9,
+          activeInstancesCount: null
+        }
+      ]
+    }
+  ]
+};
+
+const mockWorkflowCoreStatistics = {
+  data: {
+    running: 10,
+    active: 7,
+    withIncident: 3
   }
-];
-const dataByWorkflow = {
-  data: mockIncidentsByWorkflow
 };
-const dataByError = {
-  data: mockIncidentsByError
+
+const mockApi = (mockData = {}) => {
+  const {
+    workflowCoreStatistics = mockWorkflowCoreStatistics,
+    incidentsByWorkflow = mockIncidentsByWorkflow,
+    incidentsByError = mockIncidentsByError
+  } = mockData;
+
+  api.fetchWorkflowCoreStatistics = mockResolvedAsyncFn(workflowCoreStatistics);
+  apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(
+    incidentsByWorkflow
+  );
+  apiIncidents.fetchIncidentsByError = mockResolvedAsyncFn(incidentsByError);
 };
-api.fetchWorkflowInstancesCount = mockResolvedAsyncFn(123);
-apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(dataByWorkflow);
-apiIncidents.fetchIncidentsByError = mockResolvedAsyncFn(dataByError);
+
+const shallowRenderDashboard = async () => {
+  const node = shallow(<Dashboard />);
+
+  await flushPromises();
+  await node.update();
+
+  return node;
+};
 
 describe('Dashboard', () => {
-  let node;
-
-  beforeEach(() => {
-    node = shallow(<Dashboard />);
+  afterEach(() => {
+    jest.resetAllMocks();
   });
 
-  it('should set proper page title', () => {
+  it('should set proper page title', async () => {
+    mockApi();
+    await shallowRenderDashboard();
+
     expect(document.title).toBe(PAGE_TITLE.DASHBOARD);
   });
 
-  it('should render transparent heading', () => {
+  it('should render transparent heading', async () => {
+    mockApi();
+    const node = await shallowRenderDashboard();
+
     expect(node.contains('Camunda Operate Dashboard')).toBe(true);
   });
 
-  it('should render Header component', () => {
-    // given
-    const mockState = {counts: {running: 1, incidents: 2, active: 1}};
-    node.setState(mockState);
-    const headerNode = node.find(Header);
+  it('should render Header component', async () => {
+    mockApi();
+    const node = await shallowRenderDashboard();
 
-    // then
-    expect(headerNode).toHaveLength(1);
-    expect(headerNode.prop('active')).toBe('dashboard');
-    expect(headerNode.prop('runningInstancesCount')).toBe(
-      mockState.counts.running
-    );
-    expect(headerNode.prop('incidentsCount')).toBe(mockState.counts.incidents);
+    expect(node.find(Header)).toExist();
   });
 
-  describe('MetricPanel', () => {
-    it('should render MetricPanel component', () => {
-      expect(node.find(MetricPanel)).toHaveLength(1);
-    });
-    it('it should request instance counts ', async () => {
-      // when data fetched
-      await flushPromises();
-      node.update();
+  it('should render MetricPanel component', async () => {
+    mockApi();
+    const node = await shallowRenderDashboard();
 
-      expect(api.fetchWorkflowInstancesCount).toHaveBeenCalled();
-    });
+    const MetricPanelNode = node.find(MetricPanel);
+
+    expect(MetricPanelNode).toExist();
+    expect(MetricPanelNode.dive().text()).toContain('10 Running Instances');
   });
 
   describe('Incidents by Workflow', () => {
-    it('should display the Incidents by Workflow box', () => {
-      const IncidentsByWorkflow = node.find(
-        '[data-test="incidents-byWorkflow"]'
-      );
+    it('should display the Incidents by Workflow box', async () => {
+      mockApi();
+      const node = await shallowRenderDashboard();
 
-      expect(IncidentsByWorkflow.length).toBe(1);
-      expect(IncidentsByWorkflow.find(Styled.TileTitle).text()).toBe(
-        'Instances by Workflow'
-      );
+      expect(node.text()).toContain('Instances by Workflow');
+      expect(node.find(IncidentsByWorkflow)).toExist();
     });
 
-    it('should fetch the incidents by workflow', async () => {
-      // when data fetched
-      await flushPromises();
-      node.update();
+    it('should show empty state on fetch error', async () => {
+      await mockApi({incidentsByWorkflow: {data: [], error: 'fetchError'}});
+      const node = await shallowRenderDashboard();
 
-      expect(apiIncidents.fetchIncidentsByWorkflow).toHaveBeenCalled();
-    });
+      const EmptyIncidentsNode = node
+        .find('[data-test="instances-byWorkflow"]')
+        .find(EmptyIncidents);
 
-    it('should pass the incidents by workflow to IncidentsByWorkflow', async () => {
-      // when data fetched
-      await flushPromises();
-      node.update();
-
-      expect(node.find(IncidentsByWorkflow).props().incidents).toBe(
-        mockIncidentsByWorkflow
-      );
-    });
-
-    it('should render a message when the list is empty', async () => {
-      const emptyData = {
-        data: []
-      };
-      apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(emptyData);
-
-      // when data fetched
-      await flushPromises();
-      node.update();
-
-      expect(node.find(EmptyIncidents).length).toBe(1);
-      expect(node.find(EmptyIncidents).props().label).toBe(
-        'There are no Workflows.'
-      );
-      expect(node.find(EmptyIncidents).props().type).toBe('info');
-
-      expect(node.find(IncidentsByWorkflow).length).toBe(0);
-
-      //reset mockIncidentsByWorkflow
-      apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(
-        dataByWorkflow
-      );
-    });
-
-    it('should render a message when the list is empty', async () => {
-      const errorData = {
-        data: [],
-        error: 'someError'
-      };
-      apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(errorData);
-
-      // when data fetched
-      await flushPromises();
-      node.update();
-
-      expect(node.find(EmptyIncidents).length).toBe(1);
-      expect(node.find(EmptyIncidents).props().label).toBe(
+      expect(EmptyIncidentsNode).toExist();
+      expect(EmptyIncidentsNode.dive().text()).toContain(
         'Instances by Workflow could not be fetched.'
       );
-      expect(node.find(EmptyIncidents).props().type).toBe('warning');
+    });
 
-      expect(node.find(IncidentsByWorkflow).length).toBe(0);
+    it('should show empty state when no workflows', async () => {
+      await mockApi({incidentsByWorkflow: {data: [], error: null}});
+      const node = await shallowRenderDashboard();
 
-      //reset mockIncidentsByWorkflow
-      apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(
-        dataByWorkflow
+      const EmptyIncidentsNode = node
+        .find('[data-test="instances-byWorkflow"]')
+        .find(EmptyIncidents);
+
+      expect(EmptyIncidentsNode).toExist();
+      expect(EmptyIncidentsNode.dive().text()).toContain(
+        'There are no Workflows.'
       );
     });
   });
+
   describe('Incidents by Error', () => {
-    it('should display the Incidents by Error box', () => {
-      const IncidentsByError = node.find('[data-test="incidents-byError"]');
+    it('should display the Incidents by Error box', async () => {
+      mockApi();
+      const node = await shallowRenderDashboard();
 
-      expect(IncidentsByError.length).toBe(1);
-      expect(IncidentsByError.find(Styled.TileTitle).text()).toBe(
-        'Incidents by Error Message'
-      );
+      expect(node.text()).toContain('Incidents by Error');
+      expect(node.find(IncidentsByError)).toExist();
     });
 
-    it('should fetch the incidents by workflow', async () => {
-      // when data fetched
-      await flushPromises();
-      node.update();
+    it('should show empty state on fetch error', async () => {
+      await mockApi({incidentsByError: {data: [], error: 'fetchError'}});
+      const node = await shallowRenderDashboard();
 
-      expect(apiIncidents.fetchIncidentsByError).toHaveBeenCalled();
-    });
+      const EmptyIncidentsNode = node
+        .find('[data-test="incidents-byError"]')
+        .find(EmptyIncidents);
 
-    it('should pass the incidents by workflow to IncidentsByWorkflow', async () => {
-      // when data fetched
-      await flushPromises();
-      node.update();
-
-      expect(node.find(IncidentsByError).props().incidents).toBe(
-        mockIncidentsByError
-      );
-    });
-
-    it('should render a message when the list is empty', async () => {
-      const emptyData = {
-        data: []
-      };
-      apiIncidents.fetchIncidentsByError = mockResolvedAsyncFn(emptyData);
-
-      // when data fetched
-      await flushPromises();
-      node.update();
-
-      expect(node.find(EmptyIncidents).length).toBe(1);
-      expect(node.find(EmptyIncidents).props().label).toBe(
-        'There are no Workflows.'
-      );
-      expect(node.find(EmptyIncidents).props().type).toBe('info');
-
-      expect(node.find(IncidentsByError).length).toBe(0);
-
-      //reset mockIncidentsByWorkflow
-      apiIncidents.fetchIncidentsByError = mockResolvedAsyncFn(dataByError);
-    });
-
-    it('should render a message when the list is empty', async () => {
-      const errorData = {
-        data: [],
-        error: 'someError'
-      };
-      apiIncidents.fetchIncidentsByError = mockResolvedAsyncFn(errorData);
-
-      // when data fetched
-      await flushPromises();
-      node.update();
-
-      expect(node.find(EmptyIncidents).length).toBe(1);
-      expect(node.find(EmptyIncidents).props().label).toBe(
+      expect(EmptyIncidentsNode).toExist();
+      expect(EmptyIncidentsNode.dive().text()).toContain(
         'Incidents by Error Message could not be fetched.'
       );
-      expect(node.find(EmptyIncidents).props().type).toBe('warning');
+    });
 
-      expect(node.find(IncidentsByError).length).toBe(0);
+    it('should show empty state when no workflows', async () => {
+      await mockApi({incidentsByError: {data: [], error: null}});
+      const node = await shallowRenderDashboard();
 
-      //reset mockIncidentsByWorkflow
-      apiIncidents.fetchIncidentsByError = mockResolvedAsyncFn(dataByError);
+      const EmptyIncidentsNode = node
+        .find('[data-test="incidents-byError"]')
+        .find(EmptyIncidents);
+
+      expect(EmptyIncidentsNode).toExist();
+      expect(EmptyIncidentsNode.dive().text()).toContain(
+        'There are no Workflows.'
+      );
     });
   });
 });

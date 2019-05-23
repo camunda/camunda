@@ -13,33 +13,35 @@ import MetricPanel from './MetricPanel';
 import IncidentsByWorkflow from './IncidentsByWorkflow';
 import IncidentsByError from './IncidentsByError';
 import EmptyIncidents from './EmptyIncidents';
-import {fetchWorkflowInstancesCount} from 'modules/api/instances';
+import {fetchWorkflowCoreStatistics} from 'modules/api/instances';
 import {
   fetchIncidentsByWorkflow,
   fetchIncidentsByError
 } from 'modules/api/incidents/incidents';
-import {parseFilterForRequest} from 'modules/utils/filter';
-import {FILTER_SELECTION, PAGE_TITLE} from 'modules/constants';
+import {PAGE_TITLE} from 'modules/constants';
 
 import * as Styled from './styled.js';
 
 class Dashboard extends Component {
   state = {
     counts: {
-      running: 0,
-      active: 0,
-      incidents: 0
+      data: {
+        running: 0,
+        active: 0,
+        withIncidents: 0
+      },
+      errors: null
     },
     incidents: {
       byWorkflow: {data: [], error: null},
-      byError: {date: [], error: null}
+      byError: {data: [], error: null}
     },
     isDataLoaded: false
   };
 
   componentDidMount = async () => {
     document.title = PAGE_TITLE.DASHBOARD;
-    const counts = await this.fetchCounts();
+    const counts = await fetchWorkflowCoreStatistics();
     const incidents = await this.fetchIncidents();
     this.setState({counts, incidents, isDataLoaded: true});
   };
@@ -48,20 +50,6 @@ class Dashboard extends Component {
     return {
       byWorkflow: await fetchIncidentsByWorkflow(),
       byError: await fetchIncidentsByError()
-    };
-  };
-
-  fetchCounts = async () => {
-    return {
-      running: await fetchWorkflowInstancesCount(
-        parseFilterForRequest(FILTER_SELECTION.running)
-      ),
-      active: await fetchWorkflowInstancesCount(
-        parseFilterForRequest(FILTER_SELECTION.active)
-      ),
-      incidents: await fetchWorkflowInstancesCount(
-        parseFilterForRequest(FILTER_SELECTION.incidents)
-      )
     };
   };
 
@@ -75,30 +63,31 @@ class Dashboard extends Component {
       return <EmptyIncidents type="warning" label={message} />;
     }
 
-    if (state.data.length === 0) {
+    if (state.data && state.data.length === 0) {
       return <EmptyIncidents type="info" label="There are no Workflows." />;
     }
   };
 
   render() {
-    const {running, incidents, active} = this.state.counts;
-
+    const {data} = this.state.counts;
+    const {active, running, withIncidents} = data;
     return (
       <Fragment>
         <Header
           active="dashboard"
           runningInstancesCount={running}
-          incidentsCount={incidents}
+          activeInstancesCount={active}
+          incidentsCount={withIncidents}
         />
         <Styled.Dashboard>
           <VisuallyHiddenH1>Camunda Operate Dashboard</VisuallyHiddenH1>
           <MetricPanel
             runningInstancesCount={running}
             activeInstancesCount={active}
-            incidentsCount={incidents}
+            incidentsCount={withIncidents}
           />
           <Styled.TitleWrapper>
-            <Styled.Tile data-test="incidents-byWorkflow">
+            <Styled.Tile data-test="instances-byWorkflow">
               <Styled.TileTitle>Instances by Workflow</Styled.TileTitle>
               <Styled.TileContent>
                 {this.state.isDataLoaded &&

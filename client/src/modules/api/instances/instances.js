@@ -37,14 +37,13 @@ export async function fetchGroupedWorkflows() {
   }
 }
 
-export async function fetchWorkflowInstancesCount(payload) {
-  const url = `${URL}?firstResult=${0}&maxResults=${0}`;
-  const response = await post(url, {
-    queries: [{...payload}]
-  });
-
-  const resJson = await response.json();
-  return resJson.totalCount;
+export async function fetchWorkflowCoreStatistics() {
+  try {
+    const response = await get(`${URL}/core-statistics`);
+    return {data: await response.json()};
+  } catch (e) {
+    return {error: e, data: {}};
+  }
 }
 
 export async function fetchWorkflowInstancesByIds(ids) {

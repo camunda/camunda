@@ -9,7 +9,7 @@ import * as wrappers from 'modules/request/wrappers';
 import {OPERATION_TYPE} from 'modules/constants';
 
 import {
-  fetchWorkflowInstancesCount,
+  fetchWorkflowCoreStatistics,
   applyOperation,
   applyBatchOperation,
   fetchWorkflowInstance,
@@ -81,18 +81,15 @@ describe('instances api', () => {
     });
   });
 
-  describe('fetchWorkflowInstancesCount', () => {
-    it('should call post with the right url and payload', async () => {
-      //given
-      const payload = {ids: ['1'], incidents: true};
+  describe('fetchWorkflowCoreStatistics', () => {
+    it('should call get with the right url', async () => {
       // when
-      await fetchWorkflowInstancesCount(payload);
+      await fetchWorkflowCoreStatistics();
 
       // then
-      expect(wrappers.post.mock.calls[0][0]).toBe(
-        '/api/workflow-instances?firstResult=0&maxResults=0'
+      expect(wrappers.get.mock.calls[0][0]).toBe(
+        '/api/workflow-instances/core-statistics'
       );
-      expect(wrappers.post.mock.calls[0][1]).toEqual({queries: [payload]});
       expect(successResponse.json).toBeCalled();
     });
   });

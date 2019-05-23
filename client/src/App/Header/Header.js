@@ -13,7 +13,7 @@ import Badge from 'modules/components/Badge';
 import ComboBadge from 'modules/components/ComboBadge';
 import * as api from 'modules/api/header';
 import withSharedState from 'modules/components/withSharedState';
-import {fetchWorkflowInstancesCount} from 'modules/api/instances';
+import {fetchWorkflowCoreStatistics} from 'modules/api/instances';
 import {getFilterQueryString} from 'modules/utils/filter';
 import {
   FILTER_SELECTION,
@@ -26,7 +26,7 @@ import {withSelection} from 'modules/contexts/SelectionContext';
 
 import {isEqual} from 'lodash';
 
-import {filtersMap, localStateKeys, apiKeys} from './constants';
+import {localStateKeys} from './constants';
 import * as Styled from './styled.js';
 
 class Header extends React.Component {
@@ -62,7 +62,8 @@ class Header extends React.Component {
     this.setUser();
     this.localState = this.props.getStateLocally();
     localStateKeys.forEach(this.setValueFromPropsOrLocalState);
-    apiKeys.forEach(this.setValueFromPropsOrApi);
+
+    this.setValuesFromPropsOrApi();
   };
 
   componentDidUpdate = prevProps => {
@@ -72,11 +73,12 @@ class Header extends React.Component {
       }
     });
 
-    apiKeys.forEach(key => {
-      if (this.props[key] !== prevProps[key]) {
-        this.setValueFromPropsOrApi(key);
-      }
-    });
+    if (
+      this.props.incidentsCount !== prevProps.incidentsCount ||
+      this.props.runningInstancesCount !== prevProps.runningInstancesCount
+    ) {
+      this.setValuesFromPropsOrApi();
+    }
 
     // set default filter when no filter is found in localState
     if (!this.state.filter) {
@@ -105,17 +107,24 @@ class Header extends React.Component {
   };
 
   /**
-   * Sets value in the state by getting it from the props or falling back to the api.
-   * @param {string} key: key for which to set the value
+   * Sets values in the state by getting it from the props or falling back to the api.
    */
-  setValueFromPropsOrApi = async key => {
-    let countValue = this.props[key];
-    // if it's not provided in props, fetch it from the api
-    if (typeof countValue === 'undefined') {
-      countValue = await fetchWorkflowInstancesCount(filtersMap[key]);
+  setValuesFromPropsOrApi = async () => {
+    const {runningInstancesCount, incidentsCount} = this.props;
+    const counts = {runningInstancesCount, incidentsCount};
+
+    if (
+      typeof runningInstancesCount === 'undefined' ||
+      typeof incidentsCount === 'undefined'
+    ) {
+      const response = await fetchWorkflowCoreStatistics();
+      const {running, withIncidents} = response.data;
+
+      counts.runningInstancesCount = running;
+      counts.incidentsCount = withIncidents;
     }
 
-    this.setState({[key]: countValue});
+    this.setState(counts);
   };
 
   handleLogout = async () => {
