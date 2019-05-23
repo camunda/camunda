@@ -20,8 +20,9 @@ This is a small overview of the contents of the different modules:
 - `service-container` is a custom implementation to manage dependencies between different services
 - `logstreams` is an implementation of a append only log backed by the filesystem
 - `transport` is our abstraction over network transports
-- `gossip` is a cluster membership and failure detection implementation
-- `raft` is a cluster consensus and replication implementation
+- `gateway` is the implementation of the gRPC gateway, using our SBE-based protocol to communicate with brokers
+- `gateway-protocol` is the gRPC definitions for the Zeebe client-to-gateway protocol
+- `db` is our RocksDB wrapper for state management
 - `broker-core` contains the Zeebe broker which is the server side of Zeebe
 - `client-java` contains the Java Zeebe client
 
