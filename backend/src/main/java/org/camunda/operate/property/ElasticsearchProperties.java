@@ -17,7 +17,7 @@ public class ElasticsearchProperties {
 
   private String dateFormat = DATE_FORMAT_DEFAULT;
 
-  private int batchSize = 100;
+  private int batchSize = 2000;
 
   public String getClusterName() {
     return clusterName;

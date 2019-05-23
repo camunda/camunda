@@ -19,7 +19,6 @@ import org.apache.http.HttpHost;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
-import org.camunda.operate.property.ElasticsearchProperties;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -135,7 +134,7 @@ public class ParametersResolver {
           new SearchSourceBuilder()
               .fetchSource(false)
               .from(0)
-              .size(20);
+              .size(5);
       SearchRequest searchRequest =
           new SearchRequest(workflowAlias).source(searchSourceBuilder);
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);

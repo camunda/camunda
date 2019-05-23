@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 public class OperateProperties {
 
   public static final String PREFIX = "camunda.operate";
+  public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 10000L;
 
   /**
    * Indicates, whether loading of Zeebe data should start on startup.
@@ -26,7 +27,7 @@ public class OperateProperties {
   /**
    * Maximum size of batch operation.
    */
-  private Long batchOperationMaxSize;
+  private Long batchOperationMaxSize = BATCH_OPERATION_MAX_SIZE_DEFAULT;
 
   @NestedConfigurationProperty
   private OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();

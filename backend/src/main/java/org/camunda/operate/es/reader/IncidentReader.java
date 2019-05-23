@@ -13,18 +13,23 @@ import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.incidents.IncidentDto;
 import org.camunda.operate.rest.dto.incidents.IncidentErrorTypeDto;
 import org.camunda.operate.rest.dto.incidents.IncidentFlowNodeDto;
 import org.camunda.operate.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.rest.exception.NotFoundException;
+import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.IdsQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.index.query.TermsQueryBuilder;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
@@ -40,6 +45,7 @@ import io.zeebe.protocol.ErrorType;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @Component
@@ -53,6 +59,9 @@ public class IncidentReader extends AbstractReader {
   @Autowired
   private OperationReader operationReader;
 
+  @Autowired
+  private OperateProperties operateProperties;
+
   public List<IncidentEntity> getAllIncidents(String workflowInstanceId) {
     final TermQueryBuilder workflowInstanceIdQ = termQuery(IncidentTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
 
@@ -63,6 +72,36 @@ public class IncidentReader extends AbstractReader {
 
     try {
       return scroll(searchRequest, IncidentEntity.class);
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  /**
+   * Returns map of incident ids per workflow instance id.
+   * @param workflowInstanceIds
+   * @return
+   */
+  public Map<String, List<String>> getIncidentIdsPerWorkflowInstance(List<String> workflowInstanceIds) {
+    final QueryBuilder workflowInstanceIdsQ = constantScoreQuery(termsQuery(IncidentTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceIds));
+    final int batchSize = operateProperties.getElasticsearch().getBatchSize();
+
+    final SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias())
+        .source(new SearchSourceBuilder()
+            .query(workflowInstanceIdsQ)
+            .fetchSource(IncidentTemplate.WORKFLOW_INSTANCE_ID, null)
+            .size(batchSize));
+
+    Map<String, List<String>> result = new HashMap<>();
+    try {
+      ElasticsearchUtil.scrollWithoutResults(searchRequest, esClient, searchHits -> {
+        for (SearchHit hit : searchHits.getHits()) {
+          CollectionUtil.addToMap(result, hit.getFields().get(IncidentTemplate.WORKFLOW_INSTANCE_ID).toString(), hit.getId());
+        }
+      }, null, null);
+      return result;
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
       logger.error(message, e);

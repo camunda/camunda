@@ -194,29 +194,6 @@ public abstract class ElasticsearchUtil {
       }
   }
 
-  public static void executeIndex(RestHighLevelClient esClient, List<IndexRequest> indexRequests) throws PersistenceException {
-    if (indexRequests.size() == 1) {
-      executeIndex(esClient, indexRequests.get(0));
-    } else if (indexRequests.size() > 1) {
-      BulkRequest bulkRequest = new BulkRequest();
-      for (IndexRequest indexRequest: indexRequests) {
-        bulkRequest.add(indexRequest);
-      }
-      processBulkRequest(esClient, bulkRequest);
-    }
-  }
-
-  public static void executeIndex(RestHighLevelClient esClient, IndexRequest indexRequest) throws PersistenceException {
-      try {
-        esClient.index(indexRequest, RequestOptions.DEFAULT);
-      } catch (ElasticsearchException | IOException e)  {
-        final String errorMessage = String.format("Index request failed for type [%s] and id [%s] with the message [%s].",
-          indexRequest.type(), indexRequest.id(), e.getMessage());
-        logger.error(errorMessage, e);
-        throw new PersistenceException(errorMessage, e);
-      }
-  }
-
   public static <T extends OperateEntity> List<T> scroll(SearchRequest searchRequest, Class<T> clazz, ObjectMapper objectMapper, RestHighLevelClient esClient)
     throws IOException {
     return scroll(searchRequest, clazz, objectMapper, esClient, null, null);
