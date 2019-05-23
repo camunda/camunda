@@ -134,7 +134,7 @@ public class ParametersResolver {
           new SearchSourceBuilder()
               .fetchSource(false)
               .from(0)
-              .size(5);
+              .size(2);
       SearchRequest searchRequest =
           new SearchRequest(workflowAlias).source(searchSourceBuilder);
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
