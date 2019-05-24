@@ -2,7 +2,7 @@
 
 Regardless of how an exporter is loaded (whether through an external JAR or not),
 all exporters interact in the same way with the broker, which is defined by the
-[Exporter interface](https://github.com/zeebe-io/zeebe/tree/{{commit}}/exporter-api/src/main/java/io/zeebe/exporter/spi/Exporter.java).
+[Exporter interface](https://github.com/zeebe-io/zeebe/tree/{{commit}}/exporter-api/src/main/java/io/zeebe/exporter/api/Exporter.java).
 
 ## Loading
 
