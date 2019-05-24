@@ -7,7 +7,6 @@
 import React from 'react';
 
 import DurationFilter from './DurationFilter';
-import {numberParser} from 'services';
 
 import {mount} from 'enzyme';
 

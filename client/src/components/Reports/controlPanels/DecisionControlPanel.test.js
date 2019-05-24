@@ -7,8 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Popover, DefinitionSelection} from 'components';
-import {extractDefinitionName} from 'services';
+import {DefinitionSelection} from 'components';
 
 import DecisionControlPanel from './DecisionControlPanel';
 import ReportDropdown from './ReportDropdown';
@@ -19,7 +18,6 @@ jest.mock('services', () => {
   return {
     ...rest,
     loadDecisionDefinitionXml: jest.fn().mockReturnValue('somexml'),
-    extractDefinitionName: jest.fn(),
     reportConfig: {
       ...rest.reportConfig,
       decision: {

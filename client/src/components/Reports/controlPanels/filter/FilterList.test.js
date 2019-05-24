@@ -8,8 +8,6 @@ import React from 'react';
 
 import FilterList from './FilterList';
 
-import {ActionItem} from 'components';
-
 import {mount, shallow} from 'enzyme';
 
 jest.mock('components', () => {

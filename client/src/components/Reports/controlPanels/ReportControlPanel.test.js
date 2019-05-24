@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 import ReportDropdown from './ReportDropdown';
 
 import ReportControlPanel from './ReportControlPanel';
-import {extractDefinitionName, getFlowNodeNames, loadProcessDefinitionXml} from 'services';
+import {getFlowNodeNames, loadProcessDefinitionXml} from 'services';
 
 import * as service from './service';
 import {DefinitionSelection} from 'components';
@@ -39,7 +39,6 @@ jest.mock('services', () => {
         update: jest.fn()
       }
     },
-    extractDefinitionName: jest.fn(),
     getFlowNodeNames: jest.fn().mockReturnValue({
       a: 'foo',
       b: 'bar'

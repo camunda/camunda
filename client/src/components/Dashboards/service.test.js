@@ -57,7 +57,7 @@ describe('snapInPosition', () => {
   });
 
   it('should not crash when not provided any changes', () => {
-    const snapped = snapInPosition({
+    snapInPosition({
       tileDimensions,
       report,
       changes: {}

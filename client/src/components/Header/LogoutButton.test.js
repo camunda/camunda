@@ -17,10 +17,18 @@ jest.mock('request', () => {
 jest.mock('react-router-dom', () => {
   return {
     Link: ({children, onClick}) => {
-      return <a onClick={onClick}>{children}</a>;
+      return (
+        <a href="/" onClick={onClick}>
+          {children}
+        </a>
+      );
     },
     Redirect: ({children, onClick}) => {
-      return <a onClick={onClick}>{children}</a>;
+      return (
+        <a href="/" onClick={onClick}>
+          {children}
+        </a>
+      );
     },
     withRouter: Component => props => (
       <Component {...props} history={{push: jest.fn(), replace: jest.fn()}} />
