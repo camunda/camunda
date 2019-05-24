@@ -30,6 +30,7 @@ import java.util.List;
 
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 
 
 public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
@@ -175,7 +176,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     );
     MatcherAssert.assertThat(
       resultData.get(1).getValue(),
-      is(0L)
+      is(nullValue())
     );
   }
 

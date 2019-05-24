@@ -32,7 +32,7 @@ public class ProcessInstanceDurationGroupByNoneWithProcessPartCommand
   }
 
   @Override
-  protected long processAggregationOperation(Aggregations aggs) {
+  protected Long processAggregationOperation(Aggregations aggs) {
     return processProcessPartAggregationOperations(aggs, aggregationStrategy.getAggregationType());
   }
 

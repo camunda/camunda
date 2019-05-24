@@ -73,7 +73,7 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
     return intervalAggregationService;
   }
 
-  protected abstract long processAggregationOperation(Aggregations aggs);
+  protected abstract Long processAggregationOperation(Aggregations aggs);
 
   protected abstract AggregationBuilder createOperationsAggregation();
 
@@ -215,7 +215,7 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
         DateTime key = (DateTime) entry.getKey();
         String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
 
-        long operationResult = processAggregationOperation(entry.getAggregations());
+        Long operationResult = processAggregationOperation(entry.getAggregations());
         resultData.add(new MapResultEntryDto<>(formattedDate, operationResult));
       }
     } else {

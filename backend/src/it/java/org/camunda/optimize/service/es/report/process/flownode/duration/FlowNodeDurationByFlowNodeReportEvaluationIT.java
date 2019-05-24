@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.process.flownode.duration;
 import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
@@ -22,8 +23,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEnt
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
@@ -31,6 +34,7 @@ import org.junit.Test;
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -530,40 +534,19 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
-  public void runningActivitiesAreNotConsidered() throws SQLException {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    ProcessReportDataDto reportData =
-      createFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinition.getKey(),
-        processDefinition.getVersionAsString()
-      );
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
-      reportData);
-
-    // then
-    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData().size(), is(3));
-    assertThat(getExecutedFlowNodeCount(result), is(1L));
-    assertThat(
-      result.getDataEntryForKey(START_EVENT).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(100L))
-    );
-  }
-
-  @Test
   public void evaluateReportWithExecutionStateRunning() throws SQLException {
     // given
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
+    engineDatabaseRule.changeActivityInstanceStartDate(
+      processInstanceDto.getId(),
+      USER_TASK,
+      now.minus(200L, ChronoUnit.MILLIS)
+    );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -581,23 +564,31 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData().size(), is(3));
-    assertThat(getExecutedFlowNodeCount(result), is(0L));
+    assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getDataEntryForKey(START_EVENT).get().getValue(),
       is(nullValue())
     );
     assertThat(
       result.getDataEntryForKey(USER_TASK).get().getValue(),
-      is(nullValue())
+      is(calculateExpectedValueGivenDurationsDefaultAggr(200L))
     );
   }
 
   @Test
   public void evaluateReportWithExecutionStateCompleted() throws SQLException {
     // given
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
+    engineDatabaseRule.changeActivityInstanceStartDate(
+      processInstanceDto.getId(),
+      USER_TASK,
+      now.minus(200L, ChronoUnit.MILLIS)
+    );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -620,14 +611,26 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       result.getDataEntryForKey(START_EVENT).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(100L))
     );
+    assertThat(
+      result.getDataEntryForKey(USER_TASK).get().getValue(),
+      is(nullValue())
+    );
   }
 
   @Test
   public void evaluateReportWithExecutionStateAll() throws SQLException {
     // given
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
+    engineDatabaseRule.changeActivityInstanceStartDate(
+      processInstanceDto.getId(),
+      USER_TASK,
+      now.minus(200L, ChronoUnit.MILLIS)
+    );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -645,14 +648,14 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData().size(), is(3));
-    assertThat(getExecutedFlowNodeCount(result), is(1L));
+    assertThat(getExecutedFlowNodeCount(result), is(2L));
     assertThat(
       result.getDataEntryForKey(START_EVENT).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(100L))
     );
     assertThat(
       result.getDataEntryForKey(USER_TASK).get().getValue(),
-      is(nullValue())
+      is(calculateExpectedValueGivenDurationsDefaultAggr(200L))
     );
   }
 
@@ -904,5 +907,4 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     });
     return resultsMap;
   }
-
 }

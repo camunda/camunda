@@ -6,13 +6,13 @@
 package org.camunda.optimize.service.es.report.command.aggregations;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 
 public interface AggregationStrategy {
-  long getValue(Aggregations aggs);
+  Long getValue(Aggregations aggs);
 
-  AggregationBuilder getAggregationBuilder(String fieldName);
+  ValuesSourceAggregationBuilder getAggregationBuilder();
 
   AggregationType getAggregationType();
 }

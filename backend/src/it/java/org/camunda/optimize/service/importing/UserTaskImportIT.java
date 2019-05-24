@@ -106,6 +106,7 @@ public class UserTaskImportIT {
         assertThat(simpleUserTaskInstanceDto.getStartDate(), is(notNullValue()));
         assertThat(simpleUserTaskInstanceDto.getEndDate(), is(notNullValue()));
         assertThat(simpleUserTaskInstanceDto.getDueDate(), is(nullValue()));
+        assertThat(simpleUserTaskInstanceDto.getClaimDate(), is(notNullValue()));
         assertThat(simpleUserTaskInstanceDto.getDeleteReason(), is(notNullValue()));
         assertThat(simpleUserTaskInstanceDto.getTotalDurationInMs(), is(notNullValue()));
         assertThat(simpleUserTaskInstanceDto.getIdleDurationInMs(), is(notNullValue()));
@@ -143,6 +144,7 @@ public class UserTaskImportIT {
         assertThat(userTask.getActivityInstanceId(), is(notNullValue()));
         assertThat(userTask.getStartDate(), is(notNullValue()));
         assertThat(userTask.getEndDate(), is(nullValue()));
+        assertThat(userTask.getClaimDate(), is(nullValue()));
         assertThat(userTask.getTotalDurationInMs(), is(nullValue()));
       });
     }
@@ -175,8 +177,10 @@ public class UserTaskImportIT {
       processInstanceDto.getUserTasks().forEach(userTask -> {
         if (USER_TASK_1.equals(userTask.getActivityId())) {
           assertThat(userTask.getEndDate(), is(notNullValue()));
+          assertThat(userTask.getClaimDate(), is(notNullValue()));
         } else {
           assertThat(userTask.getEndDate(), is(nullValue()));
+          assertThat(userTask.getClaimDate(), is(nullValue()));
         }
       });
     }
@@ -364,10 +368,15 @@ public class UserTaskImportIT {
         searchHitFields.getSourceAsString(),
         ProcessInstanceDto.class
       );
-      persistedProcessInstanceDto.getUserTasks()
-        .forEach(userTask -> {
+
+      persistedProcessInstanceDto.getUserTasks().forEach(userTask -> {
+        if (USER_TASK_1.equals(userTask.getActivityId())) {
           assertThat(userTask.getIdleDurationInMs(), is(0L));
-        });
+        } else if (USER_TASK_2.equals(userTask.getActivityId())) {
+          assertThat(userTask.getIdleDurationInMs(), is(nullValue()));
+        }
+        assertThat(userTask.getClaimDate(), is(nullValue()));
+      });
     }
   }
 

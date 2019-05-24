@@ -19,4 +19,9 @@ public class UserTaskIdleDurationByUserTaskCommand extends AbstractUserTaskDurat
   protected String getDurationFieldName() {
     return ProcessInstanceType.USER_TASK_IDLE_DURATION;
   }
+
+  @Override
+  protected String getReferenceDateFieldName() {
+    return ProcessInstanceType.USER_TASK_START_DATE;
+  }
 }

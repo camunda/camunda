@@ -19,4 +19,9 @@ public class UserTaskTotalDurationByUserTaskCommand extends AbstractUserTaskDura
   protected String getDurationFieldName() {
     return ProcessInstanceType.USER_TASK_TOTAL_DURATION;
   }
+
+  @Override
+  protected String getReferenceDateFieldName() {
+    return ProcessInstanceType.USER_TASK_START_DATE;
+  }
 }

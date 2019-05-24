@@ -7,6 +7,9 @@ package org.camunda.optimize.service.es.report.process.user_task;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+import lombok.Data;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -23,13 +26,18 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEnt
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
+import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -50,6 +58,7 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.core.IsNull.nullValue;
 
+@RunWith(JUnitParamsRunner.class)
 public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   private static final String START_EVENT = "startEvent";
@@ -574,100 +583,95 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     assertThat(result.getData().size(), is(0));
   }
 
+  @Data
+  static class ExecutionStateTestValues {
+    FlowNodeExecutionState executionState;
+    Map<String, Long> expectedIdleDurationValues;
+    Map<String, Long> expectedWorkDurationValues;
+    Map<String, Long> expectedTotalDurationValues;
+  }
+
+  private static Map<String, Long> getExpectedResultsMap(Long userTask1Results, Long userTask2Results) {
+    Map<String, Long> result = new HashMap<>();
+    result.put(USER_TASK_1, userTask1Results);
+    result.put(USER_TASK_2, userTask2Results);
+    return result;
+  }
+
+  protected static Object[] getExecutionStateExpectedValues() {
+
+    ExecutionStateTestValues runningStateValues =
+      new ExecutionStateTestValues();
+    runningStateValues.executionState = FlowNodeExecutionState.RUNNING;
+    runningStateValues.expectedIdleDurationValues = getExpectedResultsMap(200L, 500L);
+    runningStateValues.expectedWorkDurationValues = getExpectedResultsMap(500L, null);
+    runningStateValues.expectedTotalDurationValues = getExpectedResultsMap(700L, 500L);
+
+
+    ExecutionStateTestValues completedStateValues = new ExecutionStateTestValues();
+    completedStateValues.executionState = FlowNodeExecutionState.COMPLETED;
+    completedStateValues.expectedIdleDurationValues = getExpectedResultsMap(100L, null);
+    completedStateValues.expectedWorkDurationValues = getExpectedResultsMap(100L, null);
+    completedStateValues.expectedTotalDurationValues = getExpectedResultsMap(100L, null);
+
+
+    ExecutionStateTestValues allStateValues = new ExecutionStateTestValues();
+    allStateValues.executionState = FlowNodeExecutionState.ALL;
+    allStateValues.expectedIdleDurationValues = getExpectedResultsMap(
+      calculateExpectedValueGivenDurationsDefaultAggr(100L, 200L),
+      500L
+    );
+    allStateValues.expectedWorkDurationValues = getExpectedResultsMap(
+      calculateExpectedValueGivenDurationsDefaultAggr(100L, 500L),
+      null
+    );
+    allStateValues.expectedTotalDurationValues = getExpectedResultsMap(
+      calculateExpectedValueGivenDurationsDefaultAggr(100L, 700L),
+      500L
+    );
+
+    return new Object[]{
+      runningStateValues,
+      completedStateValues,
+      allStateValues
+    };
+  }
+
   @Test
-  public void evaluateReportWithExecutionStateRunning() {
+  @Parameters(method = "getExecutionStateExpectedValues")
+  public void evaluateReportWithExecutionState(ExecutionStateTestValues testValues) {
     // given
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     // finish first running task, second now runs but unclaimed
     engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
     changeDuration(processInstanceDto, USER_TASK_1, 100L);
+    changeUserTaskStartDate(processInstanceDto, now, USER_TASK_2, 500L);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
     // claim first running task
     engineRule.claimAllRunningUserTasks(processInstanceDto2.getId());
-    changeDuration(processInstanceDto2, USER_TASK_1, 200L);
 
+    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_1, 700L);
+    changeUserTaskClaimDate(processInstanceDto2, now, USER_TASK_1, 500L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
+    reportData.getConfiguration().setFlowNodeExecutionState(testValues.executionState);
     final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(4));
-    assertRunningExecutionStateResult(result);
+    assertEvaluateReportWithExecutionState(result, testValues);
   }
 
-  protected abstract void assertRunningExecutionStateResult(final ProcessDurationReportMapResultDto result);
-
-  protected abstract void assertAllExecutionStateResult(final ProcessDurationReportMapResultDto result);
-
-  @Test
-  public void evaluateReportWithExecutionStateCompleted() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-    // finish first running task
-    engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
-    changeDuration(processInstanceDto, USER_TASK_1, 100L);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    // claim first running task
-    engineRule.claimAllRunningUserTasks(processInstanceDto2.getId());
-    changeDuration(processInstanceDto2, USER_TASK_1, 200L);
-
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.COMPLETED);
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData().size(), is(4));
-    assertThat(getExecutedFlowNodeCount(result), is(1L));
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(100L))
-    );
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_2).get().getValue(),
-      is(nullValue())
-    );
-  }
-
-  @Test
-  public void evaluateReportWithExecutionStateAll() {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-    // finish first running task, second now runs but unclaimed
-    engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
-    changeDuration(processInstanceDto, USER_TASK_1, 100L);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    // claim first running task
-    engineRule.claimAllRunningUserTasks(processInstanceDto2.getId());
-    changeDuration(processInstanceDto2, USER_TASK_1, 200L);
-
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.ALL);
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
-
-    // then
-    assertAllExecutionStateResult(result);
-  }
+  protected abstract void assertEvaluateReportWithExecutionState(ProcessDurationReportMapResultDto result,
+                                                                 ExecutionStateTestValues expectedValues);
 
   @Test
   public void processDefinitionContainsMultiInstanceBody() {
@@ -811,6 +815,43 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
     // then
     assertThat(response.getStatus(), is(400));
+  }
+
+  private void changeUserTaskStartDate(final ProcessInstanceEngineDto processInstanceDto,
+                                       final OffsetDateTime now,
+                                       final String userTaskId,
+                                       final long offsetDuration) {
+    try {
+      engineDatabaseRule.changeUserTaskStartDate(
+        processInstanceDto.getId(),
+        userTaskId,
+        now.minus(offsetDuration, ChronoUnit.MILLIS)
+      );
+    } catch (SQLException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
+  }
+
+  private void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,
+                                       final OffsetDateTime now,
+                                       final String userTaskKey,
+                                       final long offsetDuration) {
+
+    engineRule.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
+      .forEach(
+        historicUserTaskInstanceDto ->
+        {
+          try {
+            engineDatabaseRule.changeUserTaskClaimOperationTimestamp(
+              processInstanceDto.getId(),
+              historicUserTaskInstanceDto.getId(),
+              now.minus(offsetDuration, ChronoUnit.MILLIS)
+            );
+          } catch (SQLException e) {
+            throw new OptimizeIntegrationTestException(e);
+          }
+        }
+      );
   }
 
   protected abstract ProcessViewProperty getViewProperty();

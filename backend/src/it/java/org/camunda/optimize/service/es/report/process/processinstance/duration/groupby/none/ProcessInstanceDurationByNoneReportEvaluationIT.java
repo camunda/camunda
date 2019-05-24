@@ -199,7 +199,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
 
 
   @Test
-  public void noAvailableProcessInstancesReturnsZero() {
+  public void noAvailableProcessInstancesReturnsNull() {
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
@@ -211,8 +211,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
     // then
-    long calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(0L));
+    assertThat(resultDto.getData(), is(nullValue()));
   }
 
   @Test
@@ -340,7 +339,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
     // then
-    long calculatedResult = resultDto.getData();
+    Long calculatedResult = resultDto.getData();
     assertThat(calculatedResult, is(1000L));
 
     // when
@@ -355,7 +354,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
 
     // then
     calculatedResult = resultDto.getData();
-    assertThat(calculatedResult, is(0L));
+    assertThat(calculatedResult, is(nullValue()));
   }
 
   @Test

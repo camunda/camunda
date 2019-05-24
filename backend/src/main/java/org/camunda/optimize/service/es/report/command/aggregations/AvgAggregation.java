@@ -6,25 +6,25 @@
 package org.camunda.optimize.service.es.report.command.aggregations;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.avg.Avg;
+import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 
-import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLong;
+import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLongOrNull;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.avg;
 
 public class AvgAggregation implements AggregationStrategy {
   private static final String AVG_DURATION_AGGREGATION = "avgAggregatedDuration";
 
   @Override
-  public long getValue(final Aggregations aggs) {
+  public Long getValue(final Aggregations aggs) {
     final Avg aggregation = aggs.get(AVG_DURATION_AGGREGATION);
-    return mapToLong(aggregation.getValue());
+    return mapToLongOrNull(aggregation.getValue());
   }
 
   @Override
-  public AggregationBuilder getAggregationBuilder(final String fieldName) {
-    return avg(AVG_DURATION_AGGREGATION).field(fieldName);
+  public ValuesSourceAggregationBuilder getAggregationBuilder() {
+    return avg(AVG_DURATION_AGGREGATION);
   }
 
   @Override

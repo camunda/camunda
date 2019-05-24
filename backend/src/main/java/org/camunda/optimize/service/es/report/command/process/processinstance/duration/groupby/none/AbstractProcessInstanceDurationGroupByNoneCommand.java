@@ -86,7 +86,7 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
     searchSourceBuilder.aggregation(createOperationsAggregation());
   }
 
-  protected abstract long processAggregationOperation(Aggregations aggregations);
+  protected abstract Long processAggregationOperation(Aggregations aggregations);
 
   protected abstract AggregationBuilder createOperationsAggregation();
 

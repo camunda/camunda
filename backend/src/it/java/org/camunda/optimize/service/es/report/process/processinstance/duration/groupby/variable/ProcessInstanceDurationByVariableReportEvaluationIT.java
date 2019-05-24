@@ -52,6 +52,7 @@ import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateEx
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -439,7 +440,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void noAvailableDurationReturnsZero() {
+  public void noAvailableDurationReturnsNull() {
     // given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
@@ -468,7 +469,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(0L)));
+    assertThat(resultData.get(0).getValue(), is(nullValue()));
   }
 
   @Test

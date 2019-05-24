@@ -33,6 +33,7 @@ public class UserTaskInstanceDto implements OptimizeDto {
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
   private OffsetDateTime dueDate;
+  private OffsetDateTime claimDate;
 
   private String deleteReason;
 

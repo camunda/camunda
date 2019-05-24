@@ -34,4 +34,22 @@ public class ElasticsearchAggregationResultMappingUtil {
     }
   }
 
+  public static Long mapToLongOrNull(final ParsedTDigestPercentiles aggregation) {
+    double median = aggregation.percentile(50);
+    if (Double.isNaN(median) || Double.isInfinite(median)) {
+      return null;
+    } else {
+      return Math.round(median);
+    }
+  }
+
+  public static Long mapToLongOrNull(final Double value) {
+    if (Double.isInfinite(value)) {
+      return null;
+    } else {
+      return Math.round(value);
+    }
+  }
+
+
 }

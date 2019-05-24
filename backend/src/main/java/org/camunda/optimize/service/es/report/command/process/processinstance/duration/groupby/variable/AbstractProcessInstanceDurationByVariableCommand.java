@@ -154,7 +154,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
     for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
       ReverseNested reverseNested = b.getAggregations().get(REVERSE_NESTED_AGGREGATION);
-      long operationsResult = processAggregationOperation(reverseNested.getAggregations());
+      Long operationsResult = processAggregationOperation(reverseNested.getAggregations());
       resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), operationsResult));
     }
 
@@ -170,7 +170,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
   }
 
 
-  protected abstract long processAggregationOperation(Aggregations aggs);
+  protected abstract Long processAggregationOperation(Aggregations aggs);
 
   protected abstract AggregationBuilder createOperationsAggregation();
 

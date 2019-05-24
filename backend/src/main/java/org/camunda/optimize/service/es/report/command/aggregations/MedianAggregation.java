@@ -6,27 +6,27 @@
 package org.camunda.optimize.service.es.report.command.aggregations;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.percentiles.tdigest.ParsedTDigestPercentiles;
+import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 
-import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLong;
+import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLongOrNull;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.percentiles;
+
 
 public class MedianAggregation implements AggregationStrategy {
   private static final String MEDIAN_DURATION_AGGREGATION = "medianAggregatedDuration";
 
   @Override
-  public long getValue(final Aggregations aggregations) {
+  public Long getValue(final Aggregations aggregations) {
     final ParsedTDigestPercentiles percentiles = aggregations.get(MEDIAN_DURATION_AGGREGATION);
-    return mapToLong(percentiles);
+    return mapToLongOrNull(percentiles);
   }
 
   @Override
-  public AggregationBuilder getAggregationBuilder(final String fieldName) {
+  public ValuesSourceAggregationBuilder getAggregationBuilder() {
     return percentiles(MEDIAN_DURATION_AGGREGATION)
-      .percentiles(50)
-      .field(fieldName);
+      .percentiles(50);
   }
 
   @Override

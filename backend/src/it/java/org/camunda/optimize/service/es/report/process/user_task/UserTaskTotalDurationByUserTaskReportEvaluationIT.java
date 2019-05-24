@@ -15,7 +15,6 @@ import java.sql.SQLException;
 
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskTotalDurationMapGroupByUserTaskReport;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
@@ -53,26 +52,15 @@ public class UserTaskTotalDurationByUserTaskReportEvaluationIT
   }
 
   @Override
-  protected void assertRunningExecutionStateResult(final ProcessDurationReportMapResultDto result) {
+  protected void assertEvaluateReportWithExecutionState(final ProcessDurationReportMapResultDto result,
+                                                        final ExecutionStateTestValues expectedValues) {
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(nullValue())
+      is(expectedValues.getExpectedTotalDurationValues().get(USER_TASK_1))
     );
     assertThat(
       result.getDataEntryForKey(USER_TASK_2).get().getValue(),
-      is(nullValue())
-    );
-  }
-
-  @Override
-  protected void assertAllExecutionStateResult(final ProcessDurationReportMapResultDto result) {
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(100L))
-    );
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_2).get().getValue(),
-      is(nullValue())
+      is(expectedValues.getExpectedTotalDurationValues().get(USER_TASK_2))
     );
   }
 

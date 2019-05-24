@@ -18,12 +18,12 @@ public class ProcessInstanceDurationByVariableCommand
   }
 
   @Override
-  protected long processAggregationOperation(Aggregations aggs) {
+  protected Long processAggregationOperation(Aggregations aggs) {
     return aggregationStrategy.getValue(aggs);
   }
 
   @Override
   protected AggregationBuilder createOperationsAggregation() {
-    return aggregationStrategy.getAggregationBuilder(ProcessInstanceType.DURATION);
+    return aggregationStrategy.getAggregationBuilder().field(ProcessInstanceType.DURATION);
   }
 }

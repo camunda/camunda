@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.dura
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.hamcrest.CoreMatchers;
 
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
@@ -78,26 +77,15 @@ public class UserTaskIdleDurationByUserTaskReportEvaluationIT
   }
 
   @Override
-  protected void assertRunningExecutionStateResult(final ProcessDurationReportMapResultDto result) {
+  protected void assertEvaluateReportWithExecutionState(final ProcessDurationReportMapResultDto result,
+                                                        final ExecutionStateTestValues expectedValues) {
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(200L)
+      is(expectedValues.getExpectedIdleDurationValues().get(USER_TASK_1))
     );
     assertThat(
       result.getDataEntryForKey(USER_TASK_2).get().getValue(),
-      is(0L)
-    );
-  }
-
-  @Override
-  protected void assertAllExecutionStateResult(final ProcessDurationReportMapResultDto result) {
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(100L, 200L))
-    );
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_2).get().getValue(),
-      is(0L)
+      is(expectedValues.getExpectedIdleDurationValues().get(USER_TASK_2))
     );
   }
 }

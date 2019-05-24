@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
 public class ProcessDurationReportNumberResultDto extends ProcessReportResultDto {
 
-  @Getter @Setter private long data;
+  @Getter @Setter private Long data;
 
   @Override
   public ResultType getType() {

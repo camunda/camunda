@@ -67,6 +67,7 @@ public class ProcessInstanceType extends StrictTypeMappingCreator implements Def
   public static final String USER_TASK_START_DATE = "startDate";
   public static final String USER_TASK_END_DATE = "endDate";
   public static final String USER_TASK_DUE_DATE = "dueDate";
+  public static final String USER_TASK_CLAIM_DATE = "claimDate";
 
   public static final String USER_TASK_DELETE_REASON = "deleteReason";
 
@@ -300,6 +301,10 @@ public class ProcessInstanceType extends StrictTypeMappingCreator implements Def
         .field("type", "long")
       .endObject()
       .startObject(USER_TASK_START_DATE)
+        .field("type", "date")
+        .field("format", OPTIMIZE_DATE_FORMAT)
+      .endObject()
+      .startObject(USER_TASK_CLAIM_DATE)
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()

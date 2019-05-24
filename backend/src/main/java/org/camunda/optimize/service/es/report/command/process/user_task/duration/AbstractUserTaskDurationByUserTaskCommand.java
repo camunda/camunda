@@ -11,13 +11,16 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.dura
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.UserTaskGroupingCommand;
+import org.camunda.optimize.service.es.report.command.util.FlowNodeExecutionStateAggregationUtil;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -30,14 +33,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.addExecutionStateFilter;
+import static org.camunda.optimize.service.es.report.command.util.FlowNodeExecutionStateAggregationUtil.addExecutionStateFilter;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_END_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
@@ -104,8 +106,7 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
         filter(
           FILTERED_USER_TASKS_AGGREGATION,
           addExecutionStateFilter(
-            boolQuery()
-              .must(existsQuery(USER_TASKS + "." + getDurationFieldName())),
+            boolQuery(),
             flowNodeExecutionState,
             USER_TASKS + "." + USER_TASK_END_DATE
           )
@@ -116,11 +117,23 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
               .size(configurationService.getEsAggregationBucketLimit())
               .field(USER_TASKS + "." + USER_TASK_ACTIVITY_ID)
               .subAggregation(
-                aggregationStrategy.getAggregationBuilder(USER_TASKS + "." + getDurationFieldName())
+                aggregationStrategy.getAggregationBuilder()
+                  .script(getScriptedAggregationField())
               )
           )
       );
   }
+
+
+  protected Script getScriptedAggregationField() {
+    return FlowNodeExecutionStateAggregationUtil.getAggregationScript(
+      LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
+      USER_TASKS + "." + getDurationFieldName(),
+      USER_TASKS + "." + getReferenceDateFieldName()
+    );
+  }
+
+  protected abstract String getReferenceDateFieldName();
 
   private ProcessDurationReportMapResultDto mapToReportResult(final SearchResponse response) {
     final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();

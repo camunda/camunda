@@ -58,6 +58,7 @@ import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateEx
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -474,7 +475,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT extends Abstra
       resultData.get(1).getKey(),
       is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(1).getValue(), is(0L));
+    assertThat(resultData.get(1).getValue(), is(nullValue()));
 
     assertThat(
       resultData.get(2).getKey(),
@@ -486,13 +487,13 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT extends Abstra
       resultData.get(3).getKey(),
       is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(3).getValue(), is(0L));
+    assertThat(resultData.get(3).getValue(), is(nullValue()));
 
     assertThat(
       resultData.get(4).getKey(),
       is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(4).getValue(), is(0L));
+    assertThat(resultData.get(4).getValue(), is(nullValue()));
   }
 
   @Test
@@ -534,7 +535,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT extends Abstra
       is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 9000L, 2000L))
     );
     assertThat(resultData.get(1).getKey(), is(localDateTimeToString(startOfToday.minusDays(1))));
-    assertThat(resultData.get(1).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(0L)));
+    assertThat(resultData.get(1).getValue(), is(nullValue()));
     assertThat(resultData.get(2).getKey(), is(localDateTimeToString(startOfToday.minusDays(2))));
     assertThat(resultData.get(2).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
   }
@@ -575,7 +576,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT extends Abstra
       resultData.get(0).getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 9000L, 2000L))
     );
-    assertThat(resultData.stream().map(MapResultEntryDto::getValue).filter(v -> v > 0L).count(), is(2L));
+    assertThat(resultData.stream().map(MapResultEntryDto::getValue).filter(v -> v != null && v > 0L).count(), is(2L));
     assertThat(
       resultData.get(resultData.size() - 1).getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(1000L))

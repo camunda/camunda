@@ -19,6 +19,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EN
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_OPERATIONS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CLAIM_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_IDLE_DURATION;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_WORK_DURATION;
@@ -44,6 +45,7 @@ public abstract class AbstractUserTaskWriter {
       .put("userOperationsField", USER_OPERATIONS)
       .put("startDateField", START_DATE)
       .put("endDateField", END_DATE)
+      .put("claimDateField", USER_TASK_CLAIM_DATE)
       .put("idleDurationInMsField", USER_TASK_IDLE_DURATION)
       .put("workDurationInMsField", USER_TASK_WORK_DURATION)
       .put("totalDurationInMsField", USER_TASK_TOTAL_DURATION)
@@ -51,11 +53,12 @@ public abstract class AbstractUserTaskWriter {
       .put("dateFormatPattern", OPTIMIZE_DATE_FORMAT)
       .build()
     );
+
     return substitutor.replace(
       "if (ctx._source.${userTasksField} != null) {\n" +
         "for (def currentTask : ctx._source.${userTasksField}) {\n" +
-          // idle time defaults to 0, it get's eventually updated if a claim operation exists
-          "currentTask.${idleDurationInMsField} = 0;\n" +
+         // idle time defaults to 0 if the task has an end field, it get's eventually updated if a claim operation exists
+          "if (currentTask.${endDateField} != null) currentTask.${idleDurationInMsField} = 0;\n" +
           // by default work duration equals total duration, it get's eventually updated if a claim operation exists
           "currentTask.${workDurationInMsField} = currentTask.${totalDurationInMsField};\n" +
           "if (currentTask.${userOperationsField} != null) {\n" +
@@ -63,16 +66,19 @@ public abstract class AbstractUserTaskWriter {
             "def optionalFirstClaimDate = currentTask.${userOperationsField}.stream()\n" +
                 ".filter(userOperation -> \"${claimTypeValue}\".equals(userOperation.type))\n" +
                 ".map(userOperation -> userOperation.timestamp)\n" +
-                ".map(dateFormatter::parse)\n" +
-                ".min(Date::compareTo);\n" +
-            "optionalFirstClaimDate.ifPresent(claimDate -> {\n" +
+                ".min(Comparator.comparing(dateStr -> dateFormatter.parse(dateStr)));\n" +
+            "optionalFirstClaimDate.ifPresent(claimDateStr -> {\n" +
+              "def claimDate = dateFormatter.parse(claimDateStr);\n" +
               "def claimDateInMs = claimDate.getTime();\n" +
+              "currentTask.${claimDateField} = claimDateStr;\n" +
               "def optionalStartDate = Optional.ofNullable(currentTask.${startDateField}).map(dateFormatter::parse);\n" +
               "def optionalEndDate = Optional.ofNullable(currentTask.${endDateField}).map(dateFormatter::parse);\n" +
               "optionalStartDate.ifPresent(startDate -> {\n" +
                   "currentTask.${idleDurationInMsField} = claimDateInMs - startDate.getTime();\n" +
               "});\n" +
               "optionalEndDate.ifPresent(endDate -> {\n" +
+                  // if idle time is still null for completed tasks we want it to be set to 0
+                  "if (currentTask.${idleDurationInMsField} == null) currentTask.${idleDurationInMsField} = 0;\n" +
                   "currentTask.${workDurationInMsField} = endDate.getTime() - claimDateInMs;\n" +
               "});\n" +
             "});\n" +

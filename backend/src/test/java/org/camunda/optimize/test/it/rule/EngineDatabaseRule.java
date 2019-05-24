@@ -178,6 +178,22 @@ public class EngineDatabaseRule extends TestWatcher {
     connection.commit();
   }
 
+  public void changeActivityInstanceStartDate(String processInstanceId,
+                                              String activityId,
+                                              OffsetDateTime startDate) throws SQLException {
+    String sql = "UPDATE ACT_HI_ACTINST " +
+      "SET START_TIME_ = ? WHERE " +
+      "PROC_INST_ID_ = ?" +
+      "AND ACT_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
+    statement.setString(2, processInstanceId);
+    statement.setString(3, activityId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+
   public void changeFirstActivityInstanceStartDate(String activityInstanceId,
                                                    OffsetDateTime startDate) throws SQLException {
     String sql = "UPDATE ACT_HI_ACTINST " +
@@ -287,6 +303,21 @@ public class EngineDatabaseRule extends TestWatcher {
     statement.setLong(1, duration);
     statement.setString(2, processInstanceId);
     statement.setString(3, userTaskId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public void changeUserTaskStartDate(final String processInstanceId,
+                                      final String taskId,
+                                      final OffsetDateTime startDate) throws SQLException {
+    String sql = "UPDATE ACT_HI_TASKINST " +
+      "SET START_TIME_ = ? WHERE " +
+      "PROC_INST_ID_ = ?" +
+      "AND TASK_DEF_KEY_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
+    statement.setString(2, processInstanceId);
+    statement.setString(3, taskId);
     statement.executeUpdate();
     connection.commit();
   }
