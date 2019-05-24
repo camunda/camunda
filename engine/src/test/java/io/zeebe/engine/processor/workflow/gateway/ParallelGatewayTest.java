@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,27 +15,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.engine.gateway;
+package io.zeebe.engine.processor.workflow.gateway;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.engine.processor.TypedRecord;
+import io.zeebe.engine.processor.workflow.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.protocol.BpmnElementType;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
-import java.util.stream.Collectors;
-import org.junit.Before;
+import org.agrona.DirectBuffer;
+import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 public class ParallelGatewayTest {
 
@@ -64,63 +64,52 @@ public class ParallelGatewayTest {
           .connectTo("join")
           .done();
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
-
-  private PartitionTestClient testClient;
-
-  @Before
-  public void init() {
-    testClient = apiRule.partitionClient();
-  }
+  @Rule public EngineRule engine = new EngineRule();
 
   @Test
   public void shouldActivateTasksOnParallelBranches() {
     // given
-    testClient.deploy(FORK_PROCESS);
+    engine.deploy(FORK_PROCESS);
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> taskEvents =
-        testClient
-            .receiveWorkflowInstances()
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .filter(e -> isServiceTaskInProcess(e.getValue().getElementId(), FORK_PROCESS))
-            .limit(2)
-            .collect(Collectors.toList());
+    final List<TypedRecord<WorkflowInstanceRecord>> taskEvents =
+        engine.collectWorkflowInstanceRecords(
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            e -> isServiceTaskInProcess(e.getValue().getElementId(), FORK_PROCESS),
+            2);
 
     assertThat(taskEvents).hasSize(2);
     assertThat(taskEvents)
         .extracting(e -> e.getValue().getElementId())
-        .containsExactlyInAnyOrder("task1", "task2");
+        .containsExactlyInAnyOrder(wrapString("task1"), wrapString("task2"));
     assertThat(taskEvents.get(0).getKey()).isNotEqualTo(taskEvents.get(1).getKey());
   }
 
   @Test
   public void shouldCompleteScopeWhenAllPathsCompleted() {
     // given
-    testClient.deploy(FORK_PROCESS);
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
-    testClient.completeJobOfType("type1");
+    engine.deploy(FORK_PROCESS);
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.completeJobOfType("type1");
 
     // when
-    testClient.completeJobOfType("type2");
+    engine.completeJobOfType("type2");
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> completedEvents =
-        testClient.receiveElementInstancesInState(
+    final List<TypedRecord<WorkflowInstanceRecord>> completedEvents =
+        engine.collectWorkflowInstanceRecords(
             WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.END_EVENT, 2);
 
     assertThat(completedEvents)
         .extracting(e -> e.getValue().getElementId())
-        .containsExactly("end1", "end2");
+        .containsExactly(wrapString("end1"), wrapString("end2"));
 
-    assertThat(
-            testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED))
+    Assertions.assertThat(
+            engine.awaitWorkflowInstanceRecord(
+                PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED))
         .isNotNull();
   }
 
@@ -137,20 +126,22 @@ public class ParallelGatewayTest {
             .connectTo("join")
             .done();
 
-    testClient.deploy(process);
+    engine.deploy(process);
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        testClient
-            .receiveWorkflowInstances()
-            .limitToWorkflowInstanceCompleted()
-            .collect(Collectors.toList());
+    final List<TypedRecord<WorkflowInstanceRecord>> workflowInstanceEvents =
+        engine.collectWorkflowInstanceRecords(
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
+            (r) ->
+                r.getValue().getElementId().equals(wrapString(PROCESS_ID))
+                    && r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertThat(workflowInstanceEvents)
-        .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
+        .extracting(
+            e -> bufferAsString(e.getValue().getElementId()), e -> e.getMetadata().getIntent())
         .containsSubsequence(
             tuple("end", WorkflowInstanceIntent.ELEMENT_COMPLETED),
             tuple("end", WorkflowInstanceIntent.ELEMENT_COMPLETED),
@@ -169,20 +160,18 @@ public class ParallelGatewayTest {
             .endEvent("end")
             .done();
 
-    testClient.deploy(process);
+    engine.deploy(process);
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        testClient
-            .receiveWorkflowInstances()
-            .limitToWorkflowInstanceCompleted()
-            .collect(Collectors.toList());
+    final List<TypedRecord<WorkflowInstanceRecord>> workflowInstanceEvents =
+        engine.collectWorkflowInstanceRecordsUntilCompletion();
 
     assertThat(workflowInstanceEvents)
-        .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
+        .extracting(
+            e -> bufferAsString(e.getValue().getElementId()), e -> e.getMetadata().getIntent())
         .containsSequence(
             tuple("fork", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
             tuple("fork", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
@@ -206,20 +195,18 @@ public class ParallelGatewayTest {
             .parallelGateway("fork")
             .done();
 
-    testClient.deploy(process);
+    engine.deploy(process);
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        testClient
-            .receiveWorkflowInstances()
-            .limitToWorkflowInstanceCompleted()
-            .collect(Collectors.toList());
+    final List<TypedRecord<WorkflowInstanceRecord>> workflowInstanceEvents =
+        engine.collectWorkflowInstanceRecordsUntilCompletion();
 
     assertThat(workflowInstanceEvents)
-        .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
+        .extracting(
+            e -> bufferAsString(e.getValue().getElementId()), e -> e.getMetadata().getIntent())
         .containsSequence(
             tuple("fork", WorkflowInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETING));
@@ -228,20 +215,18 @@ public class ParallelGatewayTest {
   @Test
   public void shouldMergeParallelBranches() {
     // given
-    testClient.deploy(FORK_JOIN_PROCESS);
+    engine.deploy(FORK_JOIN_PROCESS);
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> events =
-        testClient
-            .receiveWorkflowInstances()
-            .limitToWorkflowInstanceCompleted()
-            .collect(Collectors.toList());
+    final List<TypedRecord<WorkflowInstanceRecord>> events =
+        engine.collectWorkflowInstanceRecordsUntilCompletion();
 
     assertThat(events)
-        .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
+        .extracting(
+            e -> bufferAsString(e.getValue().getElementId()), e -> e.getMetadata().getIntent())
         .containsSubsequence(
             tuple("flow1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("join", WorkflowInstanceIntent.ELEMENT_ACTIVATING))
@@ -270,35 +255,30 @@ public class ParallelGatewayTest {
             .endEvent()
             .done();
 
-    testClient.deploy(process);
+    engine.deploy(process);
 
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // waiting until we have signalled the first incoming sequence flow twice
     // => this should not trigger the gateway yet
-    testClient
-        .receiveWorkflowInstances()
-        .limit(r -> "joinFlow1".equals(r.getValue().getElementId()))
-        .limit(2)
-        .skip(1)
-        .getFirst();
+
+    engine.collectWorkflowInstanceRecordsUntil(
+        r -> wrapString("joinFlow1").equals(r.getValue().getElementId()));
 
     // when
     // we complete the job
-    testClient.completeJobOfType("type");
+    engine.completeJobOfType("type");
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> events =
-        testClient
-            .receiveWorkflowInstances()
-            .limit(
-                r ->
-                    "join".equals(r.getValue().getElementId())
-                        && WorkflowInstanceIntent.ELEMENT_COMPLETED == r.getMetadata().getIntent())
-            .collect(Collectors.toList());
+    final List<TypedRecord<WorkflowInstanceRecord>> events =
+        engine.collectWorkflowInstanceRecordsUntil(
+            r ->
+                wrapString("join").equals(r.getValue().getElementId())
+                    && WorkflowInstanceIntent.ELEMENT_COMPLETED == r.getMetadata().getIntent());
 
     assertThat(events)
-        .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
+        .extracting(
+            e -> bufferAsString(e.getValue().getElementId()), e -> e.getMetadata().getIntent())
         .containsSubsequence(
             tuple("joinFlow1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("joinFlow1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
@@ -321,24 +301,18 @@ public class ParallelGatewayTest {
             .serviceTask("task2", b -> b.zeebeTaskType("type2"))
             .done();
 
-    testClient.deploy(process);
+    engine.deploy(process);
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> elementInstances =
-        testClient
-            .receiveWorkflowInstances()
-            .limitToWorkflowInstanceCompleted()
-            .filter(
-                r ->
-                    r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
-                        && r.getValue().getBpmnElementType() == BpmnElementType.SERVICE_TASK)
-            .collect(Collectors.toList());
+    final List<TypedRecord<WorkflowInstanceRecord>> elementInstances =
+        engine.collectWorkflowInstanceRecords(
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.SERVICE_TASK, 2);
 
     assertThat(elementInstances)
-        .extracting(e -> e.getValue().getElementId())
+        .extracting(e -> bufferAsString(e.getValue().getElementId()))
         .contains("task1", "task2");
   }
 
@@ -353,29 +327,31 @@ public class ParallelGatewayTest {
             .serviceTask("task2", b -> b.zeebeTaskType("type2"))
             .done();
 
-    testClient.deploy(process);
+    engine.deploy(process);
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> taskEvents =
-        testClient
-            .receiveWorkflowInstances()
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .filter(e -> isServiceTaskInProcess(e.getValue().getElementId(), process))
-            .limit(2)
-            .collect(Collectors.toList());
+    final List<TypedRecord<WorkflowInstanceRecord>> taskEvents =
+        engine.collectWorkflowInstanceRecords(
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.SERVICE_TASK, 2);
 
     assertThat(taskEvents).hasSize(2);
     assertThat(taskEvents)
-        .extracting(e -> e.getValue().getElementId())
+        .extracting(e -> bufferAsString(e.getValue().getElementId()))
         .containsExactlyInAnyOrder("task1", "task2");
     assertThat(taskEvents.get(0).getKey()).isNotEqualTo(taskEvents.get(1).getKey());
   }
 
-  private static boolean isServiceTaskInProcess(String activityId, BpmnModelInstance process) {
+  private static boolean isServiceTaskInProcess(
+      DirectBuffer activityId, BpmnModelInstance process) {
+    final String activityIdString = BufferUtil.bufferAsString(activityId);
+
     return process.getModelElementsByType(ServiceTask.class).stream()
-        .anyMatch(t -> t.getId().equals(activityId));
+        .anyMatch(
+            t -> {
+              return t.getId().equals(activityIdString);
+            });
   }
 }
