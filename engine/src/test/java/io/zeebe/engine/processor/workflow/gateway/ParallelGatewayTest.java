@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,12 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.engine.gateway;
+package io.zeebe.engine.processor.workflow.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
@@ -28,14 +28,11 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 public class ParallelGatewayTest {
 
@@ -64,30 +61,19 @@ public class ParallelGatewayTest {
           .connectTo("join")
           .done();
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
-
-  private PartitionTestClient testClient;
-
-  @Before
-  public void init() {
-    testClient = apiRule.partitionClient();
-  }
+  @Rule public EngineRule engine = new EngineRule();
 
   @Test
   public void shouldActivateTasksOnParallelBranches() {
     // given
-    testClient.deploy(FORK_PROCESS);
+    engine.deploy(FORK_PROCESS);
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> taskEvents =
-        testClient
-            .receiveWorkflowInstances()
+        RecordingExporter.workflowInstanceRecords()
             .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
             .filter(e -> isServiceTaskInProcess(e.getValue().getElementId(), FORK_PROCESS))
             .limit(2)
@@ -103,25 +89,29 @@ public class ParallelGatewayTest {
   @Test
   public void shouldCompleteScopeWhenAllPathsCompleted() {
     // given
-    testClient.deploy(FORK_PROCESS);
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
-    testClient.completeJobOfType("type1");
+    engine.deploy(FORK_PROCESS);
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.completeJobOfType("type1");
 
     // when
-    testClient.completeJobOfType("type2");
+    engine.completeJobOfType("type2");
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> completedEvents =
-        testClient.receiveElementInstancesInState(
-            WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.END_EVENT, 2);
+        RecordingExporter.workflowInstanceRecords()
+            .withElementType(BpmnElementType.END_EVENT)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .limit(2)
+            .collect(Collectors.toList());
 
     assertThat(completedEvents)
         .extracting(e -> e.getValue().getElementId())
         .containsExactly("end1", "end2");
 
-    assertThat(
-            testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED))
-        .isNotNull();
+    RecordingExporter.workflowInstanceRecords()
+        .withElementId(PROCESS_ID)
+        .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        .getFirst();
   }
 
   @Test
@@ -137,15 +127,14 @@ public class ParallelGatewayTest {
             .connectTo("join")
             .done();
 
-    testClient.deploy(process);
+    engine.deploy(process);
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        testClient
-            .receiveWorkflowInstances()
+        RecordingExporter.workflowInstanceRecords()
             .limitToWorkflowInstanceCompleted()
             .collect(Collectors.toList());
 
@@ -169,15 +158,14 @@ public class ParallelGatewayTest {
             .endEvent("end")
             .done();
 
-    testClient.deploy(process);
+    engine.deploy(process);
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        testClient
-            .receiveWorkflowInstances()
+        RecordingExporter.workflowInstanceRecords()
             .limitToWorkflowInstanceCompleted()
             .collect(Collectors.toList());
 
@@ -193,7 +181,8 @@ public class ParallelGatewayTest {
             tuple("end", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
             tuple("end", WorkflowInstanceIntent.ELEMENT_COMPLETING),
             tuple("end", WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETING));
+            tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -206,15 +195,14 @@ public class ParallelGatewayTest {
             .parallelGateway("fork")
             .done();
 
-    testClient.deploy(process);
+    engine.deploy(process);
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        testClient
-            .receiveWorkflowInstances()
+        RecordingExporter.workflowInstanceRecords()
             .limitToWorkflowInstanceCompleted()
             .collect(Collectors.toList());
 
@@ -228,15 +216,14 @@ public class ParallelGatewayTest {
   @Test
   public void shouldMergeParallelBranches() {
     // given
-    testClient.deploy(FORK_JOIN_PROCESS);
+    engine.deploy(FORK_JOIN_PROCESS);
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> events =
-        testClient
-            .receiveWorkflowInstances()
+        RecordingExporter.workflowInstanceRecords()
             .limitToWorkflowInstanceCompleted()
             .collect(Collectors.toList());
 
@@ -270,14 +257,13 @@ public class ParallelGatewayTest {
             .endEvent()
             .done();
 
-    testClient.deploy(process);
+    engine.deploy(process);
 
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // waiting until we have signalled the first incoming sequence flow twice
     // => this should not trigger the gateway yet
-    testClient
-        .receiveWorkflowInstances()
+    RecordingExporter.workflowInstanceRecords()
         .limit(r -> "joinFlow1".equals(r.getValue().getElementId()))
         .limit(2)
         .skip(1)
@@ -285,12 +271,11 @@ public class ParallelGatewayTest {
 
     // when
     // we complete the job
-    testClient.completeJobOfType("type");
+    engine.completeJobOfType("type");
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> events =
-        testClient
-            .receiveWorkflowInstances()
+        RecordingExporter.workflowInstanceRecords()
             .limit(
                 r ->
                     "join".equals(r.getValue().getElementId())
@@ -321,20 +306,19 @@ public class ParallelGatewayTest {
             .serviceTask("task2", b -> b.zeebeTaskType("type2"))
             .done();
 
-    testClient.deploy(process);
+    engine.deploy(process);
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> elementInstances =
-        testClient
-            .receiveWorkflowInstances()
-            .limitToWorkflowInstanceCompleted()
+        RecordingExporter.workflowInstanceRecords()
             .filter(
                 r ->
                     r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
                         && r.getValue().getBpmnElementType() == BpmnElementType.SERVICE_TASK)
+            .limit(2)
             .collect(Collectors.toList());
 
     assertThat(elementInstances)
@@ -353,15 +337,14 @@ public class ParallelGatewayTest {
             .serviceTask("task2", b -> b.zeebeTaskType("type2"))
             .done();
 
-    testClient.deploy(process);
+    engine.deploy(process);
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> taskEvents =
-        testClient
-            .receiveWorkflowInstances()
+        RecordingExporter.workflowInstanceRecords()
             .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
             .filter(e -> isServiceTaskInProcess(e.getValue().getElementId(), process))
             .limit(2)

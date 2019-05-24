@@ -25,6 +25,7 @@ import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.util.buffer.BufferReader;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
@@ -77,10 +78,12 @@ public class RecordMetadata
 
     final int rejectionReasonLength = decoder.rejectionReasonLength();
 
-    offset += headerDecoder.blockLength();
-    offset += RecordMetadataDecoder.rejectionReasonHeaderLength();
+    if (rejectionReasonLength > 0) {
+      offset += headerDecoder.blockLength();
+      offset += RecordMetadataDecoder.rejectionReasonHeaderLength();
 
-    rejectionReason.wrap(buffer, offset, rejectionReasonLength);
+      rejectionReason.wrap(buffer, offset, rejectionReasonLength);
+    }
   }
 
   @Override
@@ -235,10 +238,6 @@ public class RecordMetadata
         && requestStreamId != RecordMetadataEncoder.requestStreamIdNullValue();
   }
 
-  public void copyRequestMetadata(RecordMetadata target) {
-    target.requestId(requestId).requestStreamId(requestStreamId);
-  }
-
   @Override
   public String toString() {
     return "RecordMetadata{"
@@ -252,8 +251,14 @@ public class RecordMetadata
         + requestStreamId
         + ", requestId="
         + requestId
+        + ", protocolVersion="
+        + protocolVersion
         + ", valueType="
         + valueType
+        + ", rejectionType="
+        + rejectionType
+        + ", rejectionReason="
+        + BufferUtil.bufferAsString(rejectionReason)
         + '}';
   }
 }

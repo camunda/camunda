@@ -28,7 +28,6 @@ public class CopiedTypedEvent extends TypedEventImpl {
   private final long key;
   private final long position;
   private final long sourcePosition;
-  private final RecordMetadata metadata;
 
   public CopiedTypedEvent(LoggedEvent event, UnifiedRecordValue object) {
     this.value = object;
@@ -37,7 +36,7 @@ public class CopiedTypedEvent extends TypedEventImpl {
     this.sourcePosition = event.getSourceEventPosition();
     this.metadata = new RecordMetadata();
     event.readMetadata(metadata);
-    value.wrap(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
+    event.readValue(object);
   }
 
   public CopiedTypedEvent(

@@ -17,17 +17,29 @@
  */
 package io.zeebe.broker.util;
 
+import static io.zeebe.engine.processor.StreamProcessorServiceNames.streamProcessorService;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
+import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
+import io.zeebe.engine.processor.CommandResponseWriter;
+import io.zeebe.engine.processor.ReadonlyProcessingContext;
+import io.zeebe.engine.processor.StreamProcessor;
+import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
+import io.zeebe.engine.processor.TypedEventRegistry;
+import io.zeebe.engine.processor.TypedRecordProcessorFactory;
+import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.state.StateStorageFactory;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -36,30 +48,19 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
-import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -72,25 +73,11 @@ import org.mockito.internal.util.reflection.FieldSetter;
 import org.mockito.stubbing.Answer;
 
 public class TestStreams {
+
   protected static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
 
   static {
-    VALUE_TYPES.put(DeploymentRecord.class, ValueType.DEPLOYMENT);
-    VALUE_TYPES.put(IncidentRecord.class, ValueType.INCIDENT);
-    VALUE_TYPES.put(JobRecord.class, ValueType.JOB);
-    VALUE_TYPES.put(WorkflowInstanceRecord.class, ValueType.WORKFLOW_INSTANCE);
-    VALUE_TYPES.put(MessageRecord.class, ValueType.MESSAGE);
-    VALUE_TYPES.put(MessageSubscriptionRecord.class, ValueType.MESSAGE_SUBSCRIPTION);
-    VALUE_TYPES.put(
-        MessageStartEventSubscriptionRecord.class, ValueType.MESSAGE_START_EVENT_SUBSCRIPTION);
-    VALUE_TYPES.put(
-        WorkflowInstanceSubscriptionRecord.class, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
-    VALUE_TYPES.put(JobBatchRecord.class, ValueType.JOB_BATCH);
-    VALUE_TYPES.put(TimerRecord.class, ValueType.TIMER);
-    VALUE_TYPES.put(VariableRecord.class, ValueType.VARIABLE);
-    VALUE_TYPES.put(VariableDocumentRecord.class, ValueType.VARIABLE_DOCUMENT);
-    VALUE_TYPES.put(WorkflowInstanceCreationRecord.class, ValueType.WORKFLOW_INSTANCE_CREATION);
-    VALUE_TYPES.put(ErrorRecord.class, ValueType.ERROR);
+    TypedEventRegistry.EVENT_REGISTRY.forEach((v, c) -> VALUE_TYPES.put(c, v));
 
     VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
   }
@@ -99,11 +86,14 @@ public class TestStreams {
   protected final AutoCloseableRule closeables;
   private final ServiceContainer serviceContainer;
 
-  protected Map<String, LogStream> managedLogs = new HashMap<>();
+  private final Map<String, LogStream> managedLogs = new HashMap<>();
+  private final Map<String, StateSnapshotController> snapshotControllerMap = new HashMap<>();
 
   protected ActorScheduler actorScheduler;
 
   protected StateStorageFactory stateStorageFactory;
+  public static final String PROCESSOR_NAME = "processor";
+  private final CommandResponseWriter mockCommandResponseWriter;
 
   public TestStreams(
       final TemporaryFolder storageDirectory,
@@ -114,6 +104,26 @@ public class TestStreams {
     this.closeables = closeables;
     this.serviceContainer = serviceContainer;
     this.actorScheduler = actorScheduler;
+
+    mockCommandResponseWriter = mock(CommandResponseWriter.class);
+    when(mockCommandResponseWriter.intent(any())).thenReturn(mockCommandResponseWriter);
+    when(mockCommandResponseWriter.key(anyLong())).thenReturn(mockCommandResponseWriter);
+    when(mockCommandResponseWriter.partitionId(anyInt())).thenReturn(mockCommandResponseWriter);
+    when(mockCommandResponseWriter.recordType(any())).thenReturn(mockCommandResponseWriter);
+    when(mockCommandResponseWriter.rejectionType(any())).thenReturn(mockCommandResponseWriter);
+    when(mockCommandResponseWriter.rejectionReason(any())).thenReturn(mockCommandResponseWriter);
+    when(mockCommandResponseWriter.valueType(any())).thenReturn(mockCommandResponseWriter);
+    when(mockCommandResponseWriter.valueWriter(any())).thenReturn(mockCommandResponseWriter);
+
+    when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
+  }
+
+  public CommandResponseWriter getMockedResponseWriter() {
+    return mockCommandResponseWriter;
+  }
+
+  public LogStream createLogStream(final String name) {
+    return createLogStream(name, 0);
   }
 
   public LogStream createLogStream(final String name, final int partitionId) {
@@ -130,14 +140,15 @@ public class TestStreams {
     final StateStorage stateStorage = new StateStorage(index, snapshots);
 
     final LogStream logStream =
-        LogStreams.createFsLogStream(partitionId)
-            .logRootPath(segments.getAbsolutePath())
-            .serviceContainer(serviceContainer)
-            .logName(name)
-            .deleteOnClose(true)
-            .indexStateStorage(stateStorage)
-            .build()
-            .join();
+        spy(
+            LogStreams.createFsLogStream(partitionId)
+                .logRootPath(segments.getAbsolutePath())
+                .serviceContainer(serviceContainer)
+                .logName(name)
+                .deleteOnClose(true)
+                .indexStateStorage(stateStorage)
+                .build()
+                .join());
 
     // Create distributed log service
     final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);
@@ -233,12 +244,71 @@ public class TestStreams {
     return stateStorageFactory;
   }
 
+  public StreamProcessor startStreamProcessor(
+      final String log,
+      final int streamProcessorId,
+      final ZeebeDbFactory zeebeDbFactory,
+      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
+    final LogStream stream = getLogStream(log);
+    return buildStreamProcessorController(
+        streamProcessorId, stream, zeebeDbFactory, typedRecordProcessorFactory);
+  }
+
+  private StreamProcessor buildStreamProcessorController(
+      int streamProcessorId,
+      LogStream stream,
+      ZeebeDbFactory zeebeDbFactory,
+      TypedRecordProcessorFactory factory) {
+
+    final StateStorage stateStorage =
+        getStateStorageFactory().create(streamProcessorId, PROCESSOR_NAME);
+    final StateSnapshotController currentSnapshotController =
+        spy(new StateSnapshotController(zeebeDbFactory, stateStorage));
+    snapshotControllerMap.put(stream.getLogName(), currentSnapshotController);
+
+    final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
+
+    final StreamProcessor processorService =
+        StreamProcessor.builder(streamProcessorId, PROCESSOR_NAME)
+            .logStream(stream)
+            .snapshotController(currentSnapshotController)
+            .actorScheduler(actorScheduler)
+            .serviceContainer(serviceContainer)
+            .commandResponseWriter(mockCommandResponseWriter)
+            .streamProcessorFactory(
+                (context) -> {
+                  final TypedRecordProcessors processors = factory.createProcessors(context);
+                  processors.withListener(
+                      new StreamProcessorLifecycleAware() {
+                        @Override
+                        public void onOpen(ReadonlyProcessingContext context) {
+                          openFuture.complete(null);
+                        }
+                      });
+                  return processors;
+                })
+            .build()
+            .join();
+    openFuture.join();
+    return processorService;
+  }
+
+  public StateSnapshotController getStateSnapshotController(String stream) {
+    return snapshotControllerMap.get(stream);
+  }
+
+  public void closeProcessor(String streamName) {
+    serviceContainer.removeService(streamProcessorService(streamName, PROCESSOR_NAME)).join();
+  }
+
   public static class FluentLogWriter {
 
     protected RecordMetadata metadata = new RecordMetadata();
     protected UnpackedObject value;
     protected LogStream logStream;
     protected long key = -1;
+    private long sourceRecordPosition = -1;
+    private int producerId = -1;
 
     public FluentLogWriter(final LogStream logStream) {
       this.logStream = logStream;
@@ -251,17 +321,37 @@ public class TestStreams {
       return this;
     }
 
+    public FluentLogWriter requestId(final long requestId) {
+      this.metadata.requestId(requestId);
+      return this;
+    }
+
+    public FluentLogWriter producerId(final int producerId) {
+      this.producerId = producerId;
+      return this;
+    }
+
+    public FluentLogWriter sourceRecordPosition(final long sourceRecordPosition) {
+      this.sourceRecordPosition = sourceRecordPosition;
+      return this;
+    }
+
+    public FluentLogWriter requestStreamId(final int requestStreamId) {
+      this.metadata.requestStreamId(requestStreamId);
+      return this;
+    }
+
     public FluentLogWriter recordType(final RecordType recordType) {
       this.metadata.recordType(recordType);
       return this;
     }
 
-    public TestStreams.FluentLogWriter key(final long key) {
+    public FluentLogWriter key(final long key) {
       this.key = key;
       return this;
     }
 
-    public TestStreams.FluentLogWriter event(final UnpackedObject event) {
+    public FluentLogWriter event(final UnpackedObject event) {
       final ValueType eventType = VALUE_TYPES.get(event.getClass());
       if (eventType == null) {
         throw new RuntimeException("No event type registered for getValue " + event.getClass());
@@ -275,8 +365,8 @@ public class TestStreams {
     public long write() {
       final LogStreamRecordWriter writer = new LogStreamWriterImpl(logStream);
 
-      writer.sourceRecordPosition(-1);
-      writer.producerId(-1);
+      writer.sourceRecordPosition(sourceRecordPosition);
+      writer.producerId(producerId);
 
       if (key >= 0) {
         writer.key(key);

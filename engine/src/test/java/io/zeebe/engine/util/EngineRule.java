@@ -1,18 +1,19 @@
 /*
- * Copyright © 2019  camunda services GmbH (info@camunda.com)
+ * Zeebe Workflow Engine
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.zeebe.engine.util;
 
@@ -27,7 +28,6 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.workflow.EngineProcessors;
 import io.zeebe.engine.processor.workflow.deployment.distribute.DeploymentDistributor;
 import io.zeebe.engine.processor.workflow.deployment.distribute.PendingDeploymentDistribution;
@@ -67,7 +67,7 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class RecordEngineRule extends ExternalResource implements StreamProcessorLifecycleAware {
+public class EngineRule extends ExternalResource implements StreamProcessorLifecycleAware {
 
   private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
 
@@ -169,7 +169,7 @@ public class RecordEngineRule extends ExternalResource implements StreamProcesso
   }
 
   /////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////// PREDICATES /////////////////////////////////////////////
+  //////////////////////////////////// PROCESSOR LIFECYCLE ////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
@@ -190,33 +190,40 @@ public class RecordEngineRule extends ExternalResource implements StreamProcesso
   private void onNewEventCommitted() {
     while (logStreamReader.hasNext()) {
       final LoggedEvent rawEvent = logStreamReader.next();
-      final RecordMetadata rawMetadata = new RecordMetadata();
-      rawEvent.readMetadata(rawMetadata);
 
-      //      final byte[] bytes = new byte[rawEvent.getLength()];
-      //      final UnsafeBuffer copiedBuffer = new UnsafeBuffer(bytes);
-      //      rawEvent.write(copiedBuffer, 0);
-      //
-      //      final RecordMetadata recordMetadata = new RecordMetadata();
-      //      recordMetadata.wrap(copiedBuffer, rawEvent.getMetadataOffset(),
-      // rawEvent.getMetadataLength());
-      //
-      //      final UnifiedRecordValue recordValue =
-      //          ReflectUtil.newInstance(EVENT_REGISTRY.get(rawMetadata.getValueType()));
-      //      recordValue.wrap(copiedBuffer, rawEvent.getValueOffset(), rawEvent.getValueLength());
-      //
-      //      final CopiedTypedEvent copiedTypedEvent =
-      //          new CopiedTypedEvent(
-      //              recordValue,
-      //              recordMetadata,
-      //              rawEvent.getKey(),
-      //              rawEvent.getPosition(),
-      //              rawEvent.getSourceEventPosition());
-
-      final TypedRecord<? extends UnifiedRecordValue> typedRecord =
-          CopiedTypedEvent.toTypedEvent(rawEvent, EVENT_REGISTRY.get(rawMetadata.getValueType()));
-
+      final CopiedTypedEvent typedRecord = createCopiedEvent(rawEvent);
       RECORDING_EXPORTER.export(typedRecord);
     }
+  }
+
+  private CopiedTypedEvent createCopiedEvent(LoggedEvent rawEvent) {
+    // we have to access the underlying buffer and copy the metadata and value bytes
+    // otherwise next event will overwrite the event before, since UnpackedObject
+    // and RecordMetadata has properties (buffers, StringProperty etc.) which only wraps the given
+    // buffer instead of copying it
+
+    final DirectBuffer contentBuffer = rawEvent.getValueBuffer();
+
+    final byte[] metadataBytes = new byte[rawEvent.getMetadataLength()];
+    contentBuffer.getBytes(rawEvent.getMetadataOffset(), metadataBytes);
+    final DirectBuffer metadataBuffer = new UnsafeBuffer(metadataBytes);
+
+    final RecordMetadata metadata = new RecordMetadata();
+    metadata.wrap(metadataBuffer, 0, metadataBuffer.capacity());
+
+    final byte[] valueBytes = new byte[rawEvent.getValueLength()];
+    contentBuffer.getBytes(rawEvent.getValueOffset(), valueBytes);
+    final DirectBuffer valueBuffer = new UnsafeBuffer(valueBytes);
+
+    final UnifiedRecordValue recordValue =
+        ReflectUtil.newInstance(EVENT_REGISTRY.get(metadata.getValueType()));
+    recordValue.wrap(valueBuffer);
+
+    return new CopiedTypedEvent(
+        recordValue,
+        metadata,
+        rawEvent.getKey(),
+        rawEvent.getPosition(),
+        rawEvent.getSourceEventPosition());
   }
 }

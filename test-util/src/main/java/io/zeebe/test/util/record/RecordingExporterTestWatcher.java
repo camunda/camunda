@@ -32,6 +32,6 @@ public class RecordingExporterTestWatcher extends TestWatcher {
   @Override
   protected void failed(Throwable e, Description description) {
     LOG.info("Test failed, following records where exported:");
-    RecordingExporter.getRecords().forEach(r -> LOG.info(r.toJson()));
+    RecordingExporter.getRecords().forEach(r -> LOG.info(r.toString()));
   }
 }
