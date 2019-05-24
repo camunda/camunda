@@ -29,7 +29,7 @@ it('should not crash when no resultType is set (e.g. for combined reports)', () 
   shallow(<AggregationType report={{result: {}}} />);
 });
 
-it('should reevaluate the report when changing aggregartion type', () => {
+it('should reevaluate the report when changing the aggregation type', () => {
   const spy = jest.fn();
 
   const node = shallow(

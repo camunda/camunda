@@ -11,6 +11,7 @@ import * as visualizations from './visualizations';
 import ShowInstanceCount from './ShowInstanceCount';
 import AggregationType from './AggregationType';
 import VisibleNodesFilter from './VisibleNodesFilter';
+import NodeStatus from './NodeStatus';
 
 import './Configuration.scss';
 
@@ -29,6 +30,7 @@ export default class Configuration extends React.Component {
     this.updateConfiguration(
       convertToChangeset({
         aggregationType: 'avg',
+        flowNodeExecutionState: 'all',
         precision: null,
         targetValue: {
           active: false,
@@ -100,6 +102,7 @@ export default class Configuration extends React.Component {
             )}
             <AggregationType report={report} onChange={this.updateConfiguration} />
             {Component && <Component report={report} onChange={this.updateConfiguration} />}
+            <NodeStatus report={report} onChange={this.updateConfiguration} />
             <VisibleNodesFilter report={report} onChange={this.updateConfiguration} />
             <Button className="resetButton" onClick={this.resetToDefaults}>
               Reset to Defaults

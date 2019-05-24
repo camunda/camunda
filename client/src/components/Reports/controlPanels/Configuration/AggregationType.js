@@ -8,8 +8,6 @@ import React from 'react';
 
 import {Select} from 'components';
 
-import './AggregationType.scss';
-
 export default function AggregationType({
   report: {
     result: {type},
