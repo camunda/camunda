@@ -45,11 +45,14 @@ public class StatusWebSocketIT {
     final StatusClientSocket socket = new StatusClientSocket();
     connectStatusClientSocket(socket);
 
+    final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+    assertThat(initialStatusCorrectlyReceived, is(true));
+
     // when
     deployProcessAndTriggerImport();
 
     // then
-    boolean statusCorrectlyReceived = socket.getLatch().await(300, TimeUnit.MILLISECONDS);
+    boolean statusCorrectlyReceived = socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
     assertThat(statusCorrectlyReceived, is(true));
   }
 
@@ -59,11 +62,14 @@ public class StatusWebSocketIT {
     final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
     connectStatusClientSocket(socket);
 
+    final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+    assertThat(initialStatusCorrectlyReceived, is(true));
+
     // when
     deployProcessAndTriggerImport();
 
     //then
-    assertThat(socket.getReceivedTwoUpdatesLatch().await(300, TimeUnit.MILLISECONDS), is(true));
+    assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS), is(true));
     assertThat(socket.isImportStatusChanged(), is(true));
   }
 
@@ -78,11 +84,14 @@ public class StatusWebSocketIT {
       final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
       connectStatusClientSocket(socket);
 
+      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      assertThat(initialStatusCorrectlyReceived, is(true));
+
       //when
       deployProcessAndTriggerImport();
 
       //then
-      assertThat(socket.getReceivedTwoUpdatesLatch().await(300, TimeUnit.MILLISECONDS), is(false));
+      assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS), is(false));
       assertThat(socket.getReceivedTwoUpdatesLatch().getCount(), is(1L));
       assertThat(socket.getImportStatus().isPresent(), is(true));
       assertThat(socket.getImportStatus().get(), is(false));

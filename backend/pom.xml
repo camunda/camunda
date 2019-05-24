@@ -526,7 +526,6 @@
               <useSystemClassLoader>false</useSystemClassLoader>
               <argLine>${test.argLine}</argLine>
               <excludedGroups>${it.test.excludedGroups}</excludedGroups>
-              <redirectTestOutputToFile>true</redirectTestOutputToFile>
               <properties>
                 <property>
                   <name>listener</name>

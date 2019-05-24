@@ -6,9 +6,9 @@
 package org.camunda.optimize.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
@@ -22,30 +22,35 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Client class to test Web Socket implementation of status
- * report is working. This class will assert 2 properties:
- *
- * 1. import status is false
- * 2. more then one message is received
+ * report is working. This class provides two latches:
+ * <p>
+ * 1. initialStatusReceivedLatch is count down when an initial message is received
+ * 2. importingStatusReceivedLatch is count down when a message with isImporting = true is received
  */
 @ClientEndpoint
+@Slf4j
 public class StatusClientSocket {
-  private static final Logger logger = LoggerFactory.getLogger(StatusClientSocket.class);
-
-  private CountDownLatch latch = new CountDownLatch(1);
   private ObjectMapper objectMapper = new ObjectMapper();
+
+  @Getter
+  private CountDownLatch initialStatusReceivedLatch = new CountDownLatch(1);
+
+  @Getter
+  private CountDownLatch importingStatusReceivedLatch = new CountDownLatch(1);
+
 
   @OnMessage
   public void onText(String message, Session session) throws Exception {
-    logger.info("Message received from server:" + message);
+    log.info("Message received from server:" + message);
 
     StatusWithProgressDto dto = objectMapper.readValue(message, StatusWithProgressDto.class);
 
     assertThat(dto.getIsImporting(), is(notNullValue()));
-    assertThat(dto.getIsImporting().get(ENGINE_ALIAS), is(true));
-    latch.countDown();
+    initialStatusReceivedLatch.countDown();
+
+    if (dto.getIsImporting().get(ENGINE_ALIAS)) {
+      importingStatusReceivedLatch.countDown();
+    }
   }
 
-  public CountDownLatch getLatch() {
-    return latch;
-  }
 }
