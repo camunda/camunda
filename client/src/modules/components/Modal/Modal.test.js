@@ -55,18 +55,32 @@ it('should call the onConfirm function when enter is pressed', () => {
     </Modal>
   );
 
-  const event = new KeyboardEvent('keydown', {key: 'Enter'});
-  window.dispatchEvent(event);
+  const event = new KeyboardEvent('keydown', {key: 'Enter', bubbles: true});
+  document.body.dispatchEvent(event);
 
   expect(spy).toHaveBeenCalledWith(event);
 });
 
-it('should call the onConfirm function when enter is pressed', () => {
+it('should not call the onConfirm function when enter is pressed but the modal is not open', () => {
   const spy = jest.fn();
   mount(<Modal open={false} onConfirm={spy} />);
 
-  const event = new KeyboardEvent('keydown', {key: 'Enter'});
-  window.dispatchEvent(event);
+  const event = new KeyboardEvent('keydown', {key: 'Enter', bubbles: true});
+  document.body.dispatchEvent(event);
+
+  expect(spy).not.toHaveBeenCalled();
+});
+
+it('should not call the onConfirm function when enter is pressed but the focus was on a button', () => {
+  const spy = jest.fn();
+  mount(
+    <Modal open onConfirm={spy}>
+      <button>Action Button</button>
+    </Modal>
+  );
+
+  const event = new KeyboardEvent('keydown', {key: 'Enter', bubbles: true});
+  document.querySelector('button').dispatchEvent(event);
 
   expect(spy).not.toHaveBeenCalled();
 });
