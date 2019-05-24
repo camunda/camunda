@@ -21,6 +21,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
 import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest {
 
@@ -68,7 +69,9 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   protected void before() {
     clientRule = zeebeRule.getClientRule();
+    assertThat(clientRule).as("clientRule is not null").isNotNull();
     brokerRule = zeebeRule.getBrokerRule();
+    assertThat(brokerRule).as("brokerRule is not null").isNotNull();
 
     workerName = TestUtil.createRandomString(10);
 
