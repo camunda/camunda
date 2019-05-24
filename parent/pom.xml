@@ -272,6 +272,12 @@
 
       <dependency>
         <groupId>io.grpc</groupId>
+        <artifactId>grpc-api</artifactId>
+        <version>${version.grpc}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.grpc</groupId>
         <artifactId>grpc-protobuf</artifactId>
         <version>${version.grpc}</version>
       </dependency>
