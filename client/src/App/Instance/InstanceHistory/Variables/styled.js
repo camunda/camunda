@@ -189,6 +189,7 @@ export const TextInput = styled(BasicInput)`
 export const DisplayText = styled.div`
   padding: 4px 0px;
   max-height: 80px;
+  width: 535px;
   overflow-y: auto;
 `;
 

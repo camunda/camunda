@@ -14,6 +14,7 @@ export const GlobalStyles = themed(createGlobalStyle`
   // these elements have custom styling for :focus only on keyboard focus,
   //  not on mouse click (clicking them does not show the focus style)
   button:focus,
+  code:focus,
   a:focus {
     ${({tabKeyPressed}) =>
       tabKeyPressed ? interactions.focus.css : resetFocusCss};

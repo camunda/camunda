@@ -218,7 +218,7 @@ export default class IncidentsTable extends React.Component {
             </TransitionGroup>
           </TBody>
         </Table>
-        {this.state.isModalVisibile && this.renderModal()}
+        {this.renderModal()}
       </>
     );
   }

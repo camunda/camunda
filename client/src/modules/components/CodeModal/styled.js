@@ -17,6 +17,7 @@ export const ModalBody = themed(styled(Modal.Body)`
 
   & pre {
     margin: 0;
+    min-width: 100%;
   }
 `);
 

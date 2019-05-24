@@ -193,7 +193,7 @@ describe('Variables', () => {
       it('should not allow to save invalid values', () => {
         const variable = 'variableName';
         // key must be a string to be valid JSON;
-        const invalidJSONObject = {invalidKey: 'value'};
+        const invalidJSONObject = "{invalidKey: 'value'}";
 
         // when
         node
@@ -243,7 +243,27 @@ describe('Variables', () => {
       expect(openInlineEditButtons).toHaveLength(3);
     });
 
-    it('should show an inline edit functionality', () => {
+    it('should show open-modal button, when edit JSON data', () => {
+      // given
+      const openInlineEditButtons = node.find(
+        "button[data-test='enter-edit-btn']"
+      );
+
+      // when
+      // variable with JSON data:
+      openInlineEditButtons.at(1).simulate('click');
+
+      setProps(node, Variables, {
+        ...mockProps,
+        editMode: MODE.EDIT
+      });
+
+      // then
+      expect(node.find("textarea[data-test='edit-value']")).toExist();
+      expect(node.find("button[data-test='open-modal-btn']")).toExist();
+    });
+
+    it('should show inline edit functionality', () => {
       // given
       const openInlineEditButtons = node.find(
         "button[data-test='enter-edit-btn']"
@@ -258,7 +278,7 @@ describe('Variables', () => {
 
       // then
       expect(node.find("textarea[data-test='edit-value']")).toExist();
-      expect(node.find("button[data-test='open-modal-btn']")).toExist();
+
       expect(node.find("button[data-test='exit-edit-inline-btn']")).toExist();
       expect(node.find("button[data-test='save-var-inline-btn']")).toExist();
     });
@@ -325,7 +345,7 @@ describe('Variables', () => {
       it('should not allow to save invalid values', () => {
         // given
         // key must be a string to be valid JSON;
-        const invalidJSONObject = {invalidKey: 'value'};
+        const invalidJSONObject = "{invalidKey: 'value'}";
 
         setProps(node, Variables, {
           ...mockProps,

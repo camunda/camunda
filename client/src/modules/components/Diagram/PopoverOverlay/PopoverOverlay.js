@@ -6,62 +6,48 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import CodeModal from 'modules/components/CodeModal';
 
 import {compactObject, pickFromObject} from 'modules/utils';
-import Modal from 'modules/components/Modal';
 
 import Overlay from '../Overlay';
 import * as Styled from './styled';
 
 export default class PopoverOverlay extends React.Component {
   state = {
-    isModalVisibile: false
+    isModalVisible: false
   };
 
   handleModalClose = () => {
-    this.setState({isModalVisibile: false});
+    this.setState({isModalVisible: false});
   };
 
   handleModalOpen = () => {
-    this.setState({isModalVisibile: true});
+    this.setState({isModalVisible: true});
   };
 
-  renderBeautifiedMetadata = () => {
+  beautifiedMetadata = () => {
     return JSON.stringify(this.props.metadata.data, null, '\t')
       .replace(/\\n/g, '\n\t\t')
-      .replace(/\\t/g, '\t')
-      .split('\n')
-      .map((line, idx) => <Styled.CodeLine key={idx}>{line}</Styled.CodeLine>);
+      .replace(/\\t/g, '\t');
   };
 
   renderModal = () => {
     const {metadata, selectedFlowNodeName} = this.props;
-    const {isModalVisibile} = this.state;
+    const {isModalVisible} = this.state;
 
     const headerTitleSuffix = !metadata.isSingleRowPeterCase
       ? ''
       : `Instance ${metadata.data.activityInstanceId}`;
 
     return (
-      <Modal onModalClose={this.handleModalClose} isVisible={isModalVisibile}>
-        <Modal.Header>{`Flow Node "${selectedFlowNodeName}" ${headerTitleSuffix} Metadata`}</Modal.Header>
-        <Styled.ModalBody>
-          <pre>
-            <Styled.LinesSeparator />
-            <code>
-              {this.props.metadata.data && this.renderBeautifiedMetadata()}
-            </code>
-          </pre>
-        </Styled.ModalBody>
-        <Modal.Footer>
-          <Modal.PrimaryButton
-            title="Close Modal"
-            onClick={this.handleModalClose}
-          >
-            Close
-          </Modal.PrimaryButton>
-        </Modal.Footer>
-      </Modal>
+      <CodeModal
+        handleModalClose={this.handleModalClose}
+        isModalVisible={isModalVisible}
+        headline={`Flow Node "${selectedFlowNodeName}" ${headerTitleSuffix} Metadata`}
+        initialValue={this.props.metadata.data ? this.beautifiedMetadata() : ''}
+        mode="view"
+      />
     );
   };
 

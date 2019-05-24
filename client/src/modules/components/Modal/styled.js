@@ -168,6 +168,7 @@ export const ModalBodyText = themed(styled.div`
 
 export const ModalFooter = themed(styled(Panel.Footer)`
   height: 63px;
+  min-height: 63px;
   display: flex;
   justify-content: flex-end;
   align-items: center;

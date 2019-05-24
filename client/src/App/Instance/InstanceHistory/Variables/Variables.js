@@ -50,9 +50,9 @@ export default function Variables({
     setIsModalVisible(false);
   }
 
-  function handleModalSave() {
-    setValue(value);
-    onVariableUpdate(key, value);
+  function handleModalSave(modifiedValue) {
+    setValue(modifiedValue);
+    onVariableUpdate(key, modifiedValue);
     handleModalClose();
   }
 
@@ -77,10 +77,14 @@ export default function Variables({
     [editMode]
   );
 
-  function renderEditButtons({isDisabled}) {
+  function stictJSONValidation(value) {
+    return isValidJSON(value) && typeof JSON.parse(value) === 'object';
+  }
+
+  function renderEditButtons({showModalBtn, isDisabled}) {
     return (
       <>
-        {
+        {showModalBtn && (
           <Styled.EditButton
             title="Open Modal"
             data-test="open-modal-btn"
@@ -88,7 +92,7 @@ export default function Variables({
           >
             <Styled.ModalIcon />
           </Styled.EditButton>
-        }
+        )}
         <Styled.EditButton
           title="Exit edit mode"
           data-test="exit-edit-inline-btn"
@@ -123,7 +127,10 @@ export default function Variables({
           />
         </Styled.EditInputTD>
         <Styled.EditButtonsTD>
-          {renderEditButtons({isDisabled: valueHasntChanged})}
+          {renderEditButtons({
+            showModalBtn: stictJSONValidation(propValue),
+            isDisabled: valueHasntChanged
+          })}
         </Styled.EditButtonsTD>
       </>
     );
@@ -154,7 +161,10 @@ export default function Variables({
           />
         </Styled.EditInputTD>
         <Styled.AddButtonsTD>
-          {renderEditButtons({isDisabled: variableAlreadyExists})}
+          {renderEditButtons({
+            showModalButton: true,
+            isDisabled: variableAlreadyExists
+          })}
         </Styled.AddButtonsTD>
       </Styled.TR>
     );
@@ -230,15 +240,16 @@ export default function Variables({
           <Styled.Plus /> Add Variable
         </Styled.Button>
       </Styled.VariablesFooter>
-      {isModalVisible && (
-        <CodeModal
-          handleModalClose={handleModalClose}
-          handleModalSave={handleModalSave}
-          isModalVisible={isModalVisible}
-          headline="SomeHeadline"
-          content={value}
-        />
-      )}
+      <CodeModal
+        handleModalClose={handleModalClose}
+        handleModalSave={handleModalSave}
+        isModalVisible={isModalVisible}
+        headline={
+          editMode === MODE.ADD ? 'Add Variable' : `Edit Variable "${key}"`
+        }
+        initialValue={value}
+        mode="edit"
+      />
     </Styled.Variables>
   );
 }

@@ -66,28 +66,30 @@ export default class Modal extends React.Component {
   };
 
   handleTabKeyDown = e => {
-    const focusableModalElements = this.modalRef.current.querySelectorAll(
-      'a[href], button, textarea, input[type="text"], input[type="radio"], input[type="checkbox"], select'
-    );
+    const focusableModalElements = [
+      ...this.modalRef.current.querySelectorAll(
+        'a[href], button, textarea, code, input[type="text"], input[type="radio"], input[type="checkbox"], select'
+      )
+    ].filter(element => !!element.disabled === false);
 
     const firstElement = focusableModalElements[0];
     const lastElement =
       focusableModalElements[focusableModalElements.length - 1];
-    const focusableElementIndex = [...focusableModalElements].indexOf(
+    const indexOfActiveElement = [...focusableModalElements].indexOf(
       document.activeElement
     );
 
     const isLastElement =
-      focusableElementIndex === focusableModalElements.length - 1;
-    const isFirstElement = focusableElementIndex === 0;
-    const isOutsideModal = focusableElementIndex < 0;
+      indexOfActiveElement === focusableModalElements.length - 1;
+    const isOutsideModal = indexOfActiveElement < 0;
+    const isFirstElement = indexOfActiveElement === 0;
 
     if (!e.shiftKey && (isLastElement || isOutsideModal)) {
       firstElement.focus();
       e.preventDefault();
     }
 
-    if (e.shiftKey && isFirstElement) {
+    if (e.shiftKey && (isFirstElement || isOutsideModal)) {
       lastElement.focus();
       e.preventDefault();
     }
@@ -168,12 +170,14 @@ Modal.Footer.propTypes = {
 class ModalPrimaryButton extends React.Component {
   static propTypes = {
     addKeyHandler: PropTypes.func.isRequired,
+    disableKeyBinding: PropTypes.bool,
     className: PropTypes.string,
     children: PropTypes.node
   };
 
   componentDidMount() {
-    this.props.addKeyHandler(13, this.handleReturnKeyPress);
+    !this.props.disableKeyBinding &&
+      this.props.addKeyHandler(13, this.handleReturnKeyPress);
   }
 
   primaryButtonRef = React.createRef();
