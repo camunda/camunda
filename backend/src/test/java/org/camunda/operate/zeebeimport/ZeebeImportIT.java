@@ -91,6 +91,10 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   @Qualifier("incidentIsResolvedCheck")
   private Predicate<Object[]> incidentIsResolvedCheck;
   
+  @Autowired
+  @Qualifier("activityIsCompletedCheck")
+  private Predicate<Object[]> activityIsCompletedCheck;
+  
   private ZeebeClient zeebeClient;
 
   private OffsetDateTime testStartTime;
@@ -295,9 +299,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     setJobWorker(ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), "{}"));
 
-    processAllRecordsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
+    processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey,activityId);
     processAllRecordsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
-    
     //then
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
     assertThat(allIncidents).hasSize(0);
