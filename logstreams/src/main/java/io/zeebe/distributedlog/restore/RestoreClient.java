@@ -15,6 +15,46 @@
  */
 package io.zeebe.distributedlog.restore;
 
-import io.zeebe.distributedlog.restore.log.LogReplicationClient;
+import io.atomix.cluster.MemberId;
+import io.zeebe.distributedlog.restore.log.LogReplicationRequest;
+import io.zeebe.distributedlog.restore.log.LogReplicationResponse;
+import java.util.concurrent.CompletableFuture;
 
-public interface RestoreClient extends LogReplicationClient, RestoreInfoClient {}
+public interface RestoreClient {
+
+  /**
+   * Requests current snapshot info from the server.
+   *
+   * @param server node to request from
+   * @return a future which when completed contains the number of snapshots to be expected
+   */
+  CompletableFuture<Integer> requestSnapshotInfo(MemberId server);
+
+  /**
+   * Requests the latest snapshot from the server.
+   *
+   * @param server target cluster member
+   */
+  void requestLatestSnapshot(MemberId server);
+
+  /**
+   * Sends a log replication request to the given cluster member.
+   *
+   * @param server target cluster member
+   * @param request request to send
+   * @return the server response as a future
+   */
+  CompletableFuture<LogReplicationResponse> requestLogReplication(
+      MemberId server, LogReplicationRequest request);
+
+  /**
+   * Requests what should be replicated from the given restore server.
+   *
+   * @param server the node to restore from
+   * @param request the restore requirements
+   * @return a future which completes with what information on what should be replicated from the
+   *     server
+   */
+  CompletableFuture<RestoreInfoResponse> requestRestoreInfo(
+      MemberId server, RestoreInfoRequest request);
+}

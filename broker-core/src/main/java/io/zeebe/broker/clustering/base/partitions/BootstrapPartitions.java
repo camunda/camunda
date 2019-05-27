@@ -22,8 +22,7 @@ import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.p
 
 import io.atomix.cluster.MemberId;
 import io.atomix.core.Atomix;
-import io.atomix.primitive.partition.Partition;
-import io.atomix.primitive.partition.PartitionId;
+import io.atomix.protocols.raft.partition.RaftPartition;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.distributedlog.StorageConfiguration;
@@ -32,7 +31,6 @@ import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -64,38 +62,31 @@ public class BootstrapPartitions implements Service<Void> {
         (RaftPartitionGroup) atomix.getPartitionService().getPartitionGroup("raft-atomix");
 
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
-    final List<Partition> owningPartitions =
+    final List<RaftPartition> owningPartitions =
         partitionGroup.getPartitions().stream()
             .filter(partition -> partition.members().contains(nodeId))
+            .map(RaftPartition.class::cast)
             .collect(Collectors.toList());
 
     this.startContext = startContext;
     startContext.run(
         () -> {
-          final List<StorageConfiguration> configurations =
-              configurationManager.getConfigurations().join();
-
-          for (final StorageConfiguration configuration : configurations) {
-            installPartition(startContext, configuration);
-            owningPartitions.removeIf(
-                partition -> partition.id().id() == configuration.getPartitionId());
-          }
-
-          for (int i = 0; i < owningPartitions.size(); i++) {
-            installPartition(owningPartitions.get(i).id(), Collections.emptyList());
+          for (RaftPartition owningPartition : owningPartitions) {
+            installPartition(owningPartition);
           }
         });
   }
 
-  private void installPartition(final PartitionId partitionId, final List<Integer> members) {
+  private void installPartition(RaftPartition partition) {
     final StorageConfiguration configuration =
-        configurationManager.createConfiguration(partitionId.id()).join();
-
-    installPartition(startContext, configuration);
+        configurationManager.createConfiguration(partition.id().id()).join();
+    installPartition(startContext, configuration, partition);
   }
 
   private void installPartition(
-      final ServiceStartContext startContext, final StorageConfiguration configuration) {
+      final ServiceStartContext startContext,
+      final StorageConfiguration configuration,
+      RaftPartition partition) {
     final String partitionName = getPartitionName(configuration.getPartitionId());
     final ServiceName<Void> partitionInstallServiceName =
         partitionInstallServiceName(partitionName);
@@ -103,9 +94,9 @@ public class BootstrapPartitions implements Service<Void> {
 
     final PartitionInstallService partitionInstallService =
         new PartitionInstallService(
+            partition,
             atomix.getEventService(),
             atomix.getCommunicationService(),
-            localMemberId,
             configuration,
             brokerCfg);
 

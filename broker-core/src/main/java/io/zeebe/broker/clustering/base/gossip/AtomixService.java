@@ -24,6 +24,7 @@ import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.core.Atomix;
 import io.atomix.core.AtomixBuilder;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup;
+import io.atomix.protocols.raft.partition.RaftPartitionGroup.Builder;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.logstreams.restore.BrokerRestoreFactory;
@@ -35,6 +36,7 @@ import io.zeebe.distributedlog.impl.LogstreamConfig;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
@@ -112,26 +114,41 @@ public class AtomixService implements Service<Atomix> {
       }
     }
 
-    final RaftPartitionGroup partitionGroup =
+    final Builder partitionGroupBuilder =
         RaftPartitionGroup.builder(raftPartitionGroupName)
             .withNumPartitions(configuration.getCluster().getPartitionsCount())
             .withPartitionSize(configuration.getCluster().getReplicationFactor())
             .withMembers(getRaftGroupMembers(clusterCfg))
             .withDataDirectory(raftDirectory)
-            .withFlushOnCommit()
-            .build();
+            .withFlushOnCommit();
+
+    if (dataConfiguration.getRaftSegmentSize() != null) {
+      partitionGroupBuilder.withSegmentSize(
+          new ByteValue(dataConfiguration.getRaftSegmentSize()).toBytes());
+    }
+
+    final RaftPartitionGroup partitionGroup = partitionGroupBuilder.build();
 
     atomixBuilder.withManagementGroup(systemGroup).withPartitionGroups(partitionGroup);
 
     atomix = atomixBuilder.build();
-    LogstreamConfig.putRestoreClientFactory(
-        localMemberId, new BrokerRestoreFactory(atomix.getCommunicationService()));
+
+    final BrokerRestoreFactory restoreFactory =
+        new BrokerRestoreFactory(
+            atomix.getCommunicationService(),
+            atomix.getEventService(),
+            atomix.getPartitionService(),
+            raftPartitionGroupName,
+            localMemberId);
+    LogstreamConfig.putRestoreFactory(localMemberId, restoreFactory);
   }
 
   @Override
   public void stop(ServiceStopContext stopContext) {
+    final String localMemberId = atomix.getMembershipService().getLocalMember().id().id();
     final CompletableFuture<Void> stopFuture = atomix.stop();
     stopContext.async(mapCompletableFuture(stopFuture));
+    LogstreamConfig.removeRestoreFactory(localMemberId);
   }
 
   @Override

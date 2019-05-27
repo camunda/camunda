@@ -15,25 +15,19 @@
  */
 package io.zeebe.distributedlog.restore;
 
-import io.atomix.cluster.MemberId;
-import java.util.concurrent.CompletableFuture;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreContext;
 
-public interface PartitionLeaderElectionController {
-
-  /**
-   * Withdraws from the leader election, stepping down if it is the leader.
-   *
-   * @return a future which completes when the node has withdrawn from the election primitive
-   */
-  CompletableFuture<Void> withdraw();
+public interface RestoreFactory {
 
   /**
-   * Rejoins the leader election primitive.
-   *
-   * @return a future which completes when the node has joined the election primitive
+   * @param partitionId the ID of the partition from which the nodes will be provided
+   * @return a node provider for the given partition
    */
-  CompletableFuture<Void> join();
+  RestoreNodeProvider createNodeProvider(int partitionId);
 
-  /** @return the current elected leader, or null if none yet elected */
-  MemberId getLeader();
+  /** @return a configured {@link RestoreClient} */
+  RestoreClient createClient(int partitionId);
+
+  /** @return a {@link SnapshotRestoreContext} */
+  SnapshotRestoreContext createSnapshotRestoreContext();
 }

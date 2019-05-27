@@ -15,28 +15,10 @@
  */
 package io.zeebe.distributedlog.restore;
 
-import io.atomix.cluster.MemberId;
+import java.util.concurrent.CompletableFuture;
 
-public class RestoreStrategy {
-  private final MemberId restoreServer;
-  private final ReplicationTarget replicationTarget;
-
-  public RestoreStrategy(MemberId restoreServer, ReplicationTarget replicationTarget) {
-    this.restoreServer = restoreServer;
-    this.replicationTarget = replicationTarget;
-  }
-
-  public MemberId getRestoreServer() {
-    return restoreServer;
-  }
-
-  public ReplicationTarget getReplicationTarget() {
-    return replicationTarget;
-  }
-
-  public enum ReplicationTarget {
-    SNAPSHOT,
-    EVENTS,
-    NONE,
-  }
+@FunctionalInterface
+public interface RestoreStrategy {
+  /** @return a future which completes with the latest local commit position */
+  CompletableFuture<Long> executeRestoreStrategy();
 }

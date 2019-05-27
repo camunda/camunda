@@ -37,6 +37,11 @@ public class StateStorageFactory {
   }
 
   public StateStorage create(final int processorId, final String processorName) {
+    return create(processorId, processorName, null);
+  }
+
+  public StateStorage create(
+      final int processorId, final String processorName, final String tmpSuffix) {
     final String name = String.format("%d_%s", processorId, processorName);
     final File processorDirectory = new File(rootDirectory, name);
 
@@ -51,6 +56,10 @@ public class StateStorageFactory {
       snapshotsDirectory.mkdir();
     }
 
-    return new StateStorage(runtimeDirectory, snapshotsDirectory);
+    if (tmpSuffix != null) {
+      return new StateStorage(runtimeDirectory, snapshotsDirectory, tmpSuffix);
+    } else {
+      return new StateStorage(runtimeDirectory, snapshotsDirectory);
+    }
   }
 }

@@ -28,7 +28,7 @@ public class StateStorage {
   private static final String DEFAULT_RUNTIME_DIRECTORY = "runtime";
   private static final String DEFAULT_SNAPSHOTS_DIRECTORY = "snapshots";
   static final String TMP_SNAPSHOT_DIRECTORY = "tmp/";
-  private static final String TMP_SUFFIX = "-tmp";
+  private String tmpSuffix = "-tmp";
 
   private final File runtimeDirectory;
   private final File snapshotsDirectory;
@@ -46,6 +46,12 @@ public class StateStorage {
     initTempSnapshotDirectory();
   }
 
+  public StateStorage(
+      final File runtimeDirectory, final File snapshotsDirectory, final String tmpSuffix) {
+    this(runtimeDirectory, snapshotsDirectory);
+    this.tmpSuffix = tmpSuffix;
+  }
+
   private void initTempSnapshotDirectory() {
     tmpSnapshotDirectory = new File(snapshotsDirectory, TMP_SNAPSHOT_DIRECTORY);
   }
@@ -59,7 +65,7 @@ public class StateStorage {
   }
 
   public File getTmpSnapshotDirectoryFor(String position) {
-    final String path = String.format("%s-%s", position, TMP_SNAPSHOT_DIRECTORY);
+    final String path = String.format("%s%s", position, tmpSuffix);
 
     return new File(snapshotsDirectory, path);
   }
@@ -117,8 +123,8 @@ public class StateStorage {
     return list;
   }
 
-  private static String getPositionFromFileName(File file) {
-    return file.getName().split(TMP_SUFFIX)[0];
+  private String getPositionFromFileName(File file) {
+    return file.getName().split(tmpSuffix)[0];
   }
 
   public List<File> findTmpDirectoriesBelowPosition(final long position) {
@@ -130,7 +136,7 @@ public class StateStorage {
 
     return Arrays.stream(snapshotFolders)
         .filter(File::isDirectory)
-        .filter(f -> f.getName().endsWith(TMP_SUFFIX))
+        .filter(f -> f.getName().endsWith(tmpSuffix))
         .filter(
             f -> {
               final String positionFromFileName = getPositionFromFileName(f);

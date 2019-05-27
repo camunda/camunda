@@ -15,10 +15,14 @@
  */
 package io.zeebe.distributedlog.restore;
 
-import io.zeebe.distributedlog.restore.RestoreStrategy.ReplicationTarget;
-
 public interface RestoreInfoResponse {
 
   /** @return the replication target in order to restore the local log */
   ReplicationTarget getReplicationTarget();
+
+  enum ReplicationTarget {
+    SNAPSHOT,
+    EVENTS,
+    NONE,
+  }
 }

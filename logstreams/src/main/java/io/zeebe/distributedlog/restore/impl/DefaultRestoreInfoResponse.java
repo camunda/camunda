@@ -16,7 +16,6 @@
 package io.zeebe.distributedlog.restore.impl;
 
 import io.zeebe.distributedlog.restore.RestoreInfoResponse;
-import io.zeebe.distributedlog.restore.RestoreStrategy.ReplicationTarget;
 
 public class DefaultRestoreInfoResponse implements RestoreInfoResponse {
   private ReplicationTarget replicationTarget;

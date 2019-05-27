@@ -17,14 +17,17 @@ package io.zeebe.distributedlog.restore.impl;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.utils.concurrent.Scheduler;
-import io.zeebe.distributedlog.restore.PartitionLeaderElectionController;
 import io.zeebe.distributedlog.restore.RestoreClient;
 import io.zeebe.distributedlog.restore.RestoreInfoRequest;
 import io.zeebe.distributedlog.restore.RestoreInfoResponse;
+import io.zeebe.distributedlog.restore.RestoreNodeProvider;
 import io.zeebe.distributedlog.restore.RestoreStrategy;
 import io.zeebe.distributedlog.restore.RestoreStrategyPicker;
+import io.zeebe.distributedlog.restore.log.LogReplicator;
+import io.zeebe.logstreams.state.SnapshotRequester;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
 
 /**
  * Implements a restore picking which uses the current stream processor leader as the restore
@@ -32,21 +35,27 @@ import java.util.concurrent.CompletableFuture;
  * election, and retry. If there is no leader, then it will simply retry forever with a slight
  * delay.
  */
-public class PartitionLeaderStrategyPicker implements RestoreStrategyPicker {
-  private final PartitionLeaderElectionController electionController;
+public class DefaultStrategyPicker implements RestoreStrategyPicker {
   private final RestoreClient client;
-  private final String localMemberId;
+  private final SnapshotRequester snapshotReplicator;
   private final Scheduler scheduler;
+  private final LogReplicator logReplicator;
+  private final RestoreNodeProvider nodeProvider;
+  private final Logger logger;
 
-  public PartitionLeaderStrategyPicker(
-      PartitionLeaderElectionController electionController,
+  public DefaultStrategyPicker(
       RestoreClient client,
-      String localMemberId,
-      Scheduler scheduler) {
-    this.electionController = electionController;
+      RestoreNodeProvider nodeProvider,
+      LogReplicator logReplicator,
+      SnapshotRequester snapshotReplicator,
+      Scheduler scheduler,
+      Logger logger) {
     this.client = client;
-    this.localMemberId = localMemberId;
+    this.nodeProvider = nodeProvider;
+    this.logReplicator = logReplicator;
+    this.snapshotReplicator = snapshotReplicator;
     this.scheduler = scheduler;
+    this.logger = logger;
   }
 
   @Override
@@ -63,13 +72,11 @@ public class PartitionLeaderStrategyPicker implements RestoreStrategyPicker {
   }
 
   private void tryFindRestoreServer(CompletableFuture<MemberId> result) {
-    final MemberId leader = electionController.getLeader();
-    if (leader == null) {
-      scheduler.schedule(Duration.ofMillis(100), () -> tryFindRestoreServer(result));
-    } else if (leader.id().equals(localMemberId)) {
-      electionController.withdraw().thenRun(() -> tryFindRestoreServer(result));
+    final MemberId server = nodeProvider.provideRestoreNode();
+    if (server != null) {
+      result.complete(server);
     } else {
-      result.complete(leader);
+      scheduler.schedule(Duration.ofMillis(100), () -> tryFindRestoreServer(result));
     }
   }
 
@@ -79,10 +86,39 @@ public class PartitionLeaderStrategyPicker implements RestoreStrategyPicker {
         new DefaultRestoreInfoRequest(latestLocalPosition, backupPosition);
     return client
         .requestRestoreInfo(server, request)
-        .thenApply(response -> this.onRestoreInfoReceived(server, response));
+        .thenCompose(
+            response ->
+                onRestoreInfoReceived(server, latestLocalPosition, backupPosition, response));
   }
 
-  private RestoreStrategy onRestoreInfoReceived(MemberId server, RestoreInfoResponse response) {
-    return new RestoreStrategy(server, response.getReplicationTarget());
+  private CompletableFuture<RestoreStrategy> onRestoreInfoReceived(
+      MemberId server,
+      long latestLocalPosition,
+      long backupPosition,
+      RestoreInfoResponse response) {
+    final CompletableFuture<RestoreStrategy> result = new CompletableFuture<>();
+
+    switch (response.getReplicationTarget()) {
+      case SNAPSHOT:
+        final SnapshotRestoreStrategy snapshotRestoreStrategy =
+            new SnapshotRestoreStrategy(
+                client,
+                logReplicator,
+                snapshotReplicator,
+                latestLocalPosition,
+                backupPosition,
+                server,
+                logger);
+        result.complete(snapshotRestoreStrategy);
+        break;
+      case EVENTS:
+        result.complete(() -> logReplicator.replicate(server, latestLocalPosition, backupPosition));
+        break;
+      case NONE:
+        result.completeExceptionally(new UnsupportedOperationException("Not yet implemented"));
+        break;
+    }
+
+    return result;
   }
 }

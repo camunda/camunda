@@ -20,7 +20,6 @@ package io.zeebe.broker.logstreams.restore;
 import io.zeebe.clustering.management.RestoreInfoResponseDecoder;
 import io.zeebe.clustering.management.RestoreInfoResponseEncoder;
 import io.zeebe.distributedlog.restore.RestoreInfoResponse;
-import io.zeebe.distributedlog.restore.RestoreStrategy.ReplicationTarget;
 import io.zeebe.distributedlog.restore.impl.DefaultRestoreInfoResponse;
 import io.zeebe.engine.util.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
