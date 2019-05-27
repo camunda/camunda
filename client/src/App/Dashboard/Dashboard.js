@@ -53,17 +53,17 @@ class Dashboard extends Component {
     };
   };
 
-  renderEmptyList = (state, type) => {
+  renderEmptyList = (incidentsState, type) => {
     const message =
       type === 'workflow'
         ? 'Instances by Workflow could not be fetched.'
         : 'Incidents by Error Message could not be fetched.';
 
-    if (state.error) {
+    if (incidentsState.error) {
       return <EmptyIncidents type="warning" label={message} />;
     }
 
-    if (state.data && state.data.length === 0) {
+    if (incidentsState.data && incidentsState.data.length === 0) {
       return <EmptyIncidents type="info" label="There are no Workflows." />;
     }
   };
