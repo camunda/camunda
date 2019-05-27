@@ -13,9 +13,14 @@ import {createVariables} from 'modules/testUtils';
 import {EMPTY_PLACEHOLDER, NULL_PLACEHOLDER} from './constants';
 import Variables from './Variables';
 
+const MODE = {
+  EDIT: 'edit',
+  ADD: 'add'
+};
+
 const mockProps = {
   variables: createVariables(),
-  isEditMode: false,
+  editMode: '',
   onVariableUpdate: jest.fn(),
   isEditable: true,
   setVariables: jest.fn(),
@@ -38,18 +43,14 @@ const setProps = (node, WrappedComponent, updatedProps) => {
 };
 
 describe('Variables', () => {
-  let node;
-
-  beforeEach(() => {
-    // given
-    node = mountNode();
-  });
-
   afterEach(() => {
     jest.clearAllMocks();
   });
 
   it('should render variables table', () => {
+    // given
+    const node = mountNode();
+
     // then
     expect(node.find('tr')).toHaveLength(mockProps.variables.length + 1);
     mockProps.variables.forEach(variable => {
@@ -92,15 +93,7 @@ describe('Variables', () => {
 
     it('should disable when editing variable', () => {
       // given
-      const node = mountNode({isEditable: true});
-
-      const openInlineEditButtons = node.find(
-        "button[data-test='enter-edit-btn']"
-      );
-
-      // when
-      openInlineEditButtons.first().simulate('click');
-      node.update();
+      const node = mountNode({isEditable: true, editMode: MODE.EDIT});
 
       // then
       const addButton = node.find("button[data-test='enter-add-btn']");
@@ -109,13 +102,7 @@ describe('Variables', () => {
 
     it('should disable when adding variable', () => {
       // given
-
-      const node = mountNode({isEditable: true});
-      const addButton = node.find("button[data-test='enter-add-btn']");
-
-      // when
-      addButton.simulate('click');
-      node.update();
+      const node = mountNode({isEditable: true, editMode: MODE.ADD});
 
       // then
       const updatedAddButton = node.find("button[data-test='enter-add-btn']");
@@ -125,8 +112,7 @@ describe('Variables', () => {
 
   describe('Add variable', () => {
     it('should show add variable inputs', () => {
-      // when
-      node.find("button[data-test='enter-add-btn']").simulate('click');
+      const node = mountNode({editMode: MODE.ADD});
 
       // then
       expect(node.find('input[data-test="add-key"]')).toHaveLength(1);
@@ -135,6 +121,8 @@ describe('Variables', () => {
 
     it('should expose that a variable is being added by the user', () => {
       // given
+      const node = mountNode({variables: null});
+
       const newVariable = 'newVariable';
       const newValue = '1234';
 
@@ -142,11 +130,11 @@ describe('Variables', () => {
 
       // when
       addButton.simulate('click');
-      expect(mockProps.setEditMode.mock.calls[0][0]).toBe(true);
+      expect(mockProps.setEditMode.mock.calls[0][0]).toBe(MODE.ADD);
 
       setProps(node, Variables, {
         ...mockProps,
-        isEditMode: true
+        editMode: MODE.ADD
       });
       node.update();
 
@@ -159,14 +147,19 @@ describe('Variables', () => {
 
       // then
       node.find("button[data-test='save-var-inline-btn']").simulate('click');
-      expect(mockProps.setEditMode.mock.calls[1][0]).toBe(false);
+      expect(mockProps.setEditMode.mock.calls[1][0]).toBe('');
     });
 
     it('should expose the new key-value pair', () => {
+      const node = mountNode();
+
       const newVariable = 'newVariable';
       const newValue = '1234';
 
-      node.find("button[data-test='enter-add-btn']").simulate('click');
+      setProps(node, Variables, {
+        ...mockProps,
+        editMode: MODE.ADD
+      });
 
       node
         .find("input[data-test='add-key']")
@@ -184,9 +177,10 @@ describe('Variables', () => {
     });
 
     describe('disable save button', () => {
+      let node;
+
       beforeEach(() => {
-        //given
-        node.find("button[data-test='enter-add-btn']").simulate('click');
+        node = mountNode({editMode: MODE.ADD});
       });
 
       it('should not allow to save empty values', () => {
@@ -236,6 +230,12 @@ describe('Variables', () => {
   });
 
   describe('Edit variable', () => {
+    let node;
+
+    beforeEach(() => {
+      node = mountNode();
+    });
+
     it('should show edit in-line buttons', () => {
       const openInlineEditButtons = node.find(
         "button[data-test='enter-edit-btn']"
@@ -251,6 +251,11 @@ describe('Variables', () => {
       // when
       openInlineEditButtons.first().simulate('click');
 
+      setProps(node, Variables, {
+        ...mockProps,
+        editMode: MODE.EDIT
+      });
+
       // then
       expect(node.find("textarea[data-test='edit-value']")).toExist();
       expect(node.find("button[data-test='open-modal-btn']")).toExist();
@@ -263,17 +268,27 @@ describe('Variables', () => {
       const openInlineEditButtons = node.find(
         "button[data-test='enter-edit-btn']"
       );
+      const newJsonValue = '{"key": "MyValue"}';
 
-      expect(mockProps.isEditMode).toBe(false);
       // when
       // edit mode is true
       openInlineEditButtons.first().simulate('click');
-      expect(mockProps.setEditMode).toHaveBeenCalledWith(!mockProps.isEditMode);
+      expect(mockProps.setEditMode).toHaveBeenNthCalledWith(1, MODE.EDIT);
+
+      setProps(node, Variables, {
+        ...mockProps,
+        editMode: MODE.EDIT
+      });
+      node.update();
+
+      node
+        .find("textarea[data-test='edit-value']")
+        .simulate('change', {target: {value: newJsonValue}});
 
       // then
       // edit mode is false
       node.find("button[data-test='save-var-inline-btn']").simulate('click');
-      expect(mockProps.setEditMode).toHaveBeenCalledWith(!mockProps.isEditMode);
+      expect(mockProps.setEditMode).toHaveBeenNthCalledWith(2, '');
     });
 
     describe('disable save button', () => {
@@ -288,6 +303,12 @@ describe('Variables', () => {
       it('should not allow to save empty values', () => {
         // given
         const emptyValue = '';
+
+        setProps(node, Variables, {
+          ...mockProps,
+          editMode: MODE.EDIT
+        });
+        node.update();
 
         node
           .find("textarea[data-test='edit-value']")
@@ -306,6 +327,12 @@ describe('Variables', () => {
         // key must be a string to be valid JSON;
         const invalidJSONObject = {invalidKey: 'value'};
 
+        setProps(node, Variables, {
+          ...mockProps,
+          editMode: MODE.EDIT
+        });
+        node.update();
+
         // when
         node
           .find("textarea[data-test='edit-value']")
@@ -319,6 +346,13 @@ describe('Variables', () => {
 
       it('should not allow to save an unmodified value', () => {
         const unmodifiedValue = mockProps.variables[0].value;
+
+        setProps(node, Variables, {
+          ...mockProps,
+          editMode: MODE.EDIT
+        });
+        node.update();
+
         // when
         node
           .find("textarea[data-test='edit-value']")

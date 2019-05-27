@@ -16,25 +16,23 @@ import * as Styled from './styled';
 
 export default function Variables({
   variables,
-  isEditMode,
+  editMode,
   onVariableUpdate,
   isEditable,
   setEditMode
 }) {
-  const CONST = {EDIT: 'edit', ADD: 'add'};
+  const MODE = {EDIT: 'edit', ADD: 'add'};
 
   const [key, setKey] = useState('');
   const [value, setValue] = useState('');
-  const [mode, setMode] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const variablesContentRef = createRef();
 
   function closeEdit() {
-    setEditMode(false);
+    setEditMode('');
     setKey('');
     setValue('');
-    setMode('');
   }
 
   function saveVariable() {
@@ -44,8 +42,7 @@ export default function Variables({
 
   function handleModalOpen() {
     setIsModalVisible(true);
-    setEditMode(true);
-    setMode(CONST.EDIT);
+    setEditMode(MODE.EDIT);
   }
 
   function handleModalClose() {
@@ -60,13 +57,11 @@ export default function Variables({
   }
 
   function handleOpenAddVariable() {
-    setEditMode(true);
-    setMode(CONST.ADD);
+    setEditMode(MODE.ADD);
   }
 
   function handleOpenEditVariable(name, value) {
-    setEditMode(true);
-    setMode(CONST.EDIT);
+    setEditMode(MODE.EDIT);
     setKey(name);
     setValue(value);
   }
@@ -74,15 +69,15 @@ export default function Variables({
   // scroll to the bottom of the table if the variables inputs got added
   useEffect(
     () => {
-      if (isEditMode && mode === CONST.ADD) {
+      if (editMode === MODE.ADD) {
         variablesContentRef.current.scrollTop =
           variablesContentRef.current.scrollHeight;
       }
     },
-    [isEditMode]
+    [editMode]
   );
 
-  function renderEditButtons(customCondition = false) {
+  function renderEditButtons({isDisabled}) {
     return (
       <>
         {
@@ -103,8 +98,8 @@ export default function Variables({
         </Styled.EditButton>
         <Styled.EditButton
           data-test="save-var-inline-btn"
-          title="save variable"
-          disabled={!value || !isValidJSON(value) || customCondition}
+          title="Save variable"
+          disabled={!value || !isValidJSON(value) || isDisabled}
           onClick={saveVariable}
         >
           <Styled.CheckIcon />
@@ -128,7 +123,7 @@ export default function Variables({
           />
         </Styled.EditInputTD>
         <Styled.EditButtonsTD>
-          {renderEditButtons(valueHasntChanged)}
+          {renderEditButtons({isDisabled: valueHasntChanged})}
         </Styled.EditButtonsTD>
       </>
     );
@@ -159,7 +154,7 @@ export default function Variables({
           />
         </Styled.EditInputTD>
         <Styled.AddButtonsTD>
-          {renderEditButtons(variableAlreadyExists)}
+          {renderEditButtons({isDisabled: variableAlreadyExists})}
         </Styled.AddButtonsTD>
       </Styled.TR>
     );
@@ -168,7 +163,7 @@ export default function Variables({
   return (
     <Styled.Variables>
       <Styled.VariablesContent ref={variablesContentRef}>
-        {!isEditMode && (!variables || !variables.length) ? (
+        {!editMode && (!variables || !variables.length) ? (
           <Styled.Placeholder>
             {!variables ? NULL_PLACEHOLDER : EMPTY_PLACEHOLDER}
           </Styled.Placeholder>
@@ -191,7 +186,7 @@ export default function Variables({
                       hasActiveOperation={hasActiveOperation}
                     >
                       <Styled.TD isBold={true}>{name}</Styled.TD>
-                      {key === name && mode === CONST.EDIT ? (
+                      {key === name && editMode === MODE.EDIT ? (
                         renderInlineEdit(propValue, name)
                       ) : (
                         <>
@@ -218,7 +213,7 @@ export default function Variables({
                     </Styled.TR>
                   )
                 )}
-                {mode === CONST.ADD && renderInlineAdd()}
+                {editMode === MODE.ADD && renderInlineAdd()}
               </tbody>
             </Styled.Table>
           </Styled.TableScroll>
@@ -230,7 +225,7 @@ export default function Variables({
           size="small"
           data-test="enter-add-btn"
           onClick={() => handleOpenAddVariable()}
-          disabled={!!mode || !isEditable}
+          disabled={!!editMode || !isEditable}
         >
           <Styled.Plus /> Add Variable
         </Styled.Button>
@@ -250,7 +245,7 @@ export default function Variables({
 
 Variables.propTypes = {
   variables: PropTypes.array,
-  isEditMode: PropTypes.bool.isRequired,
+  editMode: PropTypes.string.isRequired,
   isEditable: PropTypes.bool.isRequired,
   onVariableUpdate: PropTypes.func.isRequired,
   setEditMode: PropTypes.func.isRequired

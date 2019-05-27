@@ -72,7 +72,7 @@ export default class Instance extends Component {
       forceInstanceSpinner: false,
       forceIncidentsSpinner: false,
       variables: null,
-      isEditMode: false
+      editMode: ''
     };
 
     this.pollingTimer = null;
@@ -157,14 +157,14 @@ export default class Instance extends Component {
       // clear variables object if we don't have exactly 1 selected row
       ...(newSelection.treeRowIds.length !== 1 && {
         variables: null,
-        isEditMode: false
+        editMode: ''
       })
     });
 
     if (newSelection.treeRowIds.length === 1) {
       const scopeId = newSelection.treeRowIds[0];
       const variables = await api.fetchVariables(instance.id, scopeId);
-      this.setState({variables, isEditMode: false});
+      this.setState({variables, editMode: ''});
     }
   };
 
@@ -185,13 +185,13 @@ export default class Instance extends Component {
         flowNodeId
       },
       // clear variables object if we don't have exactly 1 selected row
-      ...(treeRowIds.length !== 1 && {variables: null, isEditMode: false})
+      ...(treeRowIds.length !== 1 && {variables: null, editMode: ''})
     });
 
     if (treeRowIds.length === 1) {
       const scopeId = treeRowIds[0];
       const variables = await api.fetchVariables(instance.id, scopeId);
-      this.setState({variables, isEditMode: false});
+      this.setState({variables, editMode: ''});
     }
   };
 
@@ -391,11 +391,11 @@ export default class Instance extends Component {
 
   setVariables = variables => {
     this.resetPolling();
-    this.setState({variables, isEditMode: false});
+    this.setState({variables, editMode: ''});
   };
 
-  setEditMode = isEditMode => {
-    this.setState({isEditMode});
+  setEditMode = editMode => {
+    this.setState({editMode});
   };
 
   render() {
@@ -408,7 +408,7 @@ export default class Instance extends Component {
       activityIdToActivityInstanceMap,
       activityIdToNameMap,
       variables,
-      isEditMode
+      editMode
     } = this.state;
 
     if (!loaded) {
@@ -488,7 +488,7 @@ export default class Instance extends Component {
               </Styled.Panel>
               <Variables
                 variables={variables}
-                isEditMode={isEditMode}
+                editMode={editMode}
                 isEditable={this.areVariablesEditable()}
                 onVariableUpdate={this.handleVariableUpdate}
                 setEditMode={this.setEditMode}
