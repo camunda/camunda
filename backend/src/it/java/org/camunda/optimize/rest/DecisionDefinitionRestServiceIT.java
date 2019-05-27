@@ -190,6 +190,27 @@ public class DecisionDefinitionRestServiceIT {
     assertThat(actualXml, is(secondTenantDefinition.getDmn10Xml()));
   }
 
+
+  @Test
+  public void getSharedDecisionDefinitionXmlByTenantWithNoSpecificDefinition() {
+    //given
+    final String firstTenantId = "tenant1";
+    DecisionDefinitionOptimizeDto sharedDecisionDefinition = createDecisionDefinitionDto("key", null);
+    addDecisionDefinitionToElasticsearch(sharedDecisionDefinition);
+
+    // when
+    String actualXml =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetDecisionDefinitionXmlRequest(
+          sharedDecisionDefinition.getKey(), sharedDecisionDefinition.getVersion(), firstTenantId
+        )
+        .execute(String.class, 200);
+
+    // then
+    assertThat(actualXml, is(sharedDecisionDefinition.getDmn10Xml()));
+  }
+
   @Test
   public void getDecisionDefinitionXmlWithoutAuthentication() {
     // when

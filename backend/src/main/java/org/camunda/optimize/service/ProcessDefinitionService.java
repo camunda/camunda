@@ -48,7 +48,17 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
                                                   final String definitionKey,
                                                   final String definitionVersion,
                                                   final String tenantId) {
-    return processDefinitionReader.getFullyImportedProcessDefinition(definitionKey, definitionVersion, tenantId)
+    // first try to load tenant specific definition
+    Optional<ProcessDefinitionOptimizeDto> fullyImportedDefinition =
+      processDefinitionReader.getFullyImportedProcessDefinition(definitionKey, definitionVersion, tenantId);
+
+    // if not available try to get shared definition
+    if (!fullyImportedDefinition.isPresent()) {
+      fullyImportedDefinition =
+        processDefinitionReader.getFullyImportedProcessDefinition(definitionKey, definitionVersion, null);
+    }
+
+    return fullyImportedDefinition
       .map(processDefinitionOptimizeDto -> {
         if (isAuthorizedToReadProcessDefinition(userId, processDefinitionOptimizeDto)) {
           return processDefinitionOptimizeDto.getBpmn20Xml();

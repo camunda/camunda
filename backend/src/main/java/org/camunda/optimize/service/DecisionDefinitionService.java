@@ -42,7 +42,17 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
                                                    final String definitionKey,
                                                    final String definitionVersion,
                                                    final String tenantId) {
-    return decisionDefinitionReader.getFullyImportedDecisionDefinition(definitionKey, definitionVersion, tenantId)
+    // first try to load tenant specific definition
+    Optional<DecisionDefinitionOptimizeDto> fullyImportedDefinition =
+      decisionDefinitionReader.getFullyImportedDecisionDefinition(definitionKey, definitionVersion, tenantId);
+
+    // if not available try to get shared definition
+    if (!fullyImportedDefinition.isPresent()) {
+      fullyImportedDefinition =
+        decisionDefinitionReader.getFullyImportedDecisionDefinition(definitionKey, definitionVersion, null);
+    }
+
+    return fullyImportedDefinition
       .map(decisionDefinitionOptimizeDto -> {
         if (isAuthorizedToReadDecisionDefinition(userId, decisionDefinitionOptimizeDto)) {
           return decisionDefinitionOptimizeDto.getDmn10Xml();

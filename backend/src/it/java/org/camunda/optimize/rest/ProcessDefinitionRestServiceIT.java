@@ -186,16 +186,18 @@ public class ProcessDefinitionRestServiceIT {
     ProcessDefinitionOptimizeDto secondTenantDefinition = addProcessDefinitionToElasticsearch(KEY, secondTenantId);
 
     // when
-    String actualXml =
-      embeddedOptimizeRule
-        .getRequestExecutor()
-        .buildGetProcessDefinitionXmlRequest(
-          firstTenantDefinition.getKey(), firstTenantDefinition.getVersion(), firstTenantDefinition.getTenantId()
-        )
-        .execute(String.class, 200);
+    final String actualXmlFirstTenant = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetProcessDefinitionXmlRequest(KEY, "1", firstTenantId)
+      .execute(String.class, 200);
+    final String actualXmlSecondTenant = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetProcessDefinitionXmlRequest(KEY, "1", secondTenantId)
+      .execute(String.class, 200);
 
     // then
-    assertThat(actualXml, is(firstTenantDefinition.getBpmn20Xml()));
+    assertThat(actualXmlFirstTenant, is(firstTenantDefinition.getBpmn20Xml()));
+    assertThat(actualXmlSecondTenant, is(secondTenantDefinition.getBpmn20Xml()));
   }
 
   @Test
@@ -216,6 +218,25 @@ public class ProcessDefinitionRestServiceIT {
 
     // then
     assertThat(actualXml, is(secondTenantDefinition.getBpmn20Xml()));
+  }
+
+  @Test
+  public void getSharedProcessDefinitionXmlByTenantWithNoSpecificDefinition() {
+    //given
+    final String firstTenantId = "tenant1";
+    ProcessDefinitionOptimizeDto sharedTenantDefinition = addProcessDefinitionToElasticsearch(KEY, null);
+
+    // when
+    String actualXml =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetProcessDefinitionXmlRequest(
+          sharedTenantDefinition.getKey(), sharedTenantDefinition.getVersion(), firstTenantId
+        )
+        .execute(String.class, 200);
+
+    // then
+    assertThat(actualXml, is(sharedTenantDefinition.getBpmn20Xml()));
   }
 
   @Test
