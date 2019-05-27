@@ -50,6 +50,7 @@ const createRandomId = function* createRandomId(type) {
 
 const randomIdIterator = createRandomId('id');
 const randomActivityIdIterator = createRandomId('activityId');
+const randomWorkflowIdInterator = createRandomId('workflowId');
 const randomJobIdIterator = createRandomId('jobId');
 const eventIdIterator = createRandomId('eventId');
 const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeId');
@@ -273,10 +274,87 @@ export const createFilter = (options = {}) => {
  */
 export const createWorkflow = (options = {}) => {
   return {
-    id: '1',
+    workflowId: randomWorkflowIdInterator.next().value,
     name: 'mockWorkflow',
     version: 1,
     bpmnProcessId: 'mockWorkflow',
+    errorMessage: 'JSON path $.paid has no result.',
+    instancesWithActiveIncidentsCount: 37,
+    activeInstancesCount: 5,
+    ...options
+  };
+};
+
+/**
+ * @returns a single mocked instanceByWorkflow Object
+ * @param {*} customProps Obj with any type of custom property
+ */
+export const createInstanceByWorkflow = (options = {}) => {
+  return {
+    bpmnProcessId: 'loanProcess',
+    workflowName: null,
+    instancesWithActiveIncidentsCount: 16,
+    activeInstancesCount: 122,
+    workflows: [
+      createWorkflow({
+        name: null,
+        bpmnProcessId: 'loanProcess',
+        instancesWithActiveIncidentsCount: 16,
+        activeInstancesCount: 122
+      })
+    ],
+    ...options
+  };
+};
+
+/**
+ * @returns a mocked InstancesByWorkflow Object as exposed by 'api/incidents/byWorkflow'
+ * @param {*} customProps array with any number of instanceByWorkflow Objects
+ */
+export const createInstancesByWorkflow = options => {
+  return options || [createInstanceByWorkflow()];
+};
+
+/**
+ * @returns a single mocked instanceByWorkflow Object
+ * @param {*} customProps Obj with any type of custom property
+ */
+export const createInstanceByError = (options = {}) => {
+  return {
+    errorMessage: "JSON path '$.paid' has no result.",
+    instancesWithErrorCount: 36,
+    workflows: [
+      createWorkflow({
+        workflowId: '1',
+        version: 1,
+        name: 'Order process',
+        bpmnProcessId: 'orderProcess',
+        errorMessage: "JSON path '$.paid' has no result.",
+        instancesWithActiveIncidentsCount: 36,
+        activeInstancesCount: null
+      })
+    ],
+    ...options
+  };
+};
+
+/**
+ * @returns a mocked InstancesByError Object as exposed by 'api/incidents/byError'
+ * @param {*} customProps array with any number of instanceByError Objects
+ */
+export const createIncidentsByError = options => {
+  return options || [createInstanceByError()];
+};
+
+/**
+ * @returns mocked Core Statistis Object as exposed by '/api/workflow-instances/core-statistics'
+ * @param {*} customProps array with any number of instanceByError Objects
+ */
+export const createCoreStatistics = (options = {}) => {
+  return {
+    running: 10,
+    active: 7,
+    withIncident: 3,
     ...options
   };
 };

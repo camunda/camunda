@@ -6,7 +6,13 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
+import {
+  mockResolvedAsyncFn,
+  flushPromises,
+  createCoreStatistics,
+  createInstancesByWorkflow,
+  createIncidentsByError
+} from 'modules/testUtils';
 
 import {PAGE_TITLE} from 'modules/constants';
 
@@ -21,62 +27,15 @@ import EmptyIncidents from './EmptyIncidents';
 import IncidentsByError from './IncidentsByError';
 
 const mockInstancesByWorkflow = {
-  data: [
-    {
-      bpmnProcessId: 'loanProcess',
-      workflowName: null,
-      instancesWithActiveIncidentsCount: 16,
-      activeInstancesCount: 122,
-      workflows: [
-        {
-          bpmnProcessId: 'loanProcess',
-          workflowId: '3',
-          version: 1,
-          name: null,
-          errorMessage: null,
-          instancesWithActiveIncidentsCount: 16,
-          activeInstancesCount: 122
-        }
-      ]
-    }
-  ]
+  data: createInstancesByWorkflow()
 };
 
 const mockIncidentsByError = {
-  data: [
-    {
-      errorMessage: "JSON path '$.paid' has no result.",
-      instancesWithErrorCount: 36,
-      workflows: [
-        {
-          workflowId: '6',
-          version: 2,
-          name: 'Order process',
-          bpmnProcessId: 'orderProcess',
-          errorMessage: "JSON path '$.paid' has no result.",
-          instancesWithActiveIncidentsCount: 27,
-          activeInstancesCount: null
-        },
-        {
-          workflowId: '1',
-          version: 1,
-          name: 'Order process',
-          bpmnProcessId: 'orderProcess',
-          errorMessage: "JSON path '$.paid' has no result.",
-          instancesWithActiveIncidentsCount: 9,
-          activeInstancesCount: null
-        }
-      ]
-    }
-  ]
+  data: createIncidentsByError()
 };
 
 const mockWorkflowCoreStatistics = {
-  data: {
-    running: 10,
-    active: 7,
-    withIncident: 3
-  }
+  data: createCoreStatistics()
 };
 
 const mockApi = (mockData = {}) => {
