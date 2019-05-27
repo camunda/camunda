@@ -63,9 +63,6 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   private PartitionHolder partitionHolder;
 
   @Autowired
-  private ZeebeImporter zeebeESImporter;
-
-  @Autowired
   private ListViewReader listViewReader;
 
   @Autowired
@@ -77,7 +74,23 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   @Autowired
   @Qualifier("activityIsActiveCheck")
   private Predicate<Object[]> activityIsActiveCheck;
-
+  
+  @Autowired
+  @Qualifier("workflowIsDeployedCheck")
+  private Predicate<Object[]> workflowIsDeployedCheck;
+  
+  @Autowired
+  @Qualifier("workflowInstanceIsCreatedCheck")
+  private Predicate<Object[]> workflowInstanceIsCreatedCheck;
+  
+  @Autowired
+  @Qualifier("incidentIsActiveCheck")
+  private Predicate<Object[]> incidentIsActiveCheck;
+  
+  @Autowired
+  @Qualifier("incidentIsResolvedCheck")
+  private Predicate<Object[]> incidentIsResolvedCheck;
+  
   private ZeebeClient zeebeClient;
 
   private OffsetDateTime testStartTime;
@@ -99,6 +112,11 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   public void after() {
     super.after();
   }
+  
+  protected void processAllRecordsAndWait(Predicate<Object[]> waitTill, Object... arguments) {
+    elasticsearchTestRule.processAllRecordsAndWait(waitTill, arguments);
+  }
+  
 
   @Test
   public void testWorkflowNameAndVersionAreLoaded() {
@@ -110,11 +128,10 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //when
     //1st load workflow instance index, then deployment
-    //processAllEvents(10, ImportValueType.WORKFLOW_INSTANCE);
-    //processAllEvents(2, ImportValueType.DEPLOYMENT);
-    elasticsearchTestRule.processAllEvents(12);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
+    processAllRecordsAndWait(workflowIsDeployedCheck, workflowId);
     
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
     
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
@@ -122,10 +139,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo("Demo process");
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
   }
-
-  protected void processAllEvents(int expectedMinEventsCount, ImportValueType workflowInstance) {
-    elasticsearchTestRule.processAllEvents(expectedMinEventsCount, workflowInstance);
-  }
+  
   
   @Test
   public void testCreateWorkflowInstanceWithEmptyWorkflowName() {
@@ -140,7 +154,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final String workflowId = deployWorkflow(model,"emptyNameProcess.bpmn");
     
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
+    processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
 
     // then it should returns the processId instead of an empty name 
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
@@ -162,9 +176,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //when
     //1st load incident and then workflow instance events
-    processAllEvents(1, ImportValueType.INCIDENT);
-    processAllEvents(8, ImportValueType.WORKFLOW_INSTANCE);
-
+    processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
+    processAllRecordsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getWorkflowId()).isEqualTo(workflowId);
@@ -224,14 +237,15 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     String processId = "demoProcess";
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    
     //create an incident
     ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
     //load only incidents
-    processAllEvents(1, ImportValueType.INCIDENT);
-
+    processAllRecordsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
+    
     assertListViewResponse();
     //if nothing is returned in list view - there is no way to access the workflow instance, no need to check other queries
 
@@ -281,9 +295,9 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     setJobWorker(ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), "{}"));
 
-    processAllEvents(20, ImportValueType.WORKFLOW_INSTANCE);
-    processAllEvents(2, ImportValueType.INCIDENT);
-
+    processAllRecordsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
+    processAllRecordsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
+    
     //then
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
     assertThat(allIncidents).hasSize(0);
@@ -335,9 +349,9 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceKey);
 
-    processAllEvents(20, ImportValueType.WORKFLOW_INSTANCE);
-    processAllEvents(2, ImportValueType.INCIDENT);
-
+    processAllRecordsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
+    processAllRecordsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
+    
     //then
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
     assertThat(allIncidents).hasSize(0);

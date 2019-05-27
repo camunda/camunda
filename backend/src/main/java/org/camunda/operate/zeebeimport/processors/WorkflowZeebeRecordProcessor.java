@@ -141,9 +141,7 @@ public class WorkflowZeebeRecordProcessor {
 
       InputStream is = new ByteArrayInputStream(byteArray);
       final Optional<WorkflowEntity> diagramData = extractDiagramData(is);
-      if(!diagramData.isPresent() || StringUtils.isEmpty(diagramData.get().getName())){
-        workflowEntity.setName(workflow.getBpmnProcessId());
-      }else {
+      if(diagramData.isPresent()) {
         workflowEntity.setName(diagramData.get().getName());
       }
     }

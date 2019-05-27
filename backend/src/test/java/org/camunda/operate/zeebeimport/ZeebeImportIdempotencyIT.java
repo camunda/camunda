@@ -10,8 +10,7 @@ import org.camunda.operate.util.apps.idempotency.ZeebeImportIdempotencyTestConfi
 import org.camunda.operate.TestApplication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import java.util.function.Predicate;
 
 /**
  * Tests that even if the Zeebe data is imported twice, in Operate Elasticsearch is is still consistent.
@@ -25,10 +24,10 @@ public class ZeebeImportIdempotencyIT extends ZeebeImportIT {
   private ZeebeImportIdempotencyTestConfig.CustomElasticsearchBulkProcessor elasticsearchBulkProcessor;
 
   @Override
-  protected void processAllEvents(int expectedMinEventsCount, ImportValueType workflowInstance) {
-    elasticsearchTestRule.processAllEvents(expectedMinEventsCount, workflowInstance);
-    elasticsearchTestRule.processAllEvents(expectedMinEventsCount, workflowInstance);
+  protected void processAllRecordsAndWait(Predicate<Object[]> waitTill, Object... arguments) {
+    elasticsearchTestRule.processAllRecordsAndWait(waitTill, arguments);
+    elasticsearchTestRule.processAllRecordsAndWait(waitTill, arguments);
     elasticsearchBulkProcessor.cancelAttempts();
   }
-
+  
 }

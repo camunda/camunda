@@ -154,7 +154,7 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
     assertThat(workflowGroupDtos).filteredOn(wg -> wg.getBpmnProcessId().equals(loanProcessId)).hasSize(1);
     final WorkflowGroupDto loanProcessWorkflowGroup =
       workflowGroupDtos.stream().filter(wg -> wg.getBpmnProcessId().equals(loanProcessId)).findFirst().get();
-    assertThat(loanProcessWorkflowGroup.getName()).isEqualTo(loanProcessId);
+    assertThat(loanProcessWorkflowGroup.getName()).isNull();
     assertThat(loanProcessWorkflowGroup.getWorkflows()).hasSize(1);
     assertThat(loanProcessWorkflowGroup.getWorkflows().get(0).getId()).isEqualTo(loanProcessV1Id);
   }

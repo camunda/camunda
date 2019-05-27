@@ -29,6 +29,8 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
+
 import static io.zeebe.protocol.ErrorType.*;
 
 public abstract class TestUtil {
@@ -67,6 +69,9 @@ public abstract class TestUtil {
       workflowInstance.setBpmnProcessId("testProcess" + i);
       workflowInstance.setWorkflowName(UUID.randomUUID().toString());
       workflowInstance.setWorkflowVersion(i);
+    }
+    if(StringUtils.isEmpty(workflowInstance.getWorkflowName())){
+      workflowInstance.setWorkflowName(workflowInstance.getBpmnProcessId());
     }
     return workflowInstance;
   }

@@ -50,6 +50,10 @@ public class ElasticsearchChecks {
   @Autowired
   private VariableReader variableReader;
 
+  /**
+   * Checks whether the workflow of given args[0] workflowId (String) is deployed.
+   * @return
+   */
   @Bean(name = "workflowIsDeployedCheck")
   public Predicate<Object[]> getWorkflowIsDeployedCheck() {
     return objects -> {
@@ -65,6 +69,10 @@ public class ElasticsearchChecks {
     };
   }
 
+  /**
+   * Checks whether the activity of given args[0] workflowInstanceId (Long) and args[1] activityId (String) is in state ACTIVE
+   * @return
+   */
   @Bean(name = "activityIsActiveCheck")
   public Predicate<Object[]> getActivityIsActiveCheck() {
     return objects -> {
@@ -88,6 +96,10 @@ public class ElasticsearchChecks {
     };
   }
 
+  /**
+   * Checks whether variable of given args[0] workflowInstanceId  (Long) and args[1] scopeId (Long) and args[2] varName (String) exists
+   * @return
+   */
   @Bean(name = "variableExistsCheck")
   public Predicate<Object[]> getVariableExistsCheck() {
     return objects -> {
@@ -107,6 +119,10 @@ public class ElasticsearchChecks {
     };
   }
 
+  /**
+   * Checks whether the activity of given args[0] workflowInstanceId (Long) and args[1] activityId (String) is in state COMPLETED
+   * @return
+   */
   @Bean(name = "activityIsCompletedCheck")
   public Predicate<Object[]> getActivityIsCompletedCheck() {
     return objects -> {
@@ -130,6 +146,10 @@ public class ElasticsearchChecks {
     };
   }
 
+  /**
+   * Checks whether the activity of given args[0] workflowInstanceId (Long) and args[1] activityId (String) is in state TERMINATED
+   * @return
+   */
   @Bean(name = "activityIsTerminatedCheck")
   public Predicate<Object[]> getActivityIsTerminatedCheck() {
     return objects -> {
@@ -153,6 +173,10 @@ public class ElasticsearchChecks {
     };
   }
 
+  /**
+   * Checks whether any incidents is active in workflowInstance of given workflowInstanceId (Long)
+   * @return
+   */
   @Bean(name = "incidentIsActiveCheck")
   public Predicate<Object[]> getIncidentIsActiveCheck() {
     return objects -> {
@@ -173,6 +197,10 @@ public class ElasticsearchChecks {
     };
   }
 
+  /**
+   * Checks whether the incidents of given args[0] workflowInstanceId (Long) equals given args[1] incidentsCount (Integer)
+   * @return
+   */
   @Bean(name = "incidentsAreActiveCheck")
   public Predicate<Object[]> getIncidentsAreActiveCheck() {
     return objects -> {
@@ -190,6 +218,10 @@ public class ElasticsearchChecks {
     };
   }
 
+  /**
+   * Checks whether there are no incidents in activities exists in given workflowInstanceId (Long)
+   * @return
+   */
   @Bean(name = "incidentIsResolvedCheck")
   public Predicate<Object[]> getIncidentIsResolvedCheck() {
     return objects -> {
@@ -205,6 +237,10 @@ public class ElasticsearchChecks {
     };
   }
 
+  /**
+   * Checks whether the workflowInstance of given workflowInstanceId (Long) is CANCELED.
+   * @return
+   */
   @Bean(name = "workflowInstanceIsCanceledCheck")
   public Predicate<Object[]> getWorkflowInstanceIsCanceledCheck() {
     return objects -> {
@@ -219,7 +255,11 @@ public class ElasticsearchChecks {
       }
     };
   }
-
+  
+  /**
+   * Checks whether the workflowInstance of given workflowInstanceId (Long) is CREATED.
+   * @return
+   */
   @Bean(name = "workflowInstanceIsCreatedCheck")
   public Predicate<Object[]> getWorkflowInstanceIsCreatedCheck() {
     return objects -> {
@@ -235,6 +275,10 @@ public class ElasticsearchChecks {
     };
   }
 
+  /**
+   * Checks whether the workflowInstance of given workflowInstanceId (Long) is COMPLETED.
+   * @return
+   */
   @Bean(name = "workflowInstanceIsCompletedCheck")
   public Predicate<Object[]> getWorkflowInstanceIsCompletedCheck() {
     return objects -> {

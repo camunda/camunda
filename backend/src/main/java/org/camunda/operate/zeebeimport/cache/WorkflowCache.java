@@ -31,23 +31,12 @@ public class WorkflowCache {
 
   @Autowired
   private WorkflowReader workflowReader;
-  
-  public String getWorkflowName(String workflowId) {
-    return getWorkflowNameOrDefaultValue(workflowId,null);
-  }
-  
-  public Integer getWorkflowVersion(String workflowId) {
-    return getWorkflowVersionOrDefaultValue(workflowId,null);
-  }
 
   public String getWorkflowNameOrDefaultValue(String workflowId, String defaultValue) {
     final WorkflowEntity cachedWorkflowData = cache.get(workflowId);
     String workflowName = defaultValue;
     if (cachedWorkflowData != null) {
       workflowName = cachedWorkflowData.getName();    
-      if(StringUtils.isEmpty(workflowName)) {
-        logger.debug("Cached WorkflowName is empty");
-      }
     } else {
       final Optional<WorkflowEntity> workflowMaybe = findOrWaitWorkflow(workflowId, MAX_ATTEMPTS, WAIT_TIME);
       if (workflowMaybe.isPresent()) {
@@ -57,33 +46,10 @@ public class WorkflowCache {
       }
     }
     if(StringUtils.isEmpty(workflowName)) {
-      logger.info("WorkflowName is empty, use default value: {} ",defaultValue);
+      logger.debug("WorkflowName is empty, use default value: {} ",defaultValue);
       workflowName = defaultValue;
     }
     return workflowName;
-  }
-
-  public Integer getWorkflowVersionOrDefaultValue(String workflowId,Integer defaultValue) {
-    final WorkflowEntity cachedWorkflowData = cache.get(workflowId);
-    Integer workflowVersion = defaultValue;
-    if (cachedWorkflowData != null) {
-      workflowVersion = cachedWorkflowData.getVersion();
-      if(workflowVersion==null || workflowVersion == 0) {
-        logger.debug("Cached Workflow version is {} ",workflowVersion);
-      }
-    } else {
-      final Optional<WorkflowEntity> workflowMaybe = findOrWaitWorkflow(workflowId, MAX_ATTEMPTS, WAIT_TIME);
-      if(workflowMaybe.isPresent()) {
-        WorkflowEntity workflow = workflowMaybe.get();
-        putToCache(workflowId, workflow);
-        workflowVersion = workflow.getVersion();
-      } 
-    }
-    if(workflowVersion == null) {
-      logger.info("Workflow version is null, use default value: {}",defaultValue);
-      workflowVersion = defaultValue;
-    }
-    return workflowVersion;
   }
   
   private Optional<WorkflowEntity> readWorkflowById(String workflowId) {
@@ -105,7 +71,7 @@ public class WorkflowCache {
         try {
           Thread.sleep(sleepInMilliseconds);
         } catch (InterruptedException e) {
-          logger.info(e.getMessage());
+          logger.debug(e.getMessage());
         }
       } else {
         logger.debug("Found workflow after {} attempts. Waited {} ms.", attemptsCount, (attemptsCount - 1) * sleepInMilliseconds);

@@ -54,17 +54,8 @@ public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
 
   @Test
   public void testWorkflowDoesNotExist() {
-    final String demoProcessName = workflowCache.getWorkflowName("1");
-    assertThat(demoProcessName).isNull();
-    
     final String processNameDefault = workflowCache.getWorkflowNameOrDefaultValue("2","default_value");
     assertThat(processNameDefault).isEqualTo("default_value");
-
-    final Integer demoProcessVersion = workflowCache.getWorkflowVersion("1");
-    assertThat(demoProcessVersion).isNull();
-    
-    final Integer demoProcessVersionDefault = workflowCache.getWorkflowVersionOrDefaultValue("1",5);
-    assertThat(demoProcessVersionDefault).isEqualTo(5);
   }
 
   @Test
@@ -75,18 +66,12 @@ public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey1);
     elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey2);
 
-    String demoProcessName = workflowCache.getWorkflowName("1");
+    String demoProcessName = workflowCache.getWorkflowNameOrDefaultValue("1",null);
     assertThat(demoProcessName).isNotNull();
 
     //request once again, the cache should be used
-    demoProcessName = workflowCache.getWorkflowName("1");
+    demoProcessName = workflowCache.getWorkflowNameOrDefaultValue("1",null);
     assertThat(demoProcessName).isNotNull();
-
-    Integer demoProcessVersion = workflowCache.getWorkflowVersion("1");
-    assertThat(demoProcessVersion).isNotNull();
-
-    demoProcessVersion = workflowCache.getWorkflowVersion("1");
-    assertThat(demoProcessVersion).isNotNull();
 
     verify(workflowCache, times(1)).putToCache(any(), any());
   }

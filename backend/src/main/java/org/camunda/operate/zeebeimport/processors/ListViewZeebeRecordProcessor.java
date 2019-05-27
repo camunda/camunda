@@ -136,8 +136,9 @@ public class ListViewZeebeRecordProcessor {
     wiEntity.setPartitionId(record.getMetadata().getPartitionId());
     wiEntity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
     wiEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
-
-    findOutWorkflowNameAndVersion(wiEntity, recordValue);
+    wiEntity.setWorkflowVersion(recordValue.getVersion());
+ 
+    wiEntity.setWorkflowName(workflowCache.getWorkflowNameOrDefaultValue(wiEntity.getWorkflowId(), recordValue.getBpmnProcessId()));
 
     if (intentStr.equals(ELEMENT_COMPLETED.name()) || intentStr.equals(ELEMENT_TERMINATED.name())) {
       wiEntity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
@@ -153,12 +154,6 @@ public class ListViewZeebeRecordProcessor {
       wiEntity.setState(WorkflowInstanceState.ACTIVE);
     }
     return wiEntity;
-  }
-
-  private void findOutWorkflowNameAndVersion(WorkflowInstanceForListViewEntity entity, WorkflowInstanceRecordValueImpl recordValue) {
-    String workflowId = entity.getWorkflowId();
-    entity.setWorkflowName(workflowCache.getWorkflowNameOrDefaultValue(workflowId, recordValue.getBpmnProcessId()));
-    entity.setWorkflowVersion(workflowCache.getWorkflowVersionOrDefaultValue(workflowId, recordValue.getVersion()));
   }
 
   private void updateActivityInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue, Map<Long, ActivityInstanceForListViewEntity> entities) {
