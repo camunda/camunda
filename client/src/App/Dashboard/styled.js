@@ -8,7 +8,7 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Dashboard = styled.main`
-  padding: 0 20px 38px;
+  padding: 0 20px 0;
   display: flex;
   flex-direction: column;
   height: calc(100vh - 56px);
@@ -68,10 +68,16 @@ export const TileTitle = themed(styled.h2`
 export const TileContent = styled.div`
   position: relative;
   overflow-y: scroll;
+  flex: 1;
 
   // these styles are required to fully display focus borders
   padding-left: 4px;
   margin-left: -4px;
   padding-top: 4px;
   margin-top: -4px;
+`;
+
+export const Footer = styled.div`
+  padding: 12px 0;
+  text-align: right;
 `;

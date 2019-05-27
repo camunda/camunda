@@ -20,6 +20,8 @@ import {
 } from 'modules/api/incidents/incidents';
 import {PAGE_TITLE} from 'modules/constants';
 
+import Copyright from 'modules/components/Copyright';
+
 import * as Styled from './styled.js';
 
 class Dashboard extends Component {
@@ -117,6 +119,10 @@ class Dashboard extends Component {
               </Styled.TileContent>
             </Styled.Tile>
           </Styled.TitleWrapper>
+
+          <Styled.Footer>
+            <Copyright />
+          </Styled.Footer>
         </Styled.Dashboard>
       </Fragment>
     );
