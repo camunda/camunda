@@ -1010,7 +1010,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   private void createWorkflowInstanceWithoutWorkflowname() {
     WorkflowInstanceForListViewEntity workflowWithoutName = createWorkflowInstance(WorkflowInstanceState.ACTIVE, "doesnotmatter");
     workflowWithoutName.setBpmnProcessId("lower_workflow_id");
-    workflowWithoutName.setWorkflowName(null);
+    workflowWithoutName.setWorkflowName(workflowWithoutName.getBpmnProcessId());
    
     elasticsearchTestRule.persistNew(workflowWithoutName);
   }
