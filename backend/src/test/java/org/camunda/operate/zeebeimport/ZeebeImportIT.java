@@ -95,6 +95,10 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   @Qualifier("activityIsCompletedCheck")
   private Predicate<Object[]> activityIsCompletedCheck;
   
+  @Autowired
+  @Qualifier("workflowInstanceIsCompletedCheck")
+  private Predicate<Object[]> workflowInstanceIsCompletedCheck;
+  
   private ZeebeClient zeebeClient;
 
   private OffsetDateTime testStartTime;
@@ -290,17 +294,18 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final String workflowId = deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
+    processAllRecordsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
     final long incidentKey = getOnlyIncidentKey();
 
     //when update retries
     ZeebeTestUtil.resolveIncident(zeebeClient, IdTestUtil.getId(jobKey), incidentKey);
-
     setJobWorker(ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), "{}"));
-
+    
     processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey,activityId);
-    processAllRecordsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
+    //processAllRecordsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
+    processAllRecordsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
     //then
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
     assertThat(allIncidents).hasSize(0);

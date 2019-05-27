@@ -125,31 +125,6 @@ public class ElasticsearchTestRule extends TestWatcher {
     }
   }
 
-  public void processAllEvents(int expectedMinEventsCount) {
-    try {
-      int entitiesCount;
-      int totalCount = 0;
-      int emptyAttempts = 0;
-      do {
-        Thread.sleep(800L);
-        entitiesCount = zeebeImporter.performOneRoundOfImport();
-        totalCount += entitiesCount;
-        if (entitiesCount > 0) {
-          emptyAttempts = 0;
-        } else {
-          emptyAttempts++;
-        }
-      } while(totalCount < expectedMinEventsCount && emptyAttempts < 5);
-      if (totalCount < expectedMinEventsCount && emptyAttempts == 5) {
-        logTimeout();
-      } else {
-        waitForQueuesEmptiness(recordsReaderHolder.getAllRecordsReaders());
-      }
-    } catch (Exception e) {
-      logger.error(e.getMessage(), e);
-    }
-  }
-
   public void processAllEvents(int expectedMinEventsCount, ImportValueType importValueType) {
     try {
       int entitiesCount;

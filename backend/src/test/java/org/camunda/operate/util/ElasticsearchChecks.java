@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.IncidentEntity;
+import org.camunda.operate.entities.OperateEntity;
+import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
@@ -20,13 +22,18 @@ import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.VariableReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.reader.WorkflowReader;
+import org.camunda.operate.rest.dto.OperationDto;
 import org.camunda.operate.rest.dto.VariableDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
+import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.google.longrunning.Operation;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Configuration
@@ -119,6 +126,7 @@ public class ElasticsearchChecks {
     };
   }
 
+  //TODO: Check for variable (name AND value)
   /**
    * Checks whether the activity of given args[0] workflowInstanceId (Long) and args[1] activityId (String) is in state COMPLETED
    * @return
@@ -294,6 +302,10 @@ public class ElasticsearchChecks {
     };
   }
 
+  /**
+   * Checks whether all workflowInstances from given workflowInstanceIds (List<String) are finished
+   * @return
+   */
   @Bean(name = "workflowInstancesAreFinished")
   public Predicate<Object[]> getWorkflowInstancesAreFinishedCheck() {
     return objects -> {
@@ -307,6 +319,10 @@ public class ElasticsearchChecks {
     };
   }
 
+  /**
+   * Checks whether all workflowInstances from given workflowInstanceIds (List<String) are started
+   * @return
+   */
   @Bean(name = "workflowInstancesAreStarted")
   public Predicate<Object[]> getWorkflowInstancesAreStartedCheck() {
     return objects -> {
@@ -321,6 +337,23 @@ public class ElasticsearchChecks {
         });
       final ListViewResponseDto responseDto = listViewReader.queryWorkflowInstances(getActiveQuery, 0, ids.size());
       return responseDto.getTotalCount() == ids.size();
+    };
+  }
+  
+  /**
+   * Checks whether all operations for given workflowInstanceId (String) are completed
+   * @return
+   */
+  @Bean(name = "operationsByWorkflowInstanceAreCompleted")
+  public Predicate<Object[]> getOperationsByWorkflowInstanceAreCompleted() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(String.class);
+      String workflowInstanceId = (String)objects[0];
+      ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(workflowInstanceId);
+      return workflowInstance.getOperations().stream().allMatch( operation -> {
+          return operation.getState().equals(OperationState.COMPLETED);
+      });
     };
   }
 

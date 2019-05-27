@@ -35,6 +35,7 @@ import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.util.IdTestUtil;
+import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
@@ -113,6 +114,10 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   @Autowired
   @Qualifier("variableExistsCheck")
   private Predicate<Object[]> variableExistsCheck;
+  
+  @Autowired
+  @Qualifier("operationsByWorkflowInstanceAreCompleted")
+  private Predicate<Object[]> operationsByWorkflowInstanceAreCompleted;
 
   @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
@@ -308,7 +313,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(lastOperation.getEndDate()).isNull();
 
     //after we process messages from Zeebe, the state of the operation is changed to COMPLETED
-    elasticsearchTestRule.processAllEvents(8);
+    //elasticsearchTestRule.processAllEvents(8);
+    elasticsearchTestRule.processAllRecordsAndWait(incidentIsResolvedCheck, IdUtil.getKey(workflowInstanceId));
     workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(workflowInstanceId);
     assertThat(workflowInstance.isHasActiveOperation()).isEqualTo(false);
     assertThat(workflowInstance.getOperations()).hasSize(1);
@@ -356,7 +362,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getEndDate()).isNull();
 
     //after we process messages from Zeebe, the state of the operation is changed to COMPLETED
-    elasticsearchTestRule.processAllEvents(2);
+    //elasticsearchTestRule.processAllEvents(2);
+    elasticsearchTestRule.processAllRecordsAndWait(operationsByWorkflowInstanceAreCompleted, workflowInstanceId);
     workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(workflowInstanceId);
     assertThat(workflowInstance.isHasActiveOperation()).isEqualTo(false);
     assertThat(workflowInstance.getOperations()).hasSize(1);
@@ -506,7 +513,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getEndDate()).isNull();
 
     //after we process messages from Zeebe, the state of the operation is changed to COMPLETED
-    elasticsearchTestRule.processAllEvents(2);
+    //elasticsearchTestRule.processAllEvents(2);
+    elasticsearchTestRule.processAllRecordsAndWait(operationsByWorkflowInstanceAreCompleted, workflowInstanceId);
     workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(workflowInstanceId);
     assertThat(workflowInstance.isHasActiveOperation()).isEqualTo(false);
     assertThat(workflowInstance.getOperations()).hasSize(1);
@@ -592,8 +600,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //then
     //the state of one operation is COMPLETED and of the other - FAILED
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
-    Thread.sleep(1000L);  //sometimes the JOB RETRIES_UPDATED event is not there yet -> wait a little
-    elasticsearchTestRule.processAllEvents(2);
+    //Thread.sleep(1000L);  //sometimes the JOB RETRIES_UPDATED event is not there yet -> wait a little
+    //elasticsearchTestRule.processAllEvents(2);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     final ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(workflowInstanceId);
