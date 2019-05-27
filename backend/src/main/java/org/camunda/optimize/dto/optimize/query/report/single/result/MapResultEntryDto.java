@@ -10,7 +10,7 @@ import lombok.Setter;
 
 import javax.validation.constraints.NotNull;
 
-public class MapResultEntryDto<T> {
+public class MapResultEntryDto<T extends Comparable> {
 
   // @formatter:off
   @NotNull @Getter @Setter private String key;

@@ -16,7 +16,8 @@ import java.util.Optional;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public abstract class ProcessReportMapResult<T> extends ProcessReportResultDto implements LimitedResultDto {
+public abstract class ProcessReportMapResult<T extends Comparable> extends ProcessReportResultDto
+  implements LimitedResultDto {
   private List<MapResultEntryDto<T>> data = new ArrayList<>();
   private Boolean isComplete = true;
 

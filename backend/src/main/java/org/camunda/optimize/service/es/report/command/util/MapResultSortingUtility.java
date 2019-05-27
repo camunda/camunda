@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.Comparator;
 import java.util.List;
@@ -42,53 +41,42 @@ public class MapResultSortingUtility {
                                     final SingleProcessMapDurationReportResult resultData) {
     final List<MapResultEntryDto<Long>> mapResultEntryDtos = sortResultData(
       sorting,
-      resultData.getResultAsDto().getData(),
-      MapResultEntryDto::getValue
+      resultData.getResultAsDto().getData()
     );
     resultData.getResultAsDto().setData(mapResultEntryDtos);
   }
 
-  private static <V> List<MapResultEntryDto<V>> sortResultData(
-    final SortingDto sorting, final List<MapResultEntryDto<V>> resultData) {
-    return sortResultData(sorting, resultData, MapResultEntryDto::getValue);
-  }
-
-  private static <V> List<MapResultEntryDto<V>> sortResultData(
+  private static <V extends Comparable> List<MapResultEntryDto<V>> sortResultData(
     final SortingDto sorting,
-    final List<MapResultEntryDto<V>> resultData,
-    final Function<MapResultEntryDto<V>, ?> valueSupplier) {
+    final List<MapResultEntryDto<V>> resultData) {
 
     final String sortBy = sorting.getBy().orElse(SortingDto.SORT_BY_KEY);
     final SortOrder sortOrder = sorting.getOrder().orElse(SortOrder.DESC);
 
-    Comparator<MapResultEntryDto<V>> comparator;
+    final Function<MapResultEntryDto<V>, Comparable> valueToSortByExtractor;
     switch (sortBy) {
       default:
       case SortingDto.SORT_BY_KEY:
-        comparator = Comparator.comparing(entry -> entry.getKey().toLowerCase());
+        valueToSortByExtractor = entry -> entry.getKey().toLowerCase();
         break;
       case SortingDto.SORT_BY_VALUE:
-        comparator = Comparator.comparing(t -> {
-          final Object value = valueSupplier.apply(t);
-          if (value == null) {
-            // we want to make sure that null values are sorted to the end
-            final int last = sortOrder.equals(SortOrder.DESC)? -1 : 1;
-            return (Comparable) o -> last;
-          } else if (value instanceof Comparable) {
-            return ((Comparable) value);
-          } else {
-            throw new OptimizeRuntimeException(
-              "Map Result value does not implement comparable: " + value.getClass().getSimpleName()
-            );
-          }
-        });
+        valueToSortByExtractor = MapResultEntryDto::getValue;
         break;
       case SortingDto.SORT_BY_LABEL:
-        comparator = Comparator.comparing(entry -> entry.getLabel().toLowerCase());
+        valueToSortByExtractor = entry -> entry.getLabel().toLowerCase();
         break;
     }
 
-    comparator = sortOrder.equals(SortOrder.DESC) ? comparator.reversed() : comparator;
+    final Comparator<MapResultEntryDto<V>> comparator;
+    switch (sortOrder) {
+      case DESC:
+        comparator = Comparator.comparing(valueToSortByExtractor, Comparator.nullsLast(Comparator.reverseOrder()));
+        break;
+      default:
+      case ASC:
+        comparator = Comparator.comparing(valueToSortByExtractor, Comparator.nullsLast(Comparator.naturalOrder()));
+        break;
+    }
 
     return resultData
       .stream()

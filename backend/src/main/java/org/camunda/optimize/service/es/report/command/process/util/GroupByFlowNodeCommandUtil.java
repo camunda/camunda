@@ -28,7 +28,7 @@ public class GroupByFlowNodeCommandUtil {
   private GroupByFlowNodeCommandUtil() {
   }
 
-  public static <MAP extends ProcessReportMapResult<V>, V> void filterResultData(
+  public static <MAP extends ProcessReportMapResult<V>, V extends Comparable> void filterResultData(
     final CommandContext<SingleProcessReportDefinitionDto> commandContext,
     final ReportEvaluationResult<MAP, SingleProcessReportDefinitionDto> evaluationResult) {
 
@@ -50,7 +50,7 @@ public class GroupByFlowNodeCommandUtil {
     }
   }
 
-  public static <MAP extends ProcessReportMapResult<V>, V> void enrichResultData(
+  public static <MAP extends ProcessReportMapResult<V>, V extends Comparable> void enrichResultData(
     final CommandContext<SingleProcessReportDefinitionDto> commandContext,
     final ReportEvaluationResult<MAP, SingleProcessReportDefinitionDto> evaluationResult,
     Supplier<V> createNewEmptyResult) {
