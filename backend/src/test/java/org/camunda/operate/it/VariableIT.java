@@ -14,7 +14,6 @@ import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.camunda.operate.zeebeimport.ImportValueType;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,6 +39,10 @@ public class VariableIT extends OperateZeebeIntegrationTest {
   @Autowired
   @Qualifier("variableExistsCheck")
   private Predicate<Object[]> variableExistsCheck;
+  
+  @Autowired
+  @Qualifier("variableEqualsCheck")
+  private Predicate<Object[]> variableEqualsCheck;
 
   @Autowired
   private ActivityInstanceReader activityInstanceReader;
@@ -137,8 +140,10 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
     //TC4 - when variables are updated
     ZeebeTestUtil.updateVariables(zeebeClient, workflowInstanceId, "{\"var1\": \"updatedValue\" , \"newVar\": 555 }");
-    elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
-
+    //elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
+    elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, workflowInstanceKey,workflowInstanceKey,"var1","\"updatedValue\"");
+    elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, workflowInstanceKey,workflowInstanceKey,"newVar","555");
+    
     variables = getVariables(workflowInstanceId);
     assertThat(variables).hasSize(4);
     assertVariable(variables, "var1","\"updatedValue\"");

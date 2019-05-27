@@ -95,6 +95,10 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   @Autowired
   @Qualifier("variableExistsCheck")
   private Predicate<Object[]> variableExistsCheck;
+  
+  @Autowired
+  @Qualifier("variableEqualsCheck")
+  private Predicate<Object[]> variableEqualsCheck;
 
   private ZeebeClient zeebeClient;
 
@@ -172,7 +176,8 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     //when TC 2
     //update variable
     ZeebeTestUtil.updateVariables(zeebeClient, IdTestUtil.getId(workflowInstanceKey), "{\"a\": \"c\"}");
-    elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
+    //elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
+    elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, workflowInstanceKey,workflowInstanceKey,"a","\"c\"");
     //then we can find the instance by 2 variable values: foo = b
     assertVariableDoesNotExist(workflowInstanceKey, "a", "\"b\"");
     assertVariableExists(workflowInstanceKey, "foo", "\"b\"");

@@ -126,7 +126,31 @@ public class ElasticsearchChecks {
     };
   }
 
-  //TODO: Check for variable (name AND value)
+  /**
+   * Checks whether variable of given args[0] workflowInstanceId  (Long) and args[1] scopeId (Long) and args[2] varName (String) with args[3] (String) value exists
+   * @return
+   */
+  @Bean(name = "variableEqualsCheck")
+  public Predicate<Object[]> getVariableEqualsCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(4);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(Long.class);
+      assertThat(objects[2]).isInstanceOf(String.class);
+      assertThat(objects[3]).isInstanceOf(String.class);
+      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
+      String scopeId = IdTestUtil.getId((Long)objects[1]);
+      String varName = (String)objects[2];
+      String varValue = (String)objects[3];
+      try {
+        List<VariableDto> variables = variableReader.getVariables(workflowInstanceId, scopeId);
+        return variables.stream().anyMatch( v -> v.getName().equals(varName) && v.getValue().equals(varValue));
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
   /**
    * Checks whether the activity of given args[0] workflowInstanceId (Long) and args[1] activityId (String) is in state COMPLETED
    * @return
