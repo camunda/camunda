@@ -46,7 +46,11 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
     final Future<Long> dataGenerationTask1 = startDataGeneration(totalInstanceCountPerGenerationBatch);
     waitForDataGenerationTaskToComplete(optimizeStartTime, dataGenerationTask1);
 
+    // wait for the current time import backoff period to pass
+    Thread.sleep(configurationService.getCurrentTimeBackoffMilliseconds());
+
     // AND wait for data import to finish
+    embeddedOptimizeRule.makeSureAllScheduledJobsAreFinished();
     embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
     progressReporterExecutorService.shutdown();
 
