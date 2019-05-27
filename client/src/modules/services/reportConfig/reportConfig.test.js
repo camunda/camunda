@@ -12,7 +12,6 @@ const {
   options: {view, groupBy, visualization},
   getLabelFor,
   isAllowed,
-  getNext,
   update
 } = reportConfig(process);
 
@@ -34,28 +33,8 @@ it('should get a label for group by variables', () => {
 
 it('should get a label for group by variables for dmn', () => {
   expect(
-    getLabelFor(
-      decision.groupBy,
-      {type: 'inputVariable', value: {id: 'anId'}},
-      '<definitions><input id="anId" label="aName" /></definitions>'
-    )
+    getLabelFor(decision.groupBy, {type: 'inputVariable', value: {id: 'anId', name: 'aName'}})
   ).toBe('Input Variable: aName');
-});
-
-it('should return the groupBy based on the view if the groupBy is unambiguous', () => {
-  expect(getNext({entity: 'flowNode', property: 'frequency'})).toEqual({
-    type: 'flowNodes'
-  });
-});
-
-it('should return the visualization based on the view and groupBy if the visualization is unambiguous', () => {
-  expect(getNext({entity: 'processInstance', property: 'duration'}, {type: 'none'})).toEqual(
-    'number'
-  );
-});
-
-it('should return undefined if an unambiguous next config param could not be found', () => {
-  expect(getNext({entity: 'processInstance', property: 'duration'})).toBe(undefined);
 });
 
 it('should always allow view selection', () => {
@@ -63,13 +42,19 @@ it('should always allow view selection', () => {
 });
 
 it('should allow only groupBy options that make sense for the selected view', () => {
-  expect(isAllowed({property: 'rawData', entity: null}, {type: 'none'})).toBe(true);
-  expect(isAllowed({property: 'rawData', entity: null}, {type: 'flowNodes'})).toBe(false);
+  expect(isAllowed({property: 'rawData', entity: null}, {type: 'none', value: null})).toBeTruthy();
+  expect(
+    isAllowed({property: 'rawData', entity: null}, {type: 'flowNodes', value: null})
+  ).toBeFalsy();
 });
 
 it('should allow only visualization options that make sense for the selected view and group', () => {
-  expect(isAllowed({property: 'rawData', entity: null}, {type: 'none'}, 'table')).toBe(true);
-  expect(isAllowed({property: 'rawData', entity: null}, {type: 'none'}, 'heat')).toBe(false);
+  expect(
+    isAllowed({property: 'rawData', entity: null}, {type: 'none', value: null}, 'table')
+  ).toBeTruthy();
+  expect(
+    isAllowed({property: 'rawData', entity: null}, {type: 'none', value: null}, 'heat')
+  ).toBeFalsy();
 
   expect(
     isAllowed(
@@ -85,7 +70,7 @@ it('should allow only visualization options that make sense for the selected vie
       },
       'pie'
     )
-  ).toBe(true);
+  ).toBeTruthy();
   expect(
     isAllowed(
       {
@@ -93,11 +78,12 @@ it('should allow only visualization options that make sense for the selected vie
         property: 'duration'
       },
       {
-        type: 'none'
+        type: 'none',
+        value: null
       },
       'pie'
     )
-  ).toBe(false);
+  ).toBeFalsy();
 });
 
 describe('update', () => {
@@ -145,7 +131,7 @@ describe('update', () => {
     expect(
       update(
         'groupBy',
-        {type: 'none'},
+        {type: 'none', value: null},
         {
           report: {
             data: {
@@ -155,7 +141,7 @@ describe('update', () => {
           }
         }
       )
-    ).toEqual({groupBy: {$set: {type: 'none'}}, visualization: {$set: 'number'}});
+    ).toEqual({groupBy: {$set: {type: 'none', value: null}}, visualization: {$set: 'number'}});
   });
 
   it('should update view', () => {
@@ -176,7 +162,7 @@ describe('update', () => {
       update('view', countProcessInstances, {
         report: {
           data: {
-            groupBy: {type: 'flowNodes'},
+            groupBy: {type: 'flowNodes', value: null},
             visualization: 'heat'
           }
         }

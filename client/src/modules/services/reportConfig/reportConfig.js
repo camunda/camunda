@@ -4,127 +4,98 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import getDataKeys from '../getDataKeys';
+import equal from 'deep-equal';
+import {convertCamelToSpaces} from '../formatters';
 
-export default function reportConfig({view, groupBy, visualization}) {
-  /**
-   * Retrieves the first level subobject form the configuration that corresponds to the entry. This does not fetch any submenu entries.
-   *
-   * @param config One of the configuration objects of the reportConfig service (view, groupBy, visualization)
-   * @param entry One data entry of the configuration object. This corresponds to the payload sent to the backend
-   */
-  const getObject = (config, entry) => {
-    if (!entry || !config) {
-      return;
-    }
-    const keys = Object.keys(config);
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i];
-      const {data} = config[key];
-
-      const dataKeys = getDataKeys(data);
-      if (
-        dataKeys.every(
-          prop =>
-            JSON.stringify(entry[prop]) === JSON.stringify(data[prop]) || Array.isArray(data[prop])
-        )
-      ) {
-        return config[key];
-      }
-    }
-  };
-
+export default function reportConfig({view, groupBy, visualization, combinations}) {
   /**
    * Construct a String representing the entry. Suitable for displaying to the user
    *
    * @param config One of the configuration objects of the reportConfig service (view, groupBy, visualization)
-   * @param entry One data entry of the configuration object. This corresponds to the payload sent to the backend
+   * @param data One data entry of the configuration object. This corresponds to the payload sent to the backend
    */
-  const getLabelFor = (config, entry, xml) => {
-    const obj = getObject(config, entry);
-
-    if (obj) {
-      const {data, label} = obj;
-
-      if (data.type === 'variable') {
-        return `${label}: ${entry.value.name}`;
-      }
-
-      if (data.type === 'inputVariable' || data.type === 'outputVariable') {
-        return `${label}: ${new DOMParser()
-          .parseFromString(xml, 'text/xml')
-          .querySelector(`[id="${entry.value.id}"]`)
-          .getAttribute('label')}`;
-      }
-
-      const dataKeys = getDataKeys(data);
-
-      const submenu = dataKeys.find(key => Array.isArray(data[key]));
-      if (submenu) {
-        return `${label}: ${getLabelFor(data[submenu], entry[submenu], xml)}`;
-      }
-      return label;
-    }
-  };
-
-  const getNextObject = (view, targetView) => {
-    const {data} = view;
-    const dataKeys = getDataKeys(data);
-
-    let next = view.next;
-
-    const submenu = dataKeys.find(key => Array.isArray(data[key]));
-    if (submenu) {
-      next = getObject(data[submenu], targetView[submenu]).next;
+  const getLabelFor = (config, data) => {
+    // special case: variables
+    if (data && data.type && data.type.toLowerCase().includes('variable')) {
+      return convertCamelToSpaces(data.type) + ': ' + data.value.name;
     }
 
-    return next;
+    for (let i = 0; i < config.length; i++) {
+      const entry = config[i];
+
+      if (equal(entry.data, data, {strict: true})) {
+        return entry.label;
+      }
+
+      if (typeof entry.options === 'object') {
+        const sublabel = getLabelFor(entry.options, data);
+        if (sublabel) {
+          return `${entry.label}: ${sublabel}`;
+        }
+      }
+    }
   };
 
   /**
    * Checks whether a certain combination of view, groupby and visualization is allowed.
    */
   const isAllowed = (targetView, targetGroupBy, targetVisualization) => {
-    const viewObj = getObject(view, targetView);
-    const groupByObj = getObject(groupBy, targetGroupBy);
-    const visualizationObj = getObject(visualization, targetVisualization);
+    const viewGroup = getGroupFor(view, targetView);
+    const groupGroup = getGroupFor(groupBy, targetGroupBy);
+    const visualizationGroup = getGroupFor(visualization, targetVisualization);
 
-    if (viewObj && groupByObj) {
-      const next = getNextObject(viewObj, targetView);
-      const allowed = next.find(({entity}) => entity === groupByObj);
-      if (!allowed) {
-        return false;
-      }
+    if (viewGroup && groupGroup && visualizationGroup) {
+      return (
+        combinations[viewGroup] &&
+        combinations[viewGroup][groupGroup] &&
+        combinations[viewGroup][groupGroup].includes(visualizationGroup)
+      );
+    }
 
-      if (visualizationObj) {
-        return !!allowed.then.find(potentialVis => visualizationObj === potentialVis);
-      }
+    if (viewGroup && groupGroup) {
+      return combinations[viewGroup] && combinations[viewGroup][groupGroup];
     }
 
     return true;
   };
 
+  function getGroupFor(type, data) {
+    // special case for variables:
+    if (data && data.type && data.type.toLowerCase().includes('variable')) {
+      return 'variable';
+    }
+
+    const entry = type.find(entry => {
+      if (entry.data) {
+        return equal(entry.data, data, {strict: true});
+      } else if (typeof entry.options === 'object') {
+        return entry.options.find(entry => equal(entry.data, data, {strict: true}));
+      }
+      return false;
+    });
+
+    return entry && entry.group;
+  }
+
+  function getOnlyOptionFor(type, group) {
+    return type.find(entry => entry.group === group).data;
+  }
+
   /**
    * Based on a given view (and optional groupby), returns the next payload data, if it is unambiguous.
    */
   const getNext = (targetView, targetGroupBy) => {
-    const viewObj = getObject(view, targetView);
-    const groupByObj = getObject(groupBy, targetGroupBy);
+    const viewGroup = getGroupFor(view, targetView);
 
-    const next = getNextObject(viewObj, targetView);
+    const groups = combinations[viewGroup];
 
-    if (next.length === 1 && !targetGroupBy) {
-      return next[0].entity.data;
-    }
+    if (!targetGroupBy && Object.keys(groups).length === 1) {
+      return getOnlyOptionFor(groupBy, Object.keys(groups)[0]);
+    } else if (targetGroupBy) {
+      const visualizations = groups[getGroupFor(groupBy, targetGroupBy)];
 
-    if (groupByObj) {
-      const allowed = next.find(({entity}) => entity === groupByObj);
-      if (!allowed) {
-        return;
-      }
-
-      if (allowed.then.length === 1) {
-        return allowed.then[0].data;
+      if (visualizations.length === 1) {
+        return getOnlyOptionFor(visualization, visualizations[0]);
       }
     }
   };
@@ -147,19 +118,20 @@ export default function reportConfig({view, groupBy, visualization}) {
     const changes = {view: {$set: newView}};
 
     const newGroup = getNext(newView) || groupBy;
-    // we need to compare the string representation for changes, because groupBy is an object, not a string
-    if (newGroup && JSON.stringify(newGroup) !== JSON.stringify(groupBy)) {
+    if (newGroup && !equal(newGroup, groupBy)) {
       changes.groupBy = {$set: newGroup};
-    }
-
-    const newVisualization = getNext(newView, newGroup) || visualization;
-    if (newVisualization && newVisualization !== visualization) {
-      changes.visualization = {$set: newVisualization};
     }
 
     if (!isAllowed(newView, newGroup)) {
       changes.groupBy = {$set: null};
       changes.visualization = {$set: null};
+
+      return changes;
+    }
+
+    const newVisualization = getNext(newView, newGroup) || visualization;
+    if (newVisualization && newVisualization !== visualization) {
+      changes.visualization = {$set: newVisualization};
     }
 
     if (!isAllowed(newView, newGroup, newVisualization)) {
@@ -194,7 +166,6 @@ export default function reportConfig({view, groupBy, visualization}) {
   return {
     getLabelFor,
     isAllowed,
-    getNext,
     update,
     options: {view, groupBy, visualization}
   };

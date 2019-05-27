@@ -83,16 +83,16 @@ export default withErrorHandling(
     updateReport = async (change, needsReevaluation) => {
       const newReport = update(this.state.report.data, change);
 
+      this.setState(({report}) => ({
+        report: update(report, {data: change})
+      }));
+
       if (needsReevaluation) {
         const query = {
           ...this.state.report,
           data: newReport
         };
         await this.loadReport(query);
-      } else {
-        this.setState(({report}) => ({
-          report: update(report, {data: change})
-        }));
       }
     };
 

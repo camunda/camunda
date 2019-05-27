@@ -142,7 +142,6 @@ export default class ReportControlPanel extends React.Component {
                   type="process"
                   field={field}
                   value={data[field]}
-                  xml={data.configuration.xml}
                   variables={{variable: this.state.variables}}
                   previous={previous}
                   disabled={

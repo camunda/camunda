@@ -22,12 +22,12 @@ jest.mock('services', () => {
       process: {
         getLabelFor: jest.fn().mockReturnValue('foo'),
         options: {
-          view: {foo: {data: 'foo', label: 'viewfoo'}},
-          groupBy: {
-            foo: {data: 'foo', label: 'groupbyfoo'},
-            inputVariable: {data: {value: []}, label: 'Input Variable'}
-          },
-          visualization: {foo: {data: 'foo', label: 'visualizationfoo'}}
+          view: [{data: 'foo', label: 'viewfoo'}],
+          groupBy: [
+            {data: 'foo', label: 'groupbyfoo'},
+            {options: 'inputVariable', label: 'Input Variable'}
+          ],
+          visualization: [{data: 'foo', label: 'visualizationfoo'}]
         },
         isAllowed: jest.fn().mockReturnValue(true)
       }
@@ -39,7 +39,7 @@ const config = {
   type: 'process',
   field: 'view',
   value: 'foo',
-  xml: '',
+  variables: {inputVariable: []},
   disabled: false,
   onChange: jest.fn()
 };

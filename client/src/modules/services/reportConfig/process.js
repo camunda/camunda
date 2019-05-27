@@ -4,119 +4,72 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export const visualization = {
-  number: {data: 'number', label: 'Number'},
-  table: {data: 'table', label: 'Table'},
-  bar: {data: 'bar', label: 'Bar Chart'},
-  line: {data: 'line', label: 'Line Chart'},
-  pie: {data: 'pie', label: 'Pie Chart'},
-  heat: {data: 'heat', label: 'Heatmap'}
-};
-
-export const groupBy = {
-  none: {data: {type: 'none'}, label: 'None'},
-  flowNodes: {data: {type: 'flowNodes'}, label: 'Flow Nodes'},
-  startDate: {
-    data: {
-      type: 'startDate',
-      value: [
-        {data: {unit: 'automatic'}, label: 'Automatic'},
-        {data: {unit: 'year'}, label: 'Year'},
-        {data: {unit: 'month'}, label: 'Month'},
-        {data: {unit: 'week'}, label: 'Week'},
-        {data: {unit: 'day'}, label: 'Day'},
-        {data: {unit: 'hour'}, label: 'Hour'}
-      ]
-    },
-    label: 'Start Date of Process Instance'
-  },
-  variable: {
-    data: {
-      type: 'variable',
-      value: []
-    },
-    label: 'Variable'
-  }
-};
-
-const combinations = {
-  rawData: [{entity: groupBy.none, then: [visualization.table]}],
-  flowNodes: [
-    {
-      entity: groupBy.flowNodes,
-      then: [
-        visualization.table,
-        visualization.pie,
-        visualization.line,
-        visualization.bar,
-        visualization.heat
-      ]
-    }
-  ],
-  instance: [
-    {entity: groupBy.none, then: [visualization.number]},
-    {
-      entity: groupBy.startDate,
-      then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
-    },
-    {
-      entity: groupBy.variable,
-      then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
-    }
-  ]
-};
-
-export const view = {
-  rawData: {
-    data: {property: 'rawData', entity: null},
-    label: 'Raw Data',
-    next: combinations.rawData
-  },
-  processInstance: {
+export const view = [
+  {label: 'Raw Data', group: 'raw', data: {property: 'rawData', entity: null}},
+  {
     label: 'Process Instance',
-    data: {
-      entity: 'processInstance',
-      property: [
-        {
-          data: 'frequency',
-          label: 'Count',
-          next: combinations.instance
-        },
-        {
-          data: 'duration',
-          label: 'Duration',
-          next: combinations.instance
-        }
-      ]
-    }
+    group: 'pi',
+    options: [
+      {label: 'Count', data: {property: 'frequency', entity: 'processInstance'}},
+      {label: 'Duration', data: {property: 'duration', entity: 'processInstance'}}
+    ]
   },
-  flowNode: {
+  {
     label: 'Flow Node',
-    data: {
-      entity: 'flowNode',
-      property: [
-        {
-          data: 'frequency',
-          label: 'Count',
-          next: combinations.flowNodes
-        },
-        {
-          data: 'duration',
-          label: 'Duration',
-          next: combinations.flowNodes
-        }
-      ]
-    }
+    group: 'fn',
+    options: [
+      {label: 'Count', data: {property: 'frequency', entity: 'flowNode'}},
+      {label: 'Duration', data: {property: 'duration', entity: 'flowNode'}}
+    ]
   },
-  userTaskDuration: {
+  {
     label: 'User Task Duration',
-    data: {
-      entity: 'userTask',
-      property: [
-        {data: 'idleDuration', label: 'Idle', next: combinations.flowNodes},
-        {data: 'workDuration', label: 'Work', next: combinations.flowNodes},
-        {data: 'duration', label: 'Total', next: combinations.flowNodes}
-      ]
-    }
+    group: 'fn',
+    options: [
+      {label: 'Idle', data: {property: 'idleDuration', entity: 'userTask'}},
+      {label: 'Work', data: {property: 'workDuration', entity: 'userTask'}},
+      {label: 'Total', data: {property: 'duration', entity: 'userTask'}}
+    ]
+  }
+];
+
+export const groupBy = [
+  {label: 'None', group: 'none', data: {type: 'none', value: null}},
+  {label: 'Flow Nodes', group: 'fn', data: {type: 'flowNodes', value: null}},
+  {
+    label: 'Start Date of Process Instance',
+    group: 'date',
+    options: [
+      {label: 'Automatic', data: {type: 'startDate', value: {unit: 'automatic'}}},
+      {label: 'Year', data: {type: 'startDate', value: {unit: 'year'}}},
+      {label: 'Month', data: {type: 'startDate', value: {unit: 'month'}}},
+      {label: 'Week', data: {type: 'startDate', value: {unit: 'week'}}},
+      {label: 'Day', data: {type: 'startDate', value: {unit: 'day'}}},
+      {label: 'Hour', data: {type: 'startDate', value: {unit: 'hour'}}}
+    ]
+  },
+  {label: 'Variable', group: 'variable', options: 'variable'}
+];
+
+export const visualization = [
+  {label: 'Number', group: 'number', data: 'number'},
+  {label: 'Table', group: 'table', data: 'table'},
+  {label: 'Bar Chart', group: 'chart', data: 'bar'},
+  {label: 'Line Chart', group: 'chart', data: 'line'},
+  {label: 'Pie Chart', group: 'chart', data: 'pie'},
+  {label: 'Heatmap', group: 'heat', data: 'heat'}
+];
+
+export const combinations = {
+  raw: {
+    none: ['table']
+  },
+  pi: {
+    none: ['number'],
+    date: ['table', 'chart'],
+    variable: ['table', 'chart']
+  },
+  fn: {
+    fn: ['table', 'chart', 'heat']
   }
 };

@@ -4,84 +4,49 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export const visualization = {
-  number: {data: 'number', label: 'Number'},
-  table: {data: 'table', label: 'Table'},
-  bar: {data: 'bar', label: 'Bar Chart'},
-  line: {data: 'line', label: 'Line Chart'},
-  pie: {data: 'pie', label: 'Pie Chart'}
-};
+export const view = [
+  {label: 'Raw Data', group: 'raw', data: {property: 'rawData'}},
+  {label: 'Evaluation Count', group: 'count', data: {property: 'frequency'}}
+];
 
-export const groupBy = {
-  none: {data: {type: 'none'}, label: 'None'},
-  rules: {data: {type: 'matchedRule'}, label: 'Rules'},
-  evaluationDate: {
-    data: {
-      type: 'evaluationDateTime',
-      value: [
-        {data: {unit: 'automatic'}, label: 'Automatic'},
-        {data: {unit: 'year'}, label: 'Year'},
-        {data: {unit: 'month'}, label: 'Month'},
-        {data: {unit: 'week'}, label: 'Week'},
-        {data: {unit: 'day'}, label: 'Day'},
-        {data: {unit: 'hour'}, label: 'Hour'}
-      ]
-    },
-    label: 'Evaluation Date'
+export const groupBy = [
+  {label: 'None', group: 'none', data: {type: 'none', value: null}},
+  {label: 'Rules', group: 'rule', data: {type: 'matchedRule', value: null}},
+  {
+    label: 'Evaluation Date',
+    group: 'date',
+    options: [
+      {label: 'Automatic', data: {type: 'evaluationDateTime', value: {unit: 'automatic'}}},
+      {label: 'Year', data: {type: 'evaluationDateTime', value: {unit: 'year'}}},
+      {label: 'Month', data: {type: 'evaluationDateTime', value: {unit: 'month'}}},
+      {label: 'Week', data: {type: 'evaluationDateTime', value: {unit: 'week'}}},
+      {label: 'Day', data: {type: 'evaluationDateTime', value: {unit: 'day'}}},
+      {label: 'Hour', data: {type: 'evaluationDateTime', value: {unit: 'hour'}}}
+    ]
   },
-  inputVariable: {
-    data: {
-      type: 'inputVariable',
-      value: []
-    },
-    label: 'Input Variable'
-  },
-  outputVariable: {
-    data: {
-      type: 'outputVariable',
-      value: []
-    },
-    label: 'Output Variable'
-  }
-};
+  {label: 'Input Variable', group: 'variable', options: 'inputVariable'},
+  {label: 'Output Variable', group: 'variable', options: 'outputVariable'}
+];
 
-const combinations = {
-  rawData: [{entity: groupBy.none, then: [visualization.table]}],
-  frequency: [
-    {
-      entity: groupBy.none,
-      then: [visualization.number]
-    },
-    {
-      entity: groupBy.rules,
-      then: [visualization.table]
-    },
-    {
-      entity: groupBy.evaluationDate,
-      then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
-    },
-    {
-      entity: groupBy.inputVariable,
-      then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
-    },
-    {
-      entity: groupBy.outputVariable,
-      then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
-    }
-  ]
-};
+export const visualization = [
+  {label: 'Number', group: 'number', data: 'number'},
+  {label: 'Table', group: 'table', data: 'table'},
+  {label: 'Bar Chart', group: 'chart', data: 'bar'},
+  {label: 'Line Chart', group: 'chart', data: 'line'},
+  {label: 'Pie Chart', group: 'chart', data: 'pie'}
+];
 
-export const view = {
-  rawData: {
-    data: {property: 'rawData'},
-    label: 'Raw Data',
-    next: combinations.rawData
+export const combinations = {
+  raw: {
+    none: ['table']
   },
-  frequency: {
-    data: {
-      property: 'frequency'
-    },
-    label: 'Evaluation Count',
-    next: combinations.frequency
+  count: {
+    none: ['number'],
+    rule: ['table'],
+    date: ['table', 'chart'],
+    variable: ['table', 'chart']
+  },
+  fn: {
+    fn: ['table', 'chart', 'heat']
   }
 };

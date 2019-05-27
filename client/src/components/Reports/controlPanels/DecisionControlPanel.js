@@ -17,7 +17,12 @@ import {reportConfig, loadDecisionDefinitionXml} from 'services';
 const {decision: decisionConfig} = reportConfig;
 
 export default class DecisionControlPanel extends React.Component {
-  state = {};
+  state = {
+    variables: {
+      inputVariable: [],
+      outputVariable: []
+    }
+  };
 
   static getDerivedStateFromProps({
     report: {
@@ -125,7 +130,6 @@ export default class DecisionControlPanel extends React.Component {
                   type="decision"
                   field={field}
                   value={data[field]}
-                  xml={xml}
                   variables={this.state.variables}
                   previous={previous}
                   disabled={

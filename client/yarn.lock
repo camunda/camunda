@@ -3153,7 +3153,6 @@ camelcase@^5.0.0, camelcase@^5.2.0, camelcase@^5.3.1:
 
 camunda-bpm-sdk-js@camunda/camunda-bpm-sdk-js#7.10:
   version "7.10.7-SNAPSHOT"
-  uid febac18dfe899728f2840e7cd6e8f6cc556c3741
   resolved "https://codeload.github.com/camunda/camunda-bpm-sdk-js/tar.gz/febac18dfe899728f2840e7cd6e8f6cc556c3741"
   dependencies:
     exposify "https://github.com/camunda-third-party/exposify/archive/v0.2.0-transform-arguments-0.tar.gz"
@@ -4193,6 +4192,7 @@ deep-equal-ident@^1.1.1:
 deep-equal@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/deep-equal/-/deep-equal-1.0.1.tgz#f5d260292b660e084eff4cdbc9f08ad3247448b5"
+  integrity sha1-9dJgKStmDghO/0zbyfCK0yR0SLU=
 
 deep-equal@~0.1.0:
   version "0.1.2"

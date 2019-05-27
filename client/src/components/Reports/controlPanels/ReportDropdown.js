@@ -5,10 +5,10 @@
  */
 
 import React from 'react';
+import equal from 'deep-equal';
 
 import {Dropdown} from 'components';
-import {reportConfig, getDataKeys} from 'services';
-import {isChecked} from './service';
+import {reportConfig} from 'services';
 
 import './ReportDropdown.scss';
 
@@ -16,47 +16,44 @@ export default function ReportDropdown({
   type,
   field,
   value,
-  xml,
   disabled,
   onChange,
-  variables = {},
+  variables,
   previous = []
 }) {
   const config = reportConfig[type];
   const options = config.options[field];
 
-  const label = config.getLabelFor(options, value, xml) || 'Select...';
+  const label = config.getLabelFor(options, value) || 'Select...';
 
   return (
     <Dropdown label={label} className="ReportDropdown" disabled={disabled}>
-      {Object.entries(options).map(([key, {data, label}]) => {
-        const submenu = getDataKeys(data).find(key => Array.isArray(data[key]));
-        const checked = isChecked(data, value);
-        let disabled = !config.isAllowed(...previous, data);
-
-        if (submenu) {
-          let options = data[submenu];
-          if (key.toLowerCase().includes('variable') && variables[key]) {
-            if (variables[key].length === 0) {
-              disabled = true;
-            }
-
-            options = variables[key].map(data => ({
-              data,
-              label: data.name
-            }));
+      {options.map(({data, label, options}, idx) => {
+        if (options) {
+          if (typeof options === 'string') {
+            options = variables[options].map(({id, name, type}) => {
+              const value = id ? {id, name} : {name, type};
+              return {
+                label: name,
+                data: {type: options, value}
+              };
+            });
           }
-          return (
-            <Dropdown.Submenu key={key} label={label} checked={checked} disabled={disabled}>
-              {options.map(({data: submenuData, label}, idx) => {
-                const completeData = {...data, [submenu]: submenuData};
-                const checked = isChecked(completeData, value);
 
+          return (
+            <Dropdown.Submenu
+              key={idx}
+              checked={options.some(({data}) => equal(data, value, {strict: true}))}
+              disabled={options.every(({data}) => !config.isAllowed(...previous, data))}
+              label={label}
+            >
+              {options.map(({label, data}, idx) => {
                 return (
                   <Dropdown.Option
+                    disabled={!config.isAllowed(...previous, data)}
+                    checked={equal(data, value, {strict: true})}
                     key={idx}
-                    checked={checked}
-                    onClick={() => onChange(completeData)}
+                    onClick={() => onChange(data)}
                   >
                     {label}
                   </Dropdown.Option>
@@ -67,9 +64,9 @@ export default function ReportDropdown({
         } else {
           return (
             <Dropdown.Option
-              key={key}
-              checked={checked}
-              disabled={disabled}
+              key={idx}
+              checked={equal(data, value, {strict: true})}
+              disabled={!config.isAllowed(...previous, data)}
               onClick={() => onChange(data)}
             >
               {label}
