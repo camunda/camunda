@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 
 import java.util.Objects;
 
-public class StartDateGroupByValueDto implements ProcessGroupByValueDto {
+public class DateGroupByValueDto implements ProcessGroupByValueDto {
 
   @Getter @Setter protected GroupByDateUnit unit;
 
@@ -20,10 +20,10 @@ public class StartDateGroupByValueDto implements ProcessGroupByValueDto {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof StartDateGroupByValueDto)) {
+    if (!(o instanceof DateGroupByValueDto)) {
       return false;
     }
-    StartDateGroupByValueDto that = (StartDateGroupByValueDto) o;
+    DateGroupByValueDto that = (DateGroupByValueDto) o;
     return Objects.equals(unit, that.unit);
   }
 }

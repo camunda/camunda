@@ -7,10 +7,10 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.group;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 
-public class StartDateGroupByDto extends ProcessGroupByDto<DateGroupByValueDto> {
+public class EndDateGroupByDto extends ProcessGroupByDto<DateGroupByValueDto> {
 
-  public StartDateGroupByDto() {
-    this.type = ProcessGroupByType.START_DATE;
+  public EndDateGroupByDto() {
+    this.type = ProcessGroupByType.END_DATE;
   }
 
   @Override

@@ -8,15 +8,12 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.d
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.StartDateGroupByValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
-import org.camunda.optimize.service.es.report.command.process.util.ProcessInstanceQueryUtil;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
@@ -45,26 +42,25 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createProcessStartDateHistogramBucketLimitingFilterFor;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.getExtendedBoundsFromDateFilters;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.limitFiltersToMaxBucketsForGroupByUnit;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.isResultComplete;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
-public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
-  extends ProcessReportCommand<SingleProcessMapDurationReportResult> implements AutomaticGroupByDateCommand {
+public abstract class AbstractProcessInstanceDurationGroupByDateCommand
+  extends ProcessReportCommand<SingleProcessMapDurationReportResult>
+  implements AutomaticGroupByDateCommand {
 
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   protected AggregationStrategy aggregationStrategy;
 
-  public AbstractProcessInstanceDurationGroupByStartDateCommand(AggregationStrategy strategy) {
+  AbstractProcessInstanceDurationGroupByDateCommand(AggregationStrategy strategy) {
     aggregationStrategy = strategy;
   }
 
@@ -82,20 +78,21 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
 
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
-      "Evaluating process instance duration grouped by start date report " +
+      "Evaluating process instance duration grouped by [{}] report " +
         "for process definition key [{}] and version [{}]",
+      processReportData.getGroupBy().getType().toString(),
       processReportData.getProcessDefinitionKey(),
       processReportData.getProcessDefinitionVersion()
     );
 
     BoolQueryBuilder query = setupBaseQuery(processReportData);
 
-    StartDateGroupByValueDto groupByStartDate = ((StartDateGroupByDto) processReportData.getGroupBy()).getValue();
+    GroupByDateUnit groupByDateUnit = getGroupByDateUnit(processReportData);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(false)
-      .aggregation(createAggregation(groupByStartDate.getUnit(), query))
+      .aggregation(createAggregation(groupByDateUnit, query))
       .size(0);
     SearchRequest searchRequest =
       new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
@@ -109,8 +106,9 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
     } catch (IOException e) {
       String reason =
         String.format(
-          "Could not evaluate process instance duration grouped by start date report " +
+          "Could not evaluate process instance duration grouped by [%s] date report " +
             "for process definition key [%s] and version [%s]",
+          processReportData.getGroupBy().getType().toString(),
           processReportData.getProcessDefinitionKey(),
           processReportData.getProcessDefinitionVersion()
         );
@@ -118,6 +116,10 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
       throw new OptimizeRuntimeException(reason, e);
     }
 
+  }
+
+  protected GroupByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
+    return ((DateGroupByValueDto) processReportData.getGroupBy().getValue()).getUnit();
   }
 
   @Override
@@ -132,29 +134,30 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
     );
   }
 
+
   private AggregationBuilder createAggregation(final GroupByDateUnit unit, final QueryBuilder query)
     throws OptimizeException {
+    String dateField = getDateField();
     if (GroupByDateUnit.AUTOMATIC.equals(unit)) {
-      return addOperationsAggregation(createAutomaticIntervalAggregation(query));
+      return addOperationsAggregation(createAutomaticIntervalAggregation(query, dateField));
     }
 
     DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
     DateHistogramAggregationBuilder dateHistogramAggregation = AggregationBuilders
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
-      .field(START_DATE)
+      .field(dateField)
       .order(BucketOrder.key(false))
       .dateHistogramInterval(interval)
       .timeZone(DateTimeZone.getDefault());
 
     final ProcessReportDataDto reportData = getReportData();
 
-    final List<DateFilterDataDto> startFilterDataDtos = queryFilterEnhancer.extractFilters(
-      reportData.getFilter(), StartDateFilterDto.class
-    );
+    final List<DateFilterDataDto> reportDateFilter = getReportDateFilter(reportData);
+
     final BoolQueryBuilder limitFilterQuery;
-    if (!startFilterDataDtos.isEmpty()) {
+    if (!reportDateFilter.isEmpty()) {
       final List<DateFilterDataDto> limitedFilters = limitFiltersToMaxBucketsForGroupByUnit(
-        startFilterDataDtos, unit, configurationService.getEsAggregationBucketLimit()
+        reportDateFilter, unit, configurationService.getEsAggregationBucketLimit()
       );
 
       getExtendedBoundsFromDateFilters(
@@ -163,28 +166,31 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
       ).ifPresent(dateHistogramAggregation::extendedBounds);
 
       limitFilterQuery = boolQuery();
-      queryFilterEnhancer.getStartDateQueryFilterService().addFilters(limitFilterQuery, limitedFilters);
+      addFiltersToQuery(limitFilterQuery, limitedFilters);
     } else {
-      limitFilterQuery = createProcessStartDateHistogramBucketLimitingFilterFor(
-        reportData.getFilter(),
-        unit,
-        configurationService.getEsAggregationBucketLimit(),
-        ProcessInstanceQueryUtil.getLatestStartDate(query, esClient).orElse(null),
-        queryFilterEnhancer
-      );
+      limitFilterQuery = createDefaultLimitingFilter(unit, query, reportData);
     }
 
     return wrapWithFilterLimitedParentAggregation(limitFilterQuery, addOperationsAggregation(dateHistogramAggregation));
   }
 
-  private AggregationBuilder createAutomaticIntervalAggregation(QueryBuilder query) throws OptimizeException {
+  protected abstract void addFiltersToQuery(final BoolQueryBuilder limitFilterQuery,
+                                            final List<DateFilterDataDto> limitedFilters);
+
+  protected abstract List<DateFilterDataDto> getReportDateFilter(final ProcessReportDataDto reportData);
+
+  protected abstract BoolQueryBuilder createDefaultLimitingFilter(final GroupByDateUnit unit, final QueryBuilder query,
+                                                                  final ProcessReportDataDto reportData);
+
+  private AggregationBuilder createAutomaticIntervalAggregation(QueryBuilder query, String dateField) throws
+                                                                                                      OptimizeException {
 
     Optional<AggregationBuilder> automaticIntervalAggregation =
       intervalAggregationService.createIntervalAggregation(
         dateIntervalRange,
         query,
         PROC_INSTANCE_TYPE,
-        START_DATE
+        dateField
       );
 
     if (automaticIntervalAggregation.isPresent()) {
@@ -234,5 +240,4 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
       ))
       .collect(Collectors.toList());
   }
-
 }

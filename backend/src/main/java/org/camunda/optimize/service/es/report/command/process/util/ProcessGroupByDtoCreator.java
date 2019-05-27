@@ -6,12 +6,13 @@
 package org.camunda.optimize.service.es.report.command.process.util;
 
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.StartDateGroupByValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
@@ -20,7 +21,7 @@ public class ProcessGroupByDtoCreator {
 
   public static ProcessGroupByDto createGroupByStartDateDto(GroupByDateUnit dateInterval) {
     StartDateGroupByDto groupByDto = new StartDateGroupByDto();
-    StartDateGroupByValueDto valueDto = new StartDateGroupByValueDto();
+    DateGroupByValueDto valueDto = new DateGroupByValueDto();
     valueDto.setUnit(dateInterval);
     groupByDto.setValue(valueDto);
 
@@ -29,6 +30,19 @@ public class ProcessGroupByDtoCreator {
 
   public static ProcessGroupByDto createGroupByStartDateDto() {
     return createGroupByStartDateDto(null);
+  }
+
+  public static ProcessGroupByDto createGroupByEndDateDto(GroupByDateUnit dateInterval) {
+    EndDateGroupByDto groupByDto = new EndDateGroupByDto();
+    DateGroupByValueDto valueDto = new DateGroupByValueDto();
+    valueDto.setUnit(dateInterval);
+    groupByDto.setValue(valueDto);
+
+    return groupByDto;
+  }
+
+  public static ProcessGroupByDto createGroupByEndDateDto() {
+    return createGroupByEndDateDto(null);
   }
 
   public static ProcessGroupByDto createGroupByFlowNode() {

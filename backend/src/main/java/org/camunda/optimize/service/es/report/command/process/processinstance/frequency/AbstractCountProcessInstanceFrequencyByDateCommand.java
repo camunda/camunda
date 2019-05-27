@@ -3,20 +3,20 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.decision.frequency;
+package org.camunda.optimize.service.es.report.command.process.processinstance.frequency;
 
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByEvaluationDateTimeDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByEvaluationDateTimeValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
-import org.camunda.optimize.service.es.report.command.decision.util.DecisionInstanceQueryUtil;
+import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
+import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
+import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
-import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -42,70 +42,82 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createDateHistogramBucketLimitedOrDefaultLimitedFilter;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.getExtendedBoundsFromDateFilters;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.limitFiltersToMaxBucketsForGroupByUnit;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.isResultComplete;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.EVALUATION_DATE_TIME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
-public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
-  extends DecisionReportCommand<SingleDecisionMapReportResult> {
+public abstract class AbstractCountProcessInstanceFrequencyByDateCommand
+  extends ProcessReportCommand<SingleProcessMapReportResult>
+  implements AutomaticGroupByDateCommand {
 
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   @Override
-  protected SingleDecisionMapReportResult evaluate() throws OptimizeException {
+  public IntervalAggregationService getIntervalAggregationService() {
+    return intervalAggregationService;
+  }
 
-    final DecisionReportDataDto reportData = getReportData();
+  @Override
+  protected SingleProcessMapReportResult evaluate() throws OptimizeException {
+
+    final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
-      "Evaluating count decision instance frequency grouped by evaluation date report " +
-        "for decision definition key [{}] and version [{}]",
-      reportData.getDecisionDefinitionKey(),
-      reportData.getDecisionDefinitionVersion()
+      "Evaluating count process instance frequency grouped by [{}] report " +
+        "for process definition key [{}] and version [{}]",
+      processReportData.getGroupBy().getType().toString(),
+      processReportData.getProcessDefinitionKey(),
+      processReportData.getProcessDefinitionVersion()
     );
 
-    final BoolQueryBuilder query = setupBaseQuery(reportData);
-
-    DecisionGroupByEvaluationDateTimeValueDto groupBy =
-      ((DecisionGroupByEvaluationDateTimeDto) reportData.getGroupBy())
-        .getValue();
+    BoolQueryBuilder query = setupBaseQuery(processReportData);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(false)
-      .aggregation(createAggregation(groupBy.getUnit(), query))
+      .aggregation(createAggregation(getGroupByDateUnit(processReportData), query))
       .size(0);
     SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
-        .types(DECISION_INSTANCE_TYPE)
+      new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+        .types(PROC_INSTANCE_TYPE)
         .source(searchSourceBuilder);
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final DecisionReportMapResultDto mapResultDto = mapToReportResult(response);
-      return new SingleDecisionMapReportResult(mapResultDto, reportDefinition);
+      final ProcessCountReportMapResultDto mapResultDto = mapToReportResult(response);
+      return new SingleProcessMapReportResult(mapResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
         String.format(
-          "Could not evaluate count decision instance frequency grouped by evaluation date report " +
-            "for decision definition with key [%s] and version [%s]",
-          reportData.getDecisionDefinitionKey(),
-          reportData.getDecisionDefinitionVersion()
+          "Could not evaluate count process instance frequency grouped by [%s] date report " +
+            "for process definition with key [%s] and version [%s]",
+          processReportData.getGroupBy().getType().toString(),
+          processReportData.getProcessDefinitionKey(),
+          processReportData.getProcessDefinitionVersion()
         );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
   }
 
+
+  protected GroupByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
+    return ((DateGroupByValueDto) processReportData.getGroupBy().getValue()).getUnit();
+  }
+
   @Override
-  protected void sortResultData(final SingleDecisionMapReportResult evaluationResult) {
-    ((DecisionReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
+  public BoolQueryBuilder setupBaseQuery(final ProcessReportDataDto reportDataDto) {
+    return super.setupBaseQuery(reportDataDto);
+  }
+
+  @Override
+  protected void sortResultData(final SingleProcessMapReportResult evaluationResult) {
+    ((ProcessReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
   }
@@ -119,19 +131,18 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     final DateHistogramAggregationBuilder dateHistogramAggregation = AggregationBuilders
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
       .order(BucketOrder.key(false))
-      .field(EVALUATION_DATE_TIME)
+      .field(getDateField())
       .dateHistogramInterval(interval)
       .timeZone(DateTimeZone.getDefault());
 
-    final DecisionReportDataDto reportData = getReportData();
+    final ProcessReportDataDto reportData = getReportData();
 
-    final List<DateFilterDataDto> dateFilterDataDtos = queryFilterEnhancer.extractFilters(
-      reportData.getFilter(), EvaluationDateFilterDto.class
-    );
+    final List<DateFilterDataDto> reportDateFilters = getReportDateFilters(reportData);
+
     final BoolQueryBuilder limitFilterQuery;
-    if (!dateFilterDataDtos.isEmpty()) {
+    if (!reportDateFilters.isEmpty()) {
       final List<DateFilterDataDto> limitedFilters = limitFiltersToMaxBucketsForGroupByUnit(
-        dateFilterDataDtos, unit, configurationService.getEsAggregationBucketLimit()
+        reportDateFilters, unit, configurationService.getEsAggregationBucketLimit()
       );
 
       getExtendedBoundsFromDateFilters(
@@ -140,19 +151,21 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
       ).ifPresent(dateHistogramAggregation::extendedBounds);
 
       limitFilterQuery = boolQuery();
-      queryFilterEnhancer.getEvaluationDateQueryFilter().addFilters(limitFilterQuery, limitedFilters);
+      addFiltersToQuery(limitFilterQuery, limitedFilters);
     } else {
-      limitFilterQuery = createDateHistogramBucketLimitedOrDefaultLimitedFilter(
-        dateFilterDataDtos,
-        unit,
-        configurationService.getEsAggregationBucketLimit(),
-        DecisionInstanceQueryUtil.getLatestEvaluationDate(query, esClient).orElse(null),
-        queryFilterEnhancer.getEvaluationDateQueryFilter()
-      );
+      limitFilterQuery = createDefaultLimitingFilter(unit, query, reportData);
     }
 
     return wrapWithFilterLimitedParentAggregation(limitFilterQuery, dateHistogramAggregation);
   }
+
+  protected abstract void addFiltersToQuery(final BoolQueryBuilder limitFilterQuery,
+                                            final List<DateFilterDataDto> limitedFilters);
+
+  protected abstract List<DateFilterDataDto> getReportDateFilters(final ProcessReportDataDto reportData);
+
+  protected abstract BoolQueryBuilder createDefaultLimitingFilter(final GroupByDateUnit unit, final QueryBuilder query,
+                                                                  final ProcessReportDataDto reportData);
 
   private AggregationBuilder createAutomaticIntervalAggregation(QueryBuilder query) throws OptimizeException {
 
@@ -160,8 +173,8 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
       intervalAggregationService.createIntervalAggregation(
         dateIntervalRange,
         query,
-        DECISION_INSTANCE_TYPE,
-        EVALUATION_DATE_TIME
+        PROC_INSTANCE_TYPE,
+        getDateField()
       );
 
     if (automaticIntervalAggregation.isPresent()) {
@@ -171,10 +184,10 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     }
   }
 
-  private DecisionReportMapResultDto mapToReportResult(final SearchResponse response) {
-    final DecisionReportMapResultDto resultDto = new DecisionReportMapResultDto();
+  private ProcessCountReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ProcessCountReportMapResultDto resultDto = new ProcessCountReportMapResultDto();
     resultDto.setData(processAggregations(response.getAggregations()));
-    resultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
+    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
     resultDto.setIsComplete(isResultComplete(response));
     return resultDto;
   }
@@ -184,7 +197,6 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     List<MapResultEntryDto<Long>> result = new ArrayList<>();
     if (unwrappedLimitedAggregations.isPresent()) {
       final Histogram agg = unwrappedLimitedAggregations.get().get(DATE_HISTOGRAM_AGGREGATION);
-
       for (Histogram.Bucket entry : agg.getBuckets()) {
         DateTime key = (DateTime) entry.getKey();
         long docCount = entry.getDocCount();
@@ -207,6 +219,5 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
       ))
       .collect(Collectors.toList());
   }
-
 
 }

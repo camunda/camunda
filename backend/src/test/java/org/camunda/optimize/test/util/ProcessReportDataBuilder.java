@@ -14,10 +14,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByEndDate;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByVariable;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeHeatmapReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByEndDateReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByEndDateWithProcessPartReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNoneWithProcessPart;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByStartDateReport;
@@ -80,6 +83,22 @@ public class ProcessReportDataBuilder {
           endFlowNodeId
         );
         break;
+      case PROC_INST_DUR_GROUP_BY_END_DATE:
+        reportData = createProcessInstanceDurationGroupByEndDateReport(
+          processDefinitionKey,
+          processDefinitionVersion,
+          dateInterval
+        );
+        break;
+      case PROC_INST_DUR_GROUP_BY_END_DATE_WITH_PART:
+        reportData = createProcessInstanceDurationGroupByEndDateWithProcessPartReport(
+          processDefinitionKey,
+          processDefinitionVersion,
+          dateInterval,
+          startFlowNodeId,
+          endFlowNodeId
+        );
+        break;
       case PROC_INST_DUR_GROUP_BY_VARIABLE:
         reportData = createProcessInstanceDurationGroupByVariable(
           processDefinitionKey,
@@ -106,6 +125,13 @@ public class ProcessReportDataBuilder {
         break;
       case COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE:
         reportData = createCountProcessInstanceFrequencyGroupByStartDate(
+          processDefinitionKey,
+          processDefinitionVersion,
+          dateInterval
+        );
+        break;
+      case COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE:
+        reportData = createCountProcessInstanceFrequencyGroupByEndDate(
           processDefinitionKey,
           processDefinitionVersion,
           dateInterval

@@ -30,12 +30,13 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTAN
 public class ProcessInstanceQueryUtil {
   private static final Logger logger = LoggerFactory.getLogger(ProcessInstanceQueryUtil.class);
 
-  public static Optional<OffsetDateTime> getLatestStartDate(final QueryBuilder baseQuery,
-                                                            final RestHighLevelClient esClient) {
+  public static Optional<OffsetDateTime> getLatestDate(final QueryBuilder baseQuery,
+                                                       final String dateField,
+                                                       final RestHighLevelClient esClient) {
     final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(baseQuery)
-      .sort(SortBuilders.fieldSort(START_DATE).order(SortOrder.DESC))
+      .sort(SortBuilders.fieldSort(dateField).order(SortOrder.DESC))
       .size(1);
     final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
       .types(PROC_INSTANCE_TYPE)
@@ -46,7 +47,7 @@ public class ProcessInstanceQueryUtil {
 
       return Arrays.stream(response.getHits().getHits())
         .findFirst()
-        .map(documentFields -> (String) documentFields.getSourceAsMap().get(START_DATE))
+        .map(documentFields -> (String) documentFields.getSourceAsMap().get(dateField))
         .map(dateTimeFormatter::parse)
         .map(OffsetDateTime::from);
     } catch (IOException e) {

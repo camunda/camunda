@@ -22,6 +22,7 @@ import org.camunda.optimize.service.es.report.command.process.util.ProcessViewDt
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByEndDateDto;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByFlowNode;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByNone;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByStartDateDto;
@@ -52,16 +53,10 @@ public class ProcessReportDataBuilderHelper {
     String processDefinitionVersion,
     GroupByDateUnit dateInterval
   ) {
-
-    ProcessViewDto view = ProcessViewDtoCreator.createProcessInstanceDurationView();
-    ProcessGroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
-
-    return createReportDataViewRaw(
+    return createProcessInstanceDurationGroupByDateReport(
       processDefinitionKey,
       processDefinitionVersion,
-      ProcessVisualization.TABLE,
-      view,
-      groupByDto
+      createGroupByStartDateDto(dateInterval)
     );
   }
 
@@ -72,9 +67,91 @@ public class ProcessReportDataBuilderHelper {
     String startFlowNodeId,
     String endFlowNodeId
   ) {
+    return createProcessInstanceDurationGroupByDateWithProcessPartReport(
+      processDefinitionKey,
+      processDefinitionVersion,
+      createGroupByStartDateDto(dateInterval),
+      startFlowNodeId,
+      endFlowNodeId
+    );
+  }
 
+  public static ProcessReportDataDto createCountProcessInstanceFrequencyGroupByStartDate(
+    String processDefinitionKey,
+    String processDefinitionVersion,
+    GroupByDateUnit dateInterval
+  ) {
+    return createCountProcessInstanceFrequencyGroupByDate(
+      processDefinitionKey,
+      processDefinitionVersion,
+      createGroupByStartDateDto(dateInterval)
+    );
+  }
+
+  public static ProcessReportDataDto createProcessInstanceDurationGroupByEndDateReport(
+    String processDefinitionKey,
+    String processDefinitionVersion,
+    GroupByDateUnit dateInterval
+  ) {
+    return createProcessInstanceDurationGroupByDateReport(
+      processDefinitionKey,
+      processDefinitionVersion,
+      createGroupByEndDateDto(dateInterval)
+    );
+  }
+
+  public static ProcessReportDataDto createProcessInstanceDurationGroupByEndDateWithProcessPartReport(
+    String processDefinitionKey,
+    String processDefinitionVersion,
+    GroupByDateUnit dateInterval,
+    String startFlowNodeId,
+    String endFlowNodeId
+  ) {
+    return createProcessInstanceDurationGroupByDateWithProcessPartReport(
+      processDefinitionKey,
+      processDefinitionVersion,
+      createGroupByEndDateDto(dateInterval),
+      startFlowNodeId,
+      endFlowNodeId
+    );
+  }
+
+  public static ProcessReportDataDto createCountProcessInstanceFrequencyGroupByEndDate(
+    String processDefinitionKey,
+    String processDefinitionVersion,
+    GroupByDateUnit dateInterval
+  ) {
+    return createCountProcessInstanceFrequencyGroupByDate(
+      processDefinitionKey,
+      processDefinitionVersion,
+      createGroupByEndDateDto(dateInterval)
+    );
+  }
+
+  public static ProcessReportDataDto createProcessInstanceDurationGroupByDateReport(
+    String processDefinitionKey,
+    String processDefinitionVersion,
+    ProcessGroupByDto groupByDto
+  ) {
     ProcessViewDto view = ProcessViewDtoCreator.createProcessInstanceDurationView();
-    ProcessGroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
+
+    return createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+  }
+
+  private static ProcessReportDataDto createProcessInstanceDurationGroupByDateWithProcessPartReport(
+    String processDefinitionKey,
+    String processDefinitionVersion,
+    ProcessGroupByDto groupByDto,
+    String startFlowNodeId,
+    String endFlowNodeId
+  ) {
+    ProcessViewDto view = ProcessViewDtoCreator.createProcessInstanceDurationView();
     ProcessPartDto processPartDto = createProcessPart(startFlowNodeId, endFlowNodeId);
 
     return createReportDataViewRaw(
@@ -87,14 +164,13 @@ public class ProcessReportDataBuilderHelper {
     );
   }
 
-  public static ProcessReportDataDto createCountProcessInstanceFrequencyGroupByStartDate(
+  private static ProcessReportDataDto createCountProcessInstanceFrequencyGroupByDate(
     String processDefinitionKey,
     String processDefinitionVersion,
-    GroupByDateUnit dateInterval
+    ProcessGroupByDto groupByDto
   ) {
 
     ProcessViewDto view = createCountProcessInstanceFrequencyView();
-    ProcessGroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
 
     ProcessReportDataDto reportData = createReportDataViewRaw(
       processDefinitionKey,

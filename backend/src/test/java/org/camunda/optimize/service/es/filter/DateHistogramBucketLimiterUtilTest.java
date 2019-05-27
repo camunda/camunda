@@ -125,7 +125,7 @@ public class DateHistogramBucketLimiterUtilTest {
     final GroupByDateUnit groupByUnit = GroupByDateUnit.valueOf(unit.name().substring(0, unit.name().length() - 1));
     final OffsetDateTime defaultEndTime = OffsetDateTime.now().minusYears(1L);
     final BoolQueryBuilder filterQuery =
-      DateHistogramBucketLimiterUtil.createDateHistogramBucketLimitingFilter(
+      DateHistogramBucketLimiterUtil.createDateHistogramBucketLimitedOrDefaultLimitedFilter(
         ImmutableList.of(),
         groupByUnit,
         limit.intValue(),

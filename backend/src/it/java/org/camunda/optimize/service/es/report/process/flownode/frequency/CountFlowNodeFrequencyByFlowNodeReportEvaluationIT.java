@@ -610,15 +610,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     return engineRule.deployAndStartProcess(modelInstance);
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .startEvent("startEvent")
-      .userTask("userTask")
-      .endEvent()
-      .done();
-    return engineRule.deployAndStartProcess(processModel);
-  }
-
   private long getExecutedFlowNodeCount(ProcessCountReportMapResultDto resultList) {
     return resultList.getData().stream().filter(result -> result.getValue() > 0).count();
   }

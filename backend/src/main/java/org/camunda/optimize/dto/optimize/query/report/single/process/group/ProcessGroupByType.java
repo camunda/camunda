@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.group;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_END_DATE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_FLOW_NODES_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_NONE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_START_DATE_TYPE;
@@ -15,6 +16,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_VARIABL
 
 public enum ProcessGroupByType {
   START_DATE(GROUP_BY_START_DATE_TYPE),
+  END_DATE(GROUP_BY_END_DATE_TYPE),
   FLOW_NODES(GROUP_BY_FLOW_NODES_TYPE),
   USER_TASKS(GROUP_BY_USER_TASKS_TYPE),
   NONE(GROUP_BY_NONE_TYPE),

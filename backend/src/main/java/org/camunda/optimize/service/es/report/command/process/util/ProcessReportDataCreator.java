@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByEndDateDto;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByFlowNode;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByNone;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByStartDateDto;
@@ -104,6 +105,29 @@ public class ProcessReportDataCreator {
     return reportData;
   }
 
+  public static ProcessReportDataDto createProcessInstanceDurationGroupByEndDateReport(AggregationType aggroType) {
+    ProcessViewDto view = ProcessViewDtoCreator.createProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByEndDateDto();
+
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    reportData.getConfiguration().setAggregationType(aggroType);
+    return reportData;
+  }
+
+  public static ProcessReportDataDto createProcessInstanceDurationGroupByEndDateWithProcessPartReport(AggregationType aggroType) {
+    ProcessViewDto view = ProcessViewDtoCreator.createProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByEndDateDto();
+
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
+    reportData.getConfiguration().setAggregationType(aggroType);
+    return reportData;
+  }
+
   public static ProcessReportDataDto createProcessInstanceDurationGroupByVariableReport(AggregationType aggroType) {
     ProcessViewDto view = ProcessViewDtoCreator.createProcessInstanceDurationView();
     ProcessGroupByDto groupByDto = createGroupByVariable();
@@ -150,6 +174,17 @@ public class ProcessReportDataCreator {
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
+
+  public static ProcessReportDataDto createCountProcessInstanceFrequencyGroupByEndDateReport() {
+    ProcessViewDto view = createCountProcessInstanceFrequencyView();
+    ProcessGroupByDto groupByDto = createGroupByEndDateDto();
+
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
 
   public static ProcessReportDataDto createCountProcessInstanceFrequencyGroupByVariableReport() {
     ProcessViewDto view = createCountProcessInstanceFrequencyView();

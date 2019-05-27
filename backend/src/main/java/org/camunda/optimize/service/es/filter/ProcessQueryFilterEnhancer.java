@@ -58,7 +58,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
     }
   }
 
-  public StartDateQueryFilter getStartDateQueryFilterService() {
+  public StartDateQueryFilter getStartDateQueryFilter() {
     return startDateQueryFilter;
   }
 

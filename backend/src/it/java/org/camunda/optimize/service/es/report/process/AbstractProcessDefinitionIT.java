@@ -81,6 +81,16 @@ public class AbstractProcessDefinitionIT {
     return engineRule.deployAndStartProcessWithVariables(processModel, variables, BUSINESS_KEY, tenantId);
   }
 
+
+  protected ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess() {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .startEvent("startEvent")
+      .userTask("userTask")
+      .endEvent()
+      .done();
+    return engineRule.deployAndStartProcess(processModel);
+  }
+
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
     return deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
   }
