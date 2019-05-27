@@ -68,4 +68,10 @@ export const TileTitle = themed(styled.h2`
 export const TileContent = styled.div`
   position: relative;
   overflow-y: scroll;
+
+  // these styles are required to fully display focus borders
+  padding-left: 4px;
+  margin-left: -4px;
+  padding-top: 4px;
+  margin-top: -4px;
 `;
