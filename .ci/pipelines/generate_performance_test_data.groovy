@@ -2,7 +2,7 @@
 
 
 // general properties for CI execution
-def static NODE_POOL() { return "slaves" }
+def static NODE_POOL() { return "slaves-ssd-small" }
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { return "postgres:${postgresVersion}" }
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "camunda/camunda-bpm-platform:${cambpmVersion}" }
@@ -11,6 +11,7 @@ static String agent(env, postgresVersion='9.6-alpine', cambpmVersion = '7.10.0')
     return """
 apiVersion: v1
 kind: Pod
+name: stage-
 metadata:
   labels:
     agent: optimize-ci-build
@@ -18,7 +19,7 @@ spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: ${NODE_POOL()}
   tolerations:
-   - key: "${NODE_POOL()}"
+   - key: \"${NODE_POOL()}"
      operator: "Exists"
      effect: "NoSchedule"
   securityContext:
@@ -26,8 +27,18 @@ spec:
   volumes:
     - name: cambpm-storage
       emptyDir: {}
-    - name: export
-      emptyDir: {}
+    - name: ssd-storage
+      hostPath:
+        path: /mnt/disks/ssd0
+        type: Directory
+  initContainers:
+  - name: init-cleanup
+    image: busybox
+    command: ['sh', '-c', 'rm -fr /var/lib/postgresql/data/*; rm -fr /export/*']
+    volumeMounts:
+    - name: ssd-storage
+      mountPath: /var/lib/postgresql/data
+      subPath: pgdata
   containers:
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}
@@ -42,14 +53,17 @@ spec:
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 4
+        cpu: 1.5
         memory: 2Gi
       requests:
-        cpu: 4
+        cpu: 1.5
         memory: 1Gi
     volumeMounts:
       - name: cambpm-storage
         mountPath: /cambpm-storage
+      - name: ssd-storage
+        mountPath: /export
+        subPath: gcloud
   - name: postgres
     image: ${POSTGRES_DOCKER_IMAGE(postgresVersion)}
     env:
@@ -66,15 +80,16 @@ spec:
       name: postgres
       protocol: TCP
     resources:
-      limits:
+      requests:
         cpu: 3 
-        memory: 1Gi
-      request:
-        cpu: 2
-        memory: 1Gi
+        memory: 10Gi
     volumeMounts:
-      - name: export 
-        mountPath: /export
+        - name: ssd-storage
+          mountPath: /var/lib/postgresql/data
+          subPath: pgdata
+        - name: ssd-storage
+          mountPath: /export
+          subPath: gcloud
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
     env:
@@ -94,11 +109,8 @@ spec:
         value: "-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m"
     resources:
       limits:
-        cpu: 4 
+        cpu: 2 
         memory: 3Gi
-      requests:
-        cpu: 2
-        memory: 1Gi
     volumeMounts:
       - name: cambpm-storage
         mountPath: /camunda/logs
@@ -115,8 +127,9 @@ spec:
         cpu: 200m
         memory: 128Mi
     volumeMounts:
-      - name: export 
+      - name: ssd-storage
         mountPath: /export
+        subPath: gcloud
 """
 }
 /******** START PIPELINE *******/
@@ -138,7 +151,7 @@ pipeline {
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()
-        timeout(time: 10, unit: 'HOURS')
+        timeout(time: 48, unit: 'HOURS')
     }
 
     stages {
@@ -148,9 +161,8 @@ pipeline {
                         branch: "$BRANCH",
                         credentialsId: 'camunda-jenkins-github-ssh',
                         poll: false
-                container('maven') {
-                    // Compile generator
-                    sh ("mvn -T\$LIMITS_CPU -B -s settings.xml -f qa/data-generation compile")
+                container('postgres') {
+                    sh ("df -h /export /var/lib/postgresql/data")
                 }
             }
         }
@@ -158,7 +170,7 @@ pipeline {
             steps {
                 container('maven') {
                     // Generate Data
-                    sh ("mvn -T\$LIMITS_CPU -B -s settings.xml -f qa/data-generation exec:java -Dexec.args=\"--numberOfProcessInstances ${NUM_INSTANCES}\"")
+                    sh ("mvn -T1C -B -s settings.xml -f qa/data-generation compile exec:java -Dexec.args=\"--numberOfProcessInstances ${NUM_INSTANCES}\"")
                 }
             }
         }
