@@ -84,7 +84,8 @@ public class GroupByFlowNodeCommandUtil {
       .getProcessDefinitionReader()
       .getFullyImportedProcessDefinition(
         reportData.getProcessDefinitionKey(),
-        reportData.getProcessDefinitionVersion()
+        reportData.getProcessDefinitionVersion(),
+        reportData.getTenantIds().stream().findFirst().orElse(null)
       );
   }
 

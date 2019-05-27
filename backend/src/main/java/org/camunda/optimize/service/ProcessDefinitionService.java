@@ -48,6 +48,19 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
                                                   final String definitionKey,
                                                   final String definitionVersion,
                                                   final String tenantId) {
+    return getProcessDefinitionXmlAsService(definitionKey, definitionVersion, tenantId)
+      .map(processDefinitionOptimizeDto -> {
+        if (isAuthorizedToReadProcessDefinition(userId, processDefinitionOptimizeDto)) {
+          return processDefinitionOptimizeDto.getBpmn20Xml();
+        } else {
+          throw new ForbiddenException("Current user is not authorized to access data of the process definition");
+        }
+      });
+  }
+
+  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionXmlAsService(final String definitionKey,
+                                                                                 final String definitionVersion,
+                                                                                 final String tenantId) {
     // first try to load tenant specific definition
     Optional<ProcessDefinitionOptimizeDto> fullyImportedDefinition =
       processDefinitionReader.getFullyImportedProcessDefinition(definitionKey, definitionVersion, tenantId);
@@ -57,15 +70,7 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
       fullyImportedDefinition =
         processDefinitionReader.getFullyImportedProcessDefinition(definitionKey, definitionVersion, null);
     }
-
-    return fullyImportedDefinition
-      .map(processDefinitionOptimizeDto -> {
-        if (isAuthorizedToReadProcessDefinition(userId, processDefinitionOptimizeDto)) {
-          return processDefinitionOptimizeDto.getBpmn20Xml();
-        } else {
-          throw new ForbiddenException("Current user is not authorized to access data of the process definition");
-        }
-      });
+    return fullyImportedDefinition;
   }
 
   public List<ProcessDefinitionOptimizeDto> getFullyImportedProcessDefinitions(final String userId, boolean withXml) {

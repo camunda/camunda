@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
 import org.camunda.optimize.rest.providers.CacheRequest;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.ProcessDefinitionService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
@@ -28,7 +28,7 @@ import java.util.Optional;
 @Slf4j
 public class FlowNodeRestService {
 
-  private final ProcessDefinitionReader processDefinitionReader;
+  private final ProcessDefinitionService processDefinitionService;
 
   @POST
   @Path("/flowNodeNames")
@@ -37,8 +37,11 @@ public class FlowNodeRestService {
   @CacheRequest
   public FlowNodeNamesResponseDto getFlowNodeNames(final FlowNodeIdsToNamesRequestDto request) {
     final FlowNodeNamesResponseDto result = new FlowNodeNamesResponseDto();
-    final Optional<ProcessDefinitionOptimizeDto> processDefinitionXmlDto = processDefinitionReader
-      .getFullyImportedProcessDefinition(request.getProcessDefinitionKey(), request.getProcessDefinitionVersion());
+
+    final Optional<ProcessDefinitionOptimizeDto> processDefinitionXmlDto = processDefinitionService
+      .getProcessDefinitionXmlAsService(
+        request.getProcessDefinitionKey(), request.getProcessDefinitionVersion(), request.getTenantId()
+      );
 
     if (processDefinitionXmlDto.isPresent()) {
       List<String> nodeIds = request.getNodeIds();

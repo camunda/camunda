@@ -14,5 +14,6 @@ public class FlowNodeIdsToNamesRequestDto {
 
   protected String processDefinitionKey;
   protected String processDefinitionVersion;
+  protected String tenantId;
   protected List<String> nodeIds;
 }

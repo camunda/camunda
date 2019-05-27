@@ -50,12 +50,6 @@ public class ProcessDefinitionReader {
 
   public Optional<ProcessDefinitionOptimizeDto> getFullyImportedProcessDefinition(
     final String processDefinitionKey,
-    final String processDefinitionVersion) {
-    return getFullyImportedProcessDefinition(processDefinitionKey, processDefinitionVersion, null);
-  }
-
-  public Optional<ProcessDefinitionOptimizeDto> getFullyImportedProcessDefinition(
-    final String processDefinitionKey,
     final String processDefinitionVersion,
     final String tenantId) {
 
