@@ -44,7 +44,7 @@ export default class InstancesByWorkflow extends React.Component {
 
   renderIncidentsPerVersion = (workflowName, items) => {
     return (
-      <ul>
+      <Styled.VersionList>
         {items.map(item => {
           const totalInstancesCount =
             item.instancesWithActiveIncidentsCount + item.activeInstancesCount;
@@ -62,6 +62,7 @@ export default class InstancesByWorkflow extends React.Component {
                   totalInstancesCount,
                   item.version
                 )}
+                boxSize="small"
               >
                 <InstancesBar
                   label={getLabel(
@@ -77,7 +78,7 @@ export default class InstancesByWorkflow extends React.Component {
             </Styled.VersionLi>
           );
         })}
-      </ul>
+      </Styled.VersionList>
     );
   };
 

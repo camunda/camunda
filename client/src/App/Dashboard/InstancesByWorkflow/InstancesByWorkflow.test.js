@@ -193,7 +193,6 @@ describe('InstancesByWorkflow', () => {
       mockInstancesByWorkflow[1].activeInstancesCount
     );
     // should render a list with 2 items
-    expect(contentNode.type()).toBe('ul');
     expect(contentNode.find(Styled.VersionLi).length).toBe(2);
 
     // should render two statistics
