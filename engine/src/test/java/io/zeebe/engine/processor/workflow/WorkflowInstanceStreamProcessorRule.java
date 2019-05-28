@@ -37,13 +37,13 @@ import io.zeebe.engine.util.CopiedTypedEvent;
 import io.zeebe.engine.util.Records;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.engine.util.TypedRecordStream;
+import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -179,7 +179,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
     return awaitAndGetFirstRecord(
         ValueType.WORKFLOW_INSTANCE_CREATION,
         (e, r) ->
-            e.getSourceEventPosition() == position
+            e.getSourceRecordPosition() == position
                 && r.getMetadata().getIntent() == WorkflowInstanceCreationIntent.CREATED,
         new WorkflowInstanceCreationRecord());
   }
@@ -197,7 +197,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
         ValueType.WORKFLOW_INSTANCE, matcher, WorkflowInstanceRecord.class);
   }
 
-  public <T extends UnpackedObject> TypedRecord<T> awaitAndGetFirstRecord(
+  public <T extends UnifiedRecordValue> TypedRecord<T> awaitAndGetFirstRecord(
       ValueType valueType, Predicate<TypedRecord<T>> matcher, Class<T> valueClass) {
     return TestUtil.doRepeatedly(
             () ->
@@ -211,7 +211,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
         .orElse(null);
   }
 
-  public <T extends UnpackedObject> TypedRecord<T> awaitAndGetFirstRecord(
+  public <T extends UnifiedRecordValue> TypedRecord<T> awaitAndGetFirstRecord(
       ValueType valueType, BiFunction<CopiedTypedEvent, TypedRecord<T>, Boolean> matcher, T value) {
     return (TypedRecord)
         TestUtil.doRepeatedly(
@@ -263,7 +263,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
                     .events()
                     .onlyWorkflowInstanceRecords()
                     .withIntent(intent)
-                    .filter(r -> elementIdAsBuffer.equals(r.getValue().getElementId()))
+                    .filter(r -> elementIdAsBuffer.equals(r.getValue().getElementIdBuffer()))
                     .findFirst())
         .until(o -> o.isPresent())
         .get();
@@ -290,7 +290,8 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
             environmentRule
                 .events()
                 .onlyJobRecords()
-                .filter(r -> r.getValue().getHeaders().getElementId().equals(activityIdBuffer))
+                .filter(
+                    r -> r.getValue().getJobHeaders().getElementIdBuffer().equals(activityIdBuffer))
                 .withIntent(state);
 
     waitUntil(() -> lookupStream.get().findFirst().isPresent());

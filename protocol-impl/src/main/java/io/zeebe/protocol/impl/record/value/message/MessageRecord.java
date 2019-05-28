@@ -15,13 +15,13 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import org.agrona.DirectBuffer;
 
-public class MessageRecord extends UnpackedObject {
+public class MessageRecord extends UnifiedRecordValue {
 
   private final StringProperty nameProp = new StringProperty("name");
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey");

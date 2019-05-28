@@ -57,6 +57,6 @@ public class FailJobTest extends GatewayTest {
 
     final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
     assertThat(brokerRequestValue.getRetries()).isEqualTo(retries);
-    assertThat(brokerRequestValue.getErrorMessage()).isEqualTo(wrapString("failed"));
+    assertThat(brokerRequestValue.getErrorMessageBuffer()).isEqualTo(wrapString("failed"));
   }
 }

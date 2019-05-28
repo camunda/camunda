@@ -18,10 +18,11 @@
 package io.zeebe.engine.util;
 
 import io.zeebe.engine.processor.TypedRecord;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import java.time.Instant;
 
-public class MockTypedRecord<T extends UnpackedObject> implements TypedRecord<T> {
+public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecord<T> {
 
   private long key;
   private RecordMetadata metadata;
@@ -60,5 +61,30 @@ public class MockTypedRecord<T extends UnpackedObject> implements TypedRecord<T>
 
   public void setValue(T value) {
     this.value = value;
+  }
+
+  @Override
+  public long getPosition() {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public long getSourceRecordPosition() {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public int getProducerId() {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public Instant getTimestamp() {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public String toJson() {
+    throw new UnsupportedOperationException("not yet implemented");
   }
 }

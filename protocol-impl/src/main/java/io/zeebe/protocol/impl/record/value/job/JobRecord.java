@@ -15,7 +15,8 @@
  */
 package io.zeebe.protocol.impl.record.value.job;
 
-import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.value.job.Headers;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
@@ -25,10 +26,15 @@ import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.WorkflowInstanceRelated;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.util.buffer.BufferUtil;
+import java.time.Instant;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class JobRecord extends UnpackedObject implements WorkflowInstanceRelated {
+public class JobRecord extends UnifiedRecordValue
+    implements WorkflowInstanceRelated, JobRecordValue {
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
   public static final String RETRIES = "retries";
@@ -59,7 +65,7 @@ public class JobRecord extends UnpackedObject implements WorkflowInstanceRelated
         .declareProperty(errorMessageProp);
   }
 
-  public long getDeadline() {
+  public long getDeadlineLong() {
     return deadlineProp.getValue();
   }
 
@@ -68,7 +74,7 @@ public class JobRecord extends UnpackedObject implements WorkflowInstanceRelated
     return this;
   }
 
-  public DirectBuffer getWorker() {
+  public DirectBuffer getWorkerBuffer() {
     return workerProp.getValue();
   }
 
@@ -95,7 +101,7 @@ public class JobRecord extends UnpackedObject implements WorkflowInstanceRelated
     return this;
   }
 
-  public DirectBuffer getType() {
+  public DirectBuffer getTypeBuffer() {
     return typeProp.getValue();
   }
 
@@ -113,7 +119,7 @@ public class JobRecord extends UnpackedObject implements WorkflowInstanceRelated
     return this;
   }
 
-  public DirectBuffer getVariables() {
+  public DirectBuffer getVariablesBuffer() {
     return variableProp.getValue();
   }
 
@@ -128,7 +134,7 @@ public class JobRecord extends UnpackedObject implements WorkflowInstanceRelated
     return this;
   }
 
-  public JobHeaders getHeaders() {
+  public JobHeaders getJobHeaders() {
     return headersProp.getValue();
   }
 
@@ -141,11 +147,11 @@ public class JobRecord extends UnpackedObject implements WorkflowInstanceRelated
     return this;
   }
 
-  public DirectBuffer getCustomHeaders() {
+  public DirectBuffer getCustomHeadersBuffer() {
     return customHeadersProp.getValue();
   }
 
-  public DirectBuffer getErrorMessage() {
+  public DirectBuffer getErrorMessageBuffer() {
     return errorMessageProp.getValue();
   }
 
@@ -166,5 +172,50 @@ public class JobRecord extends UnpackedObject implements WorkflowInstanceRelated
   @Override
   public long getWorkflowInstanceKey() {
     return headersProp.getValue().getWorkflowInstanceKey();
+  }
+
+  @Override
+  public Headers getHeaders() {
+    return headersProp.getValue();
+  }
+
+  @Override
+  public Map<String, Object> getCustomHeaders() {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public String getErrorMessage() {
+    return BufferUtil.bufferAsString(errorMessageProp.getValue());
+  }
+
+  @Override
+  public String getType() {
+    return BufferUtil.bufferAsString(typeProp.getValue());
+  }
+
+  @Override
+  public String getWorker() {
+    return BufferUtil.bufferAsString(workerProp.getValue());
+  }
+
+  @Override
+  public Instant getDeadline() {
+    return Instant.ofEpochMilli(deadlineProp.getValue());
+  }
+
+  @Override
+  public Map<String, Object> getVariablesAsMap() {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public String getVariables() {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public String toJson() {
+    throw new UnsupportedOperationException("not yet implemented");
   }
 }

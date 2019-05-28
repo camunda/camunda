@@ -17,8 +17,8 @@
  */
 package io.zeebe.engine.processor;
 
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -37,7 +37,7 @@ import java.util.EnumMap;
 
 public class TypedEventRegistry {
 
-  public static final EnumMap<ValueType, Class<? extends UnpackedObject>> EVENT_REGISTRY =
+  public static final EnumMap<ValueType, Class<? extends UnifiedRecordValue>> EVENT_REGISTRY =
       new EnumMap<>(ValueType.class);
 
   static {

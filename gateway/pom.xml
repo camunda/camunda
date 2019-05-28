@@ -20,6 +20,7 @@
       <artifactId>zeebe-gateway-protocol</artifactId>
     </dependency>
 
+
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-util</artifactId>
@@ -33,6 +34,11 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-protocol-impl</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-exporter-api</artifactId>
     </dependency>
 
     <dependency>

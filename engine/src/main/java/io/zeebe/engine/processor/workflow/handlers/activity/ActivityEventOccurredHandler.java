@@ -46,7 +46,7 @@ public class ActivityEventOccurredHandler<T extends ExecutableActivity>
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
           "No boundary event found with ID {} for process {}",
           BufferUtil.bufferAsString(event.getElementId()),
-          BufferUtil.bufferAsString(context.getValue().getBpmnProcessId()));
+          BufferUtil.bufferAsString(context.getValue().getBpmnProcessIdBuffer()));
       return false;
     }
 

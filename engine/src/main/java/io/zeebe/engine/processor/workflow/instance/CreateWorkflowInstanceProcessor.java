@@ -121,7 +121,7 @@ public class CreateWorkflowInstanceProcessor
       long workflowInstanceKey) {
     try {
       variablesState.setVariablesLocalFromDocument(
-          workflowInstanceKey, workflowKey, record.getVariables());
+          workflowInstanceKey, workflowKey, record.getVariablesBuffer());
     } catch (MsgpackReaderException e) {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(ERROR_INVALID_VARIABLES_LOGGED_MESSAGE, e);
       controller.reject(
@@ -156,7 +156,7 @@ public class CreateWorkflowInstanceProcessor
       WorkflowInstanceCreationRecord record, CommandControl controller) {
     final DeployedWorkflow workflow;
 
-    final DirectBuffer bpmnProcessId = record.getBpmnProcessId();
+    final DirectBuffer bpmnProcessId = record.getBpmnProcessIdBuffer();
 
     if (bpmnProcessId.capacity() > 0) {
       if (record.getVersion() >= 0) {

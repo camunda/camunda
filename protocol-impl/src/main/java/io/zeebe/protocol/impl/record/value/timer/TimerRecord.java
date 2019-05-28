@@ -15,14 +15,14 @@
  */
 package io.zeebe.protocol.impl.record.value.timer;
 
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.WorkflowInstanceRelated;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import org.agrona.DirectBuffer;
 
-public class TimerRecord extends UnpackedObject implements WorkflowInstanceRelated {
+public class TimerRecord extends UnifiedRecordValue implements WorkflowInstanceRelated {
 
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");

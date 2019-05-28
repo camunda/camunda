@@ -57,8 +57,8 @@ public class DeployWorkflowStub
               deploymentRecord
                   .workflows()
                   .add()
-                  .setBpmnProcessId(r.getResourceName())
-                  .setResourceName(r.getResourceName())
+                  .setBpmnProcessId(r.getResourceNameBuffer())
+                  .setResourceName(r.getResourceNameBuffer())
                   .setVersion(WORKFLOW_VERSION)
                   .setKey(WORKFLOW_KEY);
             });

@@ -66,8 +66,8 @@ public class JobStateTest {
     Assertions.assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
-    assertListedAsActivatable(key, jobRecord.getType());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    assertListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadlineLong() + 1);
   }
 
   @Test
@@ -84,8 +84,8 @@ public class JobStateTest {
     Assertions.assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATED);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
-    refuteListedAsActivatable(key, jobRecord.getType());
-    assertListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
+    assertListedAsTimedOut(key, jobRecord.getDeadlineLong() + 1);
   }
 
   @Test
@@ -103,8 +103,8 @@ public class JobStateTest {
     Assertions.assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
-    assertListedAsActivatable(key, jobRecord.getType());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    assertListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadlineLong() + 1);
   }
 
   @Test
@@ -125,7 +125,7 @@ public class JobStateTest {
     for (BiConsumer<Long, JobRecord> stateUpdate : stateUpdates) {
       jobRecord.setVariables(MsgPackUtil.asMsgPack("foo", "bar"));
       stateUpdate.accept(key, jobRecord);
-      final DirectBuffer variables = jobState.getJob(key).getVariables();
+      final DirectBuffer variables = jobState.getJob(key).getVariablesBuffer();
       BufferAssert.assertThatBuffer(variables).isEqualTo(DocumentValue.EMPTY_DOCUMENT);
     }
   }
@@ -144,8 +144,8 @@ public class JobStateTest {
     Assertions.assertThat(jobState.exists(key)).isFalse();
     Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
     Assertions.assertThat(jobState.getJob(key)).isNull();
-    refuteListedAsActivatable(key, jobRecord.getType());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadlineLong() + 1);
   }
 
   @Test
@@ -163,8 +163,8 @@ public class JobStateTest {
     Assertions.assertThat(jobState.exists(key)).isFalse();
     Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
     Assertions.assertThat(jobState.getJob(key)).isNull();
-    refuteListedAsActivatable(key, jobRecord.getType());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadlineLong() + 1);
   }
 
   @Test
@@ -183,8 +183,8 @@ public class JobStateTest {
     Assertions.assertThat(jobState.exists(key)).isFalse();
     Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
     Assertions.assertThat(jobState.getJob(key)).isNull();
-    refuteListedAsActivatable(key, jobRecord.getType());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadlineLong() + 1);
   }
 
   @Test
@@ -202,8 +202,8 @@ public class JobStateTest {
     Assertions.assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
-    assertListedAsActivatable(key, jobRecord.getType());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    assertListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadlineLong() + 1);
   }
 
   @Test
@@ -221,8 +221,8 @@ public class JobStateTest {
     Assertions.assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.FAILED);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
-    refuteListedAsActivatable(key, jobRecord.getType());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadlineLong() + 1);
   }
 
   @Test
@@ -241,8 +241,8 @@ public class JobStateTest {
     Assertions.assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
-    assertListedAsActivatable(key, jobRecord.getType());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    assertListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadlineLong() + 1);
   }
 
   @Test
@@ -367,7 +367,7 @@ public class JobStateTest {
     // then
     final JobRecord savedJob = jobState.getJob(key);
     assertJobRecordIsEqualTo(savedJob, jobRecord);
-    assertThat(BufferUtil.bufferAsString(savedJob.getType())).isEqualTo("test");
+    assertThat(BufferUtil.bufferAsString(savedJob.getTypeBuffer())).isEqualTo("test");
   }
 
   @Test
@@ -422,9 +422,9 @@ public class JobStateTest {
 
     // then
     final JobRecord readRecord = jobState.getJob(key);
-    assertThat(readRecord.getType()).isNotEqualTo(writtenRecord.getType());
-    assertThat(readRecord.getType()).isEqualTo(BufferUtil.wrapString("test"));
-    assertThat(writtenRecord.getType()).isEqualTo(BufferUtil.wrapString("foo"));
+    assertThat(readRecord.getTypeBuffer()).isNotEqualTo(writtenRecord.getTypeBuffer());
+    assertThat(readRecord.getTypeBuffer()).isEqualTo(BufferUtil.wrapString("test"));
+    assertThat(writtenRecord.getTypeBuffer()).isEqualTo(BufferUtil.wrapString("foo"));
   }
 
   private void createAndActivateJobRecord(final long key, final JobRecord record) {
@@ -451,12 +451,12 @@ public class JobStateTest {
   }
 
   private void assertJobRecordIsEqualTo(final JobRecord jobRecord, final JobRecord expected) {
-    assertThat(jobRecord.getDeadline()).isEqualTo(expected.getDeadline());
-    assertThat(jobRecord.getWorker()).isEqualTo(expected.getWorker());
+    assertThat(jobRecord.getDeadlineLong()).isEqualTo(expected.getDeadlineLong());
+    assertThat(jobRecord.getWorkerBuffer()).isEqualTo(expected.getWorkerBuffer());
     assertThat(jobRecord.getRetries()).isEqualTo(expected.getRetries());
-    assertThat(jobRecord.getType()).isEqualTo(expected.getType());
-    assertThat(jobRecord.getCustomHeaders()).isEqualTo(expected.getCustomHeaders());
-    assertThat(jobRecord.getVariables()).isEqualTo(expected.getVariables());
+    assertThat(jobRecord.getTypeBuffer()).isEqualTo(expected.getTypeBuffer());
+    assertThat(jobRecord.getCustomHeadersBuffer()).isEqualTo(expected.getCustomHeadersBuffer());
+    assertThat(jobRecord.getVariablesBuffer()).isEqualTo(expected.getVariablesBuffer());
   }
 
   private void assertListedAsActivatable(final long key, final DirectBuffer type) {

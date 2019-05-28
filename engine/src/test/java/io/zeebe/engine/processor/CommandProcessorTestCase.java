@@ -28,11 +28,11 @@ import static org.mockito.Mockito.verify;
 import io.zeebe.engine.processor.CommandProcessor.CommandControl;
 import io.zeebe.engine.util.MockTypedRecord;
 import io.zeebe.engine.util.ZeebeStateRule;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import org.junit.ClassRule;
@@ -46,7 +46,7 @@ import org.mockito.Mock;
  * <p>Implementations should use {@link org.mockito.junit.MockitoJUnitRunner.StrictStubs} as a
  * runner, or instantiate the mocks themselves.
  */
-public abstract class CommandProcessorTestCase<T extends UnpackedObject> {
+public abstract class CommandProcessorTestCase<T extends UnifiedRecordValue> {
   @ClassRule public static ZeebeStateRule zeebeStateRule = new ZeebeStateRule();
 
   @Mock(name = "CommandControl")

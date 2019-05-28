@@ -55,6 +55,7 @@ import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
+import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.BpmnElementType;
@@ -62,7 +63,6 @@ import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -220,7 +220,7 @@ public class ExporterRecordTest {
             .setDeadline(deadline)
             .setErrorMessage("failed message");
     record
-        .getHeaders()
+        .getJobHeaders()
         .setBpmnProcessId(wrapString(bpmnProcessId))
         .setWorkflowKey(workflowKey)
         .setWorkflowDefinitionVersion(workflowDefinitionVersion)
@@ -410,7 +410,7 @@ public class ExporterRecordTest {
         .setDeadline(1000L);
 
     jobRecord
-        .getHeaders()
+        .getJobHeaders()
         .setBpmnProcessId(wrapString(bpmnProcessId))
         .setWorkflowKey(workflowKey)
         .setWorkflowDefinitionVersion(workflowDefinitionVersion)
@@ -556,7 +556,7 @@ public class ExporterRecordTest {
         .hasPartitionId(PARTITION_ID)
         .hasRecordType(metadata.getRecordType())
         .hasRejectionType(metadata.getRejectionType())
-        .hasRejectionReason(bufferAsString(metadata.getRejectionReason()))
+        .hasRejectionReason(bufferAsString(metadata.getRejectionReasonBuffer()))
         .hasValueType(metadata.getValueType());
 
     assertThat(actualRecord).hasValue(expectedRecordValue);

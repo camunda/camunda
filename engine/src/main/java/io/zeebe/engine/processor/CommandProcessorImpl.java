@@ -18,11 +18,11 @@
 package io.zeebe.engine.processor;
 
 import io.zeebe.engine.processor.CommandProcessor.CommandControl;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.intent.Intent;
 
-public class CommandProcessorImpl<T extends UnpackedObject>
+public class CommandProcessorImpl<T extends UnifiedRecordValue>
     implements TypedRecordProcessor<T>, CommandControl<T> {
 
   private final CommandProcessor<T> wrappedProcessor;

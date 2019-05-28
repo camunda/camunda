@@ -57,10 +57,10 @@ public class ResponseMapper {
             workflow ->
                 responseBuilder
                     .addWorkflowsBuilder()
-                    .setBpmnProcessId(bufferAsString(workflow.getBpmnProcessId()))
+                    .setBpmnProcessId(bufferAsString(workflow.getBpmnProcessIdBuffer()))
                     .setVersion(workflow.getVersion())
                     .setWorkflowKey(workflow.getKey())
-                    .setResourceName(bufferAsString(workflow.getResourceName())));
+                    .setResourceName(bufferAsString(workflow.getResourceNameBuffer())));
 
     return responseBuilder.build();
   }
@@ -86,7 +86,7 @@ public class ResponseMapper {
       long key, WorkflowInstanceCreationRecord brokerResponse) {
     return CreateWorkflowInstanceResponse.newBuilder()
         .setWorkflowKey(brokerResponse.getKey())
-        .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessId()))
+        .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessIdBuffer()))
         .setVersion(brokerResponse.getVersion())
         .setWorkflowInstanceKey(brokerResponse.getInstanceKey())
         .build();
@@ -115,13 +115,13 @@ public class ResponseMapper {
       final ActivatedJob activatedJob =
           ActivatedJob.newBuilder()
               .setKey(jobKey.getValue())
-              .setType(bufferAsString(job.getType()))
-              .setJobHeaders(fromBrokerJobHeaders(job.getHeaders()))
-              .setCustomHeaders(bufferAsJson(job.getCustomHeaders()))
-              .setWorker(bufferAsString(job.getWorker()))
+              .setType(bufferAsString(job.getTypeBuffer()))
+              .setJobHeaders(fromBrokerJobHeaders(job.getJobHeaders()))
+              .setCustomHeaders(bufferAsJson(job.getCustomHeadersBuffer()))
+              .setWorker(bufferAsString(job.getWorkerBuffer()))
               .setRetries(job.getRetries())
-              .setDeadline(job.getDeadline())
-              .setVariables(bufferAsJson(job.getVariables()))
+              .setDeadline(job.getDeadlineLong())
+              .setVariables(bufferAsJson(job.getVariablesBuffer()))
               .build();
 
       responseBuilder.addJobs(activatedJob);
@@ -139,10 +139,10 @@ public class ResponseMapper {
       io.zeebe.protocol.impl.record.value.job.JobHeaders headers) {
     return JobHeaders.newBuilder()
         .setWorkflowInstanceKey(headers.getWorkflowInstanceKey())
-        .setBpmnProcessId(bufferAsString(headers.getBpmnProcessId()))
+        .setBpmnProcessId(bufferAsString(headers.getBpmnProcessIdBuffer()))
         .setWorkflowDefinitionVersion(headers.getWorkflowDefinitionVersion())
         .setWorkflowKey(headers.getWorkflowKey())
-        .setElementId(bufferAsString(headers.getElementId()))
+        .setElementId(bufferAsString(headers.getElementIdBuffer()))
         .setElementInstanceKey(headers.getElementInstanceKey())
         .build();
   }

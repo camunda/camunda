@@ -23,6 +23,7 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import java.time.Instant;
 
 public class TypedWorkflowInstanceRecord implements TypedRecord<WorkflowInstanceRecord> {
 
@@ -54,5 +55,30 @@ public class TypedWorkflowInstanceRecord implements TypedRecord<WorkflowInstance
   @Override
   public WorkflowInstanceRecord getValue() {
     return persistedWorkflowInstanceRecord.getValue();
+  }
+
+  @Override
+  public long getPosition() {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public long getSourceRecordPosition() {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public int getProducerId() {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public Instant getTimestamp() {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public String toJson() {
+    throw new UnsupportedOperationException("not yet implemented");
   }
 }

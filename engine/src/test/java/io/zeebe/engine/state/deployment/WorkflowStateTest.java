@@ -25,11 +25,11 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.AbstractFlowE
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
+import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import org.assertj.core.api.Assertions;
@@ -175,7 +175,7 @@ public class WorkflowStateTest {
 
     Assertions.assertThat(deployedWorkflow.getKey())
         .isNotEqualTo(deploymentRecord.workflows().iterator().next().getKey());
-    assertThat(deploymentRecord.workflows().iterator().next().getBpmnProcessId())
+    assertThat(deploymentRecord.workflows().iterator().next().getBpmnProcessIdBuffer())
         .isEqualTo(BufferUtil.wrapString("other"));
     Assertions.assertThat(deployedWorkflow.getBpmnProcessId())
         .isEqualTo(BufferUtil.wrapString("processId"));

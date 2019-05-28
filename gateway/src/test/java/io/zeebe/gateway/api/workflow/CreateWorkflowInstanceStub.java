@@ -56,7 +56,7 @@ public class CreateWorkflowInstanceStub
       BrokerCreateWorkflowInstanceRequest request) throws Exception {
     final WorkflowInstanceCreationRecord response = new WorkflowInstanceCreationRecord();
     response.setBpmnProcessId(PROCESS_ID);
-    response.setVariables(request.getRequestWriter().getVariables());
+    response.setVariables(request.getRequestWriter().getVariablesBuffer());
     response.setVersion(PROCESS_VERSION);
     response.setKey(WORKFLOW_KEY);
     response.setInstanceKey(WORKFLOW_INSTANCE_KEY);

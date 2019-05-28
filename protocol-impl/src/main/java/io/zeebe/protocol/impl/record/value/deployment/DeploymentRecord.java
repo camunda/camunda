@@ -15,11 +15,16 @@
  */
 package io.zeebe.protocol.impl.record.value.deployment;
 
-import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
+import io.zeebe.exporter.api.record.value.deployment.DeployedWorkflow;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.value.ValueArray;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-public class DeploymentRecord extends UnpackedObject {
+public class DeploymentRecord extends UnifiedRecordValue implements DeploymentRecordValue {
 
   public static final String RESOURCES = "resources";
   public static final String WORKFLOWS = "workflows";
@@ -40,5 +45,33 @@ public class DeploymentRecord extends UnpackedObject {
 
   public ValueArray<DeploymentResource> resources() {
     return resourcesProp;
+  }
+
+  @Override
+  public List<io.zeebe.exporter.api.record.value.deployment.DeploymentResource> getResources() {
+
+    final List<io.zeebe.exporter.api.record.value.deployment.DeploymentResource> resources =
+        new ArrayList<>();
+
+    final Iterator<DeploymentResource> iterator = resourcesProp.iterator();
+    iterator.forEachRemaining(resources::add);
+
+    return resources;
+  }
+
+  @Override
+  public List<DeployedWorkflow> getDeployedWorkflows() {
+
+    final List<DeployedWorkflow> workflows = new ArrayList<>();
+
+    final Iterator<Workflow> iterator = workflowsProp.iterator();
+    iterator.forEachRemaining(workflows::add);
+
+    return workflows;
+  }
+
+  @Override
+  public String toJson() {
+    throw new UnsupportedOperationException("not yet implemented");
   }
 }

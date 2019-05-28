@@ -86,7 +86,7 @@ public class ParallelMergeSequenceFlowTaken<T extends ExecutableSequenceFlow>
 
     for (final ExecutableSequenceFlow flow : incomingFlows) {
       for (final IndexedRecord recordToMatch : storedRecords) {
-        if (recordToMatch.getValue().getElementId().equals(flow.getId())) {
+        if (recordToMatch.getValue().getElementIdBuffer().equals(flow.getId())) {
           mergingRecords.add(recordToMatch);
           break;
         }

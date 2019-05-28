@@ -50,7 +50,7 @@ public class EventBasedGatewayEventOccurredHandler<T extends ExecutableEventBase
         Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
             "No outgoing flow has a target with ID {} for process {}",
             BufferUtil.bufferAsString(event.getElementId()),
-            BufferUtil.bufferAsString(context.getValue().getBpmnProcessId()));
+            BufferUtil.bufferAsString(context.getValue().getBpmnProcessIdBuffer()));
         return false;
       }
 

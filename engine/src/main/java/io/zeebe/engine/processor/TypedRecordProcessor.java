@@ -17,10 +17,10 @@
  */
 package io.zeebe.engine.processor;
 
-import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import java.util.function.Consumer;
 
-public interface TypedRecordProcessor<T extends UnpackedObject>
+public interface TypedRecordProcessor<T extends UnifiedRecordValue>
     extends StreamProcessorLifecycleAware {
 
   /** @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer) */

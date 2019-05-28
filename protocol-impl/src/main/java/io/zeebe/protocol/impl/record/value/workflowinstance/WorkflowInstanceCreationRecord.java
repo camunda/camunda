@@ -15,16 +15,19 @@
  */
 package io.zeebe.protocol.impl.record.value.workflowinstance;
 
-import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.WorkflowInstanceRelated;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.util.buffer.BufferUtil;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
-public class WorkflowInstanceCreationRecord extends UnpackedObject
-    implements WorkflowInstanceRelated {
+public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
+    implements WorkflowInstanceRelated, WorkflowInstanceCreationRecordValue {
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty("bpmnProcessId", "");
   private final LongProperty keyProperty = new LongProperty("key", -1);
@@ -50,7 +53,7 @@ public class WorkflowInstanceCreationRecord extends UnpackedObject
     return this;
   }
 
-  public DirectBuffer getBpmnProcessId() {
+  public DirectBuffer getBpmnProcessIdBuffer() {
     return bpmnProcessIdProperty.getValue();
   }
 
@@ -81,7 +84,7 @@ public class WorkflowInstanceCreationRecord extends UnpackedObject
     return versionProperty.getValue();
   }
 
-  public DirectBuffer getVariables() {
+  public DirectBuffer getVariablesBuffer() {
     return variablesProperty.getValue();
   }
 
@@ -93,5 +96,20 @@ public class WorkflowInstanceCreationRecord extends UnpackedObject
   @Override
   public long getWorkflowInstanceKey() {
     return getInstanceKey();
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProperty.getValue());
+  }
+
+  @Override
+  public Map<String, Object> getVariables() {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public String toJson() {
+    throw new UnsupportedOperationException("not yet implemented");
   }
 }

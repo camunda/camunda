@@ -489,8 +489,8 @@ public class ElementInstanceStateTest {
   }
 
   private void assertWorkflowInstanceRecord(WorkflowInstanceRecord record, DirectBuffer elementId) {
-    assertThat(record.getElementId()).isEqualTo(elementId);
-    assertThat(record.getBpmnProcessId()).isEqualTo(wrapString("process1"));
+    assertThat(record.getElementIdBuffer()).isEqualTo(elementId);
+    assertThat(record.getBpmnProcessIdBuffer()).isEqualTo(wrapString("process1"));
     assertThat(record.getWorkflowInstanceKey()).isEqualTo(1000L);
     assertThat(record.getFlowScopeKey()).isEqualTo(1001L);
     assertThat(record.getVersion()).isEqualTo(1);

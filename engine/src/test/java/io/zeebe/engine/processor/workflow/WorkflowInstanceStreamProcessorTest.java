@@ -136,7 +136,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
     Assertions.assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(WorkflowInstanceIntent.CANCEL);
-    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
+    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReasonBuffer()))
         .isEqualTo(
             "Expected to cancel a workflow instance with key '"
                 + createdEvent.getKey()
@@ -156,7 +156,8 @@ public class WorkflowInstanceStreamProcessorTest {
                 .events()
                 .onlyWorkflowInstanceRecords()
                 .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .filter(w -> w.getValue().getElementId().equals(BufferUtil.wrapString("start")))
+                .filter(
+                    w -> w.getValue().getElementIdBuffer().equals(BufferUtil.wrapString("start")))
                 .exists());
 
     // when
@@ -473,7 +474,7 @@ public class WorkflowInstanceStreamProcessorTest {
                 .onlyWorkflowInstanceRecords()
                 .onlyEvents()
                 .collect(Collectors.toList()))
-        .noneMatch(r -> r.getValue().getElementId().equals(wrapString("timer1")));
+        .noneMatch(r -> r.getValue().getElementIdBuffer().equals(wrapString("timer1")));
   }
 
   @Test
@@ -510,10 +511,10 @@ public class WorkflowInstanceStreamProcessorTest {
             envRule
                 .events()
                 .onlyWorkflowInstanceRecords()
-                .skipUntil(r -> r.getValue().getElementId().equals(wrapString("task")))
+                .skipUntil(r -> r.getValue().getElementIdBuffer().equals(wrapString("task")))
                 .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETING)
                 .map(TypedRecord::getValue)
-                .map(WorkflowInstanceRecord::getElementId)
+                .map(WorkflowInstanceRecord::getElementIdBuffer)
                 .map(BufferUtil::bufferAsString))
         .containsExactly("timer1", "timer1End", "process");
   }

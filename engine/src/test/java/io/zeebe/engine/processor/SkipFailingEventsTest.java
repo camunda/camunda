@@ -36,10 +36,10 @@ import io.zeebe.engine.util.Records;
 import io.zeebe.engine.util.TestStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -160,10 +160,10 @@ public class SkipFailingEventsTest {
               .onEvent(
                   ValueType.WORKFLOW_INSTANCE,
                   WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                  new TypedRecordProcessor<UnpackedObject>() {
+                  new TypedRecordProcessor<UnifiedRecordValue>() {
                     @Override
                     public void processRecord(
-                        TypedRecord<UnpackedObject> record,
+                        TypedRecord<UnifiedRecordValue> record,
                         TypedResponseWriter responseWriter,
                         TypedStreamWriter streamWriter) {
                       throw new NullPointerException();

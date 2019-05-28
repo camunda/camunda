@@ -92,7 +92,7 @@ public class ParallelGatewayStreamProcessorTest {
             .events()
             .onlyWorkflowInstanceRecords()
             .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETING)
-            .filter(r -> PROCESS_ID_BUFFER.equals(r.getValue().getElementId()))
+            .filter(r -> PROCESS_ID_BUFFER.equals(r.getValue().getElementIdBuffer()))
             .findFirst();
 
     Assertions.assertThat(processCompleting).isNotPresent();

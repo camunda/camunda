@@ -19,13 +19,15 @@ import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInsta
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_KEY;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
 
+import io.zeebe.exporter.api.record.value.deployment.DeployedWorkflow;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class Workflow extends UnpackedObject {
+public class Workflow extends UnpackedObject implements DeployedWorkflow {
   private final StringProperty bpmnProcessIdProp =
       new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID);
   private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION);
@@ -39,7 +41,7 @@ public class Workflow extends UnpackedObject {
         .declareProperty(resourceNameProp);
   }
 
-  public DirectBuffer getBpmnProcessId() {
+  public DirectBuffer getBpmnProcessIdBuffer() {
     return bpmnProcessIdProp.getValue();
   }
 
@@ -76,7 +78,7 @@ public class Workflow extends UnpackedObject {
     return this;
   }
 
-  public DirectBuffer getResourceName() {
+  public DirectBuffer getResourceNameBuffer() {
     return resourceNameProp.getValue();
   }
 
@@ -88,5 +90,20 @@ public class Workflow extends UnpackedObject {
   public Workflow setResourceName(DirectBuffer resourceName) {
     this.resourceNameProp.setValue(resourceName);
     return this;
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  @Override
+  public long getWorkflowKey() {
+    return getKey();
+  }
+
+  @Override
+  public String getResourceName() {
+    return BufferUtil.bufferAsString(resourceNameProp.getValue());
   }
 }

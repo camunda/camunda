@@ -28,6 +28,7 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.util.retry.EndlessRetryStrategy;
@@ -106,7 +107,7 @@ public final class ReProcessingStateMachine {
   protected final RecordMetadata metadata = new RecordMetadata();
   private final TypedEventImpl typedEvent = new TypedEventImpl();
 
-  private final Map<ValueType, UnpackedObject> eventCache;
+  private final Map<ValueType, UnifiedRecordValue> eventCache;
   private final RecordProcessorMap recordProcessorMap;
 
   private final EventFilter eventFilter;
@@ -259,7 +260,7 @@ public final class ReProcessingStateMachine {
       return;
     }
 
-    final UnpackedObject value = eventCache.get(metadata.getValueType());
+    final UnifiedRecordValue value = eventCache.get(metadata.getValueType());
     value.reset();
     currentEvent.readValue(value);
     typedEvent.wrap(currentEvent, metadata, value);

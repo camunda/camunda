@@ -31,7 +31,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class RecordMetadata implements BufferWriter, BufferReader {
+public class RecordMetadata
+    implements BufferWriter, BufferReader, io.zeebe.exporter.api.record.RecordMetadata {
   public static final int BLOCK_LENGTH =
       MessageHeaderEncoder.ENCODED_LENGTH + RecordMetadataEncoder.BLOCK_LENGTH;
 
@@ -196,8 +197,24 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     return this;
   }
 
-  public DirectBuffer getRejectionReason() {
+  public DirectBuffer getRejectionReasonBuffer() {
     return rejectionReason;
+  }
+
+  @Override
+  public int getPartitionId() {
+    //    return Protocol.decodePartitionId();
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public String getRejectionReason() {
+    return BufferUtil.bufferAsString(rejectionReason);
+  }
+
+  @Override
+  public String toJson() {
+    throw new UnsupportedOperationException("not yet implemented");
   }
 
   public RecordMetadata reset() {

@@ -26,10 +26,10 @@ import io.zeebe.engine.processor.TypedEventImpl;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.WorkflowInstanceRelated;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.ExporterIntent;
 import io.zeebe.protocol.intent.IncidentIntent;
@@ -248,7 +248,7 @@ public class BlacklistInstanceTest {
     assertThat(zeebeState.isOnBlacklist(typedEvent)).isEqualTo(expectedToBlacklist);
   }
 
-  private final class Value extends UnpackedObject implements WorkflowInstanceRelated {
+  private final class Value extends UnifiedRecordValue implements WorkflowInstanceRelated {
 
     @Override
     public long getWorkflowInstanceKey() {

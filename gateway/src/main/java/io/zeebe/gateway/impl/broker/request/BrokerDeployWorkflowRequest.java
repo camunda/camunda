@@ -15,7 +15,7 @@
  */
 package io.zeebe.gateway.impl.broker.request;
 
-import static io.zeebe.protocol.impl.record.value.deployment.ResourceType.getResourceType;
+import static io.zeebe.protocol.impl.record.value.deployment.DeploymentResource.getResourceType;
 
 import io.zeebe.gateway.cmd.InvalidBrokerRequestArgumentException;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject.ResourceType;
@@ -46,13 +46,13 @@ public class BrokerDeployWorkflowRequest extends BrokerExecuteCommand<Deployment
     return this;
   }
 
-  private io.zeebe.protocol.impl.record.value.deployment.ResourceType determineResourceType(
+  private io.zeebe.exporter.api.record.value.deployment.ResourceType determineResourceType(
       String resourceName, ResourceType resourceType) {
     switch (resourceType) {
       case BPMN:
-        return io.zeebe.protocol.impl.record.value.deployment.ResourceType.BPMN_XML;
+        return io.zeebe.exporter.api.record.value.deployment.ResourceType.BPMN_XML;
       case YAML:
-        return io.zeebe.protocol.impl.record.value.deployment.ResourceType.YAML_WORKFLOW;
+        return io.zeebe.exporter.api.record.value.deployment.ResourceType.YAML_WORKFLOW;
       default:
         try {
           return getResourceType(resourceName);

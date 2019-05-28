@@ -41,7 +41,7 @@ public final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
 
-    final JobHeaders jobHeaders = record.getValue().getHeaders();
+    final JobHeaders jobHeaders = record.getValue().getJobHeaders();
     final long elementInstanceKey = jobHeaders.getElementInstanceKey();
     if (elementInstanceKey > 0) {
       final ElementInstanceState elementInstanceState = workflowState.getElementInstanceState();
