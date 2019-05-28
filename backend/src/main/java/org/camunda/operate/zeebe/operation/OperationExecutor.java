@@ -5,8 +5,8 @@
  */
 package org.camunda.operate.zeebe.operation;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +39,8 @@ public class OperationExecutor extends Thread {
   @Autowired
   private OperateProperties operateProperties;
 
+  private List<ExecutionFinishedListener> listeners = new ArrayList<>();
+
   public void startExecuting() {
     if (operateProperties.getOperationExecutor().isExecutorEnabled()) {
       start();
@@ -58,6 +60,10 @@ public class OperationExecutor extends Thread {
 
         //TODO backoff strategy
         if (operations.size() == 0) {
+
+
+          notifyExecutionFinishedListeners();
+
           try {
             Thread.sleep(2000);
           } catch (InterruptedException e) {
@@ -106,5 +112,15 @@ public class OperationExecutor extends Thread {
       handlerMap.put(handler.getType(), handler);
     }
     return handlerMap;
+  }
+
+  public void registerListener(ExecutionFinishedListener listener) {
+    this.listeners.add(listener);
+  }
+
+  private void notifyExecutionFinishedListeners() {
+    for (ExecutionFinishedListener listener: listeners) {
+      listener.onExecutionFinished();
+    }
   }
 }

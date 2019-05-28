@@ -5,14 +5,19 @@
  */
 package org.camunda.operate.qa.util;
 
-import java.io.IOException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public abstract class ElasticsearchUtil {
 
@@ -33,4 +38,25 @@ public abstract class ElasticsearchUtil {
       .source(new SearchSourceBuilder());
     return (int)esClient.search(searchRequest, RequestOptions.DEFAULT).getHits().getTotalHits();
   }
+
+  public static List<String> getWorkflowIds(RestHighLevelClient esClient, String indexAlias, int size) {
+    try {
+      final SearchSourceBuilder searchSourceBuilder =
+          new SearchSourceBuilder()
+              .fetchSource(false)
+              .from(0)
+              .size(size);
+      SearchRequest searchRequest =
+          new SearchRequest(indexAlias).source(searchSourceBuilder);
+      return requestIdsFor(esClient, searchRequest);
+    } catch (IOException ex) {
+      throw new RuntimeException("Error occurred when reading workflowIds from Elasticsearch", ex);
+    }
+  }
+
+  private static List<String> requestIdsFor(RestHighLevelClient esClient, SearchRequest searchRequest) throws IOException{
+    final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
+    return Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2));
+  }
+
 }

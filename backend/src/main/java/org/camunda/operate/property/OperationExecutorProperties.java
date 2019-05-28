@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public class OperationExecutorProperties {
 
-  public static final int BATCH_SIZE_DEFAULT = 10;
+  public static final int BATCH_SIZE_DEFAULT = 2000;
 
   public static final String WORKER_ID_DEFAULT = UUID.randomUUID().toString();
 

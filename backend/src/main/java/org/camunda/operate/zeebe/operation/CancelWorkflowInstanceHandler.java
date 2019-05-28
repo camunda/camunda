@@ -5,7 +5,6 @@
  */
 package org.camunda.operate.zeebe.operation;
 
-import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;

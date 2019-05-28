@@ -43,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 /**
- * The tests reads QUERIES_PATH folder and parse all files contained there, reading queries to tested ({@see TestQuery}).
+ * The tests reads QUERIES_PATH folder and parse all files contained there, reading queries to be tested ({@see org.camunda.operate.qa.performance.TestQuery}).
  */
 @RunWith(Parameterized.class)
 @ContextConfiguration(classes = { TestConfig.class })

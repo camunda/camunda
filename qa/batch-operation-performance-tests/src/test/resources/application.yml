@@ -1,0 +1,25 @@
+camunda.operate:
+  #increase batch operation max size to avoid validation errors
+  batchOperationMaxSize: 1000000
+  startLoadingDataOnStartup: false
+  elasticsearch:
+    # disable rollover
+    rolloverEnabled: false
+    clusterName: docker-cluster
+    host: localhost
+    port: 9200
+    dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+  zeebe:
+    brokerContactPoint: localhost:26500
+    worker: operate
+  operationExecutor:
+    executorEnabled: false
+  zeebeElasticsearch:
+    clusterName: docker-cluster
+    host: localhost
+    port: 9200
+    prefix: zeebe-record
+logging:
+  level:
+    ROOT: INFO
+    org.camunda.operate: DEBUG

@@ -43,7 +43,7 @@ import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 /**
- * This class helps to resolv placeholders in JSON query files. On startup it reads the required data from Elasticsearch.
+ * This class helps to resolve placeholders in JSON query files. On startup it reads the required data from Elasticsearch.
  * This data is later used to replace placeholders.
  */
 @Component
@@ -131,24 +131,12 @@ public class ParametersResolver {
   }
   
   private void initWorkflowIds() {
-    try {
-      final String workflowAlias = getAlias(WorkflowIndex.INDEX_NAME);
-      final SearchSourceBuilder searchSourceBuilder =
-          new SearchSourceBuilder()
-              .fetchSource(false)
-              .from(0)
-              .size(2);
-      SearchRequest searchRequest =
-          new SearchRequest(workflowAlias).source(searchSourceBuilder);
-      workflowIds = requestIdsFor(searchRequest);
-    } catch (IOException ex) {
-      throw new RuntimeException("Error occurred when reading workflowIds from Elasticsearch", ex);
-    }
+    workflowIds = org.camunda.operate.qa.util.ElasticsearchUtil.getWorkflowIds(esClient, getAlias(WorkflowIndex.INDEX_NAME), 2);
   }
   
   private List<String> requestIdsFor(SearchRequest searchRequest) throws IOException{
     final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
-    return new ArrayList<>(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2)));
+    return Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2));
   }
 
   public void replacePlaceholdersInQuery(TestQuery testQuery) {
