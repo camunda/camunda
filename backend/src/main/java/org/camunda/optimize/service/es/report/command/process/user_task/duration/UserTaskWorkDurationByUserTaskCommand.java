@@ -7,14 +7,6 @@ package org.camunda.optimize.service.es.report.command.process.user_task.duratio
 
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.elasticsearch.script.Script;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
-import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 
 public class UserTaskWorkDurationByUserTaskCommand extends AbstractUserTaskDurationByUserTaskCommand {
 

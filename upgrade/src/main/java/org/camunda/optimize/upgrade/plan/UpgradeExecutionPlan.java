@@ -68,6 +68,8 @@ public class UpgradeExecutionPlan implements UpgradePlan {
   public void execute() {
     validationService.validateVersions(client, fromVersion, toVersion);
 
+    schemaManager.initializeSchema(client);
+
     int currentStepCount = 1;
     for (UpgradeStep step : upgradeSteps) {
       logger.info(
@@ -85,8 +87,6 @@ public class UpgradeExecutionPlan implements UpgradePlan {
       );
       currentStepCount++;
     }
-
-    schemaManager.initializeSchema(client);
 
     updateOptimizeVersion();
   }

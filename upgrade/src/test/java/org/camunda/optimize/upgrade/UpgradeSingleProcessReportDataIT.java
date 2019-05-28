@@ -8,6 +8,7 @@ package org.camunda.optimize.upgrade;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.report.AbstractReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleDecisionReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleProcessReportType;
@@ -43,7 +44,8 @@ public class UpgradeSingleProcessReportDataIT extends AbstractUpgradeIT {
     initSchema(Lists.newArrayList(
       METADATA_TYPE,
       new SingleDecisionReportType(),
-      new SingleProcessReportType()
+      new SingleProcessReportType(),
+      new ProcessInstanceType()
     ));
 
     setMetadataIndexVersion(FROM_VERSION);

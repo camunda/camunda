@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty;
 import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.report.AbstractReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleDecisionReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleProcessReportType;
@@ -46,7 +47,8 @@ public class UpgradeSingleDecisionReportDataIT extends AbstractUpgradeIT {
       METADATA_TYPE,
       DECISION_DEFINITION_TYPE,
       new SingleDecisionReportType(),
-      new SingleProcessReportType()
+      new SingleProcessReportType(),
+      new ProcessInstanceType()
     ));
 
     setMetadataIndexVersion(FROM_VERSION);

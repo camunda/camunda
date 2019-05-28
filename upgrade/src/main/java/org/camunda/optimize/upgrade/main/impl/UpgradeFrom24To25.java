@@ -5,27 +5,38 @@
  */
 package org.camunda.optimize.upgrade.main.impl;
 
+import com.google.common.collect.ImmutableMap;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringSubstitutor;
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.elasticsearch.script.Script;
 
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_OPERATIONS;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CLAIM_DATE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
 
-
+@Slf4j
 public class UpgradeFrom24To25 implements Upgrade {
 
   private static final String FROM_VERSION = "2.4.0";
   private static final String TO_VERSION = "2.5.0";
 
-  private Logger logger = LoggerFactory.getLogger(getClass());
-  private ConfigurationService configurationService = new ConfigurationService();
+  private static ConfigurationService configurationService = new ConfigurationService();
+  private static RestHighLevelClient client = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
 
   @Override
   public String getInitialVersion() {
@@ -43,7 +54,7 @@ public class UpgradeFrom24To25 implements Upgrade {
       UpgradePlan upgradePlan = buildUpgradePlan();
       upgradePlan.execute();
     } catch (Exception e) {
-      logger.error("Error while executing upgrade", e);
+      log.error("Error while executing upgrade", e);
       System.exit(2);
     }
   }
@@ -55,6 +66,7 @@ public class UpgradeFrom24To25 implements Upgrade {
       .addUpgradeStep(createChangeSingleDecisionReportViewStructureStep())
       .addUpgradeStep(createNewConfigFieldsToReportConfigStep(SINGLE_DECISION_REPORT_TYPE))
       .addUpgradeStep(createNewConfigFieldsToReportConfigStep(SINGLE_PROCESS_REPORT_TYPE))
+      .addUpgradeStep(createNewClaimDateFieldForUserTasksSetup())
       .build();
   }
 
@@ -93,4 +105,47 @@ public class UpgradeFrom24To25 implements Upgrade {
       script
     );
   }
+
+  private static UpdateDataStep createNewClaimDateFieldForUserTasksSetup() {
+
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("userTasksField", USER_TASKS)
+        .put("userOperationsField", USER_OPERATIONS)
+        .put("claimDateField", USER_TASK_CLAIM_DATE)
+        .put("claimTypeValue", "Claim")
+        .put("dateFormatPattern", OPTIMIZE_DATE_FORMAT)
+        .build()
+    );
+
+    // @formatter:off
+    String script = substitutor.replace(
+      "if (ctx._source.${userTasksField} != null) {\n" +
+          "for (def currentTask : ctx._source.${userTasksField}) {\n" +
+            "if (currentTask.${userOperationsField} != null) {\n" +
+              "def dateFormatter = new SimpleDateFormat(\"${dateFormatPattern}\");\n" +
+              "currentTask.${claimDateField} = null;\n" +
+              "def optionalFirstClaimDate = currentTask.${userOperationsField}.stream()\n" +
+                ".filter(userOperation -> \"${claimTypeValue}\".equals(userOperation.type))\n" +
+                ".map(userOperation -> userOperation.timestamp)\n" +
+                ".min(Comparator.comparing(dateStr -> dateFormatter.parse(dateStr)));\n" +
+              "optionalFirstClaimDate.ifPresent(claimDateStr -> {\n" +
+                "currentTask.${claimDateField} = claimDateStr;\n" +
+              "});\n" +
+            "}\n" +
+          "}\n" +
+      "}\n"
+    );
+    // @formatter:on
+
+    final BoolQueryBuilder filterQuery = QueryBuilders.boolQuery()
+      .filter(QueryBuilders.scriptQuery(new Script("doc['userTasks.id'] != null")));
+
+    return new UpdateDataStep(
+      PROC_INSTANCE_TYPE,
+      QueryBuilders.nestedQuery(USER_TASKS, filterQuery, ScoreMode.None),
+      script
+    );
+  }
+
 }

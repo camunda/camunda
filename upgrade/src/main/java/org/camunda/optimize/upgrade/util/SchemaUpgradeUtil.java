@@ -5,24 +5,18 @@
  */
 package org.camunda.optimize.upgrade.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.service.es.schema.TypeMappingCreator;
-import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.elasticsearch.common.Strings;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
 
 /**
  * Bunch of utility methods that might be required during upgrade
  * operation.
  */
+@Slf4j
 public class SchemaUpgradeUtil {
-  protected static Logger logger = LoggerFactory.getLogger(SchemaUpgradeUtil.class);
 
   public static String readClasspathFileAsString(String filePath) {
     InputStream inputStream = SchemaUpgradeUtil.class.getClassLoader().getResourceAsStream(filePath);
@@ -30,7 +24,7 @@ public class SchemaUpgradeUtil {
     try {
       data = readFromInputStream(inputStream);
     } catch (IOException e) {
-      logger.error("can't read [{}] from classpath", filePath, e);
+      log.error("can't read [{}] from classpath", filePath, e);
     }
     return data;
   }
