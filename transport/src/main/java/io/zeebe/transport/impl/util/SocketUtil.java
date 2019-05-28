@@ -40,7 +40,18 @@ public class SocketUtil {
     final int testForkNumber = getTestForkNumber();
     final int testMavenId = getTestMavenId();
 
-    final int min = BASE_PORT + testForkNumber * RANGE_SIZE + (testMavenId * RANGE_SIZE * 10);
+    LOG.info(
+        "Starting socket assignment with testForkNumber {} and testMavenId {}",
+        testForkNumber,
+        testMavenId);
+
+    // ensure limits to stay in available port range
+    assert testForkNumber < 39 : "System property test fork number has to be smaller then 39";
+    assert testMavenId < 10 : "System property test maven id has to be smaller then 10";
+
+    final int testOffset = testForkNumber * 10 + testMavenId;
+
+    final int min = BASE_PORT + testOffset * RANGE_SIZE;
     final int max = min + RANGE_SIZE;
     TEST_FORK_NUMBER = testForkNumber;
     PORT_RANGE = new PortRange(DEFAULT_HOST, min, max);
@@ -106,6 +117,7 @@ public class SocketUtil {
     int currentOffset;
 
     PortRange(String host, int min, int max) {
+      assert max <= 65535 : "Port range exceeds maximal available port 65535, got max port " + max;
       this.host = host;
       this.basePort = min;
       this.maxOffset = max - min;

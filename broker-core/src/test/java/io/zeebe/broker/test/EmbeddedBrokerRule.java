@@ -312,9 +312,12 @@ public class EmbeddedBrokerRule extends ExternalResource {
       throw new RuntimeException(e);
     }
 
+    // capture value before removing the service as it will uninject the value on stop
+    final S value = injector.getValue();
+
     serviceContainer.removeService(accessorServiceName);
 
-    return injector.getValue();
+    return value;
   }
 
   public <T> void installService(
