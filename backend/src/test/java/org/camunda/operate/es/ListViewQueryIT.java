@@ -725,20 +725,20 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testSortingByIdAsc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = Comparator.comparing(ListViewWorkflowInstanceDto::getId);
+    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> Long.valueOf(o1.getId()).compareTo(Long.valueOf(o2.getId()));
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy("id");
-    sorting.setSortOrder("asc");
+    sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
     testSorting(sorting, comparator);
   }
 
   @Test
   public void testSortingByIdDesc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> o2.getId().compareTo(o1.getId());
+    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> Long.valueOf(o2.getId()).compareTo(Long.valueOf(o1.getId()));
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy("id");
-    sorting.setSortOrder("desc");
+    sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator);
   }

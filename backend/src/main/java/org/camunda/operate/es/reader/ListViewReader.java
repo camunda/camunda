@@ -164,10 +164,15 @@ public class ListViewReader {
   }
 
   private void applySorting(SearchSourceBuilder searchSourceBuilder, SortingDto sorting) {
+    String defaultSortBy = ListViewTemplate.KEY;
     if (sorting == null) {
       //apply default sorting
-      searchSourceBuilder.sort(ListViewTemplate.ID, SortOrder.ASC);
+      searchSourceBuilder.sort(defaultSortBy, SortOrder.ASC);
     } else {
+      String sortBy = sorting.getSortBy();
+      if(sortBy.equals(ListViewTemplate.ID)) {
+        sorting.setSortBy(ListViewTemplate.KEY);
+      }
       searchSourceBuilder
         .sort(sorting.getSortBy(), SortOrder.fromString(sorting.getSortOrder()))
         .sort(ListViewTemplate.ID, SortOrder.ASC);     //we always sort by id, to make the order always determined

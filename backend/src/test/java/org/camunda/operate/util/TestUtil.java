@@ -50,7 +50,10 @@ public abstract class TestUtil {
 
   public static WorkflowInstanceForListViewEntity createWorkflowInstance(WorkflowInstanceState state, String workflowId) {
     WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
-    workflowInstance.setId(UUID.randomUUID().toString());
+    
+    Long id = random.nextLong();
+    workflowInstance.setId(""+id);
+    workflowInstance.setKey(id);
 
     workflowInstance.setStartDate(DateUtil.getRandomStartDate());
     if (state.equals(WorkflowInstanceState.COMPLETED) || state.equals(WorkflowInstanceState.CANCELED)) {
