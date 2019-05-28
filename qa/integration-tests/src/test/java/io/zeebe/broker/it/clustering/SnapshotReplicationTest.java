@@ -160,14 +160,7 @@ public class SnapshotReplicationTest {
     // when
     clusteringRule.restartBroker(stoppedBroker.getConfig().getCluster().getNodeId());
 
-    new BrokerRestoreClient(
-            clusteringRule.getAtomixCluster().getCommunicationService(),
-            "2",
-            null,
-            null,
-            "snapshot-request-1",
-            null,
-            clusteringRule.getAtomixCluster().getEventService())
+    new BrokerRestoreClient(clusteringRule.getAtomixCluster().getCommunicationService(), 1)
         .requestLatestSnapshot(MemberId.from(String.valueOf(leaderNodeId)));
 
     // then

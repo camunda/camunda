@@ -19,14 +19,15 @@ package io.zeebe.broker.logstreams.restore;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.cluster.messaging.ClusterEventService;
 import io.zeebe.distributedlog.restore.RestoreClient;
 import io.zeebe.distributedlog.restore.RestoreInfoRequest;
 import io.zeebe.distributedlog.restore.RestoreInfoResponse;
 import io.zeebe.distributedlog.restore.log.LogReplicationRequest;
 import io.zeebe.distributedlog.restore.log.LogReplicationResponse;
+import io.zeebe.util.ZbLogger;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
 
 public class BrokerRestoreClient implements RestoreClient {
   private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(5);
@@ -35,29 +36,41 @@ public class BrokerRestoreClient implements RestoreClient {
   private final String restoreInfoTopic;
   private final String snapshotRequestTopic;
   private final String snapshotInfoRequestTopic;
-  private final ClusterEventService eventService;
-  private String localMemberId;
+  private final Logger logger;
+
+  public BrokerRestoreClient(ClusterCommunicationService communicationService, int partitionId) {
+    this(
+        communicationService,
+        BrokerRestoreFactory.getLogReplicationTopic(partitionId),
+        BrokerRestoreFactory.getRestoreInfoTopic(partitionId),
+        BrokerRestoreFactory.getSnapshotRequestTopic(partitionId),
+        BrokerRestoreFactory.getSnapshotInfoRequestTopic(partitionId),
+        new ZbLogger(String.format("%s-%d", BrokerRestoreClient.class.getName(), partitionId)));
+  }
 
   public BrokerRestoreClient(
       ClusterCommunicationService communicationService,
-      String localMemberId,
       String logReplicationTopic,
       String restoreInfoTopic,
       String snapshotRequestTopic,
       String snapshotInfoRequestTopic,
-      ClusterEventService eventService) {
+      Logger logger) {
     this.communicationService = communicationService;
-    this.localMemberId = localMemberId;
     this.logReplicationTopic = logReplicationTopic;
     this.restoreInfoTopic = restoreInfoTopic;
     this.snapshotRequestTopic = snapshotRequestTopic;
     this.snapshotInfoRequestTopic = snapshotInfoRequestTopic;
-    this.eventService = eventService;
+    this.logger = logger;
   }
 
   @Override
   public CompletableFuture<LogReplicationResponse> requestLogReplication(
       MemberId server, LogReplicationRequest request) {
+    logger.trace(
+        "Sending log replication request {} to {} on topic {}",
+        request,
+        server,
+        logReplicationTopic);
     return communicationService.send(
         logReplicationTopic,
         request,
@@ -70,6 +83,8 @@ public class BrokerRestoreClient implements RestoreClient {
   @Override
   public CompletableFuture<RestoreInfoResponse> requestRestoreInfo(
       MemberId server, RestoreInfoRequest request) {
+    logger.trace(
+        "Sending restore info request {} to {} on topic {}", request, server, restoreInfoTopic);
     return communicationService.send(
         restoreInfoTopic,
         request,
@@ -81,12 +96,15 @@ public class BrokerRestoreClient implements RestoreClient {
 
   @Override
   public CompletableFuture<Integer> requestSnapshotInfo(MemberId server) {
+    logger.trace(
+        "Sending snapshot info request to {} on topic {}", server, snapshotInfoRequestTopic);
     return communicationService.send(
         snapshotInfoRequestTopic, null, server, DEFAULT_REQUEST_TIMEOUT);
   }
 
   @Override
   public void requestLatestSnapshot(MemberId server) {
+    logger.trace("Sending latest snapshot request to {} on topic {}", server, snapshotRequestTopic);
     communicationService.unicast(snapshotRequestTopic, null, server);
   }
 }

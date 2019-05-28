@@ -29,7 +29,7 @@ public class SnapshotRestoreStrategy implements RestoreStrategy {
   private final MemberId server;
   private final RestoreClient client;
   private final LogReplicator logReplicator;
-  private final Logger log;
+  private final Logger logger;
   private final long backupPosition;
   private final long latestLocalPosition;
 
@@ -40,19 +40,19 @@ public class SnapshotRestoreStrategy implements RestoreStrategy {
       long latestLocalPosition,
       long backupPosition,
       MemberId server,
-      Logger log) {
+      Logger logger) {
     this.client = client;
     this.logReplicator = logReplicator;
     this.snapshotReplicator = snapshotReplicator;
     this.latestLocalPosition = latestLocalPosition;
     this.backupPosition = backupPosition;
     this.server = server;
-    this.log = log;
+    this.logger = logger;
   }
 
   @Override
   public CompletableFuture<Long> executeRestoreStrategy() {
-    log.debug("Restoring from snapshot");
+    logger.debug("Restoring from snapshot");
     final CompletableFuture<Long> replicated = CompletableFuture.completedFuture(null);
 
     return replicated
@@ -71,7 +71,7 @@ public class SnapshotRestoreStrategy implements RestoreStrategy {
             getFirstEventToBeReplicated(exporterPosition, processedPosition));
     final long toPosition = Math.max(processedPosition, backupPosition);
     // TODO: logstream.deleteAll(). https://github.com/zeebe-io/zeebe/issues/2509
-    log.debug("Restored snapshot. Restoring events from {} to {}", fromPosition, toPosition);
+    logger.debug("Restored snapshot. Restoring events from {} to {}", fromPosition, toPosition);
     return logReplicator.replicate(
         server, fromPosition, toPosition, fromPosition > latestLocalPosition);
   }
