@@ -16,53 +16,47 @@
 package io.zeebe.distributedlog.restore.impl;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.utils.concurrent.Scheduler;
+import io.atomix.utils.concurrent.ThreadContext;
 import io.zeebe.distributedlog.restore.RestoreClient;
 import io.zeebe.distributedlog.restore.RestoreInfoRequest;
 import io.zeebe.distributedlog.restore.RestoreInfoResponse;
 import io.zeebe.distributedlog.restore.RestoreNodeProvider;
 import io.zeebe.distributedlog.restore.RestoreStrategy;
-import io.zeebe.distributedlog.restore.RestoreStrategyPicker;
 import io.zeebe.distributedlog.restore.log.LogReplicator;
 import io.zeebe.logstreams.state.SnapshotRequester;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
-/**
- * Implements a restore picking which uses the current stream processor leader as the restore
- * server. If the local node is the current stream processor leader, then it will withdraw from the
- * election, and retry. If there is no leader, then it will simply retry forever with a slight
- * delay.
- */
-public class DefaultStrategyPicker implements RestoreStrategyPicker {
-  private final RestoreClient client;
-  private final SnapshotRequester snapshotReplicator;
-  private final Scheduler scheduler;
-  private final LogReplicator logReplicator;
-  private final RestoreNodeProvider nodeProvider;
-  private final Logger logger;
+public class RestoreController {
 
-  public DefaultStrategyPicker(
-      RestoreClient client,
+  private final ThreadContext restoreThreadContext;
+  private final Logger logger;
+  private final RestoreClient restoreClient;
+  private final RestoreNodeProvider nodeProvider;
+  private final LogReplicator logReplicator;
+  private final SnapshotRequester snapshotReplicator;
+
+  public RestoreController(
+      RestoreClient restoreClient,
       RestoreNodeProvider nodeProvider,
       LogReplicator logReplicator,
       SnapshotRequester snapshotReplicator,
-      Scheduler scheduler,
-      Logger logger) {
-    this.client = client;
+      ThreadContext restoreThreadContext,
+      Logger log) {
+    this.restoreClient = restoreClient;
     this.nodeProvider = nodeProvider;
     this.logReplicator = logReplicator;
     this.snapshotReplicator = snapshotReplicator;
-    this.scheduler = scheduler;
-    this.logger = logger;
+    this.restoreThreadContext = restoreThreadContext;
+    logger = log;
   }
 
-  @Override
-  public CompletableFuture<RestoreStrategy> pick(long latestLocalPosition, long backupPosition) {
+  public long restore(long latestLocalPosition, long backupPosition) {
     return findRestoreServer()
-        .thenCompose(
-            server -> this.onRestoreServerFound(server, latestLocalPosition, backupPosition));
+        .thenCompose(server -> findRestoreStrategy(server, latestLocalPosition, backupPosition))
+        .thenCompose(RestoreStrategy::executeRestoreStrategy)
+        .join();
   }
 
   private CompletableFuture<MemberId> findRestoreServer() {
@@ -76,15 +70,15 @@ public class DefaultStrategyPicker implements RestoreStrategyPicker {
     if (server != null) {
       result.complete(server);
     } else {
-      scheduler.schedule(Duration.ofMillis(100), () -> tryFindRestoreServer(result));
+      restoreThreadContext.schedule(Duration.ofMillis(100), () -> tryFindRestoreServer(result));
     }
   }
 
-  private CompletableFuture<RestoreStrategy> onRestoreServerFound(
+  private CompletableFuture<RestoreStrategy> findRestoreStrategy(
       MemberId server, long latestLocalPosition, long backupPosition) {
     final RestoreInfoRequest request =
         new DefaultRestoreInfoRequest(latestLocalPosition, backupPosition);
-    return client
+    return restoreClient
         .requestRestoreInfo(server, request)
         .thenCompose(
             response ->
@@ -102,7 +96,7 @@ public class DefaultStrategyPicker implements RestoreStrategyPicker {
       case SNAPSHOT:
         final SnapshotRestoreStrategy snapshotRestoreStrategy =
             new SnapshotRestoreStrategy(
-                client,
+                restoreClient,
                 logReplicator,
                 snapshotReplicator,
                 latestLocalPosition,

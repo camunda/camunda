@@ -31,8 +31,7 @@ import io.zeebe.distributedlog.StorageConfiguration;
 import io.zeebe.distributedlog.restore.RestoreClient;
 import io.zeebe.distributedlog.restore.RestoreFactory;
 import io.zeebe.distributedlog.restore.RestoreNodeProvider;
-import io.zeebe.distributedlog.restore.RestoreStrategy;
-import io.zeebe.distributedlog.restore.impl.DefaultStrategyPicker;
+import io.zeebe.distributedlog.restore.impl.RestoreController;
 import io.zeebe.distributedlog.restore.log.LogReplicationAppender;
 import io.zeebe.distributedlog.restore.log.LogReplicator;
 import io.zeebe.logstreams.LogStreams;
@@ -65,25 +64,12 @@ public class DefaultDistributedLogstreamService
   private long currentLeaderTerm = -1;
   private long lastPosition;
   private ServiceContainer serviceContainer;
-  private ThreadContext restoreThreadContext;
   private String localMemberId;
   private Logger logger;
 
   public DefaultDistributedLogstreamService(DistributedLogstreamServiceConfig config) {
     super(DistributedLogstreamType.instance(), DistributedLogstreamClient.class);
     lastPosition = -1;
-  }
-
-  public DefaultDistributedLogstreamService(LogStream logStream, String localMemberId) {
-    super(DistributedLogstreamType.instance(), DistributedLogstreamClient.class);
-    this.logStream = logStream;
-    this.logStorage = this.logStream.getLogStorage();
-    this.logName = logStream.getLogName();
-
-    configureFromLogName(logName);
-    this.localMemberId = localMemberId;
-
-    initLastPosition();
   }
 
   @Override
@@ -123,8 +109,6 @@ public class DefaultDistributedLogstreamService
   private void configureFromLogName(String logName) {
     partitionId = getPartitionIdFromLogName(logName);
     logger = new ZbLogger(String.format("%s-%d", this.getClass().getName(), partitionId));
-    restoreThreadContext =
-        new SingleThreadContext(String.format("%s-%d-%%d", this.getClass().getName(), partitionId));
   }
 
   private int getPartitionIdFromLogName(String logName) {
@@ -189,10 +173,11 @@ public class DefaultDistributedLogstreamService
   private void initLastPosition() {
     final BufferedLogStreamReader reader = new BufferedLogStreamReader(logStream);
     reader.seekToLastEvent();
-    lastPosition =
-        Math.max(
-            logStream.getCommitPosition(),
-            reader.getPosition()); // position of last event which is committed
+    lastPosition = reader.getPosition();
+    if (lastPosition > 0) {
+      logStream.setCommitPosition(lastPosition);
+    }
+    reader.close();
   }
 
   @Override
@@ -263,70 +248,56 @@ public class DefaultDistributedLogstreamService
   @Override
   public void restore(BackupInput backupInput) {
     final long backupPosition = backupInput.readLong();
-    restore(backupPosition);
+
+    if (lastPosition < backupPosition) {
+      LogstreamConfig.startRestore(localMemberId, partitionId);
+      final RestoreFactory restoreFactory = LogstreamConfig.getRestoreFactory(localMemberId);
+
+      final ThreadContext restoreThreadContext =
+          new SingleThreadContext(String.format("log-restore-%d", partitionId));
+      final RestoreClient restoreClient = restoreFactory.createClient(partitionId);
+      final RestoreNodeProvider nodeProvider = restoreFactory.createNodeProvider(partitionId);
+      final LogReplicator logReplicator =
+          new LogReplicator(this, restoreClient, restoreThreadContext);
+      final SnapshotRequester snapshotReplicator =
+          new SnapshotRequester(
+              restoreClient, restoreFactory.createSnapshotRestoreContext(), partitionId);
+      final RestoreController restoreController =
+          new RestoreController(
+              restoreClient,
+              nodeProvider,
+              logReplicator,
+              snapshotReplicator,
+              restoreThreadContext,
+              getLogger());
+
+      while (lastPosition < backupPosition) {
+        final long latestLocalPosition = lastPosition;
+        logger.trace(
+            "Restoring local log from position {} to {}", latestLocalPosition, backupPosition);
+
+        try {
+          lastPosition = restoreController.restore(lastPosition, backupPosition);
+          logger.trace(
+              "Restored local log from position {} to {}", latestLocalPosition, lastPosition);
+        } catch (RuntimeException e) {
+          lastPosition = logStream.getCommitPosition();
+          logger.debug("Restoring local log failed at position {}. Retrying.", lastPosition, e);
+        }
+      }
+
+      restoreThreadContext.close();
+      LogstreamConfig.completeRestore(localMemberId, partitionId);
+    }
 
     logger.debug("Restored local log to position {}", lastPosition);
     currentLeader = backupInput.readString();
     currentLeaderTerm = backupInput.readLong();
   }
 
-  public void restore(long backupPosition) {
-    if (lastPosition < backupPosition) {
-      LogstreamConfig.startRestore(localMemberId, partitionId);
-
-      // pick the correct restore strategy and execute forever until the log is restored, e.g.
-      // lastPosition >= backupPosition.
-      while (lastPosition < backupPosition) {
-        final long latestLocalPosition = lastPosition;
-        logger.debug("Restoring local log from position {} to {}", lastPosition, backupPosition);
-        try {
-          final DefaultStrategyPicker strategyPicker = this.buildRestoreStrategyPicker();
-          final long lastUpdatedPosition =
-              strategyPicker
-                  .pick(latestLocalPosition, backupPosition)
-                  .thenCompose(RestoreStrategy::executeRestoreStrategy)
-                  .join();
-          updateCommitPosition(lastUpdatedPosition);
-          logger.trace(
-              "Restored local log from position {} to {}", latestLocalPosition, lastPosition);
-        } catch (RuntimeException e) {
-          lastPosition = logStream.getCommitPosition();
-          logger.error(
-              "Failed to restore log from {} to {}, retrying from {}",
-              latestLocalPosition,
-              backupPosition,
-              lastPosition,
-              e);
-        }
-      }
-      LogstreamConfig.completeRestore(localMemberId, partitionId);
-    }
-  }
-
   private void updateCommitPosition(long commitPosition) {
-    // Following is required to trigger the commit listeners.
     logStream.setCommitPosition(commitPosition);
     lastPosition = commitPosition;
-  }
-
-  private DefaultStrategyPicker buildRestoreStrategyPicker() {
-    final RestoreFactory clientFactory = LogstreamConfig.getRestoreFactory(localMemberId);
-    final RestoreClient restoreClient = clientFactory.createClient(partitionId);
-    final LogReplicator logReplicator =
-        new LogReplicator(this, restoreClient, restoreThreadContext, logger);
-    final SnapshotRequester snapshotReplicator =
-        new SnapshotRequester(
-            restoreClient, clientFactory.createSnapshotRestoreContext(), partitionId);
-
-    final RestoreNodeProvider nodeProvider = clientFactory.createNodeProvider(partitionId);
-
-    return new DefaultStrategyPicker(
-        restoreClient,
-        nodeProvider,
-        logReplicator,
-        snapshotReplicator,
-        restoreThreadContext,
-        logger);
   }
 
   @Override
