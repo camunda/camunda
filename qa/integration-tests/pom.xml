@@ -108,7 +108,7 @@
 
     <dependency>
       <groupId>io.grpc</groupId>
-      <artifactId>grpc-core</artifactId>
+      <artifactId>grpc-api</artifactId>
     </dependency>
 
     <dependency>
