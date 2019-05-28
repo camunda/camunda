@@ -18,9 +18,9 @@
 package io.zeebe.broker.exporter.stream;
 
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.spi.SnapshotController;
 import java.time.Duration;
 import java.util.Collection;
 
@@ -35,7 +35,7 @@ public class ExporterDirectorContext {
   private Collection<ExporterDescriptor> descriptors;
 
   private Duration snapshotPeriod;
-  private SnapshotController snapshotController;
+  private ZeebeDb zeebeDb;
   private int maxSnapshots;
 
   public int getId() {
@@ -62,8 +62,8 @@ public class ExporterDirectorContext {
     return snapshotPeriod;
   }
 
-  public SnapshotController getSnapshotController() {
-    return snapshotController;
+  public ZeebeDb getZeebeDb() {
+    return zeebeDb;
   }
 
   public int getMaxSnapshots() {
@@ -100,8 +100,8 @@ public class ExporterDirectorContext {
     return this;
   }
 
-  public ExporterDirectorContext snapshotController(SnapshotController snapshotController) {
-    this.snapshotController = snapshotController;
+  public ExporterDirectorContext zeebeDb(ZeebeDb zeebeDb) {
+    this.zeebeDb = zeebeDb;
     return this;
   }
 

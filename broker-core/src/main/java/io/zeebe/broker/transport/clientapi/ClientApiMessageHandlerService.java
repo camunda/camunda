@@ -28,8 +28,8 @@ public class ClientApiMessageHandlerService implements Service<ClientApiMessageH
 
   protected final ServiceGroupReference<Partition> leaderPartitionsGroupReference =
       ServiceGroupReference.<Partition>create()
-          .onAdd((name, partition) -> service.addPartition(partition))
-          .onRemove((name, partition) -> service.removePartition(partition))
+          .onAdd((name, partition) -> service.addPartition(partition.getLogStream()))
+          .onRemove((name, partition) -> service.removePartition(partition.getLogStream()))
           .build();
 
   @Override

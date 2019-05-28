@@ -188,10 +188,6 @@ public class LogStreamBuilder {
     return snapshotPeriod;
   }
 
-  public StateStorage getStateStorage() {
-    return stateStorage;
-  }
-
   public int getMaxSnapshots() {
     return maxSnapshots;
   }

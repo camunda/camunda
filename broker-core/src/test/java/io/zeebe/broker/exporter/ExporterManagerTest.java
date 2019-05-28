@@ -23,10 +23,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.engine.processor.StreamProcessorServiceNames;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
@@ -82,12 +84,11 @@ public class ExporterManagerTest {
     final long deploymentKey2 = testClient.deploy(WORKFLOW);
     waitUntil(() -> isDeploymentExported(deploymentKey2));
 
-    assertThat(TestExporter.records).extracting(r -> r.getKey()).doesNotContain(deploymentKey1);
+    assertThat(TestExporter.records).extracting(Record::getKey).doesNotContain(deploymentKey1);
   }
 
   @Test
   public void shouldRemoveExporterFromState() {
-
     // given
     final long deploymentKey1 = testClient.deploy(WORKFLOW);
     waitUntil(() -> isDeploymentExported(deploymentKey1));
@@ -95,6 +96,11 @@ public class ExporterManagerTest {
     // when
     brokerRule.getBrokerCfg().setExporters(Collections.emptyList());
     brokerRule.restartBroker();
+
+    // TODO: remove workaround to force new snapshot by publishing new record
+    // (https://github.com/zeebe-io/zeebe/issues/2490)
+    final long msgKey =
+        testClient.publishMessage("msg", "123", DocumentValue.EMPTY_DOCUMENT).getKey();
 
     TestExporter.records.clear();
     brokerRule.getBrokerCfg().setExporters(Collections.singletonList(exporterCfg));
@@ -105,8 +111,14 @@ public class ExporterManagerTest {
     waitUntil(() -> isDeploymentExported(deploymentKey2));
 
     assertThat(TestExporter.records)
-        .extracting(r -> r.getKey())
+        .extracting(Record::getKey)
         .contains(deploymentKey1, deploymentKey2);
+  }
+
+  private void waitForStreamProcessor() {
+    brokerRule.getService(
+        StreamProcessorServiceNames.asyncSnapshotingDirectorService(
+            "raft-atomix-partition-1", "zb-stream-processor"));
   }
 
   private boolean isDeploymentExported(long deploymentKey1) {

@@ -417,12 +417,4 @@ public final class ProcessingStateMachine {
   public long getLastWrittenEventPosition() {
     return lastWrittenEventPosition;
   }
-
-  public ActorFuture<Long> getLastWrittenPositionAsync() {
-    return actor.call(this::getLastWrittenEventPosition);
-  }
-
-  public ActorFuture<Long> getLastProcessedPositionAsync() {
-    return actor.call(this::getLastSuccessfulProcessedEventPosition);
-  }
 }

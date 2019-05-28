@@ -23,14 +23,11 @@ import org.slf4j.LoggerFactory;
 
 public class SnapshotRequester {
   private final RestoreClient client;
-  private final ReplicationController processorSnapshotController;
+  private final ReplicationController replicationController;
   private final SnapshotRestoreContext restoreContext;
   private final int partitionId;
-  private final StateStorage processorStorage;
-  private final StateStorage exporterStorage;
-  private final SnapshotReplication processorSnapshotReplicationConsumer;
-  private final ReplicationController exporterSnapshotController;
-  private final SnapshotReplication exporterSnapshotReplicationConsumer;
+  private final StateStorage stateStorage;
+  private final SnapshotReplication snapshotReplicationConsumer;
 
   public SnapshotRequester(
       RestoreClient client, SnapshotRestoreContext restoreContext, int partitionId) {
@@ -38,42 +35,34 @@ public class SnapshotRequester {
     this.restoreContext = restoreContext;
     this.partitionId = partitionId;
 
-    exporterSnapshotReplicationConsumer =
-        restoreContext.createExporterSnapshotReplicationConsumer(partitionId);
-    processorSnapshotReplicationConsumer =
-        restoreContext.createProcessorSnapshotReplicationConsumer(partitionId);
-    processorStorage = restoreContext.getProcessorStateStorage(partitionId);
-    exporterStorage = restoreContext.getExporterStateStorage(partitionId);
+    snapshotReplicationConsumer = restoreContext.createSnapshotReplicationConsumer(partitionId);
+    stateStorage = restoreContext.getStateStorage(partitionId);
 
-    this.processorSnapshotController =
+    this.replicationController =
         new ReplicationController(
-            processorSnapshotReplicationConsumer, this.processorStorage, () -> {}, () -> -1L);
-
-    this.exporterSnapshotController =
-        new ReplicationController(
-            exporterSnapshotReplicationConsumer, this.exporterStorage, () -> {}, () -> -1L);
+            snapshotReplicationConsumer, this.stateStorage, () -> {}, () -> -1L);
   }
 
   public CompletableFuture<Long> getLatestSnapshotsFrom(
       MemberId server, boolean getExporterSnapshot) {
 
-    processorSnapshotController.consumeReplicatedSnapshots(pos -> {});
+    replicationController.consumeReplicatedSnapshots(pos -> {});
 
     CompletableFuture<Long> replicated = CompletableFuture.completedFuture(null);
 
     if (getExporterSnapshot) {
-      exporterSnapshotController.consumeReplicatedSnapshots(pos -> {});
+      replicationController.consumeReplicatedSnapshots(pos -> {});
       final CompletableFuture<Long> exporterFuture = new CompletableFuture<>();
-      exporterSnapshotController.addListener(
+      replicationController.addListener(
           new DefaultSnapshotReplicationListener(
-              exporterSnapshotController, exporterSnapshotReplicationConsumer, exporterFuture));
+              replicationController, snapshotReplicationConsumer, exporterFuture));
       replicated = replicated.thenCompose((nothing) -> exporterFuture);
     }
 
     final CompletableFuture<Long> future = new CompletableFuture<>();
-    processorSnapshotController.addListener(
+    replicationController.addListener(
         new DefaultSnapshotReplicationListener(
-            processorSnapshotController, processorSnapshotReplicationConsumer, future));
+            replicationController, snapshotReplicationConsumer, future));
     replicated = replicated.thenCompose((nothing) -> future);
 
     client.requestLatestSnapshot(server);
@@ -81,16 +70,16 @@ public class SnapshotRequester {
   }
 
   public long getExporterPosition() {
-    return restoreContext.getExporterPositionSupplier(exporterStorage).get();
+    return restoreContext.getExporterPositionSupplier(stateStorage).get();
   }
 
   public long getProcessedPosition() {
-    return restoreContext.getProcessorPositionSupplier(partitionId, processorStorage).get();
+    return restoreContext.getProcessorPositionSupplier(partitionId, stateStorage).get();
   }
 
   static class DefaultSnapshotReplicationListener implements SnapshotReplicationListener {
     private final ReplicationController controller;
-    private SnapshotReplication consumer;
+    private final SnapshotReplication consumer;
     private final CompletableFuture<Long> future;
 
     DefaultSnapshotReplicationListener(

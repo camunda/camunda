@@ -18,7 +18,7 @@
 package io.zeebe.broker.transport.clientapi;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
@@ -58,7 +58,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
       new ManyToOneConcurrentLinkedQueue<>();
   protected final Consumer<Runnable> cmdConsumer = Runnable::run;
 
-  protected final Int2ObjectHashMap<Partition> leaderPartitions = new Int2ObjectHashMap<>();
+  protected final Int2ObjectHashMap<LogStream> leadingStreams = new Int2ObjectHashMap<>();
   protected final RecordMetadata eventMetadata = new RecordMetadata();
   protected final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl();
 
@@ -98,9 +98,9 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     final int partitionId = executeCommandRequestDecoder.partitionId();
     final long key = executeCommandRequestDecoder.key();
 
-    final Partition partition = leaderPartitions.get(partitionId);
+    final LogStream logStream = leadingStreams.get(partitionId);
 
-    if (partition == null) {
+    if (logStream == null) {
       return errorResponseWriter
           .partitionLeaderMismatch(partitionId)
           .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
@@ -137,7 +137,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     eventMetadata.intent(Intent.fromProtocolValue(eventType, intent));
     eventMetadata.valueType(eventType);
 
-    logStreamWriter.wrap(partition.getLogStream());
+    logStreamWriter.wrap(logStream);
 
     if (key != ExecuteCommandRequestDecoder.keyNullValue()) {
       logStreamWriter.key(key);
@@ -154,12 +154,12 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     return eventPosition >= 0;
   }
 
-  public void addPartition(final Partition partition) {
-    cmdQueue.add(() -> leaderPartitions.put(partition.getPartitionId(), partition));
+  public void addPartition(LogStream logStream) {
+    cmdQueue.add(() -> leadingStreams.put(logStream.getPartitionId(), logStream));
   }
 
-  public void removePartition(final Partition partition) {
-    cmdQueue.add(() -> leaderPartitions.remove(partition.getPartitionId()));
+  public void removePartition(LogStream logStream) {
+    cmdQueue.add(() -> leadingStreams.remove(logStream.getPartitionId()));
   }
 
   @Override

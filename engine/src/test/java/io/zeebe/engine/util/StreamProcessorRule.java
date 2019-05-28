@@ -37,6 +37,7 @@ import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.ZbLogger;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.time.Duration;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -117,7 +118,21 @@ public class StreamProcessorRule implements TestRule {
         }));
   }
 
-  public void closeStreamProcessor() {
+  public StreamProcessor startTypedStreamProcessor(
+      TypedRecordProcessorFactory factory, int maxSnapshot, Duration snapshotPeriod) {
+    return streams.startStreamProcessor(
+        STREAM_NAME,
+        STREAM_PROCESSOR_ID,
+        zeebeDbFactory,
+        (processingContext -> {
+          zeebeState = processingContext.getZeebeState();
+          return factory.createProcessors(processingContext);
+        }),
+        maxSnapshot,
+        snapshotPeriod);
+  }
+
+  public void closeStreamProcessor() throws Exception {
     streams.closeProcessor(STREAM_NAME);
   }
 

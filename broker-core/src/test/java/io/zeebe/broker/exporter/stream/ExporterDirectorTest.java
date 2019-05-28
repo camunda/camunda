@@ -19,7 +19,11 @@ package io.zeebe.broker.exporter.stream;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.broker.exporter.util.ControlledTestExporter;
@@ -37,7 +41,12 @@ import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -119,7 +128,7 @@ public class ExporterDirectorTest {
   }
 
   @Test
-  public void shouldCloseAllExportersOnClose() {
+  public void shouldCloseAllExportersOnClose() throws Exception {
     // given
     startExporterDirector(exporterDescriptors);
 
@@ -261,7 +270,7 @@ public class ExporterDirectorTest {
   }
 
   @Test
-  public void shouldRecoverPositionsFromState() {
+  public void shouldRecoverPositionsFromState() throws Exception {
     // given
     startExporterDirector(exporterDescriptors);
 
@@ -291,7 +300,7 @@ public class ExporterDirectorTest {
   }
 
   @Test
-  public void shouldUpdateLastExportedPositionOnClose() {
+  public void shouldUpdateLastExportedPositionOnClose() throws Exception {
     // given
     startExporterDirector(exporterDescriptors);
 
@@ -327,7 +336,7 @@ public class ExporterDirectorTest {
   }
 
   @Test
-  public void shouldRemoveExporterFromState() {
+  public void shouldRemoveExporterFromState() throws Exception {
     // given
     startExporterDirector(exporterDescriptors);
 
@@ -352,7 +361,7 @@ public class ExporterDirectorTest {
   }
 
   @Test
-  public void shouldRecoverFromStartWithNonUpdatingExporter() {
+  public void shouldRecoverFromStartWithNonUpdatingExporter() throws Exception {
     // given
     startExporterDirector(exporterDescriptors);
     final long eventPosition = writeEvent();

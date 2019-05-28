@@ -25,7 +25,6 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.servicecontainer.Service;
@@ -61,9 +60,8 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
   private ActorCondition onCommitPositionUpdatedCondition;
 
   // snapshotting
-  private final SnapshotController snapshotController;
   private AsyncSnapshotDirector asyncSnapshotDirector;
-  private final boolean deleteDataOnSnapshot;
+  private final ZeebeDb zeebeDb;
   private final int maxSnapshots;
   private final Duration snapshotPeriod;
 
@@ -86,8 +84,7 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
     this.snapshotPeriod = context.getSnapshotPeriod();
     this.maxSnapshots = context.getMaxSnapshots();
-    this.snapshotController = context.getSnapshotController();
-    this.deleteDataOnSnapshot = context.isDeleteDataOnSnapshot();
+    this.zeebeDb = context.getZeebeDb();
 
     final EnumMap<ValueType, UnpackedObject> eventCache = new EnumMap<>(ValueType.class);
     EVENT_REGISTRY.forEach((t, c) -> eventCache.put(t, ReflectUtil.newInstance(c)));
@@ -193,9 +190,9 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
     processingContext.recordProcessorMap(recordProcessorMap);
   }
 
-  private long recoverFromSnapshot() throws Exception {
+  private long recoverFromSnapshot() {
     final ZeebeState zeebeState = recoverState();
-    final long snapshotPosition = zeebeState.getLastSuccessfuProcessedRecordPosition();
+    final long snapshotPosition = zeebeState.getLastSuccessfulProcessedRecordPosition();
 
     final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
     if (failedToRecoverReader) {
@@ -210,9 +207,7 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
     return snapshotPosition;
   }
 
-  private ZeebeState recoverState() throws Exception {
-    snapshotController.recover();
-    final ZeebeDb zeebeDb = snapshotController.openDb();
+  private ZeebeState recoverState() {
     final DbContext dbContext = zeebeDb.createContext();
     final ZeebeState zeebeState = new ZeebeState(partitionId, zeebeDb, dbContext);
 
@@ -224,23 +219,6 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   private void onRecovered() {
     phase = Phase.PROCESSING;
-
-    asyncSnapshotDirector =
-        new AsyncSnapshotDirector(
-            getName(),
-            snapshotPeriod,
-            processingStateMachine::getLastProcessedPositionAsync,
-            processingStateMachine::getLastWrittenPositionAsync,
-            snapshotController,
-            logStream::registerOnCommitPositionUpdatedCondition,
-            logStream::removeOnCommitPositionUpdatedCondition,
-            logStream::getCommitPosition,
-            metrics.getSnapshotMetrics(),
-            maxSnapshots,
-            deleteDataOnSnapshot ? logStream::delete : pos -> {});
-
-    actorScheduler.submitActor(asyncSnapshotDirector);
-
     onCommitPositionUpdatedCondition =
         actor.onCondition(
             getName() + "-on-commit-position-updated", processingStateMachine::readNextEvent);
@@ -262,40 +240,13 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
   @Override
   protected void onActorCloseRequested() {
     if (!isFailed()) {
-      lifecycleAwareListeners.forEach(l -> l.onClose());
+      lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onClose);
     }
   }
 
   @Override
   protected void onActorClosing() {
     metrics.close();
-
-    if (!isFailed()) {
-      actor.run(
-          () -> {
-            if (asyncSnapshotDirector != null) {
-              actor.runOnCompletionBlockingCurrentPhase(
-                  asyncSnapshotDirector.enforceSnapshotCreation(
-                      processingStateMachine.getLastWrittenEventPosition(),
-                      processingStateMachine.getLastSuccessfulProcessedEventPosition()),
-                  (v, ex) -> {
-                    try {
-                      asyncSnapshotDirector.close();
-                      snapshotController.close();
-                    } catch (Exception e) {
-                      LOG.error("Error on closing snapshotController.", e);
-                    }
-                  });
-            } else {
-              try {
-                snapshotController.close();
-              } catch (Exception e) {
-                LOG.error("Error on closing snapshotController.", e);
-              }
-            }
-          });
-    }
-
     processingContext.getLogStreamReader().close();
 
     if (onCommitPositionUpdatedCondition != null) {
@@ -311,9 +262,7 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   private void onFailure() {
     phase = Phase.FAILED;
-
     isOpened.set(false);
-
     actor.close();
   }
 
@@ -327,6 +276,18 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   public boolean isFailed() {
     return phase == Phase.FAILED;
+  }
+
+  public ActorFuture<Long> getLastProcessedPositionAsync() {
+    return actor.call(processingStateMachine::getLastSuccessfulProcessedEventPosition);
+  }
+
+  public ActorFuture<Long> getLastWrittenPositionAsync() {
+    return actor.call(processingStateMachine::getLastWrittenEventPosition);
+  }
+
+  public StreamProcessorMetrics getMetrics() {
+    return metrics;
   }
 
   private enum Phase {

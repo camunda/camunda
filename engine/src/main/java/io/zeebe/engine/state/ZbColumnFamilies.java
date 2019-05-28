@@ -84,5 +84,7 @@ public enum ZbColumnFamilies {
   EVENT_SCOPE,
   EVENT_TRIGGER,
 
-  BLACKLIST
+  BLACKLIST,
+
+  EXPORTER
 }

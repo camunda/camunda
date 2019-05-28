@@ -24,7 +24,6 @@ public class StreamProcessorMetrics {
   private final Metric eventsProcessedCountMetric;
   private final Metric eventsWrittenCountMetric;
   private final Metric eventsSkippedCountMetric;
-  private final SnapshotMetrics snapshotMetrics;
 
   public StreamProcessorMetrics(
       final MetricsManager metricsManager, final String processorName, final String partitionId) {
@@ -54,15 +53,12 @@ public class StreamProcessorMetrics {
             .label("action", "skipped")
             .label("partition", partitionId)
             .create();
-
-    snapshotMetrics = new SnapshotMetrics(metricsManager, processorName, partitionId);
   }
 
   public void close() {
     eventsProcessedCountMetric.close();
     eventsSkippedCountMetric.close();
     eventsWrittenCountMetric.close();
-    snapshotMetrics.close();
   }
 
   public void incrementEventsProcessedCount() {
@@ -75,9 +71,5 @@ public class StreamProcessorMetrics {
 
   public void incrementEventsWrittenCount() {
     eventsWrittenCountMetric.incrementOrdered();
-  }
-
-  public SnapshotMetrics getSnapshotMetrics() {
-    return snapshotMetrics;
   }
 }

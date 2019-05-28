@@ -58,6 +58,7 @@ import org.mockito.verification.VerificationWithTimeout;
 
 public class StreamProcessorTest {
 
+  private static final int MAX_SNAPSHOTS = 1;
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
@@ -85,7 +86,7 @@ public class StreamProcessorTest {
 
     // when
     recoveredLatch.await();
-    streamProcessor.closeAsync().join();
+    streamProcessorRule.closeStreamProcessor();
 
     // then
     final InOrder inOrder = inOrder(lifecycleAware);
@@ -116,7 +117,7 @@ public class StreamProcessorTest {
 
     // when
     recoveredLatch.await();
-    streamProcessor.closeAsync().join();
+    streamProcessorRule.closeStreamProcessor();
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
@@ -152,7 +153,7 @@ public class StreamProcessorTest {
 
     inOrder.verifyNoMoreInteractions();
 
-    assertThat(streamProcessorRule.getZeebeState().getLastSuccessfuProcessedRecordPosition())
+    assertThat(streamProcessorRule.getZeebeState().getLastSuccessfulProcessedRecordPosition())
         .isEqualTo(position);
   }
 
@@ -224,27 +225,28 @@ public class StreamProcessorTest {
   }
 
   @Test
-  public void shouldWriteFollowUpEvent() throws Exception {
+  public void shouldWriteFollowUpEvent() {
     // given
-    streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
-            processors.onEvent(
-                ValueType.WORKFLOW_INSTANCE,
-                WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                new TypedRecordProcessor<UnpackedObject>() {
-                  @Override
-                  public void processRecord(
-                      long position,
-                      TypedRecord<UnpackedObject> record,
-                      TypedResponseWriter responseWriter,
-                      TypedStreamWriter streamWriter,
-                      Consumer<SideEffectProducer> sideEffect) {
-                    streamWriter.appendFollowUpEvent(
-                        record.getKey(),
-                        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-                        record.getValue());
-                  }
-                }));
+    final StreamProcessor streamProcessor =
+        streamProcessorRule.startTypedStreamProcessor(
+            (processors, state) ->
+                processors.onEvent(
+                    ValueType.WORKFLOW_INSTANCE,
+                    WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+                    new TypedRecordProcessor<UnpackedObject>() {
+                      @Override
+                      public void processRecord(
+                          long position,
+                          TypedRecord<UnpackedObject> record,
+                          TypedResponseWriter responseWriter,
+                          TypedStreamWriter streamWriter,
+                          Consumer<SideEffectProducer> sideEffect) {
+                        streamWriter.appendFollowUpEvent(
+                            record.getKey(),
+                            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+                            record.getValue());
+                      }
+                    }));
 
     // when
     final long position =
@@ -263,6 +265,10 @@ public class StreamProcessorTest {
             .get();
     assertThat(activatedEvent).isNotNull();
     assertThat(((TypedEventImpl) activatedEvent).getSourceEventPosition()).isEqualTo(position);
+
+    assertThat(streamProcessor.getLastWrittenPositionAsync().join())
+        .isEqualTo(((TypedEventImpl) activatedEvent).getPosition());
+    assertThat(streamProcessor.getLastProcessedPositionAsync().join()).isEqualTo(position);
   }
 
   @Test
@@ -348,7 +354,7 @@ public class StreamProcessorTest {
                       Consumer<SideEffectProducer> sideEffect) {
                     sideEffect.accept(
                         () -> {
-                          throw new RuntimeException();
+                          throw new RuntimeException("expected");
                         });
                     processLatch.countDown();
                   }
@@ -385,7 +391,7 @@ public class StreamProcessorTest {
                         Consumer<SideEffectProducer> sideEffect) {
                       generatedKey.set(state.getKeyGenerator().nextKey());
                       processLatch.countDown();
-                      throw new RuntimeException();
+                      throw new RuntimeException("expected");
                     }
                   })
               .onEvent(
@@ -401,7 +407,9 @@ public class StreamProcessorTest {
                       processLatch.countDown();
                     }
                   });
-        });
+        },
+        MAX_SNAPSHOTS,
+        SNAPSHOT_INTERVAL);
 
     // when
     streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
@@ -458,7 +466,9 @@ public class StreamProcessorTest {
                       processingLatch.countDown();
                     }
                   });
-        });
+        },
+        MAX_SNAPSHOTS,
+        SNAPSHOT_INTERVAL);
 
     // when
     streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
@@ -509,12 +519,10 @@ public class StreamProcessorTest {
         streamProcessorRule.getStateSnapshotController();
     final InOrder inOrder = Mockito.inOrder(stateSnapshotController);
 
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).recover();
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).getLastValidSnapshotPosition();
-
+    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).takeTempSnapshot();
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).moveValidSnapshot(position);
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).ensureMaxSnapshotCount(1);
+    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).ensureMaxSnapshotCount(MAX_SNAPSHOTS);
   }
 
   @Test
@@ -542,14 +550,14 @@ public class StreamProcessorTest {
     streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     processingLatch.await();
-    streamProcessor.closeAsync().join();
+    streamProcessorRule.closeStreamProcessor();
 
     // then
     final StateSnapshotController stateSnapshotController =
         streamProcessorRule.getStateSnapshotController();
     final InOrder inOrder = Mockito.inOrder(stateSnapshotController);
 
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).recover();
+    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).getLastValidSnapshotPosition();
 
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).takeSnapshot(anyLong());
@@ -574,16 +582,14 @@ public class StreamProcessorTest {
 
     // when
     recoveredLatch.await();
-    streamProcessor.closeAsync().join();
+    streamProcessorRule.closeStreamProcessor();
 
     // then
     final StateSnapshotController stateSnapshotController =
         streamProcessorRule.getStateSnapshotController();
     final InOrder inOrder = Mockito.inOrder(stateSnapshotController);
 
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).recover();
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).getLastValidSnapshotPosition();
-
+    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
     inOrder.verify(stateSnapshotController, never()).takeSnapshot(anyLong());
   }
 
@@ -602,7 +608,7 @@ public class StreamProcessorTest {
         streamProcessorRule.getStateSnapshotController();
     final InOrder inOrder = Mockito.inOrder(stateSnapshotController);
 
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).recover();
+    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).getLastValidSnapshotPosition();
 
     inOrder.verify(stateSnapshotController, never()).takeTempSnapshot();
@@ -629,7 +635,7 @@ public class StreamProcessorTest {
         streamProcessorRule.getStateSnapshotController();
     final InOrder inOrder = Mockito.inOrder(stateSnapshotController);
 
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).recover();
+    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).getLastValidSnapshotPosition();
 
     inOrder.verify(stateSnapshotController, never()).takeTempSnapshot();
@@ -699,7 +705,7 @@ public class StreamProcessorTest {
                     responseWriter.writeEventOnCommand(
                         3, WorkflowInstanceIntent.ELEMENT_COMPLETING, record.getValue(), record);
                     processLatch.countDown();
-                    throw new RuntimeException();
+                    throw new RuntimeException("expected");
                   }
                 }));
 
@@ -746,7 +752,7 @@ public class StreamProcessorTest {
                           TypedResponseWriter responseWriter,
                           TypedStreamWriter streamWriter,
                           Consumer<SideEffectProducer> sideEffect) {
-                        throw new RuntimeException();
+                        throw new RuntimeException("expected");
                       }
                     })
                 .onEvent(
