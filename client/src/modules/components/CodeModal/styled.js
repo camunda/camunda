@@ -4,10 +4,31 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 import Modal from 'modules/components/Modal';
+
+const LinesSeparator = css`
+  &:before {
+    content: '';
+    position: fixed;
+    top: 55px;
+    bottom: 0;
+    left: 0;
+    width: 32px;
+    border-right: 1px solid
+      ${themeStyle({
+        dark: Colors.uiDark02,
+        light: Colors.uiLight05
+      })};
+
+    background-color: ${themeStyle({
+      dark: Colors.uiDark01,
+      light: Colors.uiLight04
+    })};
+  }
+`;
 
 export const ModalBody = themed(styled(Modal.Body)`
   padding: 0;
@@ -19,11 +40,16 @@ export const ModalBody = themed(styled(Modal.Body)`
     margin: 0;
     min-width: 100%;
   }
+
+  ${LinesSeparator}
 `);
+
+export const Pre = styled.pre`
+  width: fit-content;
+`;
 
 export const CodeLine = themed(styled.p`
   margin: 3px;
-  margin-left: 0;
   line-height: 14px;
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
@@ -33,6 +59,9 @@ export const CodeLine = themed(styled.p`
   font-size: 14px;
 
   &:before {
+    left: 5px;
+    position: sticky;
+    overflow-x: hidden;
     font-size: 12px;
     box-sizing: border-box;
     text-align: right;
@@ -48,19 +77,7 @@ export const CodeLine = themed(styled.p`
       dark: 0.5,
       light: 0.65
     })};
-    padding-right: 11px;
+    padding-right: 13px;
     -webkit-user-select: none;
   }
-`);
-
-export const LinesSeparator = themed(styled.span`
-  position: absolute;
-  top: 0;
-  left: 33px;
-  height: 100%;
-  width: 1px;
-  background-color: ${themeStyle({
-    dark: Colors.uiDark02,
-    light: Colors.uiLight05
-  })};
 `);
