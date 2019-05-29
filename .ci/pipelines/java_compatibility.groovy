@@ -64,7 +64,6 @@ spec:
         value: |
           -XX:+UnlockExperimentalVMOptions
           -XX:+UseCGroupMemoryLimitForHeap
-          -XX:MaxRAMFraction=1
       - name: TZ
         value: Europe/Berlin
     resources:

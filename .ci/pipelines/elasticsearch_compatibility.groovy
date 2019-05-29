@@ -3,7 +3,7 @@
 // general properties for CI execution
 def static NODE_POOL() { return "slaves" }
 
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.5.3-jdk-8-slim" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) {
   return "registry.camunda.cloud/camunda-bpm-platform-ee:${cambpmVersion}"
@@ -47,11 +47,6 @@ spec:
     command: ["cat"]
     tty: true
     env:
-      # every JVM process will get a 1/4 of HEAP from total memory
-      - name: JAVA_TOOL_OPTIONS
-        value: |
-          -XX:+UnlockExperimentalVMOptions
-          -XX:+UseCGroupMemoryLimitForHeap
       - name: LIMITS_CPU
         valueFrom:
           resourceFieldRef:
@@ -74,7 +69,6 @@ spec:
         value: |
           -XX:+UnlockExperimentalVMOptions
           -XX:+UseCGroupMemoryLimitForHeap
-          -XX:MaxRAMFraction=1
       - name: TZ
         value: Europe/Berlin
     resources:
@@ -150,11 +144,6 @@ spec:
     command: ["cat"]
     tty: true
     env:
-      # every JVM process will get a 1/4 of HEAP from total memory
-      - name: JAVA_TOOL_OPTIONS
-        value: |
-          -XX:+UnlockExperimentalVMOptions
-          -XX:+UseCGroupMemoryLimitForHeap
       - name: LIMITS_CPU
         valueFrom:
           resourceFieldRef:
@@ -177,7 +166,6 @@ spec:
         value: |
           -XX:+UnlockExperimentalVMOptions
           -XX:+UseCGroupMemoryLimitForHeap
-          -XX:MaxRAMFraction=1
       - name: TZ
         value: Europe/Berlin
     resources:

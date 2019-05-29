@@ -14,9 +14,12 @@ String storeNumOfArtifacts() {
   return env.BRANCH_NAME == 'master' ? '5' : '1'
 }
 
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
+
 def static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
 CAMBPM_VERSION_LATEST = "7.11.0-alpha4"
+
 
 String getCamBpmDockerImage(String camBpmVersion) {
   return "registry.camunda.cloud/camunda-bpm-platform-ee:${camBpmVersion}"
@@ -58,7 +61,7 @@ spec:
         privileged: true
   containers:
   - name: maven
-    image: maven:3.5.3-jdk-8-slim
+    image: ${MAVEN_DOCKER_IMAGE()}
     command: ["cat"]
     tty: true
     env:
@@ -66,12 +69,6 @@ spec:
         valueFrom:
           resourceFieldRef:
             resource: limits.cpu
-      # every JVM process will get a 1/2 of HEAP from total memory
-      - name: JAVA_TOOL_OPTIONS
-        value: |
-          -XX:+UnlockExperimentalVMOptions
-          -XX:+UseCGroupMemoryLimitForHeap
-          -XX:MaxRAMFraction=\$(LIMITS_CPU)
       - name: TZ
         value: Europe/Berlin
     resources:
@@ -95,7 +92,6 @@ String camBpmContainerSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
         value: |
           -XX:+UnlockExperimentalVMOptions
           -XX:+UseCGroupMemoryLimitForHeap
-          -XX:MaxRAMFraction=1
       - name: TZ
         value: Europe/Berlin
     resources:

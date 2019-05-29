@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 def static NODE_POOL() { return "slaves-stable" }
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.5.3-jdk-8-slim" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 
 static String gcloudAgent() {
   return """
@@ -37,11 +37,6 @@ spec:
     command: ["cat"]
     tty: true
     env:
-      # every JVM process will get a 1/4 of HEAP from total memory
-      - name: JAVA_TOOL_OPTIONS
-        value: |
-          -XX:+UnlockExperimentalVMOptions
-          -XX:+UseCGroupMemoryLimitForHeap
       - name: LIMITS_CPU
         valueFrom:
           resourceFieldRef:
