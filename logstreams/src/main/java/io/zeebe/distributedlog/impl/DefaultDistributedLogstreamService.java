@@ -43,6 +43,7 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.state.SnapshotRequester;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.util.ZbLogger;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
@@ -66,6 +67,7 @@ public class DefaultDistributedLogstreamService
   private ServiceContainer serviceContainer;
   private ThreadContext restoreThreadContext;
   private String localMemberId;
+  private Logger logger;
 
   public DefaultDistributedLogstreamService(DistributedLogstreamServiceConfig config) {
     super(DistributedLogstreamType.instance(), DistributedLogstreamClient.class);
@@ -77,7 +79,8 @@ public class DefaultDistributedLogstreamService
     this.logStream = logStream;
     this.logStorage = this.logStream.getLogStorage();
     this.logName = logStream.getLogName();
-    restoreThreadContext = new SingleThreadContext(String.format("log-restore-%s-%%d", logName));
+
+    configureFromLogName(logName);
     this.localMemberId = localMemberId;
 
     initLastPosition();
@@ -86,17 +89,27 @@ public class DefaultDistributedLogstreamService
   @Override
   protected void configure(ServiceExecutor executor) {
     super.configure(executor);
+    localMemberId = getLocalMemberId().id();
+
     try {
       logName = getRaftPartitionName(executor);
-      restoreThreadContext = new SingleThreadContext(String.format("log-restore-%s-%%d", logName));
-      LOG.info(
+      configureFromLogName(logName);
+
+      logger.info(
           "Configuring {} on node {} with logName {}",
           getServiceName(),
           getLocalMemberId().id(),
           logName);
-
-      createLogStream(logName);
+      logStream = getOrCreateLogStream(logName);
+      logStorage = logStream.getLogStorage();
+      initLastPosition();
+      logger.info(
+          "Configured with LogStream {} and last appended event at position {}",
+          logName,
+          lastPosition);
     } catch (Exception e) {
+      // use static logger since we may have failed before we got the log name and so have no
+      // configured logger yet
       LOG.error(
           "Failed to configure {} on node {} with logName {}",
           getServiceName(),
@@ -105,6 +118,18 @@ public class DefaultDistributedLogstreamService
           e);
       throw e;
     }
+  }
+
+  private void configureFromLogName(String logName) {
+    partitionId = getPartitionIdFromLogName(logName);
+    logger = new ZbLogger(String.format("%s-%d", this.getClass().getName(), partitionId));
+    restoreThreadContext =
+        new SingleThreadContext(String.format("%s-%d-%%d", this.getClass().getName(), partitionId));
+  }
+
+  private int getPartitionIdFromLogName(String logName) {
+    final String[] parts = logName.split("-");
+    return Integer.valueOf(parts[parts.length - 1]);
   }
 
   private String getRaftPartitionName(ServiceExecutor executor) {
@@ -127,44 +152,38 @@ public class DefaultDistributedLogstreamService
     return name;
   }
 
-  private void createLogStream(String logServiceName) {
-    // A hack to get partitionId from the name
-    final String[] splitted = logServiceName.split("-");
-    partitionId = Integer.parseInt(splitted[splitted.length - 1]);
-
-    localMemberId = getLocalMemberId().id();
+  private LogStream getOrCreateLogStream(String logServiceName) {
+    final LogStream logStream;
     serviceContainer = LogstreamConfig.getServiceContainer(localMemberId);
 
     if (serviceContainer.hasService(LogStreamServiceNames.logStreamServiceName(logServiceName))) {
       logStream = LogstreamConfig.getLogStream(localMemberId, partitionId);
     } else {
-
-      final StorageConfiguration config =
-          LogstreamConfig.getConfig(localMemberId, partitionId).join();
-
-      final File logDirectory = config.getLogDirectory();
-      final File snapshotDirectory = config.getSnapshotsDirectory();
-      final File blockIndexDirectory = config.getBlockIndexDirectory();
-
-      final StateStorage stateStorage = new StateStorage(blockIndexDirectory, snapshotDirectory);
-      logStream =
-          LogStreams.createFsLogStream(partitionId)
-              .logDirectory(logDirectory.getAbsolutePath())
-              .logSegmentSize((int) config.getLogSegmentSize())
-              .indexBlockSize((int) config.getIndexBlockSize())
-              .logName(logServiceName)
-              .serviceContainer(serviceContainer)
-              .indexStateStorage(stateStorage)
-              .build()
-              .join();
+      logStream = createLogStream(logServiceName);
     }
 
     LogstreamConfig.putLogStream(localMemberId, partitionId, logStream);
+    return logStream;
+  }
 
-    this.logStorage = this.logStream.getLogStorage();
-    initLastPosition();
+  private LogStream createLogStream(String logServiceName) {
+    final StorageConfiguration config =
+        LogstreamConfig.getConfig(localMemberId, partitionId).join();
 
-    LOG.info("Logstreams created. last appended event at position {}", lastPosition);
+    final File logDirectory = config.getLogDirectory();
+    final File snapshotDirectory = config.getSnapshotsDirectory();
+    final File blockIndexDirectory = config.getBlockIndexDirectory();
+
+    final StateStorage stateStorage = new StateStorage(blockIndexDirectory, snapshotDirectory);
+    return LogStreams.createFsLogStream(partitionId)
+        .logDirectory(logDirectory.getAbsolutePath())
+        .logSegmentSize((int) config.getLogSegmentSize())
+        .indexBlockSize((int) config.getIndexBlockSize())
+        .logName(logServiceName)
+        .serviceContainer(serviceContainer)
+        .indexStateStorage(stateStorage)
+        .build()
+        .join();
   }
 
   private void initLastPosition() {
@@ -181,7 +200,7 @@ public class DefaultDistributedLogstreamService
     // Assumption: first append is always called after claim leadership. So currentLeader is not
     // null. Assumption is also valid during restart.
     if (!currentLeader.equals(nodeId)) {
-      LOG.warn(
+      logger.warn(
           "Append request from follower node {}. Current leader is {}.", nodeId, currentLeader);
       return 0; // Don't return a error, so that the appender never retries. TODO: Return a proper
       // error code;
@@ -195,7 +214,7 @@ public class DefaultDistributedLogstreamService
     if (commitPosition <= lastPosition) {
       // This case can happen due to raft-replay or when appender retries due to timeout or other
       // exceptions.
-      LOG.trace("Rejecting append request at position {}", commitPosition);
+      logger.trace("Rejecting append request at position {}", commitPosition);
       return 1; // Assume the append was successful because event was previously appended.
     }
 
@@ -204,7 +223,7 @@ public class DefaultDistributedLogstreamService
     if (appendResult > 0) {
       updateCommitPosition(commitPosition);
     } else {
-      LOG.error("Append failed {}", appendResult);
+      logger.error("Append failed {}", appendResult);
     }
     // the return result is valid only for the leader. If the followers failed to append, they don't
     // retry
@@ -213,8 +232,8 @@ public class DefaultDistributedLogstreamService
 
   @Override
   public boolean claimLeaderShip(String nodeId, long term) {
-    LOG.debug(
-        "Node {} claiming leadership for logstream partition {} at term {}.",
+    logger.debug(
+        "Node {} claiming leadership for LogStream partition {} at term {}.",
         nodeId,
         logStream.getPartitionId(),
         term);
@@ -233,8 +252,8 @@ public class DefaultDistributedLogstreamService
     // backup snapshot, but not appended to logStorage may be lost. So, if this node is away for a
     // while and tries to recover with backup received from other nodes, there will be missing
     // entries in the logStorage.
+    logger.info("Backup log {} at position {}", logName, lastPosition);
 
-    LOG.info("Backup log {} at position {}", logName, lastPosition);
     // Backup in-memory states
     backupOutput.writeLong(lastPosition);
     backupOutput.writeString(currentLeader);
@@ -246,7 +265,7 @@ public class DefaultDistributedLogstreamService
     final long backupPosition = backupInput.readLong();
     restore(backupPosition);
 
-    LOG.debug("Restored local log to position {}", lastPosition);
+    logger.debug("Restored local log to position {}", lastPosition);
     currentLeader = backupInput.readString();
     currentLeaderTerm = backupInput.readLong();
   }
@@ -254,12 +273,12 @@ public class DefaultDistributedLogstreamService
   public void restore(long backupPosition) {
     if (lastPosition < backupPosition) {
       LogstreamConfig.startRestore(localMemberId, partitionId);
-      final long latestLocalPosition = lastPosition;
 
       // pick the correct restore strategy and execute forever until the log is restored, e.g.
       // lastPosition >= backupPosition.
       while (lastPosition < backupPosition) {
-        LOG.debug("Restoring local log from position {} to {}", lastPosition, backupPosition);
+        final long latestLocalPosition = lastPosition;
+        logger.debug("Restoring local log from position {} to {}", lastPosition, backupPosition);
         try {
           final DefaultStrategyPicker strategyPicker = this.buildRestoreStrategyPicker();
           final long lastUpdatedPosition =
@@ -268,10 +287,11 @@ public class DefaultDistributedLogstreamService
                   .thenCompose(RestoreStrategy::executeRestoreStrategy)
                   .join();
           updateCommitPosition(lastUpdatedPosition);
-          LOG.trace("Restored local log from position {} to {}", latestLocalPosition, lastPosition);
+          logger.trace(
+              "Restored local log from position {} to {}", latestLocalPosition, lastPosition);
         } catch (RuntimeException e) {
           lastPosition = logStream.getCommitPosition();
-          LOG.error(
+          logger.error(
               "Failed to restore log from {} to {}, retrying from {}",
               latestLocalPosition,
               backupPosition,
@@ -293,7 +313,7 @@ public class DefaultDistributedLogstreamService
     final RestoreFactory clientFactory = LogstreamConfig.getRestoreFactory(localMemberId);
     final RestoreClient restoreClient = clientFactory.createClient(partitionId);
     final LogReplicator logReplicator =
-        new LogReplicator(this, restoreClient, restoreThreadContext, LOG);
+        new LogReplicator(this, restoreClient, restoreThreadContext, logger);
     final SnapshotRequester snapshotReplicator =
         new SnapshotRequester(
             restoreClient, clientFactory.createSnapshotRestoreContext(), partitionId);
@@ -301,12 +321,17 @@ public class DefaultDistributedLogstreamService
     final RestoreNodeProvider nodeProvider = clientFactory.createNodeProvider(partitionId);
 
     return new DefaultStrategyPicker(
-        restoreClient, nodeProvider, logReplicator, snapshotReplicator, restoreThreadContext, LOG);
+        restoreClient,
+        nodeProvider,
+        logReplicator,
+        snapshotReplicator,
+        restoreThreadContext,
+        logger);
   }
 
   @Override
   public void close() {
     super.close();
-    LOG.info("Closing {}", getServiceName());
+    logger.info("Closing {}", getServiceName());
   }
 }

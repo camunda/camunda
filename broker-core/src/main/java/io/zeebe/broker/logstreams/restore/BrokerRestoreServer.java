@@ -25,9 +25,11 @@ import io.zeebe.distributedlog.restore.impl.DefaultSnapshotRequestHandler;
 import io.zeebe.distributedlog.restore.log.impl.DefaultLogReplicationRequestHandler;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.util.ZbLogger;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.slf4j.Logger;
 
 public class BrokerRestoreServer implements RestoreServer {
   private final ClusterCommunicationService communicationService;
@@ -36,6 +38,7 @@ public class BrokerRestoreServer implements RestoreServer {
   private final String snapshotRequestTopic;
   private final String snapshotInfoRequestTopic;
   private final ExecutorService executor;
+  private final Logger logger;
 
   public BrokerRestoreServer(ClusterCommunicationService communicationService, int partitionId) {
     this(
@@ -43,7 +46,10 @@ public class BrokerRestoreServer implements RestoreServer {
         BrokerRestoreFactory.getLogReplicationTopic(partitionId),
         BrokerRestoreFactory.getRestoreInfoTopic(partitionId),
         BrokerRestoreFactory.getSnapshotRequestTopic(partitionId),
-        BrokerRestoreFactory.getSnapshotInfoRequestTopic(partitionId));
+        BrokerRestoreFactory.getSnapshotInfoRequestTopic(partitionId),
+        Executors.newSingleThreadExecutor(
+            r -> new Thread(r, String.format(BrokerRestoreServer.class.getName(), partitionId))),
+        new ZbLogger(String.format(BrokerRestoreServer.class.getName(), partitionId)));
   }
 
   public BrokerRestoreServer(
@@ -51,14 +57,16 @@ public class BrokerRestoreServer implements RestoreServer {
       String logReplicationTopic,
       String restoreInfoTopic,
       String snapshotRequestTopic,
-      String snapshotInfoRequestTopic) {
+      String snapshotInfoRequestTopic,
+      ExecutorService executor,
+      Logger logger) {
     this.communicationService = communicationService;
     this.logReplicationTopic = logReplicationTopic;
     this.restoreInfoTopic = restoreInfoTopic;
     this.snapshotRequestTopic = snapshotRequestTopic;
     this.snapshotInfoRequestTopic = snapshotInfoRequestTopic;
-
-    this.executor = Executors.newSingleThreadExecutor(r -> new Thread(r, "restore-server"));
+    this.executor = executor;
+    this.logger = logger;
   }
 
   public CompletableFuture<Void> start(LogStream logStream, SnapshotController snapshotController) {
@@ -74,7 +82,8 @@ public class BrokerRestoreServer implements RestoreServer {
     return serve(logReplicationHandler)
         .thenCompose(nothing -> serve(restoreInfoHandler))
         .thenCompose(nothing -> serve(snapshotRequestHandler))
-        .thenCompose(nothing -> serve(snapshotInfoRequestHandler));
+        .thenCompose(nothing -> serve(snapshotInfoRequestHandler))
+        .thenRun(this::logServerStart);
   }
 
   @Override
@@ -84,37 +93,57 @@ public class BrokerRestoreServer implements RestoreServer {
     communicationService.unsubscribe(snapshotRequestTopic);
     communicationService.unsubscribe(snapshotInfoRequestTopic);
     executor.shutdownNow();
+
+    logger.debug(
+        "Closed restore server for topics: {}, {}, {}, {}",
+        logReplicationTopic,
+        restoreInfoTopic,
+        snapshotRequestTopic,
+        snapshotInfoRequestTopic);
   }
 
   @Override
-  public CompletableFuture<Void> serve(LogReplicationRequestHandler server) {
+  public CompletableFuture<Void> serve(LogReplicationRequestHandler handler) {
+    logger.trace("Subscribed handler {} to topic {}", logReplicationTopic, handler);
     return communicationService.subscribe(
         logReplicationTopic,
         SbeLogReplicationRequest::new,
-        server::onReplicationRequest,
+        handler::onReplicationRequest,
         SbeLogReplicationResponse::serialize,
         executor);
   }
 
   @Override
-  public CompletableFuture<Void> serve(RestoreInfoRequestHandler server) {
+  public CompletableFuture<Void> serve(RestoreInfoRequestHandler handler) {
+    logger.trace("Subscribed handler {} to topic {}", restoreInfoTopic, handler);
     return communicationService.subscribe(
         restoreInfoTopic,
         SbeRestoreInfoRequest::new,
-        server::onRestoreInfoRequest,
+        handler::onRestoreInfoRequest,
         SbeRestoreInfoResponse::serialize,
         executor);
   }
 
   @Override
   public CompletableFuture<Void> serve(SnapshotInfoRequestHandler handler) {
+    logger.trace("Subscribed handler {} to topic {}", snapshotInfoRequestTopic, handler);
     return communicationService.subscribe(
         snapshotInfoRequestTopic, handler::onSnapshotInfoRequest, executor);
   }
 
   @Override
   public CompletableFuture<Void> serve(SnapshotRequestHandler handler) {
+    logger.trace("Subscribed handler {} to topic {}", snapshotRequestTopic, handler);
     return communicationService.subscribe(
         snapshotRequestTopic, handler::onSnapshotRequest, executor);
+  }
+
+  private void logServerStart() {
+    logger.debug(
+        "Started restore server for topics: {}, {}, {}, {}",
+        logReplicationTopic,
+        restoreInfoTopic,
+        snapshotRequestTopic,
+        snapshotInfoRequestTopic);
   }
 }

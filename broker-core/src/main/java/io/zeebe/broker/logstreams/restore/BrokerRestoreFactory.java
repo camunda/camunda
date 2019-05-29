@@ -21,8 +21,8 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionGroup;
+import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionService;
-import io.zeebe.distributedlog.impl.DistributedLogstreamName;
 import io.zeebe.distributedlog.restore.RestoreClient;
 import io.zeebe.distributedlog.restore.RestoreFactory;
 import io.zeebe.distributedlog.restore.RestoreNodeProvider;
@@ -55,14 +55,7 @@ public class BrokerRestoreFactory implements RestoreFactory {
 
   @Override
   public RestoreClient createClient(int partitionId) {
-    return new BrokerRestoreClient(
-        communicationService,
-        localMemberId,
-        getLogReplicationTopic(partitionId),
-        getRestoreInfoTopic(partitionId),
-        getSnapshotRequestTopic(partitionId),
-        getSnapshotInfoRequestTopic(partitionId),
-        eventService);
+    return new BrokerRestoreClient(communicationService, partitionId);
   }
 
   @Override
@@ -72,8 +65,7 @@ public class BrokerRestoreFactory implements RestoreFactory {
 
   private Partition getPartition(int partitionId) {
     final PartitionGroup group = partitionService.getPartitionGroup(partitionGroupName);
-    final String partitionKey = DistributedLogstreamName.getPartitionKey(partitionId);
-    return group.getPartition(partitionKey);
+    return group.getPartition(PartitionId.from(partitionGroupName, partitionId));
   }
 
   static String getLogReplicationTopic(int partitionId) {

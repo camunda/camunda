@@ -65,11 +65,11 @@ public class LogReplicator {
         .whenCompleteAsync(
             (r, e) -> {
               if (e != null) {
-                logger.trace("Error replicating {} from {}", request, server, e);
+                logger.debug("Error replicating {} from {}", request, server, e);
                 result.completeExceptionally(e);
               } else {
                 if (!r.isValid()) {
-                  logger.trace(
+                  logger.debug(
                       "Received invalid response {} when requesting {} from {}",
                       r,
                       request,
@@ -101,11 +101,11 @@ public class LogReplicator {
       final long appendResult =
           appender.append(response.getToPosition(), response.getSerializedEvents());
       if (appendResult <= 0) {
-        logger.trace("Failed to append events from {} - {} with result {}", from, to, appendResult);
+        logger.debug("Failed to append events from {} - {} with result {}", from, to, appendResult);
         result.completeExceptionally(new FailedAppendException(server, from, to, appendResult));
       }
     } catch (RuntimeException error) {
-      logger.trace("Error when appending events from {} - {}", from, to, error);
+      logger.debug("Error when appending events from {} - {}", from, to, error);
       result.completeExceptionally(error);
       return false;
     }
