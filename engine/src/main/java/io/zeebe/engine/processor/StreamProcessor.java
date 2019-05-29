@@ -38,7 +38,6 @@ import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
@@ -60,10 +59,7 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
   private ActorCondition onCommitPositionUpdatedCondition;
 
   // snapshotting
-  private AsyncSnapshotDirector asyncSnapshotDirector;
   private final ZeebeDb zeebeDb;
-  private final int maxSnapshots;
-  private final Duration snapshotPeriod;
 
   private long snapshotPosition = -1L;
 
@@ -81,9 +77,6 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
     this.lifecycleAwareListeners = context.getLifecycleListeners();
 
     this.typedRecordProcessorFactory = context.getTypedRecordProcessorFactory();
-
-    this.snapshotPeriod = context.getSnapshotPeriod();
-    this.maxSnapshots = context.getMaxSnapshots();
     this.zeebeDb = context.getZeebeDb();
 
     final EnumMap<ValueType, UnifiedRecordValue> eventCache = new EnumMap<>(ValueType.class);

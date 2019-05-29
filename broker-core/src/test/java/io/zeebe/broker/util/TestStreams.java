@@ -17,29 +17,19 @@
  */
 package io.zeebe.broker.util;
 
-import static io.zeebe.engine.processor.StreamProcessorServiceNames.streamProcessorService;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
-import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
-import io.zeebe.engine.processor.CommandResponseWriter;
-import io.zeebe.engine.processor.ReadonlyProcessingContext;
-import io.zeebe.engine.processor.StreamProcessor;
-import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedEventRegistry;
-import io.zeebe.engine.processor.TypedRecordProcessorFactory;
-import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.state.StateStorageFactory;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -48,7 +38,6 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
@@ -59,8 +48,6 @@ import io.zeebe.protocol.intent.Intent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -87,13 +74,10 @@ public class TestStreams {
   private final ServiceContainer serviceContainer;
 
   private final Map<String, LogStream> managedLogs = new HashMap<>();
-  private final Map<String, StateSnapshotController> snapshotControllerMap = new HashMap<>();
 
   protected ActorScheduler actorScheduler;
 
   protected StateStorageFactory stateStorageFactory;
-  public static final String PROCESSOR_NAME = "processor";
-  private final CommandResponseWriter mockCommandResponseWriter;
 
   public TestStreams(
       final TemporaryFolder storageDirectory,
@@ -104,26 +88,6 @@ public class TestStreams {
     this.closeables = closeables;
     this.serviceContainer = serviceContainer;
     this.actorScheduler = actorScheduler;
-
-    mockCommandResponseWriter = mock(CommandResponseWriter.class);
-    when(mockCommandResponseWriter.intent(any())).thenReturn(mockCommandResponseWriter);
-    when(mockCommandResponseWriter.key(anyLong())).thenReturn(mockCommandResponseWriter);
-    when(mockCommandResponseWriter.partitionId(anyInt())).thenReturn(mockCommandResponseWriter);
-    when(mockCommandResponseWriter.recordType(any())).thenReturn(mockCommandResponseWriter);
-    when(mockCommandResponseWriter.rejectionType(any())).thenReturn(mockCommandResponseWriter);
-    when(mockCommandResponseWriter.rejectionReason(any())).thenReturn(mockCommandResponseWriter);
-    when(mockCommandResponseWriter.valueType(any())).thenReturn(mockCommandResponseWriter);
-    when(mockCommandResponseWriter.valueWriter(any())).thenReturn(mockCommandResponseWriter);
-
-    when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
-  }
-
-  public CommandResponseWriter getMockedResponseWriter() {
-    return mockCommandResponseWriter;
-  }
-
-  public LogStream createLogStream(final String name) {
-    return createLogStream(name, 0);
   }
 
   public LogStream createLogStream(final String name, final int partitionId) {
@@ -244,71 +208,14 @@ public class TestStreams {
     return stateStorageFactory;
   }
 
-  public StreamProcessor startStreamProcessor(
-      final String log,
-      final int streamProcessorId,
-      final ZeebeDbFactory zeebeDbFactory,
-      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
-    final LogStream stream = getLogStream(log);
-    return buildStreamProcessorController(
-        streamProcessorId, stream, zeebeDbFactory, typedRecordProcessorFactory);
-  }
-
-  private StreamProcessor buildStreamProcessorController(
-      int streamProcessorId,
-      LogStream stream,
-      ZeebeDbFactory zeebeDbFactory,
-      TypedRecordProcessorFactory factory) {
-
-    final StateStorage stateStorage =
-        getStateStorageFactory().create(streamProcessorId, PROCESSOR_NAME);
-    final StateSnapshotController currentSnapshotController =
-        spy(new StateSnapshotController(zeebeDbFactory, stateStorage));
-    snapshotControllerMap.put(stream.getLogName(), currentSnapshotController);
-
-    final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
-
-    final StreamProcessor processorService =
-        StreamProcessor.builder(streamProcessorId, PROCESSOR_NAME)
-            .logStream(stream)
-            .snapshotController(currentSnapshotController)
-            .actorScheduler(actorScheduler)
-            .serviceContainer(serviceContainer)
-            .commandResponseWriter(mockCommandResponseWriter)
-            .streamProcessorFactory(
-                (context) -> {
-                  final TypedRecordProcessors processors = factory.createProcessors(context);
-                  processors.withListener(
-                      new StreamProcessorLifecycleAware() {
-                        @Override
-                        public void onOpen(ReadonlyProcessingContext context) {
-                          openFuture.complete(null);
-                        }
-                      });
-                  return processors;
-                })
-            .build()
-            .join();
-    openFuture.join();
-    return processorService;
-  }
-
-  public StateSnapshotController getStateSnapshotController(String stream) {
-    return snapshotControllerMap.get(stream);
-  }
-
-  public void closeProcessor(String streamName) {
-    serviceContainer.removeService(streamProcessorService(streamName, PROCESSOR_NAME)).join();
-  }
-
   public static class FluentLogWriter {
 
     protected RecordMetadata metadata = new RecordMetadata();
     protected UnpackedObject value;
     protected LogStream logStream;
     protected long key = -1;
-    private long sourceRecordPosition = -1;
-    private int producerId = -1;
+    private final long sourceRecordPosition = -1;
+    private final int producerId = -1;
 
     public FluentLogWriter(final LogStream logStream) {
       this.logStream = logStream;
@@ -318,26 +225,6 @@ public class TestStreams {
 
     public FluentLogWriter intent(final Intent intent) {
       this.metadata.intent(intent);
-      return this;
-    }
-
-    public FluentLogWriter requestId(final long requestId) {
-      this.metadata.requestId(requestId);
-      return this;
-    }
-
-    public FluentLogWriter producerId(final int producerId) {
-      this.producerId = producerId;
-      return this;
-    }
-
-    public FluentLogWriter sourceRecordPosition(final long sourceRecordPosition) {
-      this.sourceRecordPosition = sourceRecordPosition;
-      return this;
-    }
-
-    public FluentLogWriter requestStreamId(final int requestStreamId) {
-      this.metadata.requestStreamId(requestStreamId);
       return this;
     }
 

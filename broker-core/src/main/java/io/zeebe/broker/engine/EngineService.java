@@ -93,8 +93,6 @@ public class EngineService implements Service<EngineService> {
         .actorScheduler(serviceContext.getScheduler())
         .additionalDependencies(partitionServiceName)
         .zeebeDb(partition.getZeebeDb())
-        .maxSnapshots(maxSnapshots)
-        .snapshotPeriod(snapshotPeriod)
         .serviceContainer(serviceContainer)
         .commandResponseWriter(new CommandResponseWriterImpl(clientApiTransport.getOutput()))
         .streamProcessorFactory(
