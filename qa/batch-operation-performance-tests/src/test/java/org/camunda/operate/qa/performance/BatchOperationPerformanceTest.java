@@ -32,6 +32,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.time.Duration;
 import java.time.Instant;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +41,8 @@ import static org.mockito.Mockito.when;
 public class BatchOperationPerformanceTest {
 
   private static final Logger logger = LoggerFactory.getLogger(BatchOperationPerformanceTest.class);
+
+  private static long TEST_TIMEOUT_SECONDS = 600;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -129,6 +132,7 @@ public class BatchOperationPerformanceTest {
       Instant operationExecutionEnd = Instant.now();
       long timeElapsed = Duration.between(operationExecutionStart, operationExecutionEnd).getSeconds();
       logger.info("Batch operation execution finished in {} s", timeElapsed);
+      assertThat(timeElapsed).isLessThan(TEST_TIMEOUT_SECONDS);
       finished = true;
     }
 
