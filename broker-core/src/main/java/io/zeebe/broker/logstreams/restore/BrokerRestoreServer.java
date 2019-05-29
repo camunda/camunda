@@ -20,9 +20,8 @@ package io.zeebe.broker.logstreams.restore;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.zeebe.distributedlog.restore.RestoreServer;
 import io.zeebe.distributedlog.restore.impl.DefaultRestoreInfoRequestHandler;
-import io.zeebe.distributedlog.restore.impl.DefaultSnapshotInfoRequestHandler;
-import io.zeebe.distributedlog.restore.impl.DefaultSnapshotRequestHandler;
 import io.zeebe.distributedlog.restore.log.impl.DefaultLogReplicationRequestHandler;
+import io.zeebe.distributedlog.restore.snapshot.impl.DefaultSnapshotRequestHandler;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.util.ZbLogger;
@@ -76,13 +75,10 @@ public class BrokerRestoreServer implements RestoreServer {
         new DefaultRestoreInfoRequestHandler(logStream, snapshotController);
     final SnapshotRequestHandler snapshotRequestHandler =
         new DefaultSnapshotRequestHandler(snapshotController);
-    final SnapshotInfoRequestHandler snapshotInfoRequestHandler =
-        new DefaultSnapshotInfoRequestHandler(snapshotController);
 
     return serve(logReplicationHandler)
         .thenCompose(nothing -> serve(restoreInfoHandler))
         .thenCompose(nothing -> serve(snapshotRequestHandler))
-        .thenCompose(nothing -> serve(snapshotInfoRequestHandler))
         .thenRun(this::logServerStart);
   }
 
@@ -125,17 +121,14 @@ public class BrokerRestoreServer implements RestoreServer {
   }
 
   @Override
-  public CompletableFuture<Void> serve(SnapshotInfoRequestHandler handler) {
-    logger.trace("Subscribed handler {} to topic {}", snapshotInfoRequestTopic, handler);
-    return communicationService.subscribe(
-        snapshotInfoRequestTopic, handler::onSnapshotInfoRequest, executor);
-  }
-
-  @Override
   public CompletableFuture<Void> serve(SnapshotRequestHandler handler) {
     logger.trace("Subscribed handler {} to topic {}", snapshotRequestTopic, handler);
     return communicationService.subscribe(
-        snapshotRequestTopic, handler::onSnapshotRequest, executor);
+        snapshotRequestTopic,
+        SbeSnapshotRestoreRequest::new,
+        handler::onSnapshotRequest,
+        SbeSnapshotRestoreResponse::serialize,
+        executor);
   }
 
   private void logServerStart() {

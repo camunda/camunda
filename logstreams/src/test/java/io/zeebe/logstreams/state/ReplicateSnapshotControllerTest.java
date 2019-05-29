@@ -31,7 +31,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.zip.CRC32;
 import org.junit.Before;
@@ -217,31 +216,6 @@ public class ReplicateSnapshotControllerTest {
     verify(mockDeletionService).delete(2);
   }
 
-  @Test
-  public void shouldNotifyAfterReplication() {
-    // given
-    replicatorSnapshotController.takeSnapshot(1);
-    receiverSnapshotController.consumeReplicatedSnapshots();
-    final CompletableFuture<Long> future = new CompletableFuture();
-    receiverSnapshotController.addListener(
-        new SnapshotReplicationListener() {
-          @Override
-          public void onReplicated(long snapshotPosition) {
-            future.complete(snapshotPosition);
-          }
-
-          @Override
-          public void onFailure(long snapshotPosition) {}
-        });
-
-    // when
-    replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
-
-    // then
-    final long position = future.join();
-    assertThat(position).isEqualTo(1L);
-  }
-
   private void replicateXSnapshots(final int snapshotAmount) {
     for (int i = 1; i <= snapshotAmount; ++i) {
       replicatorSnapshotController.takeSnapshot(i);
@@ -269,9 +243,5 @@ public class ReplicateSnapshotControllerTest {
 
     @Override
     public void close() {}
-  }
-
-  public class NoopConsumer {
-    public void noop(long position) {}
   }
 }

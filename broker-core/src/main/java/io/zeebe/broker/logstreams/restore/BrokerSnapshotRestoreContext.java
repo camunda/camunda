@@ -17,10 +17,8 @@
  */
 package io.zeebe.broker.logstreams.restore;
 
-import io.atomix.cluster.messaging.ClusterEventService;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.engine.EngineService;
-import io.zeebe.broker.engine.impl.StateReplication;
 import io.zeebe.broker.exporter.stream.ExportersState;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.distributedlog.StorageConfiguration;
@@ -30,24 +28,16 @@ import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.StateStorageFactory;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.spi.SnapshotController;
-import io.zeebe.logstreams.state.SnapshotReplication;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import java.util.function.Supplier;
 
 public class BrokerSnapshotRestoreContext implements SnapshotRestoreContext {
 
-  private final ClusterEventService eventService;
   private final String localMemberId;
 
-  public BrokerSnapshotRestoreContext(ClusterEventService eventService, String localMemberId) {
-    this.eventService = eventService;
+  public BrokerSnapshotRestoreContext(String localMemberId) {
     this.localMemberId = localMemberId;
-  }
-
-  @Override
-  public SnapshotReplication createSnapshotReplicationConsumer(int partitionId) {
-    return new StateReplication(eventService, partitionId, EngineService.PROCESSOR_NAME);
   }
 
   @Override
@@ -59,17 +49,17 @@ public class BrokerSnapshotRestoreContext implements SnapshotRestoreContext {
   }
 
   @Override
-  public Supplier<Long> getExporterPositionSupplier(StateStorage exporterStorage) {
-    return () -> getLowestReplicatedExportedPosition(exporterStorage);
+  public Supplier<Long> getExporterPositionSupplier(int partitionId) {
+    return () -> getLowestReplicatedExportedPosition(partitionId);
   }
 
   @Override
-  public Supplier<Long> getProcessorPositionSupplier(
-      int partitionId, StateStorage processorStorage) {
-    return () -> getLatestProcessedPosition(partitionId, processorStorage);
+  public Supplier<Long> getProcessorPositionSupplier(int partitionId) {
+    return () -> getLatestProcessedPosition(partitionId);
   }
 
-  private long getLowestReplicatedExportedPosition(StateStorage exporterStorage) {
+  private long getLowestReplicatedExportedPosition(int partitionId) {
+    final StateStorage exporterStorage = getStateStorage(partitionId);
     final SnapshotController exporterSnapshotController =
         new StateSnapshotController(DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, exporterStorage);
 
@@ -94,7 +84,8 @@ public class BrokerSnapshotRestoreContext implements SnapshotRestoreContext {
     return -1;
   }
 
-  private long getLatestProcessedPosition(int partitionId, StateStorage stateStorage) {
+  private long getLatestProcessedPosition(int partitionId) {
+    final StateStorage stateStorage = getStateStorage(partitionId);
     final SnapshotController processorSnapshotController =
         new StateSnapshotController(DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, stateStorage);
 

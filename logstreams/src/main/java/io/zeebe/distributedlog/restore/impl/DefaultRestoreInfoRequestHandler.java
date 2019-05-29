@@ -19,10 +19,12 @@ import io.zeebe.distributedlog.restore.RestoreInfoRequest;
 import io.zeebe.distributedlog.restore.RestoreInfoResponse;
 import io.zeebe.distributedlog.restore.RestoreInfoResponse.ReplicationTarget;
 import io.zeebe.distributedlog.restore.RestoreServer.RestoreInfoRequestHandler;
+import io.zeebe.distributedlog.restore.snapshot.impl.DefaultSnapshotRestoreInfo;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.spi.SnapshotController;
+import java.io.File;
 
 public class DefaultRestoreInfoRequestHandler implements RestoreInfoRequestHandler {
   private final SnapshotController snapshotController;
@@ -41,6 +43,10 @@ public class DefaultRestoreInfoRequestHandler implements RestoreInfoRequestHandl
     if (lastValidSnapshotPosition > -1
         && lastValidSnapshotPosition >= request.getLatestLocalPosition()) {
       target = RestoreInfoResponse.ReplicationTarget.SNAPSHOT;
+      final File lastValidSnapshotDirectory = snapshotController.getLastValidSnapshotDirectory();
+      final int numChunks = lastValidSnapshotDirectory.listFiles().length;
+      return new DefaultRestoreInfoResponse(
+          target, new DefaultSnapshotRestoreInfo(lastValidSnapshotPosition, numChunks));
     } else if (seekToRequestedPositionExclusive(request.getLatestLocalPosition())) {
       target = RestoreInfoResponse.ReplicationTarget.EVENTS;
     } else {

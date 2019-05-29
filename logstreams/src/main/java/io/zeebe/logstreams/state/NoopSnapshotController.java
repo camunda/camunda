@@ -17,6 +17,7 @@ package io.zeebe.logstreams.state;
 
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.spi.SnapshotController;
+import java.io.File;
 import java.io.IOException;
 import java.util.function.Consumer;
 
@@ -66,11 +67,12 @@ public class NoopSnapshotController implements SnapshotController {
   }
 
   @Override
-  public void addListener(final SnapshotReplicationListener listener) {}
+  public File getLastValidSnapshotDirectory() {
+    return null;
+  }
 
   @Override
-  public void removeListener(final SnapshotReplicationListener listener) {}
-
-  @Override
-  public void enableRetrySnapshot(final long snapshotPosition) {}
+  public File getSnapshotDirectoryFor(long snapshotId) {
+    return null;
+  }
 }

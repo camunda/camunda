@@ -87,6 +87,7 @@ public class RestoreTest {
 
     clusteringRule.restartBroker(2);
     waitUntil(() -> !LogstreamConfig.isRestoring("2", 1));
+    waitForValidSnapshotAtBroker(clusteringRule.getBroker(2));
 
     clusteringRule.stopBroker(1);
 

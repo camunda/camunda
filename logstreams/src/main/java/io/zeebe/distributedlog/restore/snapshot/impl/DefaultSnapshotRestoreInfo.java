@@ -13,24 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.distributedlog.restore;
+package io.zeebe.distributedlog.restore.snapshot.impl;
 
 import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreInfo;
 
-public interface RestoreInfoResponse {
+public class DefaultSnapshotRestoreInfo implements SnapshotRestoreInfo {
+  private long snapshotId;
+  private int numChunks;
 
-  /** @return the replication target in order to restore the local log */
-  ReplicationTarget getReplicationTarget();
-
-  enum ReplicationTarget {
-    SNAPSHOT,
-    EVENTS,
-    NONE,
+  public DefaultSnapshotRestoreInfo(long snapshotId, int numChunks) {
+    this.snapshotId = snapshotId;
+    this.numChunks = numChunks;
   }
 
-  /**
-   * @return restore info for snapshot if {@link this::getReplicationTarget()} is equal to SNAPSHOT.
-   *     Otherwise returns null
-   */
-  SnapshotRestoreInfo getSnapshotRestoreInfo();
+  @Override
+  public long getSnapshotId() {
+    return snapshotId;
+  }
+
+  @Override
+  public int getNumChunks() {
+    return numChunks;
+  }
 }

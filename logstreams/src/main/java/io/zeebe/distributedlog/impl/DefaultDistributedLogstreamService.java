@@ -34,12 +34,15 @@ import io.zeebe.distributedlog.restore.RestoreNodeProvider;
 import io.zeebe.distributedlog.restore.impl.RestoreController;
 import io.zeebe.distributedlog.restore.log.LogReplicationAppender;
 import io.zeebe.distributedlog.restore.log.LogReplicator;
+import io.zeebe.distributedlog.restore.snapshot.RestoreSnapshotReplicator;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotConsumer;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreContext;
+import io.zeebe.distributedlog.restore.snapshot.impl.SnapshotConsumerImpl;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.state.SnapshotRequester;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.ZbLogger;
@@ -251,25 +254,10 @@ public class DefaultDistributedLogstreamService
 
     if (lastPosition < backupPosition) {
       LogstreamConfig.startRestore(localMemberId, partitionId);
-      final RestoreFactory restoreFactory = LogstreamConfig.getRestoreFactory(localMemberId);
 
       final ThreadContext restoreThreadContext =
           new SingleThreadContext(String.format("log-restore-%d", partitionId));
-      final RestoreClient restoreClient = restoreFactory.createClient(partitionId);
-      final RestoreNodeProvider nodeProvider = restoreFactory.createNodeProvider(partitionId);
-      final LogReplicator logReplicator =
-          new LogReplicator(this, restoreClient, restoreThreadContext);
-      final SnapshotRequester snapshotReplicator =
-          new SnapshotRequester(
-              restoreClient, restoreFactory.createSnapshotRestoreContext(), partitionId);
-      final RestoreController restoreController =
-          new RestoreController(
-              restoreClient,
-              nodeProvider,
-              logReplicator,
-              snapshotReplicator,
-              restoreThreadContext,
-              getLogger());
+      final RestoreController restoreController = createRestoreController(restoreThreadContext);
 
       while (lastPosition < backupPosition) {
         final long latestLocalPosition = lastPosition;
@@ -293,6 +281,35 @@ public class DefaultDistributedLogstreamService
     logger.debug("Restored local log to position {}", lastPosition);
     currentLeader = backupInput.readString();
     currentLeaderTerm = backupInput.readLong();
+  }
+
+  private RestoreController createRestoreController(ThreadContext restoreThreadContext) {
+    final RestoreFactory restoreFactory = LogstreamConfig.getRestoreFactory(localMemberId);
+    final RestoreClient restoreClient = restoreFactory.createClient(partitionId);
+    final RestoreNodeProvider nodeProvider = restoreFactory.createNodeProvider(partitionId);
+    final LogReplicator logReplicator =
+        new LogReplicator(this, restoreClient, restoreThreadContext);
+
+    final SnapshotRestoreContext snapshotRestoreContext =
+        restoreFactory.createSnapshotRestoreContext();
+    final StateStorage storage = snapshotRestoreContext.getStateStorage(partitionId);
+    final SnapshotConsumer snapshotConsumer = new SnapshotConsumerImpl(storage, LOG);
+
+    final RestoreSnapshotReplicator snapshotReplicator =
+        new RestoreSnapshotReplicator(
+            restoreClient,
+            snapshotRestoreContext,
+            snapshotConsumer,
+            partitionId,
+            restoreThreadContext,
+            logger);
+    return new RestoreController(
+        restoreClient,
+        nodeProvider,
+        logReplicator,
+        snapshotReplicator,
+        restoreThreadContext,
+        logger);
   }
 
   private void updateCommitPosition(long commitPosition) {

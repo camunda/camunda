@@ -60,7 +60,7 @@ public class BrokerRestoreFactory implements RestoreFactory {
 
   @Override
   public SnapshotRestoreContext createSnapshotRestoreContext() {
-    return new BrokerSnapshotRestoreContext(eventService, localMemberId);
+    return new BrokerSnapshotRestoreContext(localMemberId);
   }
 
   private Partition getPartition(int partitionId) {

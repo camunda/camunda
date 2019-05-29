@@ -287,18 +287,17 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
   }
 
   @Override
-  public void addListener(SnapshotReplicationListener listener) {
-    replicationController.addListener(listener);
+  public File getLastValidSnapshotDirectory() {
+    final List<File> snapshots = storage.listByPositionDesc();
+    if (snapshots != null) {
+      return snapshots.get(0);
+    }
+    return null;
   }
 
   @Override
-  public void removeListener(SnapshotReplicationListener listener) {
-    replicationController.removeListener(listener);
-  }
-
-  @Override
-  public void enableRetrySnapshot(long snapshotPosition) {
-    replicationController.clearInvalidatedSnapshot(snapshotPosition);
+  public File getSnapshotDirectoryFor(long snapshotId) {
+    return storage.getSnapshotDirectoryFor(snapshotId);
   }
 
   @Override

@@ -23,7 +23,8 @@ import io.zeebe.distributedlog.restore.RestoreInfoResponse;
 import io.zeebe.distributedlog.restore.RestoreNodeProvider;
 import io.zeebe.distributedlog.restore.RestoreStrategy;
 import io.zeebe.distributedlog.restore.log.LogReplicator;
-import io.zeebe.logstreams.state.SnapshotRequester;
+import io.zeebe.distributedlog.restore.snapshot.RestoreSnapshotReplicator;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreStrategy;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -35,13 +36,13 @@ public class RestoreController {
   private final RestoreClient restoreClient;
   private final RestoreNodeProvider nodeProvider;
   private final LogReplicator logReplicator;
-  private final SnapshotRequester snapshotReplicator;
+  private final RestoreSnapshotReplicator snapshotReplicator;
 
   public RestoreController(
       RestoreClient restoreClient,
       RestoreNodeProvider nodeProvider,
       LogReplicator logReplicator,
-      SnapshotRequester snapshotReplicator,
+      RestoreSnapshotReplicator snapshotReplicator,
       ThreadContext restoreThreadContext,
       Logger log) {
     this.restoreClient = restoreClient;
@@ -96,9 +97,9 @@ public class RestoreController {
       case SNAPSHOT:
         final SnapshotRestoreStrategy snapshotRestoreStrategy =
             new SnapshotRestoreStrategy(
-                restoreClient,
                 logReplicator,
                 snapshotReplicator,
+                response.getSnapshotRestoreInfo(),
                 latestLocalPosition,
                 backupPosition,
                 server,

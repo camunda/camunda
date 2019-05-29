@@ -87,6 +87,18 @@
 
   <sbe:message name="RestoreInfoResponse" id="19">
     <field name="replicationTarget" id="0" type="uint8"/>
+    <field name="snapshotId" id="1" type="uint64"/>
+    <field name="numChunks" id="2" type="uint16"/>
+  </sbe:message>
+
+  <sbe:message name="SnapshotRestoreRequest" id="20">
+    <field name="snapshotId" id="0" type="uint64"/>
+    <field name="chunkIdx" id="1" type="uint16"/>
+  </sbe:message>
+
+  <sbe:message name="SnapshotRestoreResponse" id="21">
+    <field name="success" id="0" type="BooleanType"/>
+    <data name="snapshotChunk" id="1" type="blob"/>
   </sbe:message>
 
 </sbe:messageSchema>
