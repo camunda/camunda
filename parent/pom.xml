@@ -55,7 +55,7 @@
     <version.msgpack>0.8.16</version.msgpack>
     <version.netty>4.1.36.Final</version.netty>
     <version.objenesis>3.0.1</version.objenesis>
-    <version.protobuf>3.7.1</version.protobuf>
+    <version.protobuf>3.8.0</version.protobuf>
     <version.rocksdbjni>6.0.1</version.rocksdbjni>
     <version.sbe>1.12.7</version.sbe>
     <version.scala-parser>1.0.6</version.scala-parser>
