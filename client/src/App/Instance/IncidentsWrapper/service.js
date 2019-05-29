@@ -7,6 +7,10 @@
 import {SORT_ORDER} from 'modules/constants';
 const SECONDARY_SORT_KEY = 'id';
 
+function sanitize(value) {
+  return Number.isInteger(value) ? value : value.toLowerCase();
+}
+
 export function sortData(data, key, order) {
   const modifier = order === SORT_ORDER.DESC ? -1 : 1;
 
@@ -15,8 +19,9 @@ export function sortData(data, key, order) {
     if (!a[key]) return 1;
     if (!b[key]) return -1;
 
-    const valA = a[key].toLowerCase();
-    const valB = b[key].toLowerCase();
+    const valA = sanitize(a[key]);
+    const valB = sanitize(b[key]);
+
     const comparison =
       key === 'creationTime'
         ? new Date(a[key]) > new Date(b[key])
