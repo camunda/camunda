@@ -692,7 +692,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     //query running instances
     ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllWorkflowInstancesQuery();
-    workflowInstanceQueryDto.setSorting(sorting);
+    if(sorting!=null) {
+      workflowInstanceQueryDto.setSorting(sorting);
+    }
 
     MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
@@ -707,8 +709,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public void testSortingByStartDateAsc() throws Exception {
     final Comparator<ListViewWorkflowInstanceDto> comparator = Comparator.comparing(ListViewWorkflowInstanceDto::getStartDate);
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy("startDate");
-    sorting.setSortOrder("asc");
+    sorting.setSortBy(ListViewTemplate.START_DATE);
+    sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
     testSorting(sorting, comparator);
   }
@@ -717,17 +719,23 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public void testSortingByStartDateDesc() throws Exception {
     final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> o2.getStartDate().compareTo(o1.getStartDate());
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy("startDate");
-    sorting.setSortOrder("desc");
+    sorting.setSortBy(ListViewTemplate.START_DATE);
+    sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator);
   }
 
   @Test
+  public void testDefaultSorting() throws Exception {
+    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> Long.valueOf(o1.getId()).compareTo(Long.valueOf(o2.getId()));
+    testSorting(null, comparator);
+  }
+  
+  @Test
   public void testSortingByIdAsc() throws Exception {
     final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> Long.valueOf(o1.getId()).compareTo(Long.valueOf(o2.getId()));
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy("id");
+    sorting.setSortBy(ListViewTemplate.ID);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
     testSorting(sorting, comparator);
@@ -737,7 +745,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public void testSortingByIdDesc() throws Exception {
     final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> Long.valueOf(o2.getId()).compareTo(Long.valueOf(o1.getId()));
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy("id");
+    sorting.setSortBy(ListViewTemplate.ID);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator);
@@ -753,8 +761,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       return x;
     };
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy("workflowName");
-    sorting.setSortOrder("asc");
+    sorting.setSortBy(ListViewTemplate.WORKFLOW_NAME);
+    sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
     
     testSorting(sorting, comparator);
   }
@@ -769,8 +777,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       return x;
     };
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy("workflowName");
-    sorting.setSortOrder("desc");
+    sorting.setSortBy(ListViewTemplate.WORKFLOW_NAME);
+    sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator);
   }
@@ -778,8 +786,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public void testSortingByWorkflowVersionAsc() throws Exception {
     final Comparator<ListViewWorkflowInstanceDto> comparator = Comparator.comparing(ListViewWorkflowInstanceDto::getWorkflowVersion);
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy("workflowVersion");
-    sorting.setSortOrder("asc");
+    sorting.setSortBy(ListViewTemplate.WORKFLOW_VERSION);
+    sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
     testSorting(sorting, comparator);
   }
@@ -788,8 +796,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   public void testSortingByWorkflowVersionDesc() throws Exception {
     final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> o2.getWorkflowVersion().compareTo(o1.getWorkflowVersion());
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy("workflowVersion");
-    sorting.setSortOrder("desc");
+    sorting.setSortBy(ListViewTemplate.WORKFLOW_VERSION);
+    sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator);
   }
@@ -809,8 +817,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       }
     };
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy("endDate");
-    sorting.setSortOrder("asc");
+    sorting.setSortBy(ListViewTemplate.END_DATE);
+    sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
     testSorting(sorting, comparator);
   }
@@ -830,8 +838,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       }
     };
     final SortingDto sorting = new SortingDto();
-    sorting.setSortBy("endDate");
-    sorting.setSortOrder("desc");
+    sorting.setSortBy(ListViewTemplate.END_DATE);
+    sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator);
   }
