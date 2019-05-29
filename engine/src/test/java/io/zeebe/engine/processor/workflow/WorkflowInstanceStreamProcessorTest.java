@@ -49,6 +49,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Assertions;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -185,6 +186,7 @@ public class WorkflowInstanceStreamProcessorTest {
   }
 
   @Test
+  @Ignore("https://github.com/zeebe-io/zeebe/issues/2542")
   public void shouldCancelAndCompleteJobConcurrentlyInSubProcess() {
     // given
     streamProcessorRule.deploy(SUB_PROCESS_WORKFLOW);
