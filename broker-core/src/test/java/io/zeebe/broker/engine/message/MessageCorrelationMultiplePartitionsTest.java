@@ -27,6 +27,7 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.SubscriptionUtil;
+import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
@@ -75,6 +76,22 @@ public class MessageCorrelationMultiplePartitionsTest {
     testClient = apiRule.partitionClient();
 
     testClient.deploy(WORKFLOW);
+
+    assertThat(
+            RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
+                .withPartitionId(1)
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
+                .withPartitionId(2)
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
+                .withPartitionId(3)
+                .exists())
+        .isTrue();
   }
 
   @Test
