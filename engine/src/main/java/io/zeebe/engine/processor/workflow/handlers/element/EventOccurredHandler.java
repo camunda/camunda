@@ -148,6 +148,6 @@ public class EventOccurredHandler<T extends ExecutableFlowElement> extends Abstr
    * but these are not initially part of a workflow instance.
    */
   private boolean hasWorkflowInstance(BpmnStepContext<T> context) {
-    return context.getRecord().getValue().getWorkflowInstanceKey() >= 0;
+    return context.getValue().getWorkflowInstanceKey() >= 0;
   }
 }

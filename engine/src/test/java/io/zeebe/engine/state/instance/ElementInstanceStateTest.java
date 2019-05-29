@@ -19,15 +19,11 @@ package io.zeebe.engine.state.instance;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.MsgPackUtil;
@@ -340,8 +336,12 @@ public class ElementInstanceStateTest {
         100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
-    final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord();
-    elementInstanceState.storeRecord(100, typedRecord, Purpose.DEFERRED);
+    elementInstanceState.storeRecord(
+        123L,
+        100,
+        createWorkflowInstanceRecord(),
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        Purpose.DEFERRED);
 
     // then
     final List<IndexedRecord> storedRecords = elementInstanceState.getDeferredRecords(100);
@@ -360,10 +360,18 @@ public class ElementInstanceStateTest {
     final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
     elementInstanceState.newInstance(
         100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord(123L);
-    elementInstanceState.storeRecord(100, typedRecord, Purpose.DEFERRED);
-    final TypedRecord<WorkflowInstanceRecord> typedRecord2 = mockTypedRecord(124L);
-    elementInstanceState.storeRecord(100, typedRecord2, Purpose.DEFERRED);
+    elementInstanceState.storeRecord(
+        123L,
+        100,
+        createWorkflowInstanceRecord(),
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        Purpose.DEFERRED);
+    elementInstanceState.storeRecord(
+        124L,
+        100,
+        createWorkflowInstanceRecord(),
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        Purpose.DEFERRED);
 
     // when
     elementInstanceState.removeStoredRecord(100, 123, Purpose.DEFERRED);
@@ -388,8 +396,12 @@ public class ElementInstanceStateTest {
     elementInstanceState.newInstance(
         key, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
-    final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord(123L);
-    elementInstanceState.storeRecord(key, typedRecord, Purpose.DEFERRED);
+    elementInstanceState.storeRecord(
+        123L,
+        100,
+        createWorkflowInstanceRecord(),
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        Purpose.DEFERRED);
 
     // when
     elementInstanceState.removeInstance(key);
@@ -421,23 +433,6 @@ public class ElementInstanceStateTest {
 
     // then
     Assertions.assertThat(elementInstanceState.isEmpty()).isTrue();
-  }
-
-  private TypedRecord<WorkflowInstanceRecord> mockTypedRecord() {
-    return mockTypedRecord(123L);
-  }
-
-  private TypedRecord<WorkflowInstanceRecord> mockTypedRecord(long key) {
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
-
-    final TypedRecord<WorkflowInstanceRecord> typedRecord = mock(TypedRecord.class);
-    when(typedRecord.getKey()).thenReturn(key);
-    when(typedRecord.getValue()).thenReturn(workflowInstanceRecord);
-    final RecordMetadata metadata = new RecordMetadata();
-    metadata.intent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    when(typedRecord.getMetadata()).thenReturn(metadata);
-
-    return typedRecord;
   }
 
   private void assertElementInstance(ElementInstance elementInstance, int childCount) {

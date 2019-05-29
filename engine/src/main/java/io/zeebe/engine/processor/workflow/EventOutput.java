@@ -18,7 +18,6 @@
 package io.zeebe.engine.processor.workflow;
 
 import io.zeebe.engine.processor.KeyGenerator;
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
@@ -90,11 +89,9 @@ public class EventOutput {
     streamWriter.appendFollowUpEvent(incidentKey, IncidentIntent.RESOLVED, incidentRecord);
   }
 
-  public long deferEvent(final TypedRecord<WorkflowInstanceRecord> event) {
-    final WorkflowInstanceRecord value = event.getValue();
-    final WorkflowInstanceIntent intent = (WorkflowInstanceIntent) event.getMetadata().getIntent();
-
-    return deferRecord(value.getFlowScopeKey(), value, intent);
+  public long deferEvent(
+      final WorkflowInstanceIntent intent, final WorkflowInstanceRecord recordValue) {
+    return deferRecord(recordValue.getFlowScopeKey(), recordValue, intent);
   }
 
   public long deferRecord(
@@ -105,15 +102,16 @@ public class EventOutput {
     return elementInstanceKey;
   }
 
-  public void storeFailedRecord(final TypedRecord<WorkflowInstanceRecord> event) {
-    materializedState.storeFailedRecord(event);
-  }
-
   public void removeDeferredEvent(final long scopeKey, final long key) {
     materializedState.removeStoredRecord(scopeKey, key, Purpose.DEFERRED);
   }
 
   public TypedStreamWriter getStreamWriter() {
     return streamWriter;
+  }
+
+  public void storeFailedRecord(
+      long key, WorkflowInstanceRecord recordValue, WorkflowInstanceIntent intent) {
+    materializedState.storeFailedRecord(key, recordValue, intent);
   }
 }

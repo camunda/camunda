@@ -18,7 +18,6 @@
 package io.zeebe.engine.processor.workflow;
 
 import io.zeebe.engine.processor.TypedCommandWriter;
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.state.deployment.WorkflowState;
@@ -39,7 +38,10 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   private final MsgPackMergeTool mergeTool;
   private final WorkflowState stateDb;
 
-  private TypedRecord<WorkflowInstanceRecord> record;
+  private long key;
+  private WorkflowInstanceIntent intent;
+  private WorkflowInstanceRecord recordValue;
+
   private ExecutableFlowElement element;
   private TypedCommandWriter commandWriter;
 
@@ -49,20 +51,23 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     this.mergeTool = new MsgPackMergeTool(4096);
   }
 
-  public TypedRecord<WorkflowInstanceRecord> getRecord() {
-    return record;
-  }
-
   public WorkflowInstanceRecord getValue() {
-    return record.getValue();
+    return recordValue;
   }
 
   public WorkflowInstanceIntent getState() {
-    return (WorkflowInstanceIntent) record.getMetadata().getIntent();
+    return intent;
   }
 
-  public void setRecord(final TypedRecord<WorkflowInstanceRecord> record) {
-    this.record = record;
+  public long getKey() {
+    return key;
+  }
+
+  public void init(
+      long key, final WorkflowInstanceRecord recordValue, WorkflowInstanceIntent intent) {
+    this.recordValue = recordValue;
+    this.key = key;
+    this.intent = intent;
   }
 
   public T getElement() {
@@ -101,9 +106,7 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
    * @return
    */
   public ElementInstance getElementInstance() {
-    final TypedRecord<WorkflowInstanceRecord> record = getRecord();
-    if (record != null) {
-      final long key = record.getKey();
+    if (recordValue != null) {
       return stateDb.getElementInstanceState().getInstance(key);
     }
     return null;
@@ -114,19 +117,19 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   }
 
   public void raiseIncident(ErrorType errorType, String errorMessage) {
-    raiseIncident(errorType, record.getKey(), errorMessage);
+    raiseIncident(errorType, key, errorMessage);
   }
 
   public void raiseIncident(ErrorType errorType, long variableScopeKey, String errorMessage) {
     incidentCommand.reset();
 
     incidentCommand
-        .initFromWorkflowInstanceFailure(record.getKey(), record.getValue())
+        .initFromWorkflowInstanceFailure(key, recordValue)
         .setErrorType(errorType)
         .setErrorMessage(errorMessage)
         .setVariableScopeKey(variableScopeKey);
 
-    eventOutput.storeFailedRecord(record);
+    eventOutput.storeFailedRecord(key, recordValue, intent);
     commandWriter.appendNewCommand(IncidentIntent.CREATE, incidentCommand);
   }
 

@@ -37,7 +37,7 @@ public class IntermediateCatchEventEventOccurredHandler<T extends ExecutableCatc
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
     if (super.handleState(context)) {
-      final EventTrigger event = getTriggeredEvent(context, context.getRecord().getKey());
+      final EventTrigger event = getTriggeredEvent(context, context.getKey());
       if (event == null) {
         Loggers.WORKFLOW_PROCESSOR_LOGGER.debug(
             "Processing EVENT_OCCURRED but no event trigger found for element {}",
@@ -45,8 +45,7 @@ public class IntermediateCatchEventEventOccurredHandler<T extends ExecutableCatc
         return false;
       }
 
-      processEventTrigger(
-          context, context.getRecord().getKey(), context.getRecord().getKey(), event);
+      processEventTrigger(context, context.getKey(), context.getKey(), event);
       transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETING);
       return true;
     }

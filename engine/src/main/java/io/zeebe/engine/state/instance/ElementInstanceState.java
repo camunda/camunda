@@ -25,7 +25,6 @@ import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 import io.zeebe.engine.processor.KeyGenerator;
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -222,12 +221,6 @@ public class ElementInstanceState {
     recordParentChildColumnFamily.put(recordParentStateRecordKey, DbNil.INSTANCE);
   }
 
-  public void storeRecord(
-      long scopeKey, TypedRecord<WorkflowInstanceRecord> record, Purpose purpose) {
-    final WorkflowInstanceIntent intent = (WorkflowInstanceIntent) record.getMetadata().getIntent();
-    storeRecord(record.getKey(), scopeKey, record.getValue(), intent, purpose);
-  }
-
   public void removeStoredRecord(long scopeKey, long recordKey, Purpose purpose) {
     setRecordKeys(scopeKey, recordKey, purpose);
 
@@ -252,12 +245,6 @@ public class ElementInstanceState {
     } else {
       return null;
     }
-  }
-
-  public void updateFailedRecord(IndexedRecord indexedRecord) {
-    final StoredRecord storedRecord = new StoredRecord(indexedRecord, Purpose.FAILED);
-    recordKey.wrapLong(indexedRecord.getKey());
-    recordColumnFamily.put(recordKey, storedRecord);
   }
 
   private List<IndexedRecord> collectRecords(long scopeKey, Purpose purpose) {
@@ -293,10 +280,6 @@ public class ElementInstanceState {
   @FunctionalInterface
   public interface RecordVisitor {
     void visitRecord(IndexedRecord indexedRecord);
-  }
-
-  public void visitFailedRecords(long scopeKey, RecordVisitor visitor) {
-    visitRecords(scopeKey, Purpose.FAILED, visitor);
   }
 
   private void visitRecords(long scopeKey, Purpose purpose, RecordVisitor visitor) {

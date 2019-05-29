@@ -91,7 +91,7 @@ public class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclus
     return context
         .getElementInstanceState()
         .getVariablesState()
-        .getVariablesAsDocument(context.getRecord().getKey(), actualNeededVariables);
+        .getVariablesAsDocument(context.getKey(), actualNeededVariables);
   }
 
   private void deferSequenceFlowTaken(
@@ -104,8 +104,7 @@ public class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclus
 
     context
         .getOutput()
-        .deferRecord(
-            context.getRecord().getKey(), record, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
+        .deferRecord(context.getKey(), record, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
   }
 
   private ExecutableSequenceFlow getSequenceFlowWithFulfilledCondition(

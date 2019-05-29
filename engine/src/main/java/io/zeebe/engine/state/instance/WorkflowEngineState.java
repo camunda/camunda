@@ -19,7 +19,6 @@ package io.zeebe.engine.state.instance;
 
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.workflow.UpdateVariableStreamWriter;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceLifecycle;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceMetrics;
@@ -72,11 +71,6 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     elementInstanceState.storeRecord(key, scopeKey, value, state, Purpose.DEFERRED);
   }
 
-  public void storeFailedRecord(TypedRecord<WorkflowInstanceRecord> event) {
-    final long scopeKey = event.getValue().getFlowScopeKey();
-    elementInstanceState.storeRecord(scopeKey, event, Purpose.FAILED);
-  }
-
   public void removeStoredRecord(long scopeKey, long key, Purpose purpose) {
     elementInstanceState.removeStoredRecord(scopeKey, key, purpose);
   }
@@ -101,10 +95,6 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     scopeInstance.setState(state);
     scopeInstance.setValue(value);
     elementInstanceState.updateInstance(scopeInstance);
-  }
-
-  private void removeElementInstance(long key, WorkflowInstanceRecord value) {
-    elementInstanceState.removeInstance(key);
   }
 
   private void createNewElementInstance(
@@ -138,5 +128,11 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   public ElementInstanceState getElementInstanceState() {
     return workflowState.getElementInstanceState();
+  }
+
+  public void storeFailedRecord(
+      long key, WorkflowInstanceRecord recordValue, WorkflowInstanceIntent intent) {
+    final long scopeKey = recordValue.getFlowScopeKey();
+    elementInstanceState.storeRecord(key, scopeKey, recordValue, intent, Purpose.FAILED);
   }
 }

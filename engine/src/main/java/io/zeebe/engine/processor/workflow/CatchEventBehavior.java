@@ -76,10 +76,9 @@ public class CatchEventBehavior {
     final VariablesDocumentSupplier variablesSupplier =
         context.getElementInstanceState().getVariablesState()::getVariablesAsDocument;
     final MessageCorrelationKeyContext elementContext =
-        new MessageCorrelationKeyContext(variablesSupplier, context.getRecord().getKey());
+        new MessageCorrelationKeyContext(variablesSupplier, context.getKey());
     final MessageCorrelationKeyContext scopeContext =
-        new MessageCorrelationKeyContext(
-            variablesSupplier, context.getRecord().getValue().getFlowScopeKey());
+        new MessageCorrelationKeyContext(variablesSupplier, context.getValue().getFlowScopeKey());
 
     // collect all message correlation keys from their respective variables, as this might fail and
     // we might need to raise an incident
@@ -90,9 +89,9 @@ public class CatchEventBehavior {
     for (final ExecutableCatchEvent event : events) {
       if (event.isTimer()) {
         subscribeToTimerEvent(
-            context.getRecord().getKey(),
-            context.getRecord().getValue().getWorkflowInstanceKey(),
-            context.getRecord().getValue().getWorkflowKey(),
+            context.getKey(),
+            context.getValue().getWorkflowInstanceKey(),
+            context.getValue().getWorkflowKey(),
             event.getId(),
             event.getTimer(),
             context.getOutput().getStreamWriter());
@@ -104,7 +103,7 @@ public class CatchEventBehavior {
     context
         .getStateDb()
         .getEventScopeInstanceState()
-        .createIfNotExists(context.getRecord().getKey(), supplier.getInterruptingElementIds());
+        .createIfNotExists(context.getKey(), supplier.getInterruptingElementIds());
   }
 
   public void subscribeToTimerEvent(
@@ -151,7 +150,7 @@ public class CatchEventBehavior {
     final ExecutableMessage message = handler.getMessage();
 
     final long workflowInstanceKey = context.getValue().getWorkflowInstanceKey();
-    final long elementInstanceKey = context.getRecord().getKey();
+    final long elementInstanceKey = context.getKey();
     final DirectBuffer messageName = cloneBuffer(message.getMessageName());
     final DirectBuffer correlationKey = extractedKey;
     final boolean closeOnCorrelate = handler.shouldCloseMessageSubscriptionOnCorrelate();

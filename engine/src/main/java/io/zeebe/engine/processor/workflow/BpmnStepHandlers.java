@@ -156,8 +156,7 @@ public class BpmnStepHandlers {
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void handle(BpmnStepContext context) {
     final ExecutableFlowElement flowElement = context.getElement();
-    final WorkflowInstanceIntent state =
-        (WorkflowInstanceIntent) context.getRecord().getMetadata().getIntent();
+    final WorkflowInstanceIntent state = context.getState();
     final BpmnStep step = flowElement.getStep(state);
 
     if (step != null) {

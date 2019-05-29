@@ -71,6 +71,6 @@ public class ServiceTaskElementActivatedHandler<T extends ExecutableServiceTask>
         .setWorkflowKey(value.getWorkflowKey())
         .setWorkflowInstanceKey(value.getWorkflowInstanceKey())
         .setElementId(serviceTask.getId())
-        .setElementInstanceKey(context.getRecord().getKey());
+        .setElementInstanceKey(context.getKey());
   }
 }
