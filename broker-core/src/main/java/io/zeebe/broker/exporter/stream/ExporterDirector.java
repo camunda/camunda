@@ -383,7 +383,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
               rawMetadata.getIntent(),
               rawMetadata.getRecordType(),
               rawMetadata.getRejectionType(),
-              BufferUtil.bufferAsString(rawMetadata.getRejectionReason()),
+              BufferUtil.bufferAsString(rawMetadata.getRejectionReasonBuffer()),
               rawMetadata.getValueType());
 
       record = recordMapper.map(rawEvent, metadata);

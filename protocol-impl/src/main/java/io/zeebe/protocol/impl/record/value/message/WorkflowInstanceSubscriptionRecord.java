@@ -15,16 +15,16 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.WorkflowInstanceRelated;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import org.agrona.DirectBuffer;
 
-public class WorkflowInstanceSubscriptionRecord extends UnpackedObject
+public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     implements WorkflowInstanceRelated {
 
   private final IntegerProperty subscriptionPartitionIdProp =

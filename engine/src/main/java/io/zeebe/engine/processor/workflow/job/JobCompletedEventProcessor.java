@@ -43,7 +43,7 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
       final TypedStreamWriter streamWriter) {
 
     final JobRecord jobEvent = record.getValue();
-    final JobHeaders jobHeaders = jobEvent.getHeaders();
+    final JobHeaders jobHeaders = jobEvent.getJobHeaders();
     final long elementInstanceKey = jobHeaders.getElementInstanceKey();
     final ElementInstance elementInstance =
         workflowState.getElementInstanceState().getInstance(elementInstanceKey);
@@ -63,7 +63,7 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
       workflowState
           .getElementInstanceState()
           .getVariablesState()
-          .setTemporaryVariables(elementInstanceKey, jobEvent.getVariables());
+          .setTemporaryVariables(elementInstanceKey, jobEvent.getVariablesBuffer());
     }
   }
 }

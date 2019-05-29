@@ -43,9 +43,9 @@ public final class JobFailedProcessor implements TypedRecordProcessor<JobRecord>
     final JobRecord value = event.getValue();
 
     if (value.getRetries() <= 0) {
-      final JobHeaders jobHeaders = value.getHeaders();
+      final JobHeaders jobHeaders = value.getJobHeaders();
 
-      final DirectBuffer jobErrorMessage = value.getErrorMessage();
+      final DirectBuffer jobErrorMessage = value.getErrorMessageBuffer();
       DirectBuffer incidentErrorMessage = DEFAULT_ERROR_MESSAGE;
       if (jobErrorMessage.capacity() > 0) {
         incidentErrorMessage = jobErrorMessage;
@@ -55,10 +55,10 @@ public final class JobFailedProcessor implements TypedRecordProcessor<JobRecord>
       incidentEvent
           .setErrorType(ErrorType.JOB_NO_RETRIES)
           .setErrorMessage(incidentErrorMessage)
-          .setBpmnProcessId(jobHeaders.getBpmnProcessId())
+          .setBpmnProcessId(jobHeaders.getBpmnProcessIdBuffer())
           .setWorkflowKey(jobHeaders.getWorkflowKey())
           .setWorkflowInstanceKey(jobHeaders.getWorkflowInstanceKey())
-          .setElementId(jobHeaders.getElementId())
+          .setElementId(jobHeaders.getElementIdBuffer())
           .setElementInstanceKey(jobHeaders.getElementInstanceKey())
           .setJobKey(event.getKey())
           .setVariableScopeKey(jobHeaders.getElementInstanceKey());

@@ -45,6 +45,6 @@ public class CatchEventSubscriber {
 
   public <T extends ExecutableCatchEventSupplier> void unsubscribeFromEvents(
       BpmnStepContext<T> context) {
-    catchEventBehavior.unsubscribeFromEvents(context.getRecord().getKey(), context);
+    catchEventBehavior.unsubscribeFromEvents(context.getKey(), context);
   }
 }

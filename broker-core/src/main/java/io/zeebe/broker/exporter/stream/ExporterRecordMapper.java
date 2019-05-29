@@ -19,17 +19,37 @@ package io.zeebe.broker.exporter.stream;
 
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordImpl;
-import io.zeebe.broker.exporter.record.value.*;
+import io.zeebe.broker.exporter.record.value.ErrorRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.MessageStartEventSubscriptionRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.TimerRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.VariableDocumentRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.VariableRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.WorkflowInstanceCreationRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
 import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.RecordMetadata;
 import io.zeebe.exporter.api.record.RecordValue;
-import io.zeebe.exporter.api.record.value.*;
+import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
+import io.zeebe.exporter.api.record.value.ErrorRecordValue;
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.value.MessageRecordValue;
+import io.zeebe.exporter.api.record.value.MessageSubscriptionRecordValue;
+import io.zeebe.exporter.api.record.value.VariableDocumentRecordValue;
+import io.zeebe.exporter.api.record.value.VariableRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.exporter.api.record.value.deployment.DeployedWorkflow;
 import io.zeebe.exporter.api.record.value.deployment.DeploymentResource;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.protocol.Protocol;
@@ -152,34 +172,34 @@ public class ExporterRecordMapper {
   }
 
   private JobRecordValue ofJobRecord(JobRecord record) {
-    final JobHeaders jobHeaders = record.getHeaders();
+    final JobHeaders jobHeaders = record.getJobHeaders();
     final HeadersImpl headers =
         new HeadersImpl(
-            asString(jobHeaders.getBpmnProcessId()),
-            asString(jobHeaders.getElementId()),
+            asString(jobHeaders.getBpmnProcessIdBuffer()),
+            asString(jobHeaders.getElementIdBuffer()),
             jobHeaders.getElementInstanceKey(),
             jobHeaders.getWorkflowInstanceKey(),
             jobHeaders.getWorkflowKey(),
             jobHeaders.getWorkflowDefinitionVersion());
 
     final Instant deadline;
-    if (record.getDeadline() != Protocol.INSTANT_NULL_VALUE) {
-      deadline = Instant.ofEpochMilli(record.getDeadline());
+    if (record.getDeadlineLong() != Protocol.INSTANT_NULL_VALUE) {
+      deadline = Instant.ofEpochMilli(record.getDeadlineLong());
     } else {
       deadline = null;
     }
 
     return new JobRecordValueImpl(
         objectMapper,
-        asJson(record.getVariables()),
-        asMsgPackMap(record.getVariables()),
-        asString(record.getType()),
-        asString(record.getWorker()),
+        asJson(record.getVariablesBuffer()),
+        asMsgPackMap(record.getVariablesBuffer()),
+        asString(record.getTypeBuffer()),
+        asString(record.getWorkerBuffer()),
         deadline,
         headers,
-        asMsgPackMap(record.getCustomHeaders()),
+        asMsgPackMap(record.getCustomHeadersBuffer()),
         record.getRetries(),
-        asString(record.getErrorMessage()));
+        asString(record.getErrorMessageBuffer()));
   }
 
   private DeploymentRecordValue ofDeploymentRecord(final DirectBuffer valueBuffer) {
@@ -192,8 +212,8 @@ public class ExporterRecordMapper {
     for (final Workflow workflow : record.workflows()) {
       deployedWorkflows.add(
           new DeployedWorkflowImpl(
-              asString(workflow.getBpmnProcessId()),
-              asString(workflow.getResourceName()),
+              asString(workflow.getBpmnProcessIdBuffer()),
+              asString(workflow.getResourceNameBuffer()),
               workflow.getKey(),
               workflow.getVersion()));
     }
@@ -202,9 +222,9 @@ public class ExporterRecordMapper {
         record.resources()) {
       resources.add(
           new DeploymentResourceImpl(
-              asByteArray(resource.getResource()),
-              asResourceType(resource.getResourceType()),
-              asString(resource.getResourceName())));
+              asByteArray(resource.getResourceBuffer()),
+              resource.getResourceType(),
+              asString(resource.getResourceNameBuffer())));
     }
 
     return new io.zeebe.broker.exporter.record.value.DeploymentRecordValueImpl(
@@ -273,8 +293,8 @@ public class ExporterRecordMapper {
 
     return new WorkflowInstanceRecordValueImpl(
         objectMapper,
-        asString(record.getBpmnProcessId()),
-        asString(record.getElementId()),
+        asString(record.getBpmnProcessIdBuffer()),
+        asString(record.getElementIdBuffer()),
         record.getVersion(),
         record.getWorkflowKey(),
         record.getWorkflowInstanceKey(),
@@ -366,11 +386,11 @@ public class ExporterRecordMapper {
 
     return new WorkflowInstanceCreationRecordValueImpl(
         objectMapper,
-        asString(record.getBpmnProcessId()),
+        asString(record.getBpmnProcessIdBuffer()),
         record.getVersion(),
         record.getKey(),
         record.getInstanceKey(),
-        asMsgPackMap(record.getVariables()));
+        asMsgPackMap(record.getVariablesBuffer()));
   }
 
   private ErrorRecordValue ofErrorRecord(final DirectBuffer valueBuffer) {
@@ -405,16 +425,5 @@ public class ExporterRecordMapper {
       serderInputStream.wrap(msgPackEncoded);
       return objectMapper.getMsgPackConverter().convertToJson(serderInputStream);
     };
-  }
-
-  private ResourceType asResourceType(
-      final io.zeebe.protocol.impl.record.value.deployment.ResourceType resourceType) {
-    switch (resourceType) {
-      case BPMN_XML:
-        return ResourceType.BPMN_XML;
-      case YAML_WORKFLOW:
-        return ResourceType.YAML_WORKFLOW;
-    }
-    throw new IllegalArgumentException("Provided resource type does not exist " + resourceType);
   }
 }

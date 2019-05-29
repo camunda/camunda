@@ -84,7 +84,7 @@ public class JobState {
   }
 
   public void create(final long key, final JobRecord record) {
-    final DirectBuffer type = record.getType();
+    final DirectBuffer type = record.getTypeBuffer();
     createJob(key, record, type);
   }
 
@@ -101,8 +101,8 @@ public class JobState {
    * <p>related to https://github.com/zeebe-io/zeebe/issues/2182
    */
   public void activate(final long key, final JobRecord record) {
-    final DirectBuffer type = record.getType();
-    final long deadline = record.getDeadline();
+    final DirectBuffer type = record.getTypeBuffer();
+    final long deadline = record.getDeadlineLong();
 
     validateParameters(type, deadline);
 
@@ -117,8 +117,8 @@ public class JobState {
   }
 
   public void timeout(final long key, final JobRecord record) {
-    final DirectBuffer type = record.getType();
-    final long deadline = record.getDeadline();
+    final DirectBuffer type = record.getTypeBuffer();
+    final long deadline = record.getDeadlineLong();
     validateParameters(type, deadline);
 
     createJob(key, record, type);
@@ -126,8 +126,8 @@ public class JobState {
   }
 
   public void delete(long key, JobRecord record) {
-    final DirectBuffer type = record.getType();
-    final long deadline = record.getDeadline();
+    final DirectBuffer type = record.getTypeBuffer();
+    final long deadline = record.getDeadlineLong();
 
     jobKey.wrapLong(key);
     jobsColumnFamily.delete(jobKey);
@@ -140,8 +140,8 @@ public class JobState {
   }
 
   public void fail(long key, JobRecord updatedValue) {
-    final DirectBuffer type = updatedValue.getType();
-    final long deadline = updatedValue.getDeadline();
+    final DirectBuffer type = updatedValue.getTypeBuffer();
+    final long deadline = updatedValue.getDeadlineLong();
 
     validateParameters(type, deadline);
 
@@ -163,7 +163,7 @@ public class JobState {
   }
 
   public void resolve(long key, final JobRecord updatedValue) {
-    final DirectBuffer type = updatedValue.getType();
+    final DirectBuffer type = updatedValue.getTypeBuffer();
 
     resetVariablesAndUpdateJobRecord(key, updatedValue);
     updateJobState(State.ACTIVATABLE);

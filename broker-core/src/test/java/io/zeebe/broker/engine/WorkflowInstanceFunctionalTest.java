@@ -28,12 +28,12 @@ import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobIntent;
@@ -63,11 +63,11 @@ import org.junit.rules.RuleChain;
 
 public class WorkflowInstanceFunctionalTest {
 
-  private static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  private static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
+  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
+  private static final ClientApiRule API_RULE = new ClientApiRule(BROKER_RULE::getAtomix);
   private static PartitionTestClient testClient;
 
-  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(API_RULE);
 
   @Rule
   public RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -75,7 +75,7 @@ public class WorkflowInstanceFunctionalTest {
 
   @BeforeClass
   public static void init() {
-    testClient = apiRule.partitionClient();
+    testClient = API_RULE.partitionClient();
   }
 
   @Test
@@ -373,7 +373,7 @@ public class WorkflowInstanceFunctionalTest {
 
     // when
     testClient.activateAndCompleteFirstJob(
-        taskType, r -> r.getHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
+        taskType, r -> r.getJobHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
 
     // then
     final Record<WorkflowInstanceRecordValue> activityActivatedEvent =
@@ -434,7 +434,7 @@ public class WorkflowInstanceFunctionalTest {
 
     // when
     testClient.activateAndCompleteFirstJob(
-        taskType, r -> r.getHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
+        taskType, r -> r.getJobHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowEvents =
@@ -481,7 +481,7 @@ public class WorkflowInstanceFunctionalTest {
     deploymentResource.put("resourceName", "simple-workflow.yaml");
 
     final ExecuteCommandResponse deploymentResp =
-        apiRule
+        API_RULE
             .createCmdRequest()
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
@@ -496,9 +496,9 @@ public class WorkflowInstanceFunctionalTest {
 
     // when
     testClient.activateAndCompleteFirstJob(
-        "foo", r -> r.getHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
+        "foo", r -> r.getJobHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
     testClient.activateAndCompleteFirstJob(
-        "bar", r -> r.getHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
+        "bar", r -> r.getJobHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
 
     // then
     final Record<WorkflowInstanceRecordValue> event =

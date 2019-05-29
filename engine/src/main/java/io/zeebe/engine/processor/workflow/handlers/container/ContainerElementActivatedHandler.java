@@ -81,12 +81,12 @@ public class ContainerElementActivatedHandler<T extends ExecutableFlowElementCon
 
     value.setElementId(firstStartEvent.getId());
     value.setBpmnElementType(firstStartEvent.getElementType());
-    value.setFlowScopeKey(context.getRecord().getKey());
+    value.setFlowScopeKey(context.getKey());
     context.getOutput().appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, value);
   }
 
   private IndexedRecord getDeferredRecord(BpmnStepContext<T> context) {
-    final long wfInstanceKey = context.getRecord().getValue().getWorkflowInstanceKey();
+    final long wfInstanceKey = context.getValue().getWorkflowInstanceKey();
     final List<IndexedRecord> deferredRecords =
         context.getElementInstanceState().getDeferredRecords(wfInstanceKey);
 

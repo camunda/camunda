@@ -28,7 +28,7 @@ public class IncidentResolver {
   }
 
   public void resolveIncidents(BpmnStepContext context) {
-    resolveIncidents(context, context.getRecord().getKey());
+    resolveIncidents(context, context.getKey());
   }
 
   public void resolveIncidents(BpmnStepContext context, long scopeKey) {

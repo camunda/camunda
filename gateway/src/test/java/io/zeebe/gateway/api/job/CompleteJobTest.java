@@ -54,7 +54,7 @@ public class CompleteJobTest extends GatewayTest {
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.JOB);
 
     final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
-    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariables(), variables);
+    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariablesBuffer(), variables);
   }
 
   @Test
@@ -76,6 +76,6 @@ public class CompleteJobTest extends GatewayTest {
     assertThat(brokerRequest.getKey()).isEqualTo(stub.getKey());
 
     final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
-    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariables(), "{}");
+    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariablesBuffer(), "{}");
   }
 }

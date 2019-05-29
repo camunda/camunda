@@ -37,9 +37,9 @@ public class PersistedWorkflow implements DbValue {
   final UnsafeBuffer resource = new UnsafeBuffer(0, 0);
 
   public void wrap(DeploymentResource resource, Workflow workflow, long workflowKey) {
-    this.resource.wrap(resource.getResource());
-    this.resourceName.wrap(resource.getResourceName());
-    this.bpmnProcessId.wrap(workflow.getBpmnProcessId());
+    this.resource.wrap(resource.getResourceBuffer());
+    this.resourceName.wrap(resource.getResourceNameBuffer());
+    this.bpmnProcessId.wrap(workflow.getBpmnProcessIdBuffer());
 
     this.version = workflow.getVersion();
     this.key = workflowKey;

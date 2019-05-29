@@ -65,12 +65,12 @@ public class ServiceTaskElementActivatedHandler<T extends ExecutableServiceTask>
         .setRetries(serviceTask.getRetries())
         .setVariables(DocumentValue.EMPTY_DOCUMENT)
         .setCustomHeaders(headers)
-        .getHeaders()
-        .setBpmnProcessId(value.getBpmnProcessId())
+        .getJobHeaders()
+        .setBpmnProcessId(value.getBpmnProcessIdBuffer())
         .setWorkflowDefinitionVersion(value.getVersion())
         .setWorkflowKey(value.getWorkflowKey())
         .setWorkflowInstanceKey(value.getWorkflowInstanceKey())
         .setElementId(serviceTask.getId())
-        .setElementInstanceKey(context.getRecord().getKey());
+        .setElementInstanceKey(context.getKey());
   }
 }

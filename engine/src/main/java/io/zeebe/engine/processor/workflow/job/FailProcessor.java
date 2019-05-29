@@ -42,7 +42,7 @@ public class FailProcessor implements CommandProcessor<JobRecord> {
     if (jobState == State.ACTIVATED) {
       final JobRecord failedJob = state.getJob(key);
       failedJob.setRetries(command.getValue().getRetries());
-      failedJob.setErrorMessage(command.getValue().getErrorMessage());
+      failedJob.setErrorMessage(command.getValue().getErrorMessageBuffer());
       state.fail(key, failedJob);
 
       commandControl.accept(JobIntent.FAILED, failedJob);

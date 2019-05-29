@@ -40,8 +40,8 @@ public class AbstractTerminalStateHandler<T extends ExecutableFlowElement>
 
     // currently we always cleanup whether or not the state was successfully handled, which is fine
     // as by convention we shouldn't perform anything in terminal state which might fail
-    context.getStateDb().getEventScopeInstanceState().deleteInstance(context.getRecord().getKey());
-    context.getElementInstanceState().removeInstance(context.getRecord().getKey());
+    context.getStateDb().getEventScopeInstanceState().deleteInstance(context.getKey());
+    context.getElementInstanceState().removeInstance(context.getKey());
   }
 
   @Override
@@ -57,7 +57,7 @@ public class AbstractTerminalStateHandler<T extends ExecutableFlowElement>
 
   protected void publishDeferredRecords(BpmnStepContext<T> context) {
     final List<IndexedRecord> deferredRecords =
-        context.getElementInstanceState().getDeferredRecords(context.getRecord().getKey());
+        context.getElementInstanceState().getDeferredRecords(context.getKey());
     final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
 
     for (final IndexedRecord record : deferredRecords) {

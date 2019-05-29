@@ -136,7 +136,7 @@ public class TransformingDeploymentCreateProcessor
     final DirectBuffer timerBpmnId =
         workflowState.getWorkflowByKey(timer.getWorkflowKey()).getBpmnProcessId();
 
-    if (timerBpmnId.equals(workflow.getBpmnProcessId())) {
+    if (timerBpmnId.equals(workflow.getBpmnProcessIdBuffer())) {
       catchEventBehavior.unsubscribeFromTimerEvent(timer, streamWriter);
     }
   }

@@ -29,6 +29,7 @@ import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.WorkflowEngineState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
@@ -61,22 +62,38 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter,
       Consumer<SideEffectProducer> sideEffect) {
-    populateEventContext(record, streamWriter, sideEffect);
+    processRecordValue(
+        record.getKey(),
+        record.getValue(),
+        (WorkflowInstanceIntent) record.getMetadata().getIntent(),
+        streamWriter,
+        sideEffect);
+  }
+
+  public void processRecordValue(
+      long key,
+      WorkflowInstanceRecord recordValue,
+      WorkflowInstanceIntent intent,
+      TypedStreamWriter streamWriter,
+      Consumer<SideEffectProducer> sideEffect) {
+    populateEventContext(key, recordValue, intent, streamWriter, sideEffect);
     stepHandlers.handle(context);
   }
 
   private void populateEventContext(
-      TypedRecord<WorkflowInstanceRecord> record,
+      long key,
+      WorkflowInstanceRecord recordValue,
+      WorkflowInstanceIntent intent,
       TypedStreamWriter streamWriter,
       Consumer<SideEffectProducer> sideEffect) {
 
-    context.setRecord(record);
+    context.init(key, recordValue, intent);
     context.setStreamWriter(streamWriter);
 
     context.getSideEffect().clear();
     sideEffect.accept(context.getSideEffect());
 
-    final long workflowKey = record.getValue().getWorkflowKey();
+    final long workflowKey = recordValue.getWorkflowKey();
     final DeployedWorkflow deployedWorkflow = workflowState.getWorkflowByKey(workflowKey);
 
     if (deployedWorkflow == null) {
@@ -89,7 +106,7 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
 
   private void populateElementInContext(final DeployedWorkflow deployedWorkflow) {
     final WorkflowInstanceRecord value = context.getValue();
-    final DirectBuffer currentElementId = value.getElementId();
+    final DirectBuffer currentElementId = value.getElementIdBuffer();
 
     final ExecutableWorkflow workflow = deployedWorkflow.getWorkflow();
     final ExecutableFlowElement flowElement = workflow.getElementById(currentElementId);

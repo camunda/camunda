@@ -32,8 +32,8 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.ArrayList;
 import java.util.List;
@@ -336,11 +336,11 @@ public class StreamProcessorReprocessingTest {
                 .onEvent(
                     ValueType.WORKFLOW_INSTANCE,
                     ELEMENT_ACTIVATING,
-                    new TypedRecordProcessor<UnpackedObject>() {
+                    new TypedRecordProcessor<UnifiedRecordValue>() {
                       @Override
                       public void processRecord(
                           long position,
-                          TypedRecord<UnpackedObject> record,
+                          TypedRecord<UnifiedRecordValue> record,
                           TypedResponseWriter responseWriter,
                           TypedStreamWriter streamWriter,
                           Consumer<SideEffectProducer> sideEffect) {
@@ -353,11 +353,11 @@ public class StreamProcessorReprocessingTest {
                 .onEvent(
                     ValueType.WORKFLOW_INSTANCE,
                     ELEMENT_ACTIVATED,
-                    new TypedRecordProcessor<UnpackedObject>() {
+                    new TypedRecordProcessor<UnifiedRecordValue>() {
                       @Override
                       public void processRecord(
                           long position,
-                          TypedRecord<UnpackedObject> record,
+                          TypedRecord<UnifiedRecordValue> record,
                           TypedResponseWriter responseWriter,
                           TypedStreamWriter streamWriter,
                           Consumer<SideEffectProducer> sideEffect) {
@@ -386,11 +386,11 @@ public class StreamProcessorReprocessingTest {
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 ELEMENT_ACTIVATING,
-                new TypedRecordProcessor<UnpackedObject>() {
+                new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
                   public void processRecord(
                       long position,
-                      TypedRecord<UnpackedObject> record,
+                      TypedRecord<UnifiedRecordValue> record,
                       TypedResponseWriter responseWriter,
                       TypedStreamWriter streamWriter,
                       Consumer<SideEffectProducer> sideEffect) {
@@ -411,11 +411,11 @@ public class StreamProcessorReprocessingTest {
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 ELEMENT_ACTIVATING,
-                new TypedRecordProcessor<UnpackedObject>() {
+                new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
                   public void processRecord(
                       long position,
-                      TypedRecord<UnpackedObject> record,
+                      TypedRecord<UnifiedRecordValue> record,
                       TypedResponseWriter responseWriter,
                       TypedStreamWriter streamWriter,
                       Consumer<SideEffectProducer> sideEffect) {

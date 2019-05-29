@@ -15,15 +15,15 @@
  */
 package io.zeebe.protocol.impl.record.value.variable;
 
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.protocol.VariableDocumentUpdateSemantic;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
 
-public class VariableDocumentRecord extends UnpackedObject {
+public class VariableDocumentRecord extends UnifiedRecordValue {
   private final LongProperty scopeKeyProperty = new LongProperty("scopeKey");
   private final EnumProperty<VariableDocumentUpdateSemantic> updateSemanticsProperty =
       new EnumProperty<>(

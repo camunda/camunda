@@ -94,9 +94,9 @@ public class WorkflowPersistenceCache {
     if (isNewDeployment) {
       for (final Workflow workflow : deploymentRecord.workflows()) {
         final long workflowKey = workflow.getKey();
-        final DirectBuffer resourceName = workflow.getResourceName();
+        final DirectBuffer resourceName = workflow.getResourceNameBuffer();
         for (final DeploymentResource resource : deploymentRecord.resources()) {
-          if (resource.getResourceName().equals(resourceName)) {
+          if (resource.getResourceNameBuffer().equals(resourceName)) {
             persistWorkflow(workflowKey, workflow, resource);
             updateLatestVersion(workflow);
           }
@@ -113,14 +113,14 @@ public class WorkflowPersistenceCache {
     this.workflowKey.wrapLong(workflowKey);
     workflowColumnFamily.put(this.workflowKey, persistedWorkflow);
 
-    workflowId.wrapBuffer(workflow.getBpmnProcessId());
+    workflowId.wrapBuffer(workflow.getBpmnProcessIdBuffer());
     workflowVersion.wrapLong(workflow.getVersion());
 
     workflowByIdAndVersionColumnFamily.put(idAndVersionKey, persistedWorkflow);
   }
 
   private void updateLatestVersion(final Workflow workflow) {
-    workflowId.wrapBuffer(workflow.getBpmnProcessId());
+    workflowId.wrapBuffer(workflow.getBpmnProcessIdBuffer());
     final DbLong storedVersion = latestWorkflowColumnFamily.get(workflowId);
     final long latestVersion = storedVersion == null ? -1 : storedVersion.getValue();
 

@@ -141,6 +141,6 @@ public class ElementTerminatedHandlerTest extends ElementHandlerTestCase {
     handler.handleState(context);
 
     // then
-    verify(incidentResolver, times(1)).resolveIncidents(context, context.getRecord().getKey());
+    verify(incidentResolver, times(1)).resolveIncidents(context, context.getKey());
   }
 }

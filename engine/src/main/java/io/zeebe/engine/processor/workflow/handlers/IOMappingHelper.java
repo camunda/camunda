@@ -35,7 +35,7 @@ public class IOMappingHelper {
 
     final T element = context.getElement();
     final WorkflowInstanceRecord record = context.getValue();
-    final long elementInstanceKey = context.getRecord().getKey();
+    final long elementInstanceKey = context.getKey();
     final long flowScopeKey = record.getFlowScopeKey();
     final long workflowKey = record.getWorkflowKey();
     final Mapping[] outputMappings = element.getOutputMappings();
@@ -84,8 +84,8 @@ public class IOMappingHelper {
       mergeTool.mergeDocumentStrictly(scopeVariables, mappings);
       final DirectBuffer mappedVariables = mergeTool.writeResultToBuffer();
 
-      final long scopeKey = context.getRecord().getKey();
-      final long workflowKey = context.getRecord().getValue().getWorkflowKey();
+      final long scopeKey = context.getKey();
+      final long workflowKey = context.getValue().getWorkflowKey();
       context
           .getElementInstanceState()
           .getVariablesState()

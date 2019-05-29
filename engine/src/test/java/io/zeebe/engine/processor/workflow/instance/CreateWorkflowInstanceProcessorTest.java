@@ -291,7 +291,7 @@ public class CreateWorkflowInstanceProcessorTest
     // then
     final WorkflowInstanceCreationRecord acceptedRecord =
         getAcceptedRecord(WorkflowInstanceCreationIntent.CREATED);
-    assertThat(acceptedRecord.getBpmnProcessId()).isEqualTo(workflow.getBpmnProcessId());
+    assertThat(acceptedRecord.getBpmnProcessIdBuffer()).isEqualTo(workflow.getBpmnProcessId());
   }
 
   private WorkflowInstanceRecord newExpectedElementActivatingRecord(
@@ -324,7 +324,7 @@ public class CreateWorkflowInstanceProcessorTest
     final Workflow workflow = deployment.workflows().iterator().next();
     workflowState.putDeployment(key, deployment);
 
-    return workflowState.getLatestWorkflowVersionByProcessId(workflow.getBpmnProcessId());
+    return workflowState.getLatestWorkflowVersionByProcessId(workflow.getBpmnProcessIdBuffer());
   }
 
   private DeploymentRecord newDeployment(BpmnModelInstance model) {

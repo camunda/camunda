@@ -13,25 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.test.util.record;
+package io.zeebe.protocol.impl.record;
 
-import io.zeebe.util.ZbLogger;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
-import org.slf4j.Logger;
+import io.zeebe.exporter.api.record.RecordValue;
+import io.zeebe.msgpack.UnpackedObject;
 
-public class RecordingExporterTestWatcher extends TestWatcher {
-
-  public static final Logger LOG = new ZbLogger("io.zeebe.test.records");
+public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
 
   @Override
-  protected void starting(Description description) {
-    RecordingExporter.reset();
-  }
-
-  @Override
-  protected void failed(Throwable e, Description description) {
-    LOG.info("Test failed, following records where exported:");
-    RecordingExporter.getRecords().forEach(r -> LOG.info(r.toString()));
+  public String toJson() {
+    throw new UnsupportedOperationException("not yet implemented");
   }
 }

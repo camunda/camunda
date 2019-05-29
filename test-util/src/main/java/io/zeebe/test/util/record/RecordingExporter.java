@@ -64,7 +64,7 @@ public class RecordingExporter implements Exporter {
   private static final Lock LOCK = new ReentrantLock();
   private static final Condition IS_EMPTY = LOCK.newCondition();
 
-  private static final long MAX_WAIT = Duration.ofSeconds(5).toMillis();
+  public static long maxWait = Duration.ofSeconds(5).toMillis();
 
   @Override
   public void export(final Record record) {
@@ -235,7 +235,7 @@ public class RecordingExporter implements Exporter {
       LOCK.lock();
       try {
         long now = System.currentTimeMillis();
-        final long endTime = now + MAX_WAIT;
+        final long endTime = now + maxWait;
         while (isEmpty() && endTime > now) {
           final long waitTime = endTime - now;
           try {

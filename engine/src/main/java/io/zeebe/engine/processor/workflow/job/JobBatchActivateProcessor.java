@@ -124,7 +124,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
           jobRecord.setDeadline(deadline).setWorker(value.getWorker());
 
           // fetch and set variables, required here to already have the full size of the job record
-          final long elementInstanceKey = jobRecord.getHeaders().getElementInstanceKey();
+          final long elementInstanceKey = jobRecord.getJobHeaders().getElementInstanceKey();
           if (elementInstanceKey >= 0) {
             final DirectBuffer variables = collectVariables(variableNames, elementInstanceKey);
             jobRecord.setVariables(variables);

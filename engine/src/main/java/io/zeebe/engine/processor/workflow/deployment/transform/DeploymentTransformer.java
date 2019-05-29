@@ -24,13 +24,13 @@ import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.processor.workflow.deployment.model.yaml.BpmnYamlParser;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
+import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
-import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayOutputStream;
 import java.util.Collection;
@@ -96,13 +96,13 @@ public class DeploymentTransformer {
       } else {
         validationErrors
             .append("\n'")
-            .append(bufferAsString(deploymentResource.getResourceName()))
+            .append(bufferAsString(deploymentResource.getResourceNameBuffer()))
             .append("': ")
             .append(validationError);
         success = false;
       }
     } catch (RuntimeException e) {
-      final String resourceName = bufferAsString(deploymentResource.getResourceName());
+      final String resourceName = bufferAsString(deploymentResource.getResourceNameBuffer());
       LOG.error("Unexpected error while processing resource '{}'", resourceName, e);
 
       validationErrors.append("\n'").append(resourceName).append("': ").append(e.getMessage());
@@ -131,7 +131,7 @@ public class DeploymentTransformer {
             .setBpmnProcessId(BufferUtil.wrapString(workflow.getId()))
             .setVersion(version)
             .setKey(key)
-            .setResourceName(deploymentResource.getResourceName());
+            .setResourceName(deploymentResource.getResourceNameBuffer());
       }
     }
 
@@ -139,7 +139,7 @@ public class DeploymentTransformer {
   }
 
   private BpmnModelInstance readWorkflowDefinition(final DeploymentResource deploymentResource) {
-    final DirectBuffer resource = deploymentResource.getResource();
+    final DirectBuffer resource = deploymentResource.getResourceBuffer();
     final DirectBufferInputStream resourceStream = new DirectBufferInputStream(resource);
 
     switch (deploymentResource.getResourceType()) {

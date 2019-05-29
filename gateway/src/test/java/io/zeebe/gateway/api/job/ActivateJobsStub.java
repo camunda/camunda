@@ -135,7 +135,7 @@ public class ActivateJobsStub
                   .setDeadline(DEADLINE)
                   .setCustomHeaders(CUSTOM_HEADERS_MSGPACK)
                   .setVariables(VARIABLES_MSGPACK)
-                  .getHeaders()
+                  .getJobHeaders()
                   .setWorkflowInstanceKey(WORKFLOW_INSTANCE_KEY)
                   .setBpmnProcessId(BPMN_PROCESS_ID)
                   .setWorkflowDefinitionVersion(WORKFLOW_DEFINITION_VERSION)

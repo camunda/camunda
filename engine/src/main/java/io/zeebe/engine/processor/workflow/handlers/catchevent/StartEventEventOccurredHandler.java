@@ -52,7 +52,7 @@ public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElemen
 
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
-    final WorkflowInstanceRecord event = context.getRecord().getValue();
+    final WorkflowInstanceRecord event = context.getValue();
     final long workflowKey = event.getWorkflowKey();
     final DeployedWorkflow workflow = state.getWorkflowByKey(workflowKey);
     final long workflowInstanceKey = keyGenerator.nextKey();

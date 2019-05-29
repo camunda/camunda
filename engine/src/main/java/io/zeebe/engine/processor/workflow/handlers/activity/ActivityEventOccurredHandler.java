@@ -40,13 +40,13 @@ public class ActivityEventOccurredHandler<T extends ExecutableActivity>
 
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
-    final EventTrigger event = getTriggeredEvent(context, context.getRecord().getKey());
+    final EventTrigger event = getTriggeredEvent(context, context.getKey());
     final ExecutableBoundaryEvent boundaryEvent = getBoundaryEvent(context, event);
     if (boundaryEvent == null) {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
           "No boundary event found with ID {} for process {}",
           BufferUtil.bufferAsString(event.getElementId()),
-          BufferUtil.bufferAsString(context.getValue().getBpmnProcessId()));
+          BufferUtil.bufferAsString(context.getValue().getBpmnProcessIdBuffer()));
       return false;
     }
 
@@ -54,10 +54,9 @@ public class ActivityEventOccurredHandler<T extends ExecutableActivity>
         getEventRecord(context, event, boundaryEvent.getElementType());
     if (boundaryEvent.cancelActivity()) {
       transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATING);
-      deferEvent(
-          context, context.getRecord().getKey(), context.getRecord().getKey(), eventRecord, event);
+      deferEvent(context, context.getKey(), context.getKey(), eventRecord, event);
     } else {
-      publishEvent(context, context.getRecord().getKey(), eventRecord, event);
+      publishEvent(context, context.getKey(), eventRecord, event);
     }
 
     return true;

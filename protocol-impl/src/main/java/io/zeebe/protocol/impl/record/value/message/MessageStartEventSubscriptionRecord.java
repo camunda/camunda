@@ -15,12 +15,12 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import org.agrona.DirectBuffer;
 
-public class MessageStartEventSubscriptionRecord extends UnpackedObject {
+public class MessageStartEventSubscriptionRecord extends UnifiedRecordValue {
 
   private final LongProperty workflowKeyProp = new LongProperty("workflowKey");
   private final StringProperty messageNameProp = new StringProperty("messageName", "");

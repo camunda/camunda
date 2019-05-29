@@ -96,8 +96,6 @@ public class EventOccurredHandlerTest extends ElementHandlerTestCase<ExecutableF
   @Override
   protected ElementInstance createAndSetContextElementInstance(WorkflowInstanceIntent state) {
     final ElementInstance instance = super.createAndSetContextElementInstance(state);
-    context.getRecord().getMetadata().intent(WorkflowInstanceIntent.EVENT_OCCURRED);
-
     return instance;
   }
 }

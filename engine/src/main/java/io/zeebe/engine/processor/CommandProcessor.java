@@ -17,15 +17,15 @@
  */
 package io.zeebe.engine.processor;
 
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.intent.Intent;
 
 /**
  * High-level record processor abstraction that implements the common behavior of most
  * command-handling processors.
  */
-public interface CommandProcessor<T extends UnpackedObject> {
+public interface CommandProcessor<T extends UnifiedRecordValue> {
 
   default void onCommand(TypedRecord<T> command, CommandControl<T> commandControl) {}
 

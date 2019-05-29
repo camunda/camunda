@@ -34,10 +34,6 @@ public class ParallelMergeSequenceFlowTaken<T extends ExecutableSequenceFlow>
     super(null);
   }
 
-  public ParallelMergeSequenceFlowTaken(WorkflowInstanceIntent nextState) {
-    super(nextState);
-  }
-
   @Override
   protected boolean shouldHandleState(BpmnStepContext<T> context) {
     return super.shouldHandleState(context) && isElementActive(context.getFlowScopeInstance());
@@ -50,7 +46,7 @@ public class ParallelMergeSequenceFlowTaken<T extends ExecutableSequenceFlow>
     final ExecutableSequenceFlow sequenceFlow = context.getElement();
     final ExecutableFlowNode gateway = sequenceFlow.getTarget();
 
-    eventOutput.deferEvent(context.getRecord());
+    eventOutput.deferEvent(context.getState(), context.getValue());
 
     final List<IndexedRecord> mergeableRecords =
         getMergeableRecords(context, gateway, scopeInstance);
@@ -86,7 +82,7 @@ public class ParallelMergeSequenceFlowTaken<T extends ExecutableSequenceFlow>
 
     for (final ExecutableSequenceFlow flow : incomingFlows) {
       for (final IndexedRecord recordToMatch : storedRecords) {
-        if (recordToMatch.getValue().getElementId().equals(flow.getId())) {
+        if (recordToMatch.getValue().getElementIdBuffer().equals(flow.getId())) {
           mergingRecords.add(recordToMatch);
           break;
         }

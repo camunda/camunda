@@ -17,9 +17,9 @@
  */
 package io.zeebe.engine.processor;
 
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.intent.Intent;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +56,7 @@ public final class TypedRecordProcessors {
     return onRecord(RecordType.COMMAND, valueType, intent, processor);
   }
 
-  public <T extends UnpackedObject> TypedRecordProcessors onCommand(
+  public <T extends UnifiedRecordValue> TypedRecordProcessors onCommand(
       ValueType valueType, Intent intent, CommandProcessor<T> commandProcessor) {
     return onCommand(valueType, intent, new CommandProcessorImpl<>(commandProcessor));
   }

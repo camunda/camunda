@@ -31,7 +31,6 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -46,8 +45,6 @@ public class StreamProcessorBuilder {
   private final List<ServiceName<?>> additionalDependencies = new ArrayList<>();
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
 
-  private int maxSnapshots;
-  private Duration snapshotPeriod;
   private ZeebeDb zeebeDb;
 
   public StreamProcessorBuilder(int id, String name) {
@@ -87,16 +84,6 @@ public class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder snapshotPeriod(Duration snapshotPeriod) {
-    this.snapshotPeriod = snapshotPeriod;
-    return this;
-  }
-
-  public StreamProcessorBuilder maxSnapshots(int maxSnapshots) {
-    this.maxSnapshots = maxSnapshots;
-    return this;
-  }
-
   public StreamProcessorBuilder commandResponseWriter(CommandResponseWriter commandResponseWriter) {
     processingContext.commandResponseWriter(commandResponseWriter);
     return this;
@@ -127,22 +114,12 @@ public class StreamProcessorBuilder {
     return lifecycleListeners;
   }
 
-  public int getMaxSnapshots() {
-    return maxSnapshots;
-  }
-
-  public Duration getSnapshotPeriod() {
-    return snapshotPeriod;
-  }
-
   public ZeebeDb getZeebeDb() {
     return zeebeDb;
   }
 
   public ActorFuture<StreamProcessor> build() {
     validate();
-
-    snapshotPeriod = snapshotPeriod == null ? Duration.ofMinutes(1) : snapshotPeriod;
 
     final LogStream logStream = processingContext.getLogStream();
     processingContext

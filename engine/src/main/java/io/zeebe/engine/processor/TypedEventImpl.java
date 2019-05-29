@@ -18,16 +18,17 @@
 package io.zeebe.engine.processor;
 
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import java.time.Instant;
 
 @SuppressWarnings({"rawtypes"})
 public class TypedEventImpl implements TypedRecord {
   protected LoggedEvent rawEvent;
   protected RecordMetadata metadata;
-  protected UnpackedObject value;
+  protected UnifiedRecordValue value;
 
-  public void wrap(LoggedEvent rawEvent, RecordMetadata metadata, UnpackedObject value) {
+  public void wrap(LoggedEvent rawEvent, RecordMetadata metadata, UnifiedRecordValue value) {
     this.rawEvent = rawEvent;
     this.metadata = metadata;
     this.value = value;
@@ -41,10 +42,6 @@ public class TypedEventImpl implements TypedRecord {
     return rawEvent.getPosition();
   }
 
-  public long getSourceEventPosition() {
-    return rawEvent.getSourceEventPosition();
-  }
-
   @Override
   public long getKey() {
     return rawEvent.getKey();
@@ -56,12 +53,34 @@ public class TypedEventImpl implements TypedRecord {
   }
 
   @Override
-  public UnpackedObject getValue() {
+  public UnifiedRecordValue getValue() {
     return value;
   }
 
   @Override
   public String toString() {
     return "TypedEventImpl{" + "metadata=" + metadata + ", value=" + value + '}';
+  }
+
+  @Override
+  public long getSourceRecordPosition() {
+    return rawEvent.getSourceEventPosition();
+  }
+
+  @Override
+  public int getProducerId() {
+    return rawEvent.getProducerId();
+  }
+
+  @Override
+  public Instant getTimestamp() {
+    return Instant.ofEpochMilli(rawEvent.getTimestamp());
+  }
+
+  @Override
+  public String toJson() {
+    final StringBuilder builder = new StringBuilder();
+    value.writeJSON(builder);
+    return builder.toString();
   }
 }

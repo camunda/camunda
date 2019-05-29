@@ -18,7 +18,6 @@
 package io.zeebe.broker.util;
 
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import java.util.stream.Stream;
@@ -42,11 +41,5 @@ public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
     return filter(e -> e.getPosition() == position)
         .findFirst()
         .orElseThrow(() -> new AssertionError("No event found with getPosition " + position));
-  }
-
-  public TypedRecordStream<WorkflowInstanceRecord> onlyWorkflowInstanceRecords() {
-    return new TypedRecordStream<>(
-        filter(Records::isWorkflowInstanceRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceRecord.class)));
   }
 }

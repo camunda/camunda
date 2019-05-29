@@ -66,7 +66,7 @@ public class DeploymentCreatedProcessor implements TypedRecordProcessor<Deployme
 
   private boolean isLatestWorkflow(Workflow workflow) {
     return workflowState
-            .getLatestWorkflowVersionByProcessId(workflow.getBpmnProcessId())
+            .getLatestWorkflowVersionByProcessId(workflow.getBpmnProcessIdBuffer())
             .getVersion()
         == workflow.getVersion();
   }
@@ -87,7 +87,7 @@ public class DeploymentCreatedProcessor implements TypedRecordProcessor<Deployme
     for (int version = workflowRecord.getVersion() - 1; version > 0; --version) {
       final DeployedWorkflow lastMsgWorkflow =
           workflowState.getWorkflowByProcessIdAndVersion(
-              workflowRecord.getBpmnProcessId(), version);
+              workflowRecord.getBpmnProcessIdBuffer(), version);
       if (lastMsgWorkflow != null
           && lastMsgWorkflow.getWorkflow().getStartEvents().stream().anyMatch(e -> e.isMessage())) {
         return lastMsgWorkflow;

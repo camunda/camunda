@@ -55,7 +55,7 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
     } else {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.debug(
           "Skipping record {} due to step guard; in-memory element is {}",
-          context.getRecord(),
+          context.getValue(),
           context.getElementInstance());
     }
   }
@@ -73,7 +73,7 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
   }
 
   protected boolean isRootScope(BpmnStepContext<T> context) {
-    return context.getRecord().getValue().getFlowScopeKey() == -1;
+    return context.getValue().getFlowScopeKey() == -1;
   }
 
   /**
@@ -111,9 +111,7 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
         : String.format("cannot transition from '%s' to '%s'", state, nextState);
 
     elementInstance.setState(nextState);
-    context
-        .getOutput()
-        .appendFollowUpEvent(context.getRecord().getKey(), nextState, context.getValue());
+    context.getOutput().appendFollowUpEvent(context.getKey(), nextState, context.getValue());
 
     // todo: this is an ugly workaround which should be removed once we have a better workflow
     // instance state abstraction: essentially, whenever transitioning to a terminating state, we
@@ -121,10 +119,7 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
     // https://github.com/zeebe-io/zeebe/issues/1980
     if (nextState == WorkflowInstanceIntent.ELEMENT_COMPLETING
         || nextState == WorkflowInstanceIntent.ELEMENT_TERMINATING) {
-      context
-          .getStateDb()
-          .getEventScopeInstanceState()
-          .shutdownInstance(context.getRecord().getKey());
+      context.getStateDb().getEventScopeInstanceState().shutdownInstance(context.getKey());
     }
     context.getElementInstanceState().updateInstance(elementInstance);
   }

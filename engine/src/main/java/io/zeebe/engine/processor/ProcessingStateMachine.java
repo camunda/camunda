@@ -24,11 +24,11 @@ import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.intent.ErrorIntent;
 import io.zeebe.util.exception.RecoverableException;
@@ -130,7 +130,7 @@ public final class ProcessingStateMachine {
 
   private final ErrorRecord errorRecord = new ErrorRecord();
   protected final RecordMetadata metadata = new RecordMetadata();
-  private final Map<ValueType, UnpackedObject> eventCache;
+  private final Map<ValueType, UnifiedRecordValue> eventCache;
   private final RecordProcessorMap recordProcessorMap;
 
   private final TypedEventImpl typedEvent = new TypedEventImpl();
@@ -214,7 +214,7 @@ public final class ProcessingStateMachine {
     }
 
     try {
-      final UnpackedObject value = eventCache.get(metadata.getValueType());
+      final UnifiedRecordValue value = eventCache.get(metadata.getValueType());
       value.reset();
       event.readValue(value);
       typedEvent.wrap(event, metadata, value);

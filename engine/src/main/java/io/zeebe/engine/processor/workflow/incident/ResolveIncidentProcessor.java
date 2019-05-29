@@ -41,7 +41,6 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   private final BpmnStepProcessor stepProcessor;
   private final ZeebeState zeebeState;
-  private final TypedWorkflowInstanceRecord typedRecord = new TypedWorkflowInstanceRecord();
   private final SideEffectQueue queue = new SideEffectQueue();
 
   public ResolveIncidentProcessor(BpmnStepProcessor stepProcessor, ZeebeState zeebeState) {
@@ -109,11 +108,15 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
         zeebeState.getWorkflowState().getElementInstanceState().getFailedRecord(elementInstanceKey);
 
     if (failedRecord != null) {
-      typedRecord.wrap(failedRecord);
 
       queue.clear();
       queue.add(responseWriter::flush);
-      stepProcessor.processRecord(typedRecord, responseWriter, streamWriter, queue::add);
+      stepProcessor.processRecordValue(
+          failedRecord.getKey(),
+          failedRecord.getValue(),
+          failedRecord.getState(),
+          streamWriter,
+          queue::add);
 
       sideEffect.accept(queue);
     }

@@ -21,7 +21,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.EventOutput;
@@ -31,11 +30,7 @@ import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.engine.state.instance.StoredRecord;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
-import io.zeebe.engine.util.MockTypedRecord;
 import io.zeebe.engine.util.ZeebeStateRule;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.IncidentIntent;
@@ -70,7 +65,8 @@ public abstract class ElementHandlerTestCase<T extends ExecutableFlowNode> {
   }
 
   protected void verifyIncidentRaised() {
-    verify(eventOutput, times(1)).storeFailedRecord(context.getRecord());
+    verify(eventOutput, times(1))
+        .storeFailedRecord(context.getKey(), context.getValue(), context.getState());
     verify(streamWriter, times(1))
         .appendNewCommand(eq(IncidentIntent.CREATE), incidentCaptor.capture());
   }
@@ -100,7 +96,7 @@ public abstract class ElementHandlerTestCase<T extends ExecutableFlowNode> {
   }
 
   protected void setContextElementInstance(ElementInstance instance) {
-    context.setRecord(newRecordFor(instance));
+    context.init(instance.getKey(), instance.getValue(), instance.getState());
   }
 
   protected ElementInstance newElementInstance(WorkflowInstanceIntent state) {
@@ -126,16 +122,6 @@ public abstract class ElementHandlerTestCase<T extends ExecutableFlowNode> {
         .getWorkflowState()
         .getElementInstanceState()
         .newInstance(flowScope, key, value, state);
-  }
-
-  protected TypedRecord<WorkflowInstanceRecord> newRecordFor(ElementInstance instance) {
-    final RecordMetadata metadata =
-        new RecordMetadata()
-            .recordType(RecordType.EVENT)
-            .valueType(ValueType.WORKFLOW_INSTANCE)
-            .intent(instance.getState());
-
-    return new MockTypedRecord<>(instance.getKey(), metadata, instance.getValue());
   }
 
   protected StoredRecord deferRecordOn(ElementInstance scopeInstance) {

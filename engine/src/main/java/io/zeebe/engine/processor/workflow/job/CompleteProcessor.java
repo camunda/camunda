@@ -48,7 +48,7 @@ public class CompleteProcessor implements CommandProcessor<JobRecord> {
       commandControl.reject(RejectionType.INVALID_STATE, String.format(FAILED_JOB_MESSAGE, jobKey));
     } else {
       final JobRecord job = state.getJob(jobKey);
-      job.setVariables(command.getValue().getVariables());
+      job.setVariables(command.getValue().getVariablesBuffer());
 
       state.delete(jobKey, job);
       commandControl.accept(JobIntent.COMPLETED, job);

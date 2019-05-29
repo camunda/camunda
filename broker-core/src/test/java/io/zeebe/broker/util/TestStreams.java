@@ -23,11 +23,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
 import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
+import io.zeebe.engine.processor.TypedEventRegistry;
 import io.zeebe.engine.state.StateStorageFactory;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -42,20 +44,6 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
-import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -72,25 +60,11 @@ import org.mockito.internal.util.reflection.FieldSetter;
 import org.mockito.stubbing.Answer;
 
 public class TestStreams {
+
   protected static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
 
   static {
-    VALUE_TYPES.put(DeploymentRecord.class, ValueType.DEPLOYMENT);
-    VALUE_TYPES.put(IncidentRecord.class, ValueType.INCIDENT);
-    VALUE_TYPES.put(JobRecord.class, ValueType.JOB);
-    VALUE_TYPES.put(WorkflowInstanceRecord.class, ValueType.WORKFLOW_INSTANCE);
-    VALUE_TYPES.put(MessageRecord.class, ValueType.MESSAGE);
-    VALUE_TYPES.put(MessageSubscriptionRecord.class, ValueType.MESSAGE_SUBSCRIPTION);
-    VALUE_TYPES.put(
-        MessageStartEventSubscriptionRecord.class, ValueType.MESSAGE_START_EVENT_SUBSCRIPTION);
-    VALUE_TYPES.put(
-        WorkflowInstanceSubscriptionRecord.class, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
-    VALUE_TYPES.put(JobBatchRecord.class, ValueType.JOB_BATCH);
-    VALUE_TYPES.put(TimerRecord.class, ValueType.TIMER);
-    VALUE_TYPES.put(VariableRecord.class, ValueType.VARIABLE);
-    VALUE_TYPES.put(VariableDocumentRecord.class, ValueType.VARIABLE_DOCUMENT);
-    VALUE_TYPES.put(WorkflowInstanceCreationRecord.class, ValueType.WORKFLOW_INSTANCE_CREATION);
-    VALUE_TYPES.put(ErrorRecord.class, ValueType.ERROR);
+    TypedEventRegistry.EVENT_REGISTRY.forEach((v, c) -> VALUE_TYPES.put(c, v));
 
     VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
   }
@@ -99,7 +73,7 @@ public class TestStreams {
   protected final AutoCloseableRule closeables;
   private final ServiceContainer serviceContainer;
 
-  protected Map<String, LogStream> managedLogs = new HashMap<>();
+  private final Map<String, LogStream> managedLogs = new HashMap<>();
 
   protected ActorScheduler actorScheduler;
 
@@ -130,14 +104,15 @@ public class TestStreams {
     final StateStorage stateStorage = new StateStorage(index, snapshots);
 
     final LogStream logStream =
-        LogStreams.createFsLogStream(partitionId)
-            .logRootPath(segments.getAbsolutePath())
-            .serviceContainer(serviceContainer)
-            .logName(name)
-            .deleteOnClose(true)
-            .indexStateStorage(stateStorage)
-            .build()
-            .join();
+        spy(
+            LogStreams.createFsLogStream(partitionId)
+                .logRootPath(segments.getAbsolutePath())
+                .serviceContainer(serviceContainer)
+                .logName(name)
+                .deleteOnClose(true)
+                .indexStateStorage(stateStorage)
+                .build()
+                .join());
 
     // Create distributed log service
     final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);
@@ -239,6 +214,8 @@ public class TestStreams {
     protected UnpackedObject value;
     protected LogStream logStream;
     protected long key = -1;
+    private final long sourceRecordPosition = -1;
+    private final int producerId = -1;
 
     public FluentLogWriter(final LogStream logStream) {
       this.logStream = logStream;
@@ -256,12 +233,12 @@ public class TestStreams {
       return this;
     }
 
-    public TestStreams.FluentLogWriter key(final long key) {
+    public FluentLogWriter key(final long key) {
       this.key = key;
       return this;
     }
 
-    public TestStreams.FluentLogWriter event(final UnpackedObject event) {
+    public FluentLogWriter event(final UnpackedObject event) {
       final ValueType eventType = VALUE_TYPES.get(event.getClass());
       if (eventType == null) {
         throw new RuntimeException("No event type registered for getValue " + event.getClass());
@@ -275,8 +252,8 @@ public class TestStreams {
     public long write() {
       final LogStreamRecordWriter writer = new LogStreamWriterImpl(logStream);
 
-      writer.sourceRecordPosition(-1);
-      writer.producerId(-1);
+      writer.sourceRecordPosition(sourceRecordPosition);
+      writer.producerId(producerId);
 
       if (key >= 0) {
         writer.key(key);
