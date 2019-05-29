@@ -21,15 +21,19 @@ spec:
         valueFrom:
           resourceFieldRef:
             resource: limits.cpu
+      - name: JAVA_TOOL_OPTIONS
+        value: |
+          -XX:InitialRAMPercentage=25.0
+          -XX:MaxRAMPercentage=50.0
       - name: TZ
         value: Europe/Berlin
     resources:
       limits:
         cpu: 4
-        memory: 3Gi
+        memory: 4Gi
       requests:
         cpu: 2
-        memory: 3Gi
+        memory: 4Gi
   - name: docker
     image: docker:18.06-dind
     args: ["--storage-driver=overlay2"]

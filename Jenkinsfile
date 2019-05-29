@@ -73,11 +73,11 @@ spec:
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 3
-        memory: 3Gi
+        cpu: 4
+        memory: 4Gi
       requests:
-        cpu: 3
-        memory: 3Gi
+        cpu: 4
+        memory: 4Gi
     """
 }
 
@@ -92,14 +92,16 @@ String camBpmContainerSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
         value: |
           -XX:+UnlockExperimentalVMOptions
           -XX:+UseCGroupMemoryLimitForHeap
+      - name: JAVA_OPTS
+        value: "-Xms512m -Xmx512m -XX:MaxMetaspaceSize=256m"
       - name: TZ
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 1
+        cpu: 2
         memory: 1Gi
       requests:
-        cpu: 1
+        cpu: 2
         memory: 1Gi
     volumeMounts:
     - name: cambpm-config
@@ -148,8 +150,11 @@ String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false
       capabilities:
         add: ["IPC_LOCK"]
     resources:
+      limits:
+        cpu: 2
+        memory: 2Gi
       requests:
-        cpu: 1
+        cpu: 2
         memory: 1Gi
     env:
       - name: ES_NODE_NAME

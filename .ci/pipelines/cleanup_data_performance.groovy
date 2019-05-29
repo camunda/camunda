@@ -42,10 +42,10 @@ spec:
     resources:
       limits:
         cpu: 4
-        memory: 2Gi
+        memory: 4Gi
       requests:
-        cpu: 3
-        memory: 1Gi
+        cpu: 2
+        memory: 2Gi
 """
 }
 

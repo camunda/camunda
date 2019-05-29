@@ -41,10 +41,10 @@ spec:
   - name: cleanup
     image: busybox
     imagePullPolicy: Always
-    command: ["rm", "-fr", "/usr/share/elasticsearch/data/*"]
+    command: ["rm", "-fr", "/data/*"]
     volumeMounts:
       - name: es-storage
-        mountPath: /usr/share/elasticsearch/data
+        mountPath: /data
         subPath: data
   containers:
   - name: maven
@@ -62,10 +62,10 @@ spec:
         value: tcp://localhost:2375
     resources:
       limits:
-        cpu: 2
+        cpu: 4
         memory: 4Gi
       requests:
-        cpu: 2
+        cpu: 4
         memory: 4Gi
     volumeMounts:
       - name: es-storage

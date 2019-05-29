@@ -67,6 +67,7 @@ public class EmbeddedCamundaOptimizeIT {
   private Set<Thread> getCurrentThreads() {
     return Thread.getAllStackTraces().keySet().stream()
       .filter(thread -> thread.getThreadGroup() != null
+        && !thread.getName().contains("ForkJoinPool.commonPool-worker")
         && !thread.getThreadGroup().getName().equals("system")
         && !thread.getName().contains("WebSocketClient")
       )
