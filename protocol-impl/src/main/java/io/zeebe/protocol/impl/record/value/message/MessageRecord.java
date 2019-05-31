@@ -15,13 +15,16 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
+import io.zeebe.exporter.api.record.value.MessageRecordValue;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.util.buffer.BufferUtil;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
-public class MessageRecord extends UnifiedRecordValue {
+public class MessageRecord extends UnifiedRecordValue implements MessageRecordValue {
 
   private final StringProperty nameProp = new StringProperty("name");
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey");
@@ -38,7 +41,7 @@ public class MessageRecord extends UnifiedRecordValue {
         .declareProperty(messageIdProp);
   }
 
-  public DirectBuffer getName() {
+  public DirectBuffer getNameBuffer() {
     return nameProp.getValue();
   }
 
@@ -52,7 +55,7 @@ public class MessageRecord extends UnifiedRecordValue {
     return this;
   }
 
-  public DirectBuffer getCorrelationKey() {
+  public DirectBuffer getCorrelationKeyBuffer() {
     return correlationKeyProp.getValue();
   }
 
@@ -66,7 +69,7 @@ public class MessageRecord extends UnifiedRecordValue {
     return this;
   }
 
-  public DirectBuffer getVariables() {
+  public DirectBuffer getVariablesBuffer() {
     return variablesProp.getValue();
   }
 
@@ -79,7 +82,7 @@ public class MessageRecord extends UnifiedRecordValue {
     return messageIdProp.getValue().capacity() > 0;
   }
 
-  public DirectBuffer getMessageId() {
+  public DirectBuffer getMessageIdBuffer() {
     return messageIdProp.getValue();
   }
 
@@ -100,5 +103,30 @@ public class MessageRecord extends UnifiedRecordValue {
   public MessageRecord setTimeToLive(long timeToLive) {
     timeToLiveProp.setValue(timeToLive);
     return this;
+  }
+
+  @Override
+  public String getName() {
+    return BufferUtil.bufferAsString(nameProp.getValue());
+  }
+
+  @Override
+  public String getCorrelationKey() {
+    return BufferUtil.bufferAsString(correlationKeyProp.getValue());
+  }
+
+  @Override
+  public String getMessageId() {
+    return BufferUtil.bufferAsString(messageIdProp.getValue());
+  }
+
+  @Override
+  public String getVariables() {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public Map<String, Object> getVariablesAsMap() {
+    throw new UnsupportedOperationException("not yet implemented");
   }
 }

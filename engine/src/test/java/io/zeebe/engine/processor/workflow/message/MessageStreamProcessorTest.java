@@ -127,9 +127,9 @@ public class MessageStreamProcessorTest {
         .correlateWorkflowInstanceSubscription(
             subscription.getWorkflowInstanceKey(),
             subscription.getElementInstanceKey(),
-            subscription.getMessageName(),
+            subscription.getMessageNameBuffer(),
             messageKey,
-            message.getVariables());
+            message.getVariablesBuffer());
   }
 
   @Test
@@ -161,9 +161,9 @@ public class MessageStreamProcessorTest {
         .correlateWorkflowInstanceSubscription(
             subscription.getWorkflowInstanceKey(),
             subscription.getElementInstanceKey(),
-            subscription.getMessageName(),
+            subscription.getMessageNameBuffer(),
             messageKey,
-            message.getVariables());
+            message.getVariablesBuffer());
   }
 
   @Test
@@ -251,9 +251,9 @@ public class MessageStreamProcessorTest {
         .correlateWorkflowInstanceSubscription(
             subscription.getWorkflowInstanceKey(),
             subscription.getElementInstanceKey(),
-            subscription.getMessageName(),
+            subscription.getMessageNameBuffer(),
             messageKey,
-            message.getVariables());
+            message.getVariablesBuffer());
   }
 
   @Test
@@ -286,19 +286,19 @@ public class MessageStreamProcessorTest {
 
     verify(mockSubscriptionCommandSender, timeout(5_000))
         .correlateWorkflowInstanceSubscription(
-            subscription.getWorkflowInstanceKey(),
-            subscription.getElementInstanceKey(),
-            subscription.getMessageName(),
-            firstMessageKey,
-            message.getVariables());
+            eq(subscription.getWorkflowInstanceKey()),
+            eq(subscription.getElementInstanceKey()),
+            eq(subscription.getMessageNameBuffer()),
+            eq(firstMessageKey),
+            eq(message.getVariablesBuffer()));
 
     verify(mockSubscriptionCommandSender, timeout(5_000))
         .correlateWorkflowInstanceSubscription(
-            subscription.getWorkflowInstanceKey(),
-            subscription.getElementInstanceKey(),
-            subscription.getMessageName(),
-            lastMessageKey,
-            message.getVariables());
+            eq(subscription.getWorkflowInstanceKey()),
+            eq(subscription.getElementInstanceKey()),
+            eq(subscription.getMessageNameBuffer()),
+            eq(lastMessageKey),
+            eq(message.getVariablesBuffer()));
   }
 
   @Test
@@ -433,10 +433,12 @@ public class MessageStreamProcessorTest {
             eq(lastMessageKey),
             variablesCaptor.capture());
 
-    assertThat(variablesCaptor.getAllValues().get(0)).isEqualTo(first.getVariables());
-    assertThat(nameCaptor.getValue()).isEqualTo(subscription.getMessageName());
-    assertThat(BufferUtil.equals(nameCaptor.getAllValues().get(1), second.getName())).isTrue();
-    assertThat(BufferUtil.equals(variablesCaptor.getAllValues().get(1), second.getVariables()))
+    assertThat(variablesCaptor.getAllValues().get(0)).isEqualTo(first.getVariablesBuffer());
+    assertThat(nameCaptor.getValue()).isEqualTo(subscription.getMessageNameBuffer());
+    assertThat(BufferUtil.equals(nameCaptor.getAllValues().get(1), second.getNameBuffer()))
+        .isTrue();
+    assertThat(
+            BufferUtil.equals(variablesCaptor.getAllValues().get(1), second.getVariablesBuffer()))
         .isTrue();
   }
 

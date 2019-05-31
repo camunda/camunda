@@ -30,7 +30,7 @@ public class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void> {
   }
 
   public DirectBuffer getCorrelationKey() {
-    return requestDto.getCorrelationKey();
+    return requestDto.getCorrelationKeyBuffer();
   }
 
   public BrokerPublishMessageRequest setMessageId(String messageId) {

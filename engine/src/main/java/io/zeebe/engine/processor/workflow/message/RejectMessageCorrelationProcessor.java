@@ -91,8 +91,8 @@ public class RejectMessageCorrelationProcessor
     }
 
     subscriptionState.visitSubscriptions(
-        subscriptionRecord.getMessageName(),
-        subscriptionRecord.getCorrelationKey(),
+        subscriptionRecord.getMessageNameBuffer(),
+        subscriptionRecord.getCorrelationKeyBuffer(),
         subscription -> {
           if (subscription.getWorkflowInstanceKey() == workflowInstanceKey
               && !subscription.isCorrelating()) {

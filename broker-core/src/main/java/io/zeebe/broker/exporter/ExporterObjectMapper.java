@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.zeebe.gateway.impl.data.MsgPackConverter;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;

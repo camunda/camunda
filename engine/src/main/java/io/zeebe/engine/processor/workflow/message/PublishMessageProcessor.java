@@ -91,11 +91,12 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
     if (messageRecord.hasMessageId()
         && messageState.exist(
-            messageRecord.getName(),
-            messageRecord.getCorrelationKey(),
-            messageRecord.getMessageId())) {
+            messageRecord.getNameBuffer(),
+            messageRecord.getCorrelationKeyBuffer(),
+            messageRecord.getMessageIdBuffer())) {
       final String rejectionReason =
-          String.format(ALREADY_PUBLISHED_MESSAGE, bufferAsString(messageRecord.getMessageId()));
+          String.format(
+              ALREADY_PUBLISHED_MESSAGE, bufferAsString(messageRecord.getMessageIdBuffer()));
 
       streamWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionReason);
       responseWriter.writeRejectionOnCommand(
@@ -120,8 +121,8 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     correlatedElementInstances.clear();
 
     subscriptionState.visitSubscriptions(
-        messageRecord.getName(),
-        messageRecord.getCorrelationKey(),
+        messageRecord.getNameBuffer(),
+        messageRecord.getCorrelationKeyBuffer(),
         subscription -> {
           final long workflowInstanceKey = subscription.getWorkflowInstanceKey();
           final long elementInstanceKey = subscription.getElementInstanceKey();
@@ -132,7 +133,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
             subscriptionState.updateToCorrelatingState(
                 subscription,
-                messageRecord.getVariables(),
+                messageRecord.getVariablesBuffer(),
                 ActorClock.currentTimeMillis(),
                 messageKey);
 
@@ -151,10 +152,10 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       final Message message =
           new Message(
               messageKey,
-              messageRecord.getName(),
-              messageRecord.getCorrelationKey(),
-              messageRecord.getVariables(),
-              messageRecord.getMessageId(),
+              messageRecord.getNameBuffer(),
+              messageRecord.getCorrelationKeyBuffer(),
+              messageRecord.getVariablesBuffer(),
+              messageRecord.getMessageIdBuffer(),
               messageRecord.getTimeToLive(),
               messageRecord.getTimeToLive() + ActorClock.currentTimeMillis());
       messageState.put(message);
@@ -179,9 +180,9 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
           commandSender.correlateWorkflowInstanceSubscription(
               workflowInstanceKey,
               elementInstanceKey,
-              messageRecord.getName(),
+              messageRecord.getNameBuffer(),
               messageKey,
-              messageRecord.getVariables());
+              messageRecord.getVariablesBuffer());
 
       if (!success) {
         return false;
@@ -193,7 +194,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
   private void correlateMessageStartEvents(
       final TypedRecord<MessageRecord> command, final TypedStreamWriter streamWriter) {
-    final DirectBuffer messageName = command.getValue().getName();
+    final DirectBuffer messageName = command.getValue().getNameBuffer();
     startEventSubscriptionState.visitSubscriptionsByMessageName(
         messageName,
         subscription -> visitStartEventSubscription(command, streamWriter, subscription));
@@ -214,7 +215,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     final long eventKey = keyGenerator.nextKey();
     final boolean wasTriggered =
         scopeEventInstanceState.triggerEvent(
-            workflowKey, eventKey, startEventId, command.getValue().getVariables());
+            workflowKey, eventKey, startEventId, command.getValue().getVariablesBuffer());
 
     if (wasTriggered) {
       streamWriter.appendNewEvent(eventKey, WorkflowInstanceIntent.EVENT_OCCURRED, record);
