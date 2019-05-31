@@ -17,11 +17,15 @@ package io.zeebe.test.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.util.ZbLogger;
 import java.util.concurrent.Callable;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import org.slf4j.Logger;
 
 public class TestUtil {
+
+  private static final Logger LOG = new ZbLogger(TestUtil.class);
 
   public static final int MAX_RETRIES = 100;
 
@@ -171,8 +175,11 @@ public class TestUtil {
 
           result = callable.call();
         } catch (Exception e) {
+
           if (!exceptionCondition.apply(e)) {
             throw new RuntimeException("Unexpected exception while checking condition", e);
+          } else {
+            LOG.error("Exception caught, will retry.", e);
           }
         }
 
