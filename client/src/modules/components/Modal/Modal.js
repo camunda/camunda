@@ -47,15 +47,37 @@ export default class Modal extends React.Component {
       [9, this.handleTabKeyDown]
     ]);
     this.modalRef = React.createRef();
-    this.prevActiveElement = document.activeElement;
+    this.eventListenerAdded = false;
   }
 
   componentDidMount() {
+    if (this.props.isVisible) {
+      this.addEventListner();
+    }
+  }
+
+  componentDidUpdate() {
+    const {isVisible} = this.props;
+    const {eventListenerAdded} = this;
+
+    if (isVisible && !eventListenerAdded) {
+      this.addEventListner();
+    } else if (!isVisible && eventListenerAdded) {
+      this.removeEventListner();
+    }
+  }
+
+  addEventListner() {
+    this.eventListenerAdded = true;
+    this.prevActiveElement = document.activeElement;
+
     document.activeElement && document.activeElement.blur();
     document.addEventListener('keydown', this.handleKeyDown);
   }
 
-  componentWillUnmount() {
+  removeEventListner() {
+    this.eventListenerAdded = false;
+
     document.removeEventListener('keydown', this.handleKeyDown);
     this.prevActiveElement.focus();
   }
@@ -207,27 +229,9 @@ class ModalSecondatyButton extends React.Component {
     children: PropTypes.node
   };
 
-  // componentDidMount() {
-  //   this.props.addKeyHandler(13, this.handleReturnKeyPress);
-  // }
-
-  // primaryButtonRef = React.createRef();
-
-  // handleReturnKeyPress = e => {
-  //   e.preventDefault();
-  //   this.primaryButtonRef.current.click();
-  // };
-
   render() {
     const {onModalClose, ...props} = this.props;
-    return (
-      <Button
-        // ref={this.primaryButtonRef}
-        color="secondary"
-        size="medium"
-        {...props}
-      />
-    );
+    return <Button color="secondary" size="medium" {...props} />;
   }
 }
 
