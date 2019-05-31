@@ -70,13 +70,12 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   private static final long NO_LAST_WRITTEN_EVENT_POSITION = -1L;
   private static final Consumer<Long> NO_DATA_REMOVER = pos -> {};
 
-  private final RecordMetadata rawMetadata = new RecordMetadata();
-
   private ActorScheduler actorScheduler;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
 
   private final List<ExporterContainer> containers;
   private final int partitionId;
+  private final RecordMetadata rawMetadata;
 
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
@@ -105,6 +104,8 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
 
     this.logStream = context.getLogStream();
     this.partitionId = logStream.getPartitionId();
+    this.rawMetadata = new RecordMetadata();
+
     this.logStreamReader = context.getLogStreamReader();
     this.exportingRetryStrategy = new AbortableRetryStrategy(actor);
     this.recordWrapStrategy = new EndlessRetryStrategy(actor);

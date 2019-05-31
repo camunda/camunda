@@ -95,9 +95,10 @@
   <!-- L2 Common Messages 200 - 399 -->
 
   <sbe:message name="RecordMetadata" id="200" description="Descriptor for Record Metadata">
-    <field name="recordType" id="1" type="RecordType"/>
-    <field name="requestStreamId" id="2" type="int32"/>
-    <field name="requestId" id="3" type="uint64"/>
+    <field name="partitionId" id="1" type="uint16"/>
+    <field name="recordType" id="2" type="RecordType"/>
+    <field name="requestStreamId" id="3" type="int32"/>
+    <field name="requestId" id="4" type="uint64"/>
     <field name="protocolVersion" id="5" type="uint16"/>
     <field name="valueType" id="6" type="ValueType"/>
     <field name="intent" id="7" type="uint8"/>

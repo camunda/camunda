@@ -46,6 +46,7 @@ public class RecordMetadata
   private RecordType recordType = RecordType.NULL_VAL;
   private short intentValue = Intent.NULL_VAL;
   private Intent intent = null;
+  private int partitionId;
   protected int requestStreamId;
   protected long requestId;
   protected int protocolVersion =
@@ -68,6 +69,7 @@ public class RecordMetadata
 
     decoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
+    partitionId = decoder.partitionId();
     recordType = decoder.recordType();
     requestStreamId = decoder.requestStreamId();
     requestId = decoder.requestId();
@@ -108,6 +110,7 @@ public class RecordMetadata
     encoder.wrap(buffer, offset);
 
     encoder
+        .partitionId(partitionId)
         .recordType(recordType)
         .requestStreamId(requestStreamId)
         .requestId(requestId)
@@ -204,10 +207,14 @@ public class RecordMetadata
     return rejectionReason;
   }
 
+  public RecordMetadata partitionId(int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
   @Override
   public int getPartitionId() {
-    //    return Protocol.decodePartitionId();
-    throw new UnsupportedOperationException("not yet implemented");
+    return partitionId;
   }
 
   @Override
@@ -221,6 +228,7 @@ public class RecordMetadata
   }
 
   public RecordMetadata reset() {
+    partitionId = RecordMetadataEncoder.partitionIdNullValue();
     recordType = RecordType.NULL_VAL;
     requestId = RecordMetadataEncoder.requestIdNullValue();
     requestStreamId = RecordMetadataEncoder.requestStreamIdNullValue();
@@ -241,7 +249,9 @@ public class RecordMetadata
   @Override
   public String toString() {
     return "RecordMetadata{"
-        + "recordType="
+        + "partitionId="
+        + partitionId
+        + ", recordType="
         + recordType
         + ", intentValue="
         + intentValue
