@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.engine;
 
-import io.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandler;
+import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMessageHandler;
 import io.zeebe.engine.state.StateStorageFactory;
 import io.zeebe.servicecontainer.ServiceName;
 
@@ -31,8 +31,8 @@ public class EngineServiceNames {
   public static final ServiceName<EngineService> ENGINE_SERVICE_NAME =
       ServiceName.newServiceName("logstreams.processor", EngineService.class);
 
-  public static final ServiceName<SubscriptionApiCommandMessageHandler>
+  public static final ServiceName<SubscriptionCommandMessageHandler>
       SUBSCRIPTION_API_MESSAGE_HANDLER_SERVICE_NAME =
           ServiceName.newServiceName(
-              "broker.subscriptionApi.messageHandler", SubscriptionApiCommandMessageHandler.class);
+              "broker.subscriptionApi.messageHandler", SubscriptionCommandMessageHandler.class);
 }
