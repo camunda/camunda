@@ -405,9 +405,7 @@ public class StreamProcessorTest {
                       processLatch.countDown();
                     }
                   });
-        },
-        MAX_SNAPSHOTS,
-        SNAPSHOT_INTERVAL);
+        });
 
     // when
     streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
@@ -464,9 +462,7 @@ public class StreamProcessorTest {
                       processingLatch.countDown();
                     }
                   });
-        },
-        MAX_SNAPSHOTS,
-        SNAPSHOT_INTERVAL);
+        });
 
     // when
     streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);

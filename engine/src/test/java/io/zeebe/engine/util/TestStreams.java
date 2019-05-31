@@ -80,7 +80,7 @@ public class TestStreams {
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
   private static final int MAX_SNAPSHOTS = 1;
 
-  protected static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
+  private static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
 
   static {
     TypedEventRegistry.EVENT_REGISTRY.forEach((v, c) -> VALUE_TYPES.put(c, v));
@@ -88,27 +88,26 @@ public class TestStreams {
     VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
   }
 
-  protected final TemporaryFolder storageDirectory;
-  protected final AutoCloseableRule closeables;
+  private final TemporaryFolder dataDirectory;
+  private final AutoCloseableRule closeables;
   private final ServiceContainer serviceContainer;
 
   private final Map<String, LogStream> managedLogs = new HashMap<>();
   private final Map<String, StateSnapshotController> snapshotControllerMap = new HashMap<>();
 
-  protected ActorScheduler actorScheduler;
+  private final ActorScheduler actorScheduler;
 
-  protected StateStorageFactory stateStorageFactory;
-  public static final String PROCESSOR_NAME = "processor";
+  private static final String PROCESSOR_NAME = "processor";
   private final CommandResponseWriter mockCommandResponseWriter;
   private ZeebeDb zeebeDb;
   private AsyncSnapshotDirector asyncSnapshotDirector;
 
   public TestStreams(
-      final TemporaryFolder storageDirectory,
+      final TemporaryFolder dataDirectory,
       final AutoCloseableRule closeables,
       final ServiceContainer serviceContainer,
       final ActorScheduler actorScheduler) {
-    this.storageDirectory = storageDirectory;
+    this.dataDirectory = dataDirectory;
     this.closeables = closeables;
     this.serviceContainer = serviceContainer;
     this.actorScheduler = actorScheduler;
@@ -138,9 +137,9 @@ public class TestStreams {
     File segments = null, index = null, snapshots = null;
 
     try {
-      segments = storageDirectory.newFolder("segments");
-      index = storageDirectory.newFolder("index", "runtime");
-      snapshots = storageDirectory.newFolder("index", "snapshots");
+      segments = dataDirectory.newFolder(name, "segments");
+      index = dataDirectory.newFolder(name, "index", "runtime");
+      snapshots = dataDirectory.newFolder(name, "index", "snapshots");
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -239,17 +238,18 @@ public class TestStreams {
     return new FluentLogWriter(logStream);
   }
 
-  protected StateStorageFactory getStateStorageFactory() {
-    if (stateStorageFactory == null) {
-      final File rocksDBDirectory = new File(storageDirectory.getRoot(), "state");
-      if (!rocksDBDirectory.exists()) {
-        rocksDBDirectory.mkdir();
+  protected StateStorageFactory getStateStorageFactory(LogStream stream) {
+    File rocksDBDirectory;
+    try {
+      rocksDBDirectory = dataDirectory.newFolder(stream.getLogName(), "state");
+    } catch (IOException e) {
+      if (!e.getMessage().contains("exists")) {
+        throw new RuntimeException(e);
       }
-
-      stateStorageFactory = new StateStorageFactory(rocksDBDirectory);
+      rocksDBDirectory = new File(new File(dataDirectory.getRoot(), stream.getLogName()), "state");
     }
 
-    return stateStorageFactory;
+    return new StateStorageFactory(rocksDBDirectory);
   }
 
   public StreamProcessor startStreamProcessor(
@@ -293,7 +293,7 @@ public class TestStreams {
       final Duration snapshotInterval) {
 
     final StateStorage stateStorage =
-        getStateStorageFactory().create(streamProcessorId, PROCESSOR_NAME);
+        getStateStorageFactory(stream).create(streamProcessorId, PROCESSOR_NAME);
     final StateSnapshotController currentSnapshotController =
         spy(new StateSnapshotController(zeebeDbFactory, stateStorage));
     snapshotControllerMap.put(stream.getLogName(), currentSnapshotController);
@@ -422,6 +422,7 @@ public class TestStreams {
         writer.keyNull();
       }
 
+      metadata.partitionId(logStream.getPartitionId());
       writer.metadataWriter(metadata);
       writer.valueWriter(value);
 
