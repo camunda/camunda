@@ -15,12 +15,15 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
+import io.zeebe.exporter.api.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class MessageStartEventSubscriptionRecord extends UnifiedRecordValue {
+public class MessageStartEventSubscriptionRecord extends UnifiedRecordValue
+    implements MessageStartEventSubscriptionRecordValue {
 
   private final LongProperty workflowKeyProp = new LongProperty("workflowKey");
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
@@ -46,7 +49,7 @@ public class MessageStartEventSubscriptionRecord extends UnifiedRecordValue {
     return this;
   }
 
-  public DirectBuffer getMessageName() {
+  public DirectBuffer getMessageNameBuffer() {
     return messageNameProp.getValue();
   }
 
@@ -55,7 +58,17 @@ public class MessageStartEventSubscriptionRecord extends UnifiedRecordValue {
     return this;
   }
 
-  public DirectBuffer getStartEventId() {
+  public DirectBuffer getStartEventIdBuffer() {
     return startEventIdProp.getValue();
+  }
+
+  @Override
+  public String getStartEventId() {
+    return BufferUtil.bufferAsString(startEventIdProp.getValue());
+  }
+
+  @Override
+  public String getMessageName() {
+    return BufferUtil.bufferAsString(messageNameProp.getValue());
   }
 }

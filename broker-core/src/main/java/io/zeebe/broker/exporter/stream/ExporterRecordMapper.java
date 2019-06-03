@@ -283,8 +283,8 @@ public class ExporterRecordMapper {
     return new MessageStartEventSubscriptionRecordValueImpl(
         objectMapper,
         record.getWorkflowKey(),
-        asString(record.getStartEventId()),
-        asString(record.getMessageName()));
+        asString(record.getStartEventIdBuffer()),
+        asString(record.getMessageNameBuffer()));
   }
 
   private WorkflowInstanceRecordValue ofWorkflowInstanceRecord(final DirectBuffer valueBuffer) {
