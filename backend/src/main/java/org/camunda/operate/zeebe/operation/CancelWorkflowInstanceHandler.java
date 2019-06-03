@@ -33,7 +33,7 @@ public class CancelWorkflowInstanceHandler extends AbstractOperationHandler impl
   private ZeebeClient zeebeClient;
 
   @Override
-  public void handle(OperationEntity operation) throws PersistenceException {
+  public void handleWithException(OperationEntity operation) throws PersistenceException {
     if (operation.getWorkflowInstanceId() == null) {
       failOperation(operation, "No workflow instance id is provided.");
     }

@@ -10,6 +10,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadPoolExecutor;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.es.writer.BatchOperationWriter;
@@ -18,8 +21,10 @@ import org.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -39,6 +44,10 @@ public class OperationExecutor extends Thread {
   @Autowired
   private OperateProperties operateProperties;
 
+  @Autowired
+  @Qualifier("operationsThreadPoolExecutor")
+  private ThreadPoolTaskExecutor operationsTakExecutor;
+
   private List<ExecutionFinishedListener> listeners = new ArrayList<>();
 
   public void startExecuting() {
@@ -56,11 +65,10 @@ public class OperationExecutor extends Thread {
   public void run() {
     while (!shutdown) {
       try {
-        final Map<String, List<OperationEntity>> operations = executeOneBatch();
+        final List<Future<?>> operations = executeOneBatch();
 
         //TODO backoff strategy
         if (operations.size() == 0) {
-
 
           notifyExecutionFinishedListeners();
 
@@ -86,22 +94,23 @@ public class OperationExecutor extends Thread {
     }
   }
 
-  public Map<String, List<OperationEntity>> executeOneBatch() throws PersistenceException {
+  public List<Future<?>> executeOneBatch() throws PersistenceException {
+    List<Future<?>> futures = new ArrayList<>();
+
     //lock the operations
-    final Map<String, List<OperationEntity>> lockedOperations = batchOperationWriter.lockBatch();
+    final List<OperationEntity> lockedOperations = batchOperationWriter.lockBatch();
 
     //execute all locked operations
-    for (Map.Entry<String, List<OperationEntity>> wiOperations: lockedOperations.entrySet()) {
-      for (OperationEntity operation: wiOperations.getValue()) {
-        final OperationHandler handler = getOperationHandlers().get(operation.getType());
-        if (handler == null) {
-          logger.info("Operation {} on worflowInstanceId {} won't be processed, as no suitable handler was found.", operation.getType(), wiOperations.getKey());
-        } else {
-          handler.handle(operation);
-        }
+    for (OperationEntity operation : lockedOperations) {
+      final OperationHandler handler = getOperationHandlers().get(operation.getType());
+      if (handler == null) {
+        logger.info("Operation {} on worflowInstanceId {} won't be processed, as no suitable handler was found.", operation.getType(), operation.getWorkflowInstanceId());
+      } else {
+        OperationCommand operationCommand = new OperationCommand(operation, handler);
+        futures.add(operationsTakExecutor.submit(operationCommand));
       }
     }
-    return lockedOperations;
+    return futures;
   }
 
   @Bean
@@ -114,6 +123,18 @@ public class OperationExecutor extends Thread {
     return handlerMap;
   }
 
+  @Bean("operationsThreadPoolExecutor")
+  public ThreadPoolTaskExecutor getOperationsTaskExecutor() {
+    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(operateProperties.getOperationExecutor().getThreadsCount());
+    executor.setMaxPoolSize(operateProperties.getOperationExecutor().getThreadsCount());
+    executor.setQueueCapacity(operateProperties.getOperationExecutor().getQueueSize());
+    executor.setRejectedExecutionHandler(new BlockCallerUntilExecutorHasCapacity());
+    executor.setThreadNamePrefix("operation_executor_");
+    executor.initialize();
+    return executor;
+  }
+
   public void registerListener(ExecutionFinishedListener listener) {
     this.listeners.add(listener);
   }
@@ -121,6 +142,19 @@ public class OperationExecutor extends Thread {
   private void notifyExecutionFinishedListeners() {
     for (ExecutionFinishedListener listener: listeners) {
       listener.onExecutionFinished();
+    }
+  }
+
+  private class BlockCallerUntilExecutorHasCapacity implements RejectedExecutionHandler {
+    public void rejectedExecution(Runnable runnable, ThreadPoolExecutor executor) {
+      // this will block if the queue is full
+      if (!executor.isShutdown()) {
+        try {
+          executor.getQueue().put(runnable);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
     }
   }
 }

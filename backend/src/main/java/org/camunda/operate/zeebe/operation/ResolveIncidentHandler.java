@@ -35,7 +35,7 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
   private ZeebeClient zeebeClient;
 
   @Override
-  public void handle(OperationEntity operation) throws PersistenceException {
+  public void handleWithException(OperationEntity operation) throws PersistenceException {
 
     if (operation.getIncidentId() == null) {
       failOperation(operation, "Incident id must be defined.");

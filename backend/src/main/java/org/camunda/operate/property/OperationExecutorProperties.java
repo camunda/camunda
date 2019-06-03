@@ -9,11 +9,15 @@ import java.util.UUID;
 
 public class OperationExecutorProperties {
 
-  public static final int BATCH_SIZE_DEFAULT = 2000;
+  public static final int BATCH_SIZE_DEFAULT = 200;
 
   public static final String WORKER_ID_DEFAULT = UUID.randomUUID().toString();
 
   public static final long LOCK_TIMEOUT_DEFAULT = 60000L;   // 1 min
+
+  private static final int DEFAULT_IMPORT_THREADS_COUNT = 3;
+
+  private static final int DEFAULT_IMPORT_QUEUE_SIZE = 10;
 
   /**
    * Amount of workflow instances, that will be processed by one run of operation executor. This counts workflow instances, but can end up in more operations,
@@ -29,6 +33,10 @@ public class OperationExecutorProperties {
   private long lockTimeout = LOCK_TIMEOUT_DEFAULT;
 
   private boolean executorEnabled = true;
+
+  private int threadsCount = DEFAULT_IMPORT_THREADS_COUNT;
+
+  private int queueSize = DEFAULT_IMPORT_QUEUE_SIZE;
 
   public int getBatchSize() {
     return batchSize;
@@ -60,5 +68,21 @@ public class OperationExecutorProperties {
 
   public void setExecutorEnabled(boolean executorEnabled) {
     this.executorEnabled = executorEnabled;
+  }
+
+  public int getThreadsCount() {
+    return threadsCount;
+  }
+
+  public void setThreadsCount(int threadsCount) {
+    this.threadsCount = threadsCount;
+  }
+
+  public int getQueueSize() {
+    return queueSize;
+  }
+
+  public void setQueueSize(int queueSize) {
+    this.queueSize = queueSize;
   }
 }

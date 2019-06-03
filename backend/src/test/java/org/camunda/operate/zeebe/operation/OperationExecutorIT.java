@@ -17,10 +17,10 @@ import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
+import org.camunda.operate.es.reader.OperationReader;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
-import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.DateUtil;
@@ -51,6 +51,9 @@ public class OperationExecutorIT extends OperateIntegrationTest {
   @MockBean
   private Map<OperationType, OperationHandler> handlers;
 
+  @Autowired
+  private OperationReader operationReader;
+
   private OffsetDateTime testStartTime;
   private OffsetDateTime approxLockExpirationTime;
 
@@ -61,7 +64,7 @@ public class OperationExecutorIT extends OperateIntegrationTest {
   }
 
   /**
-   * Test creates workflow instances in quantity of 1.5*batchSize approx. Each workflow instance has 3 operations:
+   * Test creates workflow instances in quantity of 0.75*batchSize approx. Each workflow instance has 3 operations:
    * 1. scheduled
    * 2. locked with expired lock time ->
    * 3. locked with valid lock time
@@ -81,23 +84,26 @@ public class OperationExecutorIT extends OperateIntegrationTest {
     createData(instancesCount);
 
     //when execute 1st batch
-    Map<String, List<OperationEntity>> lockedOperations = operationExecutor.executeOneBatch();
+    operationExecutor.executeOneBatch();
     //then
-    assertOperationsLocked(lockedOperations, batchSize, "lockFirstBatch");
+    assertOperationsLocked(operationReader.getOperations(null), batchSize, "lockFirstBatch");
 
     //when execute 2nd batch
-    lockedOperations = operationExecutor.executeOneBatch();
+    operationExecutor.executeOneBatch();
     //then
-    final int expectedLockedOperations = instancesCount*2 - batchSize;
-    assertOperationsLocked(lockedOperations, expectedLockedOperations, "lockSecondBatch");
+    final int expectedLockedOperations = instancesCount*2;
+    assertOperationsLocked(operationReader.getOperations(null), expectedLockedOperations, "lockSecondBatch");
   }
 
-  private void assertOperationsLocked(Map<String, List<OperationEntity>> lockedOperations, int operationCount, String assertionLabel) {
-    final List<OperationEntity> allOperations = lockedOperations.values().stream().flatMap(entry -> entry.stream()).collect(Collectors.toList());
-    assertThat(allOperations).as(assertionLabel + ".operations.size").hasSize(operationCount);
-    assertThat(allOperations).extracting(IncidentTemplate.STATE).as(assertionLabel + "operation.state").containsOnly(OperationState.LOCKED);
-    assertThat(allOperations).extracting(OperationTemplate.LOCK_OWNER).as(assertionLabel + "operation.lockOwner").containsOnly(operateProperties.getOperationExecutor().getWorkerId());
-    assertThat(allOperations).filteredOn(op -> op.getLockExpirationTime().isBefore(approxLockExpirationTime)).as(assertionLabel + "operation.lockExpirationTime").isEmpty();
+  private void assertOperationsLocked(List<OperationEntity> allOperations, int operationCount, String assertionLabel) {
+    String workerId = operateProperties.getOperationExecutor().getWorkerId();
+    List<OperationEntity> lockedOperations = allOperations.stream()
+        .filter(op -> op.getState().equals(OperationState.LOCKED) && op.getLockOwner().equals(workerId))
+        .collect(Collectors.toList());
+    assertThat(lockedOperations).as(assertionLabel + ".operations.size").hasSize(operationCount);
+    assertThat(lockedOperations).extracting(OperationTemplate.LOCK_OWNER).as(assertionLabel + "operation.lockOwner").containsOnly(
+        workerId);
+    assertThat(lockedOperations).filteredOn(op -> op.getLockExpirationTime().isBefore(approxLockExpirationTime)).as(assertionLabel + "operation.lockExpirationTime").isEmpty();
   }
 
   private void createData(int processInstanceCount) {

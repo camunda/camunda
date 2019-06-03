@@ -11,7 +11,9 @@ import org.camunda.operate.exceptions.PersistenceException;
 
 public interface OperationHandler {
 
-  void handle(OperationEntity operation) throws PersistenceException;
+  void handle(OperationEntity operation);
+
+  void handleWithException(OperationEntity operation) throws PersistenceException;
 
   OperationType getType();
 

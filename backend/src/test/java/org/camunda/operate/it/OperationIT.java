@@ -8,14 +8,15 @@ package org.camunda.operate.it;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Future;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.http.HttpStatus;
+import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.es.reader.ActivityInstanceReader;
 import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.OperationReader;
@@ -288,7 +289,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     postOperationWithOKResponse(workflowInstanceId, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));
 
     //and execute the operation
-    operationExecutor.executeOneBatch();
+    executeOneBatch();
 
     //then
     //before we process messages from Zeebe, the state of the operation must be SENT
@@ -349,7 +350,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertVariable(variables, varName, newVarValue, true);
 
     //when execute the operation
-    operationExecutor.executeOneBatch();
+    executeOneBatch();
 
     //then
     //before we process messages from Zeebe, the state of the operation must be SENT
@@ -403,7 +404,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertVariable(variables, newVar2Name, newVar2Value, true);
 
     //TC2 execute the operations
-    operationExecutor.executeOneBatch();
+    executeOneBatch();
 
     //then - before we process messages from Zeebe, the state of the operation must be SENT - variables has still hasActiveOperation = true
     //then new variables are returned
@@ -444,7 +445,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertVariable(variables, newVar2Name, newVar2Value, true);
 
     //TC2 execute the operations
-    operationExecutor.executeOneBatch();
+    executeOneBatch();
 
     //then - before we process messages from Zeebe, the state of the operation must be SENT - variables has still hasActiveOperation = true
     //then new variables are returned
@@ -504,7 +505,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     postUpdateVariableOperation(workflowInstanceId, taskAId, varName, varValue);
 
     //and execute the operation
-    operationExecutor.executeOneBatch();
+    executeOneBatch();
 
     //then
     //before we process messages from Zeebe, the state of the operation must be SENT
@@ -557,7 +558,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //and execute the operation
-    operationExecutor.executeOneBatch();
+    executeOneBatch();
 
     //then
     //before we process messages from Zeebe, the state of the operation must be SENT
@@ -590,6 +591,16 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstances.getWorkflowInstances().get(0).getState()).isEqualTo(WorkflowInstanceStateDto.CANCELED);
   }
 
+  private void executeOneBatch() {
+    try {
+      List<Future<?>> futures = operationExecutor.executeOneBatch();
+      //wait till all scheduled tasks are executed
+      for(Future f: futures) { f.get(); }
+    } catch (Exception e) {
+      fail(e.getMessage(), e);
+    }
+  }
+
   @Test
   public void testTwoOperationsOnOneInstance() throws Exception {
     // given
@@ -602,7 +613,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     postOperationWithOKResponse(workflowInstanceId, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#2
 
     //and execute the operation
-    operationExecutor.executeOneBatch();
+    executeOneBatch();
 
     //then
     //the state of one operation is COMPLETED and of the other - FAILED
@@ -633,10 +644,10 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final ListViewQueryDto workflowInstanceQuery = createAllQuery();
     workflowInstanceQuery.setIds(Collections.singletonList(IdTestUtil.getId(workflowInstanceKey)));
     postOperationWithOKResponse(IdTestUtil.getId(workflowInstanceKey), new OperationRequestDto(OperationType.CANCEL_WORKFLOW_INSTANCE));  //#1
-    postOperationWithOKResponse(IdTestUtil.getId(workflowInstanceKey), new OperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#2
+    executeOneBatch();
 
-    //and execute the operation
-    operationExecutor.executeOneBatch();
+    postOperationWithOKResponse(IdTestUtil.getId(workflowInstanceKey), new OperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#2
+    executeOneBatch();
 
     //then
     //the state of 1st operation is COMPLETED and the 2nd - FAILED
@@ -669,7 +680,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     //and execute the operation
-    operationExecutor.executeOneBatch();
+    executeOneBatch();
 
     //then
     //the state of operation is FAILED, as there are no appropriate incidents
@@ -710,7 +721,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //and execute the operation
-    operationExecutor.executeOneBatch();
+    executeOneBatch();
 
     //then
     //the state of operation is FAILED, as there are no appropriate incidents
@@ -747,7 +758,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //and execute the operation
-    operationExecutor.executeOneBatch();
+    executeOneBatch();
 
     //then
     //the state of operation is FAILED, as the instance is in wrong state

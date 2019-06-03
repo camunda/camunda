@@ -28,7 +28,7 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
   private ZeebeClient zeebeClient;
 
   @Override
-  public void handle(OperationEntity operation) throws PersistenceException {
+  public void handleWithException(OperationEntity operation) throws PersistenceException {
     try {
       String updateVariableJson = mergeVariableJson(operation.getVariableName(), operation.getVariableValue());
       zeebeClient.newSetVariablesCommand(IdUtil.getKey(operation.getScopeId()))

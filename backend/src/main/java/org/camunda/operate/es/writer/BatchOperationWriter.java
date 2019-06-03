@@ -31,7 +31,6 @@ import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
-import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -91,12 +90,10 @@ public class BatchOperationWriter {
 
   /**
    * Finds operation, which are scheduled or locked with expired timeout, in the amount of configured batch size, and locks them.
-   * @return map with workflow instance id as a key and list of locked operations as a value
+   * @return list of locked operations
    * @throws PersistenceException
    */
-  public Map<String, List<OperationEntity>> lockBatch() throws PersistenceException {
-    Map<String, List<OperationEntity>> result = new HashMap<>();
-
+  public List<OperationEntity> lockBatch() throws PersistenceException {
     final String workerId = operateProperties.getOperationExecutor().getWorkerId();
     final long lockTimeout = operateProperties.getOperationExecutor().getLockTimeout();
     final int batchSize = operateProperties.getOperationExecutor().getBatchSize();
@@ -108,20 +105,16 @@ public class BatchOperationWriter {
 
     //lock the operations
     for (OperationEntity operation: operationEntities) {
-      if (operation.getState().equals(OperationState.SCHEDULED) ||
-        (operation.getState().equals(OperationState.LOCKED) && operation.getLockExpirationTime().isBefore(OffsetDateTime.now()))) {
         //lock operation: update workerId, state, lockExpirationTime
         operation.setState(OperationState.LOCKED);
         operation.setLockOwner(workerId);
         operation.setLockExpirationTime(OffsetDateTime.now().plus(lockTimeout, ChronoUnit.MILLIS));
 
-        CollectionUtil.addToMap(result, operation.getWorkflowInstanceId(), operation);
         bulkRequest.add(createUpdateByIdRequest(operation, false));
-      }
     }
     ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true);
-    logger.debug("{} operations locked", result.entrySet().stream().mapToLong(e -> e.getValue().size()).sum());
-    return result;
+    logger.debug("{} operations locked", operationEntities.size());
+    return operationEntities;
   }
 
   private UpdateRequest createUpdateByIdRequest(OperationEntity operation, boolean refreshImmediately) throws PersistenceException {

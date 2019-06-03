@@ -24,6 +24,20 @@ public abstract class AbstractOperationHandler implements OperationHandler {
   @Autowired
   protected OperateProperties operateProperties;
 
+  @Override
+  public void handle(OperationEntity operation) {
+    try {
+      handleWithException(operation);
+    } catch (PersistenceException ex) {
+      try {
+        failOperation(operation, String.format("Unable to process operation: %s", ex.getMessage()));
+      } catch (PersistenceException e) {
+        //
+      }
+      logger.error("Unable to process operation: " + ex.getMessage(), ex);
+    }
+  }
+
   protected void failOperation(OperationEntity operation, String errorMsg) throws PersistenceException {
     if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())
       && operation.getType().equals(getType())) {

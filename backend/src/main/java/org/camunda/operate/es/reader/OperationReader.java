@@ -35,6 +35,7 @@ import static org.camunda.operate.entities.OperationState.SCHEDULED;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithOr;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -169,8 +170,13 @@ public class OperationReader extends AbstractReader {
   }
 
   public List<OperationEntity> getOperations(String workflowInstanceId) {
-    final ConstantScoreQueryBuilder query = constantScoreQuery(termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId));
 
+    final ConstantScoreQueryBuilder query;
+    if (workflowInstanceId == null) {
+      query = constantScoreQuery(matchAllQuery());
+    } else {
+      query = constantScoreQuery(termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId));
+    }
     final SearchRequest searchRequest = new SearchRequest(operationTemplate.getAlias())
       .source(new SearchSourceBuilder()
         .query(query)
