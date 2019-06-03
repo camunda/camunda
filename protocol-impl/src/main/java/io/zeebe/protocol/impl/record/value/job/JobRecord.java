@@ -126,7 +126,6 @@ public class JobRecord extends UnifiedRecordValue
 
   public JobRecord setVariables(DirectBuffer variables) {
     variableProp.setValue(variables);
-
     return this;
   }
 

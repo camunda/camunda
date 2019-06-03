@@ -193,6 +193,11 @@ public class EngineRule extends ExternalResource {
     return new VariableClient(environmentRule);
   }
 
+  public long completeJob(long jobKey) {
+    final JobRecord jobRecord = new JobRecord();
+    return environmentRule.writeCommand(jobKey, JobIntent.COMPLETE, jobRecord);
+  }
+
   public long completeJob(long jobKey, DirectBuffer variables) {
     final JobRecord jobRecord = new JobRecord().setVariables(variables);
     return environmentRule.writeCommand(jobKey, JobIntent.COMPLETE, jobRecord);
@@ -205,6 +210,11 @@ public class EngineRule extends ExternalResource {
         .withRecordKey(jobKey)
         .withIntent(JobIntent.COMPLETED)
         .getFirst();
+  }
+
+  public long failJob(long jobKey) {
+    final JobRecord jobRecord = new JobRecord();
+    return environmentRule.writeCommand(jobKey, JobIntent.FAIL, jobRecord);
   }
 
   public JobActivationClient jobs() {
