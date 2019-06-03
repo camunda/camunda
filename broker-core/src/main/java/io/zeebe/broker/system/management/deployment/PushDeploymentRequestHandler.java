@@ -166,7 +166,12 @@ public class PushDeploymentRequestHandler implements Function<byte[], Completabl
 
     logStreamWriter.wrap(partition.getLogStream());
 
-    recordMetadata.reset().recordType(recordType).valueType(valueType).intent(intent);
+    recordMetadata
+        .reset()
+        .partitionId(partition.getPartitionId())
+        .recordType(recordType)
+        .valueType(valueType)
+        .intent(intent);
 
     final long position =
         logStreamWriter.key(key).metadataWriter(recordMetadata).valueWriter(event).tryWrite();

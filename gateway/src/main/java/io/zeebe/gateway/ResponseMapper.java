@@ -18,7 +18,6 @@ package io.zeebe.gateway;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.zeebe.gateway.impl.data.MsgPackConverter;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
@@ -32,6 +31,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.msgpack.value.LongValue;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;

@@ -22,7 +22,7 @@ import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
 import io.zeebe.broker.engine.impl.DeploymentDistributorImpl;
-import io.zeebe.broker.engine.impl.SubscriptionCommandSenderImpl;
+import io.zeebe.broker.engine.impl.PartitionCommandSenderImpl;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
@@ -33,6 +33,7 @@ import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.processor.StreamProcessorServiceNames;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.EngineProcessors;
+import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.Injector;
@@ -142,9 +143,10 @@ public class EngineService implements Service<EngineService> {
         new DeploymentDistributorImpl(
             clusterCfg, atomix, partitionListener, zeebeState.getDeploymentState(), actor);
 
-    final SubscriptionCommandSenderImpl subscriptionCommandSender =
-        new SubscriptionCommandSenderImpl(atomix);
-    subscriptionCommandSender.init(topologyManager, actor, stream);
+    final PartitionCommandSenderImpl partitionCommandSender =
+        new PartitionCommandSenderImpl(atomix, topologyManager, actor);
+    final SubscriptionCommandSender subscriptionCommandSender =
+        new SubscriptionCommandSender(stream.getPartitionId(), partitionCommandSender);
 
     return EngineProcessors.createEngineProcessors(
         processingContext,

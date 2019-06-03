@@ -62,7 +62,7 @@ public class OpenMessageSubscriptionProcessor
     subscriptionRecord = record.getValue();
 
     if (subscriptionState.existSubscriptionForElementInstance(
-        subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName())) {
+        subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
       sideEffect.accept(this::sendAcknowledgeCommand);
 
       streamWriter.appendRejection(
@@ -71,7 +71,7 @@ public class OpenMessageSubscriptionProcessor
           String.format(
               SUBSCRIPTION_ALREADY_OPENED_MESSAGE,
               subscriptionRecord.getElementInstanceKey(),
-              BufferUtil.bufferAsString(subscriptionRecord.getMessageName())));
+              BufferUtil.bufferAsString(subscriptionRecord.getMessageNameBuffer())));
       return;
     }
 
@@ -86,8 +86,8 @@ public class OpenMessageSubscriptionProcessor
         new MessageSubscription(
             subscriptionRecord.getWorkflowInstanceKey(),
             subscriptionRecord.getElementInstanceKey(),
-            subscriptionRecord.getMessageName(),
-            subscriptionRecord.getCorrelationKey(),
+            subscriptionRecord.getMessageNameBuffer(),
+            subscriptionRecord.getCorrelationKeyBuffer(),
             subscriptionRecord.shouldCloseOnCorrelate());
 
     sideEffect.accept(this::sendAcknowledgeCommand);
@@ -103,7 +103,7 @@ public class OpenMessageSubscriptionProcessor
     return commandSender.openWorkflowInstanceSubscription(
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
-        subscriptionRecord.getMessageName(),
+        subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.shouldCloseOnCorrelate());
   }
 }

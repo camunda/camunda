@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,24 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.engine.impl;
+package io.zeebe.engine.processor.workflow.message.command;
 
-import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.engine.processor.workflow.message.command.CloseMessageSubscriptionCommand;
-import io.zeebe.engine.processor.workflow.message.command.CloseMessageSubscriptionDecoder;
-import io.zeebe.engine.processor.workflow.message.command.CloseWorkflowInstanceSubscriptionCommand;
-import io.zeebe.engine.processor.workflow.message.command.CloseWorkflowInstanceSubscriptionDecoder;
-import io.zeebe.engine.processor.workflow.message.command.CorrelateMessageSubscriptionCommand;
-import io.zeebe.engine.processor.workflow.message.command.CorrelateMessageSubscriptionDecoder;
-import io.zeebe.engine.processor.workflow.message.command.CorrelateWorkflowInstanceSubscriptionCommand;
-import io.zeebe.engine.processor.workflow.message.command.CorrelateWorkflowInstanceSubscriptionDecoder;
-import io.zeebe.engine.processor.workflow.message.command.MessageHeaderDecoder;
-import io.zeebe.engine.processor.workflow.message.command.OpenMessageSubscriptionCommand;
-import io.zeebe.engine.processor.workflow.message.command.OpenMessageSubscriptionDecoder;
-import io.zeebe.engine.processor.workflow.message.command.OpenWorkflowInstanceSubscriptionCommand;
-import io.zeebe.engine.processor.workflow.message.command.OpenWorkflowInstanceSubscriptionDecoder;
-import io.zeebe.engine.processor.workflow.message.command.RejectCorrelateMessageSubscriptionCommand;
-import io.zeebe.engine.processor.workflow.message.command.RejectCorrelateMessageSubscriptionDecoder;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
@@ -45,14 +30,13 @@ import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionR
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
-import io.zeebe.util.sched.ActorControl;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class SubscriptionApiCommandMessageHandler
+public class SubscriptionCommandMessageHandler
     implements Function<byte[], CompletableFuture<Void>> {
 
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -88,19 +72,19 @@ public class SubscriptionApiCommandMessageHandler
   private final WorkflowInstanceSubscriptionRecord workflowInstanceSubscriptionRecord =
       new WorkflowInstanceSubscriptionRecord();
 
-  private final Int2ObjectHashMap<Partition> leaderPartitions;
-  private final ActorControl actor;
+  private final Consumer<Runnable> enviromentToRun;
+  private final Function<Integer, LogStream> logstreamSupplier;
 
-  public SubscriptionApiCommandMessageHandler(
-      ActorControl actor, Int2ObjectHashMap<Partition> leaderPartitions) {
-    this.leaderPartitions = leaderPartitions;
-    this.actor = actor;
+  public SubscriptionCommandMessageHandler(
+      Consumer<Runnable> enviromentToRun, Function<Integer, LogStream> logstreamSupplier) {
+    this.enviromentToRun = enviromentToRun;
+    this.logstreamSupplier = logstreamSupplier;
   }
 
   @Override
   public CompletableFuture<Void> apply(byte[] bytes) {
     final CompletableFuture<Void> future = new CompletableFuture<>();
-    actor.call(
+    enviromentToRun.accept(
         () -> {
           final DirectBuffer buffer = new UnsafeBuffer(bytes);
           final int offset = 0;
@@ -288,15 +272,20 @@ public class SubscriptionApiCommandMessageHandler
   private boolean writeCommand(
       int partitionId, ValueType valueType, Intent intent, UnpackedObject command) {
 
-    final Partition partition = leaderPartitions.get(partitionId);
-    if (partition == null) {
+    final LogStream logStream = logstreamSupplier.apply(partitionId);
+    if (logStream == null) {
       // ignore message if you are not the leader of the partition
       return true;
     }
 
-    logStreamWriter.wrap(partition.getLogStream());
+    logStreamWriter.wrap(logStream);
 
-    recordMetadata.reset().recordType(RecordType.COMMAND).valueType(valueType).intent(intent);
+    recordMetadata
+        .reset()
+        .partitionId(partitionId)
+        .recordType(RecordType.COMMAND)
+        .valueType(valueType)
+        .intent(intent);
 
     final long position =
         logStreamWriter.key(-1).metadataWriter(recordMetadata).valueWriter(command).tryWrite();

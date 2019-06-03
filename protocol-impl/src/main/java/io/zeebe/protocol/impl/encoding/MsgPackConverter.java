@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.impl.data;
+package io.zeebe.protocol.impl.encoding;
 
 import static io.zeebe.util.StringUtil.getBytes;
 
@@ -23,31 +23,46 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
+import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import org.agrona.DirectBuffer;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class MsgPackConverter {
-  protected static final JsonEncoding JSON_ENCODING = JsonEncoding.UTF8;
-  protected static final Charset JSON_CHARSET = StandardCharsets.UTF_8;
+  private static final JsonEncoding JSON_ENCODING = JsonEncoding.UTF8;
+  private static final Charset JSON_CHARSET = StandardCharsets.UTF_8;
 
-  protected final JsonFactory msgPackFactory =
+  /*
+   * Extract from jackson doc:
+   *
+   * <p>* Factory instances are thread-safe and reusable after configuration * (if any). Typically
+   * applications and services use only a single * globally shared factory instance, unless they
+   * need differently * configured factories. Factory reuse is important if efficiency matters; *
+   * most recycling of expensive construct is done on per-factory basis.
+   */
+
+  private static final JsonFactory MESSAGE_PACK_FACTORY =
       new MessagePackFactory().setReuseResourceInGenerator(false).setReuseResourceInParser(false);
-  protected final JsonFactory jsonFactory = new MappingJsonFactory();
+  private static final JsonFactory JSON_FACTORY = new MappingJsonFactory();
 
-  public byte[] convertToMsgPack(String json) {
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////// JSON to MSGPACK //////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+
+  public static byte[] convertToMsgPack(String json) {
     final byte[] jsonBytes = getBytes(json, JSON_CHARSET);
     final ByteArrayInputStream inputStream = new ByteArrayInputStream(jsonBytes);
     return convertToMsgPack(inputStream);
   }
 
-  public byte[] convertToMsgPack(final InputStream inputStream) {
+  public static byte[] convertToMsgPack(final InputStream inputStream) {
     try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-      convert(inputStream, outputStream, jsonFactory, msgPackFactory);
+      convert(inputStream, outputStream, JSON_FACTORY, MESSAGE_PACK_FACTORY);
 
       return outputStream.toByteArray();
     } catch (Exception e) {
@@ -55,28 +70,36 @@ public class MsgPackConverter {
     }
   }
 
-  public String convertToJson(byte[] msgPack) {
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////// MSGPACK to JSON //////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+
+  public static String convertToJson(DirectBuffer buffer) {
+    return convertToJson(BufferUtil.bufferAsArray(buffer));
+  }
+
+  public static String convertToJson(byte[] msgPack) {
     return convertToJson(new ByteArrayInputStream(msgPack));
   }
 
-  public String convertToJson(InputStream msgPackInputStream) {
+  public static String convertToJson(InputStream msgPackInputStream) {
     final byte[] jsonBytes = convertToJsonBytes(msgPackInputStream);
     return new String(jsonBytes, JSON_CHARSET);
   }
 
-  public InputStream convertToJsonInputStream(byte[] msgPack) {
+  public static InputStream convertToJsonInputStream(byte[] msgPack) {
     final byte[] jsonBytes = convertToJsonBytes(msgPack);
     return new ByteArrayInputStream(jsonBytes);
   }
 
-  protected byte[] convertToJsonBytes(byte[] msgPack) {
+  private static byte[] convertToJsonBytes(byte[] msgPack) {
     final InputStream inputStream = new ByteArrayInputStream(msgPack);
     return convertToJsonBytes(inputStream);
   }
 
-  protected byte[] convertToJsonBytes(InputStream msgPackInputStream) {
+  private static byte[] convertToJsonBytes(InputStream msgPackInputStream) {
     try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-      convert(msgPackInputStream, outputStream, msgPackFactory, jsonFactory);
+      convert(msgPackInputStream, outputStream, MESSAGE_PACK_FACTORY, JSON_FACTORY);
 
       return outputStream.toByteArray();
     } catch (Exception e) {
@@ -84,7 +107,7 @@ public class MsgPackConverter {
     }
   }
 
-  protected void convert(
+  private static void convert(
       InputStream in, OutputStream out, JsonFactory inFormat, JsonFactory outFormat)
       throws Exception {
     final JsonParser parser = inFormat.createParser(in);

@@ -59,7 +59,7 @@ public class CorrelateMessageSubscriptionProcessor
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
     final MessageSubscription subscription =
         subscriptionState.get(
-            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName());
+            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
 
     if (subscription != null) {
       if (subscription.shouldCloseOnCorrelate()) {
@@ -78,7 +78,7 @@ public class CorrelateMessageSubscriptionProcessor
           String.format(
               NO_SUBSCRIPTION_FOUND_MESSAGE,
               subscriptionRecord.getElementInstanceKey(),
-              BufferUtil.bufferAsString(subscriptionRecord.getMessageName())));
+              BufferUtil.bufferAsString(subscriptionRecord.getMessageNameBuffer())));
     }
   }
 }

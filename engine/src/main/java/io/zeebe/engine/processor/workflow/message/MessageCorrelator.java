@@ -87,7 +87,7 @@ public class MessageCorrelator {
     return commandSender.correlateWorkflowInstanceSubscription(
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
-        subscriptionRecord.getMessageName(),
+        subscriptionRecord.getMessageNameBuffer(),
         messageKey,
         messageVariables);
   }

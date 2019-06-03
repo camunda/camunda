@@ -254,11 +254,11 @@ public class ExporterRecordMapper {
 
     return new io.zeebe.broker.exporter.record.value.MessageRecordValueImpl(
         objectMapper,
-        asJson(record.getVariables()),
-        asMsgPackMap(record.getVariables()),
-        asString(record.getName()),
-        asString(record.getMessageId()),
-        asString(record.getCorrelationKey()),
+        asJson(record.getVariablesBuffer()),
+        asMsgPackMap(record.getVariablesBuffer()),
+        asString(record.getNameBuffer()),
+        asString(record.getMessageIdBuffer()),
+        asString(record.getCorrelationKeyBuffer()),
         record.getTimeToLive());
   }
 
@@ -269,8 +269,8 @@ public class ExporterRecordMapper {
 
     return new MessageSubscriptionRecordValueImpl(
         objectMapper,
-        asString(record.getMessageName()),
-        asString(record.getCorrelationKey()),
+        asString(record.getMessageNameBuffer()),
+        asString(record.getCorrelationKeyBuffer()),
         record.getWorkflowInstanceKey(),
         record.getElementInstanceKey());
   }
@@ -361,8 +361,8 @@ public class ExporterRecordMapper {
 
     return new VariableRecordValueImpl(
         objectMapper,
-        asString(record.getName()),
-        asJson(record.getValue()),
+        asString(record.getNameBuffer()),
+        asJson(record.getValueBuffer()),
         record.getScopeKey(),
         record.getWorkflowInstanceKey(),
         record.getWorkflowKey());

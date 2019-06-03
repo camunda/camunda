@@ -58,7 +58,7 @@ public class CloseMessageSubscriptionProcessor
 
     final boolean removed =
         subscriptionState.remove(
-            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName());
+            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
     if (removed) {
       streamWriter.appendFollowUpEvent(
           record.getKey(), MessageSubscriptionIntent.CLOSED, subscriptionRecord);
@@ -70,7 +70,7 @@ public class CloseMessageSubscriptionProcessor
           String.format(
               NO_SUBSCRIPTION_FOUND_MESSAGE,
               subscriptionRecord.getElementInstanceKey(),
-              BufferUtil.bufferAsString(subscriptionRecord.getMessageName())));
+              BufferUtil.bufferAsString(subscriptionRecord.getMessageNameBuffer())));
     }
 
     sideEffect.accept(this::sendAcknowledgeCommand);
@@ -80,6 +80,6 @@ public class CloseMessageSubscriptionProcessor
     return commandSender.closeWorkflowInstanceSubscription(
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
-        subscriptionRecord.getMessageName());
+        subscriptionRecord.getMessageNameBuffer());
   }
 }

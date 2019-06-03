@@ -44,6 +44,7 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
   private ActorControl actor;
   private final DeploymentDistributor deploymentDistributor;
   private int streamProcessorId;
+  private int partitionId;
 
   public DeploymentDistributeProcessor(
       final DeploymentsState deploymentsState,
@@ -56,6 +57,7 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
 
   @Override
   public void onOpen(final ReadonlyProcessingContext processingContext) {
+    partitionId = processingContext.getLogStream().getPartitionId();
     streamProcessorId = processingContext.getProducerId();
     actor = processingContext.getActor();
     actor.submit(this::reprocessPendingDeployments);
@@ -107,6 +109,7 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
     deploymentRecord.wrap(buffer);
     final RecordMetadata recordMetadata = new RecordMetadata();
     recordMetadata
+        .partitionId(partitionId)
         .intent(DeploymentIntent.DISTRIBUTED)
         .valueType(ValueType.DEPLOYMENT)
         .recordType(RecordType.EVENT);
