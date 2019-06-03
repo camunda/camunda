@@ -41,11 +41,11 @@ public class JobBatchRecordStream
   }
 
   public JobBatchRecordStream withTimeout(final Duration timeout) {
-    return valueFilter(v -> timeout.equals(v.getTimeout()));
+    return valueFilter(v -> timeout.equals(v.getTimeoutDuration()));
   }
 
   public JobBatchRecordStream withTimeout(final long timeout) {
-    return valueFilter(v -> Duration.ofMillis(timeout).equals(v.getTimeout()));
+    return valueFilter(v -> Duration.ofMillis(timeout).equals(v.getTimeoutDuration()));
   }
 
   public JobBatchRecordStream withMaxJobsToActivate(final int maxJobsToActivate) {

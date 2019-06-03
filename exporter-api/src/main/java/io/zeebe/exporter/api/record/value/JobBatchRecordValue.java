@@ -36,7 +36,7 @@ public interface JobBatchRecordValue extends RecordValue {
    *     exceeded, it can happen that the job is handed to another worker and the work is performed
    *     twice.
    */
-  Duration getTimeout();
+  Duration getTimeoutDuration();
 
   /** @return the number of jobs to handle */
   int getMaxJobsToActivate();

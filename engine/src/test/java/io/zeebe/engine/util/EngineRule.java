@@ -18,6 +18,7 @@
 package io.zeebe.engine.util;
 
 import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,21 +31,30 @@ import io.zeebe.engine.processor.workflow.message.command.PartitionCommandSender
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMessageHandler;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
@@ -133,6 +143,40 @@ public class EngineRule extends ExternalResource {
         .collect(Collectors.toList());
   }
 
+  public ControlledActorClock getClock() {
+    return environmentRule.getClock();
+  }
+
+  public Record<DeploymentRecordValue> deploy(final BpmnModelInstance modelInstance) {
+    final DeploymentRecord deploymentRecord = new DeploymentRecord();
+    deploymentRecord
+        .resources()
+        .add()
+        .setResourceName(wrapString("process.bpmn"))
+        .setResource(wrapString(Bpmn.convertToString(modelInstance)))
+        .setResourceType(ResourceType.BPMN_XML);
+
+    final long position = environmentRule.writeCommand(DeploymentIntent.CREATE, deploymentRecord);
+
+    final Record<DeploymentRecordValue> deploymentOnPartitionOne =
+        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
+            .withSourceRecordPosition(position)
+            .withPartitionId(PARTITION_ID)
+            .getFirst();
+
+    forEachPartition(
+        partitionId ->
+            RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
+                .withPartitionId(partitionId)
+                .withRecordKey(deploymentOnPartitionOne.getKey())
+                .getFirst());
+
+    return RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+        .withPartitionId(PARTITION_ID)
+        .withRecordKey(deploymentOnPartitionOne.getKey())
+        .getFirst();
+  }
+
   public DeploymentClient deployment() {
     return new DeploymentClient(environmentRule, this::forEachPartition);
   }
@@ -147,6 +191,20 @@ public class EngineRule extends ExternalResource {
 
   public VariableClient variables() {
     return new VariableClient(environmentRule);
+  }
+
+  public long completeJob(long jobKey, DirectBuffer variables) {
+    final JobRecord jobRecord = new JobRecord().setVariables(variables);
+    return environmentRule.writeCommand(jobKey, JobIntent.COMPLETE, jobRecord);
+  }
+
+  public Record<JobRecordValue> completeJobAndWait(long jobKey, DirectBuffer variables) {
+    final long position = completeJob(jobKey, variables);
+    return RecordingExporter.jobRecords()
+        .filter(r -> r.getPosition() > position)
+        .withRecordKey(jobKey)
+        .withIntent(JobIntent.COMPLETED)
+        .getFirst();
   }
 
   public JobActivationClient jobs() {

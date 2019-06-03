@@ -102,15 +102,15 @@ public class ActivateJobsStub
 
     final JobBatchRecord response = new JobBatchRecord();
     response.setMaxJobsToActivate(requestDto.getMaxJobsToActivate());
-    response.setWorker(requestDto.getWorker());
-    response.setType(requestDto.getType());
+    response.setWorker(requestDto.getWorkerBuffer());
+    response.setType(requestDto.getTypeBuffer());
     response.setTimeout(requestDto.getTimeout());
     addJobs(
         response,
         partitionId,
         requestDto.getMaxJobsToActivate(),
-        requestDto.getType(),
-        requestDto.getWorker());
+        requestDto.getTypeBuffer(),
+        requestDto.getWorkerBuffer());
 
     return new BrokerResponse<>(
         response, partitionId, Protocol.encodePartitionId(partitionId, JOB_BATCH_KEY));

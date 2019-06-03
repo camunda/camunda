@@ -15,6 +15,8 @@
  */
 package io.zeebe.protocol.impl.record.value.job;
 
+import io.zeebe.exporter.api.record.value.JobBatchRecordValue;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
@@ -25,9 +27,14 @@ import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 
-public class JobBatchRecord extends UnifiedRecordValue {
+public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecordValue {
 
   private final StringProperty typeProp = new StringProperty("type");
   private final StringProperty workerProp = new StringProperty("worker", "");
@@ -51,7 +58,7 @@ public class JobBatchRecord extends UnifiedRecordValue {
         .declareProperty(truncatedProp);
   }
 
-  public DirectBuffer getType() {
+  public DirectBuffer getTypeBuffer() {
     return typeProp.getValue();
   }
 
@@ -70,7 +77,7 @@ public class JobBatchRecord extends UnifiedRecordValue {
     return this;
   }
 
-  public DirectBuffer getWorker() {
+  public DirectBuffer getWorkerBuffer() {
     return workerProp.getValue();
   }
 
@@ -98,10 +105,6 @@ public class JobBatchRecord extends UnifiedRecordValue {
     return this;
   }
 
-  public int getMaxJobsToActivate() {
-    return maxJobsToActivateProp.getValue();
-  }
-
   public JobBatchRecord setMaxJobsToActivate(int maxJobsToActivate) {
     maxJobsToActivateProp.setValue(maxJobsToActivate);
     return this;
@@ -125,6 +128,42 @@ public class JobBatchRecord extends UnifiedRecordValue {
   }
 
   public boolean getTruncated() {
+    return truncatedProp.getValue();
+  }
+
+  @Override
+  public String getType() {
+    return BufferUtil.bufferAsString(typeProp.getValue());
+  }
+
+  @Override
+  public String getWorker() {
+    return BufferUtil.bufferAsString(workerProp.getValue());
+  }
+
+  @Override
+  public Duration getTimeoutDuration() {
+    return Duration.ofMillis(timeoutProp.getValue());
+  }
+
+  public int getMaxJobsToActivate() {
+    return maxJobsToActivateProp.getValue();
+  }
+
+  @Override
+  public List<Long> getJobKeys() {
+    return StreamSupport.stream(jobKeysProp.spliterator(), false)
+        .map(LongValue::getValue)
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<JobRecordValue> getJobs() {
+    return StreamSupport.stream(jobsProp.spliterator(), false).collect(Collectors.toList());
+  }
+
+  @Override
+  public boolean isTruncated() {
     return truncatedProp.getValue();
   }
 }

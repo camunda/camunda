@@ -71,14 +71,16 @@ public class JobActivationClient {
     return this;
   }
 
-  public Record<JobBatchRecordValue> activate() {
-    final long position =
-        environmentRule.writeCommandOnPartition(
-            partitionId, JobBatchIntent.ACTIVATE, jobBatchRecord);
-
+  public Record<JobBatchRecordValue> activateAndWait() {
+    final long position = activate();
     return RecordingExporter.jobBatchRecords()
         .withIntent(JobBatchIntent.ACTIVATED)
         .withSourceRecordPosition(position)
         .getFirst();
+  }
+
+  public long activate() {
+    return environmentRule.writeCommandOnPartition(
+        partitionId, JobBatchIntent.ACTIVATE, jobBatchRecord);
   }
 }
