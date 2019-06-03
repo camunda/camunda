@@ -203,6 +203,15 @@ public class EngineRule extends ExternalResource {
         .getFirst();
   }
 
+  public Record<MessageRecordValue> publishMessage(
+      String correlationKey, Function<MessageRecord, MessageRecord> transformer) {
+    return publishMessage(
+        SubscriptionUtil.getSubscriptionPartitionId(
+            BufferUtil.wrapString(correlationKey), partitionCount),
+        correlationKey,
+        transformer);
+  }
+
   public Record<MessageRecordValue> publishMessage(String messageName, String correlationKey) {
     return publishMessage(
         SubscriptionUtil.getSubscriptionPartitionId(
@@ -224,12 +233,20 @@ public class EngineRule extends ExternalResource {
 
   public Record<MessageRecordValue> publishMessage(
       int partitionId, String messageName, String correlationKey, DirectBuffer variables) {
+    return publishMessage(
+        partitionId,
+        correlationKey,
+        (messageRecord) ->
+            messageRecord
+                .setName(messageName)
+                .setVariables(variables)
+                .setTimeToLive(DEFAULT_MSG_TTL.toMillis()));
+  }
+
+  public Record<MessageRecordValue> publishMessage(
+      int partitionId, String correlationKey, Function<MessageRecord, MessageRecord> transformer) {
     final MessageRecord messageRecord =
-        new MessageRecord()
-            .setName(messageName)
-            .setCorrelationKey(correlationKey)
-            .setVariables(variables)
-            .setTimeToLive(DEFAULT_MSG_TTL.toMillis());
+        transformer.apply(new MessageRecord().setCorrelationKey(correlationKey));
 
     environmentRule.writeCommandOnPartition(partitionId, MessageIntent.PUBLISH, messageRecord);
 
