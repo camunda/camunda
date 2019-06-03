@@ -53,7 +53,7 @@ public class OpenWorkflowInstanceSubscriptionProcessor
     final WorkflowInstanceSubscriptionRecord subscriptionRecord = record.getValue();
     final WorkflowInstanceSubscription subscription =
         subscriptionState.getSubscription(
-            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName());
+            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
 
     if (subscription != null && subscription.isOpening()) {
 
@@ -64,7 +64,8 @@ public class OpenWorkflowInstanceSubscriptionProcessor
           record.getKey(), WorkflowInstanceSubscriptionIntent.OPENED, subscriptionRecord);
 
     } else {
-      final String messageName = BufferUtil.bufferAsString(subscriptionRecord.getMessageName());
+      final String messageName =
+          BufferUtil.bufferAsString(subscriptionRecord.getMessageNameBuffer());
 
       if (subscription == null) {
         streamWriter.appendRejection(

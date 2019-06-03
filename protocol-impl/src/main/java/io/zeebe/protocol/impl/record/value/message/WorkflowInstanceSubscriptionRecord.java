@@ -15,17 +15,21 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
+import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.WorkflowInstanceRelated;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.util.buffer.BufferUtil;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
-    implements WorkflowInstanceRelated {
+    implements WorkflowInstanceRelated, WorkflowInstanceSubscriptionRecordValue {
 
   private final IntegerProperty subscriptionPartitionIdProp =
       new IntegerProperty("subscriptionPartitionId");
@@ -83,7 +87,7 @@ public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  public DirectBuffer getMessageName() {
+  public DirectBuffer getMessageNameBuffer() {
     return messageNameProp.getValue();
   }
 
@@ -92,7 +96,7 @@ public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  public DirectBuffer getVariables() {
+  public DirectBuffer getVariablesBuffer() {
     return variablesProp.getValue();
   }
 
@@ -108,5 +112,20 @@ public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
   public WorkflowInstanceSubscriptionRecord setCloseOnCorrelate(boolean closeOnCorrelate) {
     this.closeOnCorrelateProp.setValue(closeOnCorrelate);
     return this;
+  }
+
+  @Override
+  public String getMessageName() {
+    return BufferUtil.bufferAsString(messageNameProp.getValue());
+  }
+
+  @Override
+  public String getVariables() {
+    return MsgPackConverter.convertToJson(variablesProp.getValue());
+  }
+
+  @Override
+  public Map<String, Object> getVariablesAsMap() {
+    throw new UnsupportedOperationException("not yet implemented");
   }
 }

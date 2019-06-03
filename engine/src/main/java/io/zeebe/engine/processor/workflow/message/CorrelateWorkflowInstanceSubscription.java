@@ -97,7 +97,8 @@ public final class CorrelateWorkflowInstanceSubscription
     final long elementInstanceKey = subscriptionRecord.getElementInstanceKey();
 
     final WorkflowInstanceSubscription subscription =
-        subscriptionState.getSubscription(elementInstanceKey, subscriptionRecord.getMessageName());
+        subscriptionState.getSubscription(
+            elementInstanceKey, subscriptionRecord.getMessageNameBuffer());
 
     if (subscription == null || subscription.isClosing()) {
       RejectionType type = RejectionType.NOT_FOUND;
@@ -118,7 +119,7 @@ public final class CorrelateWorkflowInstanceSubscription
           String.format(
               reason,
               subscriptionRecord.getElementInstanceKey(),
-              BufferUtil.bufferAsString(subscriptionRecord.getMessageName())));
+              BufferUtil.bufferAsString(subscriptionRecord.getMessageNameBuffer())));
       return;
     }
 
@@ -136,7 +137,7 @@ public final class CorrelateWorkflowInstanceSubscription
                 subscriptionRecord.getElementInstanceKey(),
                 eventKey,
                 subscription.getHandlerNodeId(),
-                record.getValue().getVariables());
+                record.getValue().getVariablesBuffer());
 
     if (isOccurred) {
       sideEffect.accept(this::sendAcknowledgeCommand);
@@ -157,7 +158,7 @@ public final class CorrelateWorkflowInstanceSubscription
           String.format(
               NO_EVENT_OCCURRED_MESSAGE,
               subscriptionRecord.getElementInstanceKey(),
-              BufferUtil.bufferAsString(subscriptionRecord.getMessageName())));
+              BufferUtil.bufferAsString(subscriptionRecord.getMessageNameBuffer())));
     }
   }
 
@@ -166,7 +167,7 @@ public final class CorrelateWorkflowInstanceSubscription
         subscriptionRecord.getSubscriptionPartitionId(),
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
-        subscriptionRecord.getMessageName());
+        subscriptionRecord.getMessageNameBuffer());
   }
 
   private boolean sendRejectionCommand() {
@@ -174,7 +175,7 @@ public final class CorrelateWorkflowInstanceSubscription
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getMessageKey(),
-        subscriptionRecord.getMessageName(),
+        subscriptionRecord.getMessageNameBuffer(),
         correlationKey);
   }
 }

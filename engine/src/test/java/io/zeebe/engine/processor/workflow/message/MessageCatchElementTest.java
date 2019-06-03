@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,15 +15,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.engine.message;
+package io.zeebe.engine.processor.workflow.message;
 
-import static io.zeebe.broker.engine.WorkflowAssert.assertMessageSubscription;
-import static io.zeebe.broker.engine.WorkflowAssert.assertWorkflowSubscription;
+import static io.zeebe.engine.processor.workflow.WorkflowAssert.assertMessageSubscription;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.test.EmbeddedBrokerConfigurator;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.engine.processor.workflow.WorkflowAssert;
+import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.MessageSubscriptionRecordValue;
@@ -36,16 +35,12 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -105,19 +100,9 @@ public class MessageCatchElementTest {
           .endEvent()
           .done();
 
-  public static EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule(EmbeddedBrokerConfigurator.setPartitionCount(PARTITION_COUNT));
-  public static ClientApiRule apiRule =
-      new ClientApiRule(0, PARTITION_COUNT, brokerRule::getAtomix);
+  @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule(PARTITION_COUNT);
 
-  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
-
-  @Rule
-  public RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
-
-  @Parameter(0)
-  public String elementType;
+  @Parameter public String elementType;
 
   @Parameter(1)
   public String bpmnProcessId;
@@ -170,8 +155,6 @@ public class MessageCatchElementTest {
 
   @BeforeClass
   public static void awaitCluster() {
-    apiRule.waitForPartition(PARTITION_COUNT);
-
     deploy(CATCH_EVENT_WORKFLOW);
     deploy(RECEIVE_TASK_WORKFLOW);
     deploy(BOUNDARY_EVENT_WORKFLOW);
@@ -179,19 +162,19 @@ public class MessageCatchElementTest {
   }
 
   private static void deploy(BpmnModelInstance modelInstance) {
-    apiRule.deployWorkflow(modelInstance);
+    ENGINE_RULE.deploy(modelInstance);
   }
 
   @Before
   public void init() {
     correlationKey = UUID.randomUUID().toString();
     workflowInstanceKey =
-        apiRule
-            .partitionClient()
+        ENGINE_RULE
             .createWorkflowInstance(
                 r ->
                     r.setBpmnProcessId(bpmnProcessId)
                         .setVariables(asMsgPack("orderId", correlationKey)))
+            .getValue()
             .getInstanceKey();
   }
 
@@ -224,7 +207,7 @@ public class MessageCatchElementTest {
     assertThat(workflowInstanceSubscription.getMetadata().getRecordType())
         .isEqualTo(RecordType.EVENT);
 
-    assertWorkflowSubscription(
+    WorkflowAssert.assertWorkflowSubscription(
         workflowInstanceKey, catchEventEntered, workflowInstanceSubscription);
   }
 
@@ -235,7 +218,7 @@ public class MessageCatchElementTest {
         getFirstElementRecord(enteredState);
 
     // when
-    apiRule.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
+    ENGINE_RULE.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
 
     // then
     final Record<WorkflowInstanceSubscriptionRecordValue> subscription =
@@ -245,7 +228,7 @@ public class MessageCatchElementTest {
         .isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
     assertThat(subscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
 
-    assertWorkflowSubscription(
+    WorkflowAssert.assertWorkflowSubscription(
         workflowInstanceKey, "{\"foo\":\"bar\"}", catchEventEntered, subscription);
   }
 
@@ -256,7 +239,7 @@ public class MessageCatchElementTest {
         getFirstElementRecord(enteredState);
 
     // when
-    apiRule.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
+    ENGINE_RULE.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
 
     // then
     final Record<MessageSubscriptionRecordValue> subscription =
@@ -279,7 +262,7 @@ public class MessageCatchElementTest {
         .await();
 
     // when
-    apiRule.cancelWorkflowInstance(workflowInstanceKey);
+    ENGINE_RULE.cancelWorkflowInstance(workflowInstanceKey);
 
     // then
     final Record<MessageSubscriptionRecordValue> messageSubscription =
@@ -301,7 +284,7 @@ public class MessageCatchElementTest {
         getFirstElementRecord(enteredState);
 
     // when
-    apiRule.cancelWorkflowInstance(workflowInstanceKey);
+    ENGINE_RULE.cancelWorkflowInstance(workflowInstanceKey);
 
     // then
     final Record<WorkflowInstanceSubscriptionRecordValue> subscription =
@@ -324,7 +307,7 @@ public class MessageCatchElementTest {
         .await();
 
     // when
-    apiRule.publishMessage(MESSAGE_NAME, correlationKey);
+    ENGINE_RULE.publishMessage(MESSAGE_NAME, correlationKey);
 
     // then
     assertThat(
