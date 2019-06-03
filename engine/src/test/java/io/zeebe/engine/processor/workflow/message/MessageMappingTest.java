@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,11 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.engine.message;
+package io.zeebe.engine.processor.workflow.message;
 
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.VariableRecordValue;
@@ -31,17 +31,13 @@ import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.protocol.intent.VariableIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -119,14 +115,7 @@ public class MessageMappingTest {
     };
   }
 
-  public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
-
-  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
-
-  @Rule
-  public RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
+  @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule();
 
   private String correlationKey;
 
@@ -141,16 +130,16 @@ public class MessageMappingTest {
     final long workflowKey = deployWorkflowWithMapping(e -> {});
 
     final long workflowInstanceKey =
-        apiRule
-            .partitionClient()
+        ENGINE_RULE
             .createWorkflowInstance(
                 r ->
                     r.setKey(workflowKey)
                         .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)))
+            .getValue()
             .getInstanceKey();
 
     // when
-    apiRule.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
+    ENGINE_RULE.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
 
     // then
     final Record<VariableRecordValue> variableEvent =
@@ -170,16 +159,16 @@ public class MessageMappingTest {
     final long workflowKey = deployWorkflowWithMapping(e -> {});
 
     final long workflowInstanceKey =
-        apiRule
-            .partitionClient()
+        ENGINE_RULE
             .createWorkflowInstance(
                 r ->
                     r.setKey(workflowKey)
                         .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)))
+            .getValue()
             .getInstanceKey();
 
     // when
-    apiRule.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
+    ENGINE_RULE.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
 
     // then
     final Record<VariableRecordValue> variableEvent =
@@ -198,16 +187,16 @@ public class MessageMappingTest {
     // given
     final long workflowKey = deployWorkflowWithMapping(e -> e.zeebeOutput("foo", MESSAGE_NAME));
     final long workflowInstanceKey =
-        apiRule
-            .partitionClient()
+        ENGINE_RULE
             .createWorkflowInstance(
                 r ->
                     r.setKey(workflowKey)
                         .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)))
+            .getValue()
             .getInstanceKey();
 
     // when
-    apiRule.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
+    ENGINE_RULE.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
 
     // then
     final Record<VariableRecordValue> variableEvent =
@@ -233,8 +222,8 @@ public class MessageMappingTest {
     } else {
       c.accept(((ReceiveTask) element).builder());
     }
-    return apiRule
-        .deployWorkflow(modifiedWorkflow)
+    return ENGINE_RULE
+        .deploy(modifiedWorkflow)
         .getValue()
         .getDeployedWorkflows()
         .get(0)

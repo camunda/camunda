@@ -153,21 +153,22 @@ public class EngineRule extends ExternalResource {
 
     final long position = environmentRule.writeCommand(DeploymentIntent.CREATE, deploymentRecord);
 
-    final Record<DeploymentRecordValue> firstCreated =
+    final Record<DeploymentRecordValue> deploymentOnPartitionOne =
         RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
             .withSourceRecordPosition(position)
+            .withPartitionId(PARTITION_ID)
             .getFirst();
 
     forEachPartition(
         partitionId ->
             RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
                 .withPartitionId(partitionId)
-                .withRecordKey(firstCreated.getKey())
+                .withRecordKey(deploymentOnPartitionOne.getKey())
                 .getFirst());
 
     return RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
         .withPartitionId(PARTITION_ID)
-        .withRecordKey(firstCreated.getKey())
+        .withRecordKey(deploymentOnPartitionOne.getKey())
         .getFirst();
   }
 
