@@ -32,6 +32,7 @@ import org.camunda.optimize.data.generation.generators.client.dto.TaskDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,10 +44,8 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -58,7 +57,6 @@ public class SimpleEngineClient {
   private CloseableHttpClient client;
   private String engineRestEndpoint;
   private ObjectMapper objectMapper = new ObjectMapper();
-  private HashSet<String> tasksToNotComplete = new HashSet<>();
 
 
   public SimpleEngineClient(String engineRestEndpoint) {
@@ -334,77 +332,51 @@ public class SimpleEngineClient {
     }
   }
 
-  public boolean finishAllUserTasks() {
-    HttpGet get = new HttpGet(getTaskListUri());
-    return executeFinishAllUserTasks(client, get);
-  }
-
-  private boolean executeFinishAllUserTasks(CloseableHttpClient client, HttpGet get) {
-
+  public List<TaskDto> getAllTasks(long tasksToFetch) {
+    HttpGet get = new HttpGet(getTaskListUri(tasksToFetch));
+    List<TaskDto> tasks = new ArrayList<>();
     try (CloseableHttpResponse response = client.execute(get)) {
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      List<TaskDto> tasks = objectMapper.readValue(responseString, new TypeReference<List<TaskDto>>() {
+      tasks = objectMapper.readValue(responseString, new TypeReference<List<TaskDto>>() {
       });
+    } catch (IOException e) {
+      logger.error("Error while trying to fetch the user task!!", e);
+    }
+    return tasks;
+  }
 
-      if (allTasksCompleted(tasks)) {
-        return true;
-      }
 
-      if (tasks.size() != 0)
-        logger.info(tasks.size() - tasksToNotComplete.size() + " user tasks left to complete");
-
-      for (TaskDto task : tasks) {
-        claimAndCompleteUserTask(client, task);
-      }
-      return false;
-    } catch (Exception e) {
-      logger.error("Error while trying to finish the user task!!", e);
-      return false;
+  public long getAllTasksCount() {
+    HttpGet get = new HttpGet(getTasksCountListUri());
+    try (CloseableHttpResponse response = client.execute(get)) {
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      JsonNode jsonNode = objectMapper.readValue(responseString, JsonNode.class);
+      return jsonNode.get("count").asLong();
+    } catch (IOException e) {
+      logger.error("Error while trying to fetch the user task!", e);
+      throw new OptimizeRuntimeException();
     }
   }
 
-  private boolean allTasksCompleted(List<TaskDto> tasks) {
-    return tasks.size() != 0 && tasks.size() == tasksToNotComplete.size() &&
-    tasks.stream().allMatch(t -> tasksToNotComplete.contains(t.getId()));
+  private String getTaskListUri(long tasksToFetch) {
+    return engineRestEndpoint + "/task?maxResults=" + String.valueOf(tasksToFetch);
   }
 
-
-  private String getTaskListUri() {
-    return engineRestEndpoint + "/task?maxResults=1000";
+  private String getTasksCountListUri() {
+    return engineRestEndpoint + "/task/count";
   }
 
   private String getTaskIdentityLinksUri(String taskId) {
     return engineRestEndpoint + "/task/" + taskId + "/identity-links";
   }
 
-
-  private void claimAndCompleteUserTask(CloseableHttpClient client, TaskDto task) {
-    Random random = new Random();
-    try {
-      addOrRemoveIdentityLinks(client, task);
-      claimTask(client, task);
-
-      if (random.nextDouble() > 0.95) {
-        unclaimTask(client, task);
-      } else if (!isTaskToComplete(task.getId())) {
-        if (random.nextDouble() < 0.97) {
-          completeUserTask(client, task);
-        } else {
-          setDoNotCompleteFlag(task);
-        }
-      }
-    } catch (Exception e) {
-      logger.error("Could not claim user task!", e);
-    }
-  }
-
-  private void unclaimTask(CloseableHttpClient client, TaskDto task) throws IOException {
+  public void unclaimTask(TaskDto task) throws IOException {
     HttpPost unclaimPost = new HttpPost(getUnclaimTaskUri(task.getId()));
     CloseableHttpResponse response = client.execute(unclaimPost);
     closeResponse(response);
   }
 
-  private void claimTask(CloseableHttpClient client, TaskDto task) throws IOException {
+  public void claimTask(TaskDto task) throws IOException {
     HttpPost claimPost = new HttpPost(getClaimTaskUri(task.getId()));
     claimPost.setEntity(new StringEntity("{ \"userId\" : " + "\"demo\"" + "}"));
     claimPost.addHeader("Content-Type", "application/json");
@@ -417,7 +389,7 @@ public class SimpleEngineClient {
     closeResponse(claimResponse);
   }
 
-  private void addOrRemoveIdentityLinks(CloseableHttpClient client, TaskDto task) throws IOException {
+  public void addOrRemoveIdentityLinks(TaskDto task) throws IOException {
     HttpGet identityLinksGet = new HttpGet(getTaskIdentityLinksUri(task.getId()));
     CloseableHttpResponse getLinksResponse = client.execute(identityLinksGet);
     String content = EntityUtils.toString(getLinksResponse.getEntity());
@@ -440,15 +412,7 @@ public class SimpleEngineClient {
     }
   }
 
-  private void setDoNotCompleteFlag(TaskDto task) throws IOException {
-    tasksToNotComplete.add(task.getId());
-  }
-
-  private Boolean isTaskToComplete(String taskId) {
-    return tasksToNotComplete.contains(taskId);
-  }
-
-  private void completeUserTask(CloseableHttpClient client, TaskDto task) {
+  public void completeUserTask(TaskDto task) {
     CloseableHttpResponse response = null;
     try {
       HttpPost completePost = new HttpPost(getCompleteTaskUri(task.getId()));
