@@ -49,9 +49,8 @@ public abstract class TimestampBasedImportMediator<T extends TimestampBasedImpor
       .build();
 
     if (timestampNeedsToBeSet) {
-      importIndexHandler.updatePendingTimestampOfLastEntity(timestamp);
-
       importService.executeImport(allEntities, () -> importIndexHandler.updateTimestampOfLastEntity(timestamp));
+      importIndexHandler.updatePendingTimestampOfLastEntity(timestamp);
     } else if (!entitiesLastTimestamp.isEmpty()) {
       importService.executeImport(allEntities);
     }

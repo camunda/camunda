@@ -27,6 +27,7 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.DecisionInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +60,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
         addElasticsearchImportJobToQueue(elasticsearchImportJob);
       } catch (OptimizeDecisionDefinitionFetchException e) {
         log.debug("Required Decision Definition not imported yet, skipping current decision instance import cycle.", e);
+        throw new OptimizeRuntimeException(e.getMessage(), e);
       }
     }
   }

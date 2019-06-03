@@ -51,8 +51,8 @@ public class DecisionDefinitionEngineImportMediator
     List<DecisionDefinitionEngineDto> entities = engineEntityFetcher.fetchDecisionDefinitions(page);
     List<DecisionDefinitionEngineDto> newEntities = importIndexHandler.filterNewDefinitions(entities);
     if (!newEntities.isEmpty()) {
-      importIndexHandler.addImportedDefinitions(newEntities);
       definitionImportService.executeImport(newEntities);
+      importIndexHandler.addImportedDefinitions(newEntities);
     }
     return !newEntities.isEmpty();
   }

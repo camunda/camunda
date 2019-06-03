@@ -47,8 +47,8 @@ public class TenantImportMediator extends BackoffImportMediator<TenantImportInde
     final List<TenantEngineDto> entities = engineEntityFetcher.fetchTenants(page);
     final List<TenantEngineDto> newEntities = importIndexHandler.filterNewOrChangedTenants(entities);
     if (!newEntities.isEmpty()) {
-      importIndexHandler.addImportedTenants(newEntities);
       tenantImportService.executeImport(newEntities);
+      importIndexHandler.addImportedTenants(newEntities);
     }
     return !newEntities.isEmpty();
   }
