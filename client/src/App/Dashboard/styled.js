@@ -7,16 +7,19 @@
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
+const HEADER_HEIGHT = 56;
+const METRIC_PANEL_HEIGHT = 234;
+
 export const Dashboard = styled.main`
   padding: 0 20px 0;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 56px);
+  height: calc(100vh - ${HEADER_HEIGHT}px);
 `;
 
 export const TitleWrapper = styled.div`
   display: flex;
-  min-height: 1px;
+  height: calc(100vh - ${HEADER_HEIGHT + METRIC_PANEL_HEIGHT}px);
 `;
 
 export const Tile = themed(styled.div`
@@ -67,7 +70,7 @@ export const TileTitle = themed(styled.h2`
 
 export const TileContent = styled.div`
   position: relative;
-  overflow-y: scroll;
+  overflow-y: auto;
   flex: 1;
 
   // these styles are required to fully display focus borders

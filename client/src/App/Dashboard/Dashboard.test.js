@@ -129,9 +129,7 @@ describe('Dashboard', () => {
         .find(EmptyIncidents);
 
       expect(EmptyIncidentsNode).toExist();
-      expect(EmptyIncidentsNode.dive().text()).toContain(
-        'There are no Workflows.'
-      );
+      expect(EmptyIncidentsNode.dive().text()).toBe('There are no Workflows.');
     });
   });
 
@@ -167,8 +165,8 @@ describe('Dashboard', () => {
         .find(EmptyIncidents);
 
       expect(EmptyIncidentsNode).toExist();
-      expect(EmptyIncidentsNode.dive().text()).toContain(
-        'There are no Workflows.'
+      expect(EmptyIncidentsNode.dive().text()).toBe(
+        'There are no Instances with Incident.'
       );
     });
   });

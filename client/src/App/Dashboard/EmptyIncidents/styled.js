@@ -10,6 +10,8 @@ import {ReactComponent as Check} from 'modules/components/Icon/check.svg';
 import {ReactComponent as Warning} from 'modules/components/Icon/warning-message-icon.svg';
 
 export const EmptyIncidents = themed(styled.div`
+  margin-left: -4px;
+  margin-top: -4px;
   position: absolute;
   height: 100%;
   width: 100%;
@@ -22,6 +24,7 @@ export const EmptyIncidents = themed(styled.div`
     dark: Colors.uiDark04,
     light: Colors.uiLight05
   })};
+  padding-bottom: 188px;
 `);
 
 const errorStyle = css`
@@ -63,4 +66,5 @@ export const WarningIcon = styled(Warning)`
   height: 18px;
   fill: ${Colors.incidentsAndErrors};
   margin-right: 15px;
+  margin-bottom: 6px;
 `;
