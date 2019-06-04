@@ -9,85 +9,151 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
 import org.camunda.optimize.data.generation.generators.client.dto.TaskDto;
 
-import java.io.IOException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import static java.util.concurrent.CompletableFuture.runAsync;
 
 @Slf4j
 public class UserTaskCompleter {
 
-  private static final int TASKS_TO_FETCH = 1000;
+  private static final int TASKS_TO_FETCH = 10_000;
+  private static final int BACKOFF_SECONDS = 5;
+  private static final Random RANDOM = new Random();
+  private static final OffsetDateTime OFFSET_DATE_TIME_OF_EPOCH = OffsetDateTime.from(
+    Instant.EPOCH.atZone(ZoneId.of("UTC"))
+  );
+
+  private ExecutorService taskExecutorService;
   private SimpleEngineClient engineClient;
-  private CountDownLatch finished = new CountDownLatch(1);
-  private Set<String> tasksToNotComplete = new HashSet<>();
+  private boolean shouldShutdown = false;
+  private CountDownLatch finished = new CountDownLatch(0);
+  private OffsetDateTime currentCreationDateFilter = OFFSET_DATE_TIME_OF_EPOCH;
+  private Set<String> currentIterationHandledTaskIds = new HashSet<>();
 
   public UserTaskCompleter(SimpleEngineClient engineClient) {
     this.engineClient = engineClient;
   }
 
-  public void startUserTaskCompletion() {
-    Thread completerThread = new Thread(() -> {
-      boolean allUserTasksCompleted = false;
-      while (!allUserTasksCompleted) {
-        List<TaskDto> tasks = engineClient.getAllTasks(TASKS_TO_FETCH + tasksToNotComplete.size());
+  public synchronized void startUserTaskCompletion() {
+    if (finished == null || finished.getCount() == 0) {
+      shouldShutdown = false;
+      finished = new CountDownLatch(1);
+      taskExecutorService = Executors.newFixedThreadPool(50);
 
-        allUserTasksCompleted = allTasksCompleted(tasks);
+      final Thread completerThread = new Thread(() -> {
+        boolean allUserTasksHandled = false;
+        do {
+          if (isDateFilterInBackOffWindow()) {
+            // we back off from tip of time to ensure to not miss pending writes and to batch up while data is generated
+            try {
+              Thread.sleep(BACKOFF_SECONDS * 1000);
+            } catch (InterruptedException e) {
+              log.debug("Was Interrupted while sleeping");
+            }
+            continue;
+          }
 
-        if (tasks.size() != 0) {
-          log.info(engineClient.getAllTasksCount() - tasksToNotComplete.size() + " user tasks left to complete");
-        }
+          final OffsetDateTime previousCreationDateFilter = currentCreationDateFilter;
+          final Set<String> previousHandledTaskIds = currentIterationHandledTaskIds;
+          try {
+            final List<TaskDto> lastTimestampTasks =
+              engineClient.getActiveTasksCreatedOn(currentCreationDateFilter);
+            handleTasksInParallel(lastTimestampTasks);
 
-        for (TaskDto task : tasks) {
-          claimAndCompleteUserTask(task);
-        }
-      }
-      finished.countDown();
-    });
-    completerThread.start();
-  }
+            final List<TaskDto> currentTasksPage =
+              engineClient.getActiveTasksCreatedAfter(currentCreationDateFilter, TASKS_TO_FETCH);
+            allUserTasksHandled = currentTasksPage.size() == 0;
+            if (!allUserTasksHandled) {
+              currentCreationDateFilter = currentTasksPage.get(currentTasksPage.size() - 1).getCreated();
+              currentIterationHandledTaskIds = new HashSet<>();
+              handleTasksInParallel(currentTasksPage);
 
-  private void claimAndCompleteUserTask(TaskDto task) {
-    Random random = new Random();
-    try {
-      engineClient.addOrRemoveIdentityLinks(task);
-      engineClient.claimTask(task);
+              log.info("Handled page of {} tasks", currentTasksPage.size());
+              log.info(
+                engineClient.getAllActiveTasksCountCreatedAfter(currentCreationDateFilter) + " tasks left to complete"
+              );
+            }
+          } catch (Exception e) {
+            log.error("User Task batch failed with [{}], will be retried.", e.getMessage(), e);
 
-      if (random.nextDouble() > 0.95) {
-        engineClient.unclaimTask(task);
-      } else if (!isTaskToComplete(task.getId())) {
-        if (random.nextDouble() < 0.97) {
-          engineClient.completeUserTask(task);
-        } else {
-          setDoNotCompleteFlag(task);
-        }
-      }
-    } catch (Exception e) {
-      log.error("Could not claim user task!", e);
+            currentCreationDateFilter = previousCreationDateFilter;
+            currentIterationHandledTaskIds = previousHandledTaskIds;
+          }
+        } while (!allUserTasksHandled || !shouldShutdown);
+
+        taskExecutorService.shutdown();
+
+        finished.countDown();
+      });
+      completerThread.start();
     }
   }
 
-  private Boolean isTaskToComplete(String taskId) {
-    return tasksToNotComplete.contains(taskId);
+  public synchronized void shutdown() {
+    this.shouldShutdown = true;
   }
 
-
-  private void setDoNotCompleteFlag(TaskDto task) throws IOException {
-    tasksToNotComplete.add(task.getId());
-  }
-
-  private boolean allTasksCompleted(List<TaskDto> tasks) {
-    return tasks.size() != 0 && tasks.size() == tasksToNotComplete.size() &&
-      tasks.stream().allMatch(t -> tasksToNotComplete.contains(t.getId()));
-  }
-
-  public void awaitUserTaskCompletion() {
+  public synchronized void awaitUserTaskCompletion(long timeout, TimeUnit unit) {
     try {
-      finished.await();
+      this.finished.await(timeout, unit);
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
   }
+
+  private boolean isDateFilterInBackOffWindow() {
+    return currentCreationDateFilter.compareTo(OffsetDateTime.now().minusSeconds(BACKOFF_SECONDS)) > 0;
+  }
+
+  private void handleTasksInParallel(final List<TaskDto> nextTasksPage) throws
+                                                                        InterruptedException,
+                                                                        ExecutionException {
+    final CompletableFuture[] taskFutures = nextTasksPage.stream()
+      .map(taskDto -> runAsync(() -> claimAndCompleteUserTask(taskDto), taskExecutorService))
+      .toArray(CompletableFuture[]::new);
+
+    CompletableFuture.allOf(taskFutures).get();
+  }
+
+  private void claimAndCompleteUserTask(TaskDto task) {
+    if (isUnhandledTask(task.getId())) {
+      try {
+        engineClient.addOrRemoveIdentityLinks(task);
+        engineClient.claimTask(task);
+
+        if (RANDOM.nextDouble() > 0.95) {
+          engineClient.unclaimTask(task);
+        } else {
+          if (RANDOM.nextDouble() < 0.97) {
+            engineClient.completeUserTask(task);
+          }
+        }
+
+        addHandledTaskId(task);
+      } catch (Exception e) {
+        log.error("Could not claim user task!", e);
+      }
+    }
+  }
+
+  private Boolean isUnhandledTask(String taskId) {
+    return !currentIterationHandledTaskIds.contains(taskId);
+  }
+
+  private void addHandledTaskId(TaskDto task) {
+    currentIterationHandledTaskIds.add(task.getId());
+  }
+
 }

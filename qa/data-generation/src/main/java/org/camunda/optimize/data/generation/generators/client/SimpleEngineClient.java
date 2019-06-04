@@ -10,6 +10,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
@@ -33,15 +36,18 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.camunda.optimize.service.util.mapper.CustomDeserializer;
+import org.camunda.optimize.service.util.mapper.CustomSerializer;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,10 +55,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-
+@Slf4j
 public class SimpleEngineClient {
 
-  private final Logger logger = LoggerFactory.getLogger(SimpleEngineClient.class);
+  // @formatter:off
+  private static final TypeReference<List<TaskDto>> TASK_LIST_TYPE_REFERENCE = new TypeReference<List<TaskDto>>() {};
+  private static final String ENGINE_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+  // @formatter:on
+  private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(ENGINE_DATE_FORMAT);
 
   private CloseableHttpClient client;
   private String engineRestEndpoint;
@@ -63,8 +73,12 @@ public class SimpleEngineClient {
     this.engineRestEndpoint = engineRestEndpoint;
     client = HttpClientBuilder.create().build();
     objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    SimpleDateFormat df = new SimpleDateFormat(ENGINE_DATE_FORMAT);
     objectMapper.setDateFormat(df);
+    final JavaTimeModule javaTimeModule = new JavaTimeModule();
+    objectMapper.registerModule(javaTimeModule);
+    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(DATE_TIME_FORMATTER));
+    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(DATE_TIME_FORMATTER));
   }
 
   public List<String> deployProcesses(BpmnModelInstance modelInstance, int nVersions) {
@@ -87,7 +101,7 @@ public class SimpleEngineClient {
   }
 
   public void cleanUpDeployments() {
-    logger.info("Starting deployments clean up");
+    log.info("Starting deployments clean up");
     HttpGet get = new HttpGet(getDeploymentUri());
     String responseString;
     List<DeploymentDto> result = null;
@@ -99,9 +113,9 @@ public class SimpleEngineClient {
         new TypeReference<List<DeploymentDto>>() {
         }
       );
-      logger.info("Fetched " + result.size() + " deployments");
+      log.info("Fetched " + result.size() + " deployments");
     } catch (IOException e) {
-      logger.error("Could fetch deployments from the Engine");
+      log.error("Could fetch deployments from the Engine");
     }
     if (result != null) {
       result.forEach((deployment) -> {
@@ -112,19 +126,19 @@ public class SimpleEngineClient {
             .build();
           delete.setURI(uri);
           client.execute(delete);
-          logger.info("Deleted deployment with id " + deployment.getId());
+          log.info("Deleted deployment with id " + deployment.getId());
         } catch (IOException | URISyntaxException e) {
-          logger.error("Could not delete deployment");
+          log.error("Could not delete deployment");
         }
       });
     }
-    logger.info("Deployment clean up finished");
+    log.info("Deployment clean up finished");
   }
 
   private String getProcessDefinitionId(DeploymentDto deployment) {
     List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(deployment);
     if (processDefinitions.size() != 1) {
-      logger.warn("Deployment should contain only one process definition!");
+      log.warn("Deployment should contain only one process definition!");
     }
     return processDefinitions.get(0).getId();
   }
@@ -137,7 +151,7 @@ public class SimpleEngineClient {
         .addParameter("deploymentId", deployment.getId())
         .build();
     } catch (URISyntaxException e) {
-      logger.error("Could not build uri!", e);
+      log.error("Could not build uri!", e);
     }
     get.setURI(uri);
     CloseableHttpResponse response = null;
@@ -151,7 +165,7 @@ public class SimpleEngineClient {
         }
       );
     } catch (Exception e) {
-      logger.error("Could not fetch all process definitions for given deployment!", e);
+      log.error("Could not fetch all process definitions for given deployment!", e);
     } finally {
       closeResponse(response);
     }
@@ -187,7 +201,7 @@ public class SimpleEngineClient {
       deployment = objectMapper.readValue(responseString, DeploymentDto.class);
       response.close();
     } catch (IOException e) {
-      logger.error("Error during deployment request! Could not deploy the given process model!", e);
+      log.error("Error during deployment request! Could not deploy the given process model!", e);
     } finally {
       closeResponse(response);
     }
@@ -213,7 +227,7 @@ public class SimpleEngineClient {
       deployment = objectMapper.readValue(responseString, DeploymentDto.class);
       response.close();
     } catch (IOException e) {
-      logger.error("Error during deployment request! Could not deploy the given dmn model!", e);
+      log.error("Error during deployment request! Could not deploy the given dmn model!", e);
     } finally {
       closeResponse(response);
     }
@@ -233,7 +247,7 @@ public class SimpleEngineClient {
                                      ". Reason: " + response.getStatusLine().getReasonPhrase());
       }
     } catch (Exception e) {
-      logger.error("Error during start of process instance!");
+      log.error("Error during start of process instance!");
       throw new RuntimeException(e);
     } finally {
       closeResponse(response);
@@ -316,7 +330,7 @@ public class SimpleEngineClient {
                                      + " instead");
       }
     } catch (Exception e) {
-      logger.error("Error while trying to correlate message!", e);
+      log.error("Error while trying to correlate message!", e);
     } finally {
       closeResponse(response);
     }
@@ -327,43 +341,67 @@ public class SimpleEngineClient {
       try {
         response.close();
       } catch (IOException e) {
-        logger.error("Can't close response", e);
+        log.error("Can't close response", e);
       }
     }
   }
 
-  public List<TaskDto> getAllTasks(long tasksToFetch) {
-    HttpGet get = new HttpGet(getTaskListUri(tasksToFetch));
+  public List<TaskDto> getActiveTasksCreatedAfter(final OffsetDateTime afterDateTime, final int limit) {
+    HttpGet get = new HttpGet(getTaskListCreatedAfterUri(limit, afterDateTime));
     List<TaskDto> tasks = new ArrayList<>();
     try (CloseableHttpResponse response = client.execute(get)) {
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      tasks = objectMapper.readValue(responseString, new TypeReference<List<TaskDto>>() {
-      });
+      tasks = objectMapper.readValue(responseString, TASK_LIST_TYPE_REFERENCE);
     } catch (IOException e) {
-      logger.error("Error while trying to fetch the user task!!", e);
+      log.error("Error while trying to fetch the user task!!", e);
+    }
+    return tasks;
+  }
+
+  public List<TaskDto> getActiveTasksCreatedOn(final OffsetDateTime creationDateTime) {
+    HttpGet get = new HttpGet(getTaskListCreatedOnUri(creationDateTime));
+    List<TaskDto> tasks = new ArrayList<>();
+    try (CloseableHttpResponse response = client.execute(get)) {
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      tasks = objectMapper.readValue(responseString, TASK_LIST_TYPE_REFERENCE);
+    } catch (IOException e) {
+      log.error("Error while trying to fetch the user task!!", e);
     }
     return tasks;
   }
 
 
-  public long getAllTasksCount() {
-    HttpGet get = new HttpGet(getTasksCountListUri());
+  public long getAllActiveTasksCountCreatedAfter(final OffsetDateTime afterDateTime) {
+    HttpGet get = new HttpGet(getActiveTasksCountListCreatedAfterUri(afterDateTime));
     try (CloseableHttpResponse response = client.execute(get)) {
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       JsonNode jsonNode = objectMapper.readValue(responseString, JsonNode.class);
       return jsonNode.get("count").asLong();
     } catch (IOException e) {
-      logger.error("Error while trying to fetch the user task!", e);
+      log.error("Error while trying to fetch the user task!", e);
       throw new OptimizeRuntimeException();
     }
   }
 
-  private String getTaskListUri(long tasksToFetch) {
-    return engineRestEndpoint + "/task?maxResults=" + String.valueOf(tasksToFetch);
+  private String getTaskListCreatedAfterUri(long limit, final OffsetDateTime createdAfter) {
+    return engineRestEndpoint + "/task?active=true&sortBy=created&sortOrder=asc" +
+      "&maxResults=" + limit +
+      "&createdAfter=" + serializeDateTimeToUrlEncodedString(createdAfter);
   }
 
-  private String getTasksCountListUri() {
-    return engineRestEndpoint + "/task/count";
+  private String getTaskListCreatedOnUri(final OffsetDateTime createdOn) {
+    return engineRestEndpoint + "/task" +
+      "?active=true&createdOn=" + serializeDateTimeToUrlEncodedString(createdOn);
+  }
+
+  @SneakyThrows
+  private String serializeDateTimeToUrlEncodedString(final OffsetDateTime createdAfter) {
+    return URLEncoder.encode(DATE_TIME_FORMATTER.format(createdAfter), StandardCharsets.UTF_8.name());
+  }
+
+  private String getActiveTasksCountListCreatedAfterUri(final OffsetDateTime createdAfter) {
+    return engineRestEndpoint + "/task/count?active=true"
+      + "&createdAfter=" + serializeDateTimeToUrlEncodedString(createdAfter);
   }
 
   private String getTaskIdentityLinksUri(String taskId) {
@@ -380,52 +418,46 @@ public class SimpleEngineClient {
     HttpPost claimPost = new HttpPost(getClaimTaskUri(task.getId()));
     claimPost.setEntity(new StringEntity("{ \"userId\" : " + "\"demo\"" + "}"));
     claimPost.addHeader("Content-Type", "application/json");
-    CloseableHttpResponse claimResponse = client.execute(claimPost);
-
-    if (claimResponse.getStatusLine().getStatusCode() != 204) {
-      throw new RuntimeException("Wrong error code when claiming user tasks!");
+    try (CloseableHttpResponse claimResponse = client.execute(claimPost)) {
+      if (claimResponse.getStatusLine().getStatusCode() != 204) {
+        throw new RuntimeException("Wrong error code when claiming user tasks!");
+      }
     }
-
-    closeResponse(claimResponse);
   }
 
   public void addOrRemoveIdentityLinks(TaskDto task) throws IOException {
     HttpGet identityLinksGet = new HttpGet(getTaskIdentityLinksUri(task.getId()));
-    CloseableHttpResponse getLinksResponse = client.execute(identityLinksGet);
-    String content = EntityUtils.toString(getLinksResponse.getEntity());
-    List<JsonNode> links = objectMapper.readValue(content, new TypeReference<List<JsonNode>>() {
-    });
+    try (CloseableHttpResponse getLinksResponse = client.execute(identityLinksGet)) {
+      String content = EntityUtils.toString(getLinksResponse.getEntity());
+      List<JsonNode> links = objectMapper.readValue(content, new TypeReference<List<JsonNode>>() {
+      });
 
-    closeResponse(getLinksResponse);
-    if (links.size() == 0) {
-      HttpPost candidatePost = new HttpPost(getTaskIdentityLinksUri(task.getId()));
-      candidatePost.setEntity(
-        new StringEntity("{\"userId\":\"demo\", \"type\":\"candidate\"}")
-      );
-      candidatePost.addHeader("Content-Type", "application/json");
-      client.execute(candidatePost);
-    } else {
-      HttpPost candidateDeletePost = new HttpPost(getTaskIdentityLinksUri(task.getId()) + "/delete");
-      candidateDeletePost.addHeader("Content-Type", "application/json");
-      candidateDeletePost.setEntity(new StringEntity(objectMapper.writeValueAsString(links.get(0))));
-      client.execute(candidateDeletePost);
+      if (links.size() == 0) {
+        HttpPost candidatePost = new HttpPost(getTaskIdentityLinksUri(task.getId()));
+        candidatePost.setEntity(
+          new StringEntity("{\"userId\":\"demo\", \"type\":\"candidate\"}")
+        );
+        candidatePost.addHeader("Content-Type", "application/json");
+        client.execute(candidatePost);
+      } else {
+        HttpPost candidateDeletePost = new HttpPost(getTaskIdentityLinksUri(task.getId()) + "/delete");
+        candidateDeletePost.addHeader("Content-Type", "application/json");
+        candidateDeletePost.setEntity(new StringEntity(objectMapper.writeValueAsString(links.get(0))));
+        client.execute(candidateDeletePost);
+      }
     }
   }
 
   public void completeUserTask(TaskDto task) {
-    CloseableHttpResponse response = null;
-    try {
-      HttpPost completePost = new HttpPost(getCompleteTaskUri(task.getId()));
-      completePost.setEntity(new StringEntity("{}"));
-      completePost.addHeader("Content-Type", "application/json");
-      response = client.execute(completePost);
+    HttpPost completePost = new HttpPost(getCompleteTaskUri(task.getId()));
+    completePost.setEntity(new StringEntity("{}", StandardCharsets.UTF_8));
+    completePost.addHeader("Content-Type", "application/json");
+    try (CloseableHttpResponse response = client.execute(completePost)) {
       if (response.getStatusLine().getStatusCode() != 204) {
         throw new RuntimeException("Wrong error code when completing user tasks!");
       }
     } catch (Exception e) {
-      logger.error("Could not complete user task!", e);
-    } finally {
-      closeResponse(response);
+      log.error("Could not complete user task!", e);
     }
   }
 

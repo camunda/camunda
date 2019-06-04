@@ -40,15 +40,13 @@ spec:
             resource: limits.cpu
       - name: TZ
         value: Europe/Berlin
-      - name: DOCKER_HOST
-        value: tcp://localhost:2375
     resources:
       limits:
-        cpu: 1
+        cpu: 4
         memory: 2Gi
       requests:
-        cpu: 100m
-        memory: 500Mi
+        cpu: 4
+        memory: 1Gi
     volumeMounts:
       - name: cambpm-storage
         mountPath: /cambpm-storage
@@ -96,10 +94,10 @@ spec:
         value: "-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m"
     resources:
       limits:
-        cpu: 2 
+        cpu: 4 
         memory: 3Gi
       requests:
-        cpu: 1
+        cpu: 2
         memory: 1Gi
     volumeMounts:
       - name: cambpm-storage
@@ -147,7 +145,7 @@ pipeline {
         stage('Prepare') {
             steps {
                 git url: 'git@github.com:camunda/camunda-optimize',
-                        branch: "master",
+                        branch: "$BRANCH",
                         credentialsId: 'camunda-jenkins-github-ssh',
                         poll: false
                 container('maven') {
