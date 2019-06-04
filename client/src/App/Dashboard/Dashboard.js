@@ -75,9 +75,22 @@ class Dashboard extends Component {
     }
   };
 
+  renderIncidentsList = (incidentsData, type) => {
+    return type === 'workflow' ? (
+      <InstancesByWorkflow incidents={incidentsData.data} />
+    ) : (
+      <IncidentsByError incidents={incidentsData.data} />
+    );
+  };
+
   render() {
-    const {data} = this.state.counts;
-    const {active, running, withIncidents} = data;
+    const {
+      incidents: {byWorkflow, byError},
+      counts: {
+        data: {active, running, withIncidents}
+      }
+    } = this.state;
+
     return (
       <Fragment>
         <Header
@@ -98,29 +111,20 @@ class Dashboard extends Component {
               <Styled.TileTitle>Instances by Workflow</Styled.TileTitle>
               <Styled.TileContent>
                 {this.state.isDataLoaded &&
-                  this.renderEmptyList(
-                    this.state.incidents.byWorkflow,
-                    'workflow'
-                  )}
+                  this.renderEmptyList(byWorkflow, 'workflow')}
                 {this.state.isDataLoaded &&
-                  Boolean(this.state.incidents.byWorkflow.data.length) && (
-                    <InstancesByWorkflow
-                      incidents={this.state.incidents.byWorkflow.data}
-                    />
-                  )}
+                  Boolean(byWorkflow.data.length) &&
+                  this.renderIncidentsList(byWorkflow, 'workflow')}
               </Styled.TileContent>
             </Styled.Tile>
             <Styled.Tile data-test="incidents-byError">
               <Styled.TileTitle>Incidents by Error Message</Styled.TileTitle>
               <Styled.TileContent>
                 {this.state.isDataLoaded &&
-                  this.renderEmptyList(this.state.incidents.byError, 'error')}
+                  this.renderEmptyList(byError, 'error')}
                 {this.state.isDataLoaded &&
-                  Boolean(this.state.incidents.byError.data.length) && (
-                    <IncidentsByError
-                      incidents={this.state.incidents.byError.data}
-                    />
-                  )}
+                  Boolean(byError.data.length) &&
+                  this.renderIncidentsList(byError, 'error')}
               </Styled.TileContent>
             </Styled.Tile>
           </Styled.TitleWrapper>
