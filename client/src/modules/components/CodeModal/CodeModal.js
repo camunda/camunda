@@ -31,8 +31,12 @@ function CodeModal({
       mode === MODE.EDIT &&
       document
         .getElementById('code')
-        .addEventListener('input', function({target}) {
-          setNewValue(isValidJSON(target.innerText) ? target.innerText : '');
+        .addEventListener('input', function({target: {textContent}}) {
+          setNewValue(
+            isValidJSON(textContent)
+              ? removeWhiteSpaces(removeLineBreaks(textContent))
+              : ''
+          );
         });
   });
 
@@ -42,23 +46,31 @@ function CodeModal({
   }
 
   function createBeautyfiedJSON(validJSONstring, indentationSpace = 0) {
+    return JSON.stringify(removeTabs(validJSONstring), null, indentationSpace);
+  }
+
+  function removeTabs(validJSONstring) {
     // removes all possible spaces, a user could have added during in-line edit.
-    const validObject = JSON.parse(validJSONstring);
-    return JSON.stringify(validObject, null, indentationSpace);
+    return JSON.parse(validJSONstring);
+  }
+
+  function removeWhiteSpaces(value) {
+    return value.replace(/\s/g, '');
+  }
+
+  function removeLineBreaks(value) {
+    return value.replace(/\r?\n|\r/g, '');
   }
 
   function isValueModified() {
-    const sanatizedNewValueString = newValue
-      // remove all line breaks
-      .replace(/\r?\n|\r/g, '')
-      // remove all white space
-      .replace(/\s/g, '');
-
-    const sanatizedInitialValueString = isValidJSON(initialValue)
-      ? createBeautyfiedJSON(initialValue).replace(/\s/g, '')
-      : initialValue.replace(/\s/g, '');
-
-    return sanatizedNewValueString !== sanatizedInitialValueString;
+    return (
+      newValue !==
+      removeWhiteSpaces(
+        isValidJSON(initialValue)
+          ? createBeautyfiedJSON(initialValue)
+          : initialValue
+      )
+    );
   }
 
   function renderCodeLines(initialValue) {

@@ -80,13 +80,13 @@ describe('CodeModal', () => {
       expect(node.find('code').props().contentEditable).toBe(true);
     });
 
-    describe.skip('save button', () => {
+    describe('save button', () => {
       // innerText isn't implemented yet in jsDom.
       //https://stackoverflow.com/questions/54495862/why-does-my-unit-test-fail-to-return-the-text-within-a-single-file-component-whe
       //https://github.com/jsdom/jsdom/issues/1245
 
-      it('should allow to save value, when valid & modfied', () => {
-        //
+      it.only('should allow to save value, when valid & modfied', () => {
+        //TODO: check if tests can be written with TextContent
       });
       it('should not allow to save "empty" values', () => {
         //
