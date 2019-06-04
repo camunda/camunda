@@ -64,16 +64,12 @@ public class ImportBatch {
 
   public void finished() {
     int imported = getRecordsCount();
-    if (importListener != null) {
-      importListener.finished(imported);
-    }
+    importListener.finished(imported);
   }
 
   public void failed() {
     int failed = getRecordsCount();
-    if (importListener != null) {
-      importListener.failed(failed);
-    }
+    importListener.failed(failed);
   }
 
 }

@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
@@ -28,9 +27,6 @@ import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.zeebeimport.ImportValueType;
-import org.camunda.operate.zeebeimport.RecordsReader;
-import org.camunda.operate.zeebeimport.RecordsReaderHolder;
 import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -83,9 +79,6 @@ public class ElasticsearchTestRule extends TestWatcher {
   @Autowired
   private ObjectMapper objectMapper;
 
-  @Autowired
-  private RecordsReaderHolder recordsReaderHolder;
-
   Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
 
   protected boolean failed = false;
@@ -124,14 +117,14 @@ public class ElasticsearchTestRule extends TestWatcher {
     }
   }
 
-  public void processAllRecordsAndWait(Runnable importer, Predicate<Object[]> waitTill, Object... arguments) {
+  public void processAllRecordsAndWait(Predicate<Object[]> waitTill, Object... arguments) {
     int maxRounds = 500;
     boolean found = waitTill.test(arguments);
     long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
       zeebeImporter.resetCounters();
       try {
-        importer.run();
+        zeebeImporter.performOneRoundOfImport();
       } catch (Exception e) {
         logger.error(e.getMessage(), e);
       }
@@ -140,7 +133,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       while (shouldImportCount != 0 && imported < shouldImportCount) {
         try {
           Thread.sleep(500L);
-          importer.run();
+          zeebeImporter.performOneRoundOfImport();
         } catch (Exception e) {
           waitingRound = 1;
           zeebeImporter.resetCounters();
@@ -163,41 +156,6 @@ public class ElasticsearchTestRule extends TestWatcher {
     if (waitingRound >=  maxRounds) {
       logTimeout();
     }
-  }
-
-  public void processAllRecordsAndWait(Predicate<Object[]> waitTill, Object... arguments) {
-    processAllRecordsAndWait(() -> {
-      try {
-        zeebeImporter.performOneRoundOfImport();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }, waitTill, arguments);
-  }
-
-  public void processAllRecordsAndWait(ImportValueType importValueType, Predicate<Object[]> waitTill, Object... arguments) {
-    processAllRecordsAndWait(() -> {
-      try {
-        importOneType(importValueType);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }, waitTill, arguments);
-
-  }
-
-  private int importOneType(ImportValueType importValueType) throws IOException {
-    List<RecordsReader> readers = getRecordsReaders(importValueType);
-    int count = 0;
-    for (RecordsReader reader: readers) {
-      count += zeebeImporter.importOneBatch(reader);
-    }
-    return count;
-  }
-
-  private List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
-    return recordsReaderHolder.getAllRecordsReaders().stream()
-        .filter(rr -> rr.getImportValueType().equals(importValueType)).collect(Collectors.toList());
   }
 
   private void logTimeout() {
