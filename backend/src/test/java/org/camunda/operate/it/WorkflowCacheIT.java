@@ -66,11 +66,11 @@ public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey1);
     elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey2);
 
-    String demoProcessName = workflowCache.getWorkflowNameOrDefaultValue("1",null);
+    String demoProcessName = workflowCache.getWorkflowNameOrDefaultValue(workflowKey1,null);
     assertThat(demoProcessName).isNotNull();
 
     //request once again, the cache should be used
-    demoProcessName = workflowCache.getWorkflowNameOrDefaultValue("1",null);
+    demoProcessName = workflowCache.getWorkflowNameOrDefaultValue(workflowKey1,null);
     assertThat(demoProcessName).isNotNull();
 
     verify(workflowCache, times(1)).putToCache(any(), any());

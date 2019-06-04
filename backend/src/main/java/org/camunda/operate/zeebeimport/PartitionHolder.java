@@ -60,7 +60,7 @@ public class PartitionHolder {
       final Topology topology = zeebeClient.newTopologyRequest().send().join();
       final int partitionsCount = topology.getPartitionsCount();
       //generate list of partition ids
-      for (int i = 0; i< partitionsCount; i++) {
+      for (int i = 1; i<= partitionsCount; i++) {
         partitionIds.add(i);
       }
       if (partitionIds.size() == 0) {

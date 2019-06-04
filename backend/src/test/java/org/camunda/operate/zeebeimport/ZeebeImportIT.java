@@ -376,7 +376,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final Set<Integer> operatePartitions = partitionHolder.getPartitionIds();
     final int zeebePartitionsCount = zeebeClient.newTopologyRequest().send().join().getPartitionsCount();
     assertThat(operatePartitions).hasSize(zeebePartitionsCount);
-    assertThat(operatePartitions).allMatch(id -> id < zeebePartitionsCount && id >= 0);
+    assertThat(operatePartitions).allMatch(id -> id <= zeebePartitionsCount && id >= 1);
   }
 
   private void assertStartActivityCompleted(ActivityInstanceDto activity) {
