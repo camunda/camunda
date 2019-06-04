@@ -26,6 +26,7 @@ import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.WorkflowInstanceRelated;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.util.buffer.BufferUtil;
 import java.time.Instant;
@@ -211,7 +212,7 @@ public class JobRecord extends UnifiedRecordValue
 
   @Override
   public String getVariables() {
-    throw new UnsupportedOperationException("not yet implemented");
+    return MsgPackConverter.convertToJson(variableProp.getValue());
   }
 
   @Override

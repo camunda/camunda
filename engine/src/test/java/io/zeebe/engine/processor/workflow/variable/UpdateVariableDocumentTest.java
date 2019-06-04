@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,13 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.engine.variables;
+package io.zeebe.engine.processor.workflow.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
@@ -31,38 +31,19 @@ import io.zeebe.protocol.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.intent.VariableDocumentIntent;
 import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordStream;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
-import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 public class UpdateVariableDocumentTest {
 
-  public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
-  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
-
-  @Rule
-  public RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
-
-  private PartitionTestClient testClient;
-
-  @Before
-  public void init() {
-    testClient = apiRule.partitionClient();
-  }
+  @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule();
 
   @Test
   public void shouldProduceCorrectSequenceOfEvents() {
@@ -74,16 +55,20 @@ public class UpdateVariableDocumentTest {
     final Map<String, Object> document = Maps.of(entry("x", 2), entry("foo", "bar"));
 
     // when
-    testClient.deploy(process);
+    ENGINE_RULE.deploy(process);
     final long workflowInstanceKey =
-        testClient
+        ENGINE_RULE
             .createWorkflowInstance(
                 r -> r.setBpmnProcessId(processId).setVariables(MsgPackUtil.asMsgPack("{'x': 1}")))
+            .getValue()
             .getInstanceKey();
     final Record<WorkflowInstanceRecordValue> activatedEvent = waitForActivityActivatedEvent();
-    testClient.updateVariables(
-        activatedEvent.getKey(), VariableDocumentUpdateSemantic.PROPAGATE, document);
-    testClient.completeJobOfType(type);
+    ENGINE_RULE
+        .variables(activatedEvent.getKey())
+        .withDocument(document)
+        .withUpdateSemantic(VariableDocumentUpdateSemantic.PROPAGATE)
+        .update();
+    ENGINE_RULE.job().ofInstance(workflowInstanceKey).withType(type).complete();
 
     // then
     final long completedPosition =
@@ -136,14 +121,18 @@ public class UpdateVariableDocumentTest {
   }
 
   private long getWorkflowInstanceCompletedPosition(String processId, long workflowInstanceKey) {
-    return testClient
-        .receiveElementInState(
-            workflowInstanceKey, processId, WorkflowInstanceIntent.ELEMENT_COMPLETED)
+    return RecordingExporter.workflowInstanceRecords()
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withElementId(processId)
+        .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        .getFirst()
         .getPosition();
   }
 
   private Record<WorkflowInstanceRecordValue> waitForActivityActivatedEvent() {
-    return testClient.receiveFirstWorkflowInstanceEvent(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.SERVICE_TASK);
+    return RecordingExporter.workflowInstanceRecords()
+        .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        .withElementType(BpmnElementType.SERVICE_TASK)
+        .getFirst();
   }
 }

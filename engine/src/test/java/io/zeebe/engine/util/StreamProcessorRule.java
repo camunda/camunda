@@ -275,6 +275,17 @@ public class StreamProcessorRule implements TestRule {
         .write();
   }
 
+  public long writeCommandOnPartition(
+      int partition, long key, Intent intent, UnpackedObject value) {
+    return streams
+        .newRecord(getLogName(partition))
+        .recordType(RecordType.COMMAND)
+        .key(key)
+        .intent(intent)
+        .event(value)
+        .write();
+  }
+
   public long writeCommandOnPartition(int partition, Intent intent, UnpackedObject value) {
     return streams
         .newRecord(getLogName(partition))

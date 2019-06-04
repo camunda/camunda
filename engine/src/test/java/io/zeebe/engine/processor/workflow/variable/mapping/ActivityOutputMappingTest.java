@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,22 +15,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.engine.variables;
+package io.zeebe.engine.processor.workflow.variable.mapping;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -38,9 +36,7 @@ import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -51,14 +47,7 @@ public class ActivityOutputMappingTest {
 
   private static final String PROCESS_ID = "process";
 
-  public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
-
-  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
-
-  @Rule
-  public RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
+  @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule();
 
   @Parameter(0)
   public String initialVariables;
@@ -99,8 +88,8 @@ public class ActivityOutputMappingTest {
     final String jobType = UUID.randomUUID().toString();
 
     final long workflowKey =
-        apiRule
-            .deployWorkflow(
+        ENGINE_RULE
+            .deploy(
                 Bpmn.createExecutableProcess(PROCESS_ID)
                     .startEvent()
                     .subProcess(
@@ -123,12 +112,12 @@ public class ActivityOutputMappingTest {
     // when
     final DirectBuffer variables = MsgPackUtil.asMsgPack(initialVariables);
     final long workflowInstanceKey =
-        apiRule
-            .partitionClient()
+        ENGINE_RULE
             .createWorkflowInstance(r -> r.setKey(workflowKey).setVariables(variables))
+            .getValue()
             .getInstanceKey();
 
-    apiRule.completeJob(jobType);
+    ENGINE_RULE.job().ofInstance(workflowInstanceKey).withType(jobType).complete();
 
     // then
     final Record<WorkflowInstanceRecordValue> taskCompleted =

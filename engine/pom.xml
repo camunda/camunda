@@ -151,6 +151,12 @@
       <groupId>uk.co.real-logic</groupId>
       <artifactId>sbe-tool</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-exporter-asserts</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

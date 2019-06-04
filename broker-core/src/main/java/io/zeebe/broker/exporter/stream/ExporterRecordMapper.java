@@ -376,7 +376,7 @@ public class ExporterRecordMapper {
         objectMapper,
         record.getScopeKey(),
         record.getUpdateSemantics(),
-        asMsgPackMap(record.getDocument()));
+        asMsgPackMap(record.getDocumentBuffer()));
   }
 
   private WorkflowInstanceCreationRecordValue ofWorkflowInstanceCreationRecord(

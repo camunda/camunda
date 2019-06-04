@@ -70,7 +70,7 @@ public class UpdateVariableDocumentProcessor implements CommandProcessor<Variabl
       CommandControl<VariableDocumentRecord> controller) {
     try {
       getUpdateOperation(record.getUpdateSemantics())
-          .apply(record.getScopeKey(), workflowKey, record.getDocument());
+          .apply(record.getScopeKey(), workflowKey, record.getDocumentBuffer());
       return true;
     } catch (MsgpackReaderException e) {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
