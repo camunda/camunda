@@ -133,7 +133,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getWorkflowId()).isEqualTo(workflowId);
-    assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo("Demo process");
+    assertThat(workflowInstanceEntity.getWorkflowName()).isNotNull();
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
   }
 
