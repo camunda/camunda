@@ -142,6 +142,10 @@ public class EngineRule extends ExternalResource {
     }
   }
 
+  public void increaseTime(Duration duration) {
+    environmentRule.getClock().addTime(duration);
+  }
+
   public Record<DeploymentRecordValue> deploy(final BpmnModelInstance modelInstance) {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     deploymentRecord
@@ -244,17 +248,65 @@ public class EngineRule extends ExternalResource {
                 .setTimeToLive(DEFAULT_MSG_TTL.toMillis()));
   }
 
+  private static final Function<Message, Record<MessageRecordValue>>
+      SUCCESSFUL_EXPECTATION_SUPPLIER =
+          (message) ->
+              RecordingExporter.messageRecords(MessageIntent.PUBLISHED)
+                  .withPartitionId(message.partitionId)
+                  .withCorrelationKey(message.correlationKey)
+                  .withSourceRecordPosition(message.position)
+                  .getFirst();
+
+  private static final Function<Message, Record<MessageRecordValue>>
+      REJECTION_EXPECTATION_SUPPLIER =
+          (message) ->
+              RecordingExporter.messageRecords(MessageIntent.PUBLISH)
+                  .onlyCommandRejections()
+                  .withPartitionId(message.partitionId)
+                  .withCorrelationKey(message.correlationKey)
+                  .getFirst();
+
   public Record<MessageRecordValue> publishMessage(
       int partitionId, String correlationKey, Function<MessageRecord, MessageRecord> transformer) {
+    return publishMessage(
+        partitionId, correlationKey, transformer, SUCCESSFUL_EXPECTATION_SUPPLIER);
+  }
+
+  public Record<MessageRecordValue> publishMessageWithExpectedRejection(
+      String correlationKey, Function<MessageRecord, MessageRecord> transformer) {
+    return publishMessage(
+        SubscriptionUtil.getSubscriptionPartitionId(
+            BufferUtil.wrapString(correlationKey), partitionCount),
+        correlationKey,
+        transformer,
+        REJECTION_EXPECTATION_SUPPLIER);
+  }
+
+  public Record<MessageRecordValue> publishMessage(
+      int partitionId,
+      String correlationKey,
+      Function<MessageRecord, MessageRecord> transformer,
+      Function<Message, Record<MessageRecordValue>> expectation) {
     final MessageRecord messageRecord =
         transformer.apply(new MessageRecord().setCorrelationKey(correlationKey));
 
-    environmentRule.writeCommandOnPartition(partitionId, MessageIntent.PUBLISH, messageRecord);
+    final long position =
+        environmentRule.writeCommandOnPartition(partitionId, MessageIntent.PUBLISH, messageRecord);
 
-    return RecordingExporter.messageRecords(MessageIntent.PUBLISH)
-        .withPartitionId(partitionId)
-        .withCorrelationKey(correlationKey)
-        .getFirst();
+    return expectation.apply(new Message(partitionId, correlationKey, position));
+  }
+
+  private class Message {
+
+    final int partitionId;
+    final String correlationKey;
+    final long position;
+
+    Message(int partitionId, String correlationKey, long position) {
+      this.partitionId = partitionId;
+      this.correlationKey = correlationKey;
+      this.position = position;
+    }
   }
 
   public List<Integer> getPartitionIds() {
