@@ -70,8 +70,8 @@ export default function Variables({
   useEffect(
     () => {
       if (editMode === MODE.ADD) {
-        variablesContentRef.current.scrollTop =
-          variablesContentRef.current.scrollHeight;
+        const scrollableElement = variablesContentRef.current.children[0];
+        scrollableElement.scrollTop = scrollableElement.scrollHeight;
       }
     },
     [editMode]

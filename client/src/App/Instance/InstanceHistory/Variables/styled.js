@@ -27,6 +27,7 @@ export const Spinner = styled(ActionStatus.Spinner)`
 export const Variables = themed(styled(Panel)`
   flex: 1;
   font-size: 14px;
+
   border-left: none;
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.8)',
@@ -36,6 +37,7 @@ export const Variables = themed(styled(Panel)`
 
 export const VariablesContent = styled(Panel.Body)`
   position: absolute;
+
   width: 100%;
   height: 100%;
   top: 0;
@@ -45,6 +47,9 @@ export const VariablesContent = styled(Panel.Body)`
 
 export const TableScroll = styled.div`
   overflow-y: auto;
+  height: 100%;
+  margin-top: 45px;
+  margin-bottom: 40px;
 `;
 
 export const Placeholder = themed(styled.span`
@@ -62,8 +67,7 @@ export const Placeholder = themed(styled.span`
 
 export const Table = themed(styled.table`
   width: 100%;
-  margin-top: 45px;
-  margin-bottom: 47px;
+  margin-bottom: 3px;
   border-spacing: 0;
   border-collapse: collapse;
 `);
@@ -87,10 +91,6 @@ export const TD = themed(styled.td`
   height: 32px;
   &:not(:nth-child(2)) {
     white-space: nowrap;
-  }
-
-  &:nth-child(2) {
-    width: 100%;
   }
 `);
 
@@ -189,7 +189,6 @@ export const TextInput = styled(BasicInput)`
 export const DisplayText = styled.div`
   padding: 4px 0px;
   max-height: 80px;
-  width: 535px;
   overflow-y: auto;
 `;
 
@@ -241,6 +240,8 @@ export const EditInputTD = styled.td`
 export const EditButton = styled.button`
   margin: 0;
   padding: 0;
+  height: 16px
+  width: 16px;
   margin-left: 15px;
   background: transparent;
   border: none;
