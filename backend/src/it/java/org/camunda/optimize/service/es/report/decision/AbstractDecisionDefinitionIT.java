@@ -84,7 +84,7 @@ public abstract class AbstractDecisionDefinitionIT {
     final String decisionDefinitionKey = "multiTenantProcess";
     deployedTenants.stream()
       .filter(Objects::nonNull)
-      .forEach(tenantId -> engineRule.createTenant(tenantId, tenantId));
+      .forEach(tenantId -> engineRule.createTenant(tenantId));
     deployedTenants
       .forEach(tenant -> {
         final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinitionWithDifferentKey(

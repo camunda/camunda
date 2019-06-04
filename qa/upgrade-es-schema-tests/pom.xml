@@ -280,7 +280,7 @@
                     <!-- execute Optimize backend integration testsuite -->
                     <exec dir="${project.build.directory}/../../../" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="mvn -B clean verify -pl backend -Dskip.docker -Pproduction,it,engine-7.10 ${maven-settings} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
+                      <arg value="mvn -B clean verify -pl backend -Dskip.docker -Pproduction,it,${engine.profile.id} ${maven-settings} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
                     </exec>
                   </target>
                 </configuration>

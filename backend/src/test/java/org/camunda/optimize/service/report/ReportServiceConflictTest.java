@@ -16,7 +16,7 @@ import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.relations.ReportRelationService;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,7 +42,7 @@ public class ReportServiceConflictTest {
   AuthorizationCheckReportEvaluationHandler reportEvaluator;
 
   @Mock
-  DefinitionAuthorizationService authorizationService;
+  ReportAuthorizationService authorizationService;
 
   @Mock
   ReportRelationService reportRelationService;
@@ -66,7 +66,7 @@ public class ReportServiceConflictTest {
     SingleProcessReportDefinitionDto updateDto = new SingleProcessReportDefinitionDto();
     updateDto.setId("test1");
     when(reportReader.getSingleProcessReport("test1")).thenReturn(updateDto);
-    when(authorizationService.isAuthorizedToSeeProcessDefinition(any(), any(), anyList())).thenReturn(true);
+    when(authorizationService.isAuthorizedToSeeProcessReport(any(), any(), anyList())).thenReturn(true);
 
     // when
     underTest.updateSingleProcessReportWithAuthorizationCheck("test1", updateDto, "user1", false);
@@ -83,7 +83,7 @@ public class ReportServiceConflictTest {
     SingleProcessReportDefinitionDto updateDto = new SingleProcessReportDefinitionDto();
     updateDto.setId("test1");
     when(reportReader.getSingleProcessReport("test1")).thenReturn(updateDto);
-    when(authorizationService.isAuthorizedToSeeProcessDefinition(any(), any(), anyList())).thenReturn(true);
+    when(authorizationService.isAuthorizedToSeeProcessReport(any(), any(), anyList())).thenReturn(true);
 
     Set<ConflictedItemDto> conflicts = Sets.newHashSet(
       new ConflictedItemDto("conflict1", ConflictedItemType.ALERT, "name"),
@@ -101,7 +101,7 @@ public class ReportServiceConflictTest {
     SingleDecisionReportDefinitionDto updateDto = new SingleDecisionReportDefinitionDto();
     updateDto.setId("test1");
     when(reportReader.getSingleDecisionReport("test1")).thenReturn(updateDto);
-    when(authorizationService.isAuthorizedToSeeDecisionDefinition(any(), any(), anyList())).thenReturn(true);
+    when(authorizationService.isAuthorizedToSeeDecisionReport(any(), any(), anyList())).thenReturn(true);
     // when
     underTest.updateSingleDecisionReportWithAuthorizationCheck("test1", updateDto, "user1", false);
 
@@ -118,7 +118,7 @@ public class ReportServiceConflictTest {
     SingleDecisionReportDefinitionDto updateDto = new SingleDecisionReportDefinitionDto();
     updateDto.setId("test1");
     when(reportReader.getSingleDecisionReport("test1")).thenReturn(updateDto);
-    when(authorizationService.isAuthorizedToSeeDecisionDefinition(any(), any(), anyList())).thenReturn(true);
+    when(authorizationService.isAuthorizedToSeeDecisionReport(any(), any(), anyList())).thenReturn(true);
 
     Set<ConflictedItemDto> conflicts = Sets.newHashSet(
       new ConflictedItemDto("conflict1", ConflictedItemType.ALERT, "name"),
@@ -135,7 +135,7 @@ public class ReportServiceConflictTest {
     // given
     final SingleProcessReportDefinitionDto testDefinition = new SingleProcessReportDefinitionDto();
     when(reportReader.getReport("test1")).thenReturn(testDefinition);
-    when(authorizationService.isAuthorizedToSeeProcessDefinition(any(), any(), anyList())).thenReturn(true);
+    when(authorizationService.isAuthorizedToSeeProcessReport(any(), any(), anyList())).thenReturn(true);
 
     // when
     underTest.deleteReportWithAuthorizationCheck("user1", "test1", false);
@@ -150,7 +150,7 @@ public class ReportServiceConflictTest {
   public void testDeleteReportWithConflicts() throws OptimizeException {
     // given
     when(reportReader.getReport("test1")).thenReturn(new SingleProcessReportDefinitionDto());
-    when(authorizationService.isAuthorizedToSeeProcessDefinition(any(), any(), anyList())).thenReturn(true);
+    when(authorizationService.isAuthorizedToSeeProcessReport(any(), any(), anyList())).thenReturn(true);
 
     Set<ConflictedItemDto> conflicts = Sets.newHashSet(
       new ConflictedItemDto("conflict1", ConflictedItemType.ALERT, "name"),

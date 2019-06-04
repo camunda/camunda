@@ -27,7 +27,7 @@ public class AuthenticationService {
   private final EngineAuthenticationProvider engineAuthenticationProvider;
   private final EngineContextFactory engineContextFactory;
   private final SessionService sessionService;
-  private final ApplicationAuthorizationService applicationAuthorizationService;
+  private final ApplicationAuthorizationService engineAuthorizationService;
 
   /**
    * Authenticates user and checks for optimize authorization.
@@ -37,32 +37,28 @@ public class AuthenticationService {
    */
   public String authenticateUser(CredentialsDto credentials) throws ForbiddenException, NotAuthorizedException {
 
-    List<AuthenticationResultDto> authenticationResults = new ArrayList<>();
+    final List<AuthenticationResultDto> authenticationResults = new ArrayList<>();
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
-
       final AuthenticationResultDto authResult = engineAuthenticationProvider.performAuthenticationCheck(
         credentials, engineContext
       );
       authenticationResults.add(authResult);
-
-      if (authResult.isAuthenticated()) {
-        final boolean isAuthorized = applicationAuthorizationService.isAuthorizedToAccessOptimize(
-          credentials.getUsername(), engineContext
-        );
-        if (isAuthorized) {
-          return createUserSession(credentials);
-        }
-      }
     }
 
-    boolean userWasAuthenticated = authenticationResults.stream().anyMatch(AuthenticationResultDto::isAuthenticated);
-    if (userWasAuthenticated) {
-      // could not find an engine that grants optimize permission
-      String errorMessage = "The user [" + credentials.getUsername() + "] is not authorized to "
-        + "access Optimize.\n Please check the Camunda Admin configuration to change user "
-        + "authorizations in at least one process engine.";
-      log.warn(errorMessage);
-      throw new ForbiddenException(errorMessage);
+    boolean userIsAuthenticated = authenticationResults.stream().anyMatch(AuthenticationResultDto::isAuthenticated);
+    if (userIsAuthenticated) {
+      final boolean isAuthorized = engineAuthorizationService.isAuthorizedToAccessOptimize(credentials.getUsername());
+      if (isAuthorized) {
+        return createUserSession(credentials);
+      } else {
+        // could not find an engine that grants optimize permission
+        String errorMessage = "The user [" + credentials.getUsername() + "] is not authorized to "
+          + "access Optimize from any of the connected engines.\n "
+          + "Please check the Camunda Admin configuration to change user "
+          + "authorizations in at least one process engine.";
+        log.warn(errorMessage);
+        throw new ForbiddenException(errorMessage);
+      }
     } else {
       // could not find an engine that authenticates user
       String authenticationErrorMessage = createNotAuthenticatedErrorMessage(authenticationResults);

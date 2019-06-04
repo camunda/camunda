@@ -7,14 +7,19 @@ package org.camunda.optimize.service.security;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @AllArgsConstructor
+@RequiredArgsConstructor
 @Data
 public class EngineAuthorizations {
-  private List<AuthorizationDto> allAuthorizations;
-  private List<AuthorizationDto> groupAuthorizations;
-  private List<AuthorizationDto> userAuthorizations;
+  private final String engine;
+  private List<AuthorizationDto> allAuthorizations = new ArrayList<>();
+  private List<AuthorizationDto> groupAuthorizations = new ArrayList<>();
+  private List<AuthorizationDto> userAuthorizations = new ArrayList<>();
+  ;
 }

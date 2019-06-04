@@ -163,7 +163,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   }
 
-  private List<EngineContext> getConfiguredEngines() {
+  private Collection<EngineContext> getConfiguredEngines() {
     return getApplicationContext().getBean(EngineContextFactory.class).getConfiguredEngines();
   }
 

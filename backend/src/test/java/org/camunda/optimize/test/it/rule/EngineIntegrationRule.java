@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -20,6 +21,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
@@ -121,6 +123,10 @@ public class EngineIntegrationRule extends TestWatcher {
       .orElseThrow(OptimizeIntegrationTestException::new)
       .trim()
       .matches("true");
+  }
+
+  private String getEngineVersion() {
+    return properties.getProperty("camunda.engine.version");
   }
 
   private void setupObjectMapper() {
@@ -892,6 +898,10 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
+  public void createTenant(final String id) {
+    createTenant(id, id);
+  }
+
   public void createTenant(final String id, final String name) {
     final TenantEngineDto tenantDto = new TenantEngineDto();
     tenantDto.setId(id);
@@ -947,6 +957,23 @@ public class EngineIntegrationRule extends TestWatcher {
       response.close();
     } catch (Exception e) {
       logger.error("error creating user", e);
+    }
+  }
+
+  @SneakyThrows
+  public void unlockUser(String username) {
+    final CloseableHttpClient client = getHttpClient();
+    final HttpUriRequest request;
+    if (getEngineVersion().matches("7\\.11\\..*")) {
+      request = new HttpPost(getEngineUrl() + "/user/" + username + "/unlock");
+    } else {
+      request = new HttpGet(getEngineUrl() + "/user/" + username + "/unlock");
+    }
+    request.addHeader("Content-Type", "application/json");
+    try (final CloseableHttpResponse response = client.execute(request)) {
+      if (response.getStatusLine().getStatusCode() != 204) {
+        throw new OptimizeIntegrationTestException("Wrong status code when trying to unlock user!");
+      }
     }
   }
 

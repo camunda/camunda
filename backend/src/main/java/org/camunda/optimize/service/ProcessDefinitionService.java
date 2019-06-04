@@ -108,7 +108,7 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
   private boolean isAuthorizedToReadProcessDefinition(final String userId,
                                                       final ProcessDefinitionOptimizeDto processDefinition) {
     return definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
-      userId, processDefinition.getKey(), processDefinition.getTenantId()
+      userId, processDefinition.getKey(), processDefinition.getTenantId(), processDefinition.getEngine()
     );
   }
 

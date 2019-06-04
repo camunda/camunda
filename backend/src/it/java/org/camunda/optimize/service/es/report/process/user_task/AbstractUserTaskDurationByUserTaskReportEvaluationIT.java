@@ -880,7 +880,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     final String processKey = "multiTenantProcess";
     deployedTenants.stream()
       .filter(Objects::nonNull)
-      .forEach(tenantId -> engineRule.createTenant(tenantId, tenantId));
+      .forEach(tenantId -> engineRule.createTenant(tenantId));
     deployedTenants
       .forEach(tenant -> {
         final ProcessDefinitionEngineDto processDefinitionEngineDto = deployOneUserTasksDefinition(processKey, tenant);

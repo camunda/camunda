@@ -28,16 +28,13 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 public abstract class AbstractCachingAuthorizationService<T> implements SessionListener, ConfigurationReloadable {
   private static final int CACHE_MAXIMUM_SIZE = 1000;
 
-  protected final ApplicationAuthorizationService applicationAuthorizationService;
   protected final EngineContextFactory engineContextFactory;
   protected final ConfigurationService configurationService;
 
   protected LoadingCache<String, T> authorizationLoadingCache;
 
-  public AbstractCachingAuthorizationService(final ApplicationAuthorizationService applicationAuthorizationService,
-                                             final EngineContextFactory engineContextFactory,
+  public AbstractCachingAuthorizationService(final EngineContextFactory engineContextFactory,
                                              final ConfigurationService configurationService) {
-    this.applicationAuthorizationService = applicationAuthorizationService;
     this.engineContextFactory = engineContextFactory;
     this.configurationService = configurationService;
 
@@ -45,7 +42,16 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
   }
 
   @Override
-  public void onSessionCreateOrRefresh(final String userId) {
+  public void onSessionCreate(final String userId) {
+    onSessionCreateOrRefresh(userId);
+  }
+
+  @Override
+  public void onSessionRefresh(final String userId) {
+    onSessionCreateOrRefresh(userId);
+  }
+
+  private void onSessionCreateOrRefresh(final String userId) {
     // invalidate to force removal of old entry synchronously
     authorizationLoadingCache.invalidate(userId);
     // trigger eager load of authorizations when new session is created
@@ -81,13 +87,14 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
       .build(this::fetchAuthorizationsForUserId);
   }
 
-  public static ResolvedResourceTypeAuthorizations resolveResourceAuthorizations(final List<AuthorizationDto> allEngineAuthorizations,
+  public static ResolvedResourceTypeAuthorizations resolveResourceAuthorizations(final String engine,
+                                                                                 final List<AuthorizationDto> allEngineAuthorizations,
                                                                                  final List<String> relevantPermissions,
                                                                                  final String userId,
                                                                                  final List<GroupDto> userGroups,
                                                                                  final int resourceType) {
     return resolveResourceAuthorizations(
-      mapToEngineAuthorizations(allEngineAuthorizations, userId, userGroups),
+      mapToEngineAuthorizations(engine, allEngineAuthorizations, userId, userGroups),
       relevantPermissions,
       resourceType
     );
@@ -100,9 +107,11 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
     // NOTE: the order is essential here to make sure that
     // the revoking of resource permissions works correctly
 
+    authorizations.setEngine(resourceAuthorizations.getEngine());
+
     // global authorizations
     resourceAuthorizations.getAllAuthorizations().forEach(
-      authorization -> addGloballyAuthorizedTenants(authorization, relevantPermissions, authorizations, resourceType)
+      authorization -> addGloballyAuthorizedResources(authorization, relevantPermissions, authorizations, resourceType)
     );
 
     // group authorizations
@@ -117,10 +126,12 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
     return authorizations;
   }
 
-  public static EngineAuthorizations mapToEngineAuthorizations(final List<AuthorizationDto> allEngineAuthorizations,
+  public static EngineAuthorizations mapToEngineAuthorizations(final String engine,
+                                                               final List<AuthorizationDto> allEngineAuthorizations,
                                                                final String userId,
                                                                final List<GroupDto> userGroups) {
     return new EngineAuthorizations(
+      engine,
       allEngineAuthorizations,
       extractGroupAuthorizations(userGroups, allEngineAuthorizations),
       extractUserAuthorizations(userId, allEngineAuthorizations)
@@ -159,14 +170,14 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
         authDto, relevantPermissions, resolvedAuthorizations, resourceType
       ));
     groupAuthorizations.forEach(
-      authDto -> addAuthorizationForTenants(authDto, relevantPermissions, resolvedAuthorizations, resourceType)
+      authDto -> addAuthorizationForResources(authDto, relevantPermissions, resolvedAuthorizations, resourceType)
     );
   }
 
-  private static void addGloballyAuthorizedTenants(final AuthorizationDto authorization,
-                                                   final List<String> relevantPermissions,
-                                                   final ResolvedResourceTypeAuthorizations resourceAuthorizations,
-                                                   final int resourceType) {
+  private static void addGloballyAuthorizedResources(final AuthorizationDto authorization,
+                                                     final List<String> relevantPermissions,
+                                                     final ResolvedResourceTypeAuthorizations resourceAuthorizations,
+                                                     final int resourceType) {
     boolean hasPermissions = hasRelevantPermissions(authorization, relevantPermissions);
     boolean globalGrantPermission = authorization.getType() == AUTHORIZATION_TYPE_GLOBAL;
     boolean processDefinitionResourceType = authorization.getResourceType() == resourceType;
@@ -195,10 +206,10 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
     }
   }
 
-  private static void addAuthorizationForTenants(final AuthorizationDto authorization,
-                                                 final List<String> relevantPermissions,
-                                                 final ResolvedResourceTypeAuthorizations resourceAuthorizations,
-                                                 final int resourceType) {
+  private static void addAuthorizationForResources(final AuthorizationDto authorization,
+                                                   final List<String> relevantPermissions,
+                                                   final ResolvedResourceTypeAuthorizations resourceAuthorizations,
+                                                   final int resourceType) {
     boolean hasPermissions = hasRelevantPermissions(authorization, relevantPermissions);
     boolean grantPermission = authorization.getType() == AUTHORIZATION_TYPE_GRANT;
     boolean processDefinitionResourceType = authorization.getResourceType() == resourceType;

@@ -5,11 +5,17 @@
  */
 package org.camunda.optimize.service.security;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.HashSet;
 import java.util.Set;
 
 public class ResolvedResourceTypeAuthorizations {
 
+  @Getter
+  @Setter
+  private String engine;
   private boolean canSeeAll = false;
   private final Set<String> authorizedResources = new HashSet<>();
   private final Set<String> prohibitedResources = new HashSet<>();

@@ -34,6 +34,7 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_XML;
+import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
@@ -86,6 +87,42 @@ public class DecisionDefinitionReader {
         decisionDefinitionKey,
         decisionDefinitionVersion,
         tenantId
+      );
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    DecisionDefinitionOptimizeDto definitionOptimizeDto = null;
+    if (searchResponse.getHits().getTotalHits() > 0L) {
+      String responseAsString = searchResponse.getHits().getAt(0).getSourceAsString();
+      definitionOptimizeDto = parseDecisionDefinition(responseAsString);
+    }
+    return Optional.ofNullable(definitionOptimizeDto);
+  }
+
+  public Optional<DecisionDefinitionOptimizeDto> getDecisionDefinitionByKeyAndEngine(final String decisionDefinitionKey,
+                                                                                     final String engineAlias) {
+
+    if (decisionDefinitionKey == null) {
+      return Optional.empty();
+    }
+
+    final BoolQueryBuilder query = QueryBuilders.boolQuery()
+      .must(termQuery(DECISION_DEFINITION_KEY, decisionDefinitionKey))
+      .must(termQuery(ENGINE, engineAlias));
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(query);
+    searchSourceBuilder.size(1);
+    SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
+      .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format(
+        "Was not able to fetch decision definition with key [%s] and engine [%s]", decisionDefinitionKey, engineAlias
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

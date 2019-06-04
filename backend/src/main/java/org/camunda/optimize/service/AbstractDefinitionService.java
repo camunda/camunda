@@ -29,20 +29,17 @@ abstract class AbstractDefinitionService {
   List<DefinitionAvailableVersionsWithTenants> createDefinitionsWithAvailableVersionsAndTenants(
     final String userId,
     final List<? extends DefinitionOptimizeDto> definitions) {
-    final Map<String, TenantDto> allAvailableTenantsById = tenantService.getTenantsForUser(userId)
-      .stream()
-      .collect(Collectors.toMap(TenantDto::getId, v -> v));
 
     final Map<String, Map<String, InternalDefinitionWithTenants>> byKeyMap = groupDefinitionsByKeyAndVersion(
-      allAvailableTenantsById,
-      definitions
+      userId, definitions
     );
 
     return mapToAvailableDefinitionVersionsWithTenants(byKeyMap);
   }
 
   private Map<String, Map<String, InternalDefinitionWithTenants>> groupDefinitionsByKeyAndVersion(
-    final Map<String, TenantDto> allAvailableTenantsById, List<? extends DefinitionOptimizeDto> definitions) {
+    final String userId,
+    final List<? extends DefinitionOptimizeDto> definitions) {
 
     final Map<String, Map<String, InternalDefinitionWithTenants>> byKeyMap = new HashMap<>();
     for (DefinitionOptimizeDto process : definitions) {
@@ -58,13 +55,25 @@ abstract class AbstractDefinitionService {
 
       final String tenantId = process.getTenantId();
       boolean isTenantSpecificDefinition = tenantId != null;
+      final Map<String, TenantDto> allAvailableTenantsById = getTenantsForUserAndEngineGroupedById(userId, process);
       if (isTenantSpecificDefinition) {
-        byVersionMap.get(version).getTenants().add(allAvailableTenantsById.get(tenantId));
+        final TenantDto tenantDto = allAvailableTenantsById.get(tenantId);
+        if (tenantDto != null) {
+          byVersionMap.get(version).getTenants().add(tenantDto);
+        }
       } else {
         byVersionMap.get(version).getTenants().addAll(allAvailableTenantsById.values());
       }
     }
     return byKeyMap;
+  }
+
+  private Map<String, TenantDto> getTenantsForUserAndEngineGroupedById(final String userId,
+                                                                       final DefinitionOptimizeDto process) {
+    return tenantService
+      .getTenantsForUserByEngine(userId, process.getEngine())
+      .stream()
+      .collect(Collectors.toMap(TenantDto::getId, v -> v));
   }
 
   private List<DefinitionAvailableVersionsWithTenants> mapToAvailableDefinitionVersionsWithTenants(

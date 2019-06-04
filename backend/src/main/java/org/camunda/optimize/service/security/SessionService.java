@@ -65,7 +65,7 @@ public class SessionService implements ConfigurationReloadable {
   public String createAuthToken(String userId) {
     final String token = generateAuthToken(UUID.randomUUID().toString(), userId);
 
-    notifyOnSessionCreateOrRefresh(userId);
+    notifyOnSessionCreate(userId);
 
     return token;
   }
@@ -102,7 +102,7 @@ public class SessionService implements ConfigurationReloadable {
 
       if (isStillValid(decodedJWT)) {
         newToken = generateAuthToken(decodedJWT.getId(), decodedJWT.getSubject());
-        notifyOnSessionCreateOrRefresh(decodedJWT.getSubject());
+        notifyOnSessionRefresh(decodedJWT.getSubject());
       }
 
     } catch (JWTVerificationException exception) {
@@ -157,8 +157,12 @@ public class SessionService implements ConfigurationReloadable {
     return configurationService;
   }
 
-  private void notifyOnSessionCreateOrRefresh(final String userId) {
-    sessionListeners.forEach(sessionListener -> sessionListener.onSessionCreateOrRefresh(userId));
+  private void notifyOnSessionCreate(final String userId) {
+    sessionListeners.forEach(sessionListener -> sessionListener.onSessionCreate(userId));
+  }
+
+  private void notifyOnSessionRefresh(final String userId) {
+    sessionListeners.forEach(sessionListener -> sessionListener.onSessionRefresh(userId));
   }
 
   private boolean isStillValid(final DecodedJWT decodedJWT) {

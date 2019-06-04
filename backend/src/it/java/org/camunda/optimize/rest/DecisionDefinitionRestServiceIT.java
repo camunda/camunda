@@ -32,6 +32,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -546,7 +547,7 @@ public class DecisionDefinitionRestServiceIT {
   }
 
   private void createTenant(final String id, final String name) {
-    final TenantDto tenantDto = new TenantDto(id, name, "engine");
+    final TenantDto tenantDto = new TenantDto(id, name, DEFAULT_ENGINE_ALIAS);
     elasticSearchRule.addEntryToElasticsearch(TENANT_TYPE, id, tenantDto);
   }
 
@@ -588,6 +589,7 @@ public class DecisionDefinitionRestServiceIT {
       .setKey(key)
       .setVersion(version)
       .setTenantId(tenantId)
+      .setEngine(DEFAULT_ENGINE_ALIAS)
       .setDmn10Xml("id-" + key + "-version-" + version + "-" + tenantId);
     addDecisionDefinitionToElasticsearch(decisionDefinitionDto);
     return decisionDefinitionDto;

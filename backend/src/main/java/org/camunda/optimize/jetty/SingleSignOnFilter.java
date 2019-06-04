@@ -8,7 +8,6 @@ package org.camunda.optimize.jetty;
 import org.camunda.optimize.plugin.AuthenticationExtractorProvider;
 import org.camunda.optimize.plugin.security.authentication.AuthenticationExtractor;
 import org.camunda.optimize.plugin.security.authentication.AuthenticationResult;
-import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.security.ApplicationAuthorizationService;
 import org.camunda.optimize.service.security.AuthCookieService;
@@ -118,17 +117,10 @@ public class SingleSignOnFilter implements Filter {
   private void createSessionIfIsAuthorizedToAccessOptimize(HttpServletRequest servletRequest,
                                                            HttpServletResponse servletResponse,
                                                            String userName) {
-    for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
-      boolean isAuthorized = applicationAuthorizationService.isAuthorizedToAccessOptimize(userName, engineContext);
-      if (isAuthorized) {
-        logger.trace(
-          "User [{}] was authorized from engine [{}] to access Optimize.",
-          userName,
-          engineContext.getEngineAlias()
-        );
-        manageUserSession(servletRequest, servletResponse, userName);
-      }
-
+    boolean isAuthorized = applicationAuthorizationService.isAuthorizedToAccessOptimize(userName);
+    if (isAuthorized) {
+      logger.trace("User [{}] was authorized to access Optimize.", userName);
+      manageUserSession(servletRequest, servletResponse, userName);
     }
   }
 

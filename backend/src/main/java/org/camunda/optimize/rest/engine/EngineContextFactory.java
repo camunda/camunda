@@ -21,8 +21,8 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.camunda.optimize.service.util.EngineVersionChecker.checkEngineVersionSupport;
@@ -36,18 +36,18 @@ public class EngineContextFactory {
   private final EngineObjectMapperContextResolver engineObjectMapperContextResolver;
   private final EngineRestFilterProvider engineRestFilterProvider;
 
-  private List<EngineContext> configuredEngines;
+  private Map<String, EngineContext> configuredEngines;
 
   @PostConstruct
   public void init() {
-    this.configuredEngines = new ArrayList<>();
+    this.configuredEngines = new HashMap<>();
     for (Map.Entry<String, EngineConfiguration> config : configurationService.getConfiguredEngines().entrySet()) {
       EngineContext engineContext = constructEngineContext(config);
       checkEngineVersionSupport(
         configurationService.getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()),
         engineContext
       );
-      configuredEngines.add(engineContext);
+      configuredEngines.put(engineContext.getEngineAlias(), engineContext);
     }
   }
 
@@ -90,9 +90,12 @@ public class EngineContextFactory {
     }
   }
 
+  public EngineContext getConfiguredEngineByAlias(final String engineAlias) {
+    return configuredEngines.get(engineAlias);
+  }
 
-  public List<EngineContext> getConfiguredEngines() {
-    return configuredEngines;
+  public Collection<EngineContext> getConfiguredEngines() {
+    return configuredEngines.values();
   }
 
 }

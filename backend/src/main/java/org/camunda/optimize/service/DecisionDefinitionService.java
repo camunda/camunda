@@ -96,7 +96,7 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
   private boolean isAuthorizedToReadDecisionDefinition(final String userId,
                                                        final DecisionDefinitionOptimizeDto decisionDefinition) {
     return authorizationService.isAuthorizedToSeeDecisionDefinition(
-      userId, decisionDefinition.getKey(), decisionDefinition.getTenantId()
+      userId, decisionDefinition.getKey(), decisionDefinition.getTenantId(), decisionDefinition.getEngine()
     );
   }
 

@@ -49,6 +49,18 @@ public class TenantService implements ConfigurationReloadable {
       .collect(Collectors.toList());
   }
 
+  public List<TenantDto> getTenantsForUserByEngine(final String userId, final String engineAlias) {
+    return getTenantsByEngine(engineAlias).stream()
+      .filter(tenantDto -> tenantAuthorizationService.isAuthorizedToSeeTenant(userId, tenantDto.getId(), engineAlias))
+      .collect(Collectors.toList());
+  }
+
+  public List<TenantDto> getTenantsByEngine(final String engineAlias) {
+    return getTenants().stream()
+      .filter(tenantDto -> tenantDto.equals(TENANT_NONE) || tenantDto.getEngine().equals(engineAlias))
+      .collect(Collectors.toList());
+  }
+
   public List<TenantDto> getTenants() {
     final List<TenantDto> tenants = new ArrayList<>(configuredDefaultTenants);
     tenants.addAll(tenantReader.getTenants());

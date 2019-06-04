@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
@@ -105,6 +106,46 @@ public class ProcessDefinitionReader {
         processDefinitionVersion,
         tenantId
       );
+    }
+    return Optional.ofNullable(processDefinitionOptimizeDto);
+  }
+
+  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionByKeyAndEngine(final String processDefinitionKey,
+                                                                                   final String engineAlias) {
+
+    if (processDefinitionKey == null) {
+      return Optional.empty();
+    }
+
+    final BoolQueryBuilder query = QueryBuilders.boolQuery()
+      .must(termQuery(PROCESS_DEFINITION_KEY, processDefinitionKey))
+      .must(termQuery(ENGINE, engineAlias));
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(query);
+    searchSourceBuilder.size(1);
+    SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(PROC_DEF_TYPE))
+      .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format(
+        "Was not able to fetch process definition with key [%s] and engineAlias [%s]", processDefinitionKey, engineAlias
+      );
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = null;
+    if (searchResponse.getHits().getTotalHits() > 0L) {
+      String responseAsString = searchResponse.getHits().getAt(0).getSourceAsString();
+      try {
+        processDefinitionOptimizeDto = objectMapper.readValue(responseAsString, ProcessDefinitionOptimizeDto.class);
+      } catch (IOException e) {
+        log.error("Could not read process definition from Elasticsearch!", e);
+      }
     }
     return Optional.ofNullable(processDefinitionOptimizeDto);
   }

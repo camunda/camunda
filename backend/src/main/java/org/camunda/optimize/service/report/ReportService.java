@@ -32,7 +32,7 @@ import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.relations.ReportRelationService;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.springframework.stereotype.Component;
 
@@ -53,7 +53,7 @@ public class ReportService {
   private final ReportWriter reportWriter;
   private final ReportReader reportReader;
   private final AuthorizationCheckReportEvaluationHandler reportEvaluator;
-  private final DefinitionAuthorizationService authorizationService;
+  private final ReportAuthorizationService authorizationService;
   private final ReportRelationService reportRelationService;
 
   public ConflictResponseDto getReportDeleteConflictingItemsWithAuthorizationCheck(String userId, String reportId) {
@@ -304,7 +304,7 @@ public class ReportService {
                                                        SingleProcessReportDefinitionDto reportDefinition) {
     final ProcessReportDataDto reportData = reportDefinition.getData();
     if (reportData != null) {
-      return authorizationService.isAuthorizedToSeeProcessDefinition(
+      return authorizationService.isAuthorizedToSeeProcessReport(
         userId, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
       );
     }
@@ -315,7 +315,7 @@ public class ReportService {
                                                         SingleDecisionReportDefinitionDto reportDefinition) {
     final DecisionReportDataDto reportData = reportDefinition.getData();
     if (reportData != null) {
-      return authorizationService.isAuthorizedToSeeDecisionDefinition(
+      return authorizationService.isAuthorizedToSeeDecisionReport(
         userId, reportData.getDecisionDefinitionKey(), reportData.getTenantIds()
       );
     }
@@ -327,7 +327,7 @@ public class ReportService {
       SingleProcessReportDefinitionDto processDefinition = (SingleProcessReportDefinitionDto) reportDefinition;
       final ProcessReportDataDto reportData = processDefinition.getData();
       if (reportData != null) {
-        return authorizationService.isAuthorizedToSeeProcessDefinition(
+        return authorizationService.isAuthorizedToSeeProcessReport(
           userId, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
         );
       }
@@ -335,7 +335,7 @@ public class ReportService {
       SingleDecisionReportDefinitionDto decisionReport = (SingleDecisionReportDefinitionDto) reportDefinition;
       DecisionReportDataDto reportData = decisionReport.getData();
       if (reportData != null) {
-        return authorizationService.isAuthorizedToSeeDecisionDefinition(
+        return authorizationService.isAuthorizedToSeeDecisionReport(
           userId, reportData.getDecisionDefinitionKey(), reportData.getTenantIds()
         );
       }

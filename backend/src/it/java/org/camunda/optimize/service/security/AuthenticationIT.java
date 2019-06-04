@@ -48,7 +48,7 @@ public class AuthenticationIT {
   }
 
   @Test
-  public void authenticateLockedUser() {
+  public void rejectLockedUser() {
     //given
     engineRule.addUser("kermit", "kermit");
     engineRule.grantUserOptimizeAccess("kermit");
@@ -64,12 +64,35 @@ public class AuthenticationIT {
   }
 
   @Test
-  public void authenticateUnknownUser() {
+  public void rejectWrongPassword() {
+    //given
+    engineRule.addUser("kermit", "kermit");
+    engineRule.grantUserOptimizeAccess("kermit");
+
+    //when
+    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "wrong");
+
+    //then
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void rejectUnknownUser() {
     //when
     Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
 
     //then
     assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void rejectOnMissingApplicationAuthorization() {
+    // when
+    engineRule.addUser("kermit", "kermit");
+
+    // then
+    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
+    assertThat(response.getStatus(), is(403));
   }
 
   @Test
@@ -114,16 +137,6 @@ public class AuthenticationIT {
 
     //then
     assertThat(logoutResponse.getStatus(), is(401));
-  }
-
-  @Test
-  public void cantAuthenticateWithoutAnyAuthorization() {
-    // when
-    engineRule.addUser("kermit", "kermit");
-
-    // then
-    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
-    assertThat(response.getStatus(), is(403));
   }
 
   private String authenticateAdminUser() {

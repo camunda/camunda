@@ -141,7 +141,7 @@ public class AbstractProcessDefinitionIT {
     final String processKey = "multiTenantProcess";
     deployedTenants.stream()
       .filter(Objects::nonNull)
-      .forEach(tenantId -> engineRule.createTenant(tenantId, tenantId));
+      .forEach(tenantId -> engineRule.createTenant(tenantId));
     deployedTenants
       .forEach(tenant -> deployAndStartSimpleServiceTaskProcess(processKey, TEST_ACTIVITY, tenant));
 

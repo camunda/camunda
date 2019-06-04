@@ -26,8 +26,14 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
+import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
@@ -39,6 +45,7 @@ import java.util.Map;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.util.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
@@ -48,7 +55,7 @@ import static org.junit.Assert.assertThat;
 
 
 @RunWith(JUnitParamsRunner.class)
-public class ReportAuthorizationIT extends AbstractResourceAuthorizationIT {
+public class ReportAuthorizationIT {
 
   public static final String PROCESS_KEY = "aprocess";
   public static final String DECISION_KEY = "aDecision";
@@ -57,11 +64,21 @@ public class ReportAuthorizationIT extends AbstractResourceAuthorizationIT {
     return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
   }
 
+  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  public AuthorizationClient authorizationClient = new AuthorizationClient(engineRule);
+
+  @Rule
+  public RuleChain chain = RuleChain
+    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+
+
   @Test
   @Parameters(method = "definitionType")
   public void evaluateUnauthorizedStoredReport(int definitionResourceType) throws Exception {
     // given
-    addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
 
     String reportId = createReportForDefinition(definitionResourceType);
@@ -82,8 +99,8 @@ public class ReportAuthorizationIT extends AbstractResourceAuthorizationIT {
   public void evaluateUnauthorizedTenantsStoredReport(int definitionResourceType) throws Exception {
     // given
     final String tenantId = "tenant1";
-    addKermitUserAndGrantAccessToOptimize();
-    addGlobalAuthorizationForResource(definitionResourceType);
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
     deployStartAndImportDefinition(definitionResourceType);
 
     String reportId = createReportForDefinition(definitionResourceType, ImmutableList.of(tenantId));
@@ -105,9 +122,9 @@ public class ReportAuthorizationIT extends AbstractResourceAuthorizationIT {
     // given
     final String tenantId1 = "tenant1";
     final String tenantId2 = "tenant2";
-    addKermitUserAndGrantAccessToOptimize();
-    addGlobalAuthorizationForResource(definitionResourceType);
-    grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+    authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
     deployStartAndImportDefinition(definitionResourceType);
 
     String reportId = createReportForDefinition(definitionResourceType, ImmutableList.of(tenantId1, tenantId2));
@@ -129,10 +146,10 @@ public class ReportAuthorizationIT extends AbstractResourceAuthorizationIT {
     // given
     final String tenantId1 = "tenant1";
     final String tenantId2 = "tenant2";
-    addKermitUserAndGrantAccessToOptimize();
-    addGlobalAuthorizationForResource(definitionResourceType);
-    grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
-    grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId2, RESOURCE_TYPE_TENANT);
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+    authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
+    authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId2, RESOURCE_TYPE_TENANT);
     deployStartAndImportDefinition(definitionResourceType);
 
     String reportId = createReportForDefinition(
@@ -155,7 +172,7 @@ public class ReportAuthorizationIT extends AbstractResourceAuthorizationIT {
   @Parameters(method = "definitionType")
   public void deleteUnauthorizedStoredReport(int definitionResourceType) throws Exception {
     // given
-    addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
 
     String reportId = createReportForDefinition(definitionResourceType);
@@ -175,7 +192,7 @@ public class ReportAuthorizationIT extends AbstractResourceAuthorizationIT {
   @Parameters(method = "definitionType")
   public void evaluateUnauthorizedOnTheFlyReport(int definitionResourceType) throws Exception {
     // given
-    addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
 
     // when
@@ -194,7 +211,7 @@ public class ReportAuthorizationIT extends AbstractResourceAuthorizationIT {
   @Parameters(method = "definitionType")
   public void updateUnauthorizedReport(int definitionResourceType) throws Exception {
     // given
-    addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
 
     String reportId = createReportForDefinition(definitionResourceType);
@@ -216,7 +233,7 @@ public class ReportAuthorizationIT extends AbstractResourceAuthorizationIT {
   @Parameters(method = "definitionType")
   public void getUnauthorizedReport(int definitionResourceType) throws Exception {
     // given
-    addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
 
     String reportId = createReportForDefinition(definitionResourceType);
@@ -236,7 +253,7 @@ public class ReportAuthorizationIT extends AbstractResourceAuthorizationIT {
   @Parameters(method = "definitionType")
   public void shareUnauthorizedReport(int definitionResourceType) throws Exception {
     // given
-    addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
 
     String reportId = createReportForDefinition(definitionResourceType);
@@ -258,7 +275,7 @@ public class ReportAuthorizationIT extends AbstractResourceAuthorizationIT {
   @Parameters(method = "definitionType")
   public void newReportCanBeAccessedByEveryone(int definitionResourceType) throws Exception {
     // given
-    addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
 
     String reportId = createNewReport(definitionResourceType);
@@ -288,9 +305,9 @@ public class ReportAuthorizationIT extends AbstractResourceAuthorizationIT {
     // given
     final String authorizedProcessDefinitionKey = "aprocess";
     final String notAuthorizedProcessDefinitionKey = "notAuthorizedProcess";
-    addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployAndStartSimpleProcessDefinition(authorizedProcessDefinitionKey);
-    grantSingleResourceAuthorizationForKermit(authorizedProcessDefinitionKey, RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationClient.grantSingleResourceAuthorizationForKermit(authorizedProcessDefinitionKey, RESOURCE_TYPE_PROCESS_DEFINITION);
     deployAndStartSimpleProcessDefinition(notAuthorizedProcessDefinitionKey);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();

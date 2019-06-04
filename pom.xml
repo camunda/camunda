@@ -82,6 +82,7 @@
       </activation>
       <properties>
         <camunda.engine.version>7.11.0-alpha4</camunda.engine.version>
+        <engine.profile.id>engine-latest</engine.profile.id>
       </properties>
     </profile>
 
@@ -89,6 +90,7 @@
       <id>engine-7.10</id>
       <properties>
         <camunda.engine.version>${camunda.engine-7.10}</camunda.engine.version>
+        <engine.profile.id>engine-7.10</engine.profile.id>
       </properties>
     </profile>
 
@@ -96,6 +98,7 @@
       <id>engine-7.9</id>
       <properties>
         <camunda.engine.version>7.9.7</camunda.engine.version>
+        <engine.profile.id>engine-7.9</engine.profile.id>
       </properties>
     </profile>
 

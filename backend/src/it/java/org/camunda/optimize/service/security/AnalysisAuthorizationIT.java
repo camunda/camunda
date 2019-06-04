@@ -11,8 +11,14 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
+import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
@@ -22,10 +28,11 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class AnalysisAuthorizationIT extends AbstractResourceAuthorizationIT {
+public class AnalysisAuthorizationIT {
   private static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
   private static final String START_EVENT_ID = "startEvent";
   private static final String SPLITTING_GATEWAY_ID = "splittingGateway";
@@ -34,13 +41,22 @@ public class AnalysisAuthorizationIT extends AbstractResourceAuthorizationIT {
   private static final String MERGE_GATEWAY_ID = "mergeExclusiveGateway";
   private static final String END_EVENT_ID = "endEvent";
 
+  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
+  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  public AuthorizationClient authorizationClient = new AuthorizationClient(engineRule);
+
+  @Rule
+  public RuleChain chain = RuleChain
+    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+
   @Test
   public void branchAnalysis_authorized() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    addKermitUserAndGrantAccessToOptimize();
-    addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -57,8 +73,8 @@ public class AnalysisAuthorizationIT extends AbstractResourceAuthorizationIT {
     // given
     final ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    addKermitUserAndGrantAccessToOptimize();
-    addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -95,9 +111,9 @@ public class AnalysisAuthorizationIT extends AbstractResourceAuthorizationIT {
     // given
     final String tenantId = "tenantId";
     final ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition(tenantId);
-    addKermitUserAndGrantAccessToOptimize();
-    addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
-    grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -115,8 +131,8 @@ public class AnalysisAuthorizationIT extends AbstractResourceAuthorizationIT {
     // given
     final String tenantId = "tenantId";
     final ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition(tenantId);
-    addKermitUserAndGrantAccessToOptimize();
-    addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -136,9 +152,9 @@ public class AnalysisAuthorizationIT extends AbstractResourceAuthorizationIT {
     final String tenantId2 = "tenantId2";
     final ProcessDefinitionEngineDto processDefinition1 = deploySimpleGatewayProcessDefinition(tenantId1);
     final ProcessDefinitionEngineDto processDefinition2 = deploySimpleGatewayProcessDefinition(tenantId2);
-    addKermitUserAndGrantAccessToOptimize();
-    addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
-    grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
     startSimpleGatewayProcessAndTakeTask1(processDefinition1);
     startSimpleGatewayProcessAndTakeTask1(processDefinition2);
 
@@ -154,7 +170,8 @@ public class AnalysisAuthorizationIT extends AbstractResourceAuthorizationIT {
 
   private Response executeBranchAnalysisAsKermit(final ProcessDefinitionEngineDto processDefinition) {
     return executeBranchAnalysisAsKermit(
-      processDefinition, processDefinition.getTenantId().map(Collections::singletonList).orElse(Collections.emptyList())
+      processDefinition,
+      processDefinition.getTenantId().map(Collections::singletonList).orElse(Collections.emptyList())
     );
   }
 

@@ -49,6 +49,7 @@ public class EngineConstantsUtil {
   public static final int RESOURCE_TYPE_PROCESS_DEFINITION = 6;
   public static final int RESOURCE_TYPE_DECISION_DEFINITION = 10;
   public static final int RESOURCE_TYPE_USER = 1;
+  public static final int RESOURCE_TYPE_GROUP = 2;
   public static final int RESOURCE_TYPE_AUTHORIZATION = 4;
   public static final int RESOURCE_TYPE_TENANT = 11;
 

@@ -12,19 +12,19 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.springframework.stereotype.Component;
 
 
 @Component
 public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationHandler {
 
-  private final DefinitionAuthorizationService authorizationService;
+  private final ReportAuthorizationService authorizationService;
 
   public AuthorizationCheckReportEvaluationHandler(final ReportReader reportReader,
                                                    final SingleReportEvaluator singleReportEvaluator,
                                                    final CombinedReportEvaluator combinedReportEvaluator,
-                                                   final DefinitionAuthorizationService authorizationService) {
+                                                   final ReportAuthorizationService authorizationService) {
     super(reportReader, singleReportEvaluator, combinedReportEvaluator);
     this.authorizationService = authorizationService;
   }
@@ -42,7 +42,7 @@ public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationH
       SingleProcessReportDefinitionDto processReport = (SingleProcessReportDefinitionDto) report;
       ProcessReportDataDto reportData = processReport.getData();
       if (reportData != null) {
-        return authorizationService.isAuthorizedToSeeProcessDefinition(
+        return authorizationService.isAuthorizedToSeeProcessReport(
           userId, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
         );
       }
@@ -50,7 +50,7 @@ public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationH
       SingleDecisionReportDefinitionDto decisionReport = (SingleDecisionReportDefinitionDto) report;
       DecisionReportDataDto reportData = decisionReport.getData();
       if (reportData != null) {
-        return authorizationService.isAuthorizedToSeeDecisionDefinition(
+        return authorizationService.isAuthorizedToSeeDecisionReport(
           userId, reportData.getDecisionDefinitionKey(), reportData.getTenantIds()
         );
       }

@@ -45,6 +45,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
@@ -625,7 +626,7 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   private void createTenant(final String id, final String name) {
-    final TenantDto tenantDto = new TenantDto(id, name, "engine");
+    final TenantDto tenantDto = new TenantDto(id, name, DEFAULT_ENGINE_ALIAS);
     elasticSearchRule.addEntryToElasticsearch(TENANT_TYPE, id, tenantDto);
   }
 
@@ -655,6 +656,7 @@ public class ProcessDefinitionRestServiceIT {
       .setKey(key)
       .setVersion(version)
       .setTenantId(tenantId)
+      .setEngine(DEFAULT_ENGINE_ALIAS)
       .setBpmn20Xml(key + version + tenantId);
     elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, expectedDto.getId(), expectedDto);
     return expectedDto;
@@ -675,6 +677,7 @@ public class ProcessDefinitionRestServiceIT {
       .setId(PROCESS_DEFINITION_ID)
       .setKey(PROCESS_DEFINITION_KEY)
       .setVersion(PROCESS_DEFINITION_VERSION_1)
+      .setEngine(DEFAULT_ENGINE_ALIAS)
       .setBpmn20Xml(readDiagram(DIAGRAM));
     elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, PROCESS_DEFINITION_ID, processDefinitionXmlDto);
 

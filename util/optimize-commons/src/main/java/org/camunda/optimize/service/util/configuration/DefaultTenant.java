@@ -16,4 +16,9 @@ import lombok.NoArgsConstructor;
 public class DefaultTenant {
   private String id;
   private String name;
+
+  public DefaultTenant(final String id) {
+    this.id = id;
+    this.name = id;
+  }
 }
