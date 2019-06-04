@@ -100,7 +100,8 @@ it('should pass errors via props', done => {
   );
   const node = mount(<Component />);
 
-  setTimeout(() => {
+  setTimeout(async () => {
+    await node.update();
     expect(node).toIncludeText(error.toString());
     done();
   });
