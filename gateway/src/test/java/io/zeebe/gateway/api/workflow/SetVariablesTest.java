@@ -61,7 +61,7 @@ public class SetVariablesTest extends GatewayTest {
     assertThat(brokerRequest.getPartitionId()).isEqualTo(partitionId);
 
     final VariableDocumentRecord brokerRequestValue = brokerRequest.getRequestWriter();
-    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getDocument(), variables);
+    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getDocumentBuffer(), variables);
     assertThat(brokerRequestValue.getScopeKey()).isEqualTo(elementInstanceKey);
   }
 }

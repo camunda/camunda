@@ -21,15 +21,21 @@ import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
@@ -48,7 +54,9 @@ public class MsgPackConverter {
 
   private static final JsonFactory MESSAGE_PACK_FACTORY =
       new MessagePackFactory().setReuseResourceInGenerator(false).setReuseResourceInParser(false);
-  private static final JsonFactory JSON_FACTORY = new MappingJsonFactory();
+  private static final JsonFactory JSON_FACTORY =
+      new MappingJsonFactory().configure(Feature.ALLOW_SINGLE_QUOTES, true);
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(JSON_FACTORY);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////// JSON to MSGPACK //////////////////////////////////////////
@@ -125,5 +133,22 @@ public class MsgPackConverter {
     }
 
     generator.flush();
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////// MSGPACK to MAP ///////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+
+  public static Map<String, Object> convertToMap(DirectBuffer buffer) {
+    final byte[] msgpackBytes = BufferUtil.bufferAsArray(buffer);
+    final byte[] jsonBytes = convertToJsonBytes(new ByteArrayInputStream(msgpackBytes));
+
+    final TypeReference<HashMap<String, Object>> typeRef =
+        new TypeReference<HashMap<String, Object>>() {};
+    try {
+      return OBJECT_MAPPER.readValue(jsonBytes, typeRef);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

@@ -33,7 +33,6 @@ import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSen
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.exporter.api.record.value.MessageRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.exporter.api.record.value.deployment.ResourceType;
@@ -47,11 +46,9 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -149,16 +146,23 @@ public class EngineRule extends ExternalResource {
         .setResource(wrapString(Bpmn.convertToString(modelInstance)))
         .setResourceType(ResourceType.BPMN_XML);
 
-    environmentRule.writeCommand(DeploymentIntent.CREATE, deploymentRecord);
+    final long position = environmentRule.writeCommand(DeploymentIntent.CREATE, deploymentRecord);
+
+    final Record<DeploymentRecordValue> firstCreated =
+        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
+            .withSourceRecordPosition(position)
+            .getFirst();
 
     forEachPartition(
         partitionId ->
             RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
                 .withPartitionId(partitionId)
+                .withRecordKey(firstCreated.getKey())
                 .getFirst());
 
     return RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
         .withPartitionId(PARTITION_ID)
+        .withRecordKey(firstCreated.getKey())
         .getFirst();
   }
 
@@ -173,16 +177,6 @@ public class EngineRule extends ExternalResource {
         .withIntent(WorkflowInstanceCreationIntent.CREATED)
         .withSourceRecordPosition(position)
         .getFirst();
-  }
-
-  public Record<JobRecordValue> completeJobOfType(String type) {
-    final Record<JobRecordValue> createdEvent =
-        RecordingExporter.jobRecords().withIntent(JobIntent.CREATED).withType(type).getFirst();
-
-    final JobRecord jobRecord = new JobRecord();
-    environmentRule.writeCommand(createdEvent.getKey(), JobIntent.COMPLETE, jobRecord);
-
-    return RecordingExporter.jobRecords().withType(type).withIntent(JobIntent.COMPLETED).getFirst();
   }
 
   public Record<MessageRecordValue> publishMessage(
@@ -206,6 +200,18 @@ public class EngineRule extends ExternalResource {
     return IntStream.range(PARTITION_ID, PARTITION_ID + partitionCount)
         .boxed()
         .collect(Collectors.toList());
+  }
+
+  public VariableClient variables(long scopeKey) {
+    return new VariableClient(environmentRule, scopeKey);
+  }
+
+  public JobActivationClient jobs() {
+    return new JobActivationClient(environmentRule);
+  }
+
+  public JobClient job(long workflowInstanceKey) {
+    return new JobClient(environmentRule, workflowInstanceKey);
   }
 
   private class DeploymentDistributionImpl implements DeploymentDistributor {
