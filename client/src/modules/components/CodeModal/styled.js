@@ -15,6 +15,7 @@ const LinesSeparator = css`
     position: fixed;
     top: 55px;
     bottom: 0;
+    margin-bottom: 76px;
     left: 0;
     width: 32px;
     border-right: 1px solid
@@ -65,6 +66,8 @@ export const CodeLine = themed(styled.p`
     font-size: 12px;
     box-sizing: border-box;
     text-align: right;
+    vertical-align: top;
+    line-height: 17px;
     counter-increment: line;
     content: counter(line);
     color: ${themeStyle({
