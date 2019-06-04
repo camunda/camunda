@@ -182,7 +182,8 @@ public class JobOutputMappingTest {
             .getInstanceKey();
 
     ENGINE_RULE
-        .job(workflowInstanceKey)
+        .job()
+        .ofInstance(workflowInstanceKey)
         .withType(jobType)
         .withVariables(MsgPackUtil.asMsgPack(jobVariables))
         .complete();

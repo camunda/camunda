@@ -68,7 +68,7 @@ public class UpdateVariableDocumentTest {
         .withDocument(document)
         .withUpdateSemantic(VariableDocumentUpdateSemantic.PROPAGATE)
         .update();
-    ENGINE_RULE.job(workflowInstanceKey).withType(type).complete();
+    ENGINE_RULE.job().ofInstance(workflowInstanceKey).withType(type).complete();
 
     // then
     final long completedPosition =

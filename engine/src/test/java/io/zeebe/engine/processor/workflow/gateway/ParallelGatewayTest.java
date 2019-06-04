@@ -95,10 +95,10 @@ public class ParallelGatewayTest {
             .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID))
             .getValue()
             .getInstanceKey();
-    engine.job(workflowInstanceKey).withType("type1").complete();
+    engine.job().ofInstance(workflowInstanceKey).withType("type1").complete();
 
     // when
-    engine.job(workflowInstanceKey).withType("type2").complete();
+    engine.job().ofInstance(workflowInstanceKey).withType("type2").complete();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> completedEvents =
@@ -279,7 +279,7 @@ public class ParallelGatewayTest {
 
     // when
     // we complete the job
-    engine.job(workflowInstanceKey).withType("type").complete();
+    engine.job().ofInstance(workflowInstanceKey).withType("type").complete();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> events =

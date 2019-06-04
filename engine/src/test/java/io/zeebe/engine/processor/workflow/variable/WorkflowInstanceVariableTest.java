@@ -89,7 +89,12 @@ public class WorkflowInstanceVariableTest {
             .getInstanceKey();
 
     // when
-    ENGINE_RULE.job(workflowInstanceKey).withType("test").withVariables("{'x':1}").complete();
+    ENGINE_RULE
+        .job()
+        .ofInstance(workflowInstanceKey)
+        .withType("test")
+        .withVariables("{'x':1}")
+        .complete();
 
     // then
     final Record<VariableRecordValue> variableRecord =
@@ -123,7 +128,12 @@ public class WorkflowInstanceVariableTest {
         ENGINE_RULE.createWorkflowInstance(r -> r.setKey(workflowKey)).getValue().getInstanceKey();
 
     // when
-    ENGINE_RULE.job(workflowInstanceKey).withType("test").withVariables("{'x':1}").complete();
+    ENGINE_RULE
+        .job()
+        .ofInstance(workflowInstanceKey)
+        .withType("test")
+        .withVariables("{'x':1}")
+        .complete();
 
     // then
     final Record<VariableRecordValue> variableRecord =
@@ -198,7 +208,12 @@ public class WorkflowInstanceVariableTest {
             .getInstanceKey();
 
     // when
-    ENGINE_RULE.job(workflowInstanceKey).withType("test").withVariables("{'x':2}").complete();
+    ENGINE_RULE
+        .job()
+        .ofInstance(workflowInstanceKey)
+        .withType("test")
+        .withVariables("{'x':2}")
+        .complete();
 
     // then
     final Record<VariableRecordValue> variableRecord =
@@ -236,7 +251,12 @@ public class WorkflowInstanceVariableTest {
             .getInstanceKey();
 
     // when
-    ENGINE_RULE.job(workflowInstanceKey).withType("test").withVariables("{'x':2}").complete();
+    ENGINE_RULE
+        .job()
+        .ofInstance(workflowInstanceKey)
+        .withType("test")
+        .withVariables("{'x':2}")
+        .complete();
 
     // then
     final Record<VariableRecordValue> variableRecord =
@@ -289,7 +309,8 @@ public class WorkflowInstanceVariableTest {
 
     // when
     ENGINE_RULE
-        .job(workflowInstanceKey)
+        .job()
+        .ofInstance(workflowInstanceKey)
         .withType("test")
         .withVariables("{'x':1, 'y':4, 'z':5}")
         .complete();

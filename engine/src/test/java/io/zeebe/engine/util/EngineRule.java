@@ -210,8 +210,8 @@ public class EngineRule extends ExternalResource {
     return new JobActivationClient(environmentRule);
   }
 
-  public JobClient job(long workflowInstanceKey) {
-    return new JobClient(environmentRule, workflowInstanceKey);
+  public JobClient job() {
+    return new JobClient(environmentRule);
   }
 
   private class DeploymentDistributionImpl implements DeploymentDistributor {
@@ -234,7 +234,7 @@ public class EngineRule extends ExternalResource {
             deploymentRecord.wrap(buffer);
 
             environmentRule.writeCommandOnPartition(
-                partitionId, DeploymentIntent.CREATE, deploymentRecord);
+                partitionId, key, DeploymentIntent.CREATE, deploymentRecord);
           });
 
       return CompletableActorFuture.completed(null);

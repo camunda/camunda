@@ -33,13 +33,17 @@ public class JobClient {
 
   private final JobRecord jobRecord;
   private final StreamProcessorRule environmentRule;
-  private final long workflowInstanceKey;
+  private long workflowInstanceKey;
 
-  public JobClient(StreamProcessorRule environmentRule, long workflowInstanceKey) {
+  public JobClient(StreamProcessorRule environmentRule) {
     this.environmentRule = environmentRule;
-    this.workflowInstanceKey = workflowInstanceKey;
 
     this.jobRecord = new JobRecord();
+  }
+
+  public JobClient ofInstance(long workflowInstanceKey) {
+    this.workflowInstanceKey = workflowInstanceKey;
+    return this;
   }
 
   public JobClient withVariables(String variables) {

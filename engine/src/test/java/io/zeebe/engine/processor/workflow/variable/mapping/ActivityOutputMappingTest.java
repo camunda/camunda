@@ -117,7 +117,7 @@ public class ActivityOutputMappingTest {
             .getValue()
             .getInstanceKey();
 
-    ENGINE_RULE.job(workflowInstanceKey).withType(jobType).complete();
+    ENGINE_RULE.job().ofInstance(workflowInstanceKey).withType(jobType).complete();
 
     // then
     final Record<WorkflowInstanceRecordValue> taskCompleted =
