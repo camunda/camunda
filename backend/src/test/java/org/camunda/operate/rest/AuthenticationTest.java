@@ -47,10 +47,13 @@ public class AuthenticationTest {
   public static final String PASSWORD = "demo";
 
   @Autowired
+  WebSecurityConfig webSecurityConfig;
+  
+  @Autowired
   private TestRestTemplate testRestTemplate;
 
   @Test
-  public void shouldSetCookie() {
+  public void shouldSetCookieAndCSRFToken() {
     // given
     HttpEntity<MultiValueMap<String, String>> request = prepareLoginRequest(USERNAME, PASSWORD);
 
@@ -61,6 +64,10 @@ public class AuthenticationTest {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     assertThat(response.getHeaders()).containsKey("Set-Cookie");
     assertThat(response.getHeaders().get("Set-Cookie").get(0)).contains(COOKIE_JSESSIONID);
+    if(webSecurityConfig.isCRSFPreventionEnabled()) {
+      assertThat(response.getHeaders()).containsKey("X-CSRF-TOKEN");
+      assertThat(response.getHeaders().get("X-CSRF-TOKEN").get(0)).isNotBlank();
+    }
   }
 
   @Test
@@ -86,9 +93,7 @@ public class AuthenticationTest {
     assertThat(loginResponse.getHeaders()).containsKey("Set-Cookie");
     assertThat(loginResponse.getHeaders().get("Set-Cookie").get(0)).contains(COOKIE_JSESSIONID);
 
-    String session = loginResponse.getHeaders().get("Set-Cookie").get(0);
-
-    HttpEntity<Map<String, String>> logoutRequest = prepareRequestWithCookies(session);
+    HttpEntity<Map<String, String>> logoutRequest = prepareRequestWithCookies(loginResponse);
 
     // when
     ResponseEntity<String> logoutResponse = logout(logoutRequest);
@@ -103,11 +108,10 @@ public class AuthenticationTest {
     //given authenticated user
     HttpEntity<MultiValueMap<String, String>> loginRequest = prepareLoginRequest(USERNAME, PASSWORD);
     ResponseEntity<Void> loginResponse = login(loginRequest);
-    String session = loginResponse.getHeaders().get("Set-Cookie").get(0);
 
     //when
     final ResponseEntity<UserDto> responseEntity = testRestTemplate.exchange(CURRENT_USER_URL, HttpMethod.GET,
-      prepareRequestWithCookies(session), UserDto.class);
+      prepareRequestWithCookies(loginResponse), UserDto.class);
 
     //then
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -120,25 +124,34 @@ public class AuthenticationTest {
     //when user is logged in
     HttpEntity<MultiValueMap<String, String>> loginRequest = prepareLoginRequest(USERNAME, PASSWORD);
     ResponseEntity<Void> loginResponse = login(loginRequest);
-    String session = loginResponse.getHeaders().get("Set-Cookie").get(0);
     
     //then endpoints are accessible
-    ResponseEntity<Object> responseEntity = testRestTemplate.exchange(CURRENT_USER_URL, HttpMethod.GET, prepareRequestWithCookies(session), Object.class);
+    ResponseEntity<Object> responseEntity = testRestTemplate.exchange(CURRENT_USER_URL, HttpMethod.GET, prepareRequestWithCookies(loginResponse), Object.class);
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(responseEntity.getBody()).isNotNull();
 
     //when user logged out
-    HttpEntity<Map<String, String>> logoutRequest = prepareRequestWithCookies(session);
+    HttpEntity<Map<String, String>> logoutRequest = prepareRequestWithCookies(loginResponse);
     logout(logoutRequest);
 
     //then endpoint is not accessible
-    responseEntity = testRestTemplate.exchange(CURRENT_USER_URL, HttpMethod.GET, prepareRequestWithCookies(session), Object.class);
+    responseEntity = testRestTemplate.exchange(CURRENT_USER_URL, HttpMethod.GET, prepareRequestWithCookies(loginResponse), Object.class);
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-
+  }
+  
+  protected HttpHeaders getHeaderWithCSRF(HttpHeaders responseHeaders) {
+    HttpHeaders headers = new HttpHeaders();
+    if(responseHeaders.containsKey("X-CSRF-HEADER")) {
+      String csrfHeader = responseHeaders.get("X-CSRF-HEADER").get(0);
+      String csrfToken = responseHeaders.get("X-CSRF-TOKEN").get(0);
+      headers.set(csrfHeader,csrfToken);
+    }
+    return headers;
   }
 
   protected HttpEntity<MultiValueMap<String, String>> prepareLoginRequest(String username, String password) {
     HttpHeaders headers = new HttpHeaders();
+    
     headers.setContentType(APPLICATION_FORM_URLENCODED);
 
     MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
@@ -148,10 +161,10 @@ public class AuthenticationTest {
     return new HttpEntity<>(body, headers);
   }
 
-  protected HttpEntity<Map<String, String>> prepareRequestWithCookies(String session) {
-    HttpHeaders headers = new HttpHeaders();
+  protected HttpEntity<Map<String, String>> prepareRequestWithCookies(ResponseEntity<?> response) {
+    HttpHeaders headers = getHeaderWithCSRF(response.getHeaders());
     headers.setContentType(APPLICATION_JSON);
-    headers.add("Cookie", session);
+    headers.add("Cookie", response.getHeaders().get("Set-Cookie").get(0));
 
     Map<String, String> body = new HashMap<>();
 

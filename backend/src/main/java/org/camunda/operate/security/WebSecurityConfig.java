@@ -5,12 +5,16 @@
  */
 package org.camunda.operate.security;
 
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+
 import javax.json.Json;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.charset.Charset;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
@@ -25,9 +29,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
-import static org.springframework.http.HttpStatus.NO_CONTENT;
-import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+import org.springframework.security.web.csrf.CsrfToken;
 
 @Profile("auth")
 @EnableWebSecurity
@@ -37,7 +39,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   public static final String LOGIN_RESOURCE = "/api/login";
   public static final String LOGOUT_RESOURCE = "/api/logout";
   public static final String ACTUATOR_ENDPOINTS = "/actuator/**";
-
+  
+  private boolean isCRSFPreventionEnabled = false;
+  
   private static final String[] AUTH_WHITELIST = {
     // -- swagger ui
     "/swagger-resources",
@@ -77,7 +81,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   @Override
   public void configure(HttpSecurity http) throws Exception {
     http
-      .csrf().disable()
       .authorizeRequests()
         .antMatchers(AUTH_WHITELIST).permitAll()
         .antMatchers("/api/**").authenticated()
@@ -97,6 +100,19 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         .deleteCookies(COOKIE_JSESSIONID)
       .and()
       .exceptionHandling().authenticationEntryPoint(this::failureHandler);
+    if(isCRSFPreventionEnabled){
+      http.csrf().ignoringAntMatchers(LOGIN_RESOURCE);
+    }else {
+      http.csrf().disable();
+    }
+  }
+  
+  public boolean isCRSFPreventionEnabled() {
+    return isCRSFPreventionEnabled;
+  }
+
+  public void setCRSFPreventionEnabled(boolean isCRSFPreventionEnabled) {
+    this.isCRSFPreventionEnabled = isCRSFPreventionEnabled;
   }
 
   private void logoutSuccessHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
@@ -116,9 +132,19 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     response.setStatus(UNAUTHORIZED.value());
     response.setContentType(APPLICATION_JSON.getMimeType());
   }
+  
+  private HttpServletResponse addCSRFTokenWhenAvailable(HttpServletRequest request, HttpServletResponse response) {
+    CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());     
+    if (token != null) {
+      response.setHeader("X-CSRF-HEADER", token.getHeaderName());
+      response.setHeader("X-CSRF-PARAM", token.getParameterName());
+      response.setHeader("X-CSRF-TOKEN", token.getToken());
+    }
+    return response;
+  }
 
-  private void successHandler(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Authentication authentication) {
-    httpServletResponse.setStatus(NO_CONTENT.value());
+  private void successHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+    addCSRFTokenWhenAvailable(request,response).setStatus(NO_CONTENT.value());
   }
 
 }
