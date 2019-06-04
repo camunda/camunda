@@ -139,7 +139,12 @@ public class MessageMappingTest {
             .getInstanceKey();
 
     // when
-    ENGINE_RULE.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
+    ENGINE_RULE
+        .message()
+        .withCorrelationKey(correlationKey)
+        .withName(MESSAGE_NAME)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
 
     // then
     final Record<VariableRecordValue> variableEvent =
@@ -168,7 +173,12 @@ public class MessageMappingTest {
             .getInstanceKey();
 
     // when
-    ENGINE_RULE.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
+    ENGINE_RULE
+        .message()
+        .withCorrelationKey(correlationKey)
+        .withName(MESSAGE_NAME)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
 
     // then
     final Record<VariableRecordValue> variableEvent =
@@ -196,7 +206,13 @@ public class MessageMappingTest {
             .getInstanceKey();
 
     // when
-    ENGINE_RULE.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
+
+    ENGINE_RULE
+        .message()
+        .withCorrelationKey(correlationKey)
+        .withName(MESSAGE_NAME)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
 
     // then
     final Record<VariableRecordValue> variableEvent =

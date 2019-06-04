@@ -218,7 +218,12 @@ public class MessageCatchElementTest {
         getFirstElementRecord(enteredState);
 
     // when
-    ENGINE_RULE.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
+    ENGINE_RULE
+        .message()
+        .withCorrelationKey(correlationKey)
+        .withName(MESSAGE_NAME)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
 
     // then
     final Record<WorkflowInstanceSubscriptionRecordValue> subscription =
@@ -239,7 +244,12 @@ public class MessageCatchElementTest {
         getFirstElementRecord(enteredState);
 
     // when
-    ENGINE_RULE.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
+    ENGINE_RULE
+        .message()
+        .withCorrelationKey(correlationKey)
+        .withName(MESSAGE_NAME)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
 
     // then
     final Record<MessageSubscriptionRecordValue> subscription =
@@ -307,7 +317,7 @@ public class MessageCatchElementTest {
         .await();
 
     // when
-    ENGINE_RULE.publishMessage(MESSAGE_NAME, correlationKey);
+    ENGINE_RULE.message().withCorrelationKey(correlationKey).withName(MESSAGE_NAME).publish();
 
     // then
     assertThat(

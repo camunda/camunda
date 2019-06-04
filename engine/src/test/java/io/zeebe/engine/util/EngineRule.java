@@ -33,7 +33,6 @@ import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSen
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.MessageRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.api.record.value.deployment.ResourceType;
@@ -44,21 +43,17 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.ReflectUtil;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
@@ -82,7 +77,6 @@ public class EngineRule extends ExternalResource {
 
   private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
   private static final RecordingExporter RECORDING_EXPORTER = new RecordingExporter();
-  public static final Duration DEFAULT_MSG_TTL = Duration.ofHours(1);
 
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -208,105 +202,8 @@ public class EngineRule extends ExternalResource {
         .getFirst();
   }
 
-  public Record<MessageRecordValue> publishMessage(
-      String correlationKey, Function<MessageRecord, MessageRecord> transformer) {
-    return publishMessage(
-        SubscriptionUtil.getSubscriptionPartitionId(
-            BufferUtil.wrapString(correlationKey), partitionCount),
-        correlationKey,
-        transformer);
-  }
-
-  public Record<MessageRecordValue> publishMessage(String messageName, String correlationKey) {
-    return publishMessage(
-        SubscriptionUtil.getSubscriptionPartitionId(
-            BufferUtil.wrapString(correlationKey), partitionCount),
-        messageName,
-        correlationKey,
-        new UnsafeBuffer(0, 0));
-  }
-
-  public Record<MessageRecordValue> publishMessage(
-      String messageName, String correlationKey, DirectBuffer variables) {
-    return publishMessage(
-        SubscriptionUtil.getSubscriptionPartitionId(
-            BufferUtil.wrapString(correlationKey), partitionCount),
-        messageName,
-        correlationKey,
-        variables);
-  }
-
-  public Record<MessageRecordValue> publishMessage(
-      int partitionId, String messageName, String correlationKey, DirectBuffer variables) {
-    return publishMessage(
-        partitionId,
-        correlationKey,
-        (messageRecord) ->
-            messageRecord
-                .setName(messageName)
-                .setVariables(variables)
-                .setTimeToLive(DEFAULT_MSG_TTL.toMillis()));
-  }
-
-  private static final Function<Message, Record<MessageRecordValue>>
-      SUCCESSFUL_EXPECTATION_SUPPLIER =
-          (message) ->
-              RecordingExporter.messageRecords(MessageIntent.PUBLISHED)
-                  .withPartitionId(message.partitionId)
-                  .withCorrelationKey(message.correlationKey)
-                  .withSourceRecordPosition(message.position)
-                  .getFirst();
-
-  private static final Function<Message, Record<MessageRecordValue>>
-      REJECTION_EXPECTATION_SUPPLIER =
-          (message) ->
-              RecordingExporter.messageRecords(MessageIntent.PUBLISH)
-                  .onlyCommandRejections()
-                  .withPartitionId(message.partitionId)
-                  .withCorrelationKey(message.correlationKey)
-                  .getFirst();
-
-  public Record<MessageRecordValue> publishMessage(
-      int partitionId, String correlationKey, Function<MessageRecord, MessageRecord> transformer) {
-    return publishMessage(
-        partitionId, correlationKey, transformer, SUCCESSFUL_EXPECTATION_SUPPLIER);
-  }
-
-  public Record<MessageRecordValue> publishMessageWithExpectedRejection(
-      String correlationKey, Function<MessageRecord, MessageRecord> transformer) {
-    return publishMessage(
-        SubscriptionUtil.getSubscriptionPartitionId(
-            BufferUtil.wrapString(correlationKey), partitionCount),
-        correlationKey,
-        transformer,
-        REJECTION_EXPECTATION_SUPPLIER);
-  }
-
-  public Record<MessageRecordValue> publishMessage(
-      int partitionId,
-      String correlationKey,
-      Function<MessageRecord, MessageRecord> transformer,
-      Function<Message, Record<MessageRecordValue>> expectation) {
-    final MessageRecord messageRecord =
-        transformer.apply(new MessageRecord().setCorrelationKey(correlationKey));
-
-    final long position =
-        environmentRule.writeCommandOnPartition(partitionId, MessageIntent.PUBLISH, messageRecord);
-
-    return expectation.apply(new Message(partitionId, correlationKey, position));
-  }
-
-  private class Message {
-
-    final int partitionId;
-    final String correlationKey;
-    final long position;
-
-    Message(int partitionId, String correlationKey, long position) {
-      this.partitionId = partitionId;
-      this.correlationKey = correlationKey;
-      this.position = position;
-    }
+  public PublishMessageClient message() {
+    return new PublishMessageClient(environmentRule, partitionCount);
   }
 
   public List<Integer> getPartitionIds() {

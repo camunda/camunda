@@ -23,6 +23,7 @@ import static io.zeebe.test.util.record.RecordingExporter.messageStartEventSubsc
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.util.EngineRule;
+import io.zeebe.engine.util.PublishMessageClient;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
@@ -61,7 +62,12 @@ public class MessageStartEventTest {
         .isTrue();
 
     // when
-    engine.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
+    engine
+        .message()
+        .withCorrelationKey("order-123")
+        .withName(MESSAGE_NAME1)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
 
     // then
     final Record<WorkflowInstanceRecordValue> record =
@@ -84,7 +90,12 @@ public class MessageStartEventTest {
         .isTrue();
 
     // when
-    engine.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
+    engine
+        .message()
+        .withCorrelationKey("order-123")
+        .withName(MESSAGE_NAME1)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> records =
@@ -116,7 +127,12 @@ public class MessageStartEventTest {
         .isTrue();
 
     // when
-    engine.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
+    engine
+        .message()
+        .withCorrelationKey("order-123")
+        .withName(MESSAGE_NAME1)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
 
     // then
     assertThat(RecordingExporter.variableRecords().withName("foo").withValue("\"bar\"").exists())
@@ -135,7 +151,12 @@ public class MessageStartEventTest {
         .isTrue();
 
     // when
-    engine.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
+    engine
+        .message()
+        .withCorrelationKey("order-123")
+        .withName(MESSAGE_NAME1)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
 
     // then
     assertThat(
@@ -158,8 +179,11 @@ public class MessageStartEventTest {
         .isTrue();
 
     // when
-    engine.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
-    engine.publishMessage(MESSAGE_NAME1, "order-124", asMsgPack("foo", "bar"));
+    final PublishMessageClient messageClient =
+        engine.message().withName(MESSAGE_NAME1).withVariables(asMsgPack("foo", "bar"));
+
+    messageClient.withCorrelationKey("order-123").publish();
+    messageClient.withCorrelationKey("order-124").publish();
 
     // then
 
@@ -195,8 +219,11 @@ public class MessageStartEventTest {
         .isEqualTo(2);
 
     // when
-    engine.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
-    engine.publishMessage(MESSAGE_NAME2, "order-124", asMsgPack("foo", "bar"));
+    final PublishMessageClient messageClient =
+        engine.message().withVariables(asMsgPack("foo", "bar"));
+
+    messageClient.withName(MESSAGE_NAME1).withCorrelationKey("order-123").publish();
+    messageClient.withName(MESSAGE_NAME2).withCorrelationKey("order-124").publish();
 
     // then
 
@@ -234,7 +261,12 @@ public class MessageStartEventTest {
         .isEqualTo(2);
 
     // when
-    engine.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
+    engine
+        .message()
+        .withCorrelationKey("order-123")
+        .withName(MESSAGE_NAME1)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> records =

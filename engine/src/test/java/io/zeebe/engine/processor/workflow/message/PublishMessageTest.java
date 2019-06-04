@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.engine.processor.workflow.MsgPackConstants;
 import io.zeebe.engine.util.EngineRule;
+import io.zeebe.engine.util.PublishMessageClient;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.MessageRecordValue;
@@ -34,6 +35,7 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -41,12 +43,22 @@ public class PublishMessageTest {
 
   @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule();
 
+  private PublishMessageClient messageClient;
+
+  @Before
+  public void init() {
+    messageClient =
+        ENGINE_RULE
+            .message()
+            .withCorrelationKey("order-123")
+            .withName("order canceled")
+            .withTimeToLive(1_000L);
+  }
+
   @Test
   public void shouldPublishMessage() {
     // when
-    final Record<MessageRecordValue> publishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-123", r -> r.setName("order canceled").setTimeToLive(1_000L));
+    final Record<MessageRecordValue> publishedRecord = messageClient.publish();
 
     // then
     assertThat(publishedRecord.getKey()).isEqualTo(publishedRecord.getKey());
@@ -69,12 +81,7 @@ public class PublishMessageTest {
   public void shouldPublishMessageWithVariables() throws Exception {
     // when
     final Record<MessageRecordValue> publishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-123",
-            r ->
-                r.setName("order canceled")
-                    .setTimeToLive(1_000L)
-                    .setVariables(MsgPackConstants.MSGPACK_VARIABLES));
+        messageClient.withVariables(MsgPackConstants.MSGPACK_VARIABLES).publish();
 
     // then
     final ObjectMapper objectMapper = new ObjectMapper();
@@ -90,12 +97,7 @@ public class PublishMessageTest {
   public void shouldPublishMessageWithMessageId() {
     // when
     final Record<MessageRecordValue> publishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-123",
-            r ->
-                r.setName("order canceled")
-                    .setTimeToLive(1_000L)
-                    .setMessageId("shouldPublishMessageWithMessageId"));
+        messageClient.withId("shouldPublishMessageWithMessageId").publish();
 
     // then
     Assertions.assertThat(publishedRecord.getValue())
@@ -105,8 +107,7 @@ public class PublishMessageTest {
   @Test
   public void shouldPublishMessageWithZeroTTL() {
     // when
-    final Record<MessageRecordValue> publishedRecord =
-        ENGINE_RULE.publishMessage("order-123", r -> r.setName("order canceled").setTimeToLive(0L));
+    final Record<MessageRecordValue> publishedRecord = messageClient.withTimeToLive(0L).publish();
 
     // then
     Assertions.assertThat(publishedRecord.getValue()).hasTimeToLive(0L);
@@ -115,9 +116,7 @@ public class PublishMessageTest {
   @Test
   public void shouldPublishMessageWithNegativeTTL() {
     // when
-    final Record<MessageRecordValue> publishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-123", r -> r.setName("order canceled").setTimeToLive(-1L));
+    final Record<MessageRecordValue> publishedRecord = messageClient.withTimeToLive(-1L).publish();
 
     // then
     Assertions.assertThat(publishedRecord.getValue()).hasTimeToLive(-1L);
@@ -127,20 +126,10 @@ public class PublishMessageTest {
   public void shouldPublishSecondMessageWithDifferentId() {
     // when
     final Record<MessageRecordValue> publishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-123",
-            r ->
-                r.setName("order canceled")
-                    .setTimeToLive(1_000L)
-                    .setMessageId("shouldPublishSecondMessageWithDifferentId"));
+        messageClient.withId("shouldPublishSecondMessageWithDifferentId").publish();
 
     final Record<MessageRecordValue> secondPublishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-123",
-            r ->
-                r.setName("order canceled")
-                    .setTimeToLive(1_000L)
-                    .setMessageId("shouldPublishSecondMessageWithDifferentId-2"));
+        messageClient.withId("shouldPublishSecondMessageWithDifferentId-2").publish();
 
     // then
     assertThat(publishedRecord.getKey()).isLessThan(secondPublishedRecord.getKey());
@@ -150,20 +139,10 @@ public class PublishMessageTest {
   public void shouldPublishSecondMessageWithDifferentName() {
     // when
     final Record<MessageRecordValue> publishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-123",
-            r ->
-                r.setName("order canceled")
-                    .setTimeToLive(1_000L)
-                    .setMessageId("shouldPublishSecondMessageWithDifferentName"));
+        messageClient.withName("order canceled").publish();
 
     final Record<MessageRecordValue> secondPublishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-123",
-            r ->
-                r.setName("order shipped")
-                    .setTimeToLive(1_000L)
-                    .setMessageId("shouldPublishSecondMessageWithDifferentName"));
+        messageClient.withName("order shipped").publish();
 
     // then
     assertThat(publishedRecord.getKey()).isLessThan(secondPublishedRecord.getKey());
@@ -173,20 +152,10 @@ public class PublishMessageTest {
   public void shouldPublishSecondMessageWithDifferentCorrelationKey() {
     // when
     final Record<MessageRecordValue> publishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-123",
-            r ->
-                r.setName("order canceled")
-                    .setTimeToLive(1_000L)
-                    .setMessageId("shouldPublishSecondMessageWithDifferentCorrelationKey"));
+        messageClient.withName("order-123").publish();
 
     final Record<MessageRecordValue> secondPublishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-456",
-            r ->
-                r.setName("order shipped")
-                    .setTimeToLive(1_000L)
-                    .setMessageId("shouldPublishSecondMessageWithDifferentCorrelationKey"));
+        messageClient.withCorrelationKey("order-456").publish();
 
     // then
     assertThat(publishedRecord.getKey()).isLessThan(secondPublishedRecord.getKey());
@@ -196,27 +165,10 @@ public class PublishMessageTest {
   public void shouldPublishSameMessageWithEmptyId() {
     // when
     final Record<MessageRecordValue> publishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-123", r -> r.setName("order canceled").setTimeToLive(1_000L).setMessageId(""));
+        messageClient.withName("order canceled").withId("").publish();
 
     final Record<MessageRecordValue> secondPublishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-123", r -> r.setName("order shipped").setTimeToLive(1_000L).setMessageId(""));
-
-    // then
-    assertThat(publishedRecord.getKey()).isLessThan(secondPublishedRecord.getKey());
-  }
-
-  @Test
-  public void shouldPublishSameMessageWithoutId() {
-    // when
-    final Record<MessageRecordValue> publishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-123", r -> r.setName("order canceled").setTimeToLive(1_000L));
-
-    final Record<MessageRecordValue> secondPublishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-123", r -> r.setName("order shipped").setTimeToLive(1_000L));
+        messageClient.withName("order shipped").withId("").publish();
 
     // then
     assertThat(publishedRecord.getKey()).isLessThan(secondPublishedRecord.getKey());
@@ -225,20 +177,10 @@ public class PublishMessageTest {
   @Test
   public void shouldRejectToPublishSameMessageWithId() {
     // when
-    ENGINE_RULE.publishMessage(
-        "order-123",
-        r ->
-            r.setName("order canceled")
-                .setTimeToLive(1_000L)
-                .setMessageId("shouldRejectToPublishSameMessageWithId"));
+    messageClient.withId("shouldRejectToPublishSameMessageWithId").publish();
 
     final Record<MessageRecordValue> rejectedCommand =
-        ENGINE_RULE.publishMessageWithExpectedRejection(
-            "order-123",
-            r ->
-                r.setName("order canceled")
-                    .setTimeToLive(1_000L)
-                    .setMessageId("shouldRejectToPublishSameMessageWithId"));
+        messageClient.withId("shouldRejectToPublishSameMessageWithId").expectRejection().publish();
 
     // then
     assertThat(rejectedCommand.getMetadata().getRecordType())
@@ -254,8 +196,7 @@ public class PublishMessageTest {
 
     // when
     final Record<MessageRecordValue> publishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-123", r -> r.setName("order canceled").setTimeToLive(timeToLive));
+        messageClient.withTimeToLive(timeToLive).publish();
 
     ENGINE_RULE.increaseTime(MessageObserver.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL);
 
@@ -280,8 +221,7 @@ public class PublishMessageTest {
 
     // when
     final Record<MessageRecordValue> publishedRecord =
-        ENGINE_RULE.publishMessage(
-            "order-123", r -> r.setName("order canceled").setTimeToLive(timeToLive));
+        messageClient.withTimeToLive(timeToLive).publish();
 
     // then
     final Record<MessageRecordValue> deletedEvent =
