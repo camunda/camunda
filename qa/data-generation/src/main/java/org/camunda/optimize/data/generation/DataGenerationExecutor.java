@@ -71,7 +71,7 @@ public class DataGenerationExecutor {
     final int queueSize = 100;
     importJobsQueue = new ArrayBlockingQueue<>(queueSize);
     importExecutor = new ThreadPoolExecutor(
-      3, 20, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue, new WaitHandler());
+      4, 20, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue, new WaitHandler());
 
     engineClient = new SimpleEngineClient(engineRestEndpoint);
     if (this.removeDeployments) {
@@ -139,7 +139,7 @@ public class DataGenerationExecutor {
 
       completer.shutdown();
       completer.awaitUserTaskCompletion(timeoutInHours, TimeUnit.HOURS);
-    } catch(InterruptedException e) {
+    } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       logger.error("Data generation has been interrupted!", e);
     } finally {

@@ -25,7 +25,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.IntStream;
+
+import static java.util.concurrent.CompletableFuture.runAsync;
 
 public abstract class DataGenerator implements Runnable {
 
@@ -131,23 +138,42 @@ public abstract class DataGenerator implements Runnable {
   }
 
   protected String[] getCorrelationNames() {
-    return new String[] {};
+    return new String[]{};
   }
 
-  private void startProcessInstances(List<Integer> batchSizes, List<String> processDefinitionIds) {
-    for (int ithBatch = 0; ithBatch < batchSizes.size(); ithBatch++) {
-      for (int i = 0; i < batchSizes.get(ithBatch); i++) {
-        Map<String, Object> variables = createVariablesForProcess();
-        variables.putAll(createSimpleVariables());
-        startProcessInstance(processDefinitionIds.get(ithBatch), variables);
+  private void startProcessInstances(final List<Integer> batchSizes, final List<String> processDefinitionIds) {
+    final ExecutorService instanceStartExecutorService = Executors.newFixedThreadPool(20);
+    try {
+      for (int ithBatch = 0; ithBatch < batchSizes.size(); ithBatch++) {
+        final String procDefId = processDefinitionIds.get(ithBatch);
+        final CompletableFuture[] startInstanceFutures = IntStream
+          .range(0, batchSizes.get(ithBatch))
+          .mapToObj(taskDto -> runAsync(
+            () -> {
+              final Map<String, Object> variables = createVariablesForProcess();
+              variables.putAll(createSimpleVariables());
+              startProcessInstance(procDefId, variables);
+            },
+            instanceStartExecutorService
+          ))
+          .toArray(CompletableFuture[]::new);
+
+        try {
+          CompletableFuture.allOf(startInstanceFutures).get();
+        } catch (InterruptedException | ExecutionException e) {
+          logger.error("Failed batch execution", e);
+        }
+
         if (Thread.currentThread().isInterrupted()) {
           return;
         }
       }
+    } finally {
+      instanceStartExecutorService.shutdown();
     }
   }
 
-  private void startProcessInstance(String procDefId, Map<String, Object> variables) {
+  private void startProcessInstance(final String procDefId, final Map<String, Object> variables) {
     boolean couldStartProcessInstance = false;
     while (!couldStartProcessInstance) {
       try {
@@ -173,8 +199,8 @@ public abstract class DataGenerator implements Runnable {
 
   private void logDebugSleepInformation(long sleepTime) {
     logger.debug(
-            "Sleeping for [{}] ms and retrying to start process instance afterwards.",
-            sleepTime
+      "Sleeping for [{}] ms and retrying to start process instance afterwards.",
+      sleepTime
     );
   }
 
