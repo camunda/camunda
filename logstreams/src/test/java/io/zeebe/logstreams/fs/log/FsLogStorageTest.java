@@ -664,6 +664,23 @@ public class FsLogStorageTest {
     fsLogStorage.close();
   }
 
+  @Test
+  public void shouldIgnoreDeletedSegmentsOnFlush() throws Exception {
+    // given
+    fsLogStorage.open();
+    final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
+    final byte[] largeBlock = new byte[remainingCapacity];
+
+    fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+    final long address = fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+
+    // when
+    fsLogStorage.delete(address);
+
+    // then
+    fsLogStorage.flush();
+  }
+
   private byte[] readLogFile(final String logFilePath, final long address, final int capacity) {
     final ByteBuffer buffer = ByteBuffer.allocate(capacity);
 

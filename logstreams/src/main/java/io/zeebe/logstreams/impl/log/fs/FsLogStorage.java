@@ -148,6 +148,7 @@ public class FsLogStorage implements LogStorage {
       }
       final int diff = segmentId - firstSegmentId;
       LOG.info("Deleted {} segments from log storage ({} to {}).", diff, firstSegmentId, segmentId);
+      dirtySegmentId = Math.max(dirtySegmentId, segmentId);
       logSegments.removeSegmentsUntil(segmentId);
     }
   }
@@ -325,7 +326,12 @@ public class FsLogStorage implements LogStorage {
 
     if (dirtySegmentId >= 0) {
       for (int id = dirtySegmentId; id <= currentSegment.getSegmentId(); id++) {
-        logSegments.getSegment(id).flush();
+        final FsLogSegment segment = logSegments.getSegment(id);
+        if (segment != null) {
+          segment.flush();
+        } else {
+          LOG.warn("Ignoring segment {} on flush as it does not exist", id);
+        }
       }
 
       dirtySegmentId = -1;
