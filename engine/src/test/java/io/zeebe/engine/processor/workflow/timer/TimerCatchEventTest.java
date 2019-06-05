@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,11 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.engine.timer;
+package io.zeebe.engine.processor.workflow.timer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.TimerRecordValue;
@@ -29,36 +29,25 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
-import io.zeebe.test.broker.protocol.commandapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.stream.IntStream;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 public class TimerCatchEventTest {
-  private static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  private static CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
-  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
-
-  @Rule
-  public RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
+  @ClassRule public static final EngineRule ENGINE = new EngineRule();
 
   private static final BpmnModelInstance SINGLE_TIMER_WORKFLOW =
-      Bpmn.createExecutableProcess("single-timer-workflow")
+      Bpmn.createExecutableProcess("SINGLE_TIMER_WORKFLOW")
           .startEvent()
           .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT0.1S"))
           .endEvent()
           .done();
 
   private static final BpmnModelInstance BOUNDARY_EVENT_WORKFLOW =
-      Bpmn.createExecutableProcess("boundary-event-workflow")
+      Bpmn.createExecutableProcess("BOUNDARY_EVENT_WORKFLOW")
           .startEvent()
           .serviceTask("task", b -> b.zeebeTaskType("type"))
           .boundaryEvent("timer")
@@ -70,7 +59,7 @@ public class TimerCatchEventTest {
           .done();
 
   private static final BpmnModelInstance TWO_REPS_CYCLE_WORKFLOW =
-      Bpmn.createExecutableProcess("two-reps-cycle-workflow")
+      Bpmn.createExecutableProcess("TWO_REPS_CYCLE_WORKFLOW")
           .startEvent()
           .serviceTask("task", b -> b.zeebeTaskType("type"))
           .boundaryEvent("timer")
@@ -82,7 +71,7 @@ public class TimerCatchEventTest {
           .done();
 
   private static final BpmnModelInstance INFINITE_CYCLE_WORKFLOW =
-      Bpmn.createExecutableProcess("infinite-cycle-workflow")
+      Bpmn.createExecutableProcess("INFINITE_CYCLE_WORKFLOW")
           .startEvent()
           .serviceTask("task", b -> b.zeebeTaskType("type"))
           .boundaryEvent("timer")
@@ -93,35 +82,29 @@ public class TimerCatchEventTest {
           .endEvent()
           .done();
 
-  private PartitionTestClient testClient;
-
-  @Before
-  public void init() {
-    testClient = apiRule.partitionClient();
+  @BeforeClass
+  public static void init() {
+    ENGINE.deploy(SINGLE_TIMER_WORKFLOW);
+    ENGINE.deploy(BOUNDARY_EVENT_WORKFLOW);
+    ENGINE.deploy(TWO_REPS_CYCLE_WORKFLOW);
+    ENGINE.deploy(INFINITE_CYCLE_WORKFLOW);
   }
 
   @Test
   public void testLifeCycle() {
     // given
     final BpmnModelInstance workflow =
-        Bpmn.createExecutableProcess("process")
+        Bpmn.createExecutableProcess("testLifeCycle")
             .startEvent()
             .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT0S"))
             .endEvent()
             .done();
 
-    final long workflowKey = testClient.deployWorkflow(workflow).getKey();
+    ENGINE.deploy(workflow);
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(r -> r.setKey(workflowKey)).getInstanceKey();
+        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("testLifeCycle"));
 
     // then
-    assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .withElementId("process")
-                .exists())
-        .isTrue();
-
     assertThat(
             RecordingExporter.workflowInstanceRecords()
                 .withWorkflowInstanceKey(workflowInstanceKey)
@@ -146,15 +129,15 @@ public class TimerCatchEventTest {
   public void shouldCreateTimer() {
     // given
     final BpmnModelInstance workflow =
-        Bpmn.createExecutableProcess("process")
+        Bpmn.createExecutableProcess("shouldCreateTimer")
             .startEvent()
             .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT10S"))
             .endEvent()
             .done();
 
-    final long workflowKey = testClient.deployWorkflow(workflow).getKey();
+    ENGINE.deploy(workflow);
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(r -> r.setKey(workflowKey)).getInstanceKey();
+        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("shouldCreateTimer"));
 
     // when
     final Record<WorkflowInstanceRecordValue> activatedEvent =
@@ -175,16 +158,14 @@ public class TimerCatchEventTest {
 
     assertThat(createdEvent.getValue().getDueDate())
         .isBetween(
-            brokerRule.getClock().getCurrentTimeInMillis(),
-            createdEvent.getTimestamp().plusSeconds(10).toEpochMilli());
+            System.currentTimeMillis(), createdEvent.getTimestamp().plusSeconds(10).toEpochMilli());
   }
 
   @Test
   public void shouldTriggerTimer() {
     // given
-    final long workflowKey = testClient.deployWorkflow(SINGLE_TIMER_WORKFLOW).getKey();
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(r -> r.setKey(workflowKey)).getInstanceKey();
+        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("SINGLE_TIMER_WORKFLOW"));
 
     // when
     final Record<TimerRecordValue> createdEvent =
@@ -192,7 +173,7 @@ public class TimerCatchEventTest {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
-    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    ENGINE.increaseTime(Duration.ofSeconds(1));
 
     // then
     final Record<TimerRecordValue> triggeredEvent =
@@ -209,16 +190,15 @@ public class TimerCatchEventTest {
   @Test
   public void shouldCompleteTimerEvent() {
     // given
-    final long workflowKey = testClient.deployWorkflow(SINGLE_TIMER_WORKFLOW).getKey();
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(r -> r.setKey(workflowKey)).getInstanceKey();
+        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("SINGLE_TIMER_WORKFLOW"));
 
     // when
     RecordingExporter.timerRecords(TimerIntent.CREATED)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .getFirst();
 
-    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    ENGINE.increaseTime(Duration.ofSeconds(1));
 
     // then
     final Record<WorkflowInstanceRecordValue> activatedEvent =
@@ -243,15 +223,16 @@ public class TimerCatchEventTest {
   public void shouldTriggerTimerWithZeroDuration() {
     // given
     final BpmnModelInstance workflow =
-        Bpmn.createExecutableProcess("process")
+        Bpmn.createExecutableProcess("shouldTriggerTimerWithZeroDuration")
             .startEvent()
             .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT0S"))
             .endEvent()
             .done();
 
-    final long workflowKey = testClient.deployWorkflow(workflow).getKey();
+    ENGINE.deploy(workflow);
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(r -> r.setKey(workflowKey)).getInstanceKey();
+        ENGINE.createWorkflowInstance(
+            r -> r.setBpmnProcessId("shouldTriggerTimerWithZeroDuration"));
 
     // then
     assertThat(
@@ -265,15 +246,16 @@ public class TimerCatchEventTest {
   public void shouldTriggerTimerWithNegativeDuration() {
     // given
     final BpmnModelInstance workflow =
-        Bpmn.createExecutableProcess("process")
+        Bpmn.createExecutableProcess("shouldTriggerTimerWithNegativeDuration")
             .startEvent()
             .intermediateCatchEvent("timer", c -> c.timerWithDuration("-PT1H"))
             .endEvent()
             .done();
 
-    final long workflowKey = testClient.deployWorkflow(workflow).getKey();
+    ENGINE.deploy(workflow);
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(r -> r.setKey(workflowKey)).getInstanceKey();
+        ENGINE.createWorkflowInstance(
+            r -> r.setBpmnProcessId("shouldTriggerTimerWithNegativeDuration"));
 
     // then
     assertThat(
@@ -287,7 +269,7 @@ public class TimerCatchEventTest {
   public void shouldTriggerMultipleTimers() {
     // given
     final BpmnModelInstance workflow =
-        Bpmn.createExecutableProcess("process")
+        Bpmn.createExecutableProcess("shouldTriggerMultipleTimers")
             .startEvent()
             .parallelGateway()
             .intermediateCatchEvent("timer1", c -> c.timerWithDuration("PT1S"))
@@ -297,9 +279,9 @@ public class TimerCatchEventTest {
             .endEvent()
             .done();
 
-    final long workflowKey = testClient.deployWorkflow(workflow).getKey();
+    ENGINE.deploy(workflow);
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(r -> r.setKey(workflowKey)).getInstanceKey();
+        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("shouldTriggerMultipleTimers"));
 
     // when
     assertThat(
@@ -308,7 +290,7 @@ public class TimerCatchEventTest {
                 .limit(2))
         .hasSize(2);
 
-    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    ENGINE.increaseTime(Duration.ofSeconds(1));
 
     final Record<TimerRecordValue> triggeredTimer1 =
         RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
@@ -316,7 +298,7 @@ public class TimerCatchEventTest {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
-    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    ENGINE.increaseTime(Duration.ofSeconds(1));
 
     final Record<TimerRecordValue> triggeredTimer2 =
         RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
@@ -343,15 +325,15 @@ public class TimerCatchEventTest {
   public void shouldCancelTimer() {
     // given
     final BpmnModelInstance workflow =
-        Bpmn.createExecutableProcess("process")
+        Bpmn.createExecutableProcess("shouldCancelTimer")
             .startEvent()
             .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT10S"))
             .endEvent()
             .done();
 
-    final long workflowKey = testClient.deployWorkflow(workflow).getKey();
+    ENGINE.deploy(workflow);
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(r -> r.setKey(workflowKey)).getInstanceKey();
+        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("shouldCancelTimer"));
 
     // when
     final Record<TimerRecordValue> createdEvent =
@@ -360,7 +342,7 @@ public class TimerCatchEventTest {
             .withHandlerNodeId("timer")
             .getFirst();
 
-    testClient.cancelWorkflowInstance(workflowInstanceKey);
+    ENGINE.cancelWorkflowInstance(workflowInstanceKey);
 
     // then
     final Record<TimerRecordValue> canceledEvent =
@@ -375,9 +357,8 @@ public class TimerCatchEventTest {
   @Test
   public void shouldCreateTimerBasedOnBoundaryEvent() {
     // given/when
-    final long workflowKey = testClient.deployWorkflow(BOUNDARY_EVENT_WORKFLOW).getKey();
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(r -> r.setKey(workflowKey)).getInstanceKey();
+        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("BOUNDARY_EVENT_WORKFLOW"));
 
     // then
     final Record<TimerRecordValue> timerRecord =
@@ -397,16 +378,14 @@ public class TimerCatchEventTest {
 
     assertThat(timerRecord.getValue().getDueDate())
         .isBetween(
-            brokerRule.getClock().getCurrentTimeInMillis(),
-            timerRecord.getTimestamp().plusSeconds(1).toEpochMilli());
+            System.currentTimeMillis(), timerRecord.getTimestamp().plusSeconds(1).toEpochMilli());
   }
 
   @Test
   public void shouldTriggerHandlerNodeWhenAttachedToActivity() {
     // given
-    final long workflowKey = testClient.deployWorkflow(BOUNDARY_EVENT_WORKFLOW).getKey();
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(r -> r.setKey(workflowKey)).getInstanceKey();
+        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("BOUNDARY_EVENT_WORKFLOW"));
 
     // when
     final Record<TimerRecordValue> timerCreated =
@@ -414,7 +393,7 @@ public class TimerCatchEventTest {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
-    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    ENGINE.increaseTime(Duration.ofSeconds(1));
 
     // then
     final Record<TimerRecordValue> timerTriggered =
@@ -436,9 +415,8 @@ public class TimerCatchEventTest {
   @Test
   public void shouldRecreateTimerWithCycle() {
     // given
-    final long workflowKey = testClient.deployWorkflow(TWO_REPS_CYCLE_WORKFLOW).getKey();
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(r -> r.setKey(workflowKey)).getInstanceKey();
+        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("TWO_REPS_CYCLE_WORKFLOW"));
 
     // when
     final Record<TimerRecordValue> timerCreated =
@@ -446,7 +424,7 @@ public class TimerCatchEventTest {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
-    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    ENGINE.increaseTime(Duration.ofSeconds(1));
 
     final Record<TimerRecordValue> timerRescheduled =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
@@ -469,7 +447,7 @@ public class TimerCatchEventTest {
   public void shouldRecreateTimerForTheSpecifiedAmountOfRepetitions() {
     // given
     final BpmnModelInstance workflow =
-        Bpmn.createExecutableProcess()
+        Bpmn.createExecutableProcess("shouldRecreateTimerForTheSpecifiedAmountOfRepetitions")
             .startEvent()
             .parallelGateway("gw")
             .serviceTask("task-1", b -> b.zeebeTaskType("type"))
@@ -485,9 +463,10 @@ public class TimerCatchEventTest {
             .endEvent()
             .done();
 
-    final long workflowKey = testClient.deployWorkflow(workflow).getKey();
+    ENGINE.deploy(workflow);
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(r -> r.setKey(workflowKey)).getInstanceKey();
+        ENGINE.createWorkflowInstance(
+            r -> r.setBpmnProcessId("shouldRecreateTimerForTheSpecifiedAmountOfRepetitions"));
 
     // when
     assertThat(
@@ -496,7 +475,7 @@ public class TimerCatchEventTest {
                 .limit(2))
         .hasSize(2);
 
-    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    ENGINE.increaseTime(Duration.ofSeconds(1));
 
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
@@ -504,7 +483,7 @@ public class TimerCatchEventTest {
                 .limit(3))
         .hasSize(3);
 
-    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    ENGINE.increaseTime(Duration.ofSeconds(1));
 
     // then
     assertThat(
@@ -521,9 +500,8 @@ public class TimerCatchEventTest {
     // given
     final int expectedRepetitions = 10;
 
-    final long workflowKey = testClient.deployWorkflow(INFINITE_CYCLE_WORKFLOW).getKey();
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(r -> r.setKey(workflowKey)).getInstanceKey();
+        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("INFINITE_CYCLE_WORKFLOW"));
 
     // when
     IntStream.range(1, expectedRepetitions + 1)
@@ -534,7 +512,7 @@ public class TimerCatchEventTest {
                   .limit(i)
                   .count();
 
-              brokerRule.getClock().addTime(Duration.ofSeconds(1));
+              ENGINE.increaseTime(Duration.ofSeconds(1));
             });
 
     // then

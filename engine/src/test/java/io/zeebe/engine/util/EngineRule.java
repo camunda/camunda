@@ -333,7 +333,8 @@ public class EngineRule extends ExternalResource {
           metadata,
           rawEvent.getKey(),
           rawEvent.getPosition(),
-          rawEvent.getSourceEventPosition());
+          rawEvent.getSourceEventPosition(),
+          rawEvent.getTimestamp());
     }
   }
 }
