@@ -53,6 +53,7 @@ import io.zeebe.protocol.intent.VariableDocumentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.DeploymentRecordStream;
 import io.zeebe.test.util.record.IncidentRecordStream;
 import io.zeebe.test.util.record.JobBatchRecordStream;
@@ -104,7 +105,15 @@ public class PartitionTestClient {
         .withFailMessage("Deployment failed: %s", response.getRejectionReason())
         .isEqualTo(RecordType.EVENT);
 
-    return response.getKey();
+    final long key = response.getKey();
+
+    TestUtil.waitUntil(
+        () ->
+            RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+                .withRecordKey(key)
+                .exists());
+
+    return key;
   }
 
   public ExecuteCommandResponse deployWithResponse(final byte[] resource) {
