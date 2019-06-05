@@ -46,8 +46,8 @@ export default function Variables({
   }
 
   function handleModalClose() {
-    closeEdit();
     setIsModalVisible(false);
+    setEditMode('');
   }
 
   function handleModalSave(modifiedValue) {
