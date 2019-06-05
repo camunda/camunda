@@ -5,11 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EndDateFilterDto extends ProcessFilterDto<DateFilterDataDto> {
-  public EndDateFilterDto() {
-  }
 
   public EndDateFilterDto(final DateFilterDataDto data) {
     super(data);

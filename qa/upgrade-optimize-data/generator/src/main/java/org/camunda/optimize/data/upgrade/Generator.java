@@ -281,12 +281,11 @@ public class Generator {
   }
 
   private static StartDateFilterDto prepareStartDateFilter() {
-    StartDateFilterDto dateFilter = new StartDateFilterDto();
+
     FixedDateFilterDataDto dateFilterData = new FixedDateFilterDataDto();
     dateFilterData.setStart(OffsetDateTime.now());
     dateFilterData.setEnd(OffsetDateTime.now().plusDays(1L));
-    dateFilter.setData(dateFilterData);
-    return dateFilter;
+    return new StartDateFilterDto(dateFilterData);
   }
 
   private static ExecutedFlowNodeFilterDto prepareFlowNodeFilter() {

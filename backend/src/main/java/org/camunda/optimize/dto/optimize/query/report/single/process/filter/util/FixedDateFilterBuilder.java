@@ -52,13 +52,11 @@ public class FixedDateFilterBuilder {
     dateFilterDataDto.setStart(start);
     dateFilterDataDto.setEnd(end);
     if (type.equals("endDate")) {
-      EndDateFilterDto filterDto = new EndDateFilterDto();
-      filterDto.setData(dateFilterDataDto);
+      EndDateFilterDto filterDto = new EndDateFilterDto(dateFilterDataDto);
       filterBuilder.addFilter(filterDto);
       return filterBuilder;
     } else {
-      StartDateFilterDto filterDto = new StartDateFilterDto();
-      filterDto.setData(dateFilterDataDto);
+      StartDateFilterDto filterDto = new StartDateFilterDto(dateFilterDataDto);
       filterBuilder.addFilter(filterDto);
       return filterBuilder;
     }

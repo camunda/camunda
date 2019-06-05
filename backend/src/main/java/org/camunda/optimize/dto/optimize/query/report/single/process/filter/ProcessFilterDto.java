@@ -7,8 +7,9 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 
 /**
@@ -27,16 +28,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
   @JsonSubTypes.Type(value = CanceledInstancesOnlyFilterDto.class, name = "canceledInstancesOnly"),
   @JsonSubTypes.Type(value = NonCanceledInstancesOnlyFilterDto.class, name = "nonCanceledInstancesOnly"),
 })
-
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
-  @Getter @Setter protected DATA data;
-
-  public ProcessFilterDto() {
-  }
-
-  public ProcessFilterDto(final DATA data) {
-    this.data = data;
-  }
+  protected DATA data;
 
   @Override
   public String toString() {
