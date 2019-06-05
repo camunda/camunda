@@ -13,7 +13,6 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   private long key;
   private long position;
   private Instant timestamp;
-  private int raftTerm;
   private int producerId;
   private long sourceRecordPosition;
 
@@ -70,10 +69,6 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
     this.timestamp = timestamp;
   }
 
-  public void setRaftTerm(int raftTerm) {
-    this.raftTerm = raftTerm;
-  }
-
   public void setProducerId(int producerId) {
     this.producerId = producerId;
   }
@@ -104,8 +99,6 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
         + position
         + ", timestamp="
         + timestamp
-        + ", raftTerm="
-        + raftTerm
         + ", producerId="
         + producerId
         + ", sourceRecordPosition="
