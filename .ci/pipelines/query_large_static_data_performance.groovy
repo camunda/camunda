@@ -70,8 +70,8 @@ spec:
           cpu: 2
           memory: 4Gi
         requests:
-          cpu: 500m
-          memory: 1Gi
+          cpu: 2
+          memory: 4Gi
     - name: elasticsearch
       image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.7.0
       env:
@@ -117,8 +117,8 @@ spec:
           cpu: 4
           memory: 8Gi
         requests:
-          cpu: 2
-          memory: 4Gi
+          cpu: 4
+          memory: 8Gi
     - name: operate
       image: gcr.io/ci-30-162810/camunda-operate:latest
       env:
@@ -133,8 +133,8 @@ spec:
           cpu: 2
           memory: 8Gi
         requests:
-          cpu: 1
-          memory: 4Gi
+          cpu: 2
+          memory: 8Gi
   volumes:
   - name: configdir
     emptyDir: {}

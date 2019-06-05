@@ -5,7 +5,8 @@
  */
 package org.camunda.operate.qa.performance;
 
-import io.zeebe.client.ZeebeClient;
+import java.time.Duration;
+import java.time.Instant;
 import org.camunda.operate.Application;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
@@ -22,16 +23,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Answers;
+import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import java.time.Duration;
-import java.time.Instant;
-
+import io.zeebe.client.ZeebeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
@@ -41,8 +40,9 @@ import static org.mockito.Mockito.when;
 public class BatchOperationPerformanceTest {
 
   private static final Logger logger = LoggerFactory.getLogger(BatchOperationPerformanceTest.class);
+  public static final long ZEEBE_RESPONSE_TIME = 300L;
 
-  private static long TEST_TIMEOUT_SECONDS = 600;
+  private static long TEST_TIMEOUT_SECONDS = 60 * 60;   //1 hour
 
   @Autowired
   private OperateProperties operateProperties;
@@ -58,16 +58,20 @@ public class BatchOperationPerformanceTest {
 
   @Before
   public void setup() {
-    when(zeebeClient.newCancelInstanceCommand(anyLong()).send().join()).thenReturn(null);
-    when(zeebeClient.newUpdateRetriesCommand(anyLong()).retries(1).send().join()).thenReturn(null);
-    when(zeebeClient.newResolveIncidentCommand(anyLong()).send().join()).thenReturn(null);
+    Answer answerWithDelay = invocation -> {
+      Thread.sleep(ZEEBE_RESPONSE_TIME);
+      return null;
+    };
+    when(zeebeClient.newCancelInstanceCommand(anyLong()).send().join()).thenAnswer(answerWithDelay);
+    when(zeebeClient.newUpdateRetriesCommand(anyLong()).retries(1).send().join()).thenAnswer(answerWithDelay);
+    when(zeebeClient.newResolveIncidentCommand(anyLong()).send().join()).thenAnswer(answerWithDelay);
 
     createOperations();
   }
 
   private void createOperations() {
     createResolveIncidentOperations();
-    createCancleOperations();
+    createCancelOperations();
   }
 
   private void createResolveIncidentOperations() {
@@ -76,19 +80,19 @@ public class BatchOperationPerformanceTest {
     ListViewQueryDto queryForCancel = new ListViewQueryDto();
     queryForCancel.setRunning(true);
     queryForCancel.setIncidents(true);
-    queryForCancel.setWorkflowIds(ElasticsearchUtil.getWorkflowIds(esClient, getOperateAlias(WorkflowIndex.INDEX_NAME), 25));
+    queryForCancel.setWorkflowIds(ElasticsearchUtil.getWorkflowIds(esClient, getOperateAlias(WorkflowIndex.INDEX_NAME), 5));
     cancelRequest.getQueries().add(queryForCancel);
     final OperationResponseDto operationResponseDto = batchOperationWriter.scheduleBatchOperation(cancelRequest);
     logger.info("RESOLVE_INCIDENT operations scheduled: {}", operationResponseDto.getCount());
   }
 
-  private void createCancleOperations() {
+  private void createCancelOperations() {
     BatchOperationRequestDto cancelRequest = new BatchOperationRequestDto();
     cancelRequest.setOperationType(OperationType.CANCEL_WORKFLOW_INSTANCE);
     ListViewQueryDto queryForCancel = new ListViewQueryDto();
     queryForCancel.setRunning(true);
     queryForCancel.setActive(true);
-    queryForCancel.setWorkflowIds(ElasticsearchUtil.getWorkflowIds(esClient, getOperateAlias(WorkflowIndex.INDEX_NAME), 3));
+    queryForCancel.setWorkflowIds(ElasticsearchUtil.getWorkflowIds(esClient, getOperateAlias(WorkflowIndex.INDEX_NAME), 1));
     cancelRequest.getQueries().add(queryForCancel);
     final OperationResponseDto operationResponseDto = batchOperationWriter.scheduleBatchOperation(cancelRequest);
     logger.info("CANCEL_WORKFLOW_INSTANCE operations scheduled: {}", operationResponseDto.getCount());
