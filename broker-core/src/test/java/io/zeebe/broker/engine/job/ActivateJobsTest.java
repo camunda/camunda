@@ -36,6 +36,7 @@ import io.zeebe.exporter.api.record.value.job.Headers;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.clientapi.VarDataEncodingEncoder;
@@ -47,6 +48,7 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
+import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.sched.clock.ControlledActorClock;
@@ -355,11 +357,14 @@ public class ActivateJobsTest {
 
     // then all workflow instances are completed
     final List<Record<WorkflowInstanceRecordValue>> records =
-        workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withBpmnProcessId(processId)
-            .filter(r -> r.getKey() == r.getValue().getWorkflowInstanceKey())
-            .limit(jobAmount)
-            .collect(Collectors.toList());
+        TestUtil.doRepeatedly(
+                () ->
+                    workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                        .withBpmnProcessId(processId)
+                        .withElementType(BpmnElementType.PROCESS)
+                        .limit(jobAmount)
+                        .collect(Collectors.toList()))
+            .until(r -> r.size() == jobAmount);
 
     assertThat(records)
         .extracting(r -> r.getValue().getWorkflowInstanceKey())
