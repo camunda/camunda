@@ -64,7 +64,8 @@ public class UpdateVariableDocumentTest {
             .getInstanceKey();
     final Record<WorkflowInstanceRecordValue> activatedEvent = waitForActivityActivatedEvent();
     ENGINE_RULE
-        .variables(activatedEvent.getKey())
+        .variables()
+        .ofScope(activatedEvent.getKey())
         .withDocument(document)
         .withUpdateSemantic(VariableDocumentUpdateSemantic.PROPAGATE)
         .update();

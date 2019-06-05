@@ -158,7 +158,11 @@ public class WorkflowInstanceVariableTest {
             .getInstanceKey();
 
     // when
-    ENGINE_RULE.variables(workflowInstanceKey).withDocument(Maps.of(entry("x", 1))).update();
+    ENGINE_RULE
+        .variables()
+        .ofScope(workflowInstanceKey)
+        .withDocument(Maps.of(entry("x", 1)))
+        .update();
 
     // then
     final Record<VariableRecordValue> variableRecord =
@@ -281,7 +285,11 @@ public class WorkflowInstanceVariableTest {
             .getInstanceKey();
 
     // when
-    ENGINE_RULE.variables(workflowInstanceKey).withDocument(Maps.of(entry("x", 2))).update();
+    ENGINE_RULE
+        .variables()
+        .ofScope(workflowInstanceKey)
+        .withDocument(Maps.of(entry("x", 2)))
+        .update();
 
     // then
     final Record<VariableRecordValue> variableRecord =
@@ -343,7 +351,8 @@ public class WorkflowInstanceVariableTest {
 
     // when
     ENGINE_RULE
-        .variables(workflowInstanceKey)
+        .variables()
+        .ofScope(workflowInstanceKey)
         .withDocument(Maps.of(entry("x", 2), entry("y", 3)))
         .update();
 
@@ -381,7 +390,11 @@ public class WorkflowInstanceVariableTest {
             .getFirst();
 
     // when
-    ENGINE_RULE.variables(workflowInstanceKey).withDocument(Maps.of(entry("x", 2))).update();
+    ENGINE_RULE
+        .variables()
+        .ofScope(workflowInstanceKey)
+        .withDocument(Maps.of(entry("x", 2)))
+        .update();
 
     // then
     final Record<VariableRecordValue> variableUpdated =

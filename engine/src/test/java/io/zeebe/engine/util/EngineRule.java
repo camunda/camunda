@@ -212,8 +212,8 @@ public class EngineRule extends ExternalResource {
         .collect(Collectors.toList());
   }
 
-  public VariableClient variables(long scopeKey) {
-    return new VariableClient(environmentRule, scopeKey);
+  public VariableClient variables() {
+    return new VariableClient(environmentRule);
   }
 
   public JobActivationClient jobs() {
