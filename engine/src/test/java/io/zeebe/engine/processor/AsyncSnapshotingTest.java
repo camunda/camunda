@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.engine.util.LogStreamRule;
+import io.zeebe.logstreams.impl.delete.NoopDeletionService;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
@@ -67,6 +68,7 @@ public class AsyncSnapshotingTest {
   private LogStream logStream;
   private AsyncSnapshotDirector asyncSnapshotDirector;
   private StreamProcessor mockStreamProcessor;
+  private NoopDeletionService noopDeletionService;
 
   @Before
   public void setup() throws IOException {
@@ -76,7 +78,7 @@ public class AsyncSnapshotingTest {
 
     snapshotController =
         new StateSnapshotController(
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage);
+            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage, MAX_SNAPSHOTS);
     snapshotController.openDb();
     autoCloseableRule.manage(snapshotController);
     snapshotController = spy(snapshotController);
@@ -109,14 +111,11 @@ public class AsyncSnapshotingTest {
         new SnapshotMetrics(
             logStreamRule.getActorScheduler().getMetricsManager(), PROCESSOR_NAME, "1");
 
+    noopDeletionService = spy(new NoopDeletionService());
+    snapshotController.setDeletionService(noopDeletionService);
     asyncSnapshotDirector =
         new AsyncSnapshotDirector(
-            mockStreamProcessor,
-            snapshotController,
-            logStream,
-            Duration.ofMinutes(1),
-            MAX_SNAPSHOTS,
-            metrics);
+            mockStreamProcessor, snapshotController, logStream, Duration.ofMinutes(1), metrics);
     actorScheduler.submitActor(this.asyncSnapshotDirector).join();
   }
 
@@ -148,7 +147,7 @@ public class AsyncSnapshotingTest {
     inOrder.verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
     inOrder.verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(25);
 
-    inOrder.verify(snapshotController, TIMEOUT.times(1)).ensureMaxSnapshotCount(MAX_SNAPSHOTS);
+    inOrder.verify(snapshotController, TIMEOUT.times(1)).ensureMaxSnapshotCount();
     inOrder.verify(snapshotController, TIMEOUT.times(1)).getValidSnapshotsCount();
     inOrder.verify(snapshotController, TIMEOUT.times(1)).replicateLatestSnapshot(any());
     inOrder.verifyNoMoreInteractions();
@@ -212,7 +211,7 @@ public class AsyncSnapshotingTest {
   }
 
   @Test
-  public void shouldInvokeDataDeleteCallbackOnMaxSnapshots() throws IOException {
+  public void shouldDeleteDataOnMaxSnapshots() throws IOException {
     // when
     logStreamRule.getClock().addTime(Duration.ofMinutes(1));
     verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
@@ -225,7 +224,7 @@ public class AsyncSnapshotingTest {
     verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(32);
 
     // then
-    verify(logStream, TIMEOUT).delete(eq(25L));
+    verify(noopDeletionService, TIMEOUT).delete(eq(25L));
   }
 
   @Test
@@ -247,7 +246,7 @@ public class AsyncSnapshotingTest {
     inOrder.verify(mockStreamProcessor, TIMEOUT).getLastProcessedPositionAsync();
     inOrder.verify(snapshotController, TIMEOUT).takeTempSnapshot();
     inOrder.verify(snapshotController, TIMEOUT).moveValidSnapshot(lastProcessedPosition);
-    inOrder.verify(snapshotController, TIMEOUT).ensureMaxSnapshotCount(MAX_SNAPSHOTS);
+    inOrder.verify(snapshotController, TIMEOUT).ensureMaxSnapshotCount();
     inOrder.verify(snapshotController, TIMEOUT).replicateLatestSnapshot(any());
 
     // when
@@ -345,7 +344,7 @@ public class AsyncSnapshotingTest {
     inOrder.verify(mockStreamProcessor, TIMEOUT).getLastProcessedPositionAsync();
     inOrder.verify(snapshotController, TIMEOUT).takeTempSnapshot();
     inOrder.verify(snapshotController, TIMEOUT).moveValidSnapshot(lastProcessedPosition);
-    inOrder.verify(snapshotController, TIMEOUT).ensureMaxSnapshotCount(MAX_SNAPSHOTS);
+    inOrder.verify(snapshotController, TIMEOUT).ensureMaxSnapshotCount();
     inOrder.verify(snapshotController, TIMEOUT).replicateLatestSnapshot(any());
 
     logStreamRule.stopLogStream();

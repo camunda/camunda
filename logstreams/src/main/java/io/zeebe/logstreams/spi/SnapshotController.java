@@ -51,7 +51,7 @@ public interface SnapshotController extends AutoCloseable {
   void replicateLatestSnapshot(Consumer<Runnable> executor);
 
   /** Registers to consumes replicated snapshots. */
-  void consumeReplicatedSnapshots(Consumer<Long> dataDeleteCallback);
+  void consumeReplicatedSnapshots();
 
   /**
    * Recovers the state from the latest snapshot and returns the lower bound snapshot position.
@@ -61,13 +61,6 @@ public interface SnapshotController extends AutoCloseable {
   long recover() throws Exception;
 
   ZeebeDb openDb();
-
-  /**
-   * Ensures that only the given maximum of snapshots are kept, the rest will be purged.
-   *
-   * @param maxSnapshotCount the maximum count of snapshots which should be kept
-   */
-  void ensureMaxSnapshotCount(int maxSnapshotCount) throws Exception;
 
   /**
    * Returns the highest position that is considered to be safe to delete, which is the position of

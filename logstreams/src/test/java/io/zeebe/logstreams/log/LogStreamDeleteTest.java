@@ -182,7 +182,6 @@ public class LogStreamDeleteTest {
   public void shouldDeleteFromLogStream() {
     // given
     final LogStream logStream = prepareLogstream();
-    logStream.setExporterPositionSupplier(() -> Long.MAX_VALUE);
 
     // when
     logStream.delete(fourthPosition);
@@ -202,7 +201,6 @@ public class LogStreamDeleteTest {
   public void shouldDeleteUntilLastBlockIndexAddress() {
     // given
     final LogStream logStream = prepareLogstream();
-    logStream.setExporterPositionSupplier(() -> Long.MAX_VALUE);
 
     // when
     logStream.delete(Long.MAX_VALUE);
@@ -238,47 +236,6 @@ public class LogStreamDeleteTest {
         .isNotEmpty();
     assertThat(events(logStream).filter(e -> e.getPosition() == fourthPosition).findAny())
         .isNotEmpty();
-  }
-
-  @Test
-  public void shouldDeleteMinExportedPosition() {
-    // given
-    final LogStream logStream = prepareLogstream();
-
-    // when
-    logStream.setExporterPositionSupplier(() -> thirdPosition);
-    logStream.delete(fourthPosition);
-
-    // then
-    assertThat(events(logStream).count()).isEqualTo(3);
-
-    assertThat(events(logStream).filter(e -> e.getPosition() == firstPosition).findAny()).isEmpty();
-    assertThat(events(logStream).filter(e -> e.getPosition() == secondPosition).findAny())
-        .isNotEmpty();
-    assertThat(events(logStream).filter(e -> e.getPosition() == thirdPosition).findAny())
-        .isNotEmpty();
-    assertThat(events(logStream).filter(e -> e.getPosition() == fourthPosition).findAny())
-        .isNotEmpty();
-  }
-
-  @Test
-  public void shouldNotDeleteWithoutSupplierConfigured() {
-    // given
-    final LogStream logStream = prepareLogstream();
-
-    // when
-    logStream.delete(Long.MAX_VALUE);
-
-    // then
-    assertThat(events(logStream).count()).isEqualTo(4);
-    assertThat(
-        events(logStream)
-            .allMatch(
-                e ->
-                    e.getPosition() == firstPosition
-                        || e.getPosition() == secondPosition
-                        || e.getPosition() == thirdPosition
-                        || e.getPosition() == fourthPosition));
   }
 
   private LogStream prepareLogstream() {

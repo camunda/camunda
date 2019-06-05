@@ -41,13 +41,13 @@ public class DataDeleteTest {
   public static final int MAX_SNAPSHOTS = 1;
 
   public EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule(DataDeleteTest::configureForDeletionTest);
+      new EmbeddedBrokerRule(DataDeleteTest::configureCustomExporter);
   public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
   @Rule public Timeout timeout = new Timeout(60, TimeUnit.SECONDS);
 
-  public static void configureForDeletionTest(final BrokerCfg brokerCfg) {
+  public static void configureCustomExporter(final BrokerCfg brokerCfg) {
     final DataCfg data = brokerCfg.getData();
     data.setMaxSnapshots(MAX_SNAPSHOTS);
     data.setSnapshotPeriod(SNAPSHOT_PERIOD_SECONDS + "s");

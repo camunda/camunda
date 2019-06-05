@@ -32,39 +32,31 @@ public class AsyncSnapshotingDirectorService implements Service<AsyncSnapshoting
   private final LogStream logStream;
   private final StateSnapshotController snapshotController;
   private final Duration snapshotPeriod;
-  private final int maxSnapshots;
   private AsyncSnapshotDirector asyncSnapshotDirector;
 
   public AsyncSnapshotingDirectorService(
       final int partitionId,
       final LogStream logStream,
       final StateSnapshotController snapshotController,
-      Duration snapshotPeriod,
-      int maxSnapshots) {
+      Duration snapshotPeriod) {
     this.partitionId = partitionId;
     this.logStream = logStream;
     this.snapshotController = snapshotController;
     this.snapshotPeriod = snapshotPeriod;
-    this.maxSnapshots = maxSnapshots;
   }
 
   @Override
   public void start(final ServiceStartContext startContext) {
-    final StreamProcessor controller = streamProcessorInjector.getValue();
+    final StreamProcessor streamProcessor = streamProcessorInjector.getValue();
     final SnapshotMetrics snapshotMetrics =
         new SnapshotMetrics(
             startContext.getScheduler().getMetricsManager(),
-            controller.getName(),
+            streamProcessor.getName(),
             String.valueOf(partitionId));
 
     asyncSnapshotDirector =
         new AsyncSnapshotDirector(
-            controller,
-            snapshotController,
-            logStream,
-            snapshotPeriod,
-            maxSnapshots,
-            snapshotMetrics);
+            streamProcessor, snapshotController, logStream, snapshotPeriod, snapshotMetrics);
 
     startContext.getScheduler().submitActor(asyncSnapshotDirector);
   }

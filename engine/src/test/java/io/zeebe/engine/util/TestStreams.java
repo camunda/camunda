@@ -295,7 +295,7 @@ public class TestStreams {
     final StateStorage stateStorage =
         getStateStorageFactory(stream).create(streamProcessorId, PROCESSOR_NAME);
     final StateSnapshotController currentSnapshotController =
-        spy(new StateSnapshotController(zeebeDbFactory, stateStorage));
+        spy(new StateSnapshotController(zeebeDbFactory, stateStorage, maxSnapshot));
     snapshotControllerMap.put(stream.getLogName(), currentSnapshotController);
 
     final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
@@ -328,12 +328,7 @@ public class TestStreams {
         new SnapshotMetrics(actorScheduler.getMetricsManager(), PROCESSOR_NAME, "1");
     asyncSnapshotDirector =
         new AsyncSnapshotDirector(
-            processorService,
-            currentSnapshotController,
-            stream,
-            snapshotInterval,
-            maxSnapshot,
-            metrics);
+            processorService, currentSnapshotController, stream, snapshotInterval, metrics);
     actorScheduler.submitActor(asyncSnapshotDirector);
 
     return processorService;

@@ -63,14 +63,14 @@ public class GrpcClientRule extends ExternalResource {
   }
 
   @Override
-  protected void before() {
+  public void before() {
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder();
     configurator.accept(builder);
     client = builder.build();
   }
 
   @Override
-  protected void after() {
+  public void after() {
     client.close();
     client = null;
   }

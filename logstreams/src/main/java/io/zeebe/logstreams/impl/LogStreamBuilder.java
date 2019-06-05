@@ -245,7 +245,8 @@ public class LogStreamBuilder {
         new FsLogStorageService(storageConfig, partitionId, logStorageStubber);
     installOperation.createService(logStorageServiceName, logStorageService).install();
 
-    final LogBlockIndexService logBlockIndexService = new LogBlockIndexService(stateStorage);
+    final LogBlockIndexService logBlockIndexService =
+        new LogBlockIndexService(stateStorage, maxSnapshots);
     installOperation.createService(logBlockIndexServiceName, logBlockIndexService).install();
 
     final LogBlockIndexWriterService logBlockIndexWriterService =

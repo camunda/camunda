@@ -18,6 +18,7 @@ package io.zeebe.logstreams.state;
 import io.atomix.cluster.MemberId;
 import io.zeebe.distributedlog.restore.RestoreClient;
 import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreContext;
+import io.zeebe.logstreams.impl.delete.NoopDeletionService;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,7 @@ public class SnapshotRequester {
   private final int partitionId;
   private final StateStorage stateStorage;
   private final SnapshotReplication snapshotReplicationConsumer;
+  private final NoopDeletionService noopDeletion = new NoopDeletionService();
 
   public SnapshotRequester(
       RestoreClient client, SnapshotRestoreContext restoreContext, int partitionId) {
@@ -39,19 +41,18 @@ public class SnapshotRequester {
     stateStorage = restoreContext.getStateStorage(partitionId);
 
     this.replicationController =
-        new ReplicationController(
-            snapshotReplicationConsumer, this.stateStorage, () -> {}, () -> -1L);
+        new ReplicationController(snapshotReplicationConsumer, this.stateStorage);
   }
 
   public CompletableFuture<Long> getLatestSnapshotsFrom(
       MemberId server, boolean getExporterSnapshot) {
 
-    replicationController.consumeReplicatedSnapshots(pos -> {});
+    replicationController.consumeReplicatedSnapshots();
 
     CompletableFuture<Long> replicated = CompletableFuture.completedFuture(null);
 
     if (getExporterSnapshot) {
-      replicationController.consumeReplicatedSnapshots(pos -> {});
+      replicationController.consumeReplicatedSnapshots();
       final CompletableFuture<Long> exporterFuture = new CompletableFuture<>();
       replicationController.addListener(
           new DefaultSnapshotReplicationListener(
