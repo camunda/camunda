@@ -103,7 +103,7 @@ To start a Zeebe broker use the `broker` or `broker.bat` file located in the
     "directories": [
       "/home/philipp/zeebe/zeebe-broker-0.17.0/data"
     ],
-    "defaultLogSegmentSize": "512M",
+    "logSegmentSize": "512M",
     "snapshotPeriod": "15m",
     "snapshotReplicationPeriod": "5m"
   },

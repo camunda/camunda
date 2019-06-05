@@ -27,7 +27,7 @@ public class DataCfg implements ConfigurationEntry {
   // Hint: do not use Collections.singletonList as this does not support replaceAll
   private List<String> directories = Arrays.asList(DEFAULT_DIRECTORY);
 
-  private String defaultLogSegmentSize = "512M";
+  private String logSegmentSize = "512M";
 
   private String indexBlockSize = "4M";
 
@@ -57,12 +57,12 @@ public class DataCfg implements ConfigurationEntry {
     this.directories = directories;
   }
 
-  public String getDefaultLogSegmentSize() {
-    return defaultLogSegmentSize;
+  public String getLogSegmentSize() {
+    return logSegmentSize;
   }
 
-  public void setDefaultLogSegmentSize(String defaultLogSegmentSize) {
-    this.defaultLogSegmentSize = defaultLogSegmentSize;
+  public void setLogSegmentSize(String logSegmentSize) {
+    this.logSegmentSize = logSegmentSize;
   }
 
   public String getIndexBlockSize() {
@@ -110,8 +110,8 @@ public class DataCfg implements ConfigurationEntry {
     return "DataCfg{"
         + "directories="
         + directories
-        + ", defaultLogSegmentSize='"
-        + defaultLogSegmentSize
+        + ", logSegmentSize='"
+        + logSegmentSize
         + '\''
         + ", indexBlockSize='"
         + indexBlockSize
