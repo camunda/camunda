@@ -67,7 +67,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.mockito.stubbing.Answer;
 
-public class ClientApiMessageHandlerTest {
+public class CommandApiMessageHandlerTest {
   protected static final RemoteAddress DEFAULT_ADDRESS =
       new RemoteAddressImpl(21, new SocketAddress("foo", 4242));
   protected static final int LOG_STREAM_PARTITION_ID = 1;
@@ -97,7 +97,7 @@ public class ClientApiMessageHandlerTest {
 
   protected BufferingServerOutput serverOutput;
   private LogStream logStream;
-  private ClientApiMessageHandler messageHandler;
+  private CommandApiMessageHandler messageHandler;
   private DistributedLogstreamService distributedLogImpl;
 
   @Before
@@ -180,7 +180,7 @@ public class ClientApiMessageHandlerTest {
 
     logStream.openAppender().join();
 
-    messageHandler = new ClientApiMessageHandler();
+    messageHandler = new CommandApiMessageHandler();
     messageHandler.addPartition(logStream);
   }
 

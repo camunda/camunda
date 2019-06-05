@@ -64,7 +64,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.junit.rules.ExternalResource;
 
-public class ClientApiRule extends ExternalResource {
+public class CommandApiRule extends ExternalResource {
 
   public static final long DEFAULT_LOCK_DURATION = 10000L;
   private static final String DEFAULT_WORKER = "defaultWorker";
@@ -83,11 +83,11 @@ public class ClientApiRule extends ExternalResource {
   private AtomixCluster atomix;
   private ActorScheduler scheduler;
 
-  public ClientApiRule(final Supplier<AtomixCluster> atomixSupplier) {
+  public CommandApiRule(final Supplier<AtomixCluster> atomixSupplier) {
     this(0, 1, atomixSupplier);
   }
 
-  public ClientApiRule(
+  public CommandApiRule(
       final int nodeId, final int partitionCount, final Supplier<AtomixCluster> atomixSupplier) {
     this.nodeId = nodeId;
     this.partitionCount = partitionCount;
@@ -114,7 +114,7 @@ public class ClientApiRule extends ExternalResource {
             brokerInfo ->
                 transport.registerEndpoint(
                     brokerInfo.getNodeId(),
-                    SocketAddress.from(brokerInfo.getApiAddress(BrokerInfo.CLIENT_API_PROPERTY))));
+                    SocketAddress.from(brokerInfo.getApiAddress(BrokerInfo.COMMAND_API_PROPERTY))));
 
     final List<Integer> partitionIds = doRepeatedly(this::getPartitionIds).until(p -> !p.isEmpty());
     defaultPartitionId = partitionIds.get(0);

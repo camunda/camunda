@@ -18,14 +18,14 @@
 package io.zeebe.broker.transport;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_MESSAGE_HANDLER;
-import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.COMMAND_API_MESSAGE_HANDLER;
+import static io.zeebe.broker.transport.TransportServiceNames.COMMAND_API_SERVER_NAME;
 
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
-import io.zeebe.broker.transport.clientapi.ClientApiMessageHandlerService;
+import io.zeebe.broker.transport.clientapi.CommandApiMessageHandlerService;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.ServerMessageHandler;
@@ -46,21 +46,21 @@ public class TransportComponent implements Component {
     final NetworkCfg networkCfg = context.getBrokerConfiguration().getNetwork();
     final ServiceContainer serviceContainer = context.getServiceContainer();
 
-    final ActorFuture<ServerTransport> clientApiFuture =
+    final ActorFuture<ServerTransport> commandApiFuture =
         bindNonBufferingProtocolEndpoint(
             context,
             serviceContainer,
-            CLIENT_API_SERVER_NAME,
-            networkCfg.getClient(),
-            CLIENT_API_MESSAGE_HANDLER,
-            CLIENT_API_MESSAGE_HANDLER);
+            COMMAND_API_SERVER_NAME,
+            networkCfg.getCommandApi(),
+            COMMAND_API_MESSAGE_HANDLER,
+            COMMAND_API_MESSAGE_HANDLER);
 
-    context.addRequiredStartAction(clientApiFuture);
+    context.addRequiredStartAction(commandApiFuture);
 
-    final ClientApiMessageHandlerService messageHandlerService =
-        new ClientApiMessageHandlerService();
+    final CommandApiMessageHandlerService messageHandlerService =
+        new CommandApiMessageHandlerService();
     serviceContainer
-        .createService(CLIENT_API_MESSAGE_HANDLER, messageHandlerService)
+        .createService(COMMAND_API_MESSAGE_HANDLER, messageHandlerService)
         .groupReference(
             LEADER_PARTITION_GROUP_NAME, messageHandlerService.getLeaderParitionsGroupReference())
         .install();

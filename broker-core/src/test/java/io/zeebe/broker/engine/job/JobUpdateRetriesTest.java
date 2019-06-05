@@ -26,7 +26,7 @@ import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.CommandApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import org.junit.Before;
@@ -39,7 +39,7 @@ public class JobUpdateRetriesTest {
   private static final int NEW_RETRIES = 20;
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
+  public CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

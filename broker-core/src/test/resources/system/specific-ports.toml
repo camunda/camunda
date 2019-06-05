@@ -1,7 +1,7 @@
-[network.client]
+[network.commandApi]
 port = 1
 
-[network.atomix]
+[network.internalApi]
 port = 5
 
 [metrics]

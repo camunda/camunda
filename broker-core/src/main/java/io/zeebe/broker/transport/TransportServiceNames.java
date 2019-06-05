@@ -17,16 +17,16 @@
  */
 package io.zeebe.broker.transport;
 
-import io.zeebe.broker.transport.clientapi.ClientApiMessageHandler;
+import io.zeebe.broker.transport.clientapi.CommandApiMessageHandler;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.ServerTransport;
 
 public class TransportServiceNames {
-  public static final ServiceName<ClientApiMessageHandler> CLIENT_API_MESSAGE_HANDLER =
+  public static final ServiceName<CommandApiMessageHandler> COMMAND_API_MESSAGE_HANDLER =
       ServiceName.newServiceName(
-          "transport.clientApi.messageHandler", ClientApiMessageHandler.class);
+          "transport.commandApi.messageHandler", CommandApiMessageHandler.class);
 
-  public static final String CLIENT_API_SERVER_NAME = "clientApi.server";
+  public static final String COMMAND_API_SERVER_NAME = "commandApi.server";
 
   public static ServiceName<ServerTransport> serverTransport(String identifier) {
     return ServiceName.newServiceName(

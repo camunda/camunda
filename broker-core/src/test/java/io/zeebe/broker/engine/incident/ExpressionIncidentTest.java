@@ -35,7 +35,7 @@ import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.CommandApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.collection.Maps;
@@ -50,7 +50,7 @@ import org.junit.rules.RuleChain;
 public class ExpressionIncidentTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
+  public CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

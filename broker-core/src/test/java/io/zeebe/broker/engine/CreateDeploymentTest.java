@@ -37,7 +37,7 @@ import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.CommandApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.util.StreamUtil;
 import java.io.ByteArrayOutputStream;
@@ -69,7 +69,7 @@ public class CreateDeploymentTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
+  public CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

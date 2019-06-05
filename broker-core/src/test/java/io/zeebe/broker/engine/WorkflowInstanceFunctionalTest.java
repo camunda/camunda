@@ -39,7 +39,7 @@ import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.CommandApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
@@ -64,7 +64,7 @@ import org.junit.rules.RuleChain;
 public class WorkflowInstanceFunctionalTest {
 
   private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final ClientApiRule API_RULE = new ClientApiRule(BROKER_RULE::getAtomix);
+  private static final CommandApiRule API_RULE = new CommandApiRule(BROKER_RULE::getAtomix);
   private static PartitionTestClient testClient;
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(API_RULE);

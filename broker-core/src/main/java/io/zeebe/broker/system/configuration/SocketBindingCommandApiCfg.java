@@ -17,25 +17,11 @@
  */
 package io.zeebe.broker.system.configuration;
 
-public class SocketBindingClientApiCfg extends SocketBindingCfg {
+public class SocketBindingCommandApiCfg extends SocketBindingCfg {
 
   public static final int DEFAULT_PORT = 26501;
 
-  public SocketBindingClientApiCfg() {
+  public SocketBindingCommandApiCfg() {
     port = DEFAULT_PORT;
-  }
-
-  @Override
-  public String toString() {
-    return "SocketBindingClientApiCfg{"
-        + "host='"
-        + host
-        + '\''
-        + ", port="
-        + port
-        + ", sendBufferSize='"
-        + sendBufferSize
-        + '\''
-        + '}';
   }
 }

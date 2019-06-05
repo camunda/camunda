@@ -63,7 +63,7 @@ public class TopologyManagerImpl extends Actor
             topology.getClusterSize(),
             topology.getReplicationFactor());
     distributionInfo.setApiAddress(
-        BrokerInfo.CLIENT_API_PROPERTY, localBroker.getClientApiAddress().toString());
+        BrokerInfo.COMMAND_API_PROPERTY, localBroker.getCommandApiAddress().toString());
 
     // ensures that the first published event will contain the broker's info
     publishTopologyChanges();
@@ -140,7 +140,7 @@ public class TopologyManagerImpl extends Actor
     final NodeInfo nodeInfo =
         new NodeInfo(
             brokerInfo.getNodeId(),
-            SocketAddress.from(brokerInfo.getApiAddress(BrokerInfo.CLIENT_API_PROPERTY)));
+            SocketAddress.from(brokerInfo.getApiAddress(BrokerInfo.COMMAND_API_PROPERTY)));
 
     if (topology.addMember(nodeInfo)) {
       notifyMemberAdded(nodeInfo);

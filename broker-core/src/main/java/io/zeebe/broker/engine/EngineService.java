@@ -51,7 +51,7 @@ public class EngineService implements Service<EngineService> {
 
   public static final String PROCESSOR_NAME = "zb-stream-processor";
 
-  private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
+  private final Injector<ServerTransport> commandApiTransportInjector = new Injector<>();
   private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
   private final Injector<Atomix> atomixInjector = new Injector<>();
 
@@ -60,7 +60,7 @@ public class EngineService implements Service<EngineService> {
   private final Duration snapshotPeriod;
   private ServiceStartContext serviceContext;
 
-  private ServerTransport clientApiTransport;
+  private ServerTransport commandApiTransport;
   private TopologyManager topologyManager;
   private Atomix atomix;
   private final ServiceGroupReference<Partition> partitionsGroupReference =
@@ -77,7 +77,7 @@ public class EngineService implements Service<EngineService> {
   @Override
   public void start(final ServiceStartContext serviceContext) {
     this.serviceContext = serviceContext;
-    this.clientApiTransport = clientApiTransportInjector.getValue();
+    this.commandApiTransport = commandApiTransportInjector.getValue();
     this.topologyManager = topologyManagerInjector.getValue();
     this.atomix = atomixInjector.getValue();
   }
@@ -93,7 +93,7 @@ public class EngineService implements Service<EngineService> {
         .additionalDependencies(partitionServiceName)
         .zeebeDb(partition.getZeebeDb())
         .serviceContainer(serviceContainer)
-        .commandResponseWriter(new CommandResponseWriterImpl(clientApiTransport.getOutput()))
+        .commandResponseWriter(new CommandResponseWriterImpl(commandApiTransport.getOutput()))
         .streamProcessorFactory(
             (processingContext) -> {
               final ActorControl actor = processingContext.getActor();
@@ -157,8 +157,8 @@ public class EngineService implements Service<EngineService> {
     return this;
   }
 
-  public Injector<ServerTransport> getClientApiTransportInjector() {
-    return clientApiTransportInjector;
+  public Injector<ServerTransport> getCommandApiTransportInjector() {
+    return commandApiTransportInjector;
   }
 
   public ServiceGroupReference<Partition> getPartitionsGroupReference() {

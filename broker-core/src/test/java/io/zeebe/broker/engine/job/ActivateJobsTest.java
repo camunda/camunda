@@ -44,7 +44,7 @@ import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.CommandApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
@@ -79,7 +79,7 @@ public class ActivateJobsTest {
 
   public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
+  public static CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

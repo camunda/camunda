@@ -48,7 +48,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.slf4j.Logger;
 
-public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequestHandler {
+public class CommandApiMessageHandler implements ServerMessageHandler, ServerRequestHandler {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -66,7 +66,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
 
   protected final EnumMap<ValueType, UnpackedObject> recordsByType = new EnumMap<>(ValueType.class);
 
-  public ClientApiMessageHandler() {
+  public CommandApiMessageHandler() {
     initEventTypeMap();
   }
 

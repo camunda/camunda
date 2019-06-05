@@ -31,7 +31,7 @@ import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.CommandApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import java.time.Duration;
 import java.util.List;
@@ -43,7 +43,7 @@ import org.junit.rules.RuleChain;
 
 public class JobTimeOutTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
+  public CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
   private PartitionTestClient client;

@@ -129,8 +129,8 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public static void assignSocketAddresses(final BrokerCfg brokerCfg) {
     final NetworkCfg network = brokerCfg.getNetwork();
     brokerCfg.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().port());
-    network.getClient().setPort(SocketUtil.getNextAddress().port());
-    network.getAtomix().setPort(SocketUtil.getNextAddress().port());
+    network.getCommandApi().setPort(SocketUtil.getNextAddress().port());
+    network.getInternalApi().setPort(SocketUtil.getNextAddress().port());
     brokerCfg.getMetrics().setPort(SocketUtil.getNextAddress().port());
   }
 
@@ -175,10 +175,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
     return brokerCfg;
   }
 
-  public SocketAddress getClientAddress() {
-    return brokerCfg.getNetwork().getClient().toSocketAddress();
-  }
-
   public SocketAddress getGatewayAddress() {
     return brokerCfg.getGateway().getNetwork().toSocketAddress();
   }
@@ -221,7 +217,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
           .createService(TestService.NAME, new TestService())
           .dependency(PartitionServiceNames.leaderPartitionServiceName(partitionName))
           .dependency(
-              TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
+              TransportServiceNames.serverTransport(TransportServiceNames.COMMAND_API_SERVER_NAME))
           .install()
           .get(timeout, TimeUnit.SECONDS);
 

@@ -21,10 +21,10 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMI
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.DEBUG_EXPORTER;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.HTTP_EXPORTER;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setAtomixApiPort;
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setClientApiPort;
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setCommandApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayClusterPort;
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setInternalApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setMetricsPort;
 
 import io.atomix.core.Atomix;
@@ -127,8 +127,8 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public static void assignSocketAddresses(final BrokerCfg brokerCfg) {
     setGatewayApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
     setGatewayClusterPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
-    setClientApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
-    setAtomixApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
+    setCommandApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
+    setInternalApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
     setMetricsPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
   }
 
@@ -180,8 +180,8 @@ public class EmbeddedBrokerRule extends ExternalResource {
     return getService(ATOMIX_SERVICE);
   }
 
-  public SocketAddress getClientAddress() {
-    return brokerCfg.getNetwork().getClient().toSocketAddress();
+  public SocketAddress getCommandAdress() {
+    return brokerCfg.getNetwork().getCommandApi().toSocketAddress();
   }
 
   public SocketAddress getGatewayAddress() {
@@ -238,7 +238,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
           .createService(TestService.NAME, new TestService())
           .dependency(PartitionServiceNames.leaderPartitionServiceName(partitionName))
           .dependency(
-              TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
+              TransportServiceNames.serverTransport(TransportServiceNames.COMMAND_API_SERVER_NAME))
           .install()
           .get(INSTALL_TIMEOUT, INSTALL_TIMEOUT_UNIT);
 
@@ -341,7 +341,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public void interruptClientConnections() {
-    getService(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
+    getService(TransportServiceNames.serverTransport(TransportServiceNames.COMMAND_API_SERVER_NAME))
         .interruptAllChannels();
   }
 

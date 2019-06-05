@@ -35,7 +35,7 @@ import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.CommandApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -76,7 +76,7 @@ public class TimerStartEventTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
+  public CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

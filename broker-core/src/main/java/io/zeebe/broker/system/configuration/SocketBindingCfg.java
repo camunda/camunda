@@ -20,6 +20,8 @@ package io.zeebe.broker.system.configuration;
 import io.zeebe.transport.SocketAddress;
 
 public abstract class SocketBindingCfg {
+  public static final String DEFAULT_SEND_BUFFER_SIZE = "16M";
+
   protected String host;
   protected int port;
   protected String sendBufferSize;
@@ -34,7 +36,7 @@ public abstract class SocketBindingCfg {
     }
 
     if (sendBufferSize == null) {
-      sendBufferSize = networkCfg.getDefaultSendBufferSize();
+      sendBufferSize = DEFAULT_SEND_BUFFER_SIZE;
     }
 
     port += networkCfg.getPortOffset() * 10;

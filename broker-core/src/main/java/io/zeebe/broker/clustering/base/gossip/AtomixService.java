@@ -66,8 +66,8 @@ public class AtomixService implements Service<Atomix> {
     final String localMemberId = Integer.toString(nodeId);
 
     final NetworkCfg networkCfg = configuration.getNetwork();
-    final String host = networkCfg.getAtomix().getHost();
-    final int port = networkCfg.getAtomix().getPort();
+    final String host = networkCfg.getInternalApi().getHost();
+    final int port = networkCfg.getInternalApi().getPort();
 
     final NodeDiscoveryProvider discoveryProvider =
         createDiscoveryProvider(clusterCfg, localMemberId);

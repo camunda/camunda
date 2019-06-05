@@ -38,7 +38,7 @@ import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.CommandApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
@@ -87,7 +87,7 @@ public class CancelWorkflowInstanceTest {
   }
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
+  public CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

@@ -90,10 +90,10 @@ public class PartitionTestClient {
   public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
   public static final String PROP_WORKFLOW_KEY = "workflowKey";
 
-  private final ClientApiRule apiRule;
+  private final CommandApiRule apiRule;
   private final int partitionId;
 
-  public PartitionTestClient(final ClientApiRule apiRule, final int partitionId) {
+  public PartitionTestClient(final CommandApiRule apiRule, final int partitionId) {
     this.apiRule = apiRule;
     this.partitionId = partitionId;
   }

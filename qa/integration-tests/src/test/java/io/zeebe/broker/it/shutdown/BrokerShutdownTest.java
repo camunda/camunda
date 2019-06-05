@@ -55,7 +55,7 @@ public class BrokerShutdownTest {
                 .createService(BLOCK_BROKER_SERVICE_NAME, new BlockingService())
                 .dependency(
                     TransportServiceNames.serverTransport(
-                        TransportServiceNames.CLIENT_API_SERVER_NAME)));
+                        TransportServiceNames.COMMAND_API_SERVER_NAME)));
 
     final Broker broker = brokerRule.getBroker();
     broker.getBrokerContext().setCloseTimeout(Duration.ofSeconds(1));
@@ -66,7 +66,7 @@ public class BrokerShutdownTest {
     // then
     final NetworkCfg networkCfg = broker.getBrokerContext().getBrokerConfiguration().getNetwork();
 
-    tryToBindSocketAddress(networkCfg.getClient().toSocketAddress());
+    tryToBindSocketAddress(networkCfg.getCommandApi().toSocketAddress());
   }
 
   private void tryToBindSocketAddress(SocketAddress socketAddress) {
