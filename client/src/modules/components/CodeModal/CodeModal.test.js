@@ -13,8 +13,13 @@ import {ThemeProvider} from 'modules/theme';
 import Modal from 'modules/components/Modal';
 import CodeModal from './CodeModal';
 
-const elementMock = {addEventListener: jest.fn()};
-jest.spyOn(document, 'getElementById').mockImplementation(asd => {
+const elementMock = {
+  addEventListener: jest.fn((event, cb) => {
+    //
+  })
+};
+
+jest.spyOn(document, 'getElementById').mockImplementation(id => {
   return elementMock;
 });
 
@@ -80,13 +85,40 @@ describe('CodeModal', () => {
       expect(node.find('code').props().contentEditable).toBe(true);
     });
 
-    describe('save button', () => {
-      // innerText isn't implemented yet in jsDom.
-      //https://stackoverflow.com/questions/54495862/why-does-my-unit-test-fail-to-return-the-text-within-a-single-file-component-whe
-      //https://github.com/jsdom/jsdom/issues/1245
+    describe.skip('save button', () => {
+      //check if tests can be written with TextContent
+      // get access to the whole code editor text
+      // change the code editor text
+      // check if the button state changed accordingly
+      it('should allow to save value, when valid & modfied', () => {
+        // node.find('code').simulate('input', {
+        //   target: {
+        //     textContent: '{"firstname":"asdasdMax"}'
+        //   }
+        // });
 
-      it.only('should allow to save value, when valid & modfied', () => {
-        //TODO: check if tests can be written with TextContent
+        // const domNode = node.find('code').getDOMNode();
+        // domNode.textContent =
+        //   '{"firstname":"asdasdMax","lastname":"Muster","age":31}';
+
+        node.update();
+
+        // expect(elementMock.addEventListener).toBeCalledWith(
+        //   'input',
+        //   expect.any(Function).toBeCalledWith(
+        //     expect.objectContaining({
+        //       target: {
+        //         textContent: '{"firstname":"asdasdMax"}'
+        //       }
+        //     })
+        //   )
+        // );
+
+        // expect(node.find('code').text()).toEqual('{"firstname":"asdasdMax"}');
+
+        // expect(node.find("button[data-test='save-btn']").prop('disabled')).toBe(
+        //   false
+        // );
       });
       it('should not allow to save "empty" values', () => {
         //
