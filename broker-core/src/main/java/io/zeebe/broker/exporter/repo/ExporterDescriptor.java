@@ -18,7 +18,7 @@
 package io.zeebe.broker.exporter.repo;
 
 import io.zeebe.broker.exporter.context.ExporterConfiguration;
-import io.zeebe.exporter.api.spi.Exporter;
+import io.zeebe.exporter.api.Exporter;
 import java.util.Map;
 
 public class ExporterDescriptor {

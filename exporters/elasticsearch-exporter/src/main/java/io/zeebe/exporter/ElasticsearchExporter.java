@@ -16,10 +16,10 @@
 package io.zeebe.exporter;
 
 import io.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
+import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.spi.Exporter;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import java.time.Duration;
