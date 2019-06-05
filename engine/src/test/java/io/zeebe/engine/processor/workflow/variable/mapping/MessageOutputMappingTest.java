@@ -165,8 +165,12 @@ public class MessageOutputMappingTest {
                 r -> r.setKey(workflowKey).setVariables(MsgPackUtil.asMsgPack(variables)))
             .getValue()
             .getInstanceKey();
-    ENGINE_RULE.publishMessage(
-        1, MESSAGE_NAME, correlationKey, MsgPackUtil.asMsgPack(messageVariables));
+    ENGINE_RULE
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey(correlationKey)
+        .withVariables(MsgPackUtil.asMsgPack(messageVariables))
+        .publish();
 
     // then
     final long elementInstanceKey =

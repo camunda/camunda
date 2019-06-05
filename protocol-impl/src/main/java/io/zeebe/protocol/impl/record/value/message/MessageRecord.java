@@ -19,6 +19,7 @@ import io.zeebe.exporter.api.record.value.MessageRecordValue;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
@@ -122,7 +123,7 @@ public class MessageRecord extends UnifiedRecordValue implements MessageRecordVa
 
   @Override
   public String getVariables() {
-    throw new UnsupportedOperationException("not yet implemented");
+    return MsgPackConverter.convertToJson(variablesProp.getValue());
   }
 
   @Override

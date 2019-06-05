@@ -204,7 +204,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       TypedRecord<MessageRecord> command,
       TypedStreamWriter streamWriter,
       MessageStartEventSubscriptionRecord subscription) {
-    final DirectBuffer startEventId = subscription.getStartEventId();
+    final DirectBuffer startEventId = subscription.getStartEventIdBuffer();
     final long workflowKey = subscription.getWorkflowKey();
     final WorkflowInstanceRecord record =
         new WorkflowInstanceRecord()

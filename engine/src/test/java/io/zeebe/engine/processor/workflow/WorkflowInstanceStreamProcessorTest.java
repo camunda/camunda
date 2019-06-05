@@ -317,7 +317,7 @@ public class WorkflowInstanceStreamProcessorTest {
             eq(subscription.getWorkflowInstanceKey()),
             eq(subscription.getElementInstanceKey()),
             captor.capture());
-    BufferUtil.equals(captor.getValue(), subscription.getMessageName());
+    BufferUtil.equals(captor.getValue(), subscription.getMessageNameBuffer());
 
     verify(streamProcessorRule.getMockSubscriptionCommandSender(), timeout(5_000))
         .rejectCorrelateMessageSubscription(
@@ -327,7 +327,7 @@ public class WorkflowInstanceStreamProcessorTest {
             captor.capture(),
             any());
 
-    BufferUtil.equals(captor.getValue(), subscription.getMessageName());
+    BufferUtil.equals(captor.getValue(), subscription.getMessageNameBuffer());
   }
 
   @Test
@@ -405,7 +405,7 @@ public class WorkflowInstanceStreamProcessorTest {
             subscription.getSubscriptionPartitionId(),
             subscription.getWorkflowInstanceKey(),
             subscription.getElementInstanceKey(),
-            subscription.getMessageName());
+            subscription.getMessageNameBuffer());
   }
 
   @Test

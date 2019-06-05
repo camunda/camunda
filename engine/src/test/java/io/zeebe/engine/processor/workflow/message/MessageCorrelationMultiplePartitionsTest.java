@@ -117,11 +117,13 @@ public class MessageCorrelationMultiplePartitionsTest {
     // given
     engine.forEachPartition(
         partitionId ->
-            engine.publishMessage(
-                partitionId,
-                "message",
-                CORRELATION_KEYS.get(partitionId),
-                asMsgPack("p", "p" + partitionId)));
+            engine
+                .message()
+                .onPartition(partitionId)
+                .withName("message")
+                .withCorrelationKey(CORRELATION_KEYS.get(partitionId))
+                .withVariables(asMsgPack("p", "p" + partitionId))
+                .publish());
 
     // when
     final long wfiKey1 =

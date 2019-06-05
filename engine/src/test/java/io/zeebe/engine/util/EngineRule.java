@@ -33,8 +33,8 @@ import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSen
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.MessageRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
+import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -46,11 +46,11 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.ReflectUtil;
@@ -77,7 +77,6 @@ public class EngineRule extends ExternalResource {
 
   private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
   private static final RecordingExporter RECORDING_EXPORTER = new RecordingExporter();
-  public static final Duration DEFAULT_MSG_TTL = Duration.ofHours(1);
 
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -137,6 +136,10 @@ public class EngineRule extends ExternalResource {
     }
   }
 
+  public void increaseTime(Duration duration) {
+    environmentRule.getClock().addTime(duration);
+  }
+
   public Record<DeploymentRecordValue> deploy(final BpmnModelInstance modelInstance) {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     deploymentRecord
@@ -148,21 +151,22 @@ public class EngineRule extends ExternalResource {
 
     final long position = environmentRule.writeCommand(DeploymentIntent.CREATE, deploymentRecord);
 
-    final Record<DeploymentRecordValue> firstCreated =
+    final Record<DeploymentRecordValue> deploymentOnPartitionOne =
         RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
             .withSourceRecordPosition(position)
+            .withPartitionId(PARTITION_ID)
             .getFirst();
 
     forEachPartition(
         partitionId ->
             RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
                 .withPartitionId(partitionId)
-                .withRecordKey(firstCreated.getKey())
+                .withRecordKey(deploymentOnPartitionOne.getKey())
                 .getFirst());
 
     return RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
         .withPartitionId(PARTITION_ID)
-        .withRecordKey(firstCreated.getKey())
+        .withRecordKey(deploymentOnPartitionOne.getKey())
         .getFirst();
   }
 
@@ -179,21 +183,27 @@ public class EngineRule extends ExternalResource {
         .getFirst();
   }
 
-  public Record<MessageRecordValue> publishMessage(
-      int partitionId, String messageName, String correlationKey, DirectBuffer variables) {
-    final MessageRecord messageRecord =
-        new MessageRecord()
-            .setName(messageName)
-            .setCorrelationKey(correlationKey)
-            .setVariables(variables)
-            .setTimeToLive(DEFAULT_MSG_TTL.toMillis());
+  public Record<WorkflowInstanceRecordValue> cancelWorkflowInstance(long workflowInstanceKey) {
+    final Record<WorkflowInstanceRecordValue> instanceRecord =
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
 
-    environmentRule.writeCommandOnPartition(partitionId, MessageIntent.PUBLISH, messageRecord);
+    environmentRule.writeCommandOnPartition(
+        instanceRecord.getMetadata().getPartitionId(),
+        workflowInstanceKey,
+        WorkflowInstanceIntent.CANCEL,
+        new WorkflowInstanceRecord().setWorkflowInstanceKey(workflowInstanceKey));
 
-    return RecordingExporter.messageRecords(MessageIntent.PUBLISH)
-        .withPartitionId(partitionId)
-        .withCorrelationKey(correlationKey)
+    return RecordingExporter.workflowInstanceRecords()
+        .withRecordKey(workflowInstanceKey)
+        .withIntent(WorkflowInstanceIntent.ELEMENT_TERMINATED)
+        .withWorkflowInstanceKey(workflowInstanceKey)
         .getFirst();
+  }
+
+  public PublishMessageClient message() {
+    return new PublishMessageClient(environmentRule, partitionCount);
   }
 
   public List<Integer> getPartitionIds() {

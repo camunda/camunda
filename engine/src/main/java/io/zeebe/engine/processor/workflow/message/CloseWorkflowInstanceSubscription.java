@@ -50,7 +50,7 @@ public final class CloseWorkflowInstanceSubscription
 
     final boolean removed =
         subscriptionState.remove(
-            subscription.getElementInstanceKey(), subscription.getMessageName());
+            subscription.getElementInstanceKey(), subscription.getMessageNameBuffer());
     if (removed) {
       streamWriter.appendFollowUpEvent(
           record.getKey(), WorkflowInstanceSubscriptionIntent.CLOSED, subscription);
@@ -62,7 +62,7 @@ public final class CloseWorkflowInstanceSubscription
           String.format(
               NO_SUBSCRIPTION_FOUND_MESSAGE,
               subscription.getElementInstanceKey(),
-              BufferUtil.bufferAsString(subscription.getMessageName())));
+              BufferUtil.bufferAsString(subscription.getMessageNameBuffer())));
     }
   }
 }

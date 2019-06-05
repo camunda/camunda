@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,15 +15,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.engine.message;
+package io.zeebe.engine.processor.workflow.message;
 
 import static io.zeebe.exporter.api.record.Assertions.assertThat;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.test.util.record.RecordingExporter.messageStartEventSubscriptionRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.engine.util.EngineRule;
+import io.zeebe.engine.util.PublishMessageClient;
 import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -31,16 +33,10 @@ import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
-import java.util.Map;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 public class MessageStartEventTest {
 
@@ -50,26 +46,14 @@ public class MessageStartEventTest {
   private static final String MESSAGE_NAME2 = "startMessage2";
   private static final String EVENT_ID2 = "startEventId2";
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
-
-  private PartitionTestClient testClient;
-
-  @Before
-  public void init() {
-    testClient = apiRule.partitionClient();
-  }
+  @Rule public EngineRule engine = new EngineRule();
 
   @Test
   public void shouldCorrelateMessageToStartEvent() {
     // given
-    final ExecuteCommandResponse response =
-        testClient.deployWithResponse(createWorkflowWithOneMessageStartEvent());
-
-    final long workflowKey = getFirstDeployedWorkflowKey(response);
+    final Record<DeploymentRecordValue> deploymentRecord =
+        engine.deploy(createWorkflowWithOneMessageStartEvent());
+    final long workflowKey = getFirstDeployedWorkflowKey(deploymentRecord);
 
     // wait until subscription is opened
     assertThat(
@@ -78,7 +62,12 @@ public class MessageStartEventTest {
         .isTrue();
 
     // when
-    testClient.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
+    engine
+        .message()
+        .withCorrelationKey("order-123")
+        .withName(MESSAGE_NAME1)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
 
     // then
     final Record<WorkflowInstanceRecordValue> record =
@@ -90,10 +79,9 @@ public class MessageStartEventTest {
   @Test
   public void shouldCreateInstanceOnMessage() {
     // given
-    final ExecuteCommandResponse response =
-        testClient.deployWithResponse(createWorkflowWithOneMessageStartEvent());
-
-    final long workflowKey = getFirstDeployedWorkflowKey(response);
+    final Record<DeploymentRecordValue> deploymentRecord =
+        engine.deploy(createWorkflowWithOneMessageStartEvent());
+    final long workflowKey = getFirstDeployedWorkflowKey(deploymentRecord);
 
     // wait until subscription is opened
     assertThat(
@@ -102,7 +90,12 @@ public class MessageStartEventTest {
         .isTrue();
 
     // when
-    testClient.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
+    engine
+        .message()
+        .withCorrelationKey("order-123")
+        .withName(MESSAGE_NAME1)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> records =
@@ -125,7 +118,7 @@ public class MessageStartEventTest {
   @Test
   public void shouldMergeMessageVariables() {
     // given
-    testClient.deployWithResponse(createWorkflowWithOneMessageStartEvent());
+    engine.deploy(createWorkflowWithOneMessageStartEvent());
 
     // wait until subscription is opened
     assertThat(
@@ -134,7 +127,12 @@ public class MessageStartEventTest {
         .isTrue();
 
     // when
-    testClient.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
+    engine
+        .message()
+        .withCorrelationKey("order-123")
+        .withName(MESSAGE_NAME1)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
 
     // then
     assertThat(RecordingExporter.variableRecords().withName("foo").withValue("\"bar\"").exists())
@@ -144,7 +142,7 @@ public class MessageStartEventTest {
   @Test
   public void shouldApplyOutputMappingsOfMessageStartEvent() {
     // given
-    testClient.deployWithResponse(createWorkflowWithMessageStartEventOutputMapping());
+    engine.deploy(createWorkflowWithMessageStartEventOutputMapping());
 
     // wait until subscription is opened
     assertThat(
@@ -153,7 +151,12 @@ public class MessageStartEventTest {
         .isTrue();
 
     // when
-    testClient.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
+    engine
+        .message()
+        .withCorrelationKey("order-123")
+        .withName(MESSAGE_NAME1)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
 
     // then
     assertThat(
@@ -164,10 +167,10 @@ public class MessageStartEventTest {
   @Test
   public void shouldCreateInstancesForMultipleMessagesOfSameName() {
     // given
-    final ExecuteCommandResponse response =
-        testClient.deployWithResponse(createWorkflowWithOneMessageStartEvent());
+    final Record<DeploymentRecordValue> record =
+        engine.deploy(createWorkflowWithOneMessageStartEvent());
 
-    final long workflowKey = getFirstDeployedWorkflowKey(response);
+    final long workflowKey = getFirstDeployedWorkflowKey(record);
 
     // wait until subscription is opened
     assertThat(
@@ -176,8 +179,11 @@ public class MessageStartEventTest {
         .isTrue();
 
     // when
-    testClient.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
-    testClient.publishMessage(MESSAGE_NAME1, "order-124", asMsgPack("foo", "bar"));
+    final PublishMessageClient messageClient =
+        engine.message().withName(MESSAGE_NAME1).withVariables(asMsgPack("foo", "bar"));
+
+    messageClient.withCorrelationKey("order-123").publish();
+    messageClient.withCorrelationKey("order-124").publish();
 
     // then
 
@@ -200,10 +206,10 @@ public class MessageStartEventTest {
   @Test
   public void shouldCreateInstancesForDifferentMessages() {
     // given
-    final ExecuteCommandResponse response =
-        testClient.deployWithResponse(createWorkflowWithTwoMessageStartEvent());
+    final Record<DeploymentRecordValue> record =
+        engine.deploy(createWorkflowWithTwoMessageStartEvent());
 
-    final long workflowKey = getFirstDeployedWorkflowKey(response);
+    final long workflowKey = getFirstDeployedWorkflowKey(record);
 
     // check if two subscriptions are opened
     assertThat(
@@ -213,8 +219,11 @@ public class MessageStartEventTest {
         .isEqualTo(2);
 
     // when
-    testClient.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
-    testClient.publishMessage(MESSAGE_NAME2, "order-124", asMsgPack("foo", "bar"));
+    final PublishMessageClient messageClient =
+        engine.message().withVariables(asMsgPack("foo", "bar"));
+
+    messageClient.withName(MESSAGE_NAME1).withCorrelationKey("order-123").publish();
+    messageClient.withName(MESSAGE_NAME2).withCorrelationKey("order-124").publish();
 
     // then
 
@@ -237,12 +246,12 @@ public class MessageStartEventTest {
   @Test
   public void shouldNotCreateInstanceOfOldVersion() {
     // given
-    testClient.deploy(createWorkflowWithOneMessageStartEvent());
+    engine.deploy(createWorkflowWithOneMessageStartEvent());
 
     // new version
-    final ExecuteCommandResponse response =
-        testClient.deployWithResponse(createWorkflowWithOneMessageStartEvent());
-    final long workflowKey2 = getFirstDeployedWorkflowKey(response);
+    final Record<DeploymentRecordValue> record =
+        engine.deploy(createWorkflowWithOneMessageStartEvent());
+    final long workflowKey2 = getFirstDeployedWorkflowKey(record);
 
     // wait until second subscription is opened
     assertThat(
@@ -252,7 +261,12 @@ public class MessageStartEventTest {
         .isEqualTo(2);
 
     // when
-    testClient.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
+    engine
+        .message()
+        .withCorrelationKey("order-123")
+        .withName(MESSAGE_NAME1)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> records =
@@ -295,9 +309,7 @@ public class MessageStartEventTest {
   }
 
   @SuppressWarnings("unchecked")
-  private long getFirstDeployedWorkflowKey(final ExecuteCommandResponse response) {
-    final List<Map<String, Object>> workflows =
-        (List<Map<String, Object>>) response.getValue().get("workflows");
-    return (long) workflows.get(0).get("workflowKey");
+  private long getFirstDeployedWorkflowKey(final Record<DeploymentRecordValue> deploymentRecord) {
+    return deploymentRecord.getValue().getDeployedWorkflows().get(0).getWorkflowKey();
   }
 }
