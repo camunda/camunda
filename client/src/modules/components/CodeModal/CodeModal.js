@@ -9,6 +9,11 @@ import React, {useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
 
 import {isValidJSON} from 'modules/utils';
+import {
+  createBeautyfiedJSON,
+  removeWhiteSpaces,
+  removeLineBreaks
+} from './service';
 
 import Modal from 'modules/components/Modal';
 
@@ -43,23 +48,6 @@ function CodeModal({
   function onModalClose() {
     setNewValue('');
     handleModalClose();
-  }
-
-  function createBeautyfiedJSON(validJSONstring, indentationSpace = 0) {
-    return JSON.stringify(removeTabs(validJSONstring), null, indentationSpace);
-  }
-
-  function removeTabs(validJSONstring) {
-    // removes all possible spaces, a user could have added during in-line edit.
-    return JSON.parse(validJSONstring);
-  }
-
-  function removeWhiteSpaces(value) {
-    return value.replace(/\s/g, '');
-  }
-
-  function removeLineBreaks(value) {
-    return value.replace(/\r?\n|\r/g, '');
   }
 
   function isValueModified() {
