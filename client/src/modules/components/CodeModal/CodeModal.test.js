@@ -32,12 +32,8 @@ function mountNode(props = {}) {
 }
 
 describe('CodeModal', () => {
-  let node;
-  beforeEach(() => {
-    node = mountNode(testData.userOpensEditModal);
-  });
   it('should not render any modal UI initially', () => {
-    node = mountNode(testData.pageMounts);
+    const node = mountNode(testData.pageMounts);
 
     expect(node.find(Modal.Header)).not.toExist();
     expect(node.find(Modal.Body)).not.toExist();
@@ -48,7 +44,7 @@ describe('CodeModal', () => {
     // silence prop-type warning
     console.error = jest.fn();
 
-    node = mountNode(testData.userOpensModalWithUnknownMode);
+    const node = mountNode(testData.userOpensModalWithUnknownMode);
 
     expect(node.find(Modal.Header)).toExist();
     expect(node.find(Modal.Body)).toExist();
@@ -56,11 +52,13 @@ describe('CodeModal', () => {
   });
 
   it('should render multiple lines for a valid JSON value', () => {
+    const node = mountNode(testData.userOpensEditModal);
+
     expect(node.find('code').children().length).toBe(5);
   });
 
   it('should render a single line for a broken JSON object', () => {
-    node = mountNode({
+    const node = mountNode({
       ...testData.userOpensEditModalWithBrokenJSON
     });
 

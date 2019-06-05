@@ -240,7 +240,7 @@ export const EditInputTD = styled.td`
 export const EditButton = styled.button`
   margin: 0;
   padding: 0;
-  height: 16px
+  height: 16px;
   width: 16px;
   margin-left: 15px;
   background: transparent;

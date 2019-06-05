@@ -77,7 +77,7 @@ export default function Variables({
     [editMode]
   );
 
-  function stictJSONValidation(value) {
+  function strictJSONValidation(value) {
     return isValidJSON(value) && typeof JSON.parse(value) === 'object';
   }
 
@@ -128,7 +128,7 @@ export default function Variables({
         </Styled.EditInputTD>
         <Styled.EditButtonsTD>
           {renderEditButtons({
-            showModalBtn: stictJSONValidation(propValue),
+            showModalBtn: strictJSONValidation(propValue),
             isDisabled: valueHasntChanged
           })}
         </Styled.EditButtonsTD>
