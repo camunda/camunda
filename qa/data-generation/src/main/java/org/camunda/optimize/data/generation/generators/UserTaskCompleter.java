@@ -28,8 +28,8 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 @Slf4j
 public class UserTaskCompleter {
 
-  private static final int TASKS_TO_FETCH = 10_000;
-  private static final int BACKOFF_SECONDS = 5;
+  private static final int TASKS_TO_FETCH = 1000;
+  private static final int BACKOFF_SECONDS = 1;
   private static final Random RANDOM = new Random();
   private static final OffsetDateTime OFFSET_DATE_TIME_OF_EPOCH = OffsetDateTime.from(
     Instant.EPOCH.atZone(ZoneId.of("UTC"))
@@ -57,12 +57,12 @@ public class UserTaskCompleter {
         do {
           if (isDateFilterInBackOffWindow()) {
             // we back off from tip of time to ensure to not miss pending writes and to batch up while data is generated
+            log.info("Still in backoff window, sleeping for {} seconds", BACKOFF_SECONDS);
             try {
               Thread.sleep(BACKOFF_SECONDS * 1000);
             } catch (InterruptedException e) {
               log.debug("Was Interrupted while sleeping");
             }
-            continue;
           }
 
           final OffsetDateTime previousCreationDateFilter = currentCreationDateFilter;
