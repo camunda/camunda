@@ -237,10 +237,10 @@ public class ExporterRecordMapper {
 
     return new IncidentRecordValueImpl(
         objectMapper,
-        record.getErrorType().name(),
-        asString(record.getErrorMessage()),
-        asString(record.getBpmnProcessId()),
-        asString(record.getElementId()),
+        record.getErrorTypeEnum().name(),
+        asString(record.getErrorMessageBuffer()),
+        asString(record.getBpmnProcessIdBuffer()),
+        asString(record.getElementIdBuffer()),
         record.getWorkflowKey(),
         record.getWorkflowInstanceKey(),
         record.getElementInstanceKey(),

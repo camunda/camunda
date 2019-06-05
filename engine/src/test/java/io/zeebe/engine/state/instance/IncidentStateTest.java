@@ -200,10 +200,12 @@ public class IncidentStateTest {
     assertThat(expectedRecord.getJobKey()).isEqualTo(storedRecord.getJobKey());
     assertThat(expectedRecord.getElementInstanceKey())
         .isEqualTo(storedRecord.getElementInstanceKey());
-    assertThat(expectedRecord.getBpmnProcessId()).isEqualTo(storedRecord.getBpmnProcessId());
-    assertThat(expectedRecord.getElementId()).isEqualTo(storedRecord.getElementId());
+    assertThat(expectedRecord.getBpmnProcessIdBuffer())
+        .isEqualTo(storedRecord.getBpmnProcessIdBuffer());
+    assertThat(expectedRecord.getElementIdBuffer()).isEqualTo(storedRecord.getElementIdBuffer());
 
-    assertThat(expectedRecord.getErrorMessage()).isEqualTo(storedRecord.getErrorMessage());
-    assertThat(expectedRecord.getErrorType()).isEqualTo(storedRecord.getErrorType());
+    assertThat(expectedRecord.getErrorMessageBuffer())
+        .isEqualTo(storedRecord.getErrorMessageBuffer());
+    assertThat(expectedRecord.getErrorTypeEnum()).isEqualTo(storedRecord.getErrorTypeEnum());
   }
 }

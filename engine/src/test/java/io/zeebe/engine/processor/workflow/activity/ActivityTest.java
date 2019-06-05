@@ -37,7 +37,7 @@ import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.WorkflowInstances;
 import java.util.List;
 import java.util.Map;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 public class ActivityTest {
@@ -67,7 +67,7 @@ public class ActivityTest {
           .endEvent("taskEnd")
           .done();
 
-  @Rule public EngineRule engine = new EngineRule();
+  @ClassRule public static EngineRule engine = new EngineRule();
 
   @Test
   public void shouldApplyInputMappingOnReady() {
@@ -87,6 +87,7 @@ public class ActivityTest {
         RecordingExporter.workflowInstanceRecords()
             .withElementId("task")
             .withIntent(ELEMENT_ACTIVATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
     // then
@@ -116,6 +117,7 @@ public class ActivityTest {
         RecordingExporter.workflowInstanceRecords()
             .withElementId("task")
             .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
     final Map<String, String> variables =
         WorkflowInstances.getCurrentVariables(workflowInstanceKey, record.getPosition());
@@ -162,12 +164,13 @@ public class ActivityTest {
             .getInstanceKey();
 
     // when
-    //    RecordingExporter.timerRecords().withIntent(TimerIntent.CREATE).limit(2).asList();
     engine.job().ofInstance(instanceKey).complete();
 
     // then
     shouldUnsubscribeFromBoundaryEventTrigger(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        instanceKey,
+        WorkflowInstanceIntent.ELEMENT_COMPLETING,
+        WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -184,12 +187,15 @@ public class ActivityTest {
     RecordingExporter.workflowInstanceRecords()
         .withElementId("task")
         .withIntent(ELEMENT_ACTIVATED)
+        .withWorkflowInstanceKey(instanceKey)
         .getFirst();
     engine.cancelWorkflowInstance(instanceKey);
 
     // then
     shouldUnsubscribeFromBoundaryEventTrigger(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, WorkflowInstanceIntent.ELEMENT_TERMINATED);
+        instanceKey,
+        WorkflowInstanceIntent.ELEMENT_TERMINATING,
+        WorkflowInstanceIntent.ELEMENT_TERMINATED);
   }
 
   @Test
@@ -236,16 +242,16 @@ public class ActivityTest {
   }
 
   private void shouldUnsubscribeFromBoundaryEventTrigger(
-      WorkflowInstanceIntent leavingState, WorkflowInstanceIntent leftState) {
+      long instanceKey, WorkflowInstanceIntent leavingState, WorkflowInstanceIntent leftState) {
     // given
     final List<Record<RecordValue>> records =
         RecordingExporter.records()
-            .skipUntil(
+            .limitToWorkflowInstance(instanceKey)
+            .between(
                 r ->
                     r.getValue() instanceof WorkflowInstanceRecord
                         && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("task")
-                        && r.getMetadata().getIntent() == leavingState)
-            .limit(
+                        && r.getMetadata().getIntent() == leavingState,
                 r ->
                     r.getValue() instanceof WorkflowInstanceRecord
                         && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("task")
