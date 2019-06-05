@@ -17,7 +17,7 @@ spec:
       effect: "NoSchedule"
   initContainers:
     - name: init-sysctl
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.7.0
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.0
       command:
       - "sh"
       args:
@@ -30,7 +30,7 @@ spec:
       - mountPath: /usr/share/elasticsearch/config_new/
         name: configdir
     - name: init-plugins
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.7.0
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.0
       command:
       - "sh"
       args:
@@ -73,7 +73,7 @@ spec:
           cpu: 500m
           memory: 1Gi
     - name: elasticsearch
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.7.0
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.0
       env:
         - name: ES_JAVA_OPTS
           value: '-Xms512m -Xmx512m'
@@ -110,7 +110,7 @@ spec:
           cpu: 2
           memory: 2Gi
     - name: zeebe
-      image: camunda/zeebe:0.17.0
+      image: camunda/zeebe:SNAPSHOT
       env:
         - name: JAVA_TOOL_OPTIONS
           value: |
