@@ -222,6 +222,7 @@ public class FsLogStorage implements LogStorage {
   }
 
   private void initLogSegments(final File logDir) {
+    final int initialSegmentId;
     final List<FsLogSegment> readableLogSegments = new ArrayList<>();
 
     final List<File> logFiles =
@@ -252,8 +253,9 @@ public class FsLogStorage implements LogStorage {
 
     if (existingSegments > 0) {
       currentSegment = readableLogSegments.get(existingSegments - 1);
+      initialSegmentId = readableLogSegments.get(0).getSegmentId();
     } else {
-      final int initialSegmentId = config.getInitialSegmentId();
+      initialSegmentId = config.getInitialSegmentId();
       final String initialSegmentName = config.fileName(initialSegmentId);
       final int segmentSize = config.getSegmentSize();
 
@@ -273,7 +275,7 @@ public class FsLogStorage implements LogStorage {
         readableLogSegments.toArray(new FsLogSegment[readableLogSegments.size()]);
 
     final FsLogSegments logSegments = new FsLogSegments();
-    logSegments.init(config.getInitialSegmentId(), segmentsArray);
+    logSegments.init(initialSegmentId, segmentsArray);
     segmentCountMetric.setOrdered(logSegments.getSegmentCount());
 
     this.logSegments = logSegments;
