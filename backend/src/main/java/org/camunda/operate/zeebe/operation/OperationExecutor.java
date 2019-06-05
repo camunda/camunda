@@ -46,7 +46,7 @@ public class OperationExecutor extends Thread {
 
   @Autowired
   @Qualifier("operationsThreadPoolExecutor")
-  private ThreadPoolTaskExecutor operationsTakExecutor;
+  private ThreadPoolTaskExecutor operationsTaskExecutor;
 
   private List<ExecutionFinishedListener> listeners = new ArrayList<>();
 
@@ -107,7 +107,7 @@ public class OperationExecutor extends Thread {
         logger.info("Operation {} on worflowInstanceId {} won't be processed, as no suitable handler was found.", operation.getType(), operation.getWorkflowInstanceId());
       } else {
         OperationCommand operationCommand = new OperationCommand(operation, handler);
-        futures.add(operationsTakExecutor.submit(operationCommand));
+        futures.add(operationsTaskExecutor.submit(operationCommand));
       }
     }
     return futures;
