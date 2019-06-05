@@ -25,6 +25,7 @@ import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_REPLICATIO
 import static io.zeebe.broker.system.configuration.DataCfg.DEFAULT_DIRECTORY;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_CLUSTER_NAME;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_CLUSTER_SIZE;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DEBUG_EXPORTER;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DIRECTORIES;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_EMBED_GATEWAY;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
@@ -38,6 +39,7 @@ import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
@@ -184,6 +186,36 @@ public class ConfigurationTest {
         .is(new Condition<>(ExporterCfg::isExternal, "is external"));
     assertThat(config.getExporters().get(1).isExternal()).isFalse();
     assertThat(config.getExporters().get(2).isExternal()).isFalse();
+  }
+
+  @Test
+  public void shouldEnableDebugLogExporter() {
+    // given
+    final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(false);
+    environment.put(ENV_DEBUG_EXPORTER, "true");
+
+    // when
+    final BrokerCfg brokerCfg = readConfig("default");
+
+    // then
+    assertThat(brokerCfg.getExporters())
+        .usingRecursiveFieldByFieldElementComparator()
+        .contains(exporterCfg);
+  }
+
+  @Test
+  public void shouldEnableDebugLogExporterWithPrettyOption() {
+    // given
+    final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(true);
+    environment.put(ENV_DEBUG_EXPORTER, "pretty");
+
+    // when
+    final BrokerCfg brokerCfg = readConfig("default");
+
+    // then
+    assertThat(brokerCfg.getExporters())
+        .usingRecursiveFieldByFieldElementComparator()
+        .contains(exporterCfg);
   }
 
   @Test
