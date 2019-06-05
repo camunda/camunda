@@ -50,7 +50,7 @@ public class TenantServiceIT {
 
     // then
     assertThat(tenants.size(), is(2));
-    assertThat(tenants.get(0), is(TenantService.TENANT_NONE));
+    assertThat(tenants.get(0), is(TenantService.TENANT_NOT_DEFINED));
     assertThat(tenants.get(1).getId(), is(tenantId));
     assertThat(tenants.get(1).getName(), is(tenantName));
   }
@@ -68,7 +68,7 @@ public class TenantServiceIT {
 
     // then
     assertThat(tenants.size(), is(2));
-    assertThat(tenants.get(0), is(TenantService.TENANT_NONE));
+    assertThat(tenants.get(0), is(TenantService.TENANT_NOT_DEFINED));
     assertThat(tenants.get(1).getId(), is(tenantId));
     assertThat(tenants.get(1).getName(), is(tenantName));
   }
@@ -85,7 +85,7 @@ public class TenantServiceIT {
 
     // then
     assertThat(tenants.size(), is(2));
-    assertThat(tenants.get(0), is(TenantService.TENANT_NONE));
+    assertThat(tenants.get(0), is(TenantService.TENANT_NOT_DEFINED));
     assertThat(tenants.get(1).getId(), is(tenantId));
     assertThat(tenants.get(1).getName(), is(tenantId));
   }
@@ -107,7 +107,7 @@ public class TenantServiceIT {
 
     // then
     assertThat(tenants.size(), is(3));
-    assertThat(tenants.get(0), is(TenantService.TENANT_NONE));
+    assertThat(tenants.get(0), is(TenantService.TENANT_NOT_DEFINED));
     assertThat(tenants.get(1).getId(), is(defaultTenantId));
     assertThat(tenants.get(1).getName(), is(defaultTenantName));
     assertThat(tenants.get(2).getId(), is(storedTenantId));
@@ -200,7 +200,7 @@ public class TenantServiceIT {
 
     //then
     assertThat(tenantsForUser.size(), is(2));
-    assertThat(tenantsForUser.get(0), is(TenantService.TENANT_NONE));
+    assertThat(tenantsForUser.get(0), is(TenantService.TENANT_NOT_DEFINED));
     assertThat(tenantsForUser.get(1).getId(), is(storedTenantId1));
   }
 
@@ -229,7 +229,7 @@ public class TenantServiceIT {
 
     //then
     assertThat(tenantsForUser.size(), is(3));
-    assertThat(tenantsForUser.get(0), is(TenantService.TENANT_NONE));
+    assertThat(tenantsForUser.get(0), is(TenantService.TENANT_NOT_DEFINED));
     assertThat(tenantsForUser.get(1).getId(), is(defaultTenantId));
     assertThat(tenantsForUser.get(2).getId(), is(storedTenantId1));
   }

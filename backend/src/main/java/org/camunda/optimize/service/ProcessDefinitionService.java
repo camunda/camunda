@@ -27,14 +27,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ProcessDefinitionService extends AbstractDefinitionService {
 
-  private final DefinitionAuthorizationService definitionAuthorizationService;
   private final ProcessDefinitionReader processDefinitionReader;
 
   public ProcessDefinitionService(final TenantService tenantService,
                                   final DefinitionAuthorizationService definitionAuthorizationService,
                                   final ProcessDefinitionReader processDefinitionReader) {
-    super(tenantService);
-    this.definitionAuthorizationService = definitionAuthorizationService;
+    super(tenantService, definitionAuthorizationService);
     this.processDefinitionReader = processDefinitionReader;
   }
 

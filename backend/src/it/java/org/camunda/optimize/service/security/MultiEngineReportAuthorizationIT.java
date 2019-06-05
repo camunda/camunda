@@ -26,6 +26,7 @@ import java.util.List;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -42,7 +43,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void authorizedForDifferentEngineBasedReportsWhenAuthorizedByAllEngines(int definitionResourceType) {
+  public void authorizedForMultiEngineBasedReportsWhenAuthorizedByAllEngines(int definitionResourceType) {
     // given
     addSecondEngineToConfiguration();
 
@@ -51,7 +52,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
     secondAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
 
-    deployStartAndImportDefinitionForAllEngines(definitionResourceType, null);
+    deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     final SingleReportDataDto defaultEngineKeyReport = constructReportData(
       getDefinitionKeyDefaultEngine(definitionResourceType), definitionResourceType
@@ -80,7 +81,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void authorizedForEngineBasedReportWhenAuthorizedByOneEngineAndOtherEngineIsDown(int definitionResourceType) {
+  public void authorizedForSingleEngineReportWhenAuthorizedByParticularEngineAndOtherEngineIsDown(int definitionResourceType) {
     // given
     addSecondEngineToConfiguration();
 
@@ -88,7 +89,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    deployStartAndImportDefinitionForAllEngines(definitionResourceType, null);
+    deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     final SingleReportDataDto defaultEngineKeyReport = constructReportData(
       getDefinitionKeyDefaultEngine(definitionResourceType), definitionResourceType
@@ -109,7 +110,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void unauthorizedForEngineBasedReportWhenAuthorizedByOneEngineAndOtherEngineIsDown(int definitionResourceType) {
+  public void unauthorizedForSingleEngineReportWhenAuthorizedByOneEngineAndOtherEngineIsDown(int definitionResourceType) {
     // given
     addSecondEngineToConfiguration();
 
@@ -117,7 +118,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    deployStartAndImportDefinitionForAllEngines(definitionResourceType, null);
+    deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     final SingleReportDataDto secondEngineKeyReport = constructReportData(
       getDefinitionKeySecondEngine(definitionResourceType), definitionResourceType
@@ -138,7 +139,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void authorizedForEngineBasedReportWhenAuthorizedByParticularEngine(int definitionResourceType) {
+  public void authorizedForSingleEngineReportWhenAuthorizedByParticularEngine(int definitionResourceType) {
     // given
     addSecondEngineToConfiguration();
 
@@ -146,7 +147,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    deployStartAndImportDefinitionForAllEngines(definitionResourceType, null);
+    deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     final SingleReportDataDto defaultEngineKeyReport = constructReportData(
       getDefinitionKeyDefaultEngine(definitionResourceType), definitionResourceType
@@ -165,7 +166,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void unauthorizedForEngineBasedReportWhenNotAuthorizedByParticularEngine(int definitionResourceType) {
+  public void unauthorizedForSingleEngineReportWhenNotAuthorizedByParticularEngine(int definitionResourceType) {
     // given
     addSecondEngineToConfiguration();
 
@@ -173,7 +174,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    deployStartAndImportDefinitionForAllEngines(definitionResourceType, null);
+    deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     final SingleReportDataDto secondEngineKeyReport = constructReportData(
       getDefinitionKeySecondEngine(definitionResourceType), definitionResourceType
@@ -192,7 +193,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void authorizedForDifferentEngineDefaultTenantsWhenAuthorizedByAllEngines(int definitionResourceType) {
+  public void authorizedForMultiEngineDefaultTenantsWhenAuthorizedByAllEngines(int definitionResourceType) {
     // given
     addSecondEngineToConfiguration();
 
@@ -210,7 +211,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
-    deployStartAndImportDefinitionForAllEngines(definitionResourceType, null);
+    deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     final SingleReportDataDto multiTenantReport = constructReportData(
       getDefinitionKeyDefaultEngine(definitionResourceType),
@@ -231,7 +232,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void unauthorizedForDifferentEngineDefaultTenantsWhenAuthorizedByOnlyOneEngine(int definitionResourceType) {
+  public void unauthorizedForMultiEngineDefaultTenantsWhenAuthorizedToAccessOptimizeByOnlyOneEngine(int definitionResourceType) {
     // given
     addSecondEngineToConfiguration();
 
@@ -248,7 +249,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
-    deployStartAndImportDefinitionForAllEngines(definitionResourceType, null);
+    deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
     final SingleReportDataDto multiTenantReport = constructReportData(
       getDefinitionKeyDefaultEngine(definitionResourceType),
@@ -265,6 +266,176 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
 
     // then
     assertThat(responseDefaultEngineKey.getStatus(), is(403));
+  }
+
+  @Test
+  @Parameters(method = "definitionType")
+  public void unauthorizedForMultiEngineDefaultTenantsWhenAuthorizedForKeyByOnlyOneEngine(int definitionResourceType) {
+    // given
+    addSecondEngineToConfiguration();
+
+    final String tenantId1 = "tenant1";
+    setDefaultEngineDefaultTenant(new DefaultTenant(tenantId1));
+    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+
+    final String tenantId2 = "tenant2";
+    setSecondEngineDefaultTenant(new DefaultTenant(tenantId2));
+    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+
+    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    deployStartAndImportDefinitionForAllEngines(definitionResourceType);
+
+    final SingleReportDataDto multiTenantReport = constructReportData(
+      getDefinitionKeyDefaultEngine(definitionResourceType),
+      definitionResourceType,
+      ImmutableList.of(tenantId1, tenantId2)
+    );
+
+    // when
+    Response responseDefaultEngineKey = embeddedOptimizeRule
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildEvaluateSingleUnsavedReportRequest(multiTenantReport)
+      .execute();
+
+    // then
+    assertThat(responseDefaultEngineKey.getStatus(), is(403));
+  }
+
+  @Test
+  @Parameters(method = "definitionType")
+  public void authorizedForTenantAndKeyByParticularEngine(int definitionResourceType) {
+    // given
+    addSecondEngineToConfiguration();
+
+    final String tenantId1 = "tenant1";
+    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineRule.createTenant(tenantId1);
+    defaultAuthorizationClient.grantSingleResourceAuthorizationForKermit(tenantId1, RESOURCE_TYPE_TENANT);
+    defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+
+    final String tenantId2 = "tenant2";
+    secondEngineRule.createTenant(tenantId2);
+    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+
+    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId1, tenantId2);
+
+    final SingleReportDataDto defaultEngineTenantReport = constructReportData(
+      getDefinitionKeyDefaultEngine(definitionResourceType),
+      definitionResourceType,
+      ImmutableList.of(tenantId1)
+    );
+    final SingleReportDataDto secondEngineTenantReport = constructReportData(
+      getDefinitionKeySecondEngine(definitionResourceType),
+      definitionResourceType,
+      ImmutableList.of(tenantId2)
+    );
+
+    // when
+    Response responseDefaultEngineKey = embeddedOptimizeRule
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildEvaluateSingleUnsavedReportRequest(defaultEngineTenantReport)
+      .execute();
+
+    Response responseSecondEngineKey = embeddedOptimizeRule
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildEvaluateSingleUnsavedReportRequest(secondEngineTenantReport)
+      .execute();
+
+    // then
+    assertThat(responseDefaultEngineKey.getStatus(), is(200));
+    assertThat(responseSecondEngineKey.getStatus(), is(403));
+  }
+
+  @Test
+  @Parameters(method = "definitionType")
+  public void unauthorizedForTenantAlthoughAuthorizedForKeyByParticularEngine(int definitionResourceType) {
+    // given
+    addSecondEngineToConfiguration();
+
+    final String tenantId1 = "tenant1";
+    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineRule.createTenant(tenantId1);
+    defaultAuthorizationClient.grantSingleResourceAuthorizationForKermit(tenantId1, RESOURCE_TYPE_TENANT);
+    defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+
+    final String tenantId2 = "tenant2";
+    secondEngineRule.createTenant(tenantId2);
+    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+
+    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId1, tenantId2);
+
+    final SingleReportDataDto secondEngineTenantReport = constructReportData(
+      getDefinitionKeySecondEngine(definitionResourceType),
+      definitionResourceType,
+      ImmutableList.of(tenantId2)
+    );
+
+    // when
+    Response responseSecondEngineKey = embeddedOptimizeRule
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildEvaluateSingleUnsavedReportRequest(secondEngineTenantReport)
+      .execute();
+
+    // then
+    assertThat(responseSecondEngineKey.getStatus(), is(403));
+  }
+
+  @Test
+  @Parameters(method = "definitionType")
+  public void unauthorizedForKeyAlthoughAuthorizedForTenantByParticularEngine(int definitionResourceType) {
+    // given
+    addSecondEngineToConfiguration();
+
+    final String tenantId1 = "tenant1";
+    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineRule.createTenant(tenantId1);
+    defaultAuthorizationClient.grantSingleResourceAuthorizationForKermit(tenantId1, RESOURCE_TYPE_TENANT);
+    defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+
+    final String tenantId2 = "tenant2";
+    secondEngineRule.createTenant(tenantId2);
+    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondAuthorizationClient.grantSingleResourceAuthorizationForKermit(tenantId2, RESOURCE_TYPE_TENANT);
+
+    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId1, tenantId2);
+
+    final SingleReportDataDto secondEngineTenantReport = constructReportData(
+      getDefinitionKeySecondEngine(definitionResourceType),
+      definitionResourceType,
+      ImmutableList.of(tenantId2)
+    );
+
+    // when
+    Response responseSecondEngineKey = embeddedOptimizeRule
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildEvaluateSingleUnsavedReportRequest(secondEngineTenantReport)
+      .execute();
+
+    // then
+    assertThat(responseSecondEngineKey.getStatus(), is(403));
   }
 
   private String getDefinitionKeyDefaultEngine(final int definitionResourceType) {

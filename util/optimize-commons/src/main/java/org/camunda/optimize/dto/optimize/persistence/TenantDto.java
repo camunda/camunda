@@ -5,21 +5,23 @@
  */
 package org.camunda.optimize.dto.optimize.persistence;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Data
+@Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @FieldNameConstants(asEnum = true)
 public class TenantDto implements OptimizeDto {
   @EqualsAndHashCode.Include
   private String id;
   private String name;
+  @EqualsAndHashCode.Include
   private String engine;
 }

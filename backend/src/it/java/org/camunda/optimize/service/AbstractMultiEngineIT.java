@@ -64,13 +64,20 @@ public class AbstractMultiEngineIT {
     secondEngineRule.finishAllRunningUserTasks();
   }
 
-  protected void deployStartAndImportDefinitionForAllEngines(final int definitionResourceType, final String tenantId) {
+
+  protected void deployStartAndImportDefinitionForAllEngines(final int definitionResourceType) {
+    deployStartAndImportDefinitionForAllEngines(definitionResourceType, null, null);
+  }
+
+  protected void deployStartAndImportDefinitionForAllEngines(final int definitionResourceType,
+                                                             final String tenantIdEngine1,
+                                                             final String tenantIdEngine2) {
     switch (definitionResourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        deployAndStartSimpleProcessDefinitionForAllEngines(tenantId);
+        deployAndStartSimpleProcessDefinitionForAllEngines(tenantIdEngine1, tenantIdEngine2);
         break;
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        deployAndStartDecisionDefinitionForAllEngines(tenantId);
+        deployAndStartDecisionDefinitionForAllEngines(tenantIdEngine1, tenantIdEngine2);
         break;
       default:
         throw new OptimizeIntegrationTestException("Unsupported resourceType: " + definitionResourceType);
@@ -81,27 +88,29 @@ public class AbstractMultiEngineIT {
   }
 
   protected void deployAndStartDecisionDefinitionForAllEngines() {
-    deployAndStartDecisionDefinitionForAllEngines(null);
+    deployAndStartDecisionDefinitionForAllEngines(null, null);
   }
 
-  protected void deployAndStartDecisionDefinitionForAllEngines(final String tenantId) {
-    defaultEngineRule.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_1), tenantId);
-    secondEngineRule.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_2), tenantId);
+  protected void deployAndStartDecisionDefinitionForAllEngines(final String tenantId1, final String tenantId2) {
+    defaultEngineRule.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_1), tenantId1);
+    secondEngineRule.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_2), tenantId2);
   }
 
   protected void deployAndStartSimpleProcessDefinitionForAllEngines() {
-    deployAndStartSimpleProcessDefinitionForAllEngines(null);
+    deployAndStartSimpleProcessDefinitionForAllEngines(null, null);
   }
 
-  protected void deployAndStartSimpleProcessDefinitionForAllEngines(final String tenantId) {
-    deployAndStartSimpleProcessDefinitionForAllEngines(PROCESS_KEY_1, PROCESS_KEY_2, tenantId);
+  protected void deployAndStartSimpleProcessDefinitionForAllEngines(final String tenantId1,
+                                                                    final String tenantId2) {
+    deployAndStartSimpleProcessDefinitionForAllEngines(PROCESS_KEY_1, PROCESS_KEY_2, tenantId1, tenantId2);
   }
 
   protected void deployAndStartSimpleProcessDefinitionForAllEngines(final String key1,
                                                                     final String key2,
-                                                                    final String tenantId) {
-    deployAndStartProcessOnDefaultEngine(key1, tenantId);
-    deployAndStartProcessOnSecondEngine(key2, tenantId);
+                                                                    final String tenantId1,
+                                                                    final String tenantId2) {
+    deployAndStartProcessOnDefaultEngine(key1, tenantId1);
+    deployAndStartProcessOnSecondEngine(key2, tenantId2);
   }
 
   protected void deployAndStartProcessOnSecondEngine(final String key2, final String tenantId) {

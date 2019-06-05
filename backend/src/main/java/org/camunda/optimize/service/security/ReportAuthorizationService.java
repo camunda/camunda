@@ -5,47 +5,43 @@
  */
 package org.camunda.optimize.service.security;
 
-import com.google.common.collect.ImmutableList;
-import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.engine.GroupDto;
-import org.camunda.optimize.rest.engine.EngineContext;
+import lombok.Value;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.READ_HISTORY_PERMISSION;
+import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 
 @Component
-public class ReportAuthorizationService
-  extends AbstractCachingAuthorizationService<Map<String, EngineAuthorizations>> {
-  private static final List<String> RELEVANT_PERMISSIONS = ImmutableList.of(ALL_PERMISSION, READ_HISTORY_PERMISSION);
+public class ReportAuthorizationService {
 
-  private final ApplicationAuthorizationService applicationAuthorizationService;
-  private final TenantAuthorizationService tenantAuthorizationService;
+  private final EngineContextFactory engineContextFactory;
+  private final DefinitionAuthorizationService definitionAuthorizationService;
   private final ProcessDefinitionReader processDefinitionReader;
   private final DecisionDefinitionReader decisionDefinitionReader;
+  private final TenantService tenantService;
 
-  public ReportAuthorizationService(final ApplicationAuthorizationService applicationAuthorizationService,
-                                    final TenantAuthorizationService tenantAuthorizationService,
-                                    final EngineContextFactory engineContextFactory,
-                                    final ConfigurationService configurationService,
+  public ReportAuthorizationService(final EngineContextFactory engineContextFactory,
+                                    final DefinitionAuthorizationService definitionAuthorizationService,
                                     final ProcessDefinitionReader processDefinitionReader,
-                                    final DecisionDefinitionReader decisionDefinitionReader) {
-    super(engineContextFactory, configurationService);
-    this.applicationAuthorizationService = applicationAuthorizationService;
-    this.tenantAuthorizationService = tenantAuthorizationService;
+                                    final DecisionDefinitionReader decisionDefinitionReader,
+                                    final TenantService tenantService) {
+    this.engineContextFactory = engineContextFactory;
+    this.definitionAuthorizationService = definitionAuthorizationService;
+
     this.processDefinitionReader = processDefinitionReader;
     this.decisionDefinitionReader = decisionDefinitionReader;
+    this.tenantService = tenantService;
   }
 
   public boolean isAuthorizedToSeeProcessReport(final String userId,
@@ -60,31 +56,6 @@ public class ReportAuthorizationService
     return isAuthorizedToSeeDefinition(userId, decisionDefinitionKey, RESOURCE_TYPE_DECISION_DEFINITION, tenantIds);
   }
 
-  @Override
-  protected Map<String, EngineAuthorizations> fetchAuthorizationsForUserId(final String userId) {
-    final List<String> authorizedEngines = applicationAuthorizationService.getAuthorizedEngines(userId);
-    final Map<String, EngineAuthorizations> result = new HashMap<>();
-    engineContextFactory.getConfiguredEngines()
-      .forEach(engineContext -> {
-        if (authorizedEngines.contains(engineContext.getEngineAlias())) {
-          result.put(engineContext.getEngineAlias(), fetchEngineAuthorizations(userId, engineContext));
-        } else {
-          result.put(engineContext.getEngineAlias(), new EngineAuthorizations(engineContext.getEngineAlias()));
-        }
-      });
-    return result;
-  }
-
-  private static EngineAuthorizations fetchEngineAuthorizations(final String username,
-                                                                final EngineContext engineContext) {
-    final List<GroupDto> groups = engineContext.getAllGroupsOfUser(username);
-    final List<AuthorizationDto> allAuthorizations = ImmutableList.<AuthorizationDto>builder()
-      .addAll(engineContext.getAllProcessDefinitionAuthorizations())
-      .addAll(engineContext.getAllDecisionDefinitionAuthorizations())
-      .build();
-    return mapToEngineAuthorizations(engineContext.getEngineAlias(), allAuthorizations, username, groups);
-  }
-
   private boolean isAuthorizedToSeeDefinition(final String userId,
                                               final String definitionKey,
                                               final int resourceType,
@@ -93,33 +64,45 @@ public class ReportAuthorizationService
       return true;
     }
 
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, tenantIds)) {
-      return false;
-    }
-
-    final Map<String, EngineAuthorizations> authorizationsByEngine = authorizationLoadingCache.get(userId);
-
-    if (authorizationsByEngine == null) {
-      return false;
-    }
-
-    final ResolvedResourceTypeAuthorizations resourceAuthorizations = authorizationsByEngine.values().stream()
-      .map(groupedEngineAuthorizations -> resolveResourceAuthorizations(
-        groupedEngineAuthorizations, RELEVANT_PERMISSIONS, resourceType
+    final List<TenantAndEnginePair> availableTenantEnginePairs = resolveTenantAndEnginePairs(tenantIds);
+    return availableTenantEnginePairs
+      .stream()
+      .filter(
+        tenantAndEnginePair -> {
+          if (Objects.equals(tenantAndEnginePair.getTenantId(), TENANT_NOT_DEFINED.getId())
+            && engineContextFactory.getConfiguredEngines().size() > 1) {
+            // in case of the default NONE tenant and a multi-engine scenario,
+            // the definition needs to exist in a particular engine to allow it granting access,
+            // this ensures an ALL ("*") resource grant in one engine does not grant access to definitions
+            // of other engines
+            return definitionExistsForEngine(definitionKey, resourceType, tenantAndEnginePair.getEngine());
+          } else {
+            return true;
+          }
+        })
+      .map(tenantAndEnginePair -> definitionAuthorizationService.isAuthorizedToSeeDefinition(
+        userId, definitionKey, resourceType, tenantAndEnginePair.getTenantId(), tenantAndEnginePair.getEngine()
       ))
-      .filter(resolvedAuthorizations -> resolvedAuthorizations.isAuthorizedToAccessResource(definitionKey))
-      .filter(resolvedAuthorizations ->
-                // if there is only one engine configured, no further checks are needed
-                engineContextFactory.getConfiguredEngines().size() == 1
-                  // if there are more than one engine we need to verify this key exists in the engine that granted
-                  // access as it could be the case an engine grants access to the all resources
-                  // while the key actually originates from another engine
-                  || definitionExistsForEngine(definitionKey, resourceType, resolvedAuthorizations.getEngine())
-      )
-      .findFirst()
-      .orElseGet(ResolvedResourceTypeAuthorizations::new);
+      // user needs to be authorized for all considered tenant & engine pairs to get access
+      .reduce(Boolean::logicalAnd)
+      .orElse(false);
+  }
 
-    return resourceAuthorizations.isAuthorizedToAccessResource(definitionKey);
+  private List<TenantAndEnginePair> resolveTenantAndEnginePairs(final List<String> tenantIds) {
+    final List<String> tenantIdsWithAtLeastDefaultTenant = new ArrayList<>(tenantIds);
+    if (tenantIdsWithAtLeastDefaultTenant.isEmpty()) {
+      tenantIdsWithAtLeastDefaultTenant.add(TENANT_NOT_DEFINED.getId());
+    }
+
+    // for each tenant resolve the engines they belong to
+    return engineContextFactory.getConfiguredEngines()
+      .stream()
+      .flatMap(engineContext -> tenantService
+        .getTenantsByEngine(engineContext.getEngineAlias()).stream()
+        .filter(tenantDto -> tenantIdsWithAtLeastDefaultTenant.contains(tenantDto.getId()))
+        .map(tenantDto -> new TenantAndEnginePair(tenantDto.getId(), engineContext.getEngineAlias()))
+      )
+      .collect(Collectors.toList());
   }
 
   private boolean definitionExistsForEngine(final String definitionKey,
@@ -133,7 +116,12 @@ public class ReportAuthorizationService
       default:
         throw new OptimizeRuntimeException("Unsupported definition resource type: " + definitionResourceType);
     }
+  }
 
+  @Value
+  private static class TenantAndEnginePair {
+    String tenantId;
+    String engine;
   }
 
 }

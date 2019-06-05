@@ -69,7 +69,7 @@ public class ProcessDefinitionRestServiceIT {
   private static final String TASK = "task_1";
 
   private static final String KEY = "testKey";
-  private static final String TENANT_NONE_NAME = TenantService.TENANT_NONE.getName();
+  private static final String TENANT_NONE_NAME = TenantService.TENANT_NOT_DEFINED.getName();
 
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();

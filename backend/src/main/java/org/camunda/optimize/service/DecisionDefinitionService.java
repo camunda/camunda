@@ -27,14 +27,13 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DecisionDefinitionService extends AbstractDefinitionService {
 
-  private final DefinitionAuthorizationService authorizationService;
+
   private final DecisionDefinitionReader decisionDefinitionReader;
 
   public DecisionDefinitionService(final TenantService tenantService,
-                                   final DefinitionAuthorizationService authorizationService,
+                                   final DefinitionAuthorizationService definitionAuthorizationService,
                                    final DecisionDefinitionReader decisionDefinitionReader) {
-    super(tenantService);
-    this.authorizationService = authorizationService;
+    super(tenantService, definitionAuthorizationService);
     this.decisionDefinitionReader = decisionDefinitionReader;
   }
 
@@ -95,7 +94,7 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
 
   private boolean isAuthorizedToReadDecisionDefinition(final String userId,
                                                        final DecisionDefinitionOptimizeDto decisionDefinition) {
-    return authorizationService.isAuthorizedToSeeDecisionDefinition(
+    return definitionAuthorizationService.isAuthorizedToSeeDecisionDefinition(
       userId, decisionDefinition.getKey(), decisionDefinition.getTenantId(), decisionDefinition.getEngine()
     );
   }

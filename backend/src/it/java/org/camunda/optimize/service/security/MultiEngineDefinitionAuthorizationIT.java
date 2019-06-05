@@ -286,19 +286,20 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     // given
     addSecondEngineToConfiguration();
 
-    final String tenantId = "tenant1";
+    final String tenantId1 = "tenant1";
     defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
     defaultAuthorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
-    defaultAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
+    defaultAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
 
+    final String tenantId2 = "tenant2";
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
     secondAuthorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
-    secondAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
+    secondAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId2, RESOURCE_TYPE_TENANT);
 
-    deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId);
+    deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId1, tenantId2);
 
     // when
-    List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    final List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
     assertThat(definitions.size(), is(2));
@@ -310,14 +311,15 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     // given
     addSecondEngineToConfiguration();
 
-    final String tenantId = "tenant1";
+    final String tenantId1 = "tenant1";
     defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
     defaultAuthorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
-    defaultAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
+    defaultAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
 
+    final String tenantId2 = "tenant2";
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId);
+    deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId1, tenantId2);
 
     // when
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
@@ -333,10 +335,6 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
 
   private String getDefinitionKeySecondEngine(final int definitionResourceType) {
     return definitionResourceType == RESOURCE_TYPE_PROCESS_DEFINITION ? PROCESS_KEY_2 : DECISION_KEY_2;
-  }
-
-  private void deployStartAndImportDefinitionForAllEngines(final int definitionResourceType) {
-    deployStartAndImportDefinitionForAllEngines(definitionResourceType, null);
   }
 
   private <T extends DefinitionOptimizeDto> List<T> retrieveDefinitionsAsKermitUser(int resourceType) {

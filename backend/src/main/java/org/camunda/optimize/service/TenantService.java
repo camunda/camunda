@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 
 @Component
 public class TenantService implements ConfigurationReloadable {
-  public static final TenantDto TENANT_NONE = new TenantDto(null, "Not defined", null);
+  public static final TenantDto TENANT_NOT_DEFINED = new TenantDto(null, "Not defined", null);
 
   private final TenantReader tenantReader;
   private final TenantAuthorizationService tenantAuthorizationService;
@@ -57,7 +57,7 @@ public class TenantService implements ConfigurationReloadable {
 
   public List<TenantDto> getTenantsByEngine(final String engineAlias) {
     return getTenants().stream()
-      .filter(tenantDto -> tenantDto.equals(TENANT_NONE) || tenantDto.getEngine().equals(engineAlias))
+      .filter(tenantDto -> tenantDto.equals(TENANT_NOT_DEFINED) || tenantDto.getEngine().equals(engineAlias))
       .collect(Collectors.toList());
   }
 
@@ -69,7 +69,7 @@ public class TenantService implements ConfigurationReloadable {
 
   private void initDefaultTenants() {
     this.configuredDefaultTenants = Stream.concat(
-      Stream.of(TENANT_NONE),
+      Stream.of(TENANT_NOT_DEFINED),
       configurationService.getConfiguredEngines().entrySet().stream()
         .filter(entry -> entry.getValue().getDefaultTenantId().isPresent())
         .map(entry -> {

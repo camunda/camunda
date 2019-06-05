@@ -8,8 +8,12 @@ package org.camunda.optimize.service.security;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.GroupDto;
+import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionOptimizeDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
@@ -58,6 +62,47 @@ public class DefinitionAuthorizationService
     );
   }
 
+  public boolean isAuthorizedToSeeDefinition(final String userId,
+                                             final DefinitionOptimizeDto definition) {
+    if (definition instanceof ProcessDefinitionOptimizeDto) {
+      return isAuthorizedToSeeDefinition(
+        userId, definition.getKey(), RESOURCE_TYPE_PROCESS_DEFINITION, definition.getTenantId(), definition.getEngine()
+      );
+    } else if (definition instanceof DecisionDefinitionOptimizeDto) {
+      return isAuthorizedToSeeDefinition(
+        userId, definition.getKey(), RESOURCE_TYPE_DECISION_DEFINITION, definition.getTenantId(), definition.getEngine()
+      );
+    } else {
+      throw new OptimizeRuntimeException("Unsupported definition type: " + definition.getClass().getSimpleName());
+    }
+  }
+
+  public boolean isAuthorizedToSeeDefinition(final String userId,
+                                             final String definitionKey,
+                                             final int resourceType,
+                                             final String tenantId,
+                                             final String engineAlias) {
+    if (!tenantAuthorizationService.isAuthorizedToSeeTenant(userId, tenantId, engineAlias)) {
+      return false;
+    }
+
+    final Map<String, EngineAuthorizations> authorizationsByEngine = authorizationLoadingCache.get(userId);
+
+    if (authorizationsByEngine == null) {
+      return false;
+    }
+
+    final ResolvedResourceTypeAuthorizations resourceAuthorizations =
+      Optional.of(authorizationsByEngine.get(engineAlias))
+        .map(groupedEngineAuthorizations -> resolveResourceAuthorizations(
+          groupedEngineAuthorizations, RELEVANT_PERMISSIONS, resourceType
+        ))
+        .filter(resolvedAuthorizations -> resolvedAuthorizations.isAuthorizedToAccessResource(definitionKey))
+        .orElseGet(ResolvedResourceTypeAuthorizations::new);
+
+    return resourceAuthorizations.isAuthorizedToAccessResource(definitionKey);
+  }
+
   @Override
   protected Map<String, EngineAuthorizations> fetchAuthorizationsForUserId(final String userId) {
     final List<String> authorizedEngines = applicationAuthorizationService.getAuthorizedEngines(userId);
@@ -81,32 +126,6 @@ public class DefinitionAuthorizationService
       .addAll(engineContext.getAllDecisionDefinitionAuthorizations())
       .build();
     return mapToEngineAuthorizations(engineContext.getEngineAlias(), allAuthorizations, username, groups);
-  }
-
-  private boolean isAuthorizedToSeeDefinition(final String userId,
-                                              final String definitionKey,
-                                              final int resourceType,
-                                              final String tenantId,
-                                              final String engineAlias) {
-    if (!tenantAuthorizationService.isAuthorizedToSeeTenant(userId, tenantId, engineAlias)) {
-      return false;
-    }
-
-    final Map<String, EngineAuthorizations> authorizationsByEngine = authorizationLoadingCache.get(userId);
-
-    if (authorizationsByEngine == null) {
-      return false;
-    }
-
-    final ResolvedResourceTypeAuthorizations resourceAuthorizations =
-      Optional.of(authorizationsByEngine.get(engineAlias))
-      .map(groupedEngineAuthorizations -> resolveResourceAuthorizations(
-        groupedEngineAuthorizations, RELEVANT_PERMISSIONS, resourceType
-      ))
-      .filter(resolvedAuthorizations -> resolvedAuthorizations.isAuthorizedToAccessResource(definitionKey))
-      .orElseGet(ResolvedResourceTypeAuthorizations::new);
-
-    return resourceAuthorizations.isAuthorizedToAccessResource(definitionKey);
   }
 
 }

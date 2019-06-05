@@ -99,6 +99,8 @@ public class ReportAuthorizationIT {
   public void evaluateUnauthorizedTenantsStoredReport(int definitionResourceType) throws Exception {
     // given
     final String tenantId = "tenant1";
+    engineRule.createTenant(tenantId);
+
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
     deployStartAndImportDefinition(definitionResourceType);
@@ -121,7 +123,10 @@ public class ReportAuthorizationIT {
   public void evaluatePartiallyUnauthorizedTenantsStoredReport(int definitionResourceType) throws Exception {
     // given
     final String tenantId1 = "tenant1";
+    engineRule.createTenant(tenantId1);
     final String tenantId2 = "tenant2";
+    engineRule.createTenant(tenantId2);
+
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
@@ -145,7 +150,10 @@ public class ReportAuthorizationIT {
   public void evaluateAllTenantsAuthorizedStoredReport(int definitionResourceType) throws Exception {
     // given
     final String tenantId1 = "tenant1";
+    engineRule.createTenant(tenantId1);
     final String tenantId2 = "tenant2";
+    engineRule.createTenant(tenantId2);
+
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);

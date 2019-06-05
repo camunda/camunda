@@ -70,8 +70,8 @@ public class AuthorizationClient {
   }
 
   public void grantSingleResourceAuthorizationsForGroup(final String groupId,
-                                                           final String resourceId,
-                                                           final int resourceType) {
+                                                        final String resourceId,
+                                                        final int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(resourceType);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
@@ -86,8 +86,8 @@ public class AuthorizationClient {
   }
 
   public void revokeSingleResourceAuthorizationsForGroup(final String groupId,
-                                                            final String resourceId,
-                                                            final int resourceType) {
+                                                         final String resourceId,
+                                                         final int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(resourceType);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
@@ -106,24 +106,24 @@ public class AuthorizationClient {
   }
 
   public void grantSingleResourceAuthorizationsForUser(final String userId,
-                                                          final String resourceId,
-                                                          final int resourceType) {
+                                                       final String resourceId,
+                                                       final int resourceType) {
     grantSingleResourceAuthorizationsForUser(
       userId, Collections.singletonList(ALL_PERMISSION), resourceId, resourceType
     );
   }
 
   public void grantAllDefinitionAuthorizationsForUserWithReadHistoryPermission(final String userId,
-                                                                                  final int definitionResourceType) {
+                                                                               final int definitionResourceType) {
     grantSingleResourceAuthorizationsForUser(
       userId, ImmutableList.of(READ_HISTORY_PERMISSION), ALL_RESOURCES_RESOURCE_ID, definitionResourceType
     );
   }
 
   public void grantSingleResourceAuthorizationsForUser(final String userId,
-                                                          final List<String> permissions,
-                                                          final String resourceId,
-                                                          final int resourceType) {
+                                                       final List<String> permissions,
+                                                       final String resourceId,
+                                                       final int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(resourceType);
     authorizationDto.setPermissions(permissions);
@@ -146,8 +146,8 @@ public class AuthorizationClient {
   }
 
   public void revokeSingleResourceAuthorizationsForUser(final String userId,
-                                                           final String definitionKey,
-                                                           final int resourceType) {
+                                                        final String definitionKey,
+                                                        final int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(resourceType);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));

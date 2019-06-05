@@ -66,7 +66,7 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     assertThat(tenants.size(), is(3));
     assertThat(
       tenants.stream().map(TenantDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(TenantService.TENANT_NONE.getId(), tenantId1, tenantId2)
+      containsInAnyOrder(TenantService.TENANT_NOT_DEFINED.getId(), tenantId1, tenantId2)
     );
   }
 
@@ -94,7 +94,7 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     assertThat(tenants.size(), is(2));
     assertThat(
       tenants.stream().map(TenantDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(TenantService.TENANT_NONE.getId(), tenantId2)
+      containsInAnyOrder(TenantService.TENANT_NOT_DEFINED.getId(), tenantId2)
     );
   }
 
@@ -122,7 +122,7 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     assertThat(tenants.size(), is(3));
     assertThat(
       tenants.stream().map(TenantDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(TenantService.TENANT_NONE.getId(), tenantId1, tenantId2)
+      containsInAnyOrder(TenantService.TENANT_NOT_DEFINED.getId(), tenantId1, tenantId2)
     );
   }
 
@@ -150,7 +150,7 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     assertThat(tenants.size(), is(2));
     assertThat(
       tenants.stream().map(TenantDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(TenantService.TENANT_NONE.getId(), tenantId1)
+      containsInAnyOrder(TenantService.TENANT_NOT_DEFINED.getId(), tenantId1)
     );
   }
 
