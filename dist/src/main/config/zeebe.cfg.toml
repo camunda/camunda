@@ -106,10 +106,6 @@
 # Overrides the size of the buffer used for buffering outgoing messages to
 # clients
 # sendBufferSize = "16M"
-#
-# Sets the size of the buffer used for receiving control messages from clients
-# (such as management of subscriptions)
-# controlMessageBufferSize = "8M"
 
 [network.atomix]
 

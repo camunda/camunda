@@ -55,7 +55,6 @@ To start a Zeebe broker use the `broker` or `broker.bat` file located in the
     "defaultSendBufferSize": "16M",
     "portOffset": 0,
     "client": {
-      "controlMessageBufferSize": "8M",
       "host": "0.0.0.0",
       "port": 26501,
       "sendBufferSize": "16M"
