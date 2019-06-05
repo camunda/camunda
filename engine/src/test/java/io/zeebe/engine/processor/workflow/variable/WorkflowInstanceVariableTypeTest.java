@@ -75,10 +75,8 @@ public class WorkflowInstanceVariableTypeTest {
     // when
     final DirectBuffer variables = MsgPackUtil.asMsgPack(this.variables);
     final long workflowInstanceKey =
-        ENGINE_RULE
-            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID).setVariables(variables))
-            .getValue()
-            .getInstanceKey();
+        ENGINE_RULE.createWorkflowInstance(
+            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(variables));
 
     // then
     final Record<VariableRecordValue> variableRecord =

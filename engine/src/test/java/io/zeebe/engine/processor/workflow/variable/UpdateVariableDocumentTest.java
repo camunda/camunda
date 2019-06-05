@@ -57,11 +57,8 @@ public class UpdateVariableDocumentTest {
     // when
     ENGINE_RULE.deploy(process);
     final long workflowInstanceKey =
-        ENGINE_RULE
-            .createWorkflowInstance(
-                r -> r.setBpmnProcessId(processId).setVariables(MsgPackUtil.asMsgPack("{'x': 1}")))
-            .getValue()
-            .getInstanceKey();
+        ENGINE_RULE.createWorkflowInstance(
+            r -> r.setBpmnProcessId(processId).setVariables(MsgPackUtil.asMsgPack("{'x': 1}")));
     final Record<WorkflowInstanceRecordValue> activatedEvent = waitForActivityActivatedEvent();
     ENGINE_RULE
         .variables()

@@ -169,13 +169,10 @@ public class MessageCatchElementTest {
   public void init() {
     correlationKey = UUID.randomUUID().toString();
     workflowInstanceKey =
-        ENGINE_RULE
-            .createWorkflowInstance(
-                r ->
-                    r.setBpmnProcessId(bpmnProcessId)
-                        .setVariables(asMsgPack("orderId", correlationKey)))
-            .getValue()
-            .getInstanceKey();
+        ENGINE_RULE.createWorkflowInstance(
+            r ->
+                r.setBpmnProcessId(bpmnProcessId)
+                    .setVariables(asMsgPack("orderId", correlationKey)));
   }
 
   @Test

@@ -109,8 +109,8 @@ public class IncidentState {
     }
   }
 
-  public long getWorkflowInstanceIncidentKey(long instanceKey) {
-    elementInstanceKey.wrapLong(instanceKey);
+  public long getWorkflowInstanceIncidentKey(long workflowInstanceKey) {
+    elementInstanceKey.wrapLong(workflowInstanceKey);
 
     final DbLong incidentKey = workflowInstanceIncidentColumnFamily.get(elementInstanceKey);
 

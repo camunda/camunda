@@ -175,11 +175,8 @@ public class JobOutputMappingTest {
 
     // when
     final long workflowInstanceKey =
-        ENGINE_RULE
-            .createWorkflowInstance(
-                r -> r.setKey(workflowKey).setVariables(MsgPackUtil.asMsgPack("i", 0)))
-            .getValue()
-            .getInstanceKey();
+        ENGINE_RULE.createWorkflowInstance(
+            r -> r.setKey(workflowKey).setVariables(MsgPackUtil.asMsgPack("i", 0)));
 
     ENGINE_RULE
         .job()

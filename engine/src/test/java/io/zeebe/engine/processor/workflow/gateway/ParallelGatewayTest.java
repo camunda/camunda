@@ -91,10 +91,7 @@ public class ParallelGatewayTest {
     // given
     engine.deploy(FORK_PROCESS);
     final long workflowInstanceKey =
-        engine
-            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID))
-            .getValue()
-            .getInstanceKey();
+        engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
     engine.job().ofInstance(workflowInstanceKey).withType("type1").complete();
 
     // when
@@ -264,10 +261,7 @@ public class ParallelGatewayTest {
     engine.deploy(process);
 
     final long workflowInstanceKey =
-        engine
-            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID))
-            .getValue()
-            .getInstanceKey();
+        engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // waiting until we have signalled the first incoming sequence flow twice
     // => this should not trigger the gateway yet

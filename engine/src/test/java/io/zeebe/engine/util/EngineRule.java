@@ -33,7 +33,6 @@ import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSen
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.logstreams.impl.Loggers;
@@ -170,7 +169,7 @@ public class EngineRule extends ExternalResource {
         .getFirst();
   }
 
-  public Record<WorkflowInstanceCreationRecordValue> createWorkflowInstance(
+  public long createWorkflowInstance(
       Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> transformer) {
     final long position =
         environmentRule.writeCommand(
@@ -180,7 +179,9 @@ public class EngineRule extends ExternalResource {
     return RecordingExporter.workflowInstanceCreationRecords()
         .withIntent(WorkflowInstanceCreationIntent.CREATED)
         .withSourceRecordPosition(position)
-        .getFirst();
+        .getFirst()
+        .getValue()
+        .getInstanceKey();
   }
 
   public Record<WorkflowInstanceRecordValue> cancelWorkflowInstance(long workflowInstanceKey) {

@@ -91,10 +91,7 @@ public class JobInputMappingTest {
     // when
     final DirectBuffer variables = MsgPackUtil.asMsgPack(initialVariables);
     final long workflowInstanceKey =
-        ENGINE_RULE
-            .createWorkflowInstance(r -> r.setKey(workflowKey).setVariables(variables))
-            .getValue()
-            .getInstanceKey();
+        ENGINE_RULE.createWorkflowInstance(r -> r.setKey(workflowKey).setVariables(variables));
     RecordingExporter.jobRecords(JobIntent.CREATED)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .await();

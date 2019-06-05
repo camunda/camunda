@@ -74,13 +74,10 @@ public class ActivityTest {
     // given
     engine.deploy(WITHOUT_BOUNDARY_EVENTS);
     final long workflowInstanceKey =
-        engine
-            .createWorkflowInstance(
-                r ->
-                    r.setBpmnProcessId(PROCESS_ID)
-                        .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"boo\": 2 }")))
-            .getValue()
-            .getInstanceKey();
+        engine.createWorkflowInstance(
+            r ->
+                r.setBpmnProcessId(PROCESS_ID)
+                    .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"boo\": 2 }")));
 
     // when
     final Record<WorkflowInstanceRecordValue> record =
@@ -101,13 +98,10 @@ public class ActivityTest {
     // given
     engine.deploy(WITHOUT_BOUNDARY_EVENTS);
     final long workflowInstanceKey =
-        engine
-            .createWorkflowInstance(
-                r ->
-                    r.setBpmnProcessId(PROCESS_ID)
-                        .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"boo\": 2 }")))
-            .getValue()
-            .getInstanceKey();
+        engine.createWorkflowInstance(
+            r ->
+                r.setBpmnProcessId(PROCESS_ID)
+                    .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"boo\": 2 }")));
 
     // when
     engine.job().ofInstance(workflowInstanceKey).complete();
@@ -157,18 +151,15 @@ public class ActivityTest {
   public void shouldUnsubscribeFromBoundaryEventTriggersOnCompleting() {
     // given
     engine.deploy(WITH_BOUNDARY_EVENTS);
-    final long instanceKey =
-        engine
-            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID))
-            .getValue()
-            .getInstanceKey();
+    final long workflowInstanceKey =
+        engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
-    engine.job().ofInstance(instanceKey).complete();
+    engine.job().ofInstance(workflowInstanceKey).complete();
 
     // then
     shouldUnsubscribeFromBoundaryEventTrigger(
-        instanceKey,
+        workflowInstanceKey,
         WorkflowInstanceIntent.ELEMENT_COMPLETING,
         WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
@@ -177,23 +168,20 @@ public class ActivityTest {
   public void shouldUnsubscribeFromBoundaryEventTriggersOnTerminating() {
     // given
     engine.deploy(WITH_BOUNDARY_EVENTS);
-    final long instanceKey =
-        engine
-            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID))
-            .getValue()
-            .getInstanceKey();
+    final long workflowInstanceKey =
+        engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     RecordingExporter.workflowInstanceRecords()
         .withElementId("task")
         .withIntent(ELEMENT_ACTIVATED)
-        .withWorkflowInstanceKey(instanceKey)
+        .withWorkflowInstanceKey(workflowInstanceKey)
         .getFirst();
-    engine.cancelWorkflowInstance(instanceKey);
+    engine.cancelWorkflowInstance(workflowInstanceKey);
 
     // then
     shouldUnsubscribeFromBoundaryEventTrigger(
-        instanceKey,
+        workflowInstanceKey,
         WorkflowInstanceIntent.ELEMENT_TERMINATING,
         WorkflowInstanceIntent.ELEMENT_TERMINATED);
   }
@@ -226,15 +214,12 @@ public class ActivityTest {
 
     // when
     engine.deploy(model);
-    final long instanceKey =
-        engine
-            .createWorkflowInstance(r -> r.setBpmnProcessId("process"))
-            .getValue()
-            .getInstanceKey();
+    final long workflowInstanceKey =
+        engine.createWorkflowInstance(r -> r.setBpmnProcessId("process"));
 
     // then
-    engine.job().ofInstance(instanceKey).withType("type1").complete();
-    engine.job().ofInstance(instanceKey).withType("type2").complete();
+    engine.job().ofInstance(workflowInstanceKey).withType("type1").complete();
+    engine.job().ofInstance(workflowInstanceKey).withType("type2").complete();
 
     final JobRecordValue thirdJob =
         RecordingExporter.jobRecords().withType("type3").getFirst().getValue();
@@ -242,11 +227,13 @@ public class ActivityTest {
   }
 
   private void shouldUnsubscribeFromBoundaryEventTrigger(
-      long instanceKey, WorkflowInstanceIntent leavingState, WorkflowInstanceIntent leftState) {
+      long workflowInstanceKey,
+      WorkflowInstanceIntent leavingState,
+      WorkflowInstanceIntent leftState) {
     // given
     final List<Record<RecordValue>> records =
         RecordingExporter.records()
-            .limitToWorkflowInstance(instanceKey)
+            .limitToWorkflowInstance(workflowInstanceKey)
             .between(
                 r ->
                     r.getValue() instanceof WorkflowInstanceRecord

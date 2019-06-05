@@ -82,17 +82,14 @@ public class BoundaryEventTest {
   public void shouldTakeAllOutgoingSequenceFlowsIfTriggered() {
     // given
     ENGINE.deploy(MULTIPLE_SEQUENCE_FLOWS);
-    final long instanceKey =
-        ENGINE
-            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID))
-            .getValue()
-            .getInstanceKey();
+    final long workflowInstanceKey =
+        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     RecordingExporter.timerRecords()
         .withHandlerNodeId("timer")
         .withIntent(TimerIntent.CREATED)
-        .withWorkflowInstanceKey(instanceKey)
+        .withWorkflowInstanceKey(workflowInstanceKey)
         .getFirst();
     ENGINE.increaseTime(Duration.ofMinutes(1));
 
@@ -100,7 +97,7 @@ public class BoundaryEventTest {
     assertThat(
             RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
                 .withElementType(BpmnElementType.END_EVENT)
-                .withWorkflowInstanceKey(instanceKey)
+                .withWorkflowInstanceKey(workflowInstanceKey)
                 .limit(2))
         .extracting(Record::getValue)
         .extracting(WorkflowInstanceRecordValue::getElementId)
@@ -111,24 +108,21 @@ public class BoundaryEventTest {
   public void shouldActivateBoundaryEventWhenEventTriggered() {
     // given
     ENGINE.deploy(MULTIPLE_SEQUENCE_FLOWS);
-    final long instanceKey =
-        ENGINE
-            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID))
-            .getValue()
-            .getInstanceKey();
+    final long workflowInstanceKey =
+        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     RecordingExporter.timerRecords()
         .withHandlerNodeId("timer")
         .withIntent(TimerIntent.CREATED)
-        .withWorkflowInstanceKey(instanceKey)
+        .withWorkflowInstanceKey(workflowInstanceKey)
         .getFirst();
     ENGINE.increaseTime(Duration.ofMinutes(1));
 
     // then
     final List<Record<RecordValue>> records =
         RecordingExporter.records()
-            .limitToWorkflowInstance(instanceKey)
+            .limitToWorkflowInstance(workflowInstanceKey)
             .limit(
                 r ->
                     r.getValue() instanceof WorkflowInstanceRecord
@@ -197,13 +191,10 @@ public class BoundaryEventTest {
             .done();
     ENGINE.deploy(workflow);
     final long workflowInstanceKey =
-        ENGINE
-            .createWorkflowInstance(
-                r ->
-                    r.setBpmnProcessId(PROCESS_ID)
-                        .setVariables(asMsgPack("{ \"foo\": 1, \"oof\": 2 }")))
-            .getValue()
-            .getInstanceKey();
+        ENGINE.createWorkflowInstance(
+            r ->
+                r.setBpmnProcessId(PROCESS_ID)
+                    .setVariables(asMsgPack("{ \"foo\": 1, \"oof\": 2 }")));
 
     // when
     RecordingExporter.timerRecords()
@@ -282,25 +273,22 @@ public class BoundaryEventTest {
   public void shouldNotTerminateActivityForNonInterruptingBoundaryEvents() {
     // given
     ENGINE.deploy(NON_INTERRUPTING_WORKFLOW);
-    final long instanceKey =
-        ENGINE
-            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID))
-            .getValue()
-            .getInstanceKey();
+    final long workflowInstanceKey =
+        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     RecordingExporter.jobRecords()
         .withType("type")
         .withIntent(JobIntent.CREATED)
-        .withWorkflowInstanceKey(instanceKey)
+        .withWorkflowInstanceKey(workflowInstanceKey)
         .getFirst();
     ENGINE.increaseTime(Duration.ofSeconds(1));
     RecordingExporter.timerRecords()
         .withHandlerNodeId("event")
         .withIntent(TimerIntent.TRIGGER)
-        .withWorkflowInstanceKey(instanceKey)
+        .withWorkflowInstanceKey(workflowInstanceKey)
         .getFirst();
-    ENGINE.job().ofInstance(instanceKey).withType("type").complete();
+    ENGINE.job().ofInstance(workflowInstanceKey).withType("type").complete();
 
     // then
     final List<Record<RecordValue>> records =
@@ -378,13 +366,9 @@ public class BoundaryEventTest {
 
     // when
     final long workflowInstanceKey =
-        ENGINE
-            .createWorkflowInstance(
-                r ->
-                    r.setBpmnProcessId(processId)
-                        .setVariables(MsgPackUtil.asMsgPack("orderId", true)))
-            .getValue()
-            .getInstanceKey();
+        ENGINE.createWorkflowInstance(
+            r ->
+                r.setBpmnProcessId(processId).setVariables(MsgPackUtil.asMsgPack("orderId", true)));
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withWorkflowInstanceKey(workflowInstanceKey)
