@@ -754,11 +754,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   @Test
   public void testSortingByWorkflowNameAsc() throws Exception {
     final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> {
-      int x = o1.getWorkflowName().toLowerCase().compareTo(o2.getWorkflowName().toLowerCase());
-      if (x == 0) {
-        x = o1.getId().compareTo(o2.getId());
-      }
-      return x;
+      return o1.getWorkflowName().toLowerCase().compareTo(o2.getWorkflowName().toLowerCase());
     };
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy(ListViewTemplate.WORKFLOW_NAME);
@@ -770,11 +766,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   @Test
   public void testSortingByWorkflowNameDesc() throws Exception {
     final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> {
-      int x = o2.getWorkflowName().toLowerCase().compareTo(o1.getWorkflowName().toLowerCase());
-      if (x == 0) {
-        x = o1.getId().compareTo(o2.getId());
-      }
-      return x;
+      return o2.getWorkflowName().toLowerCase().compareTo(o1.getWorkflowName().toLowerCase());
     };
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy(ListViewTemplate.WORKFLOW_NAME);
