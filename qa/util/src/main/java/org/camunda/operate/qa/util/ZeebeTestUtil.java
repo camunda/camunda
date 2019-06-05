@@ -34,15 +34,14 @@ public abstract class ZeebeTestUtil {
     return String.valueOf(deploymentEvent.getWorkflows().get(0).getWorkflowKey());
   }
 
-  public static long startWorkflowInstance(ZeebeClient client, String bpmnProcessId, String payload) {
+  public static void startWorkflowInstanceAsync(ZeebeClient client, String bpmnProcessId, String payload) {
     final CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep3 createWorkflowInstanceCommandStep3 = client
       .newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
     if (payload != null) {
       createWorkflowInstanceCommandStep3.variables(payload);
     }
-    WorkflowInstanceEvent workflowInstanceEvent = createWorkflowInstanceCommandStep3.send().join();
-    logger.debug("Workflow instance created for workflow [{}]", bpmnProcessId);
-    return workflowInstanceEvent.getWorkflowInstanceKey();
+    createWorkflowInstanceCommandStep3.send();
+    logger.debug("Create workflow instance command was sent to Zeebe, workflow [{}]", bpmnProcessId);
   }
 
   public static void completeTask(ZeebeClient client, String jobType, String workerName, String payload, int count) {
@@ -51,7 +50,7 @@ public abstract class ZeebeTestUtil {
       .jobType(jobType)
       .handler((jobClient, job) -> {
         if (countCompleted[0] < count) {
-          jobClient.newCompleteCommand(job.getKey()).variables(payload).send().join();
+          jobClient.newCompleteCommand(job.getKey()).variables(payload).send();
           logger.debug("Task completed jobKey [{}]", job.getKey());
           countCompleted[0]++;
           if (countCompleted[0] % 1000 == 0) {
@@ -83,7 +82,7 @@ public abstract class ZeebeTestUtil {
       .handler((jobClient, activatedJob) -> {
         final String error = errorMessage == null ? "Error " + random.nextInt(50) : errorMessage;
         if (countFailed[0] < incidentCount) {
-          client.newFailCommand(activatedJob.getKey()).retries(0).errorMessage(error).send().join();
+          client.newFailCommand(activatedJob.getKey()).retries(0).errorMessage(error).send();
           countFailed[0]++;
           if (countFailed[0] % 1000 == 0) {
             logger.info("{} jobs failed ", countFailed[0]);

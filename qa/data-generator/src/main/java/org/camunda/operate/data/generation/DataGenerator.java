@@ -68,7 +68,7 @@ public class DataGenerator {
   private void startWorkflowInstances() {
     final long workflowInstanceCount = dataGeneratorProperties.getWorkflowInstanceCount();
     for (int i = 0; i< workflowInstanceCount; i++) {
-      ZeebeTestUtil.startWorkflowInstance(zeebeClient, getRandomBpmnProcessId(), "{\"var1\": \"value1\"}");
+      ZeebeTestUtil.startWorkflowInstanceAsync(zeebeClient, getRandomBpmnProcessId(), "{\"var1\": \"value1\"}");
       if (i % 1000 == 0) {
         logger.info("{} workflow instances started", i);
       }
