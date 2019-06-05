@@ -48,6 +48,7 @@ import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.io.ByteArrayOutputStream;
 import java.time.Duration;
@@ -64,6 +65,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.internal.bytebuddy.utility.RandomString;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
@@ -78,6 +80,8 @@ public class ActivateJobsTest {
   public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+
+  @Rule public RecordingExporterTestWatcher testWatcher = new RecordingExporterTestWatcher();
 
   private String processId;
   private String jobType;
