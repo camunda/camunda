@@ -26,7 +26,7 @@ import io.zeebe.broker.engine.impl.PartitionCommandSenderImpl;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.broker.transport.clientapi.CommandResponseWriterImpl;
+import io.zeebe.broker.transport.commandapi.CommandResponseWriterImpl;
 import io.zeebe.engine.processor.AsyncSnapshotingDirectorService;
 import io.zeebe.engine.processor.ProcessingContext;
 import io.zeebe.engine.processor.StreamProcessor;

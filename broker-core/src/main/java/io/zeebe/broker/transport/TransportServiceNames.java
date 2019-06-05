@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.transport;
 
-import io.zeebe.broker.transport.clientapi.CommandApiMessageHandler;
+import io.zeebe.broker.transport.commandapi.CommandApiMessageHandler;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.ServerTransport;
 

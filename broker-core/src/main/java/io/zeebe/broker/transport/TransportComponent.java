@@ -25,7 +25,7 @@ import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
-import io.zeebe.broker.transport.clientapi.CommandApiMessageHandlerService;
+import io.zeebe.broker.transport.commandapi.CommandApiMessageHandlerService;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.ServerMessageHandler;

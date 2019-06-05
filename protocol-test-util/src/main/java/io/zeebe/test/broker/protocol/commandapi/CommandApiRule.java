@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.test.broker.protocol.clientapi;
+package io.zeebe.test.broker.protocol.commandapi;
 
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
