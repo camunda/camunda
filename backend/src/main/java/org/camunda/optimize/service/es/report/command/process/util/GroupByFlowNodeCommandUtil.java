@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -85,7 +86,10 @@ public class GroupByFlowNodeCommandUtil {
       .getFullyImportedProcessDefinition(
         reportData.getProcessDefinitionKey(),
         reportData.getProcessDefinitionVersion(),
-        reportData.getTenantIds().stream().findFirst().orElse(null)
+        reportData.getTenantIds().stream()
+          // to get a null value if the first element is either absent or null
+          .map(Optional::ofNullable).findFirst().flatMap(Function.identity())
+          .orElse(null)
       );
   }
 

@@ -30,6 +30,7 @@ import org.junit.Test;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -71,6 +72,26 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(4));
     assertThat(result.getDataEntryForKey(TEST_ACTIVITY).get().getValue(), is(2L));
+  }
+
+  @Test
+  public void worksWithNullTenants() {
+    //given
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess();
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+      engineDto.getProcessDefinitionKey(), ALL_VERSIONS
+    );
+    reportData.setTenantIds(Collections.singletonList(null));
+    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(reportData);
+
+    //then
+    final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
   }
 
   @Test
