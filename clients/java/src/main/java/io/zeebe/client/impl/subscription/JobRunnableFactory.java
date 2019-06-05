@@ -19,6 +19,8 @@ import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobHandler;
 import io.zeebe.client.impl.Loggers;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import org.slf4j.Logger;
 
 public class JobRunnableFactory {
@@ -47,10 +49,14 @@ public class JobRunnableFactory {
           job.getKey(),
           job.getType(),
           e);
+      final StringWriter stringWriter = new StringWriter();
+      final PrintWriter printWriter = new PrintWriter(stringWriter);
+      e.printStackTrace(printWriter);
+      final String message = stringWriter.toString();
       jobClient
           .newFailCommand(job.getKey())
           .retries(job.getRetries() - 1)
-          .errorMessage(e.getMessage())
+          .errorMessage(message)
           .send();
     } finally {
       doneCallback.run();

@@ -267,6 +267,8 @@
 # class through the use of annotations.
 #
 # Enable the following debug exporter to log the exported records to console
+# This exporter can also be enabled using the environment variable ZEEBE_DEBUG, the pretty print
+# option will be enabled if the variable is set to "pretty".
 #
 # [[exporters]]
 # id = "debug-log"

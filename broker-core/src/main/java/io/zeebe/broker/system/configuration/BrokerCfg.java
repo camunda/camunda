@@ -18,6 +18,7 @@
 package io.zeebe.broker.system.configuration;
 
 import com.google.gson.GsonBuilder;
+import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.util.Environment;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +38,7 @@ public class BrokerCfg {
   }
 
   public void init(final String brokerBase, final Environment environment) {
+    applyEnvironment(environment);
     network.init(this, brokerBase, environment);
     cluster.init(this, brokerBase, environment);
     threads.init(this, brokerBase, environment);
@@ -44,6 +46,14 @@ public class BrokerCfg {
     data.init(this, brokerBase, environment);
     exporters.forEach(e -> e.init(this, brokerBase, environment));
     gateway.init(this, brokerBase, environment);
+  }
+
+  private void applyEnvironment(final Environment environment) {
+    environment
+        .get(EnvironmentConstants.ENV_DEBUG_EXPORTER)
+        .ifPresent(
+            value ->
+                exporters.add(DebugLogExporter.defaultConfig("pretty".equalsIgnoreCase(value))));
   }
 
   public NetworkCfg getNetwork() {
