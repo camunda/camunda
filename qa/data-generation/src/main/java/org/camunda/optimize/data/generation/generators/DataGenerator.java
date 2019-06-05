@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
@@ -44,6 +45,7 @@ public abstract class DataGenerator implements Runnable {
   private BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
 
   protected SimpleEngineClient engineClient;
+  private AtomicInteger startedInstanceCount = new AtomicInteger(0);
 
   public DataGenerator(SimpleEngineClient engineClient) {
     generateVersionNumber();
@@ -53,6 +55,10 @@ public abstract class DataGenerator implements Runnable {
   protected abstract BpmnModelInstance retrieveDiagram();
 
   protected abstract Map<String, Object> createVariablesForProcess();
+
+  public int getInstanceCountToGenerate() {
+    return instanceCountToGenerate;
+  }
 
   public void setInstanceCountToGenerate(int instanceCountToGenerate) {
     this.instanceCountToGenerate = instanceCountToGenerate;
@@ -153,6 +159,7 @@ public abstract class DataGenerator implements Runnable {
               final Map<String, Object> variables = createVariablesForProcess();
               variables.putAll(createSimpleVariables());
               startProcessInstance(procDefId, variables);
+              incrementStartedInstanceCount();
             },
             instanceStartExecutorService
           ))
@@ -228,4 +235,12 @@ public abstract class DataGenerator implements Runnable {
     InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(dmnPath);
     return Dmn.readModelFromStream(inputStream);
   }
+
+  public int getStartedInstanceCount() {
+    return startedInstanceCount.get();
+  }
+  private void incrementStartedInstanceCount() {
+    startedInstanceCount.incrementAndGet();
+  }
+
 }

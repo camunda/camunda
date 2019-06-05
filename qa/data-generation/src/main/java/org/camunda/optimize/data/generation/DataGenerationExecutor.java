@@ -31,7 +31,10 @@ import org.camunda.optimize.data.generation.generators.impl.TransshipmentArrange
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -156,12 +159,31 @@ public class DataGenerationExecutor {
 
   private ScheduledExecutorService reportDataGenerationProgress(BlockingQueue<Runnable> importJobsQueue) {
     ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-    Integer nGenerators = getTotalDataGeneratorCount();
-    exec.scheduleAtFixedRate(() -> {
-      Integer finishedCount = (nGenerators - importJobsQueue.size());
-      double finishedAmountInPercentage = Math.round((finishedCount.doubleValue() / nGenerators.doubleValue() * 100.0));
-      logger.info("Progress of data generation: {}%", finishedAmountInPercentage);
-    }, 0, 5, TimeUnit.SECONDS);
+    Runnable reportFunc = () -> {
+      RuntimeMXBean rb = ManagementFactory.getRuntimeMXBean();
+      logger.info("Progress report for running data generators (total: {} generators)", getTotalDataGeneratorCount());
+      int totalInstancesToGenerate = 0;
+      int finishedInstances = 0;
+      for (DataGenerator dataGenerator : getDataGenerators()) {
+        totalInstancesToGenerate += dataGenerator.getInstanceCountToGenerate();
+        finishedInstances += dataGenerator.getStartedInstanceCount();
+        if (dataGenerator.getStartedInstanceCount() > 0
+                && dataGenerator.getInstanceCountToGenerate() != dataGenerator.getStartedInstanceCount()) {
+          logger.info("[{}/{}] {}",
+                  dataGenerator.getStartedInstanceCount(),
+                  dataGenerator.getInstanceCountToGenerate(),
+                  dataGenerator.getClass().getSimpleName().replaceAll("DataGenerator","")
+          );
+        }
+      }
+      double finishedAmountInPercentage = Math.round((double) finishedInstances / (double) totalInstancesToGenerate * 1000.0) / 10.0;
+      long timeETAFromNow = Math.round(((double) rb.getUptime() / finishedAmountInPercentage) * (100.0 - finishedAmountInPercentage));
+      Date timeETA = new Date(System.currentTimeMillis() + timeETAFromNow);
+      logger.info("Overall data generation progress: {}% ({}/{}) ETA: {}", finishedAmountInPercentage, finishedInstances, totalInstancesToGenerate, timeETA);
+    };
+
+    exec.scheduleAtFixedRate(reportFunc, 0, 30, TimeUnit.SECONDS);
+    reportFunc.run();
     return exec;
   }
 
