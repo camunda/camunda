@@ -70,8 +70,8 @@ spec:
           cpu: 4
           memory: 8Gi
         requests:
-          cpu: 500m
-          memory: 1Gi
+          cpu: 2
+          memory: 4Gi
     - name: elasticsearch
       image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.0
       env:
@@ -108,7 +108,7 @@ spec:
           memory: 4Gi
         requests:
           cpu: 2
-          memory: 2Gi
+          memory: 4Gi
     - name: zeebe
       image: camunda/zeebe:SNAPSHOT
       env:
@@ -125,8 +125,8 @@ spec:
           cpu: 4
           memory: 8Gi
         requests:
-          cpu: 2
-          memory: 4Gi
+          cpu: 4
+          memory: 8Gi
   volumes:
   - name: configdir
     emptyDir: {}
@@ -180,7 +180,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
     timestamps()
-    timeout(time: 1, unit: 'HOURS')
+    timeout(time: 2, unit: 'HOURS')
   }
 
   stages {
