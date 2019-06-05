@@ -15,11 +15,11 @@
  */
 package io.zeebe.protocol.impl.encoding;
 
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
-import io.zeebe.protocol.clientapi.ErrorResponseEncoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.protocol.ErrorCode;
+import io.zeebe.protocol.ErrorResponseDecoder;
+import io.zeebe.protocol.ErrorResponseEncoder;
+import io.zeebe.protocol.MessageHeaderDecoder;
+import io.zeebe.protocol.MessageHeaderEncoder;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;

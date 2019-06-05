@@ -22,7 +22,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.intent.VariableDocumentIntent;
 import io.zeebe.test.util.JsonUtil;

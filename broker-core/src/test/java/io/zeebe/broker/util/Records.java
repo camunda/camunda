@@ -18,7 +18,7 @@
 package io.zeebe.broker.util;
 
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
 

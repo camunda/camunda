@@ -23,7 +23,7 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceStreamProcessorRule;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.intent.TimerIntent;
 import org.assertj.core.api.Assertions;

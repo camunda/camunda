@@ -29,7 +29,7 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;

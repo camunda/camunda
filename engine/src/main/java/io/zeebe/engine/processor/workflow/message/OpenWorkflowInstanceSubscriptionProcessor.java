@@ -23,7 +23,7 @@ import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;

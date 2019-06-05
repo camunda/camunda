@@ -32,7 +32,7 @@ import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.ErrorType;
-import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;

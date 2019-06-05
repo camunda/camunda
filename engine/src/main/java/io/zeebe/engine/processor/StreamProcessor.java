@@ -25,7 +25,7 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;

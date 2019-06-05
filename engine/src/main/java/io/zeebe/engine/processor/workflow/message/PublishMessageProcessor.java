@@ -33,7 +33,7 @@ import io.zeebe.engine.state.message.MessageStartEventSubscriptionState;
 import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.engine.state.message.MessageSubscriptionState;
 import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;

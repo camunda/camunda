@@ -30,7 +30,7 @@ import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.msgpack.value.ValueArray;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.JobBatchIntent;

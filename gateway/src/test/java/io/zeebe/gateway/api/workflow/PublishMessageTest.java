@@ -22,7 +22,7 @@ import io.zeebe.gateway.api.util.GatewayTest;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.test.util.JsonUtil;

@@ -21,7 +21,7 @@ import io.zeebe.db.DbContext;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorControl;

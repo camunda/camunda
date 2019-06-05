@@ -31,7 +31,7 @@ import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobBatchIntent;

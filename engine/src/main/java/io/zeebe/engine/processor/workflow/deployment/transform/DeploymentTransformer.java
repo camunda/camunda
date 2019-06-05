@@ -28,7 +28,7 @@ import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.zeebe.util.buffer.BufferUtil;

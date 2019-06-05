@@ -15,7 +15,7 @@
  */
 package io.zeebe.protocol.intent;
 
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import java.util.Arrays;
 import java.util.Collection;
 

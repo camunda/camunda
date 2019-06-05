@@ -15,7 +15,7 @@
  */
 package io.zeebe.test.broker.protocol.commandapi;
 
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapBuilder;

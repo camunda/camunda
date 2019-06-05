@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.state.instance.IncidentState;
 import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.intent.IncidentIntent;
 import java.util.List;

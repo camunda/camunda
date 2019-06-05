@@ -27,8 +27,8 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.record.Record;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.test.exporter.ExporterTestHarness;
 import io.zeebe.util.ZbLogger;
 import java.time.Duration;

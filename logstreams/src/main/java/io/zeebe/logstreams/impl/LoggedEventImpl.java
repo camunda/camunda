@@ -25,7 +25,7 @@ import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
 
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.VarDataEncodingEncoder;
+import io.zeebe.protocol.VarDataEncodingEncoder;
 import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;

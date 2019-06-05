@@ -36,7 +36,7 @@ import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.TimerIntent;

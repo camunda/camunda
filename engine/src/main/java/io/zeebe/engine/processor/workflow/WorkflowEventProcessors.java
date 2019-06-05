@@ -35,7 +35,7 @@ import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.engine.state.instance.WorkflowEngineState;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.VariableDocumentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;

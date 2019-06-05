@@ -15,8 +15,8 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.ExecuteCommandRequestDecoder;
+import io.zeebe.protocol.MessageHeaderDecoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;

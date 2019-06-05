@@ -21,7 +21,7 @@ import static io.zeebe.protocol.intent.MessageIntent.PUBLISH;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
 import io.zeebe.test.broker.protocol.commandapi.ExecuteCommandRequestBuilder;
 import org.junit.ClassRule;

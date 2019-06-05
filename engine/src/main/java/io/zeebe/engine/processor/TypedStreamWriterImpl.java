@@ -19,8 +19,8 @@ package io.zeebe.engine.processor;
 
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
 import java.util.function.Consumer;

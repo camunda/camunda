@@ -27,7 +27,7 @@ import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.RecordMetadata;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
 import java.util.concurrent.CountDownLatch;
