@@ -63,9 +63,6 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   private PartitionHolder partitionHolder;
 
   @Autowired
-  private ZeebeImporter zeebeESImporter;
-
-  @Autowired
   private ListViewReader listViewReader;
 
   @Autowired

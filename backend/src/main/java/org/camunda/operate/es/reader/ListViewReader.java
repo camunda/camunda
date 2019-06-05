@@ -175,7 +175,7 @@ public class ListViewReader {
       }
       searchSourceBuilder
         .sort(sorting.getSortBy(), SortOrder.fromString(sorting.getSortOrder()))
-        .sort(ListViewTemplate.ID, SortOrder.ASC);     //we always sort by id, to make the order always determined
+        .sort(ListViewTemplate.KEY, SortOrder.ASC); 
     }
   }
 
