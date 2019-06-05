@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,13 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.engine.subprocess;
+package io.zeebe.engine.processor.workflow.subprocess;
 
-import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.JobRecordValue;
@@ -34,25 +33,20 @@ import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
-import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
-import io.zeebe.test.broker.protocol.commandapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
-import java.util.Arrays;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 public class EmbeddedSubProcessTest {
 
-  private static final String PROCESS_ID = "process";
-
   private static final BpmnModelInstance ONE_TASK_SUBPROCESS =
-      Bpmn.createExecutableProcess(PROCESS_ID)
+      Bpmn.createExecutableProcess("ONE_TASK_SUBPROCESS")
           .startEvent("start")
           .sequenceFlowId("flow1")
           .subProcess("subProcess")
@@ -67,30 +61,29 @@ public class EmbeddedSubProcessTest {
           .endEvent("end")
           .done();
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
+  @ClassRule public static final EngineRule ENGINE = new EngineRule();
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
-
-  private PartitionTestClient testClient;
-
-  @Before
-  public void init() {
-    testClient = apiRule.partitionClient();
+  @BeforeClass
+  public static void init() {
+    ENGINE.deploy(ONE_TASK_SUBPROCESS);
   }
 
   @Test
   public void shouldCreateJobForServiceTaskInEmbeddedSubprocess() {
     // given
-    testClient.deploy(ONE_TASK_SUBPROCESS);
     final DirectBuffer variables = MsgPackUtil.asMsgPack("key", "val");
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID).setVariables(variables));
+    final long workflowInstanceKey =
+        ENGINE.createWorkflowInstance(
+            r -> r.setBpmnProcessId("ONE_TASK_SUBPROCESS").setVariables(variables));
 
     // then
     final Record<JobRecordValue> jobCreatedEvent =
-        testClient.receiveFirstJobEvent(JobIntent.CREATED);
+        RecordingExporter.jobRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(JobIntent.CREATED)
+            .getFirst();
     MsgPackUtil.assertEquality(
         DocumentValue.EMPTY_DOCUMENT, jobCreatedEvent.getValue().getVariables());
 
@@ -101,32 +94,28 @@ public class EmbeddedSubProcessTest {
   @Test
   public void shouldGenerateEventStream() {
     // given
-    testClient.deploy(ONE_TASK_SUBPROCESS);
     final DirectBuffer variables = MsgPackUtil.asMsgPack("key", "val");
 
     // when
     final long workflowInstanceKey =
-        testClient
-            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID).setVariables(variables))
-            .getInstanceKey();
+        ENGINE.createWorkflowInstance(
+            r -> r.setBpmnProcessId("ONE_TASK_SUBPROCESS").setVariables(variables));
 
     // then
-    testClient.receiveJobs().getFirst();
-
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        testClient
-            .receiveWorkflowInstances()
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .limit(
                 r ->
                     r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
                         && "subProcessTask".equals(r.getValue().getElementId()))
-            .collect(Collectors.toList());
+            .asList();
 
     assertThat(workflowInstanceEvents)
         .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
         .containsExactly(
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, PROCESS_ID),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, PROCESS_ID),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "ONE_TASK_SUBPROCESS"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "ONE_TASK_SUBPROCESS"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "start"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "start"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "start"),
@@ -143,18 +132,18 @@ public class EmbeddedSubProcessTest {
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessTask"));
 
     final Record<WorkflowInstanceRecordValue> subProcessReady =
-        testClient
-            .receiveWorkflowInstances()
+        RecordingExporter.workflowInstanceRecords()
             .withElementId("subProcess")
             .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
     assertThat(subProcessReady.getValue().getFlowScopeKey()).isEqualTo(workflowInstanceKey);
 
     final Record<WorkflowInstanceRecordValue> subProcessTaskReady =
-        testClient
-            .receiveWorkflowInstances()
+        RecordingExporter.workflowInstanceRecords()
             .withElementId("subProcessTask")
             .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
     assertThat(subProcessTaskReady.getValue().getFlowScopeKey())
         .isEqualTo(subProcessReady.getKey());
@@ -163,24 +152,24 @@ public class EmbeddedSubProcessTest {
   @Test
   public void shouldCompleteEmbeddedSubProcess() {
     // given
-    testClient.deploy(ONE_TASK_SUBPROCESS);
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    final long workflowInstanceKey =
+        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("ONE_TASK_SUBPROCESS"));
 
     // when
-    testClient.completeJobOfType("type");
+    ENGINE.job().ofInstance(workflowInstanceKey).withType("type").complete();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        testClient
-            .receiveWorkflowInstances()
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .limitToWorkflowInstanceCompleted()
             .collect(Collectors.toList());
 
     assertThat(workflowInstanceEvents)
         .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
         .containsExactly(
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, PROCESS_ID),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, PROCESS_ID),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "ONE_TASK_SUBPROCESS"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "ONE_TASK_SUBPROCESS"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "start"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "start"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "start"),
@@ -209,15 +198,15 @@ public class EmbeddedSubProcessTest {
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "end"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "end"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "end"),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, PROCESS_ID),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, PROCESS_ID));
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "ONE_TASK_SUBPROCESS"),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "ONE_TASK_SUBPROCESS"));
   }
 
   @Test
   public void shouldRunServiceTaskAfterEmbeddedSubProcess() {
     // given
     final BpmnModelInstance model =
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess("shouldRunServiceTaskAfterEmbeddedSubProcess")
             .startEvent()
             .subProcess()
             .embeddedSubProcess()
@@ -228,14 +217,19 @@ public class EmbeddedSubProcessTest {
             .endEvent()
             .done();
 
-    testClient.deploy(model);
+    ENGINE.deploy(model);
 
     // when
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    final long workflowInstanceKey =
+        ENGINE.createWorkflowInstance(
+            r -> r.setBpmnProcessId("shouldRunServiceTaskAfterEmbeddedSubProcess"));
 
     // then
     final Record<JobRecordValue> jobCreatedEvent =
-        testClient.receiveFirstJobEvent(JobIntent.CREATED);
+        RecordingExporter.jobRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(JobIntent.CREATED)
+            .getFirst();
 
     final Headers headers = jobCreatedEvent.getValue().getHeaders();
     Assertions.assertThat(headers).hasElementId("task");
@@ -245,7 +239,7 @@ public class EmbeddedSubProcessTest {
   public void shouldCompleteNestedSubProcess() {
     // given
     final BpmnModelInstance model =
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess("shouldCompleteNestedSubProcess")
             .startEvent()
             .subProcess("outerSubProcess")
             .embeddedSubProcess()
@@ -260,27 +254,23 @@ public class EmbeddedSubProcessTest {
             .subProcessDone()
             .endEvent()
             .done();
-    testClient.deploy(model);
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    ENGINE.deploy(model);
+    final long workflowInstanceKey =
+        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("shouldCompleteNestedSubProcess"));
 
     // when
-    testClient.completeJobOfType("type");
+    ENGINE.job().ofInstance(workflowInstanceKey).withType("type").complete();
 
     // then
-    testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    final List<String> elementFilter = Arrays.asList("innerSubProcess", "outerSubProcess", "task");
-
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        testClient
-            .receiveWorkflowInstances()
-            .filter(r -> elementFilter.contains(r.getValue().getElementId()))
-            .limit(12)
-            .collect(Collectors.toList());
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limitToWorkflowInstanceCompleted()
+            .asList();
 
     assertThat(workflowInstanceEvents)
         .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
-        .containsExactly(
+        .containsSubsequence(
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "outerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "outerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "innerSubProcess"),
@@ -313,7 +303,7 @@ public class EmbeddedSubProcessTest {
                 .subProcess("innerSubProcess", innerSubProcess)
                 .endEvent();
     final BpmnModelInstance model =
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess("shouldTerminateBeforeTriggeringBoundaryEvent")
             .startEvent()
             .subProcess("outerSubProcess", outSubProcess)
             .boundaryEvent("event")
@@ -322,45 +312,45 @@ public class EmbeddedSubProcessTest {
             .moveToActivity("outerSubProcess")
             .endEvent()
             .done();
-    testClient.deploy(model);
-    testClient
-        .createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")))
-        .getInstanceKey();
+    ENGINE.deploy(model);
+    final long workflowInstanceKey =
+        ENGINE.createWorkflowInstance(
+            r ->
+                r.setBpmnProcessId("shouldTerminateBeforeTriggeringBoundaryEvent")
+                    .setVariables(MsgPackUtil.asMsgPack("key", "123")));
 
     // when
     assertThat(
-            testClient
-                .receiveWorkflowInstanceSubscriptions()
+            RecordingExporter.workflowInstanceSubscriptionRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
                 .withIntent(WorkflowInstanceSubscriptionIntent.OPENED)
-                .limit(1)
                 .exists())
         .isTrue(); // await first subscription opened
     final Record<WorkflowInstanceRecordValue> activatedRecord =
-        testClient
-            .receiveWorkflowInstances()
+        RecordingExporter.workflowInstanceRecords()
             .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .withElementId("task")
-            .limit(1)
             .getFirst();
-    testClient.publishMessage("msg", "123", asMsgPack("foo", 1));
+
+    ENGINE
+        .message()
+        .withName("msg")
+        .withCorrelationKey("123")
+        .withVariables(MsgPackUtil.asMsgPack("foo", 1))
+        .publish();
 
     // then
-    final List<String> elementFilter =
-        Arrays.asList("innerSubProcess", "outerSubProcess", "task", "event");
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
-        testClient
-            .receiveWorkflowInstances()
+        RecordingExporter.workflowInstanceRecords()
+            .skipUntil(r -> r.getPosition() > activatedRecord.getPosition())
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .limitToWorkflowInstanceCompleted()
-            .filter(
-                r ->
-                    r.getPosition() > activatedRecord.getPosition()
-                        && elementFilter.contains(r.getValue().getElementId()))
-            .collect(Collectors.toList());
+            .asList();
 
     assertThat(workflowInstanceEvents)
         .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
-        .containsExactly(
+        .containsSubsequence(
             tuple(WorkflowInstanceIntent.EVENT_OCCURRED, "outerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATING, "outerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATING, "innerSubProcess"),
