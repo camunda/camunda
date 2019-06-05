@@ -15,14 +15,17 @@
  */
 package io.zeebe.protocol.impl.record.value.timer;
 
+import io.zeebe.exporter.api.record.value.TimerRecordValue;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.WorkflowInstanceRelated;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class TimerRecord extends UnifiedRecordValue implements WorkflowInstanceRelated {
+public class TimerRecord extends UnifiedRecordValue
+    implements WorkflowInstanceRelated, TimerRecordValue {
 
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
@@ -40,6 +43,7 @@ public class TimerRecord extends UnifiedRecordValue implements WorkflowInstanceR
         .declareProperty(workflowKeyProp);
   }
 
+  @Override
   public long getElementInstanceKey() {
     return elementInstanceKeyProp.getValue();
   }
@@ -49,6 +53,7 @@ public class TimerRecord extends UnifiedRecordValue implements WorkflowInstanceR
     return this;
   }
 
+  @Override
   public long getDueDate() {
     return dueDateProp.getValue();
   }
@@ -67,6 +72,7 @@ public class TimerRecord extends UnifiedRecordValue implements WorkflowInstanceR
     return this;
   }
 
+  @Override
   public int getRepetitions() {
     return repetitionsProp.getValue();
   }
@@ -76,6 +82,7 @@ public class TimerRecord extends UnifiedRecordValue implements WorkflowInstanceR
     return this;
   }
 
+  @Override
   public long getWorkflowKey() {
     return workflowKeyProp.getValue();
   }
@@ -92,5 +99,10 @@ public class TimerRecord extends UnifiedRecordValue implements WorkflowInstanceR
 
   public long getWorkflowInstanceKey() {
     return workflowInstanceKeyProp.getValue();
+  }
+
+  @Override
+  public String getHandlerFlowNodeId() {
+    return BufferUtil.bufferAsString(handlerNodeId.getValue());
   }
 }

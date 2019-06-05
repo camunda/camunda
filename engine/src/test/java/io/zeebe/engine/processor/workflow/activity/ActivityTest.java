@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,33 +15,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.engine.activity;
+package io.zeebe.engine.processor.workflow.activity;
 
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Record;
+import io.zeebe.exporter.api.record.RecordValue;
 import io.zeebe.exporter.api.record.value.JobRecordValue;
-import io.zeebe.exporter.api.record.value.TimerRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
-import io.zeebe.test.broker.protocol.commandapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.WorkflowInstances;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 public class ActivityTest {
   private static final String PROCESS_ID = "process";
@@ -70,32 +67,27 @@ public class ActivityTest {
           .endEvent("taskEnd")
           .done();
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
-  private PartitionTestClient testClient;
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
-
-  @Before
-  public void init() {
-    testClient = apiRule.partitionClient();
-  }
+  @Rule public EngineRule engine = new EngineRule();
 
   @Test
   public void shouldApplyInputMappingOnReady() {
     // given
-    testClient.deploy(WITHOUT_BOUNDARY_EVENTS);
+    engine.deploy(WITHOUT_BOUNDARY_EVENTS);
     final long workflowInstanceKey =
-        testClient
+        engine
             .createWorkflowInstance(
                 r ->
                     r.setBpmnProcessId(PROCESS_ID)
                         .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"boo\": 2 }")))
+            .getValue()
             .getInstanceKey();
 
     // when
     final Record<WorkflowInstanceRecordValue> record =
-        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        RecordingExporter.workflowInstanceRecords()
+            .withElementId("task")
+            .withIntent(ELEMENT_ACTIVATED)
+            .getFirst();
 
     // then
     final Map<String, String> variables =
@@ -106,22 +98,25 @@ public class ActivityTest {
   @Test
   public void shouldApplyOutputMappingOnCompleting() {
     // given
-    testClient.deploy(WITHOUT_BOUNDARY_EVENTS);
+    engine.deploy(WITHOUT_BOUNDARY_EVENTS);
     final long workflowInstanceKey =
-        testClient
+        engine
             .createWorkflowInstance(
                 r ->
                     r.setBpmnProcessId(PROCESS_ID)
                         .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"boo\": 2 }")))
+            .getValue()
             .getInstanceKey();
 
     // when
-    final Record<JobRecordValue> jobRecord = testClient.receiveFirstJobEvent(JobIntent.CREATED);
-    testClient.completeJob(jobRecord.getKey(), jobRecord.getValue().getVariables());
+    engine.job().ofInstance(workflowInstanceKey).complete();
 
     // then
     final Record<WorkflowInstanceRecordValue> record =
-        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        RecordingExporter.workflowInstanceRecords()
+            .withElementId("task")
+            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .getFirst();
     final Map<String, String> variables =
         WorkflowInstances.getCurrentVariables(workflowInstanceKey, record.getPosition());
     assertThat(variables).contains(entry("bar", "1"));
@@ -130,38 +125,45 @@ public class ActivityTest {
   @Test
   public void shouldSubscribeToBoundaryEventTriggersOnReady() {
     // given
-    testClient.deploy(WITH_BOUNDARY_EVENTS);
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.deploy(WITH_BOUNDARY_EVENTS);
 
     // when
-    final Record<WorkflowInstanceRecordValue> readyRecord =
-        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    final Record<WorkflowInstanceRecordValue> activatedRecord =
-        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    final List<Record<TimerRecordValue>> subscriptions =
-        Arrays.asList(
-            testClient.receiveTimerRecord("timer1", TimerIntent.CREATE),
-            testClient.receiveTimerRecord("timer2", TimerIntent.CREATE));
+    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
-    assertThat(subscriptions).hasSize(2);
-    for (final Record<TimerRecordValue> subscription : subscriptions) {
-      assertThat(subscription.getPosition())
-          .isBetween(readyRecord.getPosition(), activatedRecord.getPosition());
-      assertThat(subscription.getValue().getElementInstanceKey()).isEqualTo(readyRecord.getKey());
-    }
+    final List<Record<RecordValue>> records =
+        RecordingExporter.records()
+            .skipUntil(
+                r ->
+                    r.getValue() instanceof WorkflowInstanceRecord
+                        && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("task")
+                        && r.getMetadata().getIntent() == ELEMENT_ACTIVATING)
+            .limit(
+                r ->
+                    r.getValue() instanceof WorkflowInstanceRecord
+                        && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("task")
+                        && r.getMetadata().getIntent() == ELEMENT_ACTIVATED)
+            .asList();
+
+    assertThat(records).hasSize(4);
+    assertThat(records)
+        .extracting(r -> r.getMetadata().getIntent())
+        .contains(ELEMENT_ACTIVATING, TimerIntent.CREATE, TimerIntent.CREATE, ELEMENT_ACTIVATED);
   }
 
   @Test
   public void shouldUnsubscribeFromBoundaryEventTriggersOnCompleting() {
     // given
-    testClient.deploy(WITH_BOUNDARY_EVENTS);
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.deploy(WITH_BOUNDARY_EVENTS);
+    final long instanceKey =
+        engine
+            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID))
+            .getValue()
+            .getInstanceKey();
 
     // when
-    final Record<JobRecordValue> job = testClient.receiveFirstJobEvent(JobIntent.CREATED);
-    testClient.completeJob(job.getKey(), job.getValue().getVariables());
-    testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    //    RecordingExporter.timerRecords().withIntent(TimerIntent.CREATE).limit(2).asList();
+    engine.job().ofInstance(instanceKey).complete();
 
     // then
     shouldUnsubscribeFromBoundaryEventTrigger(
@@ -171,14 +173,19 @@ public class ActivityTest {
   @Test
   public void shouldUnsubscribeFromBoundaryEventTriggersOnTerminating() {
     // given
-    testClient.deploy(WITH_BOUNDARY_EVENTS);
-    final long workflowKey =
-        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
+    engine.deploy(WITH_BOUNDARY_EVENTS);
+    final long instanceKey =
+        engine
+            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID))
+            .getValue()
+            .getInstanceKey();
 
     // when
-    testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    testClient.cancelWorkflowInstance(workflowKey);
-    testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_TERMINATED);
+    RecordingExporter.workflowInstanceRecords()
+        .withElementId("task")
+        .withIntent(ELEMENT_ACTIVATED)
+        .getFirst();
+    engine.cancelWorkflowInstance(instanceKey);
 
     // then
     shouldUnsubscribeFromBoundaryEventTrigger(
@@ -212,43 +219,42 @@ public class ActivityTest {
             .done();
 
     // when
-    final long deploymentKey = testClient.deploy(model);
-    testClient.receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
-    testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process"));
+    engine.deploy(model);
+    final long instanceKey =
+        engine
+            .createWorkflowInstance(r -> r.setBpmnProcessId("process"))
+            .getValue()
+            .getInstanceKey();
 
     // then
-    final JobRecordValue firstJob =
-        testClient.receiveJobs().withType("type1").getFirst().getValue();
-    assertThat(firstJob.getCustomHeaders()).isEmpty();
-    testClient.completeJobOfType("type1");
-
-    final JobRecordValue secondJob =
-        testClient.receiveJobs().withType("type2").getFirst().getValue();
-    assertThat(secondJob.getCustomHeaders()).isEmpty();
-    testClient.completeJobOfType("type2");
+    engine.job().ofInstance(instanceKey).withType("type1").complete();
+    engine.job().ofInstance(instanceKey).withType("type2").complete();
 
     final JobRecordValue thirdJob =
-        testClient.receiveJobs().withType("type3").getFirst().getValue();
+        RecordingExporter.jobRecords().withType("type3").getFirst().getValue();
     assertThat(thirdJob.getCustomHeaders()).isEmpty();
   }
 
   private void shouldUnsubscribeFromBoundaryEventTrigger(
       WorkflowInstanceIntent leavingState, WorkflowInstanceIntent leftState) {
     // given
-    final Record<WorkflowInstanceRecordValue> leavingRecord =
-        testClient.receiveElementInState("task", leavingState);
-    final Record<WorkflowInstanceRecordValue> leftRecord =
-        testClient.receiveElementInState("task", leftState);
-    final List<Record<TimerRecordValue>> subscriptions =
-        Arrays.asList(
-            testClient.receiveTimerRecord("timer1", TimerIntent.CANCEL),
-            testClient.receiveTimerRecord("timer2", TimerIntent.CANCEL));
+    final List<Record<RecordValue>> records =
+        RecordingExporter.records()
+            .skipUntil(
+                r ->
+                    r.getValue() instanceof WorkflowInstanceRecord
+                        && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("task")
+                        && r.getMetadata().getIntent() == leavingState)
+            .limit(
+                r ->
+                    r.getValue() instanceof WorkflowInstanceRecord
+                        && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("task")
+                        && r.getMetadata().getIntent() == leftState)
+            .asList();
 
     // then
-    assertThat(subscriptions).hasSize(2);
-    for (final Record<TimerRecordValue> subscription : subscriptions) {
-      assertThat(subscription.getPosition())
-          .isBetween(leavingRecord.getPosition(), leftRecord.getPosition());
-    }
+    assertThat(records)
+        .extracting(r -> r.getMetadata().getIntent())
+        .contains(leavingState, TimerIntent.CANCEL, TimerIntent.CANCEL, leftState);
   }
 }

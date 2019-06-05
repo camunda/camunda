@@ -62,9 +62,11 @@ public class JobClient {
   }
 
   public Record<JobRecordValue> complete() {
+    final boolean hasSpecificType = !jobRecord.getType().isEmpty();
+
     final Record<JobRecordValue> createdJob =
         RecordingExporter.jobRecords()
-            .withType(jobRecord.getType())
+            .valueFilter(v -> hasSpecificType ? v.getType().equals(jobRecord.getType()) : true)
             .withIntent(JobIntent.CREATED)
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
