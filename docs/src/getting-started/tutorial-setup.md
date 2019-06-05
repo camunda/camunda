@@ -15,7 +15,9 @@ If you're looking for a very fast (but less comprehensive) "first contact" exper
 
 The tutorial assumes you have some basic knowledge of what Zeebe is and what it's used for. If you're completely new to Zeebe, you might find it helpful to read through the ["What is Zeebe?"](https://docs.zeebe.io/introduction/what-is-zeebe.html) docs article first.
 
-Below are the components you'll use in the tutorial. Please download the full distributions for these components instead of running them with Docker.
+Below are the components you'll use in the tutorial. The easiest way to run them is to use the `operate` docker-compose profile in the [zeebe-docker-compose](https://github.com/zeebe-io/zeebe-docker-compose) repository.
+ 
+ You can also download the full distributions for these components, instead of running them with Docker.
 
 1.   [Zeebe Modeler](https://github.com/zeebe-io/zeebe-modeler/releases): A desktop modeling tool that we'll use to create and configure our workflow before we deploy it to Zeebe.
 1.   [Zeebe Distribution](https://github.com/zeebe-io/zeebe/releases/tag/0.17.0): The Zeebe distribution contains the workflow engine where we'll deploy our workflow model; the engine is also responsible for managing the state of active workflow instances. Included in the distro is the Zeebe CLI, which we'll use throughout the tutorial. Please use Zeebe 0.17.0.
