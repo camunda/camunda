@@ -78,7 +78,7 @@ public class ClusteredDataDeletionTest {
     final DataCfg data = brokerCfg.getData();
     data.setMaxSnapshots(MAX_SNAPSHOTS);
     data.setSnapshotPeriod(SNAPSHOT_PERIOD_SECONDS + "s");
-    data.setDefaultLogSegmentSize("8k");
+    data.setLogSegmentSize("8k");
     data.setIndexBlockSize("2K");
 
     brokerCfg.setExporters(Collections.EMPTY_LIST);

@@ -147,8 +147,8 @@
 # This setting can also be overridden using the environment variable ZEEBE_DIRECTORIES.
 # directories = [ "data" ]
 
-# The default size of data segments.
-# defaultLogSegmentSize = "512M"
+# The size of data log segment files.
+# logSegmentSize = "512M"
 
 # The size of block index segments.
 # indexBlockSize = "4M"
