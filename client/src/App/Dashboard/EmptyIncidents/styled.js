@@ -16,7 +16,6 @@ export const EmptyIncidents = themed(styled.div`
   height: 100%;
   width: 100%;
   display: flex;
-  align-items: center;
   justify-content: center;
   border-width: 1px;
   border-style: solid;
@@ -24,7 +23,7 @@ export const EmptyIncidents = themed(styled.div`
     dark: Colors.uiDark04,
     light: Colors.uiLight05
   })};
-  padding-bottom: 188px;
+  padding-top: 210px;
 `);
 
 const errorStyle = css`
@@ -53,6 +52,7 @@ export const Label = themed(styled.span`
 
   font-family: IBMPlexSans;
   font-size: 16px;
+  padding-top: 5px;
 `);
 
 export const CheckIcon = styled(Check)`
@@ -66,5 +66,4 @@ export const WarningIcon = styled(Warning)`
   height: 18px;
   fill: ${Colors.incidentsAndErrors};
   margin-right: 15px;
-  margin-bottom: 6px;
 `;
