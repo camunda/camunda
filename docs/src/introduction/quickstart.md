@@ -69,7 +69,7 @@ Partitions count: 1
 Replication factor: 1
 Brokers:
   Broker 0 - 0.0.0.0:26501
-    Partition 0 : Leader
+    Partition 1 : Leader
 ```
 
 ## Step 3: Deploy a workflow
@@ -120,12 +120,12 @@ But first let's deploy the workflow to the Zeebe broker.
 ```
 ```
 {
-  "key": 2,
+  "key": 2251799813685250,
   "workflows": [
     {
       "bpmnProcessId": "order-process",
       "version": 1,
-      "workflowKey": 1,
+      "workflowKey": 2251799813685249,
       "resourceName": "order-process.bpmn"
     }
   ]
@@ -156,10 +156,10 @@ specify the initial data of the instance as variables when we start the instance
 ```
 ```
 {
-  "workflowKey": 1,
+  "workflowKey": 2251799813685249,
   "bpmnProcessId": "order-process",
   "version": 1,
-  "workflowInstanceKey": 3
+  "workflowInstanceKey": 2251799813685251
 }
 ```
 
@@ -191,14 +191,16 @@ each of the three task types from the workflow definition: `payment-service`,
 ./bin/zbctl create worker shipment-service --handler cat &
 ```
 ```
-2019/04/02 13:23:01 Activated job 9 with variables {"orderId":1234}
-2019/04/02 13:23:01 Handler completed job 9 with variables {"orderId":1234}
-
-2019/04/02 13:23:01 Activated job 16 with variables {"orderId":1234}
-2019/04/02 13:23:01 Handler completed job 16 with variables {"orderId":1234}
-
-2019/04/02 13:23:01 Activated job 23 with variables {"orderId":1234}
-2019/04/02 13:23:01 Handler completed job 23 with variables {"orderId":1234}
+2019/06/06 20:54:36 Handler completed job 2251799813685257 with variables
+{"orderId":1234}
+2019/06/06 20:54:36 Activated job 2251799813685264 with variables
+{"orderId":1234}
+2019/06/06 20:54:36 Handler completed job 2251799813685264 with variables
+{"orderId":1234}
+2019/06/06 20:54:36 Activated job 2251799813685271 with variables
+{"orderId":1234}
+2019/06/06 20:54:36 Handler completed job 2251799813685271 with variables
+{"orderId":1234}
 ```
 
 After the job workers are running in the background we can create more instances

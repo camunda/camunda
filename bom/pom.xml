@@ -1,12 +1,10 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe BOM</name>
   <groupId>io.zeebe</groupId>
   <artifactId>zeebe-bom</artifactId>
-  <version>0.18.0-SNAPSHOT</version>
+  <version>0.19.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <inceptionYear>2017</inceptionYear>
   <url>http://zeebe.io/</url>
@@ -16,7 +14,7 @@
     <artifactId>camunda-release-parent</artifactId>
     <version>3.0</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
-    <relativePath/>
+    <relativePath />
   </parent>
 
   <properties>
@@ -181,6 +179,31 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <profiles>
+    <profile>
+      <id>sonatype-oss-release</id>
+      <properties>
+        <plugin.version.gpg>1.6</plugin.version.gpg>
+      </properties>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-gpg-plugin</artifactId>
+              <configuration>
+                <gpgArguments>
+                  <arg>--pinentry-mode</arg>
+                  <arg>loopback</arg>
+                </gpgArguments>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+  </profiles>
 
   <repositories>
     <repository>

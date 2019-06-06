@@ -16,6 +16,7 @@ organizationFolder('zeebe-io') {
                     strategyId(3)
                  }
                  pruneStaleBranchTrait()
+                 localBranchTrait()
             }
         }
     }

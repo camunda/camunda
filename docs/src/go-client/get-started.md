@@ -97,7 +97,7 @@ You should see similar output:
 
 ```
 Broker 0.0.0.0 : 26501
-  Partition 0 : Leader
+  Partition 1 : Leader
 ```
 
 ## Model a workflow
@@ -148,7 +148,7 @@ Run the program and verify that the workflow is deployed successfully.
 You should see similar the output:
 
 ```
-key:1 workflows:<bpmnProcessId:"order-process" version:1 workflowKey:1 resourceName:"order-process.bpmn" >
+key:2251799813686743 workflows:<bpmnProcessId:"order-process" version:3 workflowKey:2251799813686742 resourceName:"order-process.bpmn" >
 ```
 
 ## Create a workflow instance
@@ -162,6 +162,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/zeebe-io/zeebe/clients/go/zbc"
 )
 
@@ -174,10 +175,10 @@ func main() {
 	}
 
 	// After the workflow is deployed.
-	payload := make(map[string]interface{})
-	payload["orderId"] = "31243"
+	variables := make(map[string]interface{})
+	variables["orderId"] = "31243"
 
-	request, err := client.NewCreateInstanceCommand().BPMNProcessId("order-process").LatestVersion().VariablesFromMap(payload)
+	request, err := client.NewCreateInstanceCommand().BPMNProcessId("order-process").LatestVersion().VariablesFromMap(variables)
 	if err != nil {
 		panic(err)
 	}
@@ -194,7 +195,7 @@ func main() {
 Run the program and verify that the workflow instance is created. You should see the output:
 
 ```
-workflowKey:1 bpmnProcessId:"order-process" version:1 workflowInstanceKey:6
+workflowKey:2251799813686742 bpmnProcessId:"order-process" version:3 workflowInstanceKey:2251799813686744
 ```
 
 You did it! You want to see how the workflow instance is executed?
@@ -229,86 +230,87 @@ complete a job of the first task type:
 package main
 
 import (
-    "fmt"
-    "github.com/zeebe-io/zeebe/clients/go/entities"
-    "github.com/zeebe-io/zeebe/clients/go/worker"
-    "github.com/zeebe-io/zeebe/clients/go/zbc"
-    "log"
+	"fmt"
+	"log"
+
+	"github.com/zeebe-io/zeebe/clients/go/entities"
+	"github.com/zeebe-io/zeebe/clients/go/worker"
+	"github.com/zeebe-io/zeebe/clients/go/zbc"
 )
 
 const brokerAddr = "0.0.0.0:26500"
 
 func main() {
-    client, err := zbc.NewZBClient(brokerAddr)
-    if err != nil {
-        panic(err)
-    }
+	client, err := zbc.NewZBClient(brokerAddr)
+	if err != nil {
+		panic(err)
+	}
 
-    // deploy workflow
-    response, err := client.NewDeployWorkflowCommand().AddResourceFile("order-process.bpmn").Send()
-    if err != nil {
-        panic(err)
-    }
+	// deploy workflow
+	response, err := client.NewDeployWorkflowCommand().AddResourceFile("order-process.bpmn").Send()
+	if err != nil {
+		panic(err)
+	}
 
-    fmt.Println(response.String())
+	fmt.Println(response.String())
 
-    // create a new workflow instance
-    payload := make(map[string]interface{})
-    payload["orderId"] = "31243"
+	// create a new workflow instance
+	variables := make(map[string]interface{})
+	variables["orderId"] = "31243"
 
-    request, err := client.NewCreateInstanceCommand().BPMNProcessId("order-process").LatestVersion().VariablesFromMap(payload)
-    if err != nil {
-        panic(err)
-    }
+	request, err := client.NewCreateInstanceCommand().BPMNProcessId("order-process").LatestVersion().VariablesFromMap(variables)
+	if err != nil {
+		panic(err)
+	}
 
-    result, err := request.Send()
-    if err != nil {
-        panic(err)
-    }
+	result, err := request.Send()
+	if err != nil {
+		panic(err)
+	}
 
-    fmt.Println(result.String())
+	fmt.Println(result.String())
 
-    jobWorker := client.NewJobWorker().JobType("payment-service").Handler(handleJob).Open()
-    defer jobWorker.Close()
+	jobWorker := client.NewJobWorker().JobType("payment-service").Handler(handleJob).Open()
+	defer jobWorker.Close()
 
-    jobWorker.AwaitClose()
+	jobWorker.AwaitClose()
 }
 
 func handleJob(client worker.JobClient, job entities.Job) {
-    jobKey := job.GetKey()
+	jobKey := job.GetKey()
 
-    headers, err := job.GetCustomHeadersAsMap()
-    if err != nil {
-        // failed to handle job as we require the custom job headers
-        failJob(client, job)
-        return
-    }
+	headers, err := job.GetCustomHeadersAsMap()
+	if err != nil {
+		// failed to handle job as we require the custom job headers
+		failJob(client, job)
+		return
+	}
 
-    variables, err := job.GetVariablesAsMap()
-    if err != nil {
-        // failed to handle job as we require the variables
-        failJob(client, job)
-        return
-    }
+	variables, err := job.GetVariablesAsMap()
+	if err != nil {
+		// failed to handle job as we require the variables
+		failJob(client, job)
+		return
+	}
 
-    variables["totalPrice"] = 46.50;
-    request, err := client.NewCompleteJobCommand().JobKey(jobKey).VariablesFromMap(variables)
-    if err != nil {
-        // failed to set the updated variables
-        failJob(client, job)
-        return
-    }
+	variables["totalPrice"] = 46.50
+	request, err := client.NewCompleteJobCommand().JobKey(jobKey).VariablesFromMap(variables)
+	if err != nil {
+		// failed to set the updated variables
+		failJob(client, job)
+		return
+	}
 
-    log.Println("Complete job", jobKey, "of type", job.Type)
-    log.Println("Processing order:", variables["orderId"])
-    log.Println("Collect money using payment method:", headers["method"])
+	log.Println("Complete job", jobKey, "of type", job.Type)
+	log.Println("Processing order:", variables["orderId"])
+	log.Println("Collect money using payment method:", headers["method"])
 
-    request.Send()
+	request.Send()
 }
 
 func failJob(client worker.JobClient, job entities.Job) {
-    log.Println("Failed to complete job", job.GetKey())
-    client.NewFailJobCommand().JobKey(job.GetKey()).Retries(job.Retries - 1).Send()
+	log.Println("Failed to complete job", job.GetKey())
+	client.NewFailJobCommand().JobKey(job.GetKey()).Retries(job.Retries - 1).Send()
 }
 ```
 
@@ -325,11 +327,12 @@ When you have a look at the Zeebe Monitor, then you can see that the workflow in
 When you run the above example you should see similar output:
 
 ```
-key:26 workflows:<bpmnProcessId:"order-process" version:2 workflowKey:2 resourceName:"order-process.bpmn" >
-workflowKey:2 bpmnProcessId:"order-process" version:2 workflowInstanceKey:31
-2018/11/02 11:39:50 Complete job 2 of type payment-service
-2018/11/02 11:39:50 Processing order: 31243
-2018/11/02 11:39:50 Collect money using payment method: VISA
+key:2251799813686751 workflows:<bpmnProcessId:"order-process" version:4 workflowKey:2251799813686750 resourceName:"order-process.bpmn" >
+workflowKey:2251799813686750 bpmnProcessId:"order-process" version:4 workflowInstanceKey:22517998136
+86752
+2019/06/06 20:59:50 Complete job 2251799813686760 of type payment-service
+2019/06/06 20:59:50 Processing order: 31243
+2019/06/06 20:59:50 Collect money using payment method: VISA
 ```
 
 
