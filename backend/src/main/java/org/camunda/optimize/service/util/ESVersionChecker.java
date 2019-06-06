@@ -33,9 +33,9 @@ public class ESVersionChecker {
     supportedES.add("6.3.1");
     supportedES.add("6.4.0");
     supportedES.add("6.5.0");
-    warningES.add("6.6.0");
-    warningES.add("6.7.0");
-    warningES.add("6.8.0");
+    supportedES.add("6.6.0");
+    supportedES.add("6.7.0");
+    supportedES.add("6.8.0");
     warningES.add("6.9.0");
   }
 

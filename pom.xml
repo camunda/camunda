@@ -29,7 +29,7 @@
 
     <jackson.version>2.9.9</jackson.version>
     <jsonpath.version>2.4.0</jsonpath.version>
-    <elasticsearch.version>6.5.4</elasticsearch.version>
+    <elasticsearch.version>6.6.2</elasticsearch.version>
     <!--The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>6.2.0</elasticsearch.test.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
