@@ -28,14 +28,14 @@ import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.RecordMetadata;
 import io.zeebe.exporter.api.record.value.JobBatchRecordValue;
 import io.zeebe.exporter.api.record.value.JobRecordValue;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.RejectionType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
+import io.zeebe.test.broker.protocol.commandapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.commandapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -48,7 +48,7 @@ public class FailJobTest {
   private static final String JOB_TYPE = "foo";
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
+  public CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.test.broker.protocol.clientapi;
+package io.zeebe.test.broker.protocol.commandapi;
 
-import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
-import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ErrorResponseDecoder;
+import io.zeebe.protocol.ExecuteCommandResponseDecoder;
+import io.zeebe.protocol.MessageHeaderDecoder;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.RejectionType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.buffer.BufferReader;

@@ -42,7 +42,7 @@ import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.IncidentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;

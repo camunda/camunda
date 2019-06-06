@@ -18,7 +18,7 @@
 package io.zeebe.engine.processor;
 
 import io.zeebe.engine.processor.CommandProcessor.CommandControl;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.intent.Intent;
 

@@ -15,15 +15,15 @@
  */
 package io.zeebe.protocol.impl.encoding;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.keyNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.partitionIdNullValue;
+import static io.zeebe.protocol.ExecuteCommandRequestEncoder.keyNullValue;
+import static io.zeebe.protocol.ExecuteCommandRequestEncoder.partitionIdNullValue;
 
+import io.zeebe.protocol.ExecuteCommandRequestDecoder;
+import io.zeebe.protocol.ExecuteCommandRequestEncoder;
+import io.zeebe.protocol.MessageHeaderDecoder;
+import io.zeebe.protocol.MessageHeaderEncoder;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
-import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;

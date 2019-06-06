@@ -21,9 +21,9 @@ import static io.zeebe.protocol.intent.MessageIntent.PUBLISH;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandRequestBuilder;
+import io.zeebe.protocol.ValueType;
+import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
+import io.zeebe.test.broker.protocol.commandapi.ExecuteCommandRequestBuilder;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -32,7 +32,7 @@ public class RejectIncompleteCommandsTest {
 
   private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
 
-  private static final ClientApiRule API_RULE = new ClientApiRule(BROKER_RULE::getAtomix);
+  private static final CommandApiRule API_RULE = new CommandApiRule(BROKER_RULE::getAtomix);
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(API_RULE);
 

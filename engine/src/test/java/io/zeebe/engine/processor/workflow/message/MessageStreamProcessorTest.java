@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.intent.MessageIntent;

@@ -70,9 +70,9 @@
 [network]
 
 # This section contains the network configuration. Particularly, it allows to
-# configure the hosts and ports the broker should bind to. the broker exposes 2
-# ports: 1. client: the port on which client (Java, CLI, Go, ...) connections
-# are handled 2. atomix: used for internal cluster communication.
+# configure the hosts and ports the broker should bind to. The broker exposes two sockets:
+# 1. command: the socket which is used for gateway-to-broker communication
+# 2. internal: the socket which is used for broker-to-broker communication
 
 # Controls the default host the broker should bind to. Can be overwritten on a
 # per binding basis for client, management and replication
@@ -90,34 +90,22 @@
 # This setting can also be overridden using the environment variable ZEEBE_PORT_OFFSET.
 # portOffset = 0
 
-# Controls the default size of the buffers that are used for buffering outgoing
-# messages. Can be overwritten on a per binding basis for client, management and
-# replication
-# defaultSendBufferSize = "16M"
-
-[network.client]
-
-# Allows to override the host the client api binds to
+[network.commandApi]
+# Overrides the host used for gateway-to-broker communication
 # host = "localhost"
-#
-# The port the client api binds to
+
+# Sets the port used for gateway-to-broker communication
 # port = 26501
-#
-# Overrides the size of the buffer used for buffering outgoing messages to
-# clients
+
+# Sets the size of the buffer used for buffering outgoing messages
 # sendBufferSize = "16M"
-#
-# Sets the size of the buffer used for receiving control messages from clients
-# (such as management of subscriptions)
-# controlMessageBufferSize = "8M"
 
-[network.atomix]
-
-# Overrides the host used by atomix for cluster communication
+[network.internalApi]
+# Overrides the host used for internal broker-to-broker communication
 # host = "localhost"
-#
-# Sets the port used by atomix for cluster communication
-# port = 26505
+
+# Sets the port used for internal broker-to-broker communication
+# port = 26502
 
 
 [data]
@@ -194,10 +182,10 @@
 # clusterSize = 1
 
 # Allows to specify a list of known other nodes to connect to on startup
-# The contact points of the atomix configuration must be specified.
+# The contact points of the internal network configuration must be specified.
 # The format is [HOST:PORT]
 # Example:
-# initialContactPoints = [ "192.168.1.22:26505", "192.168.1.32:26505" ]
+# initialContactPoints = [ "192.168.1.22:26502", "192.168.1.32:26502" ]
 #
 # This setting can also be overridden using the environment variable ZEEBE_CONTACT_POINTS
 # specifying a comma-separated list of contact points.

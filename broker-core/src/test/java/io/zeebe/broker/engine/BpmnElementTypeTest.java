@@ -26,8 +26,8 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
+import io.zeebe.test.broker.protocol.commandapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -50,7 +50,7 @@ import org.junit.runners.Parameterized.Parameters;
 public class BpmnElementTypeTest {
 
   public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
+  public static CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

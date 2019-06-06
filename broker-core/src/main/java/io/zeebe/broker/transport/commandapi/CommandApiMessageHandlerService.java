@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.transport.clientapi;
+package io.zeebe.broker.transport.commandapi;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.servicecontainer.Service;
@@ -23,8 +23,8 @@ import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 
-public class ClientApiMessageHandlerService implements Service<ClientApiMessageHandler> {
-  protected ClientApiMessageHandler service;
+public class CommandApiMessageHandlerService implements Service<CommandApiMessageHandler> {
+  protected CommandApiMessageHandler service;
 
   protected final ServiceGroupReference<Partition> leaderPartitionsGroupReference =
       ServiceGroupReference.<Partition>create()
@@ -34,7 +34,7 @@ public class ClientApiMessageHandlerService implements Service<ClientApiMessageH
 
   @Override
   public void start(ServiceStartContext startContext) {
-    service = new ClientApiMessageHandler();
+    service = new CommandApiMessageHandler();
   }
 
   @Override
@@ -43,7 +43,7 @@ public class ClientApiMessageHandlerService implements Service<ClientApiMessageH
   }
 
   @Override
-  public ClientApiMessageHandler get() {
+  public CommandApiMessageHandler get() {
     return service;
   }
 

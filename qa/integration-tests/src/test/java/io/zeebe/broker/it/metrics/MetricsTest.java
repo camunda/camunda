@@ -177,6 +177,6 @@ public class MetricsTest {
   }
 
   private Entry<String, String> nodeLabel() {
-    return entry("node", brokerRule.getClientAddress().toString());
+    return entry("node", brokerRule.getCommandAdress().toString());
   }
 }

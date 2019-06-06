@@ -17,42 +17,11 @@
  */
 package io.zeebe.broker.system.configuration;
 
-public class SocketBindingAtomixCfg extends SocketBindingCfg {
-  private String receiveBufferSize = "8M";
+public class SocketBindingCommandApiCfg extends SocketBindingCfg {
 
-  public static final int DEFAULT_PORT = 26505;
+  public static final int DEFAULT_PORT = 26501;
 
-  public SocketBindingAtomixCfg() {
+  public SocketBindingCommandApiCfg() {
     port = DEFAULT_PORT;
-  }
-
-  @Override
-  public void applyDefaults(NetworkCfg networkCfg) {
-    super.applyDefaults(networkCfg);
-  }
-
-  public String getReceiveBufferSize() {
-    return receiveBufferSize;
-  }
-
-  public void setReceiveBufferSize(String receiveBufferSize) {
-    this.receiveBufferSize = receiveBufferSize;
-  }
-
-  @Override
-  public String toString() {
-    return "SocketBindingAtomixCfg{"
-        + "receiveBufferSize='"
-        + receiveBufferSize
-        + '\''
-        + ", host='"
-        + host
-        + '\''
-        + ", port="
-        + port
-        + ", sendBufferSize='"
-        + sendBufferSize
-        + '\''
-        + '}';
   }
 }

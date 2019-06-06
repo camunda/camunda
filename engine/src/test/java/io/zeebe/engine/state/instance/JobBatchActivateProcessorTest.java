@@ -28,7 +28,7 @@ import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.job.JobBatchActivateProcessor;
 import io.zeebe.engine.util.MockTypedRecord;
 import io.zeebe.engine.util.ZeebeStateRule;
-import io.zeebe.protocol.clientapi.VarDataEncodingEncoder;
+import io.zeebe.protocol.VarDataEncodingEncoder;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;

@@ -17,8 +17,8 @@
  */
 package io.zeebe.engine.processor;
 
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.intent.Intent;
 import java.util.ArrayList;

@@ -15,7 +15,7 @@
  */
 package io.zeebe.gateway.impl.broker.request;
 
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.intent.IncidentIntent;
 import org.agrona.DirectBuffer;

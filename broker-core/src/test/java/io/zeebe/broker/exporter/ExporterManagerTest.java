@@ -29,8 +29,8 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
+import io.zeebe.test.broker.protocol.commandapi.PartitionTestClient;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.Before;
@@ -55,7 +55,7 @@ public class ExporterManagerTest {
             brokerCfg.getExporters().add(exporterCfg);
           });
 
-  public ClientApiRule clientRule = new ClientApiRule(brokerRule::getAtomix);
+  public CommandApiRule clientRule = new CommandApiRule(brokerRule::getAtomix);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   private PartitionTestClient testClient;

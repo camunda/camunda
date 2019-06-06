@@ -26,13 +26,13 @@ import io.zeebe.broker.test.MsgPackConstants;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.msgpack.spec.MsgPackHelper;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.RejectionType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
+import io.zeebe.test.broker.protocol.commandapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.commandapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,7 +43,7 @@ public class CompleteJobTest {
   private static final String JOB_TYPE = "foo";
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
+  public CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
 
   private PartitionTestClient testClient;
 

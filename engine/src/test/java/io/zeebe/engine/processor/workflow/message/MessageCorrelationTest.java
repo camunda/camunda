@@ -32,7 +32,7 @@ import io.zeebe.exporter.api.record.value.deployment.DeployedWorkflow;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;

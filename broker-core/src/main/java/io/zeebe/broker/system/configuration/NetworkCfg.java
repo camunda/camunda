@@ -27,18 +27,17 @@ public class NetworkCfg implements ConfigurationEntry {
   public static final String DEFAULT_HOST = "0.0.0.0";
 
   private String host = DEFAULT_HOST;
-  private String defaultSendBufferSize = "16M";
   private int portOffset = 0;
 
-  private SocketBindingClientApiCfg client = new SocketBindingClientApiCfg();
-  private SocketBindingAtomixCfg atomix = new SocketBindingAtomixCfg();
+  private SocketBindingCommandApiCfg commandApi = new SocketBindingCommandApiCfg();
+  private SocketBindingInternalCfg internalApi = new SocketBindingInternalCfg();
 
   @Override
   public void init(
       final BrokerCfg brokerCfg, final String brokerBase, final Environment environment) {
     applyEnvironment(environment);
-    client.applyDefaults(this);
-    atomix.applyDefaults(this);
+    commandApi.applyDefaults(this);
+    internalApi.applyDefaults(this);
   }
 
   private void applyEnvironment(final Environment environment) {
@@ -54,14 +53,6 @@ public class NetworkCfg implements ConfigurationEntry {
     this.host = host;
   }
 
-  public String getDefaultSendBufferSize() {
-    return defaultSendBufferSize;
-  }
-
-  public void setDefaultSendBufferSize(final String defaultSendBufferSize) {
-    this.defaultSendBufferSize = defaultSendBufferSize;
-  }
-
   public int getPortOffset() {
     return portOffset;
   }
@@ -70,20 +61,20 @@ public class NetworkCfg implements ConfigurationEntry {
     this.portOffset = portOffset;
   }
 
-  public SocketBindingClientApiCfg getClient() {
-    return client;
+  public SocketBindingCommandApiCfg getCommandApi() {
+    return commandApi;
   }
 
-  public void setClient(final SocketBindingClientApiCfg clientApi) {
-    this.client = clientApi;
+  public void setCommandApi(final SocketBindingCommandApiCfg commandApi) {
+    this.commandApi = commandApi;
   }
 
-  public SocketBindingAtomixCfg getAtomix() {
-    return atomix;
+  public SocketBindingInternalCfg getInternalApi() {
+    return internalApi;
   }
 
-  public void setAtomix(SocketBindingAtomixCfg atomix) {
-    this.atomix = atomix;
+  public void setInternalApi(SocketBindingInternalCfg internalApi) {
+    this.internalApi = internalApi;
   }
 
   @Override
@@ -92,13 +83,12 @@ public class NetworkCfg implements ConfigurationEntry {
         + "host='"
         + host
         + '\''
-        + ", defaultSendBufferSize='"
-        + defaultSendBufferSize
-        + '\''
         + ", portOffset="
         + portOffset
-        + ", client="
-        + client
+        + ", commandApi="
+        + commandApi
+        + ", internalApi="
+        + internalApi
         + '}';
   }
 }

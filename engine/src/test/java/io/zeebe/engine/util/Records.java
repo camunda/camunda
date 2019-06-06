@@ -19,8 +19,8 @@ package io.zeebe.engine.util;
 
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;

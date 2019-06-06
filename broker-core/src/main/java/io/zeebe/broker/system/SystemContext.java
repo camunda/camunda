@@ -99,8 +99,9 @@ public class SystemContext implements AutoCloseable {
     brokerCfg.init(basePath);
     validateConfiguration();
 
-    final SocketBindingCfg clientApiCfg = brokerCfg.getNetwork().getClient();
-    final String brokerId = String.format("%s:%d", clientApiCfg.getHost(), clientApiCfg.getPort());
+    final SocketBindingCfg commandApiCfg = brokerCfg.getNetwork().getCommandApi();
+    final String brokerId =
+        String.format("%s:%d", commandApiCfg.getHost(), commandApiCfg.getPort());
 
     this.diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
 

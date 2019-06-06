@@ -59,8 +59,7 @@ public interface Record<T extends RecordValue> {
 
   /**
    * Retrieves relevant metadata of the record, such as the type of the value ({@link
-   * io.zeebe.protocol.clientapi.ValueType}), the type of record ({@link
-   * io.zeebe.protocol.clientapi.RecordType}), etc.
+   * io.zeebe.protocol.ValueType}), the type of record ({@link io.zeebe.protocol.RecordType}), etc.
    *
    * @return record metadata
    */

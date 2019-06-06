@@ -40,7 +40,7 @@ public class BrokerInfo {
   }
 
   public static final String PROPERTY_NAME = "brokerInfo";
-  public static final String CLIENT_API_PROPERTY = "client";
+  public static final String COMMAND_API_PROPERTY = "command";
 
   // static configurations
   private int nodeId;

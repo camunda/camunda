@@ -37,15 +37,15 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.clientapi.VarDataEncodingEncoder;
+import io.zeebe.protocol.RejectionType;
+import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.VarDataEncodingEncoder;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
+import io.zeebe.test.broker.protocol.commandapi.ExecuteCommandResponse;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.TestUtil;
@@ -79,7 +79,7 @@ public class ActivateJobsTest {
 
   public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
+  public static CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

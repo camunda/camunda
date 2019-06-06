@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.test.broker.protocol.clientapi;
+package io.zeebe.test.broker.protocol.commandapi;
 
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.ErrorCode;
+import io.zeebe.protocol.ErrorResponseDecoder;
+import io.zeebe.protocol.MessageHeaderDecoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;

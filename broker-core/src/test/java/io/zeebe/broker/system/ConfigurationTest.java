@@ -47,8 +47,8 @@ import io.zeebe.broker.system.configuration.EmbeddedGatewayCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.MetricsCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.broker.system.configuration.SocketBindingAtomixCfg;
-import io.zeebe.broker.system.configuration.SocketBindingClientApiCfg;
+import io.zeebe.broker.system.configuration.SocketBindingCommandApiCfg;
+import io.zeebe.broker.system.configuration.SocketBindingInternalCfg;
 import io.zeebe.util.Environment;
 import io.zeebe.util.TomlConfigurationReader;
 import java.io.ByteArrayInputStream;
@@ -71,9 +71,9 @@ public class ConfigurationTest {
 
   public Map<String, String> environment = new HashMap<>();
 
-  public static final int CLIENT_PORT = SocketBindingClientApiCfg.DEFAULT_PORT;
+  public static final int CLIENT_PORT = SocketBindingCommandApiCfg.DEFAULT_PORT;
   public static final int METRICS_PORT = MetricsCfg.DEFAULT_PORT;
-  public static final int ATOMIX_PORT = SocketBindingAtomixCfg.DEFAULT_PORT;
+  public static final int ATOMIX_PORT = SocketBindingInternalCfg.DEFAULT_PORT;
 
   @Test
   public void shouldUseSpecifiedClusterName() {
@@ -226,7 +226,12 @@ public class ConfigurationTest {
   @Test
   public void shouldUseSpecifiedHosts() {
     assertHost(
-        "specific-hosts", DEFAULT_HOST, "gatewayHost", "clientHost", "atomixHost", "metricsHost");
+        "specific-hosts",
+        DEFAULT_HOST,
+        "gatewayHost",
+        "commandHost",
+        "internalHost",
+        "metricsHost");
   }
 
   @Test
@@ -250,7 +255,7 @@ public class ConfigurationTest {
   public void shouldNotOverrideSpecifiedHostsFromEnvironment() {
     environment.put(ENV_HOST, "myHost");
     assertHost(
-        "specific-hosts", "myHost", "gatewayHost", "clientHost", "atomixHost", "metricsHost");
+        "specific-hosts", "myHost", "gatewayHost", "commandHost", "internalHost", "metricsHost");
   }
 
   @Test
@@ -509,11 +514,11 @@ public class ConfigurationTest {
   }
 
   private void assertPorts(
-      final String configFileName, final int client, final int atomix, final int metrics) {
+      final String configFileName, final int command, final int internal, final int metrics) {
     final BrokerCfg brokerCfg = readConfig(configFileName);
     final NetworkCfg network = brokerCfg.getNetwork();
-    assertThat(network.getClient().getPort()).isEqualTo(client);
-    assertThat(network.getAtomix().getPort()).isEqualTo(atomix);
+    assertThat(network.getCommandApi().getPort()).isEqualTo(command);
+    assertThat(network.getInternalApi().getPort()).isEqualTo(internal);
     assertThat(brokerCfg.getMetrics().getPort()).isEqualTo(metrics);
   }
 
@@ -525,15 +530,15 @@ public class ConfigurationTest {
       final String configFileName,
       final String host,
       final String gateway,
-      final String client,
-      final String atomix,
+      final String command,
+      final String internal,
       final String metrics) {
     final BrokerCfg brokerCfg = readConfig(configFileName);
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     assertThat(networkCfg.getHost()).isEqualTo(host);
     assertThat(brokerCfg.getGateway().getNetwork().getHost()).isEqualTo(gateway);
-    assertThat(networkCfg.getClient().getHost()).isEqualTo(client);
-    assertThat(networkCfg.getAtomix().getHost()).isEqualTo(atomix);
+    assertThat(networkCfg.getCommandApi().getHost()).isEqualTo(command);
+    assertThat(networkCfg.getInternalApi().getHost()).isEqualTo(internal);
     assertThat(brokerCfg.getMetrics().getHost()).isEqualTo(metrics);
   }
 

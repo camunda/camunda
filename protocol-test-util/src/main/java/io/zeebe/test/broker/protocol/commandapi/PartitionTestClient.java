@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.test.broker.protocol.clientapi;
+package io.zeebe.test.broker.protocol.commandapi;
 
 import static io.zeebe.protocol.intent.JobIntent.ACTIVATED;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
@@ -33,9 +33,9 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.VariableDocumentUpdateSemantic;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -90,10 +90,10 @@ public class PartitionTestClient {
   public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
   public static final String PROP_WORKFLOW_KEY = "workflowKey";
 
-  private final ClientApiRule apiRule;
+  private final CommandApiRule apiRule;
   private final int partitionId;
 
-  public PartitionTestClient(final ClientApiRule apiRule, final int partitionId) {
+  public PartitionTestClient(final CommandApiRule apiRule, final int partitionId) {
     this.apiRule = apiRule;
     this.partitionId = partitionId;
   }

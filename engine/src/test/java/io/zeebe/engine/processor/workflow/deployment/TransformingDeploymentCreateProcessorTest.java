@@ -35,7 +35,7 @@ import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import java.util.List;

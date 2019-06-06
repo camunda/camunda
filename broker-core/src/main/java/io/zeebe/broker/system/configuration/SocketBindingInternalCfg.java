@@ -17,36 +17,11 @@
  */
 package io.zeebe.broker.system.configuration;
 
-public class SocketBindingGatewayCfg extends SocketBindingCfg {
+public class SocketBindingInternalCfg extends SocketBindingCfg {
 
-  public static final int DEFAULT_PORT = 26500;
-  private boolean enabled = true;
+  public static final int DEFAULT_PORT = 26502;
 
-  public SocketBindingGatewayCfg() {
+  public SocketBindingInternalCfg() {
     port = DEFAULT_PORT;
-  }
-
-  public boolean isEnabled() {
-    return enabled;
-  }
-
-  public void setEnabled(final boolean enabled) {
-    this.enabled = enabled;
-  }
-
-  @Override
-  public String toString() {
-    return "SocketBindingGatewayCfg{"
-        + "enabled="
-        + enabled
-        + ", host='"
-        + host
-        + '\''
-        + ", port="
-        + port
-        + ", sendBufferSize='"
-        + sendBufferSize
-        + '\''
-        + '}';
   }
 }

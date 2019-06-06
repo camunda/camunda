@@ -39,8 +39,8 @@ public class EngineComponent implements Component {
     serviceContainer
         .createService(ENGINE_SERVICE_NAME, streamProcessorService)
         .dependency(
-            TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME),
-            streamProcessorService.getClientApiTransportInjector())
+            TransportServiceNames.serverTransport(TransportServiceNames.COMMAND_API_SERVER_NAME),
+            streamProcessorService.getCommandApiTransportInjector())
         .dependency(
             ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE,
             streamProcessorService.getTopologyManagerInjector())

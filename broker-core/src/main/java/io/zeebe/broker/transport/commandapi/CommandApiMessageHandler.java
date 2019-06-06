@@ -15,18 +15,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.transport.clientapi;
+package io.zeebe.broker.transport.commandapi;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.ExecuteCommandRequestDecoder;
+import io.zeebe.protocol.MessageHeaderDecoder;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -48,7 +48,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.slf4j.Logger;
 
-public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequestHandler {
+public class CommandApiMessageHandler implements ServerMessageHandler, ServerRequestHandler {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -66,7 +66,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
 
   protected final EnumMap<ValueType, UnpackedObject> recordsByType = new EnumMap<>(ValueType.class);
 
-  public ClientApiMessageHandler() {
+  public CommandApiMessageHandler() {
     initEventTypeMap();
   }
 

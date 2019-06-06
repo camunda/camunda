@@ -15,14 +15,14 @@
  */
 package io.zeebe.protocol.impl.record;
 
+import io.zeebe.protocol.MessageHeaderDecoder;
+import io.zeebe.protocol.MessageHeaderEncoder;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
-import io.zeebe.protocol.clientapi.RecordMetadataDecoder;
-import io.zeebe.protocol.clientapi.RecordMetadataEncoder;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordMetadataDecoder;
+import io.zeebe.protocol.RecordMetadataEncoder;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.RejectionType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferUtil;

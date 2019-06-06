@@ -15,10 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.transport.clientapi;
+package io.zeebe.broker.transport.commandapi;
 
-import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.ErrorResponseDecoder;
+import io.zeebe.protocol.MessageHeaderDecoder;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;

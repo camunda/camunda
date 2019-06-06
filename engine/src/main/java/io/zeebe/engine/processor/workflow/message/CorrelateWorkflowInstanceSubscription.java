@@ -30,7 +30,7 @@ import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;

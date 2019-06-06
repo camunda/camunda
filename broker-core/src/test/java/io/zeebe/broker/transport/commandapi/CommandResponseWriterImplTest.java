@@ -15,16 +15,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.transport.clientapi;
+package io.zeebe.broker.transport.commandapi;
 
 import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.VarDataUtil.readBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ExecuteCommandResponseDecoder;
+import io.zeebe.protocol.MessageHeaderDecoder;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.concurrent.UnsafeBuffer;

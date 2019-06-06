@@ -22,22 +22,22 @@ import org.agrona.collections.IntHashSet;
 
 public class NodeInfo {
   private final int nodeId;
-  private final SocketAddress clientApiAddress;
+  private final SocketAddress commandApiAddress;
 
   private final IntHashSet leaders = new IntHashSet();
   private final IntHashSet followers = new IntHashSet();
 
-  public NodeInfo(int nodeId, final SocketAddress clientApiAddress) {
+  public NodeInfo(int nodeId, final SocketAddress commandApiAddress) {
     this.nodeId = nodeId;
-    this.clientApiAddress = clientApiAddress;
+    this.commandApiAddress = commandApiAddress;
   }
 
   public int getNodeId() {
     return nodeId;
   }
 
-  public SocketAddress getClientApiAddress() {
-    return clientApiAddress;
+  public SocketAddress getCommandApiAddress() {
+    return commandApiAddress;
   }
 
   public IntHashSet getLeaders() {
@@ -66,14 +66,14 @@ public class NodeInfo {
 
   @Override
   public String toString() {
-    return String.format("Node{nodeId=%d, clientApi=%s}", nodeId, clientApiAddress);
+    return String.format("Node{nodeId=%d, commandApi=%s}", nodeId, commandApiAddress);
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + ((clientApiAddress == null) ? 0 : clientApiAddress.hashCode());
+    result = prime * result + ((commandApiAddress == null) ? 0 : commandApiAddress.hashCode());
     return result;
   }
 
@@ -89,10 +89,10 @@ public class NodeInfo {
       return false;
     }
     final NodeInfo other = (NodeInfo) obj;
-    if (clientApiAddress == null) {
-      return other.clientApiAddress == null;
+    if (commandApiAddress == null) {
+      return other.commandApiAddress == null;
     } else {
-      return clientApiAddress.equals(other.clientApiAddress);
+      return commandApiAddress.equals(other.commandApiAddress);
     }
   }
 }

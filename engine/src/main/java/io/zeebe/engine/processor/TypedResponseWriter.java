@@ -18,7 +18,7 @@
 package io.zeebe.engine.processor;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.intent.Intent;
 
 public interface TypedResponseWriter {

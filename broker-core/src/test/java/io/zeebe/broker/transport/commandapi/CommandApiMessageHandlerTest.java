@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.transport.clientapi;
+package io.zeebe.broker.transport.commandapi;
 
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
@@ -34,12 +34,12 @@ import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.state.StateStorage;
+import io.zeebe.protocol.ErrorCode;
+import io.zeebe.protocol.ErrorResponseDecoder;
+import io.zeebe.protocol.ExecuteCommandRequestEncoder;
+import io.zeebe.protocol.MessageHeaderEncoder;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
-import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
-import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.Intent;
@@ -67,7 +67,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.mockito.stubbing.Answer;
 
-public class ClientApiMessageHandlerTest {
+public class CommandApiMessageHandlerTest {
   protected static final RemoteAddress DEFAULT_ADDRESS =
       new RemoteAddressImpl(21, new SocketAddress("foo", 4242));
   protected static final int LOG_STREAM_PARTITION_ID = 1;
@@ -97,7 +97,7 @@ public class ClientApiMessageHandlerTest {
 
   protected BufferingServerOutput serverOutput;
   private LogStream logStream;
-  private ClientApiMessageHandler messageHandler;
+  private CommandApiMessageHandler messageHandler;
   private DistributedLogstreamService distributedLogImpl;
 
   @Before
@@ -180,7 +180,7 @@ public class ClientApiMessageHandlerTest {
 
     logStream.openAppender().join();
 
-    messageHandler = new ClientApiMessageHandler();
+    messageHandler = new CommandApiMessageHandler();
     messageHandler.addPartition(logStream);
   }
 

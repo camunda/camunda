@@ -15,15 +15,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.transport.clientapi;
+package io.zeebe.broker.transport.commandapi;
 
 import static io.zeebe.util.StringUtil.getBytes;
 import static java.lang.String.format;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.ErrorResponseEncoder;
-import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
+import io.zeebe.protocol.ErrorCode;
+import io.zeebe.protocol.ErrorResponseEncoder;
+import io.zeebe.protocol.MessageHeaderEncoder;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.EnsureUtil;
