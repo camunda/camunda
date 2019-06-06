@@ -62,7 +62,7 @@ public class ExporterTestHarness {
    *
    * @param id the ID of the exporter
    */
-  public void configure(String id) {
+  public void configure(String id) throws Exception {
     final MockConfiguration<Object> configuration = new MockConfiguration<>();
     configuration.setId(id);
 
@@ -91,7 +91,7 @@ public class ExporterTestHarness {
    * @param id id of the exporter
    * @param toml the reference TOML document
    */
-  public void configure(String id, InputStream toml) {
+  public void configure(String id, InputStream toml) throws Exception {
     final BrokerCfg config = new Toml().read(toml).to(BrokerCfg.class);
     configure(id, config);
   }
@@ -103,7 +103,7 @@ public class ExporterTestHarness {
    * @param id the exporter ID
    * @param configFile pointer to a TOML configuration file
    */
-  public void configure(String id, File configFile) {
+  public void configure(String id, File configFile) throws Exception {
     final BrokerCfg config = new Toml().read(configFile).to(BrokerCfg.class);
     configure(id, config);
   }
@@ -118,7 +118,7 @@ public class ExporterTestHarness {
    * @param config new return value of {@link Configuration#instantiate(Class)}
    * @param <T> type of the configuration class
    */
-  public <T> void configure(String id, T config) {
+  public <T> void configure(String id, T config) throws Exception {
     final MockConfiguration<T> configuration = new MockConfiguration<>(config);
     configuration.setId(id);
 
@@ -261,7 +261,7 @@ public class ExporterTestHarness {
     return controller.getPosition();
   }
 
-  private void configure(String id, BrokerCfg brokerCfg) {
+  private void configure(String id, BrokerCfg brokerCfg) throws Exception {
     final Optional<ExporterCfg> config =
         brokerCfg.getExporters().stream().filter(c -> c.getId().equals(id)).findFirst();
 

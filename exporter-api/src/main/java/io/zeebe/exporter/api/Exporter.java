@@ -40,7 +40,7 @@ public interface Exporter {
    *
    * @param context the exporter context
    */
-  default void configure(Context context) {}
+  default void configure(Context context) throws Exception {}
 
   /**
    * Hook to perform any setup for a given exporter. This method is the first method called during

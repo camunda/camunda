@@ -314,7 +314,11 @@ public class ElasticsearchExporterTest {
 
   private void openExporter(ElasticsearchExporter exporter) {
     testHarness = new ExporterTestHarness(exporter);
-    testHarness.configure("elasticsearch", config);
+    try {
+      testHarness.configure("elasticsearch", config);
+    } catch (Exception e) {
+      throw new AssertionError("Failed to configure exporter", e);
+    }
     testHarness.open();
   }
 
