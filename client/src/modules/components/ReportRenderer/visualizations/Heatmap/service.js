@@ -190,7 +190,7 @@ function drawSequenceFlow(data, waypoints, value, {xOffset, yOffset}) {
 
 export function addDiagramTooltip(viewer, element, tooltipContent) {
   const elementGraphics = viewer.get('elementRegistry').getGraphics(element);
-  if (!elementGraphics) {
+  if (!elementGraphics || !tooltipContent) {
     return;
   }
 

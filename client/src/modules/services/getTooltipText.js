@@ -12,6 +12,10 @@ export default function getTooltipText(
   alwaysShowRelative,
   isDuration
 ) {
+  if (!data && data !== 0) {
+    return '';
+  }
+
   const absolute = formatter(data);
   const relative = getRelativeValue(data, processInstanceCount);
 
