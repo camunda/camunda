@@ -14,25 +14,24 @@ import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.util.Map;
 
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByEndDate;
 
-
-public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT
+public class AutomaticIntervalSelectionGroupByEndDateReportEvaluationIT
   extends AbstractAutomaticIntervalSelectionGroupByDateReportEvaluationIT {
 
   @Override
   protected ProcessReportDataDto getReportData(String key, String version) {
-    return createCountProcessInstanceFrequencyGroupByStartDate(key, version, GroupByDateUnit.AUTOMATIC);
+    return createCountProcessInstanceFrequencyGroupByEndDate(key, version, GroupByDateUnit.AUTOMATIC);
   }
 
   @Override
   protected void updateProcessInstanceDates(final Map<String, OffsetDateTime> updates) throws SQLException {
-    engineDatabaseRule.updateProcessInstanceStartDates(updates);
+    engineDatabaseRule.updateProcessInstanceEndDates(updates);
   }
 
   @Override
   protected void updateProcessInstanceDate(final ZonedDateTime min, final ProcessInstanceEngineDto procInstMin) throws
                                                                                                                 SQLException {
-    engineDatabaseRule.changeProcessInstanceStartDate(procInstMin.getId(), min.toOffsetDateTime());
+    engineDatabaseRule.changeProcessInstanceEndDate(procInstMin.getId(), min.toOffsetDateTime());
   }
 }

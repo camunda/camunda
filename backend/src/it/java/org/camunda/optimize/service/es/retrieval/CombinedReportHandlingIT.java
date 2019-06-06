@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -30,10 +31,12 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,6 +44,7 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -54,6 +58,8 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByEndDate;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeTableReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone;
@@ -79,10 +85,11 @@ public class CombinedReportHandlingIT {
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  protected EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
 
   @After
   public void cleanUp() {
@@ -325,6 +332,48 @@ public class CombinedReportHandlingIT {
       .getResult()
       .getData();
     assertThat(userTaskCount2.size(), is(3));
+  }
+
+  @Test
+  public void canSaveAndEvaluateCombinedReportsWithStartAndEndDateGroupedReports() throws SQLException {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
+    engineRule.finishAllRunningUserTasks(engineDto.getId());
+    engineDatabaseRule.changeProcessInstanceStartDate(engineDto.getId(), now.minusDays(2L));
+
+    engineRule.startProcessInstance(engineDto.getDefinitionId());
+
+    String singleReportId1 = createNewSingleReportGroupByEndDate(engineDto, GroupByDateUnit.DAY);
+    String singleReportId2 = createNewSingleReportGroupByStartDate(engineDto, GroupByDateUnit.DAY);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final String combinedReportId = createNewCombinedReport(singleReportId1, singleReportId2);
+    final CombinedReportEvaluationResultDto<ProcessCountReportMapResultDto>
+      result = evaluateCombinedReportById(combinedReportId);
+
+
+    // then
+    final Map<String, ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>> resultMap = result.getResult()
+      .getData();
+    assertThat(resultMap, is(CoreMatchers.notNullValue()));
+    assertThat(resultMap.size(), is(2));
+    assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
+
+    final ProcessCountReportMapResultDto result1 = resultMap.get(singleReportId1)
+      .getResult();
+    final List<MapResultEntryDto<Long>> resultData1 = result1.getData();
+    assertThat(resultData1, is(CoreMatchers.notNullValue()));
+    assertThat(resultData1.size(), is(1));
+
+    final ProcessCountReportMapResultDto result2 = resultMap.get(singleReportId2)
+      .getResult();
+    final List<MapResultEntryDto<Long>> resultData2 = result2.getData();
+    assertThat(resultData2, is(CoreMatchers.notNullValue()));
+    assertThat(resultData2.size(), is(3));
   }
 
   @Test
@@ -683,6 +732,45 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
+  public void canEvaluateUnsavedCombinedReportWithStartAndEndDateGroupedReports() throws SQLException {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
+    engineRule.finishAllRunningUserTasks(engineDto.getId());
+    engineDatabaseRule.changeProcessInstanceStartDate(engineDto.getId(), now.minusDays(2L));
+
+    engineRule.startProcessInstance(engineDto.getDefinitionId());
+
+    String singleReportId1 = createNewSingleReportGroupByEndDate(engineDto, GroupByDateUnit.DAY);
+    String singleReportId2 = createNewSingleReportGroupByStartDate(engineDto, GroupByDateUnit.DAY);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final CombinedReportEvaluationResultDto<ProcessCountReportMapResultDto> result = evaluateUnsavedCombined(
+      createCombinedReport(singleReportId1, singleReportId2));
+
+    // then
+    final Map<String, ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>> resultMap = result.getResult()
+      .getData();
+    assertThat(resultMap, is(CoreMatchers.notNullValue()));
+    assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
+
+    final ProcessCountReportMapResultDto result1 = resultMap.get(singleReportId1)
+      .getResult();
+    final List<MapResultEntryDto<Long>> resultData1 = result1.getData();
+    assertThat(resultData1, is(CoreMatchers.notNullValue()));
+    assertThat(resultData1.size(), is(1));
+
+    final ProcessCountReportMapResultDto result2 = resultMap.get(singleReportId2)
+      .getResult();
+    final List<MapResultEntryDto<Long>> resultData2 = result2.getData();
+    assertThat(resultData2, is(CoreMatchers.notNullValue()));
+    assertThat(resultData2.size(), is(3));
+  }
+
+  @Test
   public void canEvaluateUnsavedCombinedReportWithSingleNumberAndMapReport_firstWins() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
@@ -806,6 +894,28 @@ public class CombinedReportHandlingIT {
     definitionDto.setData(data);
     updateReport(singleReportId, definitionDto);
     return singleReportId;
+  }
+
+  private String createNewSingleReportGroupByEndDate(ProcessInstanceEngineDto engineDto,
+                                                     GroupByDateUnit groupByDateUnit) {
+    ProcessReportDataDto reportDataByEndDate =
+      createCountProcessInstanceFrequencyGroupByEndDate(
+        engineDto.getProcessDefinitionKey(),
+        engineDto.getProcessDefinitionVersion(),
+        groupByDateUnit
+      );
+    return createNewSingleMapReport(reportDataByEndDate);
+  }
+
+  private String createNewSingleReportGroupByStartDate(ProcessInstanceEngineDto engineDto,
+                                                       GroupByDateUnit groupByDateUnit) {
+    ProcessReportDataDto reportDataByStartDate =
+      createCountProcessInstanceFrequencyGroupByStartDate(
+        engineDto.getProcessDefinitionKey(),
+        engineDto.getProcessDefinitionVersion(),
+        groupByDateUnit
+      );
+    return createNewSingleMapReport(reportDataByStartDate);
   }
 
 

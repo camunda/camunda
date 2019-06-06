@@ -7,6 +7,8 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.group;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 
+import java.util.Objects;
+
 public class EndDateGroupByDto extends ProcessGroupByDto<DateGroupByValueDto> {
 
   public EndDateGroupByDto() {
@@ -18,5 +20,8 @@ public class EndDateGroupByDto extends ProcessGroupByDto<DateGroupByValueDto> {
     return super.toString() + "_" + this.getValue().getUnit();
   }
 
-
+  @Override
+  protected boolean isTypeCombinable(final ProcessGroupByDto<?> that) {
+    return Objects.equals(type, that.type) || Objects.equals(that.type, ProcessGroupByType.START_DATE);
+  }
 }

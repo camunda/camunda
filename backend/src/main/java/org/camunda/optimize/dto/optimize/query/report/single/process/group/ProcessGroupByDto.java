@@ -59,8 +59,12 @@ public abstract class ProcessGroupByDto<VALUE extends ProcessGroupByValueDto> im
       return false;
     }
     ProcessGroupByDto<?> that = (ProcessGroupByDto<?>) o;
-    return Objects.equals(type, that.type) &&
+    return isTypeCombinable(that) &&
       ReportUtil.isCombinable(value, that.value);
+  }
+
+  protected boolean isTypeCombinable(final ProcessGroupByDto<?> that) {
+    return Objects.equals(type, that.type);
   }
 
   @JsonIgnore

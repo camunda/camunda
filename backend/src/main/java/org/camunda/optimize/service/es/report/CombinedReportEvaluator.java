@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.report;
 
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -15,8 +17,6 @@ import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.elasticsearch.search.aggregations.metrics.stats.Stats;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
@@ -25,30 +25,37 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Component
 public class CombinedReportEvaluator {
-  private static final Logger logger = LoggerFactory.getLogger(CombinedReportEvaluator.class);
 
-  private final SingleReportEvaluatorForCombinedReports singleReportEvaluator;
+  private final SingleReportEvaluator singleReportEvaluatorInjected;
   private final DateTimeFormatter dateTimeFormatter;
 
   public CombinedReportEvaluator(final SingleReportEvaluator singleReportEvaluator,
                                  final DateTimeFormatter dateTimeFormatter) {
-    this.singleReportEvaluator = new SingleReportEvaluatorForCombinedReports(singleReportEvaluator);
+    this.singleReportEvaluatorInjected = singleReportEvaluator;
     this.dateTimeFormatter = dateTimeFormatter;
   }
 
   public List<ReportEvaluationResult> evaluate(List<SingleProcessReportDefinitionDto> singleReportDefinitions) {
-    addIntervalToReportEvaluator(singleReportDefinitions);
+    final SingleReportEvaluatorForCombinedReports singleReportEvaluator =
+      new SingleReportEvaluatorForCombinedReports(singleReportEvaluatorInjected);
+
+    addIntervalToReportEvaluator(singleReportDefinitions, singleReportEvaluator);
     List<ReportEvaluationResult> resultList = new ArrayList<>();
     for (SingleProcessReportDefinitionDto report : singleReportDefinitions) {
-      Optional<ReportEvaluationResult> singleReportResult = evaluateWithoutThrowingError(report);
+      Optional<ReportEvaluationResult> singleReportResult = evaluateWithoutThrowingError(
+        report,
+        singleReportEvaluator
+      );
       singleReportResult.ifPresent(resultList::add);
     }
     return resultList;
   }
 
-  private void addIntervalToReportEvaluator(List<SingleProcessReportDefinitionDto> singleReportDefinitions) {
+  private void addIntervalToReportEvaluator(List<SingleProcessReportDefinitionDto> singleReportDefinitions,
+                                            SingleReportEvaluatorForCombinedReports singleReportEvaluator) {
     CombinedAutomaticIntervalSelectionCalculator calculator =
       new CombinedAutomaticIntervalSelectionCalculator(dateTimeFormatter);
     singleReportDefinitions
@@ -65,18 +72,19 @@ public class CombinedReportEvaluator {
       );
     Optional<Range<OffsetDateTime>> dateHistogramIntervalForCombinedReport = calculator.calculateInterval();
     dateHistogramIntervalForCombinedReport.ifPresent(
-      interval -> singleReportEvaluator.setStartDateIntervalRange(interval)
+      singleReportEvaluator::setDateIntervalRange
     );
   }
 
-  private Optional<ReportEvaluationResult> evaluateWithoutThrowingError(SingleProcessReportDefinitionDto reportDefinition) {
+  private Optional<ReportEvaluationResult> evaluateWithoutThrowingError(SingleProcessReportDefinitionDto reportDefinition,
+                                                                        SingleReportEvaluatorForCombinedReports singleReportEvaluator) {
     Optional<ReportEvaluationResult> result = Optional.empty();
     try {
       ReportEvaluationResult singleResult = singleReportEvaluator.evaluate(reportDefinition);
       result = Optional.of(singleResult);
     } catch (OptimizeException | OptimizeValidationException onlyForLogging) {
       // we just ignore reports that cannot be evaluated in a combined report
-      logger.debug(
+      log.debug(
         "Single report with id [{}] could not be evaluated for a combined report.",
         reportDefinition.getId(),
         onlyForLogging
@@ -87,7 +95,8 @@ public class CombinedReportEvaluator {
 
   private class SingleReportEvaluatorForCombinedReports extends SingleReportEvaluator {
 
-    private Range<OffsetDateTime> startDateIntervalRange;
+    @Setter
+    private Range<OffsetDateTime> dateIntervalRange;
 
     private SingleReportEvaluatorForCombinedReports(SingleReportEvaluator evaluator) {
       super(
@@ -101,14 +110,10 @@ public class CombinedReportEvaluator {
       );
     }
 
-    public void setStartDateIntervalRange(Range<OffsetDateTime> startDateIntervalRange) {
-      this.startDateIntervalRange = startDateIntervalRange;
-    }
-
     @Override
     protected <T extends ReportDefinitionDto> CommandContext<T> createCommandContext(final T reportDefinition) {
       CommandContext<T> commandContext = super.createCommandContext(reportDefinition);
-      commandContext.setDateIntervalRange(startDateIntervalRange);
+      commandContext.setDateIntervalRange(dateIntervalRange);
       return commandContext;
     }
   }
