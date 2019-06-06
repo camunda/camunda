@@ -2,7 +2,7 @@
 
 // general properties for CI execution
 def static NODE_POOL() { return "slaves" }
-def static MAVEN_DOCKER_IMAGE(String javaVersion) { return "maven:3.6.0-jdk-${javaVersion}-slim" }
+def static MAVEN_DOCKER_IMAGE(String javaVersion) { return "maven:3.6.1-jdk-${javaVersion}" }
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "registry.camunda.cloud/camunda-bpm-platform-ee:${cambpmVersion}" }
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) { return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}" }
 
@@ -159,7 +159,25 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-JDK11_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenIntegrationTestAgent("11", "${params.ES_VERSION}", "${params.CAMBPM_VERSION}")
+              yaml mavenIntegrationTestAgent("11-slim", "${params.ES_VERSION}", "${params.CAMBPM_VERSION}")
+            }
+          }
+          steps {
+            integrationTestSteps()
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage("Java 12 Integration") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_es-JDK12_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenIntegrationTestAgent("12", "${params.ES_VERSION}", "${params.CAMBPM_VERSION}")
             }
           }
           steps {
