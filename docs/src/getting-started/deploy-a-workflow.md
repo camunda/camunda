@@ -10,6 +10,14 @@ The answer is that Zeebe itself doesn't store historic data related to your work
 
 Elasticsearch is also what Camunda Operate uses to store data, so to run Operate, you need to enable the Elasticsearch exporter in Zeebe and run an instance of Elasticsearch. In this section and the next section of the tutorial, we'll use Operate to visualize what's going on in Zeebe with each step we take.
 
+If you are using Docker and [zeebe-docker-compose](https://github.com/zeebe-io/zeebe-docker-compose) then follow the instructions in the README file in the `operate` directory of that repository to start Zeebe and Operate. Once you have done that, skip the following section, and continue from "Check the status of the broker".
+
+If you are using individual components, then you will need to manually configure and start components.
+
+## Manually configure and start Zeebe and Operate
+
+_These instructions are for using separate components, and are not necessary when using Docker._
+
 First, open the `zeebe.cfg.toml` file (in the `conf` directory of the Zeebe broker) and enable the Zeebe Elasticsearch exporter.
 
 Note that you need to un-comment _only_ these three lines to enable the exporter:
@@ -61,45 +69,6 @@ cd zeebe-broker-0.17.0
 ```
 
 
-You can use the Zeebe CLI to check the status of your broker. Open a new Terminal window and change into the Zeebe broker directory, then run the following:
-
-**Linux**
-
-
-```
-./bin/zbctl status
-```
-
-
-**Mac**
-
-
-```
-./bin/zbctl.darwin status
-```
-
-
-**Windows**
-
-
-```
-./bin/zbctl.exe status
-```
-
-
-You should see a response like this one:
-
-
-```
-Cluster size: 1
-Partitions count: 1
-Replication factor: 1
-Brokers:
-  Broker 0 - 0.0.0.0:26501
-    Partition 0 : Leader
-```
-
-
 And finally, start Operate in yet another Terminal window. Note that you'll need port 8080 in order to run Operate and access the UI, so be sure to check that it's available.
 
 
@@ -115,13 +84,16 @@ To confirm that Operate was started, go to [http://localhost:8080](http://localh
 
 You can leave this tab open as we'll be returning to it shortly.
 
-For all Zeebe-related operations moving forward, we'll be using Zeebe's command-line interface (CLI). In a real-world deployment, you likely wouldn't rely on the CLI to send messages or create job workers. Rather, you would embed Zeebe clients in worker microservices that connect to the Zeebe engine.
 
-But for the sake of keeping this guide simple (and language agnostic), we're going to use the CLI.  
+## Check the status of the broker
 
-Next, we'll deploy our workflow model via the CLI. Open a new terminal window and change into the Zeebe broker directory.
+You can use the Zeebe CLI to check the status of your broker. Open a new Terminal window to run it. 
 
-First, let's check the status of our broker.
+If you are using Docker, change into the `zeebe-docker-compose` directory.
+ 
+If you are using separate components, then change into the Zeebe broker directory.
+ 
+Run the following:
 
 **Linux**
 
@@ -159,8 +131,11 @@ Brokers:
     Partition 0 : Leader
 ```
 
+For all Zeebe-related operations moving forward, we'll be using Zeebe's command-line interface (CLI). In a real-world deployment, you likely wouldn't rely on the CLI to send messages or create job workers. Rather, you would embed Zeebe clients in worker microservices that connect to the Zeebe engine.
 
-OK, we just double-checked that our broker is running as expected. Next, we'll deploy the workflow model we created in the previous section.
+But for the sake of keeping this guide simple (and language agnostic), we're going to use the CLI.  
+
+Next, we'll deploy our workflow model via the CLI. We'll deploy the workflow model we created in the previous section.
 
 **Linux**
 
@@ -203,10 +178,7 @@ You should see a response like this one:
 }
 ```
 
-
 Now we'll take a look at the Operate user interface:
-
-
 
 *   Go to [http://localhost:8080](http://localhost:8080) and use the credentials `demo` / `demo` to access Operate
 *   Click on the "Running Instances" option in the navigation bar at the top of the interface
