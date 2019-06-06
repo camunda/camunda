@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
+import io.atomix.core.Atomix;
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.system.configuration.ClusterCfg;
-import io.zeebe.gossip.Gossip;
-import io.zeebe.raft.Raft;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
@@ -29,16 +29,23 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 public class TopologyManagerService implements Service<TopologyManager> {
   private TopologyManagerImpl topologyManager;
 
-  private final Injector<Gossip> gossipInjector = new Injector<>();
+  private final ServiceGroupReference<Partition> leaderInstallReference =
+      ServiceGroupReference.<Partition>create()
+          .onAdd(
+              (name, partition) ->
+                  topologyManager.updateRole(partition.getState(), partition.getPartitionId()))
+          .build();
 
-  private final ServiceGroupReference<Raft> raftReference =
-      ServiceGroupReference.<Raft>create()
-          .onAdd((name, raft) -> topologyManager.onRaftStarted(raft))
-          .onRemove((name, raft) -> topologyManager.onRaftRemoved(raft))
+  private final ServiceGroupReference<Partition> followerInstallReference =
+      ServiceGroupReference.<Partition>create()
+          .onAdd(
+              (name, partition) ->
+                  topologyManager.updateRole(partition.getState(), partition.getPartitionId()))
           .build();
 
   private final NodeInfo localMember;
   private final ClusterCfg clusterCfg;
+  private final Injector<Atomix> atomixInjector = new Injector<>();
 
   public TopologyManagerService(NodeInfo localMember, ClusterCfg clusterCfg) {
     this.localMember = localMember;
@@ -47,9 +54,9 @@ public class TopologyManagerService implements Service<TopologyManager> {
 
   @Override
   public void start(ServiceStartContext startContext) {
-    final Gossip gossip = gossipInjector.getValue();
+    final Atomix atomix = atomixInjector.getValue();
 
-    topologyManager = new TopologyManagerImpl(gossip, localMember, clusterCfg);
+    topologyManager = new TopologyManagerImpl(atomix, localMember, clusterCfg);
 
     startContext.async(startContext.getScheduler().submitActor(topologyManager));
   }
@@ -64,11 +71,15 @@ public class TopologyManagerService implements Service<TopologyManager> {
     return topologyManager;
   }
 
-  public ServiceGroupReference<Raft> getRaftReference() {
-    return raftReference;
+  public ServiceGroupReference<Partition> getLeaderInstallReference() {
+    return leaderInstallReference;
   }
 
-  public Injector<Gossip> getGossipInjector() {
-    return gossipInjector;
+  public ServiceGroupReference<Partition> getFollowerInstallReference() {
+    return followerInstallReference;
+  }
+
+  public Injector<Atomix> getAtomixInjector() {
+    return atomixInjector;
   }
 }

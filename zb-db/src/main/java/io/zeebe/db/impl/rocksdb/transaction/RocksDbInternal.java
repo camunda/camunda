@@ -80,7 +80,14 @@ public class RocksDbInternal {
   private static void putWithHandle() throws NoSuchMethodException {
     putWithHandle =
         Transaction.class.getDeclaredMethod(
-            "put", Long.TYPE, byte[].class, Integer.TYPE, byte[].class, Integer.TYPE, Long.TYPE);
+            "put",
+            Long.TYPE,
+            byte[].class,
+            Integer.TYPE,
+            byte[].class,
+            Integer.TYPE,
+            Long.TYPE,
+            Boolean.TYPE);
     putWithHandle.setAccessible(true);
   }
 
@@ -100,7 +107,7 @@ public class RocksDbInternal {
   private static void removeWithHandle() throws NoSuchMethodException {
     removeWithHandle =
         Transaction.class.getDeclaredMethod(
-            "delete", Long.TYPE, byte[].class, Integer.TYPE, Long.TYPE);
+            "delete", Long.TYPE, byte[].class, Integer.TYPE, Long.TYPE, Boolean.TYPE);
     removeWithHandle.setAccessible(true);
   }
 

@@ -16,52 +16,67 @@
 package io.zeebe.exporter.api.record.value;
 
 import io.zeebe.exporter.api.record.RecordValue;
+import io.zeebe.protocol.intent.IncidentIntent;
 
 /**
  * Represents a workflow incident.
  *
- * <p>See {@link io.zeebe.protocol.intent.IncidentIntent} for intents.
+ * <p>See {@link IncidentIntent} for intents.
  */
 public interface IncidentRecordValue extends RecordValue {
-  /** @return the type of error this incident is caused by. */
+  /**
+   * @return the type of error this incident is caused by. Can be <code>UNKNOWN</code> if the
+   *     incident record is part of a {@link IncidentIntent#RESOLVE} command.
+   */
   String getErrorType();
 
-  /** @return the description of the error this incident is caused by. */
+  /**
+   * @return the description of the error this incident is caused by. Can be empty if the incident
+   *     record is part of a {@link IncidentIntent#RESOLVE} command.
+   */
   String getErrorMessage();
 
   /**
-   * @return the BPMN process id this incident belongs to. Can be <code>null</code> if the incident
-   *     belongs to no workflow instance.
+   * @return the BPMN process id this incident belongs to. Can be empty if the incident record is
+   *     part of a {@link IncidentIntent#RESOLVE} command.
    */
   String getBpmnProcessId();
 
   /**
-   * @return the key of the workflow instance this incident belongs to. Can be <code>null</code> if
-   *     the incident belongs to no workflow instance.
+   * @return the key of the workflow this incident belongs to. Can be <code>-1</code> if the
+   *     incident record is part of a {@link IncidentIntent#RESOLVE} command.
+   */
+  long getWorkflowKey();
+
+  /**
+   * @return the key of the workflow instance this incident belongs to. Can be <code>-1</code> if
+   *     the incident record is part of a {@link IncidentIntent#RESOLVE} command.
    */
   long getWorkflowInstanceKey();
 
   /**
-   * @return the id of the element this incident belongs to. Can be <code>null</code> if the
-   *     incident belongs to no element or workflow instance.
+   * @return the id of the element this incident belongs to. Can be empty if incident record is part
+   *     of a {@link IncidentIntent#RESOLVE} command.
    */
   String getElementId();
 
   /**
-   * @return the key of the element instance this incident belongs to. Can be <code>null</code> if
-   *     the incident belongs to no workflow element or workflow instance.
+   * @return the key of the element instance this incident belongs to. Can be <code>-1</code> if the
+   *     incident record is part of a {@link IncidentIntent#RESOLVE} command.
    */
   long getElementInstanceKey();
 
   /**
-   * @return the key of the job this incident belongs to. Can be <code>null</code> if the incident
-   *     belongs to no task.
+   * @return the key of the job this incident belongs to. Can be <code>-1</code> if the incident
+   *     belongs to no job or the incident record is part of a {@link IncidentIntent#RESOLVE}
+   *     command.
    */
   long getJobKey();
 
   /**
-   * @return the key of the element instance to use in order to update the correct variables before
-   *     resolving the incident.
+   * @return the key of the element instance to use in order to update the correct variables before.
+   *     Can be <code>-1</code> if the incident record is part of a {@link IncidentIntent#RESOLVE}
+   *     command.
    */
   long getVariableScopeKey();
 }

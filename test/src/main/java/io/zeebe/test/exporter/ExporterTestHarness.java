@@ -18,10 +18,10 @@ package io.zeebe.test.exporter;
 import com.moandjiezana.toml.Toml;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
+import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Configuration;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.spi.Exporter;
 import io.zeebe.test.exporter.record.MockRecord;
 import io.zeebe.test.exporter.record.MockRecordMetadata;
 import io.zeebe.test.exporter.record.MockRecordStream;
@@ -48,6 +48,7 @@ public class ExporterTestHarness {
   private final Exporter exporter;
   private final int partitionId = 0;
 
+  private MockContext context;
   private long position = 1;
 
   /** @param exporter the exporter to be tested */
@@ -61,7 +62,7 @@ public class ExporterTestHarness {
    *
    * @param id the ID of the exporter
    */
-  public void configure(String id) {
+  public void configure(String id) throws Exception {
     final MockConfiguration<Object> configuration = new MockConfiguration<>();
     configuration.setId(id);
 
@@ -90,7 +91,7 @@ public class ExporterTestHarness {
    * @param id id of the exporter
    * @param toml the reference TOML document
    */
-  public void configure(String id, InputStream toml) {
+  public void configure(String id, InputStream toml) throws Exception {
     final BrokerCfg config = new Toml().read(toml).to(BrokerCfg.class);
     configure(id, config);
   }
@@ -102,7 +103,7 @@ public class ExporterTestHarness {
    * @param id the exporter ID
    * @param configFile pointer to a TOML configuration file
    */
-  public void configure(String id, File configFile) {
+  public void configure(String id, File configFile) throws Exception {
     final BrokerCfg config = new Toml().read(configFile).to(BrokerCfg.class);
     configure(id, config);
   }
@@ -117,11 +118,12 @@ public class ExporterTestHarness {
    * @param config new return value of {@link Configuration#instantiate(Class)}
    * @param <T> type of the configuration class
    */
-  public <T> void configure(String id, T config) {
+  public <T> void configure(String id, T config) throws Exception {
     final MockConfiguration<T> configuration = new MockConfiguration<>(config);
     configuration.setId(id);
 
-    exporter.configure(newContext(configuration));
+    context = newContext(configuration);
+    exporter.configure(context);
   }
 
   /**
@@ -234,6 +236,10 @@ public class ExporterTestHarness {
     return controller;
   }
 
+  public MockContext getContext() {
+    return context;
+  }
+
   /**
    * Returns the last exported record's position; note that this is <em>not</em> the last updated
    * record position, as updated by the exporter, but simply the position of that last record handed
@@ -255,7 +261,7 @@ public class ExporterTestHarness {
     return controller.getPosition();
   }
 
-  private void configure(String id, BrokerCfg brokerCfg) {
+  private void configure(String id, BrokerCfg brokerCfg) throws Exception {
     final Optional<ExporterCfg> config =
         brokerCfg.getExporters().stream().filter(c -> c.getId().equals(id)).findFirst();
 
@@ -263,7 +269,8 @@ public class ExporterTestHarness {
       final MockConfiguration<Object> configuration = new MockConfiguration<>();
       configuration.setId(id);
       configuration.setArguments(config.get().getArgs());
-      exporter.configure(newContext(configuration));
+      context = newContext(configuration);
+      exporter.configure(context);
     } else {
       throw new IllegalArgumentException(String.format("No exporter with ID %s found", id));
     }

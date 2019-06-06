@@ -18,13 +18,15 @@ package io.zeebe.protocol.impl.record.value.job;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
 
+import io.zeebe.exporter.api.record.value.job.Headers;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class JobHeaders extends UnpackedObject {
+public class JobHeaders extends UnpackedObject implements Headers {
   private static final String EMPTY_STRING = "";
 
   private final LongProperty workflowInstanceKeyProp =
@@ -55,7 +57,7 @@ public class JobHeaders extends UnpackedObject {
     return this;
   }
 
-  public DirectBuffer getElementId() {
+  public DirectBuffer getElementIdBuffer() {
     return elementIdProp.getValue();
   }
 
@@ -83,7 +85,7 @@ public class JobHeaders extends UnpackedObject {
     return this;
   }
 
-  public DirectBuffer getBpmnProcessId() {
+  public DirectBuffer getBpmnProcessIdBuffer() {
     return bpmnProcessIdProp.getValue();
   }
 
@@ -112,5 +114,15 @@ public class JobHeaders extends UnpackedObject {
   public JobHeaders setWorkflowKey(long workflowKey) {
     this.workflowKeyProp.setValue(workflowKey);
     return this;
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  @Override
+  public String getElementId() {
+    return BufferUtil.bufferAsString(elementIdProp.getValue());
   }
 }

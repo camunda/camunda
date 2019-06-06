@@ -17,42 +17,42 @@ package io.zeebe.logstreams.impl;
 
 import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.Subscription;
-import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-/** Consume the write buffer and append the blocks on the log storage. */
+/** Consume the write buffer and append the blocks to the distributedlog. */
 public class LogStorageAppender extends Actor {
   public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
   private final AtomicBoolean isFailed = new AtomicBoolean(false);
 
   private final BlockPeek blockPeek = new BlockPeek();
+  private byte[] bytesToAppend;
+  private long commitPosition;
 
   private final String name;
-  private final LogStorage logStorage;
   private final Subscription writeBufferSubscription;
-  private final ActorConditions logStorageAppendConditions;
 
-  private Runnable peekedBlockHandler = this::appendBlock;
-  private int maxAppendBlockSize;
+  private final Runnable peekedBlockHandler = this::appendBlock;
+  private final int maxAppendBlockSize;
+
+  private final DistributedLogstreamPartition distributedLog;
 
   public LogStorageAppender(
       String name,
-      LogStorage logStorage,
+      DistributedLogstreamPartition distributedLog,
       Subscription writeBufferSubscription,
-      int maxBlockSize,
-      ActorConditions logStorageAppendConditions) {
+      int maxBlockSize) {
     this.name = name;
-    this.logStorage = logStorage;
+    this.distributedLog = distributedLog;
     this.writeBufferSubscription = writeBufferSubscription;
     this.maxAppendBlockSize = maxBlockSize;
-    this.logStorageAppendConditions = logStorageAppendConditions;
   }
 
   @Override
@@ -62,6 +62,7 @@ public class LogStorageAppender extends Actor {
 
   @Override
   protected void onActorStarting() {
+
     actor.consume(writeBufferSubscription, this::peekBlock);
   }
 
@@ -75,31 +76,48 @@ public class LogStorageAppender extends Actor {
 
   private void appendBlock() {
     final ByteBuffer rawBuffer = blockPeek.getRawBuffer();
-    final MutableDirectBuffer buffer = blockPeek.getBuffer();
 
-    final long address = logStorage.append(rawBuffer);
-    if (address >= 0) {
-      blockPeek.markCompleted();
-      logStorageAppendConditions.signalConsumers();
-    } else {
-      isFailed.set(true);
+    bytesToAppend = new byte[rawBuffer.remaining()];
+    rawBuffer.get(bytesToAppend);
 
-      final long positionOfFirstEventInBlock = LogEntryDescriptor.getPosition(buffer, 0);
-      LOG.error(
-          "Failed to append log storage on position '{}'. Stop writing to log storage until recovered.",
-          positionOfFirstEventInBlock);
-
-      // recover log storage from failure - see zeebe-io/zeebe#500
-      peekedBlockHandler = this::discardBlock;
-
-      discardBlock();
-    }
+    // Commit position is the position of the last event. DistributedLogstream uses this position
+    // to identify duplicate append requests during recovery.
+    commitPosition = getLastEventPosition(bytesToAppend);
+    actor.runUntilDone(this::tryWrite);
   }
 
-  private void discardBlock() {
-    blockPeek.markFailed();
-    // continue with next block
-    actor.yield();
+  private void tryWrite() {
+    distributedLog.asyncAppend(bytesToAppend, commitPosition);
+    blockPeek.markCompleted();
+    actor.done();
+    /*// TODO: Handle error codes
+    if (res >= 0) {
+      blockPeek.markCompleted();
+      actor.done();
+    } else {
+      // retry
+      LOG.debug("Append failed, retrying");
+      actor.yield();
+    }*/
+  }
+
+  /* Iterate over the events in buffer and find the position of the last event */
+  private long getLastEventPosition(byte[] buffer) {
+    int bufferOffset = 0;
+    final DirectBuffer directBuffer = new UnsafeBuffer(0, 0);
+
+    directBuffer.wrap(buffer);
+    long lastEventPosition = -1;
+
+    final LoggedEventImpl nextEvent = new LoggedEventImpl();
+    int remaining = buffer.length - bufferOffset;
+    while (remaining > 0) {
+      nextEvent.wrap(directBuffer, bufferOffset);
+      bufferOffset += nextEvent.getFragmentLength();
+      lastEventPosition = nextEvent.getPosition();
+      remaining = buffer.length - bufferOffset;
+    }
+    return lastEventPosition;
   }
 
   public ActorFuture<Void> close() {

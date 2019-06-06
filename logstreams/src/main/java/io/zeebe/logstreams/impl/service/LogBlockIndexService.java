@@ -21,25 +21,31 @@ import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.impl.log.index.LogBlockColumnFamilies;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
+import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 
 public class LogBlockIndexService implements Service<LogBlockIndex> {
+
+  private final int maxSnapshotCount;
   private LogBlockIndex logBlockIndex;
   private final StateStorage stateStorage;
 
-  public LogBlockIndexService(StateStorage stateStorage) {
+  public LogBlockIndexService(StateStorage stateStorage, int maxSnapshotCount) {
     this.stateStorage = stateStorage;
+    this.maxSnapshotCount = maxSnapshotCount;
   }
 
   @Override
   public void start(ServiceStartContext startContext) {
     final ZeebeDbFactory<LogBlockColumnFamilies> dbFactory =
         ZeebeRocksDbFactory.newFactory(LogBlockColumnFamilies.class);
+    final StateSnapshotController snapshotController =
+        new StateSnapshotController(dbFactory, stateStorage, maxSnapshotCount);
 
-    logBlockIndex = new LogBlockIndex(dbFactory, stateStorage);
+    logBlockIndex = new LogBlockIndex(snapshotController);
   }
 
   @Override

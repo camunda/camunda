@@ -22,7 +22,7 @@ import io.zeebe.gateway.api.util.GatewayTest;
 import io.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.JobIntent;
 import org.junit.Test;
@@ -57,6 +57,6 @@ public class FailJobTest extends GatewayTest {
 
     final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
     assertThat(brokerRequestValue.getRetries()).isEqualTo(retries);
-    assertThat(brokerRequestValue.getErrorMessage()).isEqualTo(wrapString("failed"));
+    assertThat(brokerRequestValue.getErrorMessageBuffer()).isEqualTo(wrapString("failed"));
   }
 }

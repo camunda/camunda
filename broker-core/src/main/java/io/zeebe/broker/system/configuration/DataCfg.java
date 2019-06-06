@@ -27,11 +27,17 @@ public class DataCfg implements ConfigurationEntry {
   // Hint: do not use Collections.singletonList as this does not support replaceAll
   private List<String> directories = Arrays.asList(DEFAULT_DIRECTORY);
 
-  private String defaultLogSegmentSize = "512M";
+  private String logSegmentSize = "512M";
+
+  private String indexBlockSize = "4M";
 
   private String snapshotPeriod = "15m";
 
   private String snapshotReplicationPeriod = "5m";
+
+  private String raftSegmentSize;
+
+  private int maxSnapshots = 1;
 
   @Override
   public void init(BrokerCfg globalConfig, String brokerBase, Environment environment) {
@@ -51,12 +57,20 @@ public class DataCfg implements ConfigurationEntry {
     this.directories = directories;
   }
 
-  public String getDefaultLogSegmentSize() {
-    return defaultLogSegmentSize;
+  public String getLogSegmentSize() {
+    return logSegmentSize;
   }
 
-  public void setDefaultLogSegmentSize(String defaultLogSegmentSize) {
-    this.defaultLogSegmentSize = defaultLogSegmentSize;
+  public void setLogSegmentSize(String logSegmentSize) {
+    this.logSegmentSize = logSegmentSize;
+  }
+
+  public String getIndexBlockSize() {
+    return indexBlockSize;
+  }
+
+  public void setIndexBlockSize(final String indexBlockSize) {
+    this.indexBlockSize = indexBlockSize;
   }
 
   public String getSnapshotPeriod() {
@@ -75,19 +89,41 @@ public class DataCfg implements ConfigurationEntry {
     this.snapshotReplicationPeriod = snapshotReplicationPeriod;
   }
 
+  public void setMaxSnapshots(final int maxSnapshots) {
+    this.maxSnapshots = maxSnapshots;
+  }
+
+  public int getMaxSnapshots() {
+    return maxSnapshots;
+  }
+
+  public String getRaftSegmentSize() {
+    return raftSegmentSize;
+  }
+
+  public void setRaftSegmentSize(String raftSegmentSize) {
+    this.raftSegmentSize = raftSegmentSize;
+  }
+
   @Override
   public String toString() {
     return "DataCfg{"
         + "directories="
         + directories
-        + ", defaultLogSegmentSize='"
-        + defaultLogSegmentSize
+        + ", logSegmentSize='"
+        + logSegmentSize
+        + '\''
+        + ", indexBlockSize='"
+        + indexBlockSize
         + '\''
         + ", snapshotPeriod='"
         + snapshotPeriod
         + '\''
         + ", snapshotReplicationPeriod='"
         + snapshotReplicationPeriod
+        + '\''
+        + ", maxSnapshots='"
+        + maxSnapshots
         + '\''
         + '}';
   }

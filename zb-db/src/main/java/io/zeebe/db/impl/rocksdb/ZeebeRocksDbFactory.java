@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyOptions;
+import org.rocksdb.CompactionPriority;
 import org.rocksdb.DBOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -72,7 +73,8 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
           new DBOptions()
               .setCreateMissingColumnFamilies(true)
               .setErrorIfExists(false)
-              .setCreateIfMissing(true);
+              .setCreateIfMissing(true)
+              .setParanoidChecks(true);
       closeables.add(dbOptions);
 
       db =
@@ -82,6 +84,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
               columnFamilyDescriptors,
               closeables,
               columnFamilyTypeClass);
+
     } catch (final RocksDBException e) {
       throw new RuntimeException("Unexpected error occurred trying to open the database", e);
     }
@@ -103,10 +106,8 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
   }
 
   private static ColumnFamilyOptions createColumnFamilyOptions() {
-
     // Options which are used on all column families
-    final ColumnFamilyOptions columnFamilyOptions = new ColumnFamilyOptions();
-
-    return columnFamilyOptions;
+    return new ColumnFamilyOptions()
+        .setCompactionPriority(CompactionPriority.OldestSmallestSeqFirst);
   }
 }

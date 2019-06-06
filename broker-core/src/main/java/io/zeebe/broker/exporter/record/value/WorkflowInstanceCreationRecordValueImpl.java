@@ -17,11 +17,14 @@
  */
 package io.zeebe.broker.exporter.record.value;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueImpl;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class WorkflowInstanceCreationRecordValueImpl extends RecordValueImpl
     implements WorkflowInstanceCreationRecordValue {
@@ -29,7 +32,9 @@ public class WorkflowInstanceCreationRecordValueImpl extends RecordValueImpl
   private final int version;
   private final long key;
   private final long instanceKey;
-  private final Map<String, Object> variables;
+
+  @JsonIgnore private final Supplier<Map<String, Object>> variablesSupplier;
+  @JsonIgnore private Map<String, Object> variables;
 
   public WorkflowInstanceCreationRecordValueImpl(
       ExporterObjectMapper objectMapper,
@@ -37,13 +42,13 @@ public class WorkflowInstanceCreationRecordValueImpl extends RecordValueImpl
       int version,
       long key,
       long instanceKey,
-      Map<String, Object> variables) {
+      Supplier<Map<String, Object>> variablesSupplier) {
     super(objectMapper);
     this.bpmnProcessId = bpmnProcessId;
     this.version = version;
     this.key = key;
     this.instanceKey = instanceKey;
-    this.variables = variables;
+    this.variablesSupplier = variablesSupplier;
   }
 
   @Override
@@ -67,7 +72,11 @@ public class WorkflowInstanceCreationRecordValueImpl extends RecordValueImpl
   }
 
   @Override
+  @JsonProperty
   public Map<String, Object> getVariables() {
+    if (variables == null) {
+      variables = variablesSupplier.get();
+    }
     return variables;
   }
 
@@ -109,7 +118,7 @@ public class WorkflowInstanceCreationRecordValueImpl extends RecordValueImpl
         + ", workflowInstanceKey="
         + instanceKey
         + ", variables="
-        + variables
+        + getVariables()
         + "}";
   }
 }

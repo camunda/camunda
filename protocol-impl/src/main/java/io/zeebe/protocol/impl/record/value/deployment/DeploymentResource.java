@@ -17,13 +17,16 @@ package io.zeebe.protocol.impl.record.value.deployment;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapArray;
 
+import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.BinaryProperty;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class DeploymentResource extends UnpackedObject {
+public class DeploymentResource extends UnpackedObject
+    implements io.zeebe.exporter.api.record.value.deployment.DeploymentResource {
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
   private final EnumProperty<ResourceType> resourceTypeProp =
       new EnumProperty<>("resourceType", ResourceType.class, ResourceType.BPMN_XML);
@@ -40,7 +43,7 @@ public class DeploymentResource extends UnpackedObject {
         .declareProperty(resourceProp);
   }
 
-  public DirectBuffer getResource() {
+  public DirectBuffer getResourceBuffer() {
     return resourceProp.getValue();
   }
 
@@ -66,7 +69,7 @@ public class DeploymentResource extends UnpackedObject {
     return this;
   }
 
-  public DirectBuffer getResourceName() {
+  public DirectBuffer getResourceNameBuffer() {
     return resourceNameProp.getValue();
   }
 
@@ -78,5 +81,30 @@ public class DeploymentResource extends UnpackedObject {
   public DeploymentResource setResourceName(DirectBuffer resourceName) {
     this.resourceNameProp.setValue(resourceName);
     return this;
+  }
+
+  @Override
+  public byte[] getResource() {
+    return BufferUtil.bufferAsArray(resourceProp.getValue());
+  }
+
+  @Override
+  public String getResourceName() {
+    return BufferUtil.bufferAsString(resourceNameProp.getValue());
+  }
+
+  public static ResourceType getResourceType(String resourceName) {
+    resourceName = resourceName.toLowerCase();
+
+    if (resourceName.endsWith(".yaml")) {
+      return ResourceType.YAML_WORKFLOW;
+    } else if (resourceName.endsWith(".bpmn") || resourceName.endsWith(".bpmn20.xml")) {
+      return ResourceType.BPMN_XML;
+    } else {
+      throw new RuntimeException(
+          String.format(
+              "Expected to resolve type of resource '%s', but could not; should be a .bpmn or .yaml file",
+              resourceName));
+    }
   }
 }

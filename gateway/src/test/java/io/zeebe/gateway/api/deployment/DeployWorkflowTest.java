@@ -25,7 +25,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest.Builder
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowMetadata;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject.ResourceType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.zeebe.protocol.intent.DeploymentIntent;
@@ -108,8 +108,8 @@ public class DeployWorkflowTest extends GatewayTest {
     assertThat(record.resources())
         .extracting(DeploymentResource::getResourceType)
         .containsExactlyInAnyOrder(
-            io.zeebe.protocol.impl.record.value.deployment.ResourceType.BPMN_XML,
-            io.zeebe.protocol.impl.record.value.deployment.ResourceType.YAML_WORKFLOW);
+            io.zeebe.exporter.api.record.value.deployment.ResourceType.BPMN_XML,
+            io.zeebe.exporter.api.record.value.deployment.ResourceType.YAML_WORKFLOW);
   }
 
   @Test
@@ -142,7 +142,7 @@ public class DeployWorkflowTest extends GatewayTest {
     assertThat(record.resources())
         .extracting(DeploymentResource::getResourceType)
         .containsExactlyInAnyOrder(
-            io.zeebe.protocol.impl.record.value.deployment.ResourceType.BPMN_XML,
-            io.zeebe.protocol.impl.record.value.deployment.ResourceType.YAML_WORKFLOW);
+            io.zeebe.exporter.api.record.value.deployment.ResourceType.BPMN_XML,
+            io.zeebe.exporter.api.record.value.deployment.ResourceType.YAML_WORKFLOW);
   }
 }

@@ -21,12 +21,10 @@ import io.zeebe.clustering.management.MessageHeaderDecoder;
 import io.zeebe.clustering.management.MessageHeaderEncoder;
 import io.zeebe.clustering.management.NotLeaderResponseDecoder;
 import io.zeebe.clustering.management.NotLeaderResponseEncoder;
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferWriter;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
+import io.zeebe.engine.util.SbeBufferWriterReader;
 
-public class NotLeaderResponse implements BufferReader, BufferWriter {
+public class NotLeaderResponse
+    extends SbeBufferWriterReader<NotLeaderResponseEncoder, NotLeaderResponseDecoder> {
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final NotLeaderResponseEncoder bodyEncoder = new NotLeaderResponseEncoder();
 
@@ -34,35 +32,12 @@ public class NotLeaderResponse implements BufferReader, BufferWriter {
   private final NotLeaderResponseDecoder bodyDecoder = new NotLeaderResponseDecoder();
 
   @Override
-  public int getLength() {
-    return headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength();
+  protected NotLeaderResponseEncoder getBodyEncoder() {
+    return bodyEncoder;
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-    headerEncoder
-        .wrap(buffer, offset)
-        .blockLength(bodyEncoder.sbeBlockLength())
-        .templateId(bodyEncoder.sbeTemplateId())
-        .schemaId(bodyEncoder.sbeSchemaId())
-        .version(bodyEncoder.sbeSchemaVersion());
-
-    bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength());
-  }
-
-  public boolean tryWrap(final DirectBuffer buffer, final int offset, final int length) {
-    headerDecoder.wrap(buffer, offset);
-
-    return headerDecoder.schemaId() == bodyDecoder.sbeSchemaId()
-        && headerDecoder.templateId() == bodyDecoder.sbeTemplateId();
-  }
-
-  @Override
-  public void wrap(final DirectBuffer buffer, int offset, final int length) {
-    headerDecoder.wrap(buffer, offset);
-
-    offset += headerDecoder.encodedLength();
-
-    bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
+  protected NotLeaderResponseDecoder getBodyDecoder() {
+    return bodyDecoder;
   }
 }

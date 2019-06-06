@@ -30,10 +30,10 @@ import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.protocol.clientapi.ErrorCode;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.ErrorCode;
+import io.zeebe.protocol.MessageHeaderDecoder;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.SubscriptionUtil;
-import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.util.sched.Actor;
@@ -62,6 +62,25 @@ public class BrokerRequestManager extends Actor {
     this.dispatchStrategy = dispatchStrategy;
     this.topologyManager = topologyManager;
     this.requestTimeout = requestTimeout;
+  }
+
+  private static boolean shouldRetryRequest(final DirectBuffer responseContent) {
+    final ErrorResponseHandler errorHandler = new ErrorResponseHandler();
+    final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+    headerDecoder.wrap(responseContent, 0);
+
+    if (errorHandler.handlesResponse(headerDecoder)) {
+      errorHandler.wrap(
+          responseContent,
+          headerDecoder.encodedLength(),
+          headerDecoder.blockLength(),
+          headerDecoder.version());
+
+      final ErrorCode errorCode = errorHandler.getErrorCode();
+      return errorCode == ErrorCode.PARTITION_LEADER_MISMATCH;
+    } else {
+      return false;
+    }
   }
 
   public <T> ActorFuture<BrokerResponse<T>> sendRequest(BrokerRequest<T> request) {
@@ -98,6 +117,7 @@ public class BrokerRequestManager extends Actor {
       Consumer<BrokerRejection> rejectionConsumer,
       Consumer<BrokerError> errorConsumer,
       Consumer<Throwable> throwableConsumer) {
+
     sendRequest(
         request,
         (response, error) -> {
@@ -125,51 +145,8 @@ public class BrokerRequestManager extends Actor {
 
   private <T> void sendRequest(
       BrokerRequest<T> request, BiConsumer<BrokerResponse<T>, Throwable> responseConsumer) {
-
     request.serializeValue();
-
-    actor.run(
-        () -> {
-          final BrokerClusterState topology = topologyManager.getTopology();
-          if (request.requiresPartitionId() && !topologyContainsPartitions(topology)) {
-            // request requires a fetched topology to determine the partition id
-            fetchTopologyBeforeRequest(request, responseConsumer, 3);
-          } else {
-            sendRequestInternal(request, responseConsumer);
-          }
-        });
-  }
-
-  private boolean topologyContainsPartitions(BrokerClusterState topology) {
-    return topology != null && !topology.getPartitions().isEmpty();
-  }
-
-  private <T> void fetchTopologyBeforeRequest(
-      BrokerRequest<T> request,
-      BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
-      int remainingRetries) {
-    final ActorFuture<BrokerClusterState> topologyFuture = topologyManager.requestTopology();
-    actor.runOnCompletion(
-        topologyFuture,
-        (topology, error) -> {
-          if (error == null) {
-            if (topologyContainsPartitions(topology)) {
-              sendRequestInternal(request, responseConsumer);
-            } else if (remainingRetries > 1) {
-              // no partitions known yet, let's retry
-              fetchTopologyBeforeRequest(request, responseConsumer, remainingRetries - 1);
-            } else {
-              responseConsumer.accept(
-                  null,
-                  new NoTopologyAvailableException(
-                      "Expected to discover at least one partition before dispatching request, but none found"));
-            }
-          } else if (remainingRetries > 1) {
-            fetchTopologyBeforeRequest(request, responseConsumer, remainingRetries - 1);
-          } else {
-            responseConsumer.accept(null, error);
-          }
-        });
+    actor.run(() -> sendRequestInternal(request, responseConsumer));
   }
 
   private <T> void sendRequestInternal(
@@ -187,7 +164,6 @@ public class BrokerRequestManager extends Actor {
             try {
               if (error == null) {
                 final BrokerResponse<T> response = request.getResponse(clientResponse);
-                checkForTopologyResponse(response);
                 responseConsumer.accept(response, null);
               } else {
                 responseConsumer.accept(null, error);
@@ -201,34 +177,6 @@ public class BrokerRequestManager extends Actor {
     }
   }
 
-  private void checkForTopologyResponse(BrokerResponse<?> response) {
-    if (response.isResponse()) {
-      final Object value = response.getResponse();
-      if (value instanceof TopologyResponseDto) {
-        topologyManager.provideTopology((TopologyResponseDto) value);
-      }
-    }
-  }
-
-  private static boolean shouldRetryRequest(final DirectBuffer responseContent) {
-    final ErrorResponseHandler errorHandler = new ErrorResponseHandler();
-    final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    headerDecoder.wrap(responseContent, 0);
-
-    if (errorHandler.handlesResponse(headerDecoder)) {
-      errorHandler.wrap(
-          responseContent,
-          headerDecoder.encodedLength(),
-          headerDecoder.blockLength(),
-          headerDecoder.version());
-
-      final ErrorCode errorCode = errorHandler.getErrorCode();
-      return errorCode == ErrorCode.PARTITION_LEADER_MISMATCH;
-    } else {
-      return false;
-    }
-  }
-
   private BrokerNodeIdProvider determineBrokerNodeIdProvider(BrokerRequest<?> request) {
     if (request.addressesSpecificPartition()) {
       // already know partition id
@@ -238,13 +186,12 @@ public class BrokerRequestManager extends Actor {
         determinePartitionIdForPublishMessageRequest((BrokerPublishMessageRequest) request);
       } else {
         // select next partition id for request
-        final int partitionId = dispatchStrategy.determinePartition();
+        int partitionId = dispatchStrategy.determinePartition();
         if (partitionId == BrokerClusterState.PARTITION_ID_NULL) {
-          // should not happen as the request manager fetches the topology before starting the
-          // request
-          throw new NoTopologyAvailableException(
-              "Expected to pick next broker against which to request from, "
-                  + "but no partitions available");
+          // could happen if the topology is not set yet, let's just try with partition 0 but we
+          // should find a better solution
+          // https://github.com/zeebe-io/zeebe/issues/2013
+          partitionId = Protocol.DEPLOYMENT_PARTITION;
         }
         request.setPartitionId(partitionId);
       }
@@ -276,7 +223,6 @@ public class BrokerRequestManager extends Actor {
 
   private class BrokerNodeIdProvider implements Supplier<Integer> {
     private final Function<BrokerClusterState, Integer> nodeIdSelector;
-    private int attempt = 0;
 
     BrokerNodeIdProvider() {
       this(BrokerClusterState::getRandomBroker);
@@ -292,12 +238,6 @@ public class BrokerRequestManager extends Actor {
 
     @Override
     public Integer get() {
-      if (attempt > 0) {
-        topologyManager.requestTopology();
-      }
-
-      attempt++;
-
       final BrokerClusterState topology = topologyManager.getTopology();
       if (topology != null) {
         return nodeIdSelector.apply(topology);

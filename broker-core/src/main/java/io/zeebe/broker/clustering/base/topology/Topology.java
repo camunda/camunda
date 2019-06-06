@@ -18,29 +18,24 @@
 package io.zeebe.broker.clustering.base.topology;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.protocol.PartitionState;
-import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
-import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.BrokerDto;
-import io.zeebe.raft.state.RaftState;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.broker.clustering.base.partitions.RaftState;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
 import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.IntHashSet;
 import org.slf4j.Logger;
 
 /**
  * Represents this node's view of the cluster. Includes info about known nodes as well as partitions
  * and their current distribution to nodes.
  */
-public class Topology implements ReadableTopology {
+public class Topology {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private final NodeInfo local;
 
-  private final Int2ObjectHashMap<PartitionInfo> partitions = new Int2ObjectHashMap<>();
+  private final IntHashSet partitions = new IntHashSet();
   private final List<NodeInfo> members = new ArrayList<>();
 
   private final Int2ObjectHashMap<NodeInfo> partitionLeaders = new Int2ObjectHashMap<>();
@@ -59,7 +54,6 @@ public class Topology implements ReadableTopology {
     this.addMember(localBroker);
   }
 
-  @Override
   public NodeInfo getLocal() {
     return local;
   }
@@ -90,59 +84,20 @@ public class Topology implements ReadableTopology {
     return member;
   }
 
-  @Override
-  public NodeInfo getMemberByClientApi(SocketAddress apiAddress) {
-    return getMemberByApi(NodeInfo::getClientApiAddress, apiAddress);
-  }
-
-  @Override
-  public NodeInfo getMemberByManagementApi(SocketAddress apiAddress) {
-    return getMemberByApi(NodeInfo::getManagementApiAddress, apiAddress);
-  }
-
-  @Override
-  public NodeInfo getMemberByReplicationApi(SocketAddress apiAddress) {
-    return getMemberByApi(NodeInfo::getReplicationApiAddress, apiAddress);
-  }
-
-  protected NodeInfo getMemberByApi(
-      Function<NodeInfo, SocketAddress> apiAddressMapper, SocketAddress apiAddress) {
-    NodeInfo member = null;
-
-    for (int i = 0; i < members.size() && member == null; i++) {
-      final NodeInfo current = members.get(i);
-
-      if (apiAddressMapper.apply(current).equals(apiAddress)) {
-        member = current;
-      }
-    }
-
-    return member;
-  }
-
-  @Override
   public List<NodeInfo> getMembers() {
     return members;
   }
 
-  @Override
-  public PartitionInfo getPartition(int partitionId) {
-    return partitions.get(partitionId);
-  }
-
-  @Override
   public NodeInfo getLeader(int partitionId) {
     return partitionLeaders.get(partitionId);
   }
 
-  @Override
   public List<NodeInfo> getFollowers(int partitionId) {
     return partitionFollowers.getOrDefault(partitionId, Collections.emptyList());
   }
 
-  @Override
-  public Collection<PartitionInfo> getPartitions() {
-    return new ArrayList<>(partitions.values());
+  public IntHashSet getPartitions() {
+    return partitions;
   }
 
   public boolean addMember(NodeInfo member) {
@@ -157,56 +112,28 @@ public class Topology implements ReadableTopology {
   public void removeMember(NodeInfo member) {
     LOG.debug("Removing {} from list of known members", member);
 
-    for (PartitionInfo partition : member.getFollowers()) {
-      final List<NodeInfo> followers = partitionFollowers.get(partition.getPartitionId());
+    for (int partitionId : member.getFollowers()) {
+      final List<NodeInfo> followers = partitionFollowers.get(partitionId);
 
       if (followers != null) {
         followers.remove(member);
       }
     }
 
-    for (PartitionInfo partition : member.getLeaders()) {
-      partitionLeaders.remove(partition.getPartitionId());
+    for (int partitionId : member.getLeaders()) {
+      partitionLeaders.remove(partitionId);
     }
 
     members.remove(member);
   }
 
-  public void removePartitionForMember(int partitionId, NodeInfo memberInfo) {
-    final PartitionInfo partition = partitions.get(partitionId);
-    if (partition == null) {
-      return;
-    }
-
-    LOG.debug("Removing {} list of known partitions", partition);
-
-    memberInfo.removeLeader(partition);
-    memberInfo.removeFollower(partition);
-
-    final List<NodeInfo> followers = partitionFollowers.get(partitionId);
-    if (followers != null) {
-      followers.remove(memberInfo);
-    }
-
-    final NodeInfo member = partitionLeaders.get(partitionId);
-    if (member != null && member.equals(memberInfo)) {
-      partitionLeaders.remove(partitionId);
-    }
-  }
-
-  public PartitionInfo updatePartition(
-      int partitionId, int replicationFactor, NodeInfo member, RaftState state) {
+  public void updatePartition(int partitionId, NodeInfo member, RaftState state) {
     List<NodeInfo> followers = partitionFollowers.get(partitionId);
 
-    PartitionInfo partition = partitions.get(partitionId);
-    if (partition == null) {
-      partition = new PartitionInfo(partitionId, replicationFactor);
-      partitions.put(partitionId, partition);
-    }
-
+    partitions.add(partitionId);
     LOG.debug(
         "Updating partition information for partition {} on {} with state {}",
-        partition,
+        partitionId,
         member,
         state);
 
@@ -218,8 +145,8 @@ public class Topology implements ReadableTopology {
           }
           partitionLeaders.put(partitionId, member);
 
-          member.removeFollower(partition);
-          member.addLeader(partition);
+          member.removeFollower(partitionId);
+          member.addLeader(partitionId);
           break;
 
         case FOLLOWER:
@@ -234,54 +161,10 @@ public class Topology implements ReadableTopology {
             followers.add(member);
           }
 
-          member.removeLeader(partition);
-          member.addFollower(partition);
-          break;
-
-        case CANDIDATE:
-          // internal raft state: not tracked by topology
+          member.removeLeader(partitionId);
+          member.addFollower(partitionId);
           break;
       }
     }
-
-    return partition;
-  }
-
-  @Override
-  public TopologyResponseDto asDto() {
-    final TopologyResponseDto dto = new TopologyResponseDto();
-    dto.setClusterSize(clusterSize);
-    dto.setPartitionsCount(partitionsCount);
-    dto.setReplicationFactor(replicationFactor);
-
-    for (NodeInfo member : members) {
-      final BrokerDto broker = dto.brokers().add();
-      final SocketAddress apiContactPoint = member.getClientApiAddress();
-      broker.setNodeId(member.getNodeId());
-      broker.setHost(
-          apiContactPoint.getHostBuffer(), 0, apiContactPoint.getHostBuffer().capacity());
-      broker.setPort(apiContactPoint.port());
-
-      for (PartitionInfo partition : member.getLeaders()) {
-
-        broker
-            .partitionStates()
-            .add()
-            .setPartitionId(partition.getPartitionId())
-            .setReplicationFactor(partition.getReplicationFactor())
-            .setState(PartitionState.LEADER);
-      }
-
-      for (PartitionInfo partition : member.getFollowers()) {
-        broker
-            .partitionStates()
-            .add()
-            .setPartitionId(partition.getPartitionId())
-            .setReplicationFactor(partition.getReplicationFactor())
-            .setState(PartitionState.FOLLOWER);
-      }
-    }
-
-    return dto;
   }
 }

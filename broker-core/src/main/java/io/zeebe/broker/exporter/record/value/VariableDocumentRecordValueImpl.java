@@ -17,29 +17,34 @@
  */
 package io.zeebe.broker.exporter.record.value;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueImpl;
 import io.zeebe.exporter.api.record.value.VariableDocumentRecordValue;
 import io.zeebe.protocol.VariableDocumentUpdateSemantic;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class VariableDocumentRecordValueImpl extends RecordValueImpl
     implements VariableDocumentRecordValue {
 
   private final long scopeKey;
   private final VariableDocumentUpdateSemantic updateSemantics;
-  private final Map<String, Object> document;
+
+  @JsonIgnore private final Supplier<Map<String, Object>> documentSupplier;
+  @JsonIgnore private Map<String, Object> document;
 
   public VariableDocumentRecordValueImpl(
       ExporterObjectMapper objectMapper,
       long scopeKey,
       VariableDocumentUpdateSemantic updateSemantics,
-      Map<String, Object> document) {
+      Supplier<Map<String, Object>> documentSupplier) {
     super(objectMapper);
     this.scopeKey = scopeKey;
     this.updateSemantics = updateSemantics;
-    this.document = document;
+    this.documentSupplier = documentSupplier;
   }
 
   @Override
@@ -53,7 +58,11 @@ public class VariableDocumentRecordValueImpl extends RecordValueImpl
   }
 
   @Override
+  @JsonProperty
   public Map<String, Object> getDocument() {
+    if (document == null) {
+      document = documentSupplier.get();
+    }
     return document;
   }
 
@@ -86,7 +95,7 @@ public class VariableDocumentRecordValueImpl extends RecordValueImpl
         + ", updateSemantics="
         + updateSemantics
         + ", document="
-        + document
+        + getDocument()
         + "} "
         + super.toString();
   }

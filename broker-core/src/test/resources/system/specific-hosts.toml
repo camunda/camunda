@@ -1,17 +1,11 @@
 [gateway.network]
 host = "gatewayHost"
 
-[network.client]
-host = "clientHost"
+[network.commandApi]
+host = "commandHost"
 
-[network.management]
-host = "managementHost"
-
-[network.replication]
-host = "replicationHost"
-
-[network.subscription]
-host = "subscriptionHost"
+[network.internalApi]
+host = "internalHost"
 
 [metrics]
 host = "metricsHost"

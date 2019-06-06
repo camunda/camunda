@@ -44,7 +44,7 @@ public class ActorExecutor {
   }
 
   /**
-   * Initially submit a non-blocking actor to be managed by this schedueler.
+   * Initially submit a non-blocking actor to be managed by this scheduler.
    *
    * @param task the task to submit
    * @param collectTaskMetrics Controls whether metrics should be collected. (See {@link

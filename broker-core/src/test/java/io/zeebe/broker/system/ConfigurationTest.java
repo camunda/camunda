@@ -23,7 +23,9 @@ import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_NODE_ID;
 import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_PARTITIONS_COUNT;
 import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_REPLICATION_FACTOR;
 import static io.zeebe.broker.system.configuration.DataCfg.DEFAULT_DIRECTORY;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_CLUSTER_NAME;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_CLUSTER_SIZE;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DEBUG_EXPORTER;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DIRECTORIES;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_EMBED_GATEWAY;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
@@ -34,8 +36,10 @@ import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PART
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_REPLICATION_FACTOR;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
@@ -43,10 +47,8 @@ import io.zeebe.broker.system.configuration.EmbeddedGatewayCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.MetricsCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.broker.system.configuration.SocketBindingClientApiCfg;
-import io.zeebe.broker.system.configuration.SocketBindingManagementCfg;
-import io.zeebe.broker.system.configuration.SocketBindingReplicationCfg;
-import io.zeebe.broker.system.configuration.SocketBindingSubscriptionCfg;
+import io.zeebe.broker.system.configuration.SocketBindingCommandApiCfg;
+import io.zeebe.broker.system.configuration.SocketBindingInternalCfg;
 import io.zeebe.util.Environment;
 import io.zeebe.util.TomlConfigurationReader;
 import java.io.ByteArrayInputStream;
@@ -69,11 +71,20 @@ public class ConfigurationTest {
 
   public Map<String, String> environment = new HashMap<>();
 
-  public static final int CLIENT_PORT = SocketBindingClientApiCfg.DEFAULT_PORT;
-  public static final int MANAGEMENT_PORT = SocketBindingManagementCfg.DEFAULT_PORT;
-  public static final int REPLICATION_PORT = SocketBindingReplicationCfg.DEFAULT_PORT;
-  public static final int SUBSCRIPTION_PORT = SocketBindingSubscriptionCfg.DEFAULT_PORT;
+  public static final int CLIENT_PORT = SocketBindingCommandApiCfg.DEFAULT_PORT;
   public static final int METRICS_PORT = MetricsCfg.DEFAULT_PORT;
+  public static final int ATOMIX_PORT = SocketBindingInternalCfg.DEFAULT_PORT;
+
+  @Test
+  public void shouldUseSpecifiedClusterName() {
+    assertClusterName("specific-cluster-name", "cluster-name");
+  }
+
+  @Test
+  public void shouldUseClusterNameFromEnvironment() {
+    environment.put(ENV_CLUSTER_NAME, "test-cluster");
+    assertClusterName("default", "test-cluster");
+  }
 
   @Test
   public void shouldUseSpecifiedNodeId() {
@@ -100,72 +111,51 @@ public class ConfigurationTest {
 
   @Test
   public void shouldUseDefaultPorts() {
-    assertPorts(
-        "default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT, SUBSCRIPTION_PORT, METRICS_PORT);
+    assertPorts("default", CLIENT_PORT, ATOMIX_PORT, METRICS_PORT);
   }
 
   @Test
   public void shouldUseSpecifiedPorts() {
-    assertPorts("specific-ports", 1, 2, 3, 4, 5);
+    assertPorts("specific-ports", 1, 5, 6);
   }
 
   @Test
   public void shouldUsePortOffset() {
     final int offset = 50;
-    assertPorts(
-        "port-offset",
-        CLIENT_PORT + offset,
-        MANAGEMENT_PORT + offset,
-        REPLICATION_PORT + offset,
-        SUBSCRIPTION_PORT + offset,
-        METRICS_PORT + offset);
+    assertPorts("port-offset", CLIENT_PORT + offset, ATOMIX_PORT + offset, METRICS_PORT + offset);
   }
 
   @Test
   public void shouldUsePortOffsetWithSpecifiedPorts() {
     final int offset = 30;
-    assertPorts(
-        "specific-ports-offset", 1 + offset, 2 + offset, 3 + offset, 4 + offset, 5 + offset);
+    assertPorts("specific-ports-offset", 1 + offset, 5 + offset, 6 + offset);
   }
 
   @Test
   public void shouldUsePortOffsetFromEnvironment() {
     environment.put(ENV_PORT_OFFSET, "5");
     final int offset = 50;
-    assertPorts(
-        "default",
-        CLIENT_PORT + offset,
-        MANAGEMENT_PORT + offset,
-        REPLICATION_PORT + offset,
-        SUBSCRIPTION_PORT + offset,
-        METRICS_PORT + offset);
+    assertPorts("default", CLIENT_PORT + offset, ATOMIX_PORT + offset, METRICS_PORT + offset);
   }
 
   @Test
   public void shouldUsePortOffsetFromEnvironmentWithSpecifiedPorts() {
     environment.put(ENV_PORT_OFFSET, "3");
     final int offset = 30;
-    assertPorts("specific-ports", 1 + offset, 2 + offset, 3 + offset, 4 + offset, 5 + offset);
+    assertPorts("specific-ports", 1 + offset, 5 + offset, 6 + offset);
   }
 
   @Test
   public void shouldIgnoreInvalidPortOffsetFromEnvironment() {
     environment.put(ENV_PORT_OFFSET, "a");
-    assertPorts(
-        "default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT, SUBSCRIPTION_PORT, METRICS_PORT);
+    assertPorts("default", CLIENT_PORT, ATOMIX_PORT, METRICS_PORT);
   }
 
   @Test
   public void shouldOverridePortOffsetFromEnvironment() {
     environment.put(ENV_PORT_OFFSET, "7");
     final int offset = 70;
-    assertPorts(
-        "port-offset",
-        CLIENT_PORT + offset,
-        MANAGEMENT_PORT + offset,
-        REPLICATION_PORT + offset,
-        SUBSCRIPTION_PORT + offset,
-        METRICS_PORT + offset);
+    assertPorts("port-offset", CLIENT_PORT + offset, ATOMIX_PORT + offset, METRICS_PORT + offset);
   }
 
   @Test
@@ -199,6 +189,36 @@ public class ConfigurationTest {
   }
 
   @Test
+  public void shouldEnableDebugLogExporter() {
+    // given
+    final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(false);
+    environment.put(ENV_DEBUG_EXPORTER, "true");
+
+    // when
+    final BrokerCfg brokerCfg = readConfig("default");
+
+    // then
+    assertThat(brokerCfg.getExporters())
+        .usingRecursiveFieldByFieldElementComparator()
+        .contains(exporterCfg);
+  }
+
+  @Test
+  public void shouldEnableDebugLogExporterWithPrettyOption() {
+    // given
+    final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(true);
+    environment.put(ENV_DEBUG_EXPORTER, "pretty");
+
+    // when
+    final BrokerCfg brokerCfg = readConfig("default");
+
+    // then
+    assertThat(brokerCfg.getExporters())
+        .usingRecursiveFieldByFieldElementComparator()
+        .contains(exporterCfg);
+  }
+
+  @Test
   public void shouldUseDefaultHost() {
     assertHost("default", DEFAULT_HOST);
   }
@@ -209,10 +229,8 @@ public class ConfigurationTest {
         "specific-hosts",
         DEFAULT_HOST,
         "gatewayHost",
-        "clientHost",
-        "managementHost",
-        "replicationHost",
-        "subscriptionHost",
+        "commandHost",
+        "internalHost",
         "metricsHost");
   }
 
@@ -237,14 +255,7 @@ public class ConfigurationTest {
   public void shouldNotOverrideSpecifiedHostsFromEnvironment() {
     environment.put(ENV_HOST, "myHost");
     assertHost(
-        "specific-hosts",
-        "myHost",
-        "gatewayHost",
-        "clientHost",
-        "managementHost",
-        "replicationHost",
-        "subscriptionHost",
-        "metricsHost");
+        "specific-hosts", "myHost", "gatewayHost", "commandHost", "internalHost", "metricsHost");
   }
 
   @Test
@@ -358,7 +369,8 @@ public class ConfigurationTest {
     // when - then
     assertThat(cfgCluster.getPartitionsCount()).isEqualTo(3);
     final List<Integer> partitionIds = cfgCluster.getPartitionIds();
-    assertThat(partitionIds).contains(0, 1, 2);
+    final int startId = START_PARTITION_ID;
+    assertThat(partitionIds).contains(startId, startId + 1, startId + 2);
   }
 
   @Test
@@ -496,43 +508,37 @@ public class ConfigurationTest {
     assertThat(cfg.getCluster().getNodeId()).isEqualTo(nodeId);
   }
 
+  private void assertClusterName(final String configFileName, final String clusterName) {
+    final BrokerCfg cfg = readConfig(configFileName);
+    assertThat(cfg.getCluster().getClusterName()).isEqualTo(clusterName);
+  }
+
   private void assertPorts(
-      final String configFileName,
-      final int client,
-      final int management,
-      final int replication,
-      final int subscription,
-      final int metrics) {
+      final String configFileName, final int command, final int internal, final int metrics) {
     final BrokerCfg brokerCfg = readConfig(configFileName);
     final NetworkCfg network = brokerCfg.getNetwork();
-    assertThat(network.getClient().getPort()).isEqualTo(client);
-    assertThat(network.getManagement().getPort()).isEqualTo(management);
-    assertThat(network.getReplication().getPort()).isEqualTo(replication);
-    assertThat(network.getSubscription().getPort()).isEqualTo(subscription);
+    assertThat(network.getCommandApi().getPort()).isEqualTo(command);
+    assertThat(network.getInternalApi().getPort()).isEqualTo(internal);
     assertThat(brokerCfg.getMetrics().getPort()).isEqualTo(metrics);
   }
 
   private void assertHost(final String configFileName, final String host) {
-    assertHost(configFileName, host, host, host, host, host, host, host);
+    assertHost(configFileName, host, host, host, host, host);
   }
 
   private void assertHost(
       final String configFileName,
       final String host,
       final String gateway,
-      final String client,
-      final String management,
-      final String replication,
-      final String subscription,
+      final String command,
+      final String internal,
       final String metrics) {
     final BrokerCfg brokerCfg = readConfig(configFileName);
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     assertThat(networkCfg.getHost()).isEqualTo(host);
     assertThat(brokerCfg.getGateway().getNetwork().getHost()).isEqualTo(gateway);
-    assertThat(networkCfg.getClient().getHost()).isEqualTo(client);
-    assertThat(networkCfg.getManagement().getHost()).isEqualTo(management);
-    assertThat(networkCfg.getReplication().getHost()).isEqualTo(replication);
-    assertThat(networkCfg.getSubscription().getHost()).isEqualTo(subscription);
+    assertThat(networkCfg.getCommandApi().getHost()).isEqualTo(command);
+    assertThat(networkCfg.getInternalApi().getHost()).isEqualTo(internal);
     assertThat(brokerCfg.getMetrics().getHost()).isEqualTo(metrics);
   }
 

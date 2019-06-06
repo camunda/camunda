@@ -15,7 +15,6 @@
  */
 package io.zeebe.protocol;
 
-import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
 import java.nio.ByteOrder;
 
 public class Protocol {
@@ -32,7 +31,13 @@ public class Protocol {
   public static final long INSTANT_NULL_VALUE = Long.MIN_VALUE;
 
   /** By convention, the partition to deploy to */
-  public static final int DEPLOYMENT_PARTITION = 0;
+  public static final int DEPLOYMENT_PARTITION = 1;
+
+  /**
+   * Id of the first partition. partition ids are in the range(START_PARTITION_ID,
+   * START_PARTITION_ID + partitionCount)
+   */
+  public static final int START_PARTITION_ID = 1;
 
   public static final long encodePartitionId(int partitionId, long key) {
     return ((long) partitionId << KEY_BITS) + key;

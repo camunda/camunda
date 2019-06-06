@@ -28,8 +28,6 @@ import java.util.function.Consumer;
 
 public class EmbeddedBrokerConfigurator {
 
-  public static final Consumer<BrokerCfg> NOOP = cfg -> {};
-
   public static final Consumer<BrokerCfg> DEBUG_EXPORTER =
       cfg -> cfg.getExporters().add(DebugLogExporter.defaultConfig(false));
 
@@ -55,13 +53,15 @@ public class EmbeddedBrokerConfigurator {
       final int nodeId,
       final int partitionCount,
       final int replicationFactor,
-      final int clusterSize) {
+      final int clusterSize,
+      final String clusterName) {
     return cfg -> {
       final ClusterCfg cluster = cfg.getCluster();
       cluster.setNodeId(nodeId);
       cluster.setPartitionsCount(partitionCount);
       cluster.setReplicationFactor(replicationFactor);
       cluster.setClusterSize(clusterSize);
+      cluster.setClusterName(clusterName);
     };
   }
 
@@ -73,20 +73,16 @@ public class EmbeddedBrokerConfigurator {
     return cfg -> cfg.getGateway().getNetwork().setPort(port);
   }
 
-  public static Consumer<BrokerCfg> setClientApiPort(final int port) {
-    return cfg -> cfg.getNetwork().getClient().setPort(port);
+  public static Consumer<BrokerCfg> setGatewayClusterPort(final int port) {
+    return cfg -> cfg.getGateway().getCluster().setPort(port);
   }
 
-  public static Consumer<BrokerCfg> setManagementApiPort(final int port) {
-    return cfg -> cfg.getNetwork().getManagement().setPort(port);
+  public static Consumer<BrokerCfg> setCommandApiPort(final int port) {
+    return cfg -> cfg.getNetwork().getCommandApi().setPort(port);
   }
 
-  public static Consumer<BrokerCfg> setReplicationApiPort(final int port) {
-    return cfg -> cfg.getNetwork().getReplication().setPort(port);
-  }
-
-  public static Consumer<BrokerCfg> setSubscriptionApiPort(final int port) {
-    return cfg -> cfg.getNetwork().getSubscription().setPort(port);
+  public static Consumer<BrokerCfg> setInternalApiPort(final int port) {
+    return cfg -> cfg.getNetwork().getInternalApi().setPort(port);
   }
 
   public static Consumer<BrokerCfg> setMetricsPort(final int port) {

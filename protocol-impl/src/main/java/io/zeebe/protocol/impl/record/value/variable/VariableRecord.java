@@ -15,14 +15,18 @@
  */
 package io.zeebe.protocol.impl.record.value.variable;
 
-import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.msgpack.property.BinaryProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.WorkflowInstanceRelated;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class VariableRecord extends UnpackedObject implements WorkflowInstanceRelated {
+public class VariableRecord extends UnifiedRecordValue
+    implements WorkflowInstanceRelated, VariableRecordValue {
 
   private final StringProperty nameProp = new StringProperty("name");
   private final BinaryProperty valueProp = new BinaryProperty("value");
@@ -38,7 +42,7 @@ public class VariableRecord extends UnpackedObject implements WorkflowInstanceRe
         .declareProperty(workflowKeyProp);
   }
 
-  public DirectBuffer getName() {
+  public DirectBuffer getNameBuffer() {
     return nameProp.getValue();
   }
 
@@ -47,7 +51,7 @@ public class VariableRecord extends UnpackedObject implements WorkflowInstanceRe
     return this;
   }
 
-  public DirectBuffer getValue() {
+  public DirectBuffer getValueBuffer() {
     return valueProp.getValue();
   }
 
@@ -81,5 +85,15 @@ public class VariableRecord extends UnpackedObject implements WorkflowInstanceRe
   public VariableRecord setWorkflowKey(long workflowKey) {
     this.workflowKeyProp.setValue(workflowKey);
     return this;
+  }
+
+  @Override
+  public String getName() {
+    return BufferUtil.bufferAsString(nameProp.getValue());
+  }
+
+  @Override
+  public String getValue() {
+    return MsgPackConverter.convertToJson(valueProp.getValue());
   }
 }

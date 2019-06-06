@@ -66,6 +66,21 @@ public class BrokerInfoImpl implements BrokerInfo {
     return this.partitions;
   }
 
+  @Override
+  public String toString() {
+    return "BrokerInfoImpl{"
+        + "nodeId="
+        + nodeId
+        + ", host='"
+        + host
+        + '\''
+        + ", port="
+        + port
+        + ", partitions="
+        + partitions
+        + '}';
+  }
+
   class PartitionInfoImpl implements PartitionInfo {
 
     private final int partitionId;
@@ -99,6 +114,11 @@ public class BrokerInfoImpl implements BrokerInfo {
     @Override
     public boolean isLeader() {
       return this.role == PartitionBrokerRole.LEADER;
+    }
+
+    @Override
+    public String toString() {
+      return "PartitionInfoImpl{" + "partitionId=" + partitionId + ", role=" + role + '}';
     }
   }
 }

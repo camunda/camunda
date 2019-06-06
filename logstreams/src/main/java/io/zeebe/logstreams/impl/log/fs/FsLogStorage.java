@@ -22,9 +22,6 @@ import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.END_OF_SEGMENT;
 import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.INSUFFICIENT_CAPACITY;
 import static io.zeebe.logstreams.impl.log.fs.FsLogSegment.NO_DATA;
 import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.METADATA_LENGTH;
-import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.SEGMENT_SIZE_OFFSET;
-import static io.zeebe.util.FileUtil.moveFile;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.LogStorage;
@@ -35,38 +32,29 @@ import io.zeebe.util.metrics.MetricsManager;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileChannel.MapMode;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
-import org.agrona.IoUtil;
-import org.agrona.LangUtil;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 public class FsLogStorage implements LogStorage {
   public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
-  protected static final int STATE_CREATED = 0;
-  protected static final int STATE_OPENED = 1;
-  protected static final int STATE_CLOSED = 2;
+  private static final int STATE_CREATED = 0;
+  private static final int STATE_OPENED = 1;
+  private static final int STATE_CLOSED = 2;
 
   protected final FsLogStorageConfiguration config;
   private final MetricsManager metricsManager;
-  protected final ReadResultProcessor defaultReadResultProcessor =
-      (buffer, readResult) -> readResult;
+  private final ReadResultProcessor defaultReadResultProcessor = (buffer, readResult) -> readResult;
 
   /** Readable log segments */
-  protected FsLogSegments logSegments;
+  private FsLogSegments logSegments;
 
-  protected FsLogSegment currentSegment;
+  private FsLogSegment currentSegment;
 
-  protected int dirtySegmentId = -1;
+  private int dirtySegmentId = -1;
 
   protected volatile int state = STATE_CREATED;
 
@@ -123,7 +111,7 @@ public class FsLogStorage implements LogStorage {
     return opresult;
   }
 
-  protected void onSegmentFilled() {
+  private void onSegmentFilled() {
     final FsLogSegment filledSegment = currentSegment;
 
     final int nextSegmentId = 1 + filledSegment.getSegmentId();
@@ -141,71 +129,27 @@ public class FsLogStorage implements LogStorage {
   }
 
   @Override
-  public void truncate(final long address) {
+  public void delete(long address) {
     ensureOpenedStorage();
 
     final int segmentId = partitionId(address);
-    final int segmentOffset = partitionOffset(address);
-    addressCheck(segmentId, segmentOffset);
 
-    truncateLogSegment(segmentId, segmentOffset);
-
-    final String source = config.fileName(segmentId);
-    final String backup = config.backupFileName(segmentId);
-    final String truncated = config.truncatedFileName(segmentId);
-
-    // move: segment.bak -> segment.bak.truncated
-    moveFile(backup, truncated, REPLACE_EXISTING);
-
-    // delete log segments in reverse order
-    for (int i = currentSegment.getSegmentId(); segmentId <= i; i--) {
-      final FsLogSegment segmentToDelete = logSegments.getSegment(i);
-      segmentToDelete.closeSegment();
-      segmentToDelete.delete();
-    }
-
-    // move: segment.bak.truncated -> segment
-    moveFile(truncated, source, REPLACE_EXISTING);
-
-    final String path = config.getPath();
-    final File logDir = new File(path);
-    initLogSegments(logDir);
-  }
-
-  protected void addressCheck(final int segmentId, final int segmentOffset) {
-    final FsLogSegment segment = logSegments.getSegment(segmentId);
-    if (segment == null || segmentOffset < METADATA_LENGTH || segmentOffset >= segment.getSize()) {
-      throw new IllegalArgumentException("Invalid address");
-    }
-  }
-
-  /** Creates a truncated backup file of given segment. */
-  protected void truncateLogSegment(final int segmentId, final int size) {
-    final String source = config.fileName(segmentId);
-    final String backup = config.backupFileName(segmentId);
-
-    final Path sourcePath = Paths.get(source);
-    final Path backupPath = Paths.get(backup);
-
-    FileChannel fileChannel = null;
-    MappedByteBuffer mappedBuffer = null;
-    try {
-      // copy: segment -> segment.bak
-      Files.copy(sourcePath, backupPath, REPLACE_EXISTING);
-
-      fileChannel = FileUtil.openChannel(backup, false);
-      fileChannel.truncate(size);
-      fileChannel.force(true);
-
-      mappedBuffer = fileChannel.map(MapMode.READ_WRITE, 0, METADATA_LENGTH);
-      final UnsafeBuffer metadataSection = new UnsafeBuffer(mappedBuffer, 0, METADATA_LENGTH);
-      metadataSection.putInt(SEGMENT_SIZE_OFFSET, size);
-      mappedBuffer.force();
-    } catch (final IOException e) {
-      LangUtil.rethrowUnchecked(e);
-    } finally {
-      IoUtil.unmap(mappedBuffer);
-      FileUtil.closeSilently(fileChannel);
+    final int firstSegmentId = logSegments.initialSegmentId;
+    final int lastSegmentId = logSegments.getLastSegmentId();
+    if (segmentId > firstSegmentId && segmentId <= lastSegmentId) {
+      // segment id has to be larger then initial id,
+      // since we don't delete data within a segment
+      for (int i = logSegments.initialSegmentId; i < segmentId; i++) {
+        final FsLogSegment segmentToDelete = logSegments.getSegment(i);
+        if (segmentToDelete != null) {
+          segmentToDelete.closeSegment();
+          segmentToDelete.delete();
+        }
+      }
+      final int diff = segmentId - firstSegmentId;
+      LOG.info("Deleted {} segments from log storage ({} to {}).", diff, firstSegmentId, segmentId);
+      dirtySegmentId = Math.max(dirtySegmentId, segmentId);
+      logSegments.removeSegmentsUntil(segmentId);
     }
   }
 
@@ -271,9 +215,6 @@ public class FsLogStorage implements LogStorage {
     final File logDir = new File(path);
     logDir.mkdirs();
 
-    deleteBackupFilesIfExist(logDir);
-    applyTruncatedFileIfExists(logDir);
-
     initLogSegments(logDir);
 
     checkConsistency();
@@ -281,7 +222,8 @@ public class FsLogStorage implements LogStorage {
     state = STATE_OPENED;
   }
 
-  protected void initLogSegments(final File logDir) {
+  private void initLogSegments(final File logDir) {
+    final int initialSegmentId;
     final List<FsLogSegment> readableLogSegments = new ArrayList<>();
 
     final List<File> logFiles =
@@ -298,7 +240,7 @@ public class FsLogStorage implements LogStorage {
         });
 
     // sort segments by id
-    readableLogSegments.sort((s1, s2) -> Integer.compare(s1.getSegmentId(), s2.getSegmentId()));
+    readableLogSegments.sort(Comparator.comparingInt(FsLogSegment::getSegmentId));
 
     // set all segments but the last one filled
     for (int i = 0; i < readableLogSegments.size() - 1; i++) {
@@ -312,15 +254,15 @@ public class FsLogStorage implements LogStorage {
 
     if (existingSegments > 0) {
       currentSegment = readableLogSegments.get(existingSegments - 1);
+      initialSegmentId = readableLogSegments.get(0).getSegmentId();
     } else {
-      final int initialSegmentId = config.initialSegmentId;
+      initialSegmentId = config.getInitialSegmentId();
       final String initialSegmentName = config.fileName(initialSegmentId);
       final int segmentSize = config.getSegmentSize();
 
       final FsLogSegment initialSegment = new FsLogSegment(initialSegmentName);
 
       if (!initialSegment.allocate(initialSegmentId, segmentSize)) {
-
         throw new RuntimeException("Cannot allocate initial segment");
       }
 
@@ -334,13 +276,13 @@ public class FsLogStorage implements LogStorage {
         readableLogSegments.toArray(new FsLogSegment[readableLogSegments.size()]);
 
     final FsLogSegments logSegments = new FsLogSegments();
-    logSegments.init(config.initialSegmentId, segmentsArray);
+    logSegments.init(initialSegmentId, segmentsArray);
     segmentCountMetric.setOrdered(logSegments.getSegmentCount());
 
     this.logSegments = logSegments;
   }
 
-  protected void checkConsistency() {
+  private void checkConsistency() {
     try {
       if (!currentSegment.isConsistent()) {
         // try to auto-repair segment
@@ -353,56 +295,6 @@ public class FsLogStorage implements LogStorage {
     } catch (final IOException e) {
       throw new RuntimeException("Fail to check consistency", e);
     }
-  }
-
-  protected void deleteBackupFilesIfExist(final File logDir) {
-    final List<File> backupFiles =
-        Arrays.asList(logDir.listFiles(config::matchesBackupFileNamePattern));
-    backupFiles.forEach(FileUtil::deleteFile);
-  }
-
-  protected void applyTruncatedFileIfExists(final File logDir) {
-    final List<File> truncatedFiles =
-        Arrays.asList(logDir.listFiles(config::matchesTruncatedFileNamePattern));
-
-    final int truncatedApplicableFiles = truncatedFiles.size();
-    if (truncatedApplicableFiles == 1) {
-      final File truncatedFile = truncatedFiles.get(0);
-      final int truncatedSegmentId = getSegmentId(truncatedFile);
-
-      if (shouldApplyTruncatedSegment(logDir, truncatedFile, truncatedSegmentId)) {
-        moveFile(truncatedFile.getAbsolutePath(), config.fileName(truncatedSegmentId));
-      } else {
-        truncatedFiles.forEach(FileUtil::deleteFile);
-      }
-
-    } else if (truncatedApplicableFiles > 1) {
-      throw new RuntimeException("Cannot open log storage: multiple truncated files detected");
-    }
-  }
-
-  protected boolean shouldApplyTruncatedSegment(
-      final File logDir, final File truncatedFile, final int truncatedSegmentId) {
-    final List<File> segments =
-        Arrays.asList(logDir.listFiles(config::matchesFragmentFileNamePattern));
-
-    boolean shouldApply = false;
-    final int existingSegments = segments.size();
-
-    if (existingSegments == 0) {
-      shouldApply = truncatedSegmentId == config.initialSegmentId;
-    } else {
-      final File lastSegment =
-          segments.stream()
-              .max((s1, s2) -> Integer.compare(getSegmentId(s1), getSegmentId(s2)))
-              .get();
-
-      final int lastSegmentId = getSegmentId(lastSegment);
-
-      shouldApply = lastSegmentId + 1 == truncatedSegmentId;
-    }
-
-    return shouldApply;
   }
 
   @Override
@@ -434,14 +326,19 @@ public class FsLogStorage implements LogStorage {
 
     if (dirtySegmentId >= 0) {
       for (int id = dirtySegmentId; id <= currentSegment.getSegmentId(); id++) {
-        logSegments.getSegment(id).flush();
+        final FsLogSegment segment = logSegments.getSegment(id);
+        if (segment != null) {
+          segment.flush();
+        } else {
+          LOG.warn("Ignoring segment {} on flush as it does not exist", id);
+        }
       }
 
       dirtySegmentId = -1;
     }
   }
 
-  protected void markSegmentAsDirty(final FsLogSegment segment) {
+  private void markSegmentAsDirty(final FsLogSegment segment) {
     if (dirtySegmentId < 0) {
       dirtySegmentId = segment.getSegmentId();
     }
@@ -463,7 +360,7 @@ public class FsLogStorage implements LogStorage {
     }
   }
 
-  protected void ensureOpenedStorage() {
+  private void ensureOpenedStorage() {
     if (state == STATE_CREATED) {
       throw new IllegalStateException("log storage is not open");
     }
@@ -472,7 +369,7 @@ public class FsLogStorage implements LogStorage {
     }
   }
 
-  protected void ensureNotOpenedStorage() {
+  private void ensureNotOpenedStorage() {
     if (state == STATE_OPENED) {
       throw new IllegalStateException("log storage is already opened");
     }
@@ -486,16 +383,5 @@ public class FsLogStorage implements LogStorage {
   @Override
   public boolean isClosed() {
     return state == STATE_CLOSED;
-  }
-
-  protected int getSegmentId(final File file) {
-    final FsLogSegment segment = new FsLogSegment(file.getAbsolutePath());
-    segment.openSegment(false);
-
-    final int segmentId = segment.getSegmentId();
-
-    segment.closeSegment();
-
-    return segmentId;
   }
 }

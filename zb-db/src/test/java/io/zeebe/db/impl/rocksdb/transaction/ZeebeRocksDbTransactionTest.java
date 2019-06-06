@@ -26,6 +26,7 @@ import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.db.ZeebeDbTransaction;
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.DefaultZeebeDbFactory;
+import io.zeebe.util.exception.RecoverableException;
 import java.io.File;
 import org.junit.Before;
 import org.junit.Rule;
@@ -61,6 +62,18 @@ public class ZeebeRocksDbTransactionTest {
     dbContext.runInTransaction(
         () -> {
           throw new RocksDBException("expected", status);
+        });
+  }
+
+  @Test(expected = RecoverableException.class)
+  public void shouldReThrowRecoverableException() {
+    // given
+    final Status status = new Status(Code.IOError, SubCode.None, "");
+
+    // when
+    dbContext.runInTransaction(
+        () -> {
+          throw new RecoverableException(new RocksDBException("expected", status));
         });
   }
 
@@ -134,6 +147,19 @@ public class ZeebeRocksDbTransactionTest {
     currentTransaction.run(
         () -> {
           throw new RocksDBException("expected", status);
+        });
+  }
+
+  @Test(expected = RecoverableException.class)
+  public void shouldReThrowRecoverableExceptionInTransactionRun() throws Exception {
+    // given
+    final Status status = new Status(Code.IOError, SubCode.None, "");
+
+    // when
+    final ZeebeDbTransaction currentTransaction = dbContext.getCurrentTransaction();
+    currentTransaction.run(
+        () -> {
+          throw new RecoverableException(new RocksDBException("expected", status));
         });
   }
 

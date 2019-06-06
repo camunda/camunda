@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
+
 import io.zeebe.util.Environment;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +30,7 @@ public class ClusterCfg implements ConfigurationEntry {
   public static final int DEFAULT_PARTITIONS_COUNT = 1;
   public static final int DEFAULT_REPLICATION_FACTOR = 1;
   public static final int DEFAULT_CLUSTER_SIZE = 1;
+  public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
 
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
 
@@ -36,6 +39,7 @@ public class ClusterCfg implements ConfigurationEntry {
   private int partitionsCount = DEFAULT_PARTITIONS_COUNT;
   private int replicationFactor = DEFAULT_REPLICATION_FACTOR;
   private int clusterSize = DEFAULT_CLUSTER_SIZE;
+  private String clusterName = DEFAULT_CLUSTER_NAME;
 
   @Override
   public void init(
@@ -47,7 +51,7 @@ public class ClusterCfg implements ConfigurationEntry {
 
   private void initPartitionIds() {
     final IntArrayList list = new IntArrayList();
-    for (int i = 0; i < partitionsCount; i++) {
+    for (int i = START_PARTITION_ID; i < START_PARTITION_ID + partitionsCount; i++) {
       final int partitionId = i;
       list.add(partitionId);
     }
@@ -58,6 +62,7 @@ public class ClusterCfg implements ConfigurationEntry {
   private void applyEnvironment(final Environment environment) {
     environment.getInt(EnvironmentConstants.ENV_NODE_ID).ifPresent(v -> nodeId = v);
     environment.getInt(EnvironmentConstants.ENV_CLUSTER_SIZE).ifPresent(v -> clusterSize = v);
+    environment.get(EnvironmentConstants.ENV_CLUSTER_NAME).ifPresent(v -> clusterName = v);
     environment
         .getInt(EnvironmentConstants.ENV_PARTITIONS_COUNT)
         .ifPresent(v -> partitionsCount = v);
@@ -111,6 +116,14 @@ public class ClusterCfg implements ConfigurationEntry {
 
   public void setClusterSize(final int clusterSize) {
     this.clusterSize = clusterSize;
+  }
+
+  public String getClusterName() {
+    return clusterName;
+  }
+
+  public void setClusterName(String clusterName) {
+    this.clusterName = clusterName;
   }
 
   @Override

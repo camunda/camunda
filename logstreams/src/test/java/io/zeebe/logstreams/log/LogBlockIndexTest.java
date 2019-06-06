@@ -22,6 +22,7 @@ import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.impl.log.index.LogBlockColumnFamilies;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndexContext;
+import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import org.junit.After;
 import org.junit.Before;
@@ -53,11 +54,11 @@ public class LogBlockIndexTest {
   private void startBlockIndexDb() {
     final ZeebeDbFactory<LogBlockColumnFamilies> dbFactory =
         ZeebeRocksDbFactory.newFactory(LogBlockColumnFamilies.class);
-
     final StateStorage stateStorage =
         new StateStorage(runtimeDirectory.getRoot(), snapshotDirectory.getRoot());
+    final StateSnapshotController controller = new StateSnapshotController(dbFactory, stateStorage);
 
-    blockIndex = new LogBlockIndex(dbFactory, stateStorage);
+    blockIndex = new LogBlockIndex(controller);
     indexContext = blockIndex.createLogBlockIndexContext();
   }
 
@@ -145,7 +146,6 @@ public class LogBlockIndexTest {
     final int capacity = 100;
 
     // given
-
     for (int i = 0; i < capacity; i++) {
       final int pos = (i + 1) * 10;
       final int addr = (i + 1) * 100;
@@ -154,7 +154,6 @@ public class LogBlockIndexTest {
     }
 
     // then
-
     for (int i = 0; i < capacity; i++) {
       final int expectedAddr = (i + 1) * 100;
 
@@ -193,7 +192,6 @@ public class LogBlockIndexTest {
     final int capacity = 100;
 
     // given
-
     for (int i = 0; i < capacity; i++) {
       final int pos = (i + 1) * 10;
       final int addr = (i + 1) * 100;
@@ -202,7 +200,6 @@ public class LogBlockIndexTest {
     }
 
     // then
-
     for (int i = 0; i < capacity; i++) {
       final int expectedPos = (i + 1) * 10;
 
@@ -228,6 +225,27 @@ public class LogBlockIndexTest {
     // then
     lookupAndAssert(numBlocks);
     assertThat(blockIndex.getLastPosition()).isEqualTo(snapshotPosition);
+  }
+
+  @Test
+  public void shouldDeleteEntriesUpToPosition() {
+    // given
+    final int numBlocks = 3;
+    addBlocks(numBlocks);
+
+    // when
+    blockIndex.deleteUpToPosition(indexContext, ENTRY_OFFSET);
+
+    // then
+    assertThat(blockIndex.lookupBlockAddress(indexContext, 0))
+        .isEqualTo(LogBlockIndex.VALUE_NOT_FOUND);
+    for (int i = 0; i < ENTRY_OFFSET; ++i) {
+      assertThat(blockIndex.lookupBlockPosition(indexContext, i))
+          .isEqualTo(LogBlockIndex.VALUE_NOT_FOUND);
+    }
+    assertThat(blockIndex.lookupBlockAddress(indexContext, ENTRY_OFFSET))
+        .isEqualTo(ENTRY_OFFSET * ADDRESS_MULTIPLIER);
+    // don't delete block if it may contain entries that shouldn't be deleted
   }
 
   // Adds blocks and returns the last added position

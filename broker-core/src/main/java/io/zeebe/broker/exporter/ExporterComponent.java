@@ -19,13 +19,10 @@ package io.zeebe.broker.exporter;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.exporter.ExporterServiceNames.EXPORTER_MANAGER;
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
 
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
-import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.servicecontainer.ServiceContainer;
-import java.util.List;
 
 public class ExporterComponent implements Component {
 
@@ -33,19 +30,13 @@ public class ExporterComponent implements Component {
   public void init(SystemContext context) {
     final ServiceContainer serviceContainer = context.getServiceContainer();
 
-    final List<ExporterCfg> exporters = context.getBrokerConfiguration().getExporters();
+    final ExporterManagerService exporterManagerService =
+        new ExporterManagerService(context.getBrokerConfiguration());
 
-    if (!exporters.isEmpty()) {
-      final ExporterManagerService exporterManagerService = new ExporterManagerService(exporters);
-
-      serviceContainer
-          .createService(EXPORTER_MANAGER, exporterManagerService)
-          .dependency(
-              STREAM_PROCESSOR_SERVICE_FACTORY,
-              exporterManagerService.getStreamProcessorServiceFactoryInjector())
-          .groupReference(
-              LEADER_PARTITION_GROUP_NAME, exporterManagerService.getPartitionsGroupReference())
-          .install();
-    }
+    serviceContainer
+        .createService(EXPORTER_MANAGER, exporterManagerService)
+        .groupReference(
+            LEADER_PARTITION_GROUP_NAME, exporterManagerService.getPartitionsGroupReference())
+        .install();
   }
 }

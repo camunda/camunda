@@ -22,11 +22,9 @@ import static io.zeebe.logstreams.impl.LogEntryDescriptor.setKey;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setMetadataLength;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setPosition;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setProducerId;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setRaftTerm;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventPosition;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setTimestamp;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
@@ -50,8 +48,6 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   protected long sourceRecordPosition = -1L;
   protected int producerId = -1;
-
-  protected final short keyLength = SIZE_OF_LONG;
 
   protected BufferWriter metadataWriter;
 
@@ -159,7 +155,6 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
 
         // write log entry header
         setPosition(writeBuffer, bufferOffset, claimedPosition);
-        setRaftTerm(writeBuffer, bufferOffset, logStream.getTerm());
         setProducerId(writeBuffer, bufferOffset, producerId);
         setSourceEventPosition(writeBuffer, bufferOffset, sourceRecordPosition);
         setKey(writeBuffer, bufferOffset, key);

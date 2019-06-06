@@ -15,7 +15,7 @@
  */
 package io.zeebe.gateway.impl.broker.response;
 
-import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.ErrorCode;
 import io.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.zeebe.util.buffer.BufferUtil;
 

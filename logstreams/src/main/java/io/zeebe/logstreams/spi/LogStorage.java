@@ -65,11 +65,11 @@ public interface LogStorage {
   long append(ByteBuffer blockBuffer);
 
   /**
-   * Truncates the log up to the given address.
+   * Deletes from the log storage, uses the given address as upper limit.
    *
-   * @param address The address at which to truncate the log.
+   * @param address the address until we try to delete
    */
-  void truncate(long address);
+  void delete(long address);
 
   /**
    * Naive implementation of the {@link #read(ByteBuffer, long, ReadResultProcessor)} method. Does

@@ -23,6 +23,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.test.util.JsonUtil;
 import io.zeebe.util.buffer.BufferUtil;
@@ -67,7 +68,8 @@ public class ActivateJobsTest extends GatewayTest {
 
     for (int i = 0; i < maxJobsToActivate; i++) {
       final ActivatedJob job = response.getJobs(i);
-      assertThat(job.getKey()).isEqualTo(i);
+      assertThat(job.getKey())
+          .isEqualTo(Protocol.encodePartitionId(Protocol.START_PARTITION_ID, i));
       assertThat(job.getType()).isEqualTo(jobType);
       assertThat(job.getWorker()).isEqualTo(worker);
       assertThat(job.getRetries()).isEqualTo(stub.getRetries());
@@ -94,5 +96,29 @@ public class ActivateJobsTest extends GatewayTest {
     assertThat(brokerRequestValue.variables())
         .extracting(v -> BufferUtil.bufferAsString(v.getValue()))
         .containsExactlyInAnyOrderElementsOf(fetchVariables);
+  }
+
+  @Test
+  public void shouldActivateJobsRoundRobin() {
+    // given
+    final ActivateJobsStub stub = new ActivateJobsStub();
+    stub.registerWith(gateway);
+
+    final ActivateJobsRequest request =
+        ActivateJobsRequest.newBuilder().setType("test").setMaxJobsToActivate(2).build();
+
+    for (int partitionOffset = 0; partitionOffset < 3; partitionOffset++) {
+      // when
+      final Iterator<ActivateJobsResponse> responses = client.activateJobs(request);
+
+      // then
+      assertThat(responses.hasNext()).isTrue();
+      final ActivateJobsResponse response = responses.next();
+
+      for (ActivatedJob activatedJob : response.getJobsList()) {
+        assertThat(Protocol.decodePartitionId(activatedJob.getKey()))
+            .isEqualTo(Protocol.START_PARTITION_ID + partitionOffset);
+      }
+    }
   }
 }

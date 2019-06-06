@@ -50,9 +50,9 @@ public class LogBlockIndexWriterTest {
 
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofSeconds(1);
 
-  private TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  private LogStreamRule logStreamRule =
+  private final LogStreamRule logStreamRule =
       new LogStreamRule(
           temporaryFolder,
           b ->
@@ -60,7 +60,7 @@ public class LogBlockIndexWriterTest {
                   .readBlockSize(FRAGMENT_SIZE)
                   .snapshotPeriod(SNAPSHOT_INTERVAL));
 
-  private LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
+  private final LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
 
   @Rule
   public RuleChain ruleChain =
@@ -83,8 +83,8 @@ public class LogBlockIndexWriterTest {
   @Test
   public void shouldAppendBlockWhenIndexBlockSizeIsReached() {
     // given
-    final long firstEventPosition = writer.writeEvent(EVENT_1, true);
-    writer.writeEvent(EVENT_2, true);
+    final long firstEventPosition = writer.writeEvent(EVENT_1);
+    writer.writeEvent(EVENT_2);
 
     // when
     waitUntil(() -> !blockIndex.isEmpty(indexContext));
@@ -96,8 +96,8 @@ public class LogBlockIndexWriterTest {
   @Test
   public void shouldAppendBlockWithPositionAndAddressOfFirstEventInTheBlock() {
     // given
-    final long firstEventPosition = writer.writeEvent(EVENT_1, true);
-    writer.writeEvent(EVENT_2, true);
+    final long firstEventPosition = writer.writeEvent(EVENT_1);
+    writer.writeEvent(EVENT_2);
 
     // when
     waitUntil(() -> !blockIndex.isEmpty(indexContext));
@@ -113,10 +113,10 @@ public class LogBlockIndexWriterTest {
   @Test
   public void shouldAppendMultipleBlocks() {
     // given
-    writer.writeEvents(8, EVENT_1, true);
+    writer.writeEvents(8, EVENT_1);
 
-    final long lastBlockPosition = writer.writeEvent(EVENT_2, true);
-    final long lastEventPosition = writer.writeEvent(EVENT_2, true);
+    final long lastBlockPosition = writer.writeEvent(EVENT_2);
+    final long lastEventPosition = writer.writeEvent(EVENT_2);
 
     // when
     waitUntil(() -> blockIndex.getLastPosition() == lastBlockPosition);
@@ -128,9 +128,9 @@ public class LogBlockIndexWriterTest {
   @Test
   public void shouldWriteSnapshot() {
     // given
-    writer.writeEvents(2, EVENT_1, true);
-    final long eventPositionOfLastBlock = writer.writeEvent(EVENT_1, true);
-    writer.writeEvent(EVENT_2, true);
+    writer.writeEvents(2, EVENT_1);
+    final long eventPositionOfLastBlock = writer.writeEvent(EVENT_1);
+    writer.writeEvent(EVENT_2);
 
     waitUntil(() -> blockIndex.getLastPosition() == eventPositionOfLastBlock);
     assertThat(stateStorage.list()).isEmpty();
@@ -146,9 +146,9 @@ public class LogBlockIndexWriterTest {
   @Test
   public void shouldWriteSnapshotWithPositionOfLastBlock() {
     // given
-    final long eventPositionOfLastBlock = writer.writeEvent(EVENT_1, true);
-    writer.writeEvent(EVENT_1, true);
-    writer.writeEvent(EVENT_2, true);
+    final long eventPositionOfLastBlock = writer.writeEvent(EVENT_1);
+    writer.writeEvent(EVENT_1);
+    writer.writeEvent(EVENT_2);
 
     // when
     waitUntil(() -> !blockIndex.isEmpty(indexContext));
@@ -160,7 +160,7 @@ public class LogBlockIndexWriterTest {
     // then
     assertThat(stateStorage.list()).hasSize(1);
 
-    final long snapshotWrittenPosition = stateStorage.list().get(0).getLastWrittenEventPosition();
+    final long snapshotWrittenPosition = Long.parseLong(stateStorage.list().get(0).getName());
     assertThat(snapshotWrittenPosition).isEqualTo(eventPositionOfLastBlock);
   }
 
@@ -180,9 +180,9 @@ public class LogBlockIndexWriterTest {
   public void shouldRecoverBlockIndex() {
     // given
     logStreamRule.getClock().pinCurrentTime();
-    writer.writeEvents(2, EVENT_1, true);
-    final long lastBlockPosition = writer.writeEvents(1, EVENT_2, true);
-    final long lastEventPosition = writer.writeEvents(1, EVENT_2, true);
+    writer.writeEvents(2, EVENT_1);
+    final long lastBlockPosition = writer.writeEvents(1, EVENT_2);
+    final long lastEventPosition = writer.writeEvents(1, EVENT_2);
 
     logStreamRule.closeLogStream();
     assertThat(stateStorage.list()).isEmpty();
@@ -203,8 +203,8 @@ public class LogBlockIndexWriterTest {
   public void shouldAppendBlockAfterRecover() {
     // given
     logStreamRule.getClock().pinCurrentTime();
-    writer.writeEvent(EVENT_1, true);
-    final long lastPos = writer.writeEvent(EVENT_1, true);
+    writer.writeEvent(EVENT_1);
+    final long lastPos = writer.writeEvent(EVENT_1);
 
     logStreamRule.closeLogStream();
     assertThat(stateStorage.list()).isEmpty();
@@ -219,8 +219,8 @@ public class LogBlockIndexWriterTest {
     waitUntil(() -> !newIndex.isEmpty(indexContext));
 
     writer.wrap(logStreamRule);
-    final long lastBlockPosition = writer.writeEvents(1, EVENT_2, true);
-    final long lastEventPosition = writer.writeEvents(1, EVENT_2, true);
+    final long lastBlockPosition = writer.writeEvents(1, EVENT_2);
+    final long lastEventPosition = writer.writeEvents(1, EVENT_2);
 
     // then
     waitUntil(() -> newIndex.getLastPosition() == lastBlockPosition);
@@ -231,9 +231,9 @@ public class LogBlockIndexWriterTest {
   public void shouldRecoverBlockIndexFromSnapshot() {
     // given
     logStreamRule.getClock().pinCurrentTime();
-    writer.writeEvents(2, EVENT_1, true);
-    final long lastBlockPosition = writer.writeEvents(1, EVENT_2, true);
-    final long lastEventPosition = writer.writeEvents(1, EVENT_2, true);
+    writer.writeEvents(2, EVENT_1);
+    final long lastBlockPosition = writer.writeEvents(1, EVENT_2);
+    final long lastEventPosition = writer.writeEvents(1, EVENT_2);
 
     waitUntil(() -> blockIndex.getLastPosition() == lastBlockPosition);
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
@@ -256,7 +256,7 @@ public class LogBlockIndexWriterTest {
   public void shouldAppendBlockAfterRecoverFromSnapshot() {
     // given
     logStreamRule.getClock().pinCurrentTime();
-    writer.writeEvents(2, EVENT_1, true);
+    writer.writeEvents(2, EVENT_1);
 
     waitUntil(() -> !blockIndex.isEmpty(indexContext));
 
@@ -274,8 +274,8 @@ public class LogBlockIndexWriterTest {
     indexContext = newIndex.createLogBlockIndexContext();
 
     writer.wrap(logStreamRule);
-    final long lastBlockPosition = writer.writeEvents(1, EVENT_2, true);
-    final long lastEventPosition = writer.writeEvents(1, EVENT_2, true);
+    final long lastBlockPosition = writer.writeEvents(1, EVENT_2);
+    final long lastEventPosition = writer.writeEvents(1, EVENT_2);
 
     // then
     waitUntil(() -> newIndex.getLastPosition() == lastBlockPosition);

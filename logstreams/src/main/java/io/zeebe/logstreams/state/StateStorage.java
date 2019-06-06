@@ -15,33 +15,45 @@
  */
 package io.zeebe.logstreams.state;
 
-import io.zeebe.logstreams.impl.Loggers;
 import java.io.File;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.function.Predicate;
-import org.slf4j.Logger;
+import java.util.stream.Collectors;
 
 /** Handles how snapshots/databases are stored on the file system. */
 public class StateStorage {
 
-  private static final Logger LOG = Loggers.ROCKSDB_LOGGER;
-  private static final String SEPARATOR = "_";
-
-  public static final String DEFAULT_RUNTIME_DIRECTORY = "runtime";
-  public static final String DEFAULT_SNAPSHOTS_DIRECTORY = "snapshots";
+  private static final String DEFAULT_RUNTIME_DIRECTORY = "runtime";
+  private static final String DEFAULT_SNAPSHOTS_DIRECTORY = "snapshots";
+  static final String TMP_SNAPSHOT_DIRECTORY = "tmp/";
+  private String tmpSuffix = "-tmp";
 
   private final File runtimeDirectory;
   private final File snapshotsDirectory;
+  private File tmpSnapshotDirectory;
 
   public StateStorage(final String rootDirectory) {
     this.runtimeDirectory = new File(rootDirectory, DEFAULT_RUNTIME_DIRECTORY);
     this.snapshotsDirectory = new File(rootDirectory, DEFAULT_SNAPSHOTS_DIRECTORY);
+    initTempSnapshotDirectory();
   }
 
   public StateStorage(final File runtimeDirectory, final File snapshotsDirectory) {
     this.runtimeDirectory = runtimeDirectory;
     this.snapshotsDirectory = snapshotsDirectory;
+    initTempSnapshotDirectory();
+  }
+
+  public StateStorage(
+      final File runtimeDirectory, final File snapshotsDirectory, final String tmpSuffix) {
+    this(runtimeDirectory, snapshotsDirectory);
+    this.tmpSuffix = tmpSuffix;
+  }
+
+  private void initTempSnapshotDirectory() {
+    tmpSnapshotDirectory = new File(snapshotsDirectory, TMP_SNAPSHOT_DIRECTORY);
   }
 
   public File getRuntimeDirectory() {
@@ -52,72 +64,85 @@ public class StateStorage {
     return snapshotsDirectory;
   }
 
-  public File getSnapshotDirectoryFor(final StateSnapshotMetadata metadata) {
-    if (metadata == null) {
-      throw new NullPointerException();
-    }
-
-    final String path =
-        String.format(
-            "%d%s%d%s%d",
-            metadata.getLastSuccessfulProcessedEventPosition(),
-            SEPARATOR,
-            metadata.getLastWrittenEventPosition(),
-            SEPARATOR,
-            metadata.getLastWrittenEventTerm());
+  public File getTmpSnapshotDirectoryFor(String position) {
+    final String path = String.format("%s%s", position, tmpSuffix);
 
     return new File(snapshotsDirectory, path);
   }
 
-  public StateSnapshotMetadata getSnapshotMetadata(final File folder) {
-    if (folder == null) {
-      throw new NullPointerException();
+  public boolean existSnapshot(long snapshotPosition) {
+    final File[] files = snapshotsDirectory.listFiles();
+    if (files != null && files.length > 0) {
+      final String snapshotDirName = Long.toString(snapshotPosition);
+      return Arrays.stream(files).anyMatch(f -> f.getName().equalsIgnoreCase(snapshotDirName));
     }
-
-    if (folder.exists() && !folder.isDirectory()) {
-      throw new IllegalArgumentException("given file is not a directory");
-    }
-
-    final String name = folder.getName();
-    final String[] parts = name.split(SEPARATOR, 3);
-
-    return new StateSnapshotMetadata(
-        Long.parseLong(parts[0]),
-        Long.parseLong(parts[1]),
-        Integer.parseInt(parts[2]),
-        folder.exists());
+    return false;
   }
 
-  public List<StateSnapshotMetadata> list() {
-    return list(s -> true);
+  public File getSnapshotDirectoryFor(long position) {
+    final String path = String.format("%d", position);
+
+    return new File(snapshotsDirectory, path);
   }
 
-  public List<StateSnapshotMetadata> listRecoverable(long lastSuccessfulProcessedEventPosition) {
-    return list(s -> s.getLastWrittenEventPosition() <= lastSuccessfulProcessedEventPosition);
+  public File getTempSnapshotDirectory() {
+    return tmpSnapshotDirectory;
   }
 
-  public List<StateSnapshotMetadata> list(Predicate<StateSnapshotMetadata> filter) {
+  public List<File> list() {
     final File[] snapshotFolders = snapshotsDirectory.listFiles();
-    final List<StateSnapshotMetadata> snapshots = new ArrayList<>();
 
     if (snapshotFolders == null || snapshotFolders.length == 0) {
-      return snapshots;
+      return Collections.emptyList();
     }
 
-    for (final File folder : snapshotFolders) {
-      if (folder.isDirectory()) {
-        try {
-          final StateSnapshotMetadata metadata = getSnapshotMetadata(folder);
+    return Arrays.stream(snapshotFolders)
+        .filter(File::isDirectory)
+        .filter(f -> isNumber(f.getName()))
+        .collect(Collectors.toList());
+  }
 
-          if (filter.test(metadata)) {
-            snapshots.add(metadata);
-          }
-        } catch (final Exception ex) {
-          LOG.warn("error listing snapshot {}", folder.getAbsolutePath(), ex);
-        }
-      }
+  private boolean isNumber(String name) {
+    try {
+      Long.parseLong(name);
+      return true;
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  public List<File> listByPositionAsc() {
+    return list().stream()
+        .sorted(Comparator.comparingLong(f -> Long.parseLong(f.getName())))
+        .collect(Collectors.toList());
+  }
+
+  public List<File> listByPositionDesc() {
+    final List<File> list = listByPositionAsc();
+    Collections.reverse(list);
+    return list;
+  }
+
+  private String getPositionFromFileName(File file) {
+    return file.getName().split(tmpSuffix)[0];
+  }
+
+  public List<File> findTmpDirectoriesBelowPosition(final long position) {
+    final File[] snapshotFolders = snapshotsDirectory.listFiles();
+
+    if (snapshotFolders == null || snapshotFolders.length == 0) {
+      return Collections.emptyList();
     }
 
-    return snapshots;
+    return Arrays.stream(snapshotFolders)
+        .filter(File::isDirectory)
+        .filter(f -> f.getName().endsWith(tmpSuffix))
+        .filter(
+            f -> {
+              final String positionFromFileName = getPositionFromFileName(f);
+              return isNumber(positionFromFileName)
+                  && Long.parseLong(positionFromFileName) < position;
+            })
+        .collect(Collectors.toList());
   }
 }

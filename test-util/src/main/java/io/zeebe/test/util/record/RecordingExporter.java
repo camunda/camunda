@@ -15,6 +15,7 @@
  */
 package io.zeebe.test.util.record;
 
+import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.RecordValue;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
@@ -30,8 +31,7 @@ import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
-import io.zeebe.exporter.api.spi.Exporter;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobBatchIntent;
@@ -64,14 +64,17 @@ public class RecordingExporter implements Exporter {
   private static final Lock LOCK = new ReentrantLock();
   private static final Condition IS_EMPTY = LOCK.newCondition();
 
-  private static final long MAX_WAIT = Duration.ofSeconds(5).toMillis();
+  public static long maxWait = Duration.ofSeconds(5).toMillis();
 
   @Override
   public void export(final Record record) {
     LOCK.lock();
-    RECORDS.add(record);
-    IS_EMPTY.signal();
-    LOCK.unlock();
+    try {
+      RECORDS.add(record);
+      IS_EMPTY.signal();
+    } finally {
+      LOCK.unlock();
+    }
   }
 
   public static List<Record<?>> getRecords() {
@@ -80,8 +83,11 @@ public class RecordingExporter implements Exporter {
 
   public static void reset() {
     LOCK.lock();
-    RECORDS.clear();
-    LOCK.unlock();
+    try {
+      RECORDS.clear();
+    } finally {
+      LOCK.unlock();
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -229,7 +235,7 @@ public class RecordingExporter implements Exporter {
       LOCK.lock();
       try {
         long now = System.currentTimeMillis();
-        final long endTime = now + MAX_WAIT;
+        final long endTime = now + maxWait;
         while (isEmpty() && endTime > now) {
           final long waitTime = endTime - now;
           try {

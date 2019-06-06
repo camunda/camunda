@@ -19,9 +19,9 @@ package io.zeebe.broker.system.management.deployment;
 
 import static io.zeebe.clustering.management.PushDeploymentRequestDecoder.deploymentHeaderLength;
 
-import io.zeebe.broker.util.SbeBufferWriterReader;
 import io.zeebe.clustering.management.PushDeploymentRequestDecoder;
 import io.zeebe.clustering.management.PushDeploymentRequestEncoder;
+import io.zeebe.engine.util.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

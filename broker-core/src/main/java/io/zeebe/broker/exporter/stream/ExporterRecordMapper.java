@@ -25,7 +25,6 @@ import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageStartEventSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
-import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.TimerRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.VariableDocumentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.VariableRecordValueImpl;
@@ -35,10 +34,6 @@ import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordV
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
 import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
-import io.zeebe.broker.exporter.record.value.raft.RaftMemberImpl;
-import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
-import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
-import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.RecordMetadata;
 import io.zeebe.exporter.api.record.RecordValue;
@@ -48,7 +43,6 @@ import io.zeebe.exporter.api.record.value.IncidentRecordValue;
 import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.exporter.api.record.value.MessageRecordValue;
 import io.zeebe.exporter.api.record.value.MessageSubscriptionRecordValue;
-import io.zeebe.exporter.api.record.value.RaftRecordValue;
 import io.zeebe.exporter.api.record.value.VariableDocumentRecordValue;
 import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
@@ -56,8 +50,6 @@ import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.exporter.api.record.value.deployment.DeployedWorkflow;
 import io.zeebe.exporter.api.record.value.deployment.DeploymentResource;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
-import io.zeebe.exporter.api.record.value.raft.RaftMember;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.protocol.Protocol;
@@ -69,13 +61,14 @@ import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobHeaders;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.raft.event.RaftConfigurationEvent;
-import io.zeebe.raft.event.RaftConfigurationEventMember;
 import io.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.time.Instant;
@@ -83,6 +76,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
@@ -97,7 +91,7 @@ public class ExporterRecordMapper {
   }
 
   public Record map(final LoggedEvent event, final RecordMetadata metadata) {
-    final Function<LoggedEvent, ? extends RecordValue> valueSupplier;
+    final Function<DirectBuffer, ? extends RecordValue> valueSupplier;
 
     switch (metadata.getValueType()) {
       case DEPLOYMENT:
@@ -114,9 +108,6 @@ public class ExporterRecordMapper {
         break;
       case MESSAGE_SUBSCRIPTION:
         valueSupplier = this::ofMessageSubscriptionRecord;
-        break;
-      case RAFT:
-        valueSupplier = this::ofRaftRecord;
         break;
       case WORKFLOW_INSTANCE:
         valueSupplier = this::ofWorkflowInstanceRecord;
@@ -155,81 +146,74 @@ public class ExporterRecordMapper {
   private <T extends RecordValue> RecordImpl<T> newRecord(
       final LoggedEvent event,
       final RecordMetadata metadata,
-      final Function<LoggedEvent, T> valueSupplier) {
+      final Function<DirectBuffer, T> valueSupplier) {
+
+    // need to copy the event buffer for lazy transformation
+    final DirectBuffer eventBuffer =
+        BufferUtil.cloneBuffer(
+            event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
+
     return new RecordImpl<>(
         objectMapper,
         event.getKey(),
         event.getPosition(),
         Instant.ofEpochMilli(event.getTimestamp()),
-        event.getRaftTerm(),
         event.getProducerId(),
         event.getSourceEventPosition(),
         metadata,
-        valueSupplier.apply(event));
+        () -> valueSupplier.apply(eventBuffer));
   }
 
-  // VALUE SUPPLIERS
-  private RaftRecordValue ofRaftRecord(final LoggedEvent event) {
-    final RaftConfigurationEvent record = new RaftConfigurationEvent();
-    event.readValue(record);
-
-    final List<RaftMember> members = new ArrayList<>();
-    for (final RaftConfigurationEventMember member : record.members()) {
-      members.add(new RaftMemberImpl(member.getNodeId()));
-    }
-
-    return new RaftRecordValueImpl(objectMapper, members);
-  }
-
-  private JobRecordValue ofJobRecord(final LoggedEvent event) {
+  private JobRecordValue ofJobRecord(final DirectBuffer valueBuffer) {
     final JobRecord record = new JobRecord();
-    event.readValue(record);
+    record.wrap(valueBuffer);
 
     return ofJobRecord(record);
   }
 
   private JobRecordValue ofJobRecord(JobRecord record) {
-    final JobHeaders jobHeaders = record.getHeaders();
+    final JobHeaders jobHeaders = record.getJobHeaders();
     final HeadersImpl headers =
         new HeadersImpl(
-            asString(jobHeaders.getBpmnProcessId()),
-            asString(jobHeaders.getElementId()),
+            asString(jobHeaders.getBpmnProcessIdBuffer()),
+            asString(jobHeaders.getElementIdBuffer()),
             jobHeaders.getElementInstanceKey(),
             jobHeaders.getWorkflowInstanceKey(),
             jobHeaders.getWorkflowKey(),
             jobHeaders.getWorkflowDefinitionVersion());
 
     final Instant deadline;
-    if (record.getDeadline() != Protocol.INSTANT_NULL_VALUE) {
-      deadline = Instant.ofEpochMilli(record.getDeadline());
+    if (record.getDeadlineLong() != Protocol.INSTANT_NULL_VALUE) {
+      deadline = Instant.ofEpochMilli(record.getDeadlineLong());
     } else {
       deadline = null;
     }
 
     return new JobRecordValueImpl(
         objectMapper,
-        asJson(record.getVariables()),
-        asString(record.getType()),
-        asString(record.getWorker()),
+        asJson(record.getVariablesBuffer()),
+        asMsgPackMap(record.getVariablesBuffer()),
+        asString(record.getTypeBuffer()),
+        asString(record.getWorkerBuffer()),
         deadline,
         headers,
-        asMsgPackMap(record.getCustomHeaders()),
+        asMsgPackMap(record.getCustomHeadersBuffer()),
         record.getRetries(),
-        asString(record.getErrorMessage()));
+        asString(record.getErrorMessageBuffer()));
   }
 
-  private DeploymentRecordValue ofDeploymentRecord(final LoggedEvent event) {
+  private DeploymentRecordValue ofDeploymentRecord(final DirectBuffer valueBuffer) {
     final List<DeployedWorkflow> deployedWorkflows = new ArrayList<>();
     final List<DeploymentResource> resources = new ArrayList<>();
     final DeploymentRecord record = new DeploymentRecord();
 
-    event.readValue(record);
+    record.wrap(valueBuffer);
 
     for (final Workflow workflow : record.workflows()) {
       deployedWorkflows.add(
           new DeployedWorkflowImpl(
-              asString(workflow.getBpmnProcessId()),
-              asString(workflow.getResourceName()),
+              asString(workflow.getBpmnProcessIdBuffer()),
+              asString(workflow.getResourceNameBuffer()),
               workflow.getKey(),
               workflow.getVersion()));
     }
@@ -238,18 +222,18 @@ public class ExporterRecordMapper {
         record.resources()) {
       resources.add(
           new DeploymentResourceImpl(
-              asByteArray(resource.getResource()),
-              asResourceType(resource.getResourceType()),
-              asString(resource.getResourceName())));
+              asByteArray(resource.getResourceBuffer()),
+              resource.getResourceType(),
+              asString(resource.getResourceNameBuffer())));
     }
 
     return new io.zeebe.broker.exporter.record.value.DeploymentRecordValueImpl(
         objectMapper, deployedWorkflows, resources);
   }
 
-  private IncidentRecordValue ofIncidentRecord(final LoggedEvent event) {
+  private IncidentRecordValue ofIncidentRecord(final DirectBuffer valueBuffer) {
     final IncidentRecord record = new IncidentRecord();
-    event.readValue(record);
+    record.wrap(valueBuffer);
 
     return new IncidentRecordValueImpl(
         objectMapper,
@@ -257,57 +241,60 @@ public class ExporterRecordMapper {
         asString(record.getErrorMessage()),
         asString(record.getBpmnProcessId()),
         asString(record.getElementId()),
+        record.getWorkflowKey(),
         record.getWorkflowInstanceKey(),
         record.getElementInstanceKey(),
         record.getJobKey(),
         record.getVariableScopeKey());
   }
 
-  private MessageRecordValue ofMessageRecord(final LoggedEvent event) {
+  private MessageRecordValue ofMessageRecord(final DirectBuffer valueBuffer) {
     final MessageRecord record = new MessageRecord();
-    event.readValue(record);
+    record.wrap(valueBuffer);
 
     return new io.zeebe.broker.exporter.record.value.MessageRecordValueImpl(
         objectMapper,
-        asJson(record.getVariables()),
-        asString(record.getName()),
-        asString(record.getMessageId()),
-        asString(record.getCorrelationKey()),
+        asJson(record.getVariablesBuffer()),
+        asMsgPackMap(record.getVariablesBuffer()),
+        asString(record.getNameBuffer()),
+        asString(record.getMessageIdBuffer()),
+        asString(record.getCorrelationKeyBuffer()),
         record.getTimeToLive());
   }
 
-  private MessageSubscriptionRecordValue ofMessageSubscriptionRecord(final LoggedEvent event) {
+  private MessageSubscriptionRecordValue ofMessageSubscriptionRecord(
+      final DirectBuffer valueBuffer) {
     final MessageSubscriptionRecord record = new MessageSubscriptionRecord();
-    event.readValue(record);
+    record.wrap(valueBuffer);
 
     return new MessageSubscriptionRecordValueImpl(
         objectMapper,
-        asString(record.getMessageName()),
-        asString(record.getCorrelationKey()),
+        asString(record.getMessageNameBuffer()),
+        asString(record.getCorrelationKeyBuffer()),
         record.getWorkflowInstanceKey(),
         record.getElementInstanceKey());
   }
 
   private MessageStartEventSubscriptionRecordValueImpl ofMessageStartEventSubscriptionRecord(
-      final LoggedEvent event) {
+      final DirectBuffer valueBuffer) {
     final MessageStartEventSubscriptionRecord record = new MessageStartEventSubscriptionRecord();
-    event.readValue(record);
+    record.wrap(valueBuffer);
 
     return new MessageStartEventSubscriptionRecordValueImpl(
         objectMapper,
         record.getWorkflowKey(),
-        asString(record.getStartEventId()),
-        asString(record.getMessageName()));
+        asString(record.getStartEventIdBuffer()),
+        asString(record.getMessageNameBuffer()));
   }
 
-  private WorkflowInstanceRecordValue ofWorkflowInstanceRecord(final LoggedEvent event) {
+  private WorkflowInstanceRecordValue ofWorkflowInstanceRecord(final DirectBuffer valueBuffer) {
     final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
-    event.readValue(record);
+    record.wrap(valueBuffer);
 
     return new WorkflowInstanceRecordValueImpl(
         objectMapper,
-        asString(record.getBpmnProcessId()),
-        asString(record.getElementId()),
+        asString(record.getBpmnProcessIdBuffer()),
+        asString(record.getElementIdBuffer()),
         record.getVersion(),
         record.getWorkflowKey(),
         record.getWorkflowInstanceKey(),
@@ -316,21 +303,22 @@ public class ExporterRecordMapper {
   }
 
   private WorkflowInstanceSubscriptionRecordValue ofWorkflowInstanceSubscriptionRecord(
-      final LoggedEvent event) {
+      final DirectBuffer valueBuffer) {
     final WorkflowInstanceSubscriptionRecord record = new WorkflowInstanceSubscriptionRecord();
-    event.readValue(record);
+    record.wrap(valueBuffer);
 
     return new WorkflowInstanceSubscriptionRecordValueImpl(
         objectMapper,
-        asJson(record.getVariables()),
-        asString(record.getMessageName()),
+        asJson(record.getVariablesBuffer()),
+        asMsgPackMap(record.getVariablesBuffer()),
+        asString(record.getMessageNameBuffer()),
         record.getWorkflowInstanceKey(),
         record.getElementInstanceKey());
   }
 
-  private RecordValue ofJobBatchRecord(LoggedEvent event) {
+  private RecordValue ofJobBatchRecord(DirectBuffer valueBuffer) {
     final JobBatchRecord record = new JobBatchRecord();
-    event.readValue(record);
+    record.wrap(valueBuffer);
 
     final List<Long> jobKeys =
         StreamSupport.stream(record.jobKeys().spliterator(), false)
@@ -353,9 +341,9 @@ public class ExporterRecordMapper {
         record.getTruncated());
   }
 
-  private RecordValue ofTimerRecord(LoggedEvent event) {
+  private RecordValue ofTimerRecord(DirectBuffer valueBuffer) {
     final TimerRecord record = new TimerRecord();
-    event.readValue(record);
+    record.wrap(valueBuffer);
 
     return new TimerRecordValueImpl(
         objectMapper,
@@ -367,46 +355,47 @@ public class ExporterRecordMapper {
         record.getWorkflowKey());
   }
 
-  private VariableRecordValue ofVariableRecord(LoggedEvent event) {
+  private VariableRecordValue ofVariableRecord(DirectBuffer valueBuffer) {
     final VariableRecord record = new VariableRecord();
-    event.readValue(record);
+    record.wrap(valueBuffer);
 
     return new VariableRecordValueImpl(
         objectMapper,
-        asString(record.getName()),
-        asJson(record.getValue()),
+        asString(record.getNameBuffer()),
+        asJson(record.getValueBuffer()),
         record.getScopeKey(),
         record.getWorkflowInstanceKey(),
         record.getWorkflowKey());
   }
 
-  private VariableDocumentRecordValue ofVariableDocumentRecord(LoggedEvent event) {
+  private VariableDocumentRecordValue ofVariableDocumentRecord(DirectBuffer valueBuffer) {
     final VariableDocumentRecord record = new VariableDocumentRecord();
-    event.readValue(record);
+    record.wrap(valueBuffer);
 
     return new VariableDocumentRecordValueImpl(
         objectMapper,
         record.getScopeKey(),
         record.getUpdateSemantics(),
-        asMsgPackMap(record.getDocument()));
+        asMsgPackMap(record.getDocumentBuffer()));
   }
 
-  private WorkflowInstanceCreationRecordValue ofWorkflowInstanceCreationRecord(LoggedEvent event) {
+  private WorkflowInstanceCreationRecordValue ofWorkflowInstanceCreationRecord(
+      DirectBuffer valueBuffer) {
     final WorkflowInstanceCreationRecord record = new WorkflowInstanceCreationRecord();
-    event.readValue(record);
+    record.wrap(valueBuffer);
 
     return new WorkflowInstanceCreationRecordValueImpl(
         objectMapper,
-        asString(record.getBpmnProcessId()),
+        asString(record.getBpmnProcessIdBuffer()),
         record.getVersion(),
         record.getKey(),
         record.getInstanceKey(),
-        asMsgPackMap(record.getVariables()));
+        asMsgPackMap(record.getVariablesBuffer()));
   }
 
-  private ErrorRecordValue ofErrorRecord(LoggedEvent loggedEvent) {
+  private ErrorRecordValue ofErrorRecord(final DirectBuffer valueBuffer) {
     final ErrorRecord record = new ErrorRecord();
-    loggedEvent.readValue(record);
+    record.wrap(valueBuffer);
 
     return new ErrorRecordValueImpl(
         objectMapper,
@@ -424,24 +413,17 @@ public class ExporterRecordMapper {
     return BufferUtil.bufferAsString(buffer);
   }
 
-  private Map<String, Object> asMsgPackMap(final DirectBuffer msgPackEncoded) {
-    serderInputStream.wrap(msgPackEncoded);
-    return objectMapper.fromMsgpackAsMap(serderInputStream);
+  private Supplier<Map<String, Object>> asMsgPackMap(final DirectBuffer msgPackEncoded) {
+    return () -> {
+      serderInputStream.wrap(msgPackEncoded);
+      return objectMapper.fromMsgpackAsMap(serderInputStream);
+    };
   }
 
-  private String asJson(final DirectBuffer msgPackEncoded) {
-    serderInputStream.wrap(msgPackEncoded);
-    return objectMapper.getMsgPackConverter().convertToJson(serderInputStream);
-  }
-
-  private ResourceType asResourceType(
-      final io.zeebe.protocol.impl.record.value.deployment.ResourceType resourceType) {
-    switch (resourceType) {
-      case BPMN_XML:
-        return ResourceType.BPMN_XML;
-      case YAML_WORKFLOW:
-        return ResourceType.YAML_WORKFLOW;
-    }
-    throw new IllegalArgumentException("Provided resource type does not exist " + resourceType);
+  private Supplier<String> asJson(final DirectBuffer msgPackEncoded) {
+    return () -> {
+      serderInputStream.wrap(msgPackEncoded);
+      return objectMapper.getMsgPackConverter().convertToJson(serderInputStream);
+    };
   }
 }

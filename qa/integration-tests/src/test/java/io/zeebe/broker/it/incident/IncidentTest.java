@@ -35,6 +35,7 @@ import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.IncidentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
@@ -52,7 +53,7 @@ public class IncidentTest {
           .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("foo", "foo"))
           .done();
 
-  private static final String PAYLOAD = "{\"foo\": \"bar\"}";
+  private static final String VARIABLES = "{\"foo\": \"bar\"}";
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
@@ -66,12 +67,15 @@ public class IncidentTest {
   public void shouldRejectResolveOnNonExistingIncident() {
     // given
 
+    final long nonExistingKey = Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1);
     // when
     Assertions.assertThatThrownBy(
-            () -> clientRule.getClient().newResolveIncidentCommand(1).send().join())
+            () -> clientRule.getClient().newResolveIncidentCommand(nonExistingKey).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(
-            "Expected to resolve incident with key '1', but no such incident was found");
+            "Expected to resolve incident with key '"
+                + nonExistingKey
+                + "', but no such incident was found");
   }
 
   @Test
@@ -95,7 +99,7 @@ public class IncidentTest {
     clientRule
         .getClient()
         .newSetVariablesCommand(workflowInstanceEvent.getWorkflowInstanceKey())
-        .variables(PAYLOAD)
+        .variables(VARIABLES)
         .send()
         .join();
     clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send();
@@ -126,7 +130,7 @@ public class IncidentTest {
     clientRule
         .getClient()
         .newSetVariablesCommand(workflowInstanceEvent.getWorkflowInstanceKey())
-        .variables(PAYLOAD)
+        .variables(VARIABLES)
         .send()
         .join();
     clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send();
@@ -180,7 +184,7 @@ public class IncidentTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
-        .variables(PAYLOAD)
+        .variables(VARIABLES)
         .send()
         .join();
 
@@ -226,7 +230,7 @@ public class IncidentTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
-        .variables(PAYLOAD)
+        .variables(VARIABLES)
         .send()
         .join();
 
@@ -260,7 +264,7 @@ public class IncidentTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
-        .variables(PAYLOAD)
+        .variables(VARIABLES)
         .send()
         .join();
 

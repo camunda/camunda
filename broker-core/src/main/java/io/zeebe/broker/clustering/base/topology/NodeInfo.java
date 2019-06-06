@@ -18,92 +18,62 @@
 package io.zeebe.broker.clustering.base.topology;
 
 import io.zeebe.transport.SocketAddress;
-import java.util.HashSet;
-import java.util.Set;
+import org.agrona.collections.IntHashSet;
 
 public class NodeInfo {
   private final int nodeId;
-  private final SocketAddress clientApiAddress;
-  private final SocketAddress managementApiAddress;
-  private final SocketAddress replicationApiAddress;
-  private final SocketAddress subscriptionApiAddress;
+  private final SocketAddress commandApiAddress;
 
-  private final Set<PartitionInfo> leaders = new HashSet<>();
-  private final Set<PartitionInfo> followers = new HashSet<>();
+  private final IntHashSet leaders = new IntHashSet();
+  private final IntHashSet followers = new IntHashSet();
 
-  public NodeInfo(
-      int nodeId,
-      final SocketAddress clientApiAddress,
-      final SocketAddress managementApiAddress,
-      final SocketAddress replicationApiAddress,
-      final SocketAddress subscriptionApiAddress) {
+  public NodeInfo(int nodeId, final SocketAddress commandApiAddress) {
     this.nodeId = nodeId;
-    this.clientApiAddress = clientApiAddress;
-    this.managementApiAddress = managementApiAddress;
-    this.replicationApiAddress = replicationApiAddress;
-    this.subscriptionApiAddress = subscriptionApiAddress;
+    this.commandApiAddress = commandApiAddress;
   }
 
   public int getNodeId() {
     return nodeId;
   }
 
-  public SocketAddress getClientApiAddress() {
-    return clientApiAddress;
+  public SocketAddress getCommandApiAddress() {
+    return commandApiAddress;
   }
 
-  public SocketAddress getManagementApiAddress() {
-    return managementApiAddress;
-  }
-
-  public SocketAddress getReplicationApiAddress() {
-    return replicationApiAddress;
-  }
-
-  public SocketAddress getSubscriptionApiAddress() {
-    return subscriptionApiAddress;
-  }
-
-  public Set<PartitionInfo> getLeaders() {
+  public IntHashSet getLeaders() {
     return leaders;
   }
 
-  public boolean addLeader(final PartitionInfo leader) {
-    return leaders.add(leader);
+  public boolean addLeader(final int partitionId) {
+    return leaders.add(partitionId);
   }
 
-  public boolean removeLeader(final PartitionInfo leader) {
-    return leaders.remove(leader);
+  public boolean removeLeader(final int partitionId) {
+    return leaders.remove(partitionId);
   }
 
-  public Set<PartitionInfo> getFollowers() {
+  public IntHashSet getFollowers() {
     return followers;
   }
 
-  public boolean addFollower(final PartitionInfo follower) {
-    return followers.add(follower);
+  public boolean addFollower(final int partitionId) {
+    return followers.add(partitionId);
   }
 
-  public boolean removeFollower(final PartitionInfo follower) {
-    return followers.remove(follower);
+  public boolean removeFollower(final int partitionId) {
+    return followers.remove(partitionId);
   }
 
   @Override
   public String toString() {
-    return String.format(
-        "Node{nodeId=%d, clientApi=%s, managementApi=%s, replicationApi=%s, subscriptionApi=%s}",
-        nodeId,
-        clientApiAddress,
-        managementApiAddress,
-        replicationApiAddress,
-        subscriptionApiAddress);
+    return String.format("Node{nodeId=%d, commandApi=%s}", nodeId, commandApiAddress);
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + ((clientApiAddress == null) ? 0 : clientApiAddress.hashCode());
+    result = prime * result + ((commandApiAddress == null) ? 0 : commandApiAddress.hashCode());
     return result;
   }
 
@@ -119,10 +89,10 @@ public class NodeInfo {
       return false;
     }
     final NodeInfo other = (NodeInfo) obj;
-    if (clientApiAddress == null) {
-      return other.clientApiAddress == null;
+    if (commandApiAddress == null) {
+      return other.commandApiAddress == null;
     } else {
-      return clientApiAddress.equals(other.clientApiAddress);
+      return commandApiAddress.equals(other.commandApiAddress);
     }
   }
 }

@@ -39,12 +39,10 @@ public class BufferedLogStreamReader implements LogStreamReader {
   private static final long LAST_POSITION = Long.MAX_VALUE;
 
   // configuration
-  private final boolean readUncommittedEntries;
   private final ReadResultProcessor completeEventsInBlockProcessor =
       new CompleteEventsInBlockProcessor();
 
   // wrapped logstream
-  private LogStream logStream;
   private LogStorage logStorage;
   private LogBlockIndex logBlockIndex;
   private LogBlockIndexContext indexContext;
@@ -52,34 +50,24 @@ public class BufferedLogStreamReader implements LogStreamReader {
   // state
   private IteratorState state;
   private long nextLogStorageReadAddress;
-  private LoggedEventImpl nextEvent = new LoggedEventImpl();
+  private final LoggedEventImpl nextEvent = new LoggedEventImpl();
   // event returned to caller (important: has to be preserved even after compact/buffer resize)
-  private LoggedEventImpl returnedEvent = new LoggedEventImpl();
+  private final LoggedEventImpl returnedEvent = new LoggedEventImpl();
 
   // buffer
   private final BufferAllocator bufferAllocator = new DirectBufferAllocator();
   private AllocatedBuffer allocatedBuffer;
   private ByteBuffer byteBuffer;
   private int bufferOffset;
-  private DirectBuffer directBuffer = new UnsafeBuffer(0, 0);
-
-  public BufferedLogStreamReader() {
-    this(false);
-  }
+  private final DirectBuffer directBuffer = new UnsafeBuffer(0, 0);
 
   public BufferedLogStreamReader(final LogStream logStream) {
     this();
     wrap(logStream);
   }
 
-  public BufferedLogStreamReader(final boolean readUncommittedEntries) {
-    this.readUncommittedEntries = readUncommittedEntries;
+  public BufferedLogStreamReader() {
     state = IteratorState.WRAP_NOT_CALLED;
-  }
-
-  public BufferedLogStreamReader(final LogStream logStream, final boolean readUncommittedEntries) {
-    this(readUncommittedEntries);
-    wrap(logStream);
   }
 
   @Override
@@ -89,7 +77,6 @@ public class BufferedLogStreamReader implements LogStreamReader {
 
   @Override
   public void wrap(final LogStream log, final long position) {
-    logStream = log;
     wrap(log.getLogStorage(), log.getLogBlockIndex(), position);
   }
 
@@ -108,6 +95,23 @@ public class BufferedLogStreamReader implements LogStreamReader {
     }
 
     seek(position);
+  }
+
+  @Override
+  public boolean seekToNextEvent(long position) {
+
+    if (position <= -1) {
+      seekToFirstEvent();
+      return true;
+    }
+
+    final boolean found = seek(position);
+    if (found && hasNext()) {
+      next();
+      return true;
+    }
+
+    return false;
   }
 
   @Override
@@ -176,7 +180,6 @@ public class BufferedLogStreamReader implements LogStreamReader {
       directBuffer.wrap(0, 0);
       bufferOffset = 0;
 
-      logStream = null;
       logStorage = null;
       logBlockIndex = null;
 
@@ -407,27 +410,12 @@ public class BufferedLogStreamReader implements LogStreamReader {
   }
 
   private void checkIfNextEventIsCommitted() {
-    if (readUncommittedEntries || isNextEventCommitted()) {
-      state = IteratorState.EVENT_AVAILABLE;
-    } else {
-      state = IteratorState.EVENT_NOT_COMMITTED;
-    }
-  }
-
-  private boolean isNextEventCommitted() {
-    return nextEvent.getPosition() <= getCommitPosition();
-  }
-
-  private long getCommitPosition() {
-    return logStream.getCommitPosition();
+    // Next Event is always committed.
+    state = IteratorState.EVENT_AVAILABLE;
   }
 
   private long getLastPosition() {
-    if (readUncommittedEntries) {
-      return LAST_POSITION;
-    } else {
-      return getCommitPosition();
-    }
+    return LAST_POSITION;
   }
 
   enum IteratorState {

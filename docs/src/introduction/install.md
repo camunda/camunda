@@ -1,11 +1,11 @@
 # Install
 
-This page guides you through the initial installation of your Zeebe broker. In case you are looking for more detailed information on how to set up and operate Zeebe, make sure to check out the [Operations Guide](/operations/README.html) as well.
+This page guides you through the initial installation of a Zeebe broker for development purposes. In case you are looking for more detailed information on how to set up and operate Zeebe, make sure to check out the [Operations Guide](/operations/README.html) as well.
 
 There are different ways to install Zeebe:
 
 * [Download a distribution](#download-a-distribution)
-* [Using Docker](#using-docker)
+* [Using Docker](#using-docker) (Recommended)
 
 ## Prerequisites
 
@@ -32,16 +32,21 @@ tar -xzf zeebe-distribution-X.Y.Z.tar.gz -C zeebe/
 Once the Zeebe broker has started, it should produce the following output:
 
 ```bash
-10:49:52.264 [] [main] INFO  io.zeebe.broker.system - Using configuration file zeebe-broker-X.Y.Z/conf/zeebe.cfg.toml
-10:49:52.342 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 2, io-bound: 2}.
-10:49:52.383 [] [main] INFO  io.zeebe.broker.system - Version: X.Y.Z
-10:49:52.430 [] [main] INFO  io.zeebe.broker.clustering - Starting standalone broker.
-10:49:52.435 [service-controller] [0.0.0.0:26500-zb-actors-1] INFO  io.zeebe.broker.transport - Bound managementApi.server to /0.0.0.0:26502
-10:49:52.460 [service-controller] [0.0.0.0:26500-zb-actors-1] INFO  io.zeebe.transport - Bound clientApi.server to /0.0.0.0:26501
-10:49:52.460 [service-controller] [0.0.0.0:26500-zb-actors-1] INFO  io.zeebe.transport - Bound replicationApi.server to /0.0.0.0:26503
+23:39:13.167 [] [main] INFO  io.zeebe.util.config - Reading configuration for class class io.zeebe.broker.system.configuration.BrokerCfg from file conf/zeebe.cfg.toml
+23:39:13.246 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 2, io-bound: 2}.
+23:39:13.270 [] [main] INFO  io.zeebe.broker.system - Version: X.Y.Z
+23:39:13.273 [] [main] INFO  io.zeebe.broker.system - Starting broker with configuration {
 ```
 
 ## Using Docker
+
+The easiest way to try Zeebe is using Docker. Using Docker provides you with a consistent environment, and we recommend it for development.
+
+### Docker configurations for docker-compose
+
+Docker configurations for starting a single Zeebe broker using `docker-compose`, optionally with Operate and Simple Monitor, are available in the [zeebe-docker-compose](https://github.com/zeebe-io/zeebe-docker-compose/blob/master/README.md) repository. Further instructions for using these configurations are in [the README.md in that repository](https://github.com/zeebe-io/zeebe-docker-compose/blob/master/README.md).
+
+### Using Docker without docker-compose
 
 You can run Zeebe with Docker:
 
@@ -52,10 +57,8 @@ docker run --name zeebe -p 26500:26500 camunda/zeebe:latest
 ### Exposed Ports
 
 - `26500`: Gateway API
-- `26501`: Client API
-- `26502`: Management API for broker to broker communcation
-- `26503`: Replication API for broker to broker replication
-- `26504`: Subscription API for message correlation
+- `26501`: Command API (gateway-to-broker)
+- `26502`: Internal API (broker-to-broker)
 
 ### Volumes
 

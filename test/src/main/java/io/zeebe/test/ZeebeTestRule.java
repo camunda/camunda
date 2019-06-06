@@ -88,8 +88,4 @@ public class ZeebeTestRule extends ExternalResource {
               System.out.println("> " + event.toJson());
             });
   }
-
-  public int getDefaultPartition() {
-    return clientRule.getDefaultPartition();
-  }
 }

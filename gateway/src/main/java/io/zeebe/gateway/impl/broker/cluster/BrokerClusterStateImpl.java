@@ -16,94 +16,162 @@
 package io.zeebe.gateway.impl.broker.cluster;
 
 import static io.zeebe.transport.ClientTransport.UNKNOWN_NODE_ID;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
-import io.zeebe.transport.SocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
-import java.util.function.BiConsumer;
 import org.agrona.collections.Int2IntHashMap;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.IntArrayList;
 
-/**
- * Immutable; Important because we hand this between actors. If this is supposed to become mutable,
- * make sure to make copies in the right places.
- */
 public class BrokerClusterStateImpl implements BrokerClusterState {
 
-  private final Int2IntHashMap partitionLeaders = new Int2IntHashMap(NODE_ID_NULL);
-  private final IntArrayList brokers = new IntArrayList(5, NODE_ID_NULL);
-  private final IntArrayList partitions = new IntArrayList(32, PARTITION_ID_NULL);
-  private final int clusterSize;
-  private final int partitionsCount;
-  private final int replicationFactor;
+  private final Int2IntHashMap partitionLeaders;
+  private final Int2ObjectHashMap<List<Integer>> partitionFollowers;
+  private final Int2ObjectHashMap<String> brokerAddresses;
+  private final IntArrayList brokers;
+  private final IntArrayList partitions;
+  private final Random randomBroker;
+  private int clusterSize;
+  private int partitionsCount;
+  private int replicationFactor;
 
-  private final Random randomBroker = new Random();
+  public BrokerClusterStateImpl(BrokerClusterStateImpl topology) {
+    this();
+    if (topology != null) {
+      partitionLeaders.putAll(topology.partitionLeaders);
+      partitionFollowers.putAll(topology.partitionFollowers);
+      brokerAddresses.putAll(topology.brokerAddresses);
 
-  public BrokerClusterStateImpl(
-      final TopologyResponseDto topologyDto,
-      final BiConsumer<Integer, SocketAddress> endpointRegistry) {
-    clusterSize = topologyDto.getClusterSize();
-    partitionsCount = topologyDto.getPartitionsCount();
-    replicationFactor = topologyDto.getReplicationFactor();
+      brokers.addAll(topology.brokers);
+      partitions.addAll(topology.partitions);
 
-    topologyDto
-        .brokers()
-        .forEach(
-            b -> {
-              final int nodeId = b.getNodeId();
-              endpointRegistry.accept(
-                  nodeId, new SocketAddress(bufferAsString(b.getHost()), b.getPort()));
-              brokers.add(nodeId);
-
-              b.partitionStates()
-                  .forEach(
-                      p -> {
-                        final int partitionId = p.getPartitionId();
-                        partitions.add(partitionId);
-                        if (p.isLeader()) {
-                          partitionLeaders.put(partitionId, nodeId);
-                        }
-                      });
-            });
+      clusterSize = topology.clusterSize;
+      partitionsCount = topology.partitionsCount;
+      replicationFactor = topology.replicationFactor;
+    }
   }
 
+  public BrokerClusterStateImpl() {
+    partitionLeaders = new Int2IntHashMap(NODE_ID_NULL);
+    partitionFollowers = new Int2ObjectHashMap<>();
+    brokerAddresses = new Int2ObjectHashMap<>();
+    brokers = new IntArrayList(5, NODE_ID_NULL);
+    partitions = new IntArrayList(32, PARTITION_ID_NULL);
+    randomBroker = new Random();
+  }
+
+  public void setPartitionLeader(int partitionId, int leaderId) {
+    partitionLeaders.put(partitionId, leaderId);
+    final List<Integer> followers = partitionFollowers.get(partitionId);
+    if (followers != null) {
+      followers.removeIf(follower -> follower == leaderId);
+    }
+  }
+
+  public void addPartitionFollower(int partitionId, int followerId) {
+    partitionFollowers.computeIfAbsent(partitionId, ArrayList::new).add(followerId);
+  }
+
+  public void addPartitionIfAbsent(int partitionId) {
+    if (partitions.indexOf(partitionId) == -1) {
+      partitions.addInt(partitionId);
+    }
+  }
+
+  public void addBrokerIfAbsent(int nodeId) {
+    if (brokerAddresses.get(nodeId) == null) {
+      brokerAddresses.put(nodeId, "");
+      brokers.addInt(nodeId);
+    }
+  }
+
+  public void setBrokerAddressIfPresent(int brokerId, String address) {
+    if (brokerAddresses.get(brokerId) != null) {
+      brokerAddresses.put(brokerId, address);
+    }
+  }
+
+  public void removeBroker(int brokerId) {
+    brokerAddresses.remove(brokerId);
+    brokers.removeInt(brokerId);
+    partitions.forEachOrderedInt(
+        partitionId -> {
+          if (partitionLeaders.get(partitionId) == brokerId) {
+            partitionLeaders.remove(partitionId);
+          }
+          final List<Integer> followers = partitionFollowers.get(partitionId);
+          if (followers != null) {
+            followers.remove(new Integer(brokerId));
+          }
+        });
+  }
+
+  @Override
   public int getClusterSize() {
     return clusterSize;
   }
 
+  public void setClusterSize(int clusterSize) {
+    this.clusterSize = clusterSize;
+  }
+
+  @Override
   public int getPartitionsCount() {
     return partitionsCount;
   }
 
+  public void setPartitionsCount(int partitionsCount) {
+    this.partitionsCount = partitionsCount;
+  }
+
+  @Override
   public int getReplicationFactor() {
     return replicationFactor;
   }
 
+  public void setReplicationFactor(int replicationFactor) {
+    this.replicationFactor = replicationFactor;
+  }
+
   @Override
-  public int getLeaderForPartition(final int partition) {
+  public int getLeaderForPartition(int partition) {
     return partitionLeaders.get(partition);
   }
 
   @Override
+  public List<Integer> getFollowersForPartition(int partition) {
+    return partitionFollowers.get(partition);
+  }
+
+  @Override
   public int getRandomBroker() {
-    if (!brokers.isEmpty()) {
-      final int nextBroker = randomBroker.nextInt(brokers.size());
-      return brokers.getInt(nextBroker);
-    } else {
+    if (brokers.isEmpty()) {
       return UNKNOWN_NODE_ID;
+    } else {
+      return brokers.get(randomBroker.nextInt(brokers.size()));
     }
   }
 
   @Override
-  public IntArrayList getPartitions() {
+  public List<Integer> getPartitions() {
     return partitions;
   }
 
   @Override
-  public int getPartition(final int offset) {
+  public List<Integer> getBrokers() {
+    return brokers;
+  }
+
+  @Override
+  public String getBrokerAddress(int brokerId) {
+    return brokerAddresses.get(brokerId);
+  }
+
+  @Override
+  public int getPartition(int index) {
     if (!partitions.isEmpty()) {
-      return partitions.getInt(offset % partitions.size());
+      return partitions.getInt(index % partitions.size());
     } else {
       return PARTITION_ID_NULL;
     }

@@ -18,9 +18,9 @@ package io.zeebe.test.util.record;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.RecordMetadata;
 import io.zeebe.exporter.api.record.RecordValue;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.RejectionType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import java.time.Instant;
@@ -57,10 +57,6 @@ public abstract class ExporterRecordStream<
 
   public S withPosition(final long position) {
     return filter(r -> r.getPosition() == position);
-  }
-
-  public S withRaftTerm(final int raftTerm) {
-    return filter(r -> r.getRaftTerm() == raftTerm);
   }
 
   public S withSourceRecordPosition(final long sourceRecordPosition) {

@@ -44,21 +44,21 @@ public class FsLogSegment {
 
   public static final short INSUFFICIENT_CAPACITY = -4;
 
-  public static final short STATE_ACTIVE = 1;
+  private static final short STATE_ACTIVE = 1;
 
-  public static final short STATE_FILLED = 2;
+  private static final short STATE_FILLED = 2;
 
   protected volatile short state;
 
-  protected final String fileName;
+  private final String fileName;
 
-  protected FileChannel fileChannel;
+  private FileChannel fileChannel;
 
-  protected UnsafeBuffer metadataSection;
+  private UnsafeBuffer metadataSection;
 
-  protected MappedByteBuffer mappedBuffer;
+  private MappedByteBuffer mappedBuffer;
 
-  protected final Rater rater =
+  private final Rater rater =
       new Rater(
           1024 * 1024 * 4,
           () -> {
@@ -115,7 +115,7 @@ public class FsLogSegment {
     return metadataSection.getInt(SEGMENT_ID_OFFSET);
   }
 
-  protected void setSegmentId(int segmentId) {
+  private void setSegmentId(int segmentId) {
     metadataSection.putInt(SEGMENT_ID_OFFSET, segmentId);
   }
 
@@ -123,15 +123,15 @@ public class FsLogSegment {
     return metadataSection.getInt(SEGMENT_SIZE_OFFSET);
   }
 
-  public int getSizeVolatile() {
+  int getSizeVolatile() {
     return metadataSection.getIntVolatile(SEGMENT_SIZE_OFFSET);
   }
 
-  protected void setSizeOrdered(int tail) {
+  private void setSizeOrdered(int tail) {
     metadataSection.putIntOrdered(SEGMENT_SIZE_OFFSET, tail);
   }
 
-  protected void setSizeVolatile(int tail) {
+  private void setSizeVolatile(int tail) {
     metadataSection.putIntVolatile(SEGMENT_SIZE_OFFSET, tail);
   }
 

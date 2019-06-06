@@ -16,11 +16,12 @@
 package io.zeebe.logstreams.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
-import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
@@ -31,7 +32,6 @@ public class StateStorageTest {
   @Rule public TemporaryFolder tempFolderRule = new TemporaryFolder();
   @Rule public AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
 
-  private File root;
   private StateStorage storage;
 
   @Before
@@ -44,107 +44,99 @@ public class StateStorageTest {
   @Test
   public void shouldReturnCorrectFolderForMetadata() {
     // given
-    final int lastWrittenEventTerm = 3;
-    final long lastSuccessfulProcessedEventPosition = 13L;
-    final long lastWrittenEventPosition = 12L;
-    final File expected = new File(storage.getSnapshotsDirectory(), "13_12_3");
+    final long lastProcessedPosition = 12L;
+    final File expected = new File(storage.getSnapshotsDirectory(), "12");
 
     // when
-    final StateSnapshotMetadata metadata =
-        new StateSnapshotMetadata(
-            lastSuccessfulProcessedEventPosition,
-            lastWrittenEventPosition,
-            lastWrittenEventTerm,
-            false);
-    final File folder = storage.getSnapshotDirectoryFor(metadata);
+    final File folder = storage.getSnapshotDirectoryFor(lastProcessedPosition);
 
     // then
     assertThat(folder).isEqualTo(expected);
   }
 
   @Test
-  public void shouldReturnMetadataForExistingFolder() throws IOException {
+  public void shouldReturnTempFolder() {
     // given
-    final File folder = tempFolderRule.newFolder("13_12_3");
+    final File snapshotsDirectory = storage.getSnapshotsDirectory();
+    final File tempSnapshotDirectory = storage.getTempSnapshotDirectory();
 
+    final Path tempParent = tempSnapshotDirectory.toPath().getParent();
     // when
-    final StateSnapshotMetadata metadata = storage.getSnapshotMetadata(folder);
-
-    // then
-    assertThat(metadata.getLastSuccessfulProcessedEventPosition()).isEqualTo(13L);
-    assertThat(metadata.getLastWrittenEventPosition()).isEqualTo(12L);
-    assertThat(metadata.getLastWrittenEventTerm()).isEqualTo(3);
-    assertThat(metadata.exists()).isTrue();
+    assertThat(snapshotsDirectory.toPath()).isEqualTo(tempParent);
   }
 
   @Test
-  public void shouldReturnMetadataForNonExistingFolder() {
+  public void shouldListAllFoldersWhoseNameMatchExpectedPattern() {
     // given
-    final File folder = new File(tempFolderRule.getRoot(), "1_2_0");
-
-    // when
-    final StateSnapshotMetadata metadata = storage.getSnapshotMetadata(folder);
-
-    // then
-    assertThat(metadata.getLastSuccessfulProcessedEventPosition()).isEqualTo(1L);
-    assertThat(metadata.getLastWrittenEventPosition()).isEqualTo(2L);
-    assertThat(metadata.getLastWrittenEventTerm()).isEqualTo(0);
-    assertThat(metadata.exists()).isFalse();
-  }
-
-  @Test
-  public void shouldThrowIllegalArgumentExceptionIfFolderIsNotADirectory() throws IOException {
-    // given
-    final File file = tempFolderRule.newFile("13_12_3");
-
-    // then
-    assertThatThrownBy(() -> storage.getSnapshotMetadata(file))
-        .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  public void shouldListAllFoldersWhoseNameMatchExpectedPattern() throws IOException {
-    // given
-    final File[] folders =
+    createSnapshotDirectory("no");
+    createSnapshotDirectory("bad");
+    createSnapshotDirectory(StateStorage.TMP_SNAPSHOT_DIRECTORY);
+    createSnapshotDirectory("1");
+    createSnapshotDirectory("0");
+    final File[] expected =
         new File[] {
-          createSnapshotDirectory("no"),
-          createSnapshotDirectory("bad"),
-          createSnapshotDirectory("1_2_0"),
-          createSnapshotDirectory("0_0_0"),
-          createSnapshotDirectory("1"),
-          createSnapshotDirectory("1_2")
-        };
-    final StateSnapshotMetadata[] expected =
-        new StateSnapshotMetadata[] {
-          new StateSnapshotMetadata(1, 2, 0, true), new StateSnapshotMetadata(0, 0, 0, true)
+          new File(storage.getSnapshotsDirectory(), "0"),
+          new File(storage.getSnapshotsDirectory(), "1")
         };
 
     // when
-    final List<StateSnapshotMetadata> valid = storage.list();
+    final List<File> valid = storage.list();
 
     // then
     assertThat(valid).containsExactlyInAnyOrder(expected);
   }
 
   @Test
-  public void shouldListAllRecoverableSnapshotsBasedOnGivenPosition() throws IOException {
+  public void shouldFindAllTemporaryFoldersWhichAreBelowGivenPosition() {
     // given
-    final File[] folders =
+    createSnapshotDirectory("no");
+    createSnapshotDirectory("bad");
+    createSnapshotDirectory(StateStorage.TMP_SNAPSHOT_DIRECTORY);
+    createSnapshotDirectory("121-tmp");
+    createSnapshotDirectory("not-tmp");
+    createSnapshotDirectory("3-tmp");
+    createSnapshotDirectory("3");
+    createSnapshotDirectory("310-tmp");
+    final File[] expected =
         new File[] {
-          createSnapshotDirectory("1_2_0"),
-          createSnapshotDirectory("2_3_0"),
-          createSnapshotDirectory("3_4_0")
-        };
-    final StateSnapshotMetadata[] expected =
-        new StateSnapshotMetadata[] {
-          new StateSnapshotMetadata(1, 2, 0, true), new StateSnapshotMetadata(2, 3, 0, true)
+          new File(storage.getSnapshotsDirectory(), "3-tmp"),
+          new File(storage.getSnapshotsDirectory(), "121-tmp")
         };
 
     // when
-    final List<StateSnapshotMetadata> valid = storage.listRecoverable(3L);
+    final List<File> valid = storage.findTmpDirectoriesBelowPosition(128L);
 
     // then
     assertThat(valid).containsExactlyInAnyOrder(expected);
+  }
+
+  @Test
+  public void shouldListAllFoldersInOrder() {
+    // given
+    createSnapshotDirectory("no");
+    createSnapshotDirectory("45");
+    createSnapshotDirectory("bad");
+    createSnapshotDirectory("256");
+    createSnapshotDirectory("131");
+    createSnapshotDirectory(StateStorage.TMP_SNAPSHOT_DIRECTORY);
+    createSnapshotDirectory("1");
+    createSnapshotDirectory("0");
+
+    final File[] expected =
+        new File[] {
+          new File(storage.getSnapshotsDirectory(), "0"),
+          new File(storage.getSnapshotsDirectory(), "1"),
+          new File(storage.getSnapshotsDirectory(), "45"),
+          new File(storage.getSnapshotsDirectory(), "131"),
+          new File(storage.getSnapshotsDirectory(), "256")
+        };
+
+    // when/then
+    assertThat(storage.listByPositionAsc()).containsExactly(expected);
+
+    final List<File> reverseOrder = Arrays.asList(expected);
+    Collections.reverse(reverseOrder);
+    assertThat(storage.listByPositionDesc()).containsExactlyElementsOf(reverseOrder);
   }
 
   private File createSnapshotDirectory(final String name) {

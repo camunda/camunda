@@ -15,7 +15,6 @@
  */
 package io.zeebe.protocol.impl.record.value.job;
 
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
@@ -25,9 +24,10 @@ import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import org.agrona.DirectBuffer;
 
-public class JobBatchRecord extends UnpackedObject {
+public class JobBatchRecord extends UnifiedRecordValue {
 
   private final StringProperty typeProp = new StringProperty("type");
   private final StringProperty workerProp = new StringProperty("worker", "");

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe" package="io.zeebe.protocol.clientapi"
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe" package="io.zeebe.protocol"
   id="0" version="${protocol.version}" semanticVersion="${project.version}"
   description="Zeebe Protocol" byteOrder="littleEndian">
   <types>
@@ -32,7 +32,6 @@
 
     <enum name="ValueType" encodingType="uint8" description="The type of a record value">
       <validValue name="JOB">0</validValue>
-      <validValue name="RAFT">1</validValue>
       <validValue name="DEPLOYMENT">4</validValue>
       <validValue name="WORKFLOW_INSTANCE">5</validValue>
       <validValue name="INCIDENT">6</validValue>
@@ -48,13 +47,6 @@
       <validValue name="VARIABLE_DOCUMENT">18</validValue>
       <validValue name="WORKFLOW_INSTANCE_CREATION">19</validValue>
       <validValue name="ERROR">20</validValue>
-    </enum>
-
-    <enum name="ControlMessageType" encodingType="uint8"
-      description="The type of the control message.">
-      <validValue name="REQUEST_TOPOLOGY">4</validValue>
-      <validValue name="GET_WORKFLOW">5</validValue>
-      <validValue name="LIST_WORKFLOWS">6</validValue>
     </enum>
 
     <enum name="RecordType" encodingType="uint8">
@@ -77,17 +69,6 @@
   <sbe:message name="ErrorResponse" id="0" description="Standard error response">
     <field name="errorCode" id="1" type="errorCode"/>
     <data name="errorData" id="2" type="varDataEncoding"/>
-  </sbe:message>
-
-  <sbe:message name="ControlMessageRequest" id="10">
-    <field name="messageType" id="1" type="ControlMessageType"/>
-    <!-- Optional: Needs only be set if request addresses a specific partition -->
-    <field name="partitionId" id="2" type="uint16" presence="optional"/>
-    <data name="data" id="3" type="varDataEncoding"/>
-  </sbe:message>
-
-  <sbe:message name="ControlMessageResponse" id="11">
-    <data name="data" id="1" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="ExecuteCommandRequest" id="20">
@@ -114,9 +95,10 @@
   <!-- L2 Common Messages 200 - 399 -->
 
   <sbe:message name="RecordMetadata" id="200" description="Descriptor for Record Metadata">
-    <field name="recordType" id="1" type="RecordType"/>
-    <field name="requestStreamId" id="2" type="int32"/>
-    <field name="requestId" id="3" type="uint64"/>
+    <field name="partitionId" id="1" type="uint16"/>
+    <field name="recordType" id="2" type="RecordType"/>
+    <field name="requestStreamId" id="3" type="int32"/>
+    <field name="requestId" id="4" type="uint64"/>
     <field name="protocolVersion" id="5" type="uint16"/>
     <field name="valueType" id="6" type="ValueType"/>
     <field name="intent" id="7" type="uint8"/>

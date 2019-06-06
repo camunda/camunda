@@ -48,7 +48,7 @@ public class FsLogSegmentTest {
   private FsLogSegment fsLogSegment;
 
   @Before
-  public void init() throws IOException {
+  public void init() {
     logPath = tempFolder.getRoot().getAbsolutePath();
 
     logFileName = new File(logPath, "test-log-segment.data").getAbsolutePath();

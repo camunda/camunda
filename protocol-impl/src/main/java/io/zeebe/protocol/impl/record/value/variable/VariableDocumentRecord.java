@@ -15,15 +15,19 @@
  */
 package io.zeebe.protocol.impl.record.value.variable;
 
-import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.exporter.api.record.value.VariableDocumentRecordValue;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.protocol.VariableDocumentUpdateSemantic;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import java.util.Map;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
 
-public class VariableDocumentRecord extends UnpackedObject {
+public class VariableDocumentRecord extends UnifiedRecordValue
+    implements VariableDocumentRecordValue {
   private final LongProperty scopeKeyProperty = new LongProperty("scopeKey");
   private final EnumProperty<VariableDocumentUpdateSemantic> updateSemanticsProperty =
       new EnumProperty<>(
@@ -56,7 +60,7 @@ public class VariableDocumentRecord extends UnpackedObject {
     return this;
   }
 
-  public DirectBuffer getDocument() {
+  public DirectBuffer getDocumentBuffer() {
     return documentProperty.getValue();
   }
 
@@ -65,9 +69,14 @@ public class VariableDocumentRecord extends UnpackedObject {
     return this;
   }
 
+  @Override
+  public Map<String, Object> getDocument() {
+    return MsgPackConverter.convertToMap(documentProperty.getValue());
+  }
+
   public VariableDocumentRecord wrap(VariableDocumentRecord other) {
     this.setScopeKey(other.getScopeKey())
-        .setDocument(other.getDocument())
+        .setDocument(other.getDocumentBuffer())
         .setUpdateSemantics(other.getUpdateSemantics());
 
     return this;
@@ -102,7 +111,7 @@ public class VariableDocumentRecord extends UnpackedObject {
         + ", mergeSemantics="
         + getUpdateSemantics()
         + ", document="
-        + getDocument()
+        + getDocumentBuffer()
         + "} "
         + super.toString();
   }

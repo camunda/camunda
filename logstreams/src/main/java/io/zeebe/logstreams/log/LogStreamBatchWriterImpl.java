@@ -24,7 +24,6 @@ import static io.zeebe.logstreams.impl.LogEntryDescriptor.setKey;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setMetadataLength;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setPosition;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setProducerId;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setRaftTerm;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventPosition;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setTimestamp;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
@@ -60,7 +59,6 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
   private int eventLength;
   private int eventCount;
 
-  private LogStream logStream;
   private Dispatcher logWriteBuffer;
   private int logId;
 
@@ -79,7 +77,6 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
 
   @Override
   public void wrap(final LogStream logStream) {
-    this.logStream = logStream;
     this.logWriteBuffer = logStream.getWriteBuffer();
     this.logId = logStream.getPartitionId();
 
@@ -251,7 +248,6 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
 
       // write log entry header
       setPosition(writeBuffer, bufferOffset, position);
-      setRaftTerm(writeBuffer, bufferOffset, logStream.getTerm());
       setProducerId(writeBuffer, bufferOffset, producerId);
       setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
       setKey(writeBuffer, bufferOffset, key);

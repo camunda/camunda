@@ -15,15 +15,15 @@
  */
 package io.zeebe.protocol.impl.record.value.error;
 
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
 
-public class ErrorRecord extends UnpackedObject {
+public class ErrorRecord extends UnifiedRecordValue {
 
   private static final String NULL_MESSAGE = "Without exception message.";
 

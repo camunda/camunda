@@ -32,6 +32,8 @@ import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.TestUtil;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -267,11 +269,14 @@ public class JobWorkerTest {
     // given
     final long jobKey = createJobOfType("foo");
     final String failureMessage = "expected failure";
+    final StringWriter exceptionWriter = new StringWriter();
 
     final RecordingJobHandler jobHandler =
         new RecordingJobHandler(
             (c, j) -> {
-              throw new RuntimeException(failureMessage);
+              final RuntimeException runtimeException = new RuntimeException(failureMessage);
+              runtimeException.printStackTrace(new PrintWriter(exceptionWriter));
+              throw runtimeException;
             },
             (c, j) -> c.newCompleteCommand(j.getKey()).send().join());
 
@@ -292,7 +297,7 @@ public class JobWorkerTest {
         .containsExactly(jobKey, jobKey);
 
     final Record<JobRecordValue> failedJob = jobRecords(JobIntent.FAILED).getFirst();
-    assertThat(failedJob.getValue()).hasErrorMessage(failureMessage);
+    assertThat(failedJob.getValue()).hasErrorMessage(exceptionWriter.toString());
 
     waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
   }

@@ -17,29 +17,34 @@
  */
 package io.zeebe.broker.exporter.record.value;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueImpl;
 import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class VariableRecordValueImpl extends RecordValueImpl implements VariableRecordValue {
 
   private final String name;
-  private final String value;
   private final long scopeKey;
   private final long workflowInstanceKey;
   private final long workflowKey;
 
+  @JsonIgnore private final Supplier<String> valueSupplier;
+  @JsonIgnore private String value;
+
   public VariableRecordValueImpl(
       final ExporterObjectMapper objectMapper,
       String name,
-      String value,
+      Supplier<String> valueSupplier,
       long variableScopeKey,
       long workflowInstanceKey,
       long workflowKey) {
     super(objectMapper);
     this.name = name;
-    this.value = value;
+    this.valueSupplier = valueSupplier;
     this.scopeKey = variableScopeKey;
     this.workflowInstanceKey = workflowInstanceKey;
     this.workflowKey = workflowKey;
@@ -51,7 +56,11 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
   }
 
   @Override
+  @JsonProperty
   public String getValue() {
+    if (value == null) {
+      value = valueSupplier.get();
+    }
     return value;
   }
 
@@ -98,7 +107,7 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
         + name
         + '\''
         + ", value='"
-        + value
+        + getValue()
         + '\''
         + ", scopeKey="
         + scopeKey

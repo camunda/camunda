@@ -1,10 +1,45 @@
+<a name="0.18.0"></a>
+## 0.18.0 (2019-06-06)
+
+#### Breaking Changes
+
+* **broker:**
+  *  rename port configuration ([02e3c472](https://github.com/zeebe-io/zeebe/commit/02e3c4720800c8067055efdd4b76d06786dcb007)
+  *  rename defaultLogSegmentSize to logSegmentSize in configuration ([915fd5e5](https://github.com/zeebe-io/zeebe/commit/915fd5e571b41bcf76dad801c448acf5d24ce544)
+* **exporter-api:**  move Exporter interface to upper api package ([faac031f](https://github.com/zeebe-io/zeebe/commit/faac031f3b84557793778b504dd02699477bdf0a)
+* **protocol:**  move protocol class to upper level package ([8f580c51](https://github.com/zeebe-io/zeebe/commit/8f580c51c3f70efb16f39c08fdff6ee8792e3bbf)
+* **gateway-protocol:**  remove control messages (list and get workflows) ([8a6035676](https://github.com/zeebe-io/zeebe/commit/8a6035676fb0eaf2bc79d1e3eacad8e683f787bb)
+
+
+#### Bug Fixes
+
+* **broker:**
+  *  rename port configuration ([02e3c472](https://github.com/zeebe-io/zeebe/commit/02e3c4720800c8067055efdd4b76d06786dcb007), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+  *  rename defaultLogSegmentSize to logSegmentSize in configuration ([915fd5e5](https://github.com/zeebe-io/zeebe/commit/915fd5e571b41bcf76dad801c448acf5d24ce544), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+  *  fix lost messages on rejected correlation ([cdcddd86](https://github.com/zeebe-io/zeebe/commit/cdcddd863b1d3f591839319840f9f5ca8c3bc076))
+  *  fix intermediate catch event XML order dependency ([5c25ecd1](https://github.com/zeebe-io/zeebe/commit/5c25ecd17aa55f8cc223868df59530b412f9cfca))
+  *  fix XOR gateway being dependent on element position in XML ([bdd88dc1](https://github.com/zeebe-io/zeebe/commit/bdd88dc1465d522eebb3032976eb10a85cfa9c24))
+  *  do not skip partition on job activation ([80307830](https://github.com/zeebe-io/zeebe/commit/80307830bd9e750e5a7ec82829032a9f1cbafa05))
+  *  fix invalid state when cancelling with job ([f990274a](https://github.com/zeebe-io/zeebe/commit/f990274af2647a6b51f52d448a3b5829824bb898))
+  *  fix reading empty string token ([638e0631](https://github.com/zeebe-io/zeebe/commit/638e0631514160bdc74b280f61ac3c2cf44aca75))
+* **exporter-api:**  move Exporter interface to upper api package ([faac031f](https://github.com/zeebe-io/zeebe/commit/faac031f3b84557793778b504dd02699477bdf0a), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **gateway:**  fix topology response ([ea92e981](https://github.com/zeebe-io/zeebe/commit/ea92e98102e1acb1bbefce822aaa796918504e54))
+* **protocol:**  move protocol class to upper level package ([8f580c51](https://github.com/zeebe-io/zeebe/commit/8f580c51c3f70efb16f39c08fdff6ee8792e3bbf), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+
+#### Features
+
+* **broker:**  add workflow key to incident record ([73477e87](https://github.com/zeebe-io/zeebe/commit/73477e875a8575c0e9f278df92858595b4ae821f))
+* **clients/java:**  send stack trace of unhandled worker exception to Operate ([7ceea4ce](https://github.com/zeebe-io/zeebe/commit/7ceea4ce104d1421eff1965f8b36fa499c9b2305))
+* **exporter-api:**  allow exporters to throw checked exceptions in configure method ([df52c92b](https://github.com/zeebe-io/zeebe/commit/df52c92b3edeb655462e2f5bcb1253526a8d8181))
+
+
 <a name="0.17.0"></a>
 ## 0.17.0 (2019-04-02)
 
 
 #### Breaking Changes
 
-* **broker:**  
+* **broker:**
   * renamed payload to variables ([e2fed8bc](https://github.com/zeebe-io/zeebe/commit/e2fed8bc7d15092deb701cba5f0b158d250c2485))
   * input/output mappings and correlation key expressions access variables by name ([665393f0](https://github.com/zeebe-io/zeebe/commit/665393f0206c54cf0373cc7ac54edeec31b3f460))
 * **clients:**  rename bufferSize to maxJobsActive ([2373c264](https://github.com/zeebe-io/zeebe/commit/2373c2649da13755e964f83a530d9adb3e6798ed))
@@ -14,7 +49,7 @@
 #### Features
 
 * **bpmn-model:**  reject end events with outgoing sequence flows ([50582295](https://github.com/zeebe-io/zeebe/commit/50582295a9b7588c27798173a7135398b7239357))
-* **broker:**  
+* **broker:**
   * add workflow key to variable record ([624d32a2](https://github.com/zeebe-io/zeebe/commit/624d32a2fc3f3c9941fbe2603cb32e1db1a6ac9d))
   * input/output mappings and correlation key expressions access variables by name ([665393f0](https://github.com/zeebe-io/zeebe/commit/665393f0206c54cf0373cc7ac54edeec31b3f460))
 * **exporter:**  export error record ([b35728bf](https://github.com/zeebe-io/zeebe/commit/b35728bfe3542a6c5beccea5dcfd290c02853d2e))

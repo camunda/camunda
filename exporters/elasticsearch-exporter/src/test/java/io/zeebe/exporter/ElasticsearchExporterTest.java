@@ -21,16 +21,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.record.Record;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.test.exporter.ExporterTestHarness;
 import io.zeebe.util.ZbLogger;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
@@ -92,7 +94,6 @@ public class ElasticsearchExporterTest {
     verify(esClient).putIndexTemplate(ValueType.JOB_BATCH);
     verify(esClient).putIndexTemplate(ValueType.MESSAGE);
     verify(esClient).putIndexTemplate(ValueType.MESSAGE_SUBSCRIPTION);
-    verify(esClient).putIndexTemplate(ValueType.RAFT);
     verify(esClient).putIndexTemplate(ValueType.VARIABLE);
     verify(esClient).putIndexTemplate(ValueType.VARIABLE_DOCUMENT);
     verify(esClient).putIndexTemplate(ValueType.WORKFLOW_INSTANCE);
@@ -127,7 +128,6 @@ public class ElasticsearchExporterTest {
           ValueType.JOB_BATCH,
           ValueType.MESSAGE,
           ValueType.MESSAGE_SUBSCRIPTION,
-          ValueType.RAFT,
           ValueType.VARIABLE,
           ValueType.VARIABLE_DOCUMENT,
           ValueType.WORKFLOW_INSTANCE,
@@ -136,12 +136,9 @@ public class ElasticsearchExporterTest {
         };
 
     // when - then
-    for (ValueType valueType : valueTypes) {
-      final Record record =
-          testHarness.export(
-              r -> r.getMetadata().setValueType(valueType).setRecordType(RecordType.EVENT));
-      verify(esClient).index(record);
-    }
+    final Context.RecordFilter filter = testHarness.getContext().getFilter();
+
+    assertThat(Arrays.stream(valueTypes).map(filter::acceptValue)).containsOnly(true);
   }
 
   @Test
@@ -171,7 +168,6 @@ public class ElasticsearchExporterTest {
           ValueType.JOB_BATCH,
           ValueType.MESSAGE,
           ValueType.MESSAGE_SUBSCRIPTION,
-          ValueType.RAFT,
           ValueType.VARIABLE,
           ValueType.VARIABLE_DOCUMENT,
           ValueType.WORKFLOW_INSTANCE,
@@ -180,30 +176,9 @@ public class ElasticsearchExporterTest {
         };
 
     // when - then
-    for (ValueType valueType : valueTypes) {
-      final Record record =
-          testHarness.export(
-              r -> r.getMetadata().setValueType(valueType).setRecordType(RecordType.EVENT));
-      verify(esClient, never()).index(record);
-    }
-  }
+    final Context.RecordFilter filter = testHarness.getContext().getFilter();
 
-  @Test
-  public void shouldIgnoreUnknownValueType() {
-    // given
-    config.index.event = true;
-    createAndOpenExporter();
-
-    // when
-    final Record record =
-        testHarness.export(
-            r ->
-                r.getMetadata()
-                    .setValueType(ValueType.SBE_UNKNOWN)
-                    .setRecordType(RecordType.EVENT));
-
-    // then
-    verify(esClient, never()).index(record);
+    assertThat(Arrays.stream(valueTypes).map(filter::acceptValue)).containsOnly(false);
   }
 
   @Test
@@ -220,12 +195,9 @@ public class ElasticsearchExporterTest {
         new RecordType[] {RecordType.COMMAND, RecordType.EVENT, RecordType.COMMAND_REJECTION};
 
     // when - then
-    for (RecordType recordType : recordTypes) {
-      final Record record =
-          testHarness.export(
-              r -> r.getMetadata().setValueType(ValueType.DEPLOYMENT).setRecordType(recordType));
-      verify(esClient).index(record);
-    }
+    final Context.RecordFilter filter = testHarness.getContext().getFilter();
+
+    assertThat(Arrays.stream(recordTypes).map(filter::acceptType)).containsOnly(true);
   }
 
   @Test
@@ -242,31 +214,9 @@ public class ElasticsearchExporterTest {
         new RecordType[] {RecordType.COMMAND, RecordType.EVENT, RecordType.COMMAND_REJECTION};
 
     // when - then
-    for (RecordType recordType : recordTypes) {
-      final Record record =
-          testHarness.export(
-              r -> r.getMetadata().setValueType(ValueType.DEPLOYMENT).setRecordType(recordType));
-      verify(esClient, never()).index(record);
-    }
-  }
+    final Context.RecordFilter filter = testHarness.getContext().getFilter();
 
-  @Test
-  public void shouldIgnoreUnknownRecordType() {
-    // given
-    config.index.deployment = true;
-    final ElasticsearchExporter exporter = createAndOpenExporter();
-
-    // when
-    createAndOpenExporter();
-    final Record record =
-        testHarness.export(
-            r ->
-                r.getMetadata()
-                    .setValueType(ValueType.DEPLOYMENT)
-                    .setRecordType(RecordType.SBE_UNKNOWN));
-
-    // then
-    verify(esClient, never()).index(record);
+    assertThat(Arrays.stream(recordTypes).map(filter::acceptType)).containsOnly(false);
   }
 
   @Test
@@ -329,11 +279,9 @@ public class ElasticsearchExporterTest {
   }
 
   @Test
-  public void shouldUpdatePositionAfterDelayEvenIfNoRecordsAreExported() {
+  public void shouldUpdatePositionAfterDelay() {
     // given
-    // scenario: events are not exported but still their position should be recorded
-    config.index.event = false;
-    config.index.workflowInstance = false;
+    config.index.event = true;
     createAndOpenExporter();
 
     // when
@@ -346,8 +294,8 @@ public class ElasticsearchExporterTest {
             .export(4);
     testHarness.getController().runScheduledTasks(Duration.ofSeconds(config.bulk.delay));
 
-    // then no record was indexed but the exporter record position was updated
-    verify(esClient, never()).index(any());
+    // then record was indexed and the exporter record position was updated
+    verify(esClient, times(4)).index(any());
     assertThat(testHarness.getController().getPosition()).isEqualTo(exported.get(3).getPosition());
   }
 
@@ -366,7 +314,11 @@ public class ElasticsearchExporterTest {
 
   private void openExporter(ElasticsearchExporter exporter) {
     testHarness = new ExporterTestHarness(exporter);
-    testHarness.configure("elasticsearch", config);
+    try {
+      testHarness.configure("elasticsearch", config);
+    } catch (Exception e) {
+      throw new AssertionError("Failed to configure exporter", e);
+    }
     testHarness.open();
   }
 

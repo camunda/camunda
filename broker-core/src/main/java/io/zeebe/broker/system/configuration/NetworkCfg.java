@@ -27,22 +27,17 @@ public class NetworkCfg implements ConfigurationEntry {
   public static final String DEFAULT_HOST = "0.0.0.0";
 
   private String host = DEFAULT_HOST;
-  private String defaultSendBufferSize = "16M";
   private int portOffset = 0;
 
-  private SocketBindingClientApiCfg client = new SocketBindingClientApiCfg();
-  private SocketBindingManagementCfg management = new SocketBindingManagementCfg();
-  private SocketBindingReplicationCfg replication = new SocketBindingReplicationCfg();
-  private SocketBindingSubscriptionCfg subscription = new SocketBindingSubscriptionCfg();
+  private SocketBindingCommandApiCfg commandApi = new SocketBindingCommandApiCfg();
+  private SocketBindingInternalCfg internalApi = new SocketBindingInternalCfg();
 
   @Override
   public void init(
       final BrokerCfg brokerCfg, final String brokerBase, final Environment environment) {
     applyEnvironment(environment);
-    client.applyDefaults(this);
-    management.applyDefaults(this);
-    replication.applyDefaults(this);
-    subscription.applyDefaults(this);
+    commandApi.applyDefaults(this);
+    internalApi.applyDefaults(this);
   }
 
   private void applyEnvironment(final Environment environment) {
@@ -58,14 +53,6 @@ public class NetworkCfg implements ConfigurationEntry {
     this.host = host;
   }
 
-  public String getDefaultSendBufferSize() {
-    return defaultSendBufferSize;
-  }
-
-  public void setDefaultSendBufferSize(final String defaultSendBufferSize) {
-    this.defaultSendBufferSize = defaultSendBufferSize;
-  }
-
   public int getPortOffset() {
     return portOffset;
   }
@@ -74,36 +61,20 @@ public class NetworkCfg implements ConfigurationEntry {
     this.portOffset = portOffset;
   }
 
-  public SocketBindingClientApiCfg getClient() {
-    return client;
+  public SocketBindingCommandApiCfg getCommandApi() {
+    return commandApi;
   }
 
-  public void setClient(final SocketBindingClientApiCfg clientApi) {
-    this.client = clientApi;
+  public void setCommandApi(final SocketBindingCommandApiCfg commandApi) {
+    this.commandApi = commandApi;
   }
 
-  public SocketBindingManagementCfg getManagement() {
-    return management;
+  public SocketBindingInternalCfg getInternalApi() {
+    return internalApi;
   }
 
-  public void setManagement(final SocketBindingManagementCfg managementApi) {
-    this.management = managementApi;
-  }
-
-  public SocketBindingReplicationCfg getReplication() {
-    return replication;
-  }
-
-  public void setReplication(final SocketBindingReplicationCfg replicationApi) {
-    this.replication = replicationApi;
-  }
-
-  public SocketBindingSubscriptionCfg getSubscription() {
-    return subscription;
-  }
-
-  public void setSubscription(final SocketBindingSubscriptionCfg subscription) {
-    this.subscription = subscription;
+  public void setInternalApi(SocketBindingInternalCfg internalApi) {
+    this.internalApi = internalApi;
   }
 
   @Override
@@ -112,19 +83,12 @@ public class NetworkCfg implements ConfigurationEntry {
         + "host='"
         + host
         + '\''
-        + ", defaultSendBufferSize='"
-        + defaultSendBufferSize
-        + '\''
         + ", portOffset="
         + portOffset
-        + ", client="
-        + client
-        + ", management="
-        + management
-        + ", replication="
-        + replication
-        + ", subscription="
-        + subscription
+        + ", commandApi="
+        + commandApi
+        + ", internalApi="
+        + internalApi
         + '}';
   }
 }

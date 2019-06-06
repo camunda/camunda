@@ -17,10 +17,10 @@
  */
 package io.zeebe.broker.system.management.deployment;
 
-import io.zeebe.broker.util.SbeBufferWriterReader;
 import io.zeebe.clustering.management.PushDeploymentRequestEncoder;
 import io.zeebe.clustering.management.PushDeploymentResponseDecoder;
 import io.zeebe.clustering.management.PushDeploymentResponseEncoder;
+import io.zeebe.engine.util.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 

@@ -9,7 +9,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.18.0-SNAPSHOT</version>
+    <version>0.19.0-SNAPSHOT</version>
     <relativePath>parent/</relativePath>
   </parent>
 
@@ -25,9 +25,8 @@
     <module>service-container</module>
     <module>bpmn-model</module>
     <module>logstreams</module>
+    <module>engine</module>  
     <module>transport</module>
-    <module>gossip</module>
-    <module>raft</module>
     <module>test</module>
     <module>util</module>
     <module>test-util</module>

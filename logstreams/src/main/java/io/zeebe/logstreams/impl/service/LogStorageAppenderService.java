@@ -16,42 +16,37 @@
 package io.zeebe.logstreams.impl.service;
 
 import io.zeebe.dispatcher.Subscription;
+import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.logstreams.impl.LogStorageAppender;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.SchedulingHints;
-import io.zeebe.util.sched.channel.ActorConditions;
 
 public class LogStorageAppenderService implements Service<LogStorageAppender> {
-  private final Injector<LogStorage> logStorageInjector = new Injector<>();
   private final Injector<Subscription> appenderSubscriptionInjector = new Injector<>();
+  private final Injector<DistributedLogstreamPartition> distributedLogstreamInjector =
+      new Injector<>();
 
   private final int maxAppendBlockSize;
 
   private LogStorageAppender service;
-  private ActorConditions onLogStorageAppendedConditions;
 
-  public LogStorageAppenderService(
-      ActorConditions onLogStorageAppendedConditions, int maxAppendBlockSize) {
-    this.onLogStorageAppendedConditions = onLogStorageAppendedConditions;
+  public LogStorageAppenderService(int maxAppendBlockSize) {
     this.maxAppendBlockSize = maxAppendBlockSize;
   }
 
   @Override
   public void start(ServiceStartContext startContext) {
-    final LogStorage logStorage = logStorageInjector.getValue();
     final Subscription subscription = appenderSubscriptionInjector.getValue();
 
     service =
         new LogStorageAppender(
             startContext.getName(),
-            logStorage,
+            distributedLogstreamInjector.getValue(),
             subscription,
-            maxAppendBlockSize,
-            onLogStorageAppendedConditions);
+            maxAppendBlockSize);
 
     startContext.async(
         startContext.getScheduler().submitActor(service, true, SchedulingHints.ioBound()));
@@ -67,11 +62,11 @@ public class LogStorageAppenderService implements Service<LogStorageAppender> {
     return service;
   }
 
-  public Injector<LogStorage> getLogStorageInjector() {
-    return logStorageInjector;
-  }
-
   public Injector<Subscription> getAppenderSubscriptionInjector() {
     return appenderSubscriptionInjector;
+  }
+
+  public Injector<DistributedLogstreamPartition> getDistributedLogstreamInjector() {
+    return distributedLogstreamInjector;
   }
 }

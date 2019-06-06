@@ -21,24 +21,28 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.client.api.commands.BrokerInfo;
-import io.zeebe.client.api.commands.PartitionBrokerRole;
 import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.subscription.JobWorker;
-import java.util.Optional;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.Protocol;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.junit.Ignore;
+import java.util.stream.Stream;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
+// FIXME: rewrite tests now that leader election is not controllable
 public class BrokerLeaderChangeTest {
-  public static final String NULL_PAYLOAD = null;
+  public static final String NULL_VARIABLES = null;
   public static final String JOB_TYPE = "testTask";
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
-  public Timeout testTimeout = Timeout.seconds(60);
-  public ClusteringRule clusteringRule = new ClusteringRule();
+  public Timeout testTimeout = Timeout.seconds(120);
+  public ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3);
   public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
@@ -48,7 +52,7 @@ public class BrokerLeaderChangeTest {
   @Test
   public void shouldBecomeFollowerAfterRestartLeaderChange() {
     // given
-    final int partition = 1;
+    final int partition = Protocol.START_PARTITION_ID;
     final int oldLeader = clusteringRule.getLeaderForPartition(partition).getNodeId();
 
     clusteringRule.stopBroker(oldLeader);
@@ -59,18 +63,16 @@ public class BrokerLeaderChangeTest {
     clusteringRule.restartBroker(oldLeader);
 
     // then
-    final Optional<PartitionInfo> partitionInfo =
-        clusteringRule.getTopologyFromBroker(oldLeader).stream()
-            .filter(b -> b.getNodeId() == oldLeader)
-            .flatMap(b -> b.getPartitions().stream().filter(p -> p.getPartitionId() == partition))
-            .findFirst();
 
-    assertThat(partitionInfo)
-        .hasValueSatisfying(p -> assertThat(p.getRole()).isEqualTo(PartitionBrokerRole.FOLLOWER));
+    final Stream<PartitionInfo> partitionInfo =
+        clusteringRule.getTopologyFromClient().getBrokers().stream()
+            .filter(b -> b.getNodeId() == oldLeader)
+            .flatMap(b -> b.getPartitions().stream().filter(p -> p.getPartitionId() == partition));
+
+    assertThat(partitionInfo.allMatch(p -> !p.isLeader())).isTrue();
   }
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
   public void shouldChangeLeaderAfterLeaderDies() {
     // given
     final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
@@ -101,7 +103,7 @@ public class BrokerLeaderChangeTest {
               .handler(
                   (client, job) -> {
                     if (job.getKey() == jobKey) {
-                      client.newCompleteCommand(job.getKey()).variables(NULL_PAYLOAD).send();
+                      client.newCompleteCommand(job.getKey()).send();
                       latch.countDown();
                     }
                   })

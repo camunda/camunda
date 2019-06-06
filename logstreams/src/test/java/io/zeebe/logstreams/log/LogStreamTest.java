@@ -15,27 +15,36 @@
  */
 package io.zeebe.logstreams.log;
 
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.distributedlog.DistributedLogstreamService;
+import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
+import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
+import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.io.File;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+import org.agrona.DirectBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.internal.util.reflection.FieldSetter;
+import org.mockito.stubbing.Answer;
 
 public class LogStreamTest {
   public static final int PARTITION_ID = 0;
@@ -73,7 +82,59 @@ public class LogStreamTest {
 
     streamConfig.accept(builder);
 
-    return builder.build().join();
+    final LogStream logStream = builder.build().join();
+
+    final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);
+
+    final DistributedLogstreamService distributedLogImpl =
+        new DefaultDistributedLogstreamService(new DistributedLogstreamServiceConfig());
+
+    final String nodeId = "0";
+    try {
+      FieldSetter.setField(
+          distributedLogImpl,
+          DefaultDistributedLogstreamService.class.getDeclaredField("logStream"),
+          logStream);
+
+      FieldSetter.setField(
+          distributedLogImpl,
+          DefaultDistributedLogstreamService.class.getDeclaredField("logStorage"),
+          logStream.getLogStorage());
+
+      FieldSetter.setField(
+          distributedLogImpl,
+          DefaultDistributedLogstreamService.class.getDeclaredField("currentLeader"),
+          nodeId);
+
+    } catch (NoSuchFieldException e) {
+      e.printStackTrace();
+    }
+
+    doAnswer(
+            (Answer<CompletableFuture<Long>>)
+                invocation -> {
+                  final Object[] arguments = invocation.getArguments();
+                  if (arguments != null
+                      && arguments.length > 1
+                      && arguments[0] != null
+                      && arguments[1] != null) {
+                    final byte[] bytes = (byte[]) arguments[0];
+                    final long pos = (long) arguments[1];
+                    return CompletableFuture.completedFuture(
+                        distributedLogImpl.append(nodeId, pos, bytes));
+                  }
+                  return null;
+                })
+        .when(mockDistLog)
+        .asyncAppend(any(), anyLong());
+
+    serviceContainer
+        .get()
+        .createService(distributedLogPartitionServiceName("test-log-name"), () -> mockDistLog)
+        .install()
+        .join();
+
+    return logStream;
   }
 
   protected LogStream buildLogStream() {
@@ -98,7 +159,6 @@ public class LogStreamTest {
     assertThat(logStream.getLogStorage().isOpen()).isTrue();
 
     assertThat(logStream.getCommitPosition()).isEqualTo(-1L);
-    assertThat(logStream.getTerm()).isEqualTo(0);
 
     assertThat(logStream.getLogStorageAppender()).isNull();
     assertThat(logStream.getWriteBuffer()).isNull();
@@ -119,7 +179,7 @@ public class LogStreamTest {
   }
 
   @Test
-  public void shouldCloseLogStorageAppender() throws Exception {
+  public void shouldCloseLogStorageAppender() {
     // given
     final LogStream logStream = buildLogStream();
 
@@ -166,181 +226,21 @@ public class LogStreamTest {
     assertThat(logStream.getCommitPosition()).isEqualTo(123L);
   }
 
-  @Test
-  public void shouldSetTerm() throws Exception {
-    // given
-    final LogStream logStream = buildLogStream();
-
-    // when
-    logStream.setTerm(123);
-
-    // then
-    assertThat(logStream.getTerm()).isEqualTo(123);
+  static long writeEvent(final LogStream logStream) {
+    return writeEvent(logStream, wrapString("event"));
   }
 
-  @Test
-  public void shouldDeleteOnClose() {
-    final File logDir = tempFolder.getRoot();
-    final LogStream logStream =
-        buildLogStream(b -> b.logRootPath(logDir.getAbsolutePath()).deleteOnClose(true));
-
-    // when
-    logStream.close();
-
-    // then
-    final File[] files = logDir.listFiles();
-    assertThat(files).isNotNull();
-    assertThat(files.length).isEqualTo(0);
-  }
-
-  @Test
-  public void shouldNotDeleteOnCloseByDefault() {
-    final File logDir = tempFolder.getRoot();
-    final LogStream logStream = buildLogStream(b -> b.logRootPath(logDir.getAbsolutePath()));
-
-    // when
-    logStream.close();
-
-    // then
-    final File[] files = logDir.listFiles();
-    assertThat(files).isNotNull();
-    assertThat(files.length).isGreaterThan(0);
-  }
-
-  @Test
-  public void shouldTruncateLogStorage() {
-    // given
-    final LogStream logStream = buildLogStream();
-
-    logStream.openAppender().join();
-    closeables.manage(logStream);
-
-    final long firstPosition = writeEvent(logStream);
-    final long secondPosition = writeEvent(logStream);
-
-    assertThat(events(logStream).count()).isEqualTo(2);
-
-    // when
-    logStream.truncate(secondPosition);
-
-    // then
-    assertThat(events(logStream).count()).isEqualTo(1);
-    assertThat(events(logStream).findFirst().get().getPosition()).isEqualTo(firstPosition);
-  }
-
-  @Test
-  public void shouldTruncateLogStorageAfterCommittedPosition() {
-    // given
-    final LogStream logStream = buildLogStream();
-
-    logStream.openAppender().join();
-    closeables.manage(logStream);
-
-    final long firstPosition = writeEvent(logStream);
-    final long secondPosition = writeEvent(logStream);
-
-    logStream.setCommitPosition(firstPosition);
-
-    // when
-    logStream.truncate(secondPosition);
-
-    // then
-    assertThat(events(logStream).count()).isEqualTo(1);
-    assertThat(events(logStream).findFirst().get().getPosition()).isEqualTo(firstPosition);
-  }
-
-  @Test
-  public void shouldTruncateWhenPositionIsNotAnEventPosition() {
-    // given
-    final LogStream logStream = buildLogStream();
-
-    logStream.openAppender().join();
-    closeables.manage(logStream);
-
-    final long firstPosition = writeEvent(logStream);
-    final long secondPosition = writeEvent(logStream);
-
-    // when
-    logStream.truncate(secondPosition - 1);
-
-    // then
-    assertThat(events(logStream).count()).isEqualTo(1);
-    assertThat(events(logStream).findFirst().get().getPosition()).isEqualTo(firstPosition);
-  }
-
-  @Test
-  public void shouldWriteNewEventAfterTruncation() {
-    // given
-    final LogStream logStream = buildLogStream();
-
-    logStream.openAppender().join();
-    closeables.manage(logStream);
-
-    final long firstPosition = writeEvent(logStream);
-
-    logStream.truncate(firstPosition);
-
-    // when
-    final long secondPosition = writeEvent(logStream);
-
-    // then
-    assertThat(events(logStream).count()).isEqualTo(1);
-    assertThat(events(logStream).findFirst().get().getPosition()).isEqualTo(secondPosition);
-  }
-
-  @Test
-  public void shouldNotTruncateIfPositionIsAlreadyCommitted() {
-    // given
-    final LogStream logStream = buildLogStream();
-
-    closeables.manage(logStream);
-
-    logStream.setCommitPosition(100L);
-
-    // when
-    assertThatThrownBy(() -> logStream.truncate(100L))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Can't truncate position which is already committed");
-  }
-
-  @Test
-  public void shouldNotTruncateIfPositionIsGreaterThanCurrentHead() {
-    // given
-    final LogStream logStream = buildLogStream();
-
-    logStream.openAppender().join();
-    closeables.manage(logStream);
-
-    // when
-    final long nonExistingPosition = Long.MAX_VALUE;
-
-    assertThatThrownBy(() -> logStream.truncate(nonExistingPosition))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Truncation failed! Position " + nonExistingPosition + " was not found.");
-  }
-
-  private Stream<LoggedEvent> events(final LogStream stream) {
-    final BufferedLogStreamReader reader = new BufferedLogStreamReader(stream, true);
-    closeables.manage(reader);
-
-    reader.seekToFirstEvent();
-    final Iterable<LoggedEvent> iterable = () -> reader;
-    return StreamSupport.stream(iterable.spliterator(), false);
-  }
-
-  private long writeEvent(final LogStream logStream) {
+  static long writeEvent(final LogStream logStream, DirectBuffer value) {
     final LogStreamWriterImpl writer = new LogStreamWriterImpl(logStream);
 
     long position = -1L;
 
     while (position < 0) {
-      position = writer.value(wrapString("event")).tryWrite();
+      position = writer.value(value).tryWrite();
     }
 
     final long writtenEventPosition = position;
-    waitUntil(
-        () ->
-            logStream.getLogStorageAppender().getCurrentAppenderPosition() > writtenEventPosition);
+    waitUntil(() -> logStream.getCommitPosition() >= writtenEventPosition);
 
     return position;
   }

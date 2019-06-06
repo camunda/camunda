@@ -57,7 +57,7 @@ public class ActorJob {
         resultFuture = null;
       }
 
-    } catch (Exception e) {
+    } catch (Throwable e) {
       task.onFailure(e);
     } finally {
       this.actorThread = null;
@@ -180,7 +180,7 @@ public class ActorJob {
     failFuture(new RuntimeException(reason));
   }
 
-  public void failFuture(Exception cause) {
+  public void failFuture(Throwable cause) {
     if (this.resultFuture != null) {
       resultFuture.completeExceptionally(cause);
     }

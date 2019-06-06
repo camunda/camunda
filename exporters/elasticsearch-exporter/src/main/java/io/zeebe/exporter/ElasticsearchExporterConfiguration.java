@@ -17,8 +17,8 @@ package io.zeebe.exporter;
 
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.RecordMetadata;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 
 public class ElasticsearchExporterConfiguration {
 
@@ -142,7 +142,7 @@ public class ElasticsearchExporterConfiguration {
         && shouldIndexValueType(metadata.getValueType());
   }
 
-  private boolean shouldIndexValueType(ValueType valueType) {
+  public boolean shouldIndexValueType(ValueType valueType) {
     switch (valueType) {
       case DEPLOYMENT:
         return index.deployment;
@@ -156,8 +156,6 @@ public class ElasticsearchExporterConfiguration {
         return index.message;
       case MESSAGE_SUBSCRIPTION:
         return index.messageSubscription;
-      case RAFT:
-        return index.raft;
       case VARIABLE:
         return index.variable;
       case VARIABLE_DOCUMENT:
@@ -173,7 +171,7 @@ public class ElasticsearchExporterConfiguration {
     }
   }
 
-  private boolean shouldIndexRecordType(RecordType recordType) {
+  public boolean shouldIndexRecordType(RecordType recordType) {
     switch (recordType) {
       case EVENT:
         return index.event;

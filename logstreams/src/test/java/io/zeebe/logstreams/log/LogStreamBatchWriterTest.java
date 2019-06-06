@@ -68,8 +68,6 @@ public class LogStreamBatchWriterTest {
   @Before
   public void setUp() {
     writer = new LogStreamBatchWriterImpl(logStreamRule.getLogStream());
-
-    logStreamRule.setCommitPosition(Long.MAX_VALUE);
   }
 
   private List<LoggedEvent> getWrittenEvents(final long position) {
@@ -421,30 +419,6 @@ public class LogStreamBatchWriterTest {
     assertThat(getWrittenEvents(position.get()))
         .extracting(LoggedEvent::getTimestamp)
         .containsExactly(timestamp, timestamp);
-  }
-
-  @Test
-  public void shouldWriteEventWithRaftTerm() {
-    // given
-    logStreamRule.getLogStream().setTerm(123);
-
-    // when
-    final long position =
-        writer
-            .event()
-            .key(1)
-            .value(EVENT_VALUE_1)
-            .done()
-            .event()
-            .key(2)
-            .value(EVENT_VALUE_2)
-            .done()
-            .tryWrite();
-
-    // then
-    assertThat(getWrittenEvents(position))
-        .extracting(LoggedEvent::getRaftTerm)
-        .containsExactly(123, 123);
   }
 
   @Test

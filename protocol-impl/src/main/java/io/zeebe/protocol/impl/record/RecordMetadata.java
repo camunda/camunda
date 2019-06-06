@@ -15,23 +15,25 @@
  */
 package io.zeebe.protocol.impl.record;
 
+import io.zeebe.protocol.MessageHeaderDecoder;
+import io.zeebe.protocol.MessageHeaderEncoder;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
-import io.zeebe.protocol.clientapi.RecordMetadataDecoder;
-import io.zeebe.protocol.clientapi.RecordMetadataEncoder;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordMetadataDecoder;
+import io.zeebe.protocol.RecordMetadataEncoder;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.RejectionType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.util.buffer.BufferReader;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class RecordMetadata implements BufferWriter, BufferReader {
+public class RecordMetadata
+    implements BufferWriter, BufferReader, io.zeebe.exporter.api.record.RecordMetadata {
   public static final int BLOCK_LENGTH =
       MessageHeaderEncoder.ENCODED_LENGTH + RecordMetadataEncoder.BLOCK_LENGTH;
 
@@ -44,6 +46,7 @@ public class RecordMetadata implements BufferWriter, BufferReader {
   private RecordType recordType = RecordType.NULL_VAL;
   private short intentValue = Intent.NULL_VAL;
   private Intent intent = null;
+  private int partitionId;
   protected int requestStreamId;
   protected long requestId;
   protected int protocolVersion =
@@ -66,6 +69,7 @@ public class RecordMetadata implements BufferWriter, BufferReader {
 
     decoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
+    partitionId = decoder.partitionId();
     recordType = decoder.recordType();
     requestStreamId = decoder.requestStreamId();
     requestId = decoder.requestId();
@@ -76,10 +80,12 @@ public class RecordMetadata implements BufferWriter, BufferReader {
 
     final int rejectionReasonLength = decoder.rejectionReasonLength();
 
-    offset += headerDecoder.blockLength();
-    offset += RecordMetadataDecoder.rejectionReasonHeaderLength();
+    if (rejectionReasonLength > 0) {
+      offset += headerDecoder.blockLength();
+      offset += RecordMetadataDecoder.rejectionReasonHeaderLength();
 
-    rejectionReason.wrap(buffer, offset, rejectionReasonLength);
+      rejectionReason.wrap(buffer, offset, rejectionReasonLength);
+    }
   }
 
   @Override
@@ -104,6 +110,7 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     encoder.wrap(buffer, offset);
 
     encoder
+        .partitionId(partitionId)
         .recordType(recordType)
         .requestStreamId(requestStreamId)
         .requestId(requestId)
@@ -196,11 +203,32 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     return this;
   }
 
-  public DirectBuffer getRejectionReason() {
+  public DirectBuffer getRejectionReasonBuffer() {
     return rejectionReason;
   }
 
+  public RecordMetadata partitionId(int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public String getRejectionReason() {
+    return BufferUtil.bufferAsString(rejectionReason);
+  }
+
+  @Override
+  public String toJson() {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
   public RecordMetadata reset() {
+    partitionId = RecordMetadataEncoder.partitionIdNullValue();
     recordType = RecordType.NULL_VAL;
     requestId = RecordMetadataEncoder.requestIdNullValue();
     requestStreamId = RecordMetadataEncoder.requestStreamIdNullValue();
@@ -218,14 +246,12 @@ public class RecordMetadata implements BufferWriter, BufferReader {
         && requestStreamId != RecordMetadataEncoder.requestStreamIdNullValue();
   }
 
-  public void copyRequestMetadata(RecordMetadata target) {
-    target.requestId(requestId).requestStreamId(requestStreamId);
-  }
-
   @Override
   public String toString() {
     return "RecordMetadata{"
-        + "recordType="
+        + "partitionId="
+        + partitionId
+        + ", recordType="
         + recordType
         + ", intentValue="
         + intentValue
@@ -235,8 +261,14 @@ public class RecordMetadata implements BufferWriter, BufferReader {
         + requestStreamId
         + ", requestId="
         + requestId
+        + ", protocolVersion="
+        + protocolVersion
         + ", valueType="
         + valueType
+        + ", rejectionType="
+        + rejectionType
+        + ", rejectionReason="
+        + BufferUtil.bufferAsString(rejectionReason)
         + '}';
   }
 }

@@ -16,15 +16,13 @@
 package io.zeebe.logstreams.log;
 
 import io.zeebe.util.buffer.BufferReader;
+import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
 /** Represents an event on the log stream. */
-public interface LoggedEvent {
+public interface LoggedEvent extends BufferWriter {
   /** @return the event's position in the log. */
   long getPosition();
-
-  /** @return the raft term this event was committed in */
-  int getRaftTerm();
 
   /**
    * @return the position of the event which causes this event. Returns a negative value if no such

@@ -55,4 +55,18 @@ public class TopologyImpl implements Topology {
   public int getReplicationFactor() {
     return replicationFactor;
   }
+
+  @Override
+  public String toString() {
+    return "TopologyImpl{"
+        + "brokers="
+        + brokers
+        + ", clusterSize="
+        + clusterSize
+        + ", partitionsCount="
+        + partitionsCount
+        + ", replicationFactor="
+        + replicationFactor
+        + '}';
+  }
 }

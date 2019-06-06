@@ -22,7 +22,7 @@ import io.zeebe.gateway.api.util.GatewayTest;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.test.util.JsonUtil;
@@ -60,11 +60,12 @@ public class PublishMessageTest extends GatewayTest {
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.MESSAGE);
 
     final MessageRecord brokerRequestValue = brokerRequest.getRequestWriter();
-    assertThat(bufferAsString(brokerRequestValue.getCorrelationKey()))
+    assertThat(bufferAsString(brokerRequestValue.getCorrelationKeyBuffer()))
         .isEqualTo(request.getCorrelationKey());
-    assertThat(bufferAsString(brokerRequestValue.getName())).isEqualTo(request.getName());
-    assertThat(bufferAsString(brokerRequestValue.getMessageId())).isEqualTo(request.getMessageId());
+    assertThat(bufferAsString(brokerRequestValue.getNameBuffer())).isEqualTo(request.getName());
+    assertThat(bufferAsString(brokerRequestValue.getMessageIdBuffer()))
+        .isEqualTo(request.getMessageId());
     assertThat(brokerRequestValue.getTimeToLive()).isEqualTo(request.getTimeToLive());
-    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariables(), variables);
+    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariablesBuffer(), variables);
   }
 }

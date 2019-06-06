@@ -15,13 +15,43 @@
  */
 package io.zeebe.exporter.api.context;
 
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 import org.slf4j.Logger;
 
 /** Encapsulates context associated with the exporter on open. */
 public interface Context {
+
   /** @return pre-configured logger for this exporter */
   Logger getLogger();
 
   /** @return configuration for this exporter */
   Configuration getConfiguration();
+
+  /**
+   * Apply the given filter to limit the records which are exported.
+   *
+   * @param filter the filter to apply.
+   */
+  void setFilter(RecordFilter filter);
+
+  /** A filter to limit the records which are exported. */
+  interface RecordFilter {
+
+    /**
+     * Should export records of the given type?
+     *
+     * @param recordType the type of the record.
+     * @return {@code true} if records of this type should be exporter.
+     */
+    boolean acceptType(RecordType recordType);
+
+    /**
+     * Should export records with a value of the given type?
+     *
+     * @param valueType the type of the record value.
+     * @return {@code true} if records with this type of value should be exported.
+     */
+    boolean acceptValue(ValueType valueType);
+  }
 }

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+  package="io.zeebe.engine.state" id="7" version="1"
+  semanticVersion="0.1.0" description="Zeebe Cluster Management Protocol" byteOrder="littleEndian">
+
+  <types>
+
+    <composite name="messageHeader"
+      description="Message identifiers and length of message root">
+      <type name="blockLength" primitiveType="uint16"/>
+      <type name="templateId" primitiveType="uint16"/>
+      <type name="schemaId" primitiveType="uint16"/>
+      <type name="version" primitiveType="uint16"/>
+    </composite>
+
+    <composite name="varDataEncoding">
+      <type name="length" primitiveType="uint16"/>
+      <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
+    </composite>
+
+    <composite name="blob">
+      <type name="length" primitiveType="uint32" maxValue="2147483647"/>
+      <type name="varData" primitiveType="uint8" length="0"/>
+    </composite>
+
+    <composite name="groupSizeEncoding">
+      <type name="blockLength" primitiveType="uint16"/>
+      <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup"/>
+    </composite>
+
+  </types>
+  <sbe:message name="SnapshotChunk" id="15">
+    <field name="snapshotPosition" id="0" type="uint64"/>
+    <field name="totalCount" id="1" type="int32"/>
+    <field name="checksum" id="2" type="uint64"/>
+    <data name="chunkName" id="3" type="varDataEncoding"/>
+    <data name="content" id="4" type="blob"/>
+  </sbe:message>
+
+</sbe:messageSchema>

@@ -54,6 +54,26 @@ pipeline {
                     sh '.ci/scripts/distribution/build-java.sh'
                 }
             }
+        }
+
+        stage('Test (Java)') {
+            parallel {
+                stage('Unit (Java)') {
+                    steps {
+                        container('maven') {
+                            sh '.ci/scripts/distribution/test-java.sh'
+                        }
+                    }
+                }
+
+                stage('IT (Java)') {
+                    steps {
+                        container('maven') {
+                            sh '.ci/scripts/distribution/it-java.sh'
+                        }
+                    }
+                }
+            }
 
             post {
                 always {
@@ -90,7 +110,7 @@ pipeline {
                 }
 
                 stage('Docs') {
-                    when { anyOf { branch 'master'; branch 'live' } }
+                    when { anyOf { branch 'master'; branch 'develop' } }
                     steps {
                         build job: 'zeebe-docs', parameters: [
                             string(name: 'BRANCH', value: env.BRANCH_NAME),
@@ -100,5 +120,19 @@ pipeline {
                 }
             }
         }
+
+    post {
+        always {
+            // Retrigger the build if there were connection issues
+            script {
+                if (connectionProblem()) {
+                    build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
+                }
+            }
+        }
     }
+}
+
+boolean connectionProblem() {
+  return currentBuild.rawBuild.getLog(500).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|Connection reset).*/
 }

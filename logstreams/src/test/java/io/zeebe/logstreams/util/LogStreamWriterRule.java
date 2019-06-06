@@ -24,7 +24,7 @@ import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
 
 public class LogStreamWriterRule extends ExternalResource {
-  private LogStreamRule logStreamRule;
+  private final LogStreamRule logStreamRule;
 
   private LogStream logStream;
   private LogStreamRecordWriter logStreamWriter;
@@ -51,10 +51,6 @@ public class LogStreamWriterRule extends ExternalResource {
   }
 
   public long writeEvents(final int count, final DirectBuffer event) {
-    return writeEvents(count, event, false);
-  }
-
-  public long writeEvents(final int count, final DirectBuffer event, final boolean commit) {
     long lastPosition = -1;
     for (int i = 1; i <= count; i++) {
       final long key = i;
@@ -63,29 +59,17 @@ public class LogStreamWriterRule extends ExternalResource {
 
     waitForPositionToBeAppended(lastPosition);
 
-    if (commit) {
-      logStream.setCommitPosition(lastPosition);
-    }
-
     return lastPosition;
   }
 
   public long writeEvent(final DirectBuffer event) {
-    return writeEvent(event, false);
+    return writeEvent(w -> w.value(event));
   }
 
-  public long writeEvent(final DirectBuffer event, final boolean commit) {
-    return writeEvent(w -> w.value(event), commit);
-  }
-
-  public long writeEvent(final Consumer<LogStreamRecordWriter> writer, final boolean commit) {
+  public long writeEvent(final Consumer<LogStreamRecordWriter> writer) {
     final long position = writeEventInternal(writer);
 
     waitForPositionToBeAppended(position);
-
-    if (commit) {
-      logStream.setCommitPosition(position);
-    }
 
     return position;
   }
@@ -103,10 +87,6 @@ public class LogStreamWriterRule extends ExternalResource {
     return tryWrite(w -> w.keyNull().value(value));
   }
 
-  public long tryWrite(final long key, final DirectBuffer value) {
-    return tryWrite(w -> w.key(key).value(value));
-  }
-
   public long tryWrite(final Consumer<LogStreamRecordWriter> writer) {
     writer.accept(logStreamWriter);
 
@@ -115,7 +95,7 @@ public class LogStreamWriterRule extends ExternalResource {
 
   public void waitForPositionToBeAppended(final long position) {
     TestUtil.waitUntil(
-        () -> logStream.getLogStorageAppender().getCurrentAppenderPosition() > position,
+        () -> logStream.getCommitPosition() >= position, // Now only committed events are appended.
         "Failed to wait for position {} to be appended",
         position);
   }

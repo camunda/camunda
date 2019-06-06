@@ -96,7 +96,7 @@ public class DeployWorkflowCommandImpl
       final String classpathResource) {
     ensureNotNull("classpath resource", classpathResource);
 
-    try (final InputStream resourceStream =
+    try (InputStream resourceStream =
         getClass().getClassLoader().getResourceAsStream(classpathResource)) {
       if (resourceStream != null) {
         return addResourceStream(resourceStream, classpathResource);
@@ -115,7 +115,7 @@ public class DeployWorkflowCommandImpl
   public DeployWorkflowCommandBuilderStep2 addResourceFile(final String filename) {
     ensureNotNull("filename", filename);
 
-    try (final InputStream resourceStream = new FileInputStream(filename)) {
+    try (InputStream resourceStream = new FileInputStream(filename)) {
       return addResourceStream(resourceStream, filename);
     } catch (final IOException e) {
       final String exceptionMsg =

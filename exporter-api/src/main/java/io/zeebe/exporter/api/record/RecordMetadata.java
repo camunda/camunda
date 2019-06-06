@@ -15,9 +15,9 @@
  */
 package io.zeebe.exporter.api.record;
 
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.RejectionType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.Intent;
 
 /** Encapsulates metadata information shared by all records. */
@@ -33,13 +33,13 @@ public interface RecordMetadata {
 
   /**
    * @return the type of rejection if {@link #getRecordType()} returns {@link
-   *     io.zeebe.protocol.clientapi.RecordType#COMMAND_REJECTION} or else <code>null</code>.
+   *     io.zeebe.protocol.RecordType#COMMAND_REJECTION} or else <code>null</code>.
    */
   RejectionType getRejectionType();
 
   /**
    * @return the reason why a command was rejected if {@link #getRecordType()} returns {@link
-   *     io.zeebe.protocol.clientapi.RecordType#COMMAND_REJECTION} or else <code>null</code>.
+   *     io.zeebe.protocol.RecordType#COMMAND_REJECTION} or else <code>null</code>.
    */
   String getRejectionReason();
 

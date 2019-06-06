@@ -20,7 +20,9 @@ package io.zeebe.broker.exporter.record.value;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueWithVariablesImpl;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class WorkflowInstanceSubscriptionRecordValueImpl extends RecordValueWithVariablesImpl
     implements WorkflowInstanceSubscriptionRecordValue {
@@ -30,11 +32,12 @@ public class WorkflowInstanceSubscriptionRecordValueImpl extends RecordValueWith
 
   public WorkflowInstanceSubscriptionRecordValueImpl(
       final ExporterObjectMapper objectMapper,
-      final String variables,
+      final Supplier<String> variablesSupplier,
+      final Supplier<Map<String, Object>> variableMapSupplier,
       final String messageName,
       final long workflowInstanceKey,
       final long elementInstanceKey) {
-    super(objectMapper, variables);
+    super(objectMapper, variablesSupplier, variableMapSupplier);
     this.messageName = messageName;
     this.workflowInstanceKey = workflowInstanceKey;
     this.elementInstanceKey = elementInstanceKey;
@@ -89,7 +92,7 @@ public class WorkflowInstanceSubscriptionRecordValueImpl extends RecordValueWith
         + ", elementInstanceKey="
         + elementInstanceKey
         + ", variables='"
-        + variables
+        + getVariables()
         + '\''
         + '}';
   }

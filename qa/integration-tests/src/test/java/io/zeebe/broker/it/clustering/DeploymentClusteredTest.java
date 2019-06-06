@@ -41,7 +41,7 @@ public class DeploymentClusteredTest {
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
-  public Timeout testTimeout = Timeout.seconds(60);
+  public Timeout testTimeout = Timeout.seconds(120);
   public ClusteringRule clusteringRule = new ClusteringRule();
   public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
@@ -96,7 +96,6 @@ public class DeploymentClusteredTest {
   }
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
   public void shouldDeployOnRemainingBrokers() {
     // given
 
@@ -136,7 +135,6 @@ public class DeploymentClusteredTest {
   }
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
   public void shouldDeployAfterRestartBroker() {
     // given
 

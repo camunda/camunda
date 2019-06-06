@@ -23,8 +23,7 @@ public class MsgPackConstants {
 
   public static final String JSON_DOCUMENT = "{'string':'value', 'jsonObject':{'testAttr':'test'}}";
   public static final String OTHER_DOCUMENT = "{'string':'bar', 'otherObject':{'testAttr':'test'}}";
-  public static final String MERGED_OTHER_WITH_JSON_DOCUMENT =
-      "{'string':'bar', 'jsonObject':{'testAttr':'test'}, 'otherObject':{'testAttr':'test'}}";
+
   public static final byte[] MSGPACK_VARIABLES;
   public static final byte[] OTHER_VARIABLES;
 

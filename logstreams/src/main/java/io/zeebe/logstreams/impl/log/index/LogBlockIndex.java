@@ -17,12 +17,9 @@ package io.zeebe.logstreams.impl.log.index;
 
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.state.StateSnapshotController;
-import io.zeebe.logstreams.state.StateSnapshotMetadata;
-import io.zeebe.logstreams.state.StateStorage;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -38,25 +35,24 @@ import java.util.concurrent.atomic.AtomicLong;
  * requested.
  */
 public class LogBlockIndex {
+  private static final String ERROR_MSG_ENSURING_MAX_SNAPSHOT_COUNT =
+      "Unexpected exception occurred on ensuring maximum snapshot count.";
 
   public static final int VALUE_NOT_FOUND = -1;
   private long lastVirtualPosition = VALUE_NOT_FOUND;
 
   private final StateSnapshotController stateSnapshotController;
-  private ZeebeDb zeebeDb;
+  private ZeebeDb<LogBlockColumnFamilies> zeebeDb;
   private ColumnFamily<DbLong, DbLong> indexColumnFamily;
 
-  public LogBlockIndex(
-      ZeebeDbFactory<LogBlockColumnFamilies> dbFactory, StateStorage stateStorage) {
-    this.stateSnapshotController = new StateSnapshotController(dbFactory, stateStorage);
+  public LogBlockIndex(StateSnapshotController snapshotController) {
+    this.stateSnapshotController = snapshotController;
     tryToRestoreAndOpen();
   }
 
   private void tryToRestoreAndOpen() {
-    final StateSnapshotMetadata snapshotMetadata;
     try {
-      snapshotMetadata = stateSnapshotController.recoverFromLatestSnapshot();
-      lastVirtualPosition = snapshotMetadata.getLastWrittenEventPosition();
+      lastVirtualPosition = stateSnapshotController.recover();
     } catch (Exception e) {
       Loggers.ROCKSDB_LOGGER.debug("Log block index failed to recover from snapshot", e);
     }
@@ -74,6 +70,7 @@ public class LogBlockIndex {
     if (zeebeDb != null) {
       stateSnapshotController.close();
       zeebeDb = null;
+      indexColumnFamily = null;
     }
   }
 
@@ -149,11 +146,48 @@ public class LogBlockIndex {
       throw new IllegalArgumentException(errorMessage);
     }
 
-    lastVirtualPosition = blockPosition;
     final DbLong dbBlockPosition = indexContext.writeKeyInstance(blockPosition);
     final DbLong dbBlockAddress = indexContext.writeValueInstance(blockAddress);
 
     indexColumnFamily.put(indexContext.getDbContext(), dbBlockPosition, dbBlockAddress);
+    lastVirtualPosition = blockPosition;
+  }
+
+  /**
+   * Deletes mappings up to {@code deletePosition}, with the exception of the last entry in the
+   * index, which will not be deleted. Therefore, this method should be used solely as a best-effort
+   * attempt to free-up disk space and not as a dependable delete operation.
+   *
+   * @param indexContext the log block index context
+   * @param deletePosition the position up to which entries will be deleted
+   */
+  public void deleteUpToPosition(
+      final LogBlockIndexContext indexContext, final long deletePosition) {
+    final AtomicLong lastBlockPosition = new AtomicLong(VALUE_NOT_FOUND);
+
+    indexColumnFamily.whileTrue(
+        indexContext.getDbContext(),
+        (key, val) -> {
+          final long storedBlockPosition = key.getValue();
+
+          if (storedBlockPosition <= deletePosition) {
+            if (lastBlockPosition.get() != VALUE_NOT_FOUND) {
+              deleteEntry(indexContext, lastBlockPosition.get());
+            }
+
+            lastBlockPosition.set(storedBlockPosition);
+            return true;
+          }
+
+          return false;
+        },
+        indexContext.getKeyInstance(),
+        indexContext.getValueInstance());
+  }
+
+  private void deleteEntry(final LogBlockIndexContext indexContext, final long blockPosition) {
+    final DbLong dbBlockPosition = indexContext.writeKeyInstance(blockPosition);
+    indexColumnFamily.delete(indexContext.getDbContext(), dbBlockPosition);
   }
 
   /**
@@ -172,8 +206,13 @@ public class LogBlockIndex {
    * @param snapshotEventPosition last written position
    */
   public void writeSnapshot(final long snapshotEventPosition) {
-    final StateSnapshotMetadata snapshotMetadata = new StateSnapshotMetadata(snapshotEventPosition);
-    stateSnapshotController.takeSnapshot(snapshotMetadata);
+    stateSnapshotController.takeSnapshot(snapshotEventPosition);
+
+    try {
+      stateSnapshotController.ensureMaxSnapshotCount();
+    } catch (Exception e) {
+      Loggers.SNAPSHOT_LOGGER.error(ERROR_MSG_ENSURING_MAX_SNAPSHOT_COUNT, e);
+    }
   }
 
   /**

@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
   <artifactId>zeebe-parent</artifactId>
-  <version>0.18.0-SNAPSHOT</version>
+  <version>0.19.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <inceptionYear>2017</inceptionYear>
   <url>http://zeebe.io/</url>
@@ -11,7 +11,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>0.18.0-SNAPSHOT</version>
+    <version>0.19.0-SNAPSHOT</version>
     <relativePath>../bom</relativePath>
   </parent>
 
@@ -24,37 +24,38 @@
     <spotbugs.include>spotbugs/spotbugs-include.xml</spotbugs.include>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>0.9.35</version.agrona>
-    <version.animal-sniffer>1.17</version.animal-sniffer>
+    <version.agrona>1.0.1</version.agrona>
+    <version.animal-sniffer>1.18</version.animal-sniffer>
     <version.assertj>3.12.2</version.assertj>
-    <version.atomix>3.1.5</version.atomix>
+    <version.atomix>3.2.0-alpha1</version.atomix>
     <version.camunda>7.10.0</version.camunda>
+    <version.commons-lang>3.9</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.12</version.commons-codec>
-    <version.elasticsearch>6.7.0</version.elasticsearch>
+    <version.elasticsearch>6.8.0</version.elasticsearch>
     <version.embedded-elasticsearch>2.10.0</version.embedded-elasticsearch>
     <version.error-prone>2.3.3</version.error-prone>
-    <version.grpc>1.19.0</version.grpc>
+    <version.grpc>1.21.0</version.grpc>
     <version.gson>2.8.5</version.gson>
     <version.guava>27.1-jre</version.guava>
     <version.hamcrest>2.1</version.hamcrest>
     <version.hppc>0.8.1</version.hppc>
     <version.httpasyncclient>4.1.4</version.httpasyncclient>
-    <version.httpclient>4.5.7</version.httpclient>
+    <version.httpclient>4.5.8</version.httpclient>
     <version.httpcomponents>4.4.11</version.httpcomponents>
-    <version.jackson>2.9.8</version.jackson>
+    <version.jackson>2.9.9</version.jackson>
     <version.jmh>1.21</version.jmh>
     <version.junit>4.12</version.junit>
     <version.log4j>2.11.2</version.log4j>
-    <version.mockito>2.25.1</version.mockito>
+    <version.mockito>2.28.2</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.16</version.msgpack>
-    <version.netty>4.1.34.Final</version.netty>
+    <version.netty>4.1.36.Final</version.netty>
     <version.objenesis>3.0.1</version.objenesis>
-    <version.protobuf>3.7.0</version.protobuf>
-    <version.rocksdbjni>5.17.2</version.rocksdbjni>
-    <version.sbe>1.12.4</version.sbe>
+    <version.protobuf>3.8.0</version.protobuf>
+    <version.rocksdbjni>6.0.1</version.rocksdbjni>
+    <version.sbe>1.12.7</version.sbe>
     <version.scala-parser>1.0.6</version.scala-parser>
     <version.scala>2.12.8</version.scala>
     <version.slf4j>1.7.26</version.slf4j>
@@ -64,13 +65,13 @@
 
     <!-- maven plugins -->
     <plugin.version.antrun>1.8</plugin.version.antrun>
-    <plugin.version.appassembler>2.0.0</plugin.version.appassembler>
+    <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.build-helper>3.0.0</plugin.version.build-helper>
-    <plugin.version.checkstyle>3.0.0</plugin.version.checkstyle>
-    <plugin.version.compiler>3.8.0</plugin.version.compiler>
+    <plugin.version.checkstyle>3.1.0</plugin.version.checkstyle>
+    <plugin.version.compiler>3.8.1</plugin.version.compiler>
     <plugin.version.exec>1.6.0</plugin.version.exec>
-    <plugin.version.failsafe>3.0.0-M2</plugin.version.failsafe>
-    <plugin.version.fmt>2.8</plugin.version.fmt>
+    <plugin.version.failsafe>3.0.0-M3</plugin.version.failsafe>
+    <plugin.version.fmt>2.9</plugin.version.fmt>
     <plugin.version.license>3.0</plugin.version.license>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
@@ -226,32 +227,50 @@
       </dependency>
 
       <dependency>
-        <groupId>io.atomix</groupId>
+        <groupId>io.zeebe</groupId>
         <artifactId>atomix</artifactId>
         <version>${version.atomix}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.atomix</groupId>
+        <groupId>io.zeebe</groupId>
         <artifactId>atomix-cluster</artifactId>
         <version>${version.atomix}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.atomix</groupId>
+        <groupId>io.zeebe</groupId>
         <artifactId>atomix-primary-backup</artifactId>
         <version>${version.atomix}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.atomix</groupId>
+        <groupId>io.zeebe</groupId>
+        <artifactId>atomix-primitive</artifactId>
+        <version>${version.atomix}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
         <artifactId>atomix-utils</artifactId>
+        <version>${version.atomix}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>atomix-raft</artifactId>
         <version>${version.atomix}</version>
       </dependency>
 
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
+        <version>${version.grpc}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-api</artifactId>
         <version>${version.grpc}</version>
       </dependency>
 
@@ -363,6 +382,12 @@
         <groupId>org.yaml</groupId>
         <artifactId>snakeyaml</artifactId>
         <version>${version.snakeyaml}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>${version.commons-lang}</version>
       </dependency>
 
       <dependency>
@@ -793,6 +818,15 @@
           </executions>
         </plugin>
 
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.1.2</version>
+          <configuration>
+            <useDefaultManifestFile>false</useDefaultManifestFile>
+          </configuration>
+        </plugin>
+
       </plugins>
 
     </pluginManagement>
@@ -888,21 +922,6 @@
     </profile>
 
     <profile>
-      <id>retry-tests</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <rerunFailingTestsCount>3</rerunFailingTestsCount>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
       <id>parallel-tests</id>
       <build>
         <plugins>
@@ -957,6 +976,52 @@
           </plugin>
         </plugins>
 
+      </build>
+    </profile>
+
+    <!--
+      This profile is used to add an explicit dependency to surefire-junit. To fix the race condition
+      of https://github.com/zeebe-io/zeebe/issues/2379 we download all dependencies at the beginning
+      with mvn dependency:go-offline and then run the tests in offline mode. But the plugin misses
+      to download the surefire-junit dependency, therefore define an explicit dependency while downloading
+    -->
+    <profile>
+      <id>prepare-offline</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.maven.surefire</groupId>
+          <artifactId>surefire-junit4</artifactId>
+          <version>${plugin.version.surefire}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.maven.surefire</groupId>
+          <artifactId>surefire-junit47</artifactId>
+          <version>${plugin.version.surefire}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>analyze-dependencies</id>
+                <goals>
+                  <goal>analyze-only</goal>
+                </goals>
+                <configuration>
+                  <ignoredUnusedDeclaredDependencies combine.children="append">
+                    <dep>org.apache.maven.surefire:surefire-junit4</dep>
+                    <dep>org.apache.maven.surefire:surefire-junit47</dep>
+                  </ignoredUnusedDeclaredDependencies>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
       </build>
     </profile>
   </profiles>

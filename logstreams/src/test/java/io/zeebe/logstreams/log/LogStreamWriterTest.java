@@ -63,8 +63,6 @@ public class LogStreamWriterTest {
   @Before
   public void setUp() {
     writer = new LogStreamWriterImpl(logStreamRule.getLogStream());
-
-    logStreamRule.setCommitPosition(Long.MAX_VALUE);
   }
 
   private LoggedEvent getWrittenEvent(final long position) {
@@ -253,18 +251,6 @@ public class LogStreamWriterTest {
 
     // then
     assertThat(getWrittenEvent(position).getProducerId()).isEqualTo(-1);
-  }
-
-  @Test
-  public void shouldWriteEventWithRaftTerm() {
-    // given
-    logStreamRule.getLogStream().setTerm(123);
-
-    // when
-    final long position = writer.value(EVENT_VALUE).tryWrite();
-
-    // then
-    assertThat(getWrittenEvent(position).getRaftTerm()).isEqualTo(123);
   }
 
   @Test

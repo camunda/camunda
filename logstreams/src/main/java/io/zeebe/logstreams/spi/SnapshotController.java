@@ -16,58 +16,89 @@
 package io.zeebe.logstreams.spi;
 
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.logstreams.state.StateSnapshotMetadata;
-import java.util.function.Predicate;
+import io.zeebe.logstreams.state.SnapshotReplicationListener;
+import java.io.IOException;
+import java.util.function.Consumer;
 
 public interface SnapshotController extends AutoCloseable {
   /**
-   * Takes a snapshot based on the given metadata: - last successful processed event - last written
-   * event (regardless of whether or not it is committed) - term of the last written event
+   * Takes a snapshot based on the given position. The position is a last processed lower bound
+   * event position.
    *
-   * @param metadata current state metadata
+   * @param lowerBoundSnapshotPosition the lower bound snapshot position
    */
-  void takeSnapshot(StateSnapshotMetadata metadata) throws Exception;
+  void takeSnapshot(long lowerBoundSnapshotPosition);
+
+  /** Takes a snapshot into a temporary folder, will overwrite an existing snapshot. */
+  void takeTempSnapshot();
 
   /**
-   * Recovers the state from the latest snapshot and returns the corresponding metadata. The
-   * metadata is used by the StreamProcessController to know where to seek to in the log stream.
-   * Defaults to: (-1, -1, term)
+   * A temporary snapshot is moved into a new snapshot directory and in that way marked as valid.
+   * The given position is a last processed lower bound event position.
    *
-   * @param commitPosition current log stream commit position
-   * @return recovered state metadata
+   * @param lowerBoundSnapshotPosition the lower bound snapshot position
+   * @throws IOException thrown if moving the snapshot fails
    */
-  StateSnapshotMetadata recover(
-      long commitPosition, int term, Predicate<StateSnapshotMetadata> filter) throws Exception;
+  void moveValidSnapshot(long lowerBoundSnapshotPosition) throws IOException;
 
   /**
-   * Recovers the state from the latest snapshot.
+   * Replicates the latest valid snapshot. The given executor is called for each snapshot chunk in
+   * the latest snapshot. The executor should execute/run the given Runnable in a specific
+   * environment (e.g. ActorThread).
    *
-   * @return recovered state metadata
-   * @throws Exception
+   * @param executor executor which executed the given Runnable
    */
-  StateSnapshotMetadata recoverFromLatestSnapshot() throws Exception;
+  void replicateLatestSnapshot(Consumer<Runnable> executor);
+
+  /** Registers to consumes replicated snapshots. */
+  void consumeReplicatedSnapshots();
+
+  /**
+   * Recovers the state from the latest snapshot and returns the lower bound snapshot position.
+   *
+   * @return the lower bound position related to the snapshot
+   */
+  long recover() throws Exception;
 
   ZeebeDb openDb();
 
   /**
-   * Purges all snapshots which return true for the given matcher.
+   * Returns the highest position that is considered to be safe to delete, which is the position of
+   * the oldest of the required snapshots. If maxSnapshotCount hasn't been reached, returns -1,
+   * since it's not safe to delete data.
    *
-   * @param matcher predicate used to match
+   * @param maxSnapshotCount the required number of snapshots
+   * @return the position to delete
    */
-  void purgeAll(Predicate<StateSnapshotMetadata> matcher) throws Exception;
-
-  /** Purges all snapshots. */
-  default void purgeAll() throws Exception {
-    purgeAll(s -> true);
-  }
+  long getPositionToDelete(int maxSnapshotCount);
 
   /**
-   * Purges old and invalid snapshots. Should be done once we are sure we can discard other
-   * snapshots, e.g. during recovery.
+   * Returns the current number of valid snapshots.
    *
-   * @param metadata last taken/recovered snapshot metadata
+   * @return valid snapshots count
    */
-  default void purgeAllExcept(StateSnapshotMetadata metadata) throws Exception {
-    purgeAll(s -> !s.equals(metadata));
-  }
+  int getValidSnapshotsCount();
+
+  /**
+   * Returns the position of the last valid snapshot. Or, -1 if no valid snapshot exists.
+   *
+   * @return the snapshot position
+   */
+  long getLastValidSnapshotPosition();
+
+  /**
+   * Add a listener which will be notified when a snapshot replication is completed
+   *
+   * @param listener
+   */
+  void addListener(SnapshotReplicationListener listener);
+
+  /**
+   * Remove the listener
+   *
+   * @param listener
+   */
+  void removeListener(SnapshotReplicationListener listener);
+
+  void enableRetrySnapshot(long snapshotPosition);
 }

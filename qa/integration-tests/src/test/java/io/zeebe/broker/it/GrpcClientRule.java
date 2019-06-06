@@ -63,14 +63,14 @@ public class GrpcClientRule extends ExternalResource {
   }
 
   @Override
-  protected void before() {
+  public void before() {
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder();
     configurator.accept(builder);
     client = builder.build();
   }
 
   @Override
-  protected void after() {
+  public void after() {
     client.close();
     client = null;
   }
@@ -107,18 +107,32 @@ public class GrpcClientRule extends ExternalResource {
 
   public long createSingleJob(
       String type, Consumer<ServiceTaskBuilder> consumer, String variables) {
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess("process")
-            .startEvent("start")
-            .serviceTask(
-                "task",
-                t -> {
-                  t.zeebeTaskType(type);
-                  consumer.accept(t);
-                })
-            .endEvent("end")
-            .done();
+    final BpmnModelInstance modelInstance = createSingleJobModelInstance(type, consumer);
+    final long workflowKey = deployWorkflow(modelInstance);
+    final long workflowInstanceKey = createWorkflowInstance(workflowKey, variables);
 
+    return RecordingExporter.jobRecords(JobIntent.CREATED)
+        .filter(j -> j.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstanceKey)
+        .withType(type)
+        .getFirst()
+        .getKey();
+  }
+
+  public BpmnModelInstance createSingleJobModelInstance(
+      String jobType, Consumer<ServiceTaskBuilder> taskBuilderConsumer) {
+    return Bpmn.createExecutableProcess("process")
+        .startEvent("start")
+        .serviceTask(
+            "task",
+            t -> {
+              t.zeebeTaskType(jobType);
+              taskBuilderConsumer.accept(t);
+            })
+        .endEvent("end")
+        .done();
+  }
+
+  public long deployWorkflow(BpmnModelInstance modelInstance) {
     final DeploymentEvent deploymentEvent =
         getClient()
             .newDeployCommand()
@@ -126,22 +140,25 @@ public class GrpcClientRule extends ExternalResource {
             .send()
             .join();
     waitUntilDeploymentIsDone(deploymentEvent.getKey());
+    return deploymentEvent.getWorkflows().get(0).getWorkflowKey();
+  }
 
-    // when
-    final long workflowInstanceKey =
-        getClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId("process")
-            .latestVersion()
-            .variables(variables)
-            .send()
-            .join()
-            .getWorkflowInstanceKey();
+  public long createWorkflowInstance(long workflowKey, String variables) {
+    return getClient()
+        .newCreateInstanceCommand()
+        .workflowKey(workflowKey)
+        .variables(variables)
+        .send()
+        .join()
+        .getWorkflowInstanceKey();
+  }
 
-    return RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
-        .withType(type)
-        .getFirst()
-        .getKey();
+  public long createWorkflowInstance(long workflowKey) {
+    return getClient()
+        .newCreateInstanceCommand()
+        .workflowKey(workflowKey)
+        .send()
+        .join()
+        .getWorkflowInstanceKey();
   }
 }

@@ -17,6 +17,7 @@ package io.zeebe.logstreams.impl.service;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Subscription;
+import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
@@ -45,6 +46,13 @@ public class LogStreamServiceNames {
         String.format("logstream.%s.storage.appender", logName), LogStorageAppender.class);
   }
 
+  public static final ServiceName<DistributedLogstreamPartition> distributedLogPartitionServiceName(
+      String logName) {
+    return ServiceName.newServiceName(
+        String.format("logstream.%s.distributed.log", logName),
+        DistributedLogstreamPartition.class);
+  }
+
   public static final ServiceName<LogBlockIndex> logBlockIndexServiceName(String logName) {
     return ServiceName.newServiceName(
         String.format("logstream.%s.blockIdx", logName), LogBlockIndex.class);
@@ -70,12 +78,5 @@ public class LogStreamServiceNames {
   public static final ServiceName<Void> logStorageAppenderRootService(String logName) {
     return ServiceName.newServiceName(
         String.format("logstream.%s.storage.appender-root", logName), Void.class);
-  }
-
-  public static final ServiceName<StreamProcessorService> streamProcessorService(
-      String logName, String processorName) {
-    return ServiceName.newServiceName(
-        String.format("logstream.%s.processor.%s", logName, processorName),
-        StreamProcessorService.class);
   }
 }

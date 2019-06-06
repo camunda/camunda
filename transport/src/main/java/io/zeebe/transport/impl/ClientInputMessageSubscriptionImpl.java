@@ -23,7 +23,6 @@ import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.RemoteAddressList;
 import io.zeebe.util.sched.ActorCondition;
-import org.agrona.DirectBuffer;
 
 public class ClientInputMessageSubscriptionImpl implements ClientInputMessageSubscription {
   protected final Subscription subscription;
@@ -36,16 +35,14 @@ public class ClientInputMessageSubscriptionImpl implements ClientInputMessageSub
       RemoteAddressList remoteAddresses) {
     this.subscription = subscription;
     this.messageHandler =
-        new FragmentHandler() {
-          @Override
-          public int onFragment(
-              DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed) {
-            final RemoteAddress remoteAddress = remoteAddresses.getByStreamId(streamId);
-            final boolean success =
-                messageHandler.onMessage(output, remoteAddress, buffer, offset, length);
+        (buffer, offset, length, streamId, isMarkedFailed) -> {
+          final RemoteAddress remoteAddress = remoteAddresses.getByStreamId(streamId);
+          final boolean success =
+              messageHandler.onMessage(output, remoteAddress, buffer, offset, length);
 
-            return success ? CONSUME_FRAGMENT_RESULT : POSTPONE_FRAGMENT_RESULT;
-          }
+          return success
+              ? FragmentHandler.CONSUME_FRAGMENT_RESULT
+              : FragmentHandler.POSTPONE_FRAGMENT_RESULT;
         };
   }
 

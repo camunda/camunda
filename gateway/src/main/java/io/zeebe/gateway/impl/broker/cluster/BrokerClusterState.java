@@ -29,7 +29,11 @@ public interface BrokerClusterState {
 
   int getPartitionsCount();
 
+  int getReplicationFactor();
+
   int getLeaderForPartition(int partition);
+
+  List<Integer> getFollowersForPartition(int partition);
 
   /**
    * @return the node id of a random broker or {@link ClientTransport#UNKNOWN_NODE_ID} if no brokers
@@ -39,5 +43,9 @@ public interface BrokerClusterState {
 
   List<Integer> getPartitions();
 
-  int getPartition(int offset);
+  List<Integer> getBrokers();
+
+  String getBrokerAddress(int brokerId);
+
+  int getPartition(int index);
 }
