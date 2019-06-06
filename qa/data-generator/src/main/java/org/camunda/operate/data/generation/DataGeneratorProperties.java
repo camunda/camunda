@@ -29,6 +29,10 @@ public class DataGeneratorProperties {
 
   private String zeebeElasticsearchPrefix = "zeebe-record";
 
+  private int numberOfThreads = 3;
+
+  private int queueSize = 1000;
+
   public int getWorkflowCount() {
     return workflowCount;
   }
@@ -83,5 +87,21 @@ public class DataGeneratorProperties {
 
   public void setZeebeElasticsearchPrefix(String zeebeElasticsearchPrefix) {
     this.zeebeElasticsearchPrefix = zeebeElasticsearchPrefix;
+  }
+
+  public int getNumberOfThreads() {
+    return numberOfThreads;
+  }
+
+  public void setNumberOfThreads(int numberOfThreads) {
+    this.numberOfThreads = numberOfThreads;
+  }
+
+  public int getQueueSize() {
+    return queueSize;
+  }
+
+  public void setQueueSize(int queueSize) {
+    this.queueSize = queueSize;
   }
 }

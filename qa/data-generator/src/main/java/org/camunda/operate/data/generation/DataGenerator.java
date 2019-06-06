@@ -10,6 +10,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.camunda.operate.qa.util.ZeebeTestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +49,7 @@ public class DataGenerator {
     logger.info("Starting generating data...");
 
     deployWorkflows();
+
     startWorkflowInstances();
     completeAllTasks("task1");
     createIncidents("task2");
@@ -66,14 +73,39 @@ public class DataGenerator {
   }
 
   private void startWorkflowInstances() {
-    final long workflowInstanceCount = dataGeneratorProperties.getWorkflowInstanceCount();
-    for (int i = 0; i< workflowInstanceCount; i++) {
-      ZeebeTestUtil.startWorkflowInstance(zeebeClient, getRandomBpmnProcessId(), "{\"var1\": \"value1\"}");
-      if (i % 1000 == 0) {
-        logger.info("{} workflow instances started", i);
+    int numberOfThreads = dataGeneratorProperties.getNumberOfThreads();
+
+    ExecutorService executorService = new ThreadPoolExecutor(
+        numberOfThreads, numberOfThreads,
+        0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<>(dataGeneratorProperties.getQueueSize()),
+        new BlockCallerUntilExecutorHasCapacity());
+
+    AtomicInteger workflowInstancesCount = new AtomicInteger(0);
+
+    int count;
+    while ((count = workflowInstancesCount.getAndIncrement()) < dataGeneratorProperties.getWorkflowInstanceCount()) {
+      int finalCount = count;
+      executorService.submit(() -> {
+        ZeebeTestUtil.startWorkflowInstance(zeebeClient, getRandomBpmnProcessId(), "{\"var1\": \"value1\"}");
+        if ((finalCount - 1) % 1000 == 0) {
+          logger.info("{} workflow instances started", finalCount);
+        }
+      });
+    }
+    logger.info("{} workflow instances started", count-1);
+
+    //wait till all instances are started
+    while (workflowInstancesCount.get()<dataGeneratorProperties.getWorkflowInstanceCount()) {
+      try {
+        Thread.sleep(5000L);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
     }
-    logger.info("{} workflow instances started", workflowInstanceCount);
+    //terminate threads
+    executorService.shutdown();
+    logger.info("{} workflow instances started", workflowInstancesCount.get());
   }
 
   private String getRandomBpmnProcessId() {
@@ -107,5 +139,17 @@ public class DataGenerator {
     .done();
   }
 
+  private class BlockCallerUntilExecutorHasCapacity implements RejectedExecutionHandler {
+    public void rejectedExecution(Runnable runnable, ThreadPoolExecutor executor) {
+      // this will block if the queue is full
+      if (!executor.isShutdown()) {
+        try {
+          executor.getQueue().put(runnable);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
+    }
+  }
 
 }

@@ -70,8 +70,8 @@ spec:
           cpu: 4
           memory: 8Gi
         requests:
-          cpu: 2
-          memory: 4Gi
+          cpu: 4
+          memory: 8Gi
     - name: elasticsearch
       image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.0
       env:
