@@ -40,10 +40,14 @@ export default class ReportControlPanel extends React.Component {
 
   loadFlowNodeNames = async () => {
     const {
-      data: {processDefinitionKey, processDefinitionVersion}
+      data: {processDefinitionKey, processDefinitionVersion, tenantIds}
     } = this.props.report;
     this.setState({
-      flowNodeNames: await getFlowNodeNames(processDefinitionKey, processDefinitionVersion)
+      flowNodeNames: await getFlowNodeNames(
+        processDefinitionKey,
+        processDefinitionVersion,
+        tenantIds[0]
+      )
     });
   };
 

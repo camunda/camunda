@@ -30,7 +30,8 @@ export default class Statistics extends React.Component {
         {
           flowNodeNames: await getFlowNodeNames(
             this.props.config.processDefinitionKey,
-            this.props.config.processDefinitionVersion
+            this.props.config.processDefinitionVersion,
+            this.props.config.tenantIds[0]
           )
         },
         resolve

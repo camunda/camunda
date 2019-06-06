@@ -13,13 +13,18 @@ export async function getOptimizeVersion() {
   return payload.optimizeVersion;
 }
 
-export async function getFlowNodeNames(processDefinitionKey, processDefinitionVersion) {
+export async function getFlowNodeNames(processDefinitionKey, processDefinitionVersion, tenantId) {
   if (processDefinitionKey && processDefinitionVersion) {
-    const response = await post(`api/flow-node/flowNodeNames`, {
+    const payload = {
       processDefinitionKey,
-      processDefinitionVersion,
-      nodeIds: []
-    });
+      processDefinitionVersion
+    };
+
+    if (tenantId) {
+      payload.tenantId = tenantId;
+    }
+
+    const response = await post(`api/flow-node/flowNodeNames`, payload);
 
     const json = await response.json();
 

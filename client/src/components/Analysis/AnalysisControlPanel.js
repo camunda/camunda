@@ -44,7 +44,8 @@ export default class AnalysisControlPanel extends React.Component {
     this.setState({
       flowNodeNames: await getFlowNodeNames(
         this.props.processDefinitionKey,
-        this.props.processDefinitionVersion
+        this.props.processDefinitionVersion,
+        this.props.tenantIds[0]
       )
     });
   };

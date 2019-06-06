@@ -5,6 +5,7 @@ exports[`should display a sentence to describe what the user can do on this page
   filter={null}
   processDefinitionKey=""
   processDefinitionVersion=""
+  tenantIds={Array []}
   xml={null}
 >
   <div
@@ -21,6 +22,7 @@ exports[`should display a sentence to describe what the user can do on this page
           definitionKey=""
           definitionVersion=""
           onChange={[Function]}
+          tenants={Array []}
           type="process"
           xml={null}
         >

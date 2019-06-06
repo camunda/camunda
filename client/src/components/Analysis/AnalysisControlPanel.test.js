@@ -54,6 +54,7 @@ const flushPromises = () => new Promise(resolve => setImmediate(resolve));
 const data = {
   processDefinitionKey: 'aKey',
   processDefinitionVersion: 'aVersion',
+  tenantIds: [],
   filter: null,
   xml: 'aFooXml'
 };
@@ -61,6 +62,7 @@ const data = {
 const emptyData = {
   processDefinitionKey: '',
   processDefinitionVersion: '',
+  tenantIds: [],
   filter: null,
   xml: null
 };

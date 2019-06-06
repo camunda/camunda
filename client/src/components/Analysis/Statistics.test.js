@@ -102,7 +102,7 @@ it('should load updated correlation when selection or configuration changes', as
   expect(loadCorrelationData.mock.calls[0][4]).toBe('g2');
 
   loadCorrelationData.mockClear();
-  node.setProps({config: {filter: ['aFilter']}});
+  node.setProps({config: {...props.config, filter: ['aFilter']}});
 
   await flushPromises();
 
