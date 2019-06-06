@@ -15,6 +15,7 @@
  */
 package io.zeebe.test.util.record;
 
+import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.RecordValue;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
@@ -30,7 +31,6 @@ import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
-import io.zeebe.exporter.api.spi.Exporter;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.IncidentIntent;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.exporter.api.spi;
+package io.zeebe.exporter.api;
 
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
