@@ -81,7 +81,7 @@ public class TopologyUpdateTest {
 
   private BrokerInfo createBroker(int brokerId) {
     final BrokerInfo broker = new BrokerInfo(brokerId, 1, 3, 3);
-    broker.setApiAddress(BrokerInfo.CLIENT_API_PROPERTY, "localhost:1000");
+    broker.setApiAddress(BrokerInfo.COMMAND_API_PROPERTY, "localhost:1000");
     return broker;
   }
 

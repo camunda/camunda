@@ -19,6 +19,8 @@ package io.zeebe.broker.engine.impl;
 
 import io.atomix.core.Atomix;
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMessageHandler;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
@@ -29,7 +31,7 @@ import io.zeebe.util.sched.Actor;
 import org.agrona.collections.Int2ObjectHashMap;
 
 public class SubscriptionApiCommandMessageHandlerService extends Actor
-    implements Service<SubscriptionApiCommandMessageHandler> {
+    implements Service<SubscriptionCommandMessageHandler> {
 
   private final Injector<Atomix> atomixInjector = new Injector<>();
 
@@ -39,9 +41,9 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
           .onRemove(this::removePartition)
           .build();
 
-  private final Int2ObjectHashMap<Partition> leaderPartitions = new Int2ObjectHashMap<>();
+  private final Int2ObjectHashMap<LogStream> leaderPartitions = new Int2ObjectHashMap<>();
 
-  private SubscriptionApiCommandMessageHandler messageHandler;
+  private SubscriptionCommandMessageHandler messageHandler;
   private Atomix atomix;
 
   @Override
@@ -62,12 +64,12 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
 
   @Override
   protected void onActorStarting() {
-    messageHandler = new SubscriptionApiCommandMessageHandler(actor, leaderPartitions);
+    messageHandler = new SubscriptionCommandMessageHandler(actor::call, leaderPartitions::get);
     atomix.getCommunicationService().subscribe("subscription", messageHandler);
   }
 
   private void addPartition(final ServiceName<Partition> sericeName, final Partition partition) {
-    actor.submit(() -> leaderPartitions.put(partition.getPartitionId(), partition));
+    actor.submit(() -> leaderPartitions.put(partition.getPartitionId(), partition.getLogStream()));
   }
 
   private void removePartition(final ServiceName<Partition> sericeName, final Partition partition) {
@@ -75,7 +77,7 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
   }
 
   @Override
-  public SubscriptionApiCommandMessageHandler get() {
+  public SubscriptionCommandMessageHandler get() {
     return messageHandler;
   }
 

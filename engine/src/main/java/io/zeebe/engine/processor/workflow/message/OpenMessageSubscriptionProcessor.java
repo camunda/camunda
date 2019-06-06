@@ -26,7 +26,7 @@ import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSen
 import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.engine.state.message.MessageSubscription;
 import io.zeebe.engine.state.message.MessageSubscriptionState;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
@@ -62,7 +62,7 @@ public class OpenMessageSubscriptionProcessor
     subscriptionRecord = record.getValue();
 
     if (subscriptionState.existSubscriptionForElementInstance(
-        subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName())) {
+        subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
       sideEffect.accept(this::sendAcknowledgeCommand);
 
       streamWriter.appendRejection(
@@ -71,7 +71,7 @@ public class OpenMessageSubscriptionProcessor
           String.format(
               SUBSCRIPTION_ALREADY_OPENED_MESSAGE,
               subscriptionRecord.getElementInstanceKey(),
-              BufferUtil.bufferAsString(subscriptionRecord.getMessageName())));
+              BufferUtil.bufferAsString(subscriptionRecord.getMessageNameBuffer())));
       return;
     }
 
@@ -86,8 +86,8 @@ public class OpenMessageSubscriptionProcessor
         new MessageSubscription(
             subscriptionRecord.getWorkflowInstanceKey(),
             subscriptionRecord.getElementInstanceKey(),
-            subscriptionRecord.getMessageName(),
-            subscriptionRecord.getCorrelationKey(),
+            subscriptionRecord.getMessageNameBuffer(),
+            subscriptionRecord.getCorrelationKeyBuffer(),
             subscriptionRecord.shouldCloseOnCorrelate());
 
     sideEffect.accept(this::sendAcknowledgeCommand);
@@ -103,7 +103,7 @@ public class OpenMessageSubscriptionProcessor
     return commandSender.openWorkflowInstanceSubscription(
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
-        subscriptionRecord.getMessageName(),
+        subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.shouldCloseOnCorrelate());
   }
 }

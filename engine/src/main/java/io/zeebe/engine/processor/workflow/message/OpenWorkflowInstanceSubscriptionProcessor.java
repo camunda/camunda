@@ -23,7 +23,7 @@ import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
@@ -53,7 +53,7 @@ public class OpenWorkflowInstanceSubscriptionProcessor
     final WorkflowInstanceSubscriptionRecord subscriptionRecord = record.getValue();
     final WorkflowInstanceSubscription subscription =
         subscriptionState.getSubscription(
-            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName());
+            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
 
     if (subscription != null && subscription.isOpening()) {
 
@@ -64,7 +64,8 @@ public class OpenWorkflowInstanceSubscriptionProcessor
           record.getKey(), WorkflowInstanceSubscriptionIntent.OPENED, subscriptionRecord);
 
     } else {
-      final String messageName = BufferUtil.bufferAsString(subscriptionRecord.getMessageName());
+      final String messageName =
+          BufferUtil.bufferAsString(subscriptionRecord.getMessageNameBuffer());
 
       if (subscription == null) {
         streamWriter.appendRejection(

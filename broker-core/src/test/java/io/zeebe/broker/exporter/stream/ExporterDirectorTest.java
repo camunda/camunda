@@ -32,8 +32,8 @@ import io.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExporterConfi
 import io.zeebe.engine.Loggers;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.record.Record;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;

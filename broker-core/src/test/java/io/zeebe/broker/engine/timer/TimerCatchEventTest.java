@@ -29,8 +29,8 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
+import io.zeebe.test.broker.protocol.commandapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -43,7 +43,7 @@ import org.junit.rules.RuleChain;
 
 public class TimerCatchEventTest {
   private static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  private static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
+  private static CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
   @Rule

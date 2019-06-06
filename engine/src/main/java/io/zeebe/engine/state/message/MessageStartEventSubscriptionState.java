@@ -71,11 +71,11 @@ public class MessageStartEventSubscriptionState {
   }
 
   public void put(final MessageStartEventSubscriptionRecord subscription) {
-    subscriptionRecord.setStartEventId(subscription.getStartEventId());
-    subscriptionRecord.setMessageName(subscription.getMessageName());
+    subscriptionRecord.setStartEventId(subscription.getStartEventIdBuffer());
+    subscriptionRecord.setMessageName(subscription.getMessageNameBuffer());
     subscriptionRecord.setWorkflowKey(subscription.getWorkflowKey());
 
-    messageName.wrapBuffer(subscription.getMessageName());
+    messageName.wrapBuffer(subscription.getMessageNameBuffer());
     workflowKey.wrapLong(subscription.getWorkflowKey());
     subscriptionsColumnFamily.put(messageNameAndWorkflowKey, subscriptionValue);
     subscriptionsOfWorkflowKeyColumnfamily.put(workflowKeyAndMessageName, DbNil.INSTANCE);
@@ -93,7 +93,7 @@ public class MessageStartEventSubscriptionState {
   }
 
   public boolean exists(final MessageStartEventSubscriptionRecord subscription) {
-    messageName.wrapBuffer(subscription.getMessageName());
+    messageName.wrapBuffer(subscription.getMessageNameBuffer());
     workflowKey.wrapLong(subscription.getWorkflowKey());
 
     return subscriptionsColumnFamily.exists(messageNameAndWorkflowKey);

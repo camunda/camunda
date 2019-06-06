@@ -216,7 +216,7 @@ public class LogBlockIndexTest {
     // given
     final int numBlocks = 10;
     final long snapshotPosition = addBlocks(numBlocks);
-    blockIndex.writeSnapshot(snapshotPosition, 1);
+    blockIndex.writeSnapshot(snapshotPosition);
 
     // when
     blockIndex.closeDb(); // close and reopen DB

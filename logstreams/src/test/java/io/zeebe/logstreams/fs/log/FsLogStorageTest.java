@@ -26,13 +26,17 @@ import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorageConfiguration;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.FileUtil;
+import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.metrics.MetricsManager;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -434,6 +438,38 @@ public class FsLogStorageTest {
   }
 
   @Test
+  public void shouldOpenStorageAfterLogSegmentsAreDeleted() {
+    // given
+    final int segments = 5;
+    final int deletedSegments = 3;
+    final int maxCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
+
+    fsLogStorage.open();
+
+    final List<Tuple<Long, byte[]>> messages =
+        IntStream.rangeClosed(1, segments)
+            .mapToObj(
+                i -> {
+                  final byte[] message = new byte[maxCapacity];
+                  Arrays.fill(message, (byte) i);
+                  return new Tuple<>(fsLogStorage.append(ByteBuffer.wrap(message)), message);
+                })
+            .collect(Collectors.toList());
+
+    // when
+    fsLogStorage.delete(messages.get(deletedSegments).getLeft());
+    fsLogStorage.close();
+    fsLogStorage.open();
+
+    // when
+    assertThat(fsLogStorage.getFirstBlockAddress())
+        .isEqualTo(messages.get(deletedSegments).getLeft());
+    messages.stream()
+        .skip(deletedSegments)
+        .forEach(message -> assertMessage(message.getLeft(), message.getRight()));
+  }
+
+  @Test
   public void shouldNotDeleteIfNotOpen() {
     thrown.expect(IllegalStateException.class);
     thrown.expectMessage("log storage is not open");
@@ -626,6 +662,23 @@ public class FsLogStorageTest {
     assertMessage(addressMessage, MSG);
 
     fsLogStorage.close();
+  }
+
+  @Test
+  public void shouldIgnoreDeletedSegmentsOnFlush() throws Exception {
+    // given
+    fsLogStorage.open();
+    final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
+    final byte[] largeBlock = new byte[remainingCapacity];
+
+    fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+    final long address = fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+
+    // when
+    fsLogStorage.delete(address);
+
+    // then
+    fsLogStorage.flush();
   }
 
   private byte[] readLogFile(final String logFilePath, final long address, final int capacity) {

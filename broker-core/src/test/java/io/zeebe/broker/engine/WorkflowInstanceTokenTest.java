@@ -28,8 +28,8 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
+import io.zeebe.test.broker.protocol.commandapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.collection.Maps;
@@ -45,7 +45,7 @@ import org.junit.rules.RuleChain;
 public class WorkflowInstanceTokenTest {
 
   private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final ClientApiRule API_RULE = new ClientApiRule(BROKER_RULE::getAtomix);
+  private static final CommandApiRule API_RULE = new CommandApiRule(BROKER_RULE::getAtomix);
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(API_RULE);
 

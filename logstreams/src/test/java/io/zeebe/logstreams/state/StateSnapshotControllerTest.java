@@ -48,7 +48,7 @@ public class StateSnapshotControllerTest {
 
     snapshotController =
         new StateSnapshotController(
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage);
+            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage, 2);
 
     autoCloseableRule.manage(snapshotController);
   }
@@ -148,7 +148,7 @@ public class StateSnapshotControllerTest {
     snapshotController.takeSnapshot(34);
 
     // when
-    snapshotController.ensureMaxSnapshotCount(2);
+    snapshotController.ensureMaxSnapshotCount();
 
     // then
     assertThat(storage.list()).hasSize(2);
@@ -169,7 +169,7 @@ public class StateSnapshotControllerTest {
     createSnapshotDirectory("132-tmp");
 
     // when
-    snapshotController.ensureMaxSnapshotCount(2);
+    snapshotController.ensureMaxSnapshotCount();
 
     // then
     assertThat(storage.getSnapshotsDirectory().listFiles())

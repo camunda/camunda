@@ -15,14 +15,14 @@
  */
 package io.zeebe.protocol.impl.record;
 
+import io.zeebe.protocol.MessageHeaderDecoder;
+import io.zeebe.protocol.MessageHeaderEncoder;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
-import io.zeebe.protocol.clientapi.RecordMetadataDecoder;
-import io.zeebe.protocol.clientapi.RecordMetadataEncoder;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordMetadataDecoder;
+import io.zeebe.protocol.RecordMetadataEncoder;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.RejectionType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferUtil;
@@ -46,6 +46,7 @@ public class RecordMetadata
   private RecordType recordType = RecordType.NULL_VAL;
   private short intentValue = Intent.NULL_VAL;
   private Intent intent = null;
+  private int partitionId;
   protected int requestStreamId;
   protected long requestId;
   protected int protocolVersion =
@@ -68,6 +69,7 @@ public class RecordMetadata
 
     decoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
+    partitionId = decoder.partitionId();
     recordType = decoder.recordType();
     requestStreamId = decoder.requestStreamId();
     requestId = decoder.requestId();
@@ -108,6 +110,7 @@ public class RecordMetadata
     encoder.wrap(buffer, offset);
 
     encoder
+        .partitionId(partitionId)
         .recordType(recordType)
         .requestStreamId(requestStreamId)
         .requestId(requestId)
@@ -204,10 +207,14 @@ public class RecordMetadata
     return rejectionReason;
   }
 
+  public RecordMetadata partitionId(int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
   @Override
   public int getPartitionId() {
-    //    return Protocol.decodePartitionId();
-    throw new UnsupportedOperationException("not yet implemented");
+    return partitionId;
   }
 
   @Override
@@ -221,6 +228,7 @@ public class RecordMetadata
   }
 
   public RecordMetadata reset() {
+    partitionId = RecordMetadataEncoder.partitionIdNullValue();
     recordType = RecordType.NULL_VAL;
     requestId = RecordMetadataEncoder.requestIdNullValue();
     requestStreamId = RecordMetadataEncoder.requestStreamIdNullValue();
@@ -241,7 +249,9 @@ public class RecordMetadata
   @Override
   public String toString() {
     return "RecordMetadata{"
-        + "recordType="
+        + "partitionId="
+        + partitionId
+        + ", recordType="
         + recordType
         + ", intentValue="
         + intentValue

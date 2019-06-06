@@ -25,15 +25,15 @@ import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.processor.AsyncSnapshotDirector;
 import io.zeebe.engine.processor.EventFilter;
+import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.spi.Exporter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -70,13 +70,12 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   private static final long NO_LAST_WRITTEN_EVENT_POSITION = -1L;
   private static final Consumer<Long> NO_DATA_REMOVER = pos -> {};
 
-  private final RecordMetadata rawMetadata = new RecordMetadata();
-
   private ActorScheduler actorScheduler;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
 
   private final List<ExporterContainer> containers;
   private final int partitionId;
+  private final RecordMetadata rawMetadata;
 
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
@@ -105,6 +104,8 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
 
     this.logStream = context.getLogStream();
     this.partitionId = logStream.getPartitionId();
+    this.rawMetadata = new RecordMetadata();
+
     this.logStreamReader = context.getLogStreamReader();
     this.exportingRetryStrategy = new AbortableRetryStrategy(actor);
     this.recordWrapStrategy = new EndlessRetryStrategy(actor);

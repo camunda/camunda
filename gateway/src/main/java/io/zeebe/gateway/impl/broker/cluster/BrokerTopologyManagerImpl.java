@@ -104,7 +104,7 @@ public class BrokerTopologyManagerImpl extends Actor
         followerPartitionId -> newTopology.addPartitionFollower(followerPartitionId, nodeId));
 
     final String clientAddress =
-        distributedBrokerInfo.getApiAddress(BrokerInfo.CLIENT_API_PROPERTY);
+        distributedBrokerInfo.getApiAddress(BrokerInfo.COMMAND_API_PROPERTY);
     if (clientAddress != null) {
       newTopology.setBrokerAddressIfPresent(nodeId, clientAddress);
       registerEndpoint.accept(nodeId, SocketAddress.from(clientAddress));

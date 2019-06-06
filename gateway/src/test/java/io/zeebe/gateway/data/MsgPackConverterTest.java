@@ -18,7 +18,7 @@ package io.zeebe.gateway.data;
 import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.gateway.impl.data.MsgPackConverter;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.StreamUtil;

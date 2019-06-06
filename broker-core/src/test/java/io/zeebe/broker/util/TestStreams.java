@@ -41,8 +41,8 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.servicecontainer.ServiceContainer;
@@ -261,6 +261,7 @@ public class TestStreams {
         writer.keyNull();
       }
 
+      metadata.partitionId(logStream.getPartitionId());
       writer.metadataWriter(metadata);
       writer.valueWriter(value);
 

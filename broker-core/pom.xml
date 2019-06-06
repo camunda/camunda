@@ -174,11 +174,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.bpm.model</groupId>
-      <artifactId>camunda-xml-model</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-db</artifactId>
     </dependency>

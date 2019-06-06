@@ -27,8 +27,8 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.record.Record;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.test.exporter.ExporterTestHarness;
 import io.zeebe.util.ZbLogger;
 import java.time.Duration;
@@ -314,7 +314,11 @@ public class ElasticsearchExporterTest {
 
   private void openExporter(ElasticsearchExporter exporter) {
     testHarness = new ExporterTestHarness(exporter);
-    testHarness.configure("elasticsearch", config);
+    try {
+      testHarness.configure("elasticsearch", config);
+    } catch (Exception e) {
+      throw new AssertionError("Failed to configure exporter", e);
+    }
     testHarness.open();
   }
 

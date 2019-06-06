@@ -22,17 +22,18 @@ import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
 import io.zeebe.broker.engine.impl.DeploymentDistributorImpl;
-import io.zeebe.broker.engine.impl.SubscriptionCommandSenderImpl;
+import io.zeebe.broker.engine.impl.PartitionCommandSenderImpl;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.broker.transport.clientapi.CommandResponseWriterImpl;
+import io.zeebe.broker.transport.commandapi.CommandResponseWriterImpl;
 import io.zeebe.engine.processor.AsyncSnapshotingDirectorService;
 import io.zeebe.engine.processor.ProcessingContext;
 import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.processor.StreamProcessorServiceNames;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.EngineProcessors;
+import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.Injector;
@@ -50,17 +51,16 @@ public class EngineService implements Service<EngineService> {
 
   public static final String PROCESSOR_NAME = "zb-stream-processor";
 
-  private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
+  private final Injector<ServerTransport> commandApiTransportInjector = new Injector<>();
   private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
   private final Injector<Atomix> atomixInjector = new Injector<>();
 
   private final ClusterCfg clusterCfg;
   private final ServiceContainer serviceContainer;
   private final Duration snapshotPeriod;
-  private final int maxSnapshots;
   private ServiceStartContext serviceContext;
 
-  private ServerTransport clientApiTransport;
+  private ServerTransport commandApiTransport;
   private TopologyManager topologyManager;
   private Atomix atomix;
   private final ServiceGroupReference<Partition> partitionsGroupReference =
@@ -72,13 +72,12 @@ public class EngineService implements Service<EngineService> {
     this.serviceContainer = serviceContainer;
     final DataCfg dataCfg = brokerCfg.getData();
     this.snapshotPeriod = DurationUtil.parse(dataCfg.getSnapshotPeriod());
-    this.maxSnapshots = dataCfg.getMaxSnapshots();
   }
 
   @Override
   public void start(final ServiceStartContext serviceContext) {
     this.serviceContext = serviceContext;
-    this.clientApiTransport = clientApiTransportInjector.getValue();
+    this.commandApiTransport = commandApiTransportInjector.getValue();
     this.topologyManager = topologyManagerInjector.getValue();
     this.atomix = atomixInjector.getValue();
   }
@@ -94,7 +93,7 @@ public class EngineService implements Service<EngineService> {
         .additionalDependencies(partitionServiceName)
         .zeebeDb(partition.getZeebeDb())
         .serviceContainer(serviceContainer)
-        .commandResponseWriter(new CommandResponseWriterImpl(clientApiTransport.getOutput()))
+        .commandResponseWriter(new CommandResponseWriterImpl(commandApiTransport.getOutput()))
         .streamProcessorFactory(
             (processingContext) -> {
               final ActorControl actor = processingContext.getActor();
@@ -114,8 +113,7 @@ public class EngineService implements Service<EngineService> {
             partition.getPartitionId(),
             partition.getLogStream(),
             partition.getSnapshotController(),
-            snapshotPeriod,
-            maxSnapshots);
+            snapshotPeriod);
 
     final ServiceName<AsyncSnapshotingDirectorService> snapshotDirectorServiceName =
         StreamProcessorServiceNames.asyncSnapshotingDirectorService(logName, PROCESSOR_NAME);
@@ -142,9 +140,10 @@ public class EngineService implements Service<EngineService> {
         new DeploymentDistributorImpl(
             clusterCfg, atomix, partitionListener, zeebeState.getDeploymentState(), actor);
 
-    final SubscriptionCommandSenderImpl subscriptionCommandSender =
-        new SubscriptionCommandSenderImpl(atomix);
-    subscriptionCommandSender.init(topologyManager, actor, stream);
+    final PartitionCommandSenderImpl partitionCommandSender =
+        new PartitionCommandSenderImpl(atomix, topologyManager, actor);
+    final SubscriptionCommandSender subscriptionCommandSender =
+        new SubscriptionCommandSender(stream.getPartitionId(), partitionCommandSender);
 
     return EngineProcessors.createEngineProcessors(
         processingContext,
@@ -158,8 +157,8 @@ public class EngineService implements Service<EngineService> {
     return this;
   }
 
-  public Injector<ServerTransport> getClientApiTransportInjector() {
-    return clientApiTransportInjector;
+  public Injector<ServerTransport> getCommandApiTransportInjector() {
+    return commandApiTransportInjector;
   }
 
   public ServiceGroupReference<Partition> getPartitionsGroupReference() {

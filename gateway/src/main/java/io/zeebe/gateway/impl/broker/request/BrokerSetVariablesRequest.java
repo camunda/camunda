@@ -16,8 +16,8 @@
 package io.zeebe.gateway.impl.broker.request;
 
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.VariableDocumentUpdateSemantic;
-import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.intent.VariableDocumentIntent;
 import org.agrona.DirectBuffer;

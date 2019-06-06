@@ -18,6 +18,7 @@ package io.zeebe.logstreams.state;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 import io.zeebe.logstreams.impl.Loggers;
+import io.zeebe.logstreams.spi.ValidSnapshotListener;
 import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
@@ -25,8 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.zip.CRC32;
 import org.agrona.collections.Long2LongHashMap;
 import org.slf4j.Logger;
@@ -38,26 +37,27 @@ public final class ReplicationController {
   private static final long START_VALUE = 0L;
   private static final long INVALID_SNAPSHOT = -1;
   private static final long MISSING_SNAPSHOT = Long.MIN_VALUE;
+  private static final ValidSnapshotListener NOOP_VALID_SNAPSHOT_LISTENER = () -> {};
 
   private final SnapshotReplication replication;
   private final Long2LongHashMap receivedSnapshots = new Long2LongHashMap(MISSING_SNAPSHOT);
   private final StateStorage storage;
-  private final Runnable ensureMaxSnapshotCount;
-  private final Supplier<Long> deletablePositionSupplier;
-  private Consumer<Long> deleteDataCallback;
 
   private final List<SnapshotReplicationListener> replicationListeners =
       new CopyOnWriteArrayList<>();
+  private final ValidSnapshotListener validSnapshotListener;
+
+  public ReplicationController(SnapshotReplication replication, StateStorage storage) {
+    this(replication, storage, NOOP_VALID_SNAPSHOT_LISTENER);
+  }
 
   public ReplicationController(
       SnapshotReplication replication,
       StateStorage storage,
-      Runnable ensureMaxSnapshotCount,
-      Supplier<Long> deletablePositionSupplier) {
+      ValidSnapshotListener validSnapshotListener) {
     this.replication = replication;
     this.storage = storage;
-    this.ensureMaxSnapshotCount = ensureMaxSnapshotCount;
-    this.deletablePositionSupplier = deletablePositionSupplier;
+    this.validSnapshotListener = validSnapshotListener;
   }
 
   private static long createChecksum(byte[] content) {
@@ -81,8 +81,7 @@ public final class ReplicationController {
   }
 
   /** Registering for consuming snapshot chunks. */
-  public void consumeReplicatedSnapshots(Consumer<Long> dataDeleteCallback) {
-    this.deleteDataCallback = dataDeleteCallback;
+  public void consumeReplicatedSnapshots() {
     replication.consume(this::consumeSnapshotChunk);
   }
 
@@ -197,9 +196,14 @@ public final class ReplicationController {
           currentChunks,
           totalChunkCount,
           validSnapshotDirectory.toPath());
-      tryToMarkSnapshotAsValid(snapshotChunk, tmpSnapshotDirectory, validSnapshotDirectory);
-      if (deleteDataCallback != null) {
-        deleteDataCallback.accept(deletablePositionSupplier.get());
+
+      final boolean valid =
+          tryToMarkSnapshotAsValid(snapshotChunk, tmpSnapshotDirectory, validSnapshotDirectory);
+
+      if (valid) {
+        replicationListeners.forEach(
+            listener -> listener.onReplicated(snapshotChunk.getSnapshotPosition()));
+        validSnapshotListener.onNewValidSnapshot();
       }
     } else {
       LOG.debug(
@@ -217,24 +221,21 @@ public final class ReplicationController {
     return newCount;
   }
 
-  private void tryToMarkSnapshotAsValid(
+  private boolean tryToMarkSnapshotAsValid(
       SnapshotChunk snapshotChunk, File tmpSnapshotDirectory, File validSnapshotDirectory) {
     try {
       Files.move(tmpSnapshotDirectory.toPath(), validSnapshotDirectory.toPath());
       receivedSnapshots.remove(snapshotChunk.getSnapshotPosition());
 
-      ensureMaxSnapshotCount.run();
-    } catch (IOException ioe) {
+      return true;
+    } catch (Exception e) {
       markSnapshotAsInvalid(snapshotChunk);
       LOG.error(
           "Unexpected error occurred on moving replicated snapshot from '{}'.",
           tmpSnapshotDirectory.toPath(),
-          ioe);
-      return;
+          e);
+      return false;
     }
-
-    replicationListeners.forEach(
-        listener -> listener.onReplicated(snapshotChunk.getSnapshotPosition()));
   }
 
   public void clearInvalidatedSnapshot(long snapshotPosition) {

@@ -77,7 +77,7 @@ public class FailingSnapshotChunkReplicationTest {
     final EvilReplicator replicator = new EvilReplicator();
     setup(replicator);
 
-    receiverSnapshotController.consumeReplicatedSnapshots(pos -> {});
+    receiverSnapshotController.consumeReplicatedSnapshots();
     replicatorSnapshotController.takeSnapshot(1);
 
     // when
@@ -103,7 +103,7 @@ public class FailingSnapshotChunkReplicationTest {
     final FlakyReplicator replicator = new FlakyReplicator();
     setup(replicator);
 
-    receiverSnapshotController.consumeReplicatedSnapshots(pos -> {});
+    receiverSnapshotController.consumeReplicatedSnapshots();
     replicatorSnapshotController.takeSnapshot(1);
 
     // when
@@ -130,14 +130,14 @@ public class FailingSnapshotChunkReplicationTest {
     // given
     final FlakyReplicator flakyReplicator = new FlakyReplicator();
     setup(flakyReplicator);
-    receiverSnapshotController.consumeReplicatedSnapshots(pos -> {});
+    receiverSnapshotController.consumeReplicatedSnapshots();
     replicatorSnapshotController.takeSnapshot(1);
     replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
     replicatorSnapshotController.close();
 
     final Replicator workingReplicator = new Replicator();
     setupReplication(workingReplicator);
-    receiverSnapshotController.consumeReplicatedSnapshots(pos -> {});
+    receiverSnapshotController.consumeReplicatedSnapshots();
     replicatorSnapshotController.takeSnapshot(2);
     replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
 

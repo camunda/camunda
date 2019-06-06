@@ -15,7 +15,7 @@
  */
 package io.zeebe.gateway.impl.broker.request;
 
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.intent.MessageIntent;
 import org.agrona.DirectBuffer;
@@ -30,7 +30,7 @@ public class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void> {
   }
 
   public DirectBuffer getCorrelationKey() {
-    return requestDto.getCorrelationKey();
+    return requestDto.getCorrelationKeyBuffer();
   }
 
   public BrokerPublishMessageRequest setMessageId(String messageId) {

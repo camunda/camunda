@@ -1,11 +1,11 @@
 [gateway.network]
 host = "gatewayHost"
 
-[network.client]
-host = "clientHost"
+[network.commandApi]
+host = "commandHost"
 
-[network.atomix]
-host = "atomixHost"
+[network.internalApi]
+host = "internalHost"
 
 [metrics]
 host = "metricsHost"

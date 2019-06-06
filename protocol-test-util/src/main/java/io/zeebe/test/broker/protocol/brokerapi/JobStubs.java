@@ -15,7 +15,7 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import java.util.function.Consumer;
 

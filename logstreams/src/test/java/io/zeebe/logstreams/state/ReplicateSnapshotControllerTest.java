@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.zeebe.logstreams.impl.delete.NoopDeletionService;
 import io.zeebe.logstreams.util.RocksDBWrapper;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
@@ -50,7 +51,6 @@ public class ReplicateSnapshotControllerTest {
   private StateSnapshotController receiverSnapshotController;
   private Replicator replicator;
   private StateStorage receiverStorage;
-  private NoopConsumer snapshotReplicatedCallback;
 
   @Before
   public void setup() throws IOException {
@@ -62,7 +62,6 @@ public class ReplicateSnapshotControllerTest {
     final File receiverSnapshotsDirectory = tempFolderRule.newFolder("snapshots-receiver");
     receiverStorage = new StateStorage(receiverRuntimeDirectory, receiverSnapshotsDirectory);
 
-    snapshotReplicatedCallback = spy(new NoopConsumer());
     replicator = new Replicator();
     replicatorSnapshotController =
         new StateSnapshotController(
@@ -141,7 +140,7 @@ public class ReplicateSnapshotControllerTest {
   @Test
   public void shouldReceiveSnapshotChunks() throws Exception {
     // given
-    receiverSnapshotController.consumeReplicatedSnapshots(pos -> {});
+    receiverSnapshotController.consumeReplicatedSnapshots();
     replicatorSnapshotController.takeSnapshot(1);
 
     // when
@@ -160,7 +159,7 @@ public class ReplicateSnapshotControllerTest {
   @Test
   public void shouldNotFailOnReplicatingAndReceivingTwice() throws Exception {
     // given
-    receiverSnapshotController.consumeReplicatedSnapshots(pos -> {});
+    receiverSnapshotController.consumeReplicatedSnapshots();
     replicatorSnapshotController.takeSnapshot(1);
     replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
 
@@ -180,7 +179,7 @@ public class ReplicateSnapshotControllerTest {
   @Test
   public void shouldEnsureMaxSnapshotCount() throws Exception {
     // given
-    receiverSnapshotController.consumeReplicatedSnapshots(pos -> {});
+    receiverSnapshotController.consumeReplicatedSnapshots();
     replicateXSnapshots(3);
 
     // when
@@ -203,24 +202,26 @@ public class ReplicateSnapshotControllerTest {
   @Test
   public void shouldInvokeCallbackOnReplicatedSnapshot() {
     // given
-    receiverSnapshotController.consumeReplicatedSnapshots(snapshotReplicatedCallback::noop);
+    receiverSnapshotController.consumeReplicatedSnapshots();
+    final NoopDeletionService mockDeletionService = spy(new NoopDeletionService());
+    receiverSnapshotController.setDeletionService(mockDeletionService);
     replicateXSnapshots(3);
 
     // then
-    verify(snapshotReplicatedCallback, never()).noop(anyInt());
+    verify(mockDeletionService, never()).delete(anyInt());
 
     // when
     replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
 
     // then
-    verify(snapshotReplicatedCallback).noop(2);
+    verify(mockDeletionService).delete(2);
   }
 
   @Test
   public void shouldNotifyAfterReplication() {
     // given
     replicatorSnapshotController.takeSnapshot(1);
-    receiverSnapshotController.consumeReplicatedSnapshots((l) -> {});
+    receiverSnapshotController.consumeReplicatedSnapshots();
     final CompletableFuture<Long> future = new CompletableFuture();
     receiverSnapshotController.addListener(
         new SnapshotReplicationListener() {

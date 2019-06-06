@@ -35,8 +35,8 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.CopiedTypedEvent;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.logstreams.state.StateSnapshotController;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -405,9 +405,7 @@ public class StreamProcessorTest {
                       processLatch.countDown();
                     }
                   });
-        },
-        MAX_SNAPSHOTS,
-        SNAPSHOT_INTERVAL);
+        });
 
     // when
     streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
@@ -464,9 +462,7 @@ public class StreamProcessorTest {
                       processingLatch.countDown();
                     }
                   });
-        },
-        MAX_SNAPSHOTS,
-        SNAPSHOT_INTERVAL);
+        });
 
     // when
     streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
@@ -520,7 +516,7 @@ public class StreamProcessorTest {
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).takeTempSnapshot();
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).moveValidSnapshot(position);
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).ensureMaxSnapshotCount(MAX_SNAPSHOTS);
+    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).ensureMaxSnapshotCount();
   }
 
   @Test
@@ -609,7 +605,7 @@ public class StreamProcessorTest {
 
     inOrder.verify(stateSnapshotController, never()).takeTempSnapshot();
     inOrder.verify(stateSnapshotController, never()).moveValidSnapshot(position);
-    inOrder.verify(stateSnapshotController, never()).ensureMaxSnapshotCount(1);
+    inOrder.verify(stateSnapshotController, never()).ensureMaxSnapshotCount();
   }
 
   @Test
@@ -636,7 +632,7 @@ public class StreamProcessorTest {
 
     inOrder.verify(stateSnapshotController, never()).takeTempSnapshot();
     inOrder.verify(stateSnapshotController, never()).moveValidSnapshot(anyLong());
-    inOrder.verify(stateSnapshotController, never()).ensureMaxSnapshotCount(1);
+    inOrder.verify(stateSnapshotController, never()).ensureMaxSnapshotCount();
   }
 
   @Test

@@ -20,7 +20,7 @@ import static io.zeebe.protocol.impl.record.value.deployment.DeploymentResource.
 import io.zeebe.gateway.cmd.InvalidBrokerRequestArgumentException;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject.ResourceType;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import org.agrona.DirectBuffer;

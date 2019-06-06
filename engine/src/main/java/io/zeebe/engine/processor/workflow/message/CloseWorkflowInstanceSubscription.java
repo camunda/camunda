@@ -22,7 +22,7 @@ import io.zeebe.engine.processor.TypedRecordProcessor;
 import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
@@ -50,7 +50,7 @@ public final class CloseWorkflowInstanceSubscription
 
     final boolean removed =
         subscriptionState.remove(
-            subscription.getElementInstanceKey(), subscription.getMessageName());
+            subscription.getElementInstanceKey(), subscription.getMessageNameBuffer());
     if (removed) {
       streamWriter.appendFollowUpEvent(
           record.getKey(), WorkflowInstanceSubscriptionIntent.CLOSED, subscription);
@@ -62,7 +62,7 @@ public final class CloseWorkflowInstanceSubscription
           String.format(
               NO_SUBSCRIPTION_FOUND_MESSAGE,
               subscription.getElementInstanceKey(),
-              BufferUtil.bufferAsString(subscription.getMessageName())));
+              BufferUtil.bufferAsString(subscription.getMessageNameBuffer())));
     }
   }
 }

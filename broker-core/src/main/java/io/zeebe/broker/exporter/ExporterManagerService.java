@@ -57,6 +57,7 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
   private final DataCfg dataCfg;
 
   private ServiceStartContext startContext;
+  private ExporterDirector director;
 
   public ExporterManagerService(BrokerCfg brokerCfg) {
     this.dataCfg = brokerCfg.getData();
@@ -87,7 +88,6 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
 
     if (exporterRepository.getExporters().isEmpty()) {
       clearExporterState(partition.getZeebeDb());
-      partition.getLogStream().setExporterPositionSupplier(() -> Long.MAX_VALUE);
     } else {
       final ExporterDirectorContext context =
           new ExporterDirectorContext()
@@ -103,7 +103,7 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
       final LogStream logStream = partition.getLogStream();
       final String logName = logStream.getLogName();
 
-      final ExporterDirector director = new ExporterDirector(context);
+      director = new ExporterDirector(context);
       startContext
           .createService(exporterDirectorServiceName(partition.getPartitionId()), director)
           .dependency(LogStreamServiceNames.logStreamServiceName(logName))
@@ -112,7 +112,14 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
           .dependency(LogStreamServiceNames.logBlockIndexServiceName(logName))
           .dependency(partitionName)
           .install();
-      logStream.setExporterPositionSupplier(director::getLowestExporterPosition);
+    }
+  }
+
+  public long getLowestExporterPosition() {
+    if (exporterRepository.getExporters().isEmpty()) {
+      return Long.MAX_VALUE;
+    } else {
+      return director.getLowestExporterPosition();
     }
   }
 

@@ -33,8 +33,8 @@ import io.zeebe.engine.processor.workflow.message.MessageObserver;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -49,7 +49,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Assertions;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -187,7 +186,6 @@ public class WorkflowInstanceStreamProcessorTest {
   }
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/2542")
   public void shouldCancelAndCompleteJobConcurrentlyInSubProcess() {
     // given
     streamProcessorRule.deploy(SUB_PROCESS_WORKFLOW);
@@ -317,7 +315,7 @@ public class WorkflowInstanceStreamProcessorTest {
             eq(subscription.getWorkflowInstanceKey()),
             eq(subscription.getElementInstanceKey()),
             captor.capture());
-    BufferUtil.equals(captor.getValue(), subscription.getMessageName());
+    BufferUtil.equals(captor.getValue(), subscription.getMessageNameBuffer());
 
     verify(streamProcessorRule.getMockSubscriptionCommandSender(), timeout(5_000))
         .rejectCorrelateMessageSubscription(
@@ -327,7 +325,7 @@ public class WorkflowInstanceStreamProcessorTest {
             captor.capture(),
             any());
 
-    BufferUtil.equals(captor.getValue(), subscription.getMessageName());
+    BufferUtil.equals(captor.getValue(), subscription.getMessageNameBuffer());
   }
 
   @Test
@@ -405,7 +403,7 @@ public class WorkflowInstanceStreamProcessorTest {
             subscription.getSubscriptionPartitionId(),
             subscription.getWorkflowInstanceKey(),
             subscription.getElementInstanceKey(),
-            subscription.getMessageName());
+            subscription.getMessageNameBuffer());
   }
 
   @Test

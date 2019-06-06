@@ -24,8 +24,8 @@ import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.msgpack.spec.MsgpackReaderException;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.VariableDocumentUpdateSemantic;
-import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.intent.VariableDocumentIntent;
 import org.agrona.DirectBuffer;
@@ -70,7 +70,7 @@ public class UpdateVariableDocumentProcessor implements CommandProcessor<Variabl
       CommandControl<VariableDocumentRecord> controller) {
     try {
       getUpdateOperation(record.getUpdateSemantics())
-          .apply(record.getScopeKey(), workflowKey, record.getDocument());
+          .apply(record.getScopeKey(), workflowKey, record.getDocumentBuffer());
       return true;
     } catch (MsgpackReaderException e) {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(

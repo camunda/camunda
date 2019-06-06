@@ -85,7 +85,7 @@ public class MessageStartEventSubscriptionStateTest {
     state.visitSubscriptionsByMessageName(
         wrapString("message"),
         subscription -> {
-          visitedStartEvents.add(bufferAsString(subscription.getStartEventId()));
+          visitedStartEvents.add(bufferAsString(subscription.getStartEventIdBuffer()));
         });
 
     assertThat(visitedStartEvents.size()).isEqualTo(3);
@@ -146,15 +146,17 @@ public class MessageStartEventSubscriptionStateTest {
     state.visitSubscriptionsByMessageName(
         BufferUtil.wrapString("msg"),
         readRecord -> {
-          assertThat(readRecord.getMessageName()).isNotEqualTo(writtenRecord.getMessageName());
-          assertThat(readRecord.getMessageName()).isEqualTo(BufferUtil.wrapString("msg"));
-          Assertions.assertThat(writtenRecord.getMessageName())
+          assertThat(readRecord.getMessageNameBuffer())
+              .isNotEqualTo(writtenRecord.getMessageNameBuffer());
+          assertThat(readRecord.getMessageNameBuffer()).isEqualTo(BufferUtil.wrapString("msg"));
+          Assertions.assertThat(writtenRecord.getMessageNameBuffer())
               .isEqualTo(BufferUtil.wrapString("foo"));
         });
 
     final MessageStartEventSubscriptionRecord secondSub = createSubscription("msg", "start", 23);
     state.exists(secondSub);
-    Assertions.assertThat(writtenRecord.getMessageName()).isEqualTo(BufferUtil.wrapString("foo"));
+    Assertions.assertThat(writtenRecord.getMessageNameBuffer())
+        .isEqualTo(BufferUtil.wrapString("foo"));
   }
 
   private MessageStartEventSubscriptionRecord createSubscription(

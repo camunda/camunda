@@ -36,18 +36,21 @@ import io.zeebe.exporter.api.record.value.job.Headers;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.clientapi.VarDataEncodingEncoder;
+import io.zeebe.protocol.BpmnElementType;
+import io.zeebe.protocol.RejectionType;
+import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.VarDataEncodingEncoder;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
+import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
+import io.zeebe.test.broker.protocol.commandapi.ExecuteCommandResponse;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
+import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.io.ByteArrayOutputStream;
 import java.time.Duration;
@@ -64,6 +67,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.internal.bytebuddy.utility.RandomString;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
@@ -75,9 +79,11 @@ public class ActivateJobsTest {
 
   public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
+  public static CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+
+  @Rule public RecordingExporterTestWatcher testWatcher = new RecordingExporterTestWatcher();
 
   private String processId;
   private String jobType;
@@ -351,11 +357,14 @@ public class ActivateJobsTest {
 
     // then all workflow instances are completed
     final List<Record<WorkflowInstanceRecordValue>> records =
-        workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withBpmnProcessId(processId)
-            .filter(r -> r.getKey() == r.getValue().getWorkflowInstanceKey())
-            .limit(jobAmount)
-            .collect(Collectors.toList());
+        TestUtil.doRepeatedly(
+                () ->
+                    workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                        .withBpmnProcessId(processId)
+                        .withElementType(BpmnElementType.PROCESS)
+                        .limit(jobAmount)
+                        .collect(Collectors.toList()))
+            .until(r -> r.size() == jobAmount);
 
     assertThat(records)
         .extracting(r -> r.getValue().getWorkflowInstanceKey())

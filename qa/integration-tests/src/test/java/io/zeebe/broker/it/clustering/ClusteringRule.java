@@ -80,7 +80,7 @@ public class ClusteringRule extends ExternalResource {
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  protected final AutoCloseableRule closables = new AutoCloseableRule();
+  protected final AutoCloseableRule closeables = new AutoCloseableRule();
 
   // configuration
   private final int partitionCount;
@@ -147,7 +147,7 @@ public class ClusteringRule extends ExternalResource {
   @Override
   public Statement apply(final Statement base, final Description description) {
     Statement statement = recordingExporterTestWatcher.apply(base, description);
-    statement = closables.apply(statement, description);
+    statement = closeables.apply(statement, description);
     return super.apply(statement, description);
   }
 
@@ -174,7 +174,7 @@ public class ClusteringRule extends ExternalResource {
 
     } catch (Error e) {
       // If the previous waits timeouts, the brokers are not closed automatically.
-      closables.after();
+      closeables.after();
       throw e;
     }
   }
@@ -203,7 +203,7 @@ public class ClusteringRule extends ExternalResource {
     final File brokerBase = getBrokerBase(nodeId);
     final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
     final Broker broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), controlledClock);
-    closables.manage(broker);
+    closeables.manage(broker);
     return broker;
   }
 
@@ -230,7 +230,8 @@ public class ClusteringRule extends ExternalResource {
       // all nodes have to join the same broker
       // https://github.com/zeebe-io/zeebe/issues/2012
 
-      setInitialContactPoints(getBrokerCfg(0).getNetwork().getAtomix().toSocketAddress().toString())
+      setInitialContactPoints(
+              getBrokerCfg(0).getNetwork().getInternalApi().toSocketAddress().toString())
           .accept(brokerCfg);
     }
 
@@ -249,13 +250,13 @@ public class ClusteringRule extends ExternalResource {
 
   private File createBrokerBase(int nodeId) {
     final File base = Files.newTemporaryFolder();
-    closables.manage(() -> FileUtil.deleteFolder(base.getAbsolutePath()));
+    closeables.manage(() -> FileUtil.deleteFolder(base.getAbsolutePath()));
     return base;
   }
 
   private Gateway createGateway() {
     final String contactPoint =
-        getBrokerCfg(0).getNetwork().getAtomix().toSocketAddress().toString();
+        getBrokerCfg(0).getNetwork().getInternalApi().toSocketAddress().toString();
 
     final GatewayCfg gatewayCfg = new GatewayCfg();
     gatewayCfg.getCluster().setContactPoint(contactPoint).setClusterName(clusterName);
@@ -280,8 +281,8 @@ public class ClusteringRule extends ExternalResource {
     atomixCluster.start().join();
 
     final Gateway gateway = new Gateway(gatewayCfg, atomixCluster);
-    closables.manage(gateway::stop);
-    closables.manage(atomixCluster::stop);
+    closeables.manage(gateway::stop);
+    closeables.manage(atomixCluster::stop);
     return gateway;
   }
 
@@ -289,12 +290,13 @@ public class ClusteringRule extends ExternalResource {
     final String contactPoint = gateway.getGatewayCfg().getNetwork().toSocketAddress().toString();
     final ZeebeClient client =
         ZeebeClient.newClientBuilder().brokerContactPoint(contactPoint).build();
-    closables.manage(client);
+    closeables.manage(client);
     return client;
   }
 
   @Override
   protected void after() {
+    closeables.after();
     brokerBases.clear();
     brokerCfgs.clear();
     brokers.clear();
@@ -305,7 +307,7 @@ public class ClusteringRule extends ExternalResource {
     final Set<SocketAddress> addresses =
         brokers.values().stream()
             .map(Broker::getConfig)
-            .map(b -> b.getNetwork().getClient().toSocketAddress())
+            .map(b -> b.getNetwork().getCommandApi().toSocketAddress())
             .collect(Collectors.toSet());
 
     waitForTopology(
@@ -390,8 +392,9 @@ public class ClusteringRule extends ExternalResource {
   public void restartBroker(final int nodeId) {
     stopBroker(nodeId);
     final Broker broker = getBroker(nodeId);
-    final SocketAddress clientApi = broker.getConfig().getNetwork().getClient().toSocketAddress();
-    waitUntilBrokerIsAddedToTopology(clientApi);
+    final SocketAddress commandApi =
+        broker.getConfig().getNetwork().getCommandApi().toSocketAddress();
+    waitUntilBrokerIsAddedToTopology(commandApi);
     waitForPartitionReplicationFactor();
   }
 
@@ -442,13 +445,14 @@ public class ClusteringRule extends ExternalResource {
 
   public SocketAddress[] getOtherBrokers(final SocketAddress address) {
     return getBrokers().stream()
-        .map(b -> b.getConfig().getNetwork().getClient().toSocketAddress())
+        .map(b -> b.getConfig().getNetwork().getCommandApi().toSocketAddress())
         .filter(a -> !address.equals(a))
         .toArray(SocketAddress[]::new);
   }
 
   public SocketAddress[] getOtherBrokers(final int nodeId) {
-    final SocketAddress filter = getBrokerCfg(nodeId).getNetwork().getClient().toSocketAddress();
+    final SocketAddress filter =
+        getBrokerCfg(nodeId).getNetwork().getCommandApi().toSocketAddress();
     return getOtherBrokers(filter);
   }
 
@@ -468,7 +472,7 @@ public class ClusteringRule extends ExternalResource {
     final Broker broker = brokers.remove(nodeId);
     if (broker != null) {
       final SocketAddress socketAddress =
-          broker.getConfig().getNetwork().getClient().toSocketAddress();
+          broker.getConfig().getNetwork().getCommandApi().toSocketAddress();
       final List<Integer> brokersLeadingPartitions = getBrokersLeadingPartitions(socketAddress);
       broker.close();
 

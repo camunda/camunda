@@ -90,11 +90,15 @@ public class ParallelGatewayTest {
   public void shouldCompleteScopeWhenAllPathsCompleted() {
     // given
     engine.deploy(FORK_PROCESS);
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
-    engine.completeJobOfType("type1");
+    final long workflowInstanceKey =
+        engine
+            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID))
+            .getValue()
+            .getInstanceKey();
+    engine.job().ofInstance(workflowInstanceKey).withType("type1").complete();
 
     // when
-    engine.completeJobOfType("type2");
+    engine.job().ofInstance(workflowInstanceKey).withType("type2").complete();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> completedEvents =
@@ -259,7 +263,11 @@ public class ParallelGatewayTest {
 
     engine.deploy(process);
 
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    final long workflowInstanceKey =
+        engine
+            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID))
+            .getValue()
+            .getInstanceKey();
 
     // waiting until we have signalled the first incoming sequence flow twice
     // => this should not trigger the gateway yet
@@ -271,7 +279,7 @@ public class ParallelGatewayTest {
 
     // when
     // we complete the job
-    engine.completeJobOfType("type");
+    engine.job().ofInstance(workflowInstanceKey).withType("type").complete();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> events =

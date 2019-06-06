@@ -15,15 +15,17 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
+import io.zeebe.exporter.api.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.WorkflowInstanceRelated;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public class MessageSubscriptionRecord extends UnifiedRecordValue
-    implements WorkflowInstanceRelated {
+    implements WorkflowInstanceRelated, MessageSubscriptionRecordValue {
 
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
@@ -60,7 +62,7 @@ public class MessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  public DirectBuffer getMessageName() {
+  public DirectBuffer getMessageNameBuffer() {
     return messageNameProp.getValue();
   }
 
@@ -69,13 +71,23 @@ public class MessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  public DirectBuffer getCorrelationKey() {
+  public DirectBuffer getCorrelationKeyBuffer() {
     return correlationKeyProp.getValue();
   }
 
   public MessageSubscriptionRecord setCorrelationKey(DirectBuffer correlationKey) {
     correlationKeyProp.setValue(correlationKey);
     return this;
+  }
+
+  @Override
+  public String getMessageName() {
+    return BufferUtil.bufferAsString(messageNameProp.getValue());
+  }
+
+  @Override
+  public String getCorrelationKey() {
+    return BufferUtil.bufferAsString(correlationKeyProp.getValue());
   }
 
   public boolean shouldCloseOnCorrelate() {

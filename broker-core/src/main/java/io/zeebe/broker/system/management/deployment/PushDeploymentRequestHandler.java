@@ -24,8 +24,8 @@ import io.zeebe.clustering.management.PushDeploymentRequestDecoder;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
@@ -166,7 +166,12 @@ public class PushDeploymentRequestHandler implements Function<byte[], Completabl
 
     logStreamWriter.wrap(partition.getLogStream());
 
-    recordMetadata.reset().recordType(recordType).valueType(valueType).intent(intent);
+    recordMetadata
+        .reset()
+        .partitionId(partition.getPartitionId())
+        .recordType(recordType)
+        .valueType(valueType)
+        .intent(intent);
 
     final long position =
         logStreamWriter.key(key).metadataWriter(recordMetadata).valueWriter(event).tryWrite();

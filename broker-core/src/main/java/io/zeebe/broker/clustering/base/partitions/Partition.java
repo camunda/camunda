@@ -20,14 +20,18 @@ package io.zeebe.broker.clustering.base.partitions;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.engine.EngineService;
+import io.zeebe.broker.engine.EngineServiceNames;
 import io.zeebe.broker.engine.impl.StateReplication;
-import io.zeebe.broker.exporter.stream.ExportersState;
+import io.zeebe.broker.exporter.ExporterServiceNames;
+import io.zeebe.broker.logstreams.delete.FollowerLogStreamDeletionService;
+import io.zeebe.broker.logstreams.delete.LeaderLogStreamDeletionService;
 import io.zeebe.broker.logstreams.restore.BrokerRestoreServer;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.distributedlog.StorageConfiguration;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.StateStorageFactory;
+import io.zeebe.logstreams.impl.delete.DeletionService;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.NoneSnapshotReplication;
 import io.zeebe.logstreams.state.SnapshotReplication;
@@ -82,14 +86,29 @@ public class Partition implements Service<Partition> {
   public void start(final ServiceStartContext startContext) {
     final CompletableActorFuture<Void> startedFuture = new CompletableActorFuture<>();
     logStream = logStreamInjector.getValue();
-
-    logStream = logStreamInjector.getValue();
     snapshotController = createSnapshotController();
 
+    final DeletionService deletionService;
     if (state == RaftState.FOLLOWER) {
-      logStream.setExporterPositionSupplier(this::getLowestReplicatedExportedPosition);
-      snapshotController.consumeReplicatedSnapshots(logStream::delete);
+      deletionService =
+          new FollowerLogStreamDeletionService(
+              logStream, snapshotController, brokerCfg.getCluster().getNodeId());
+
+      snapshotController.setDeletionService(deletionService);
+      snapshotController.consumeReplicatedSnapshots();
     } else {
+      final LeaderLogStreamDeletionService leaderDeletionService =
+          new LeaderLogStreamDeletionService(logStream);
+      startContext
+          .createService(
+              EngineServiceNames.leaderLogStreamDeletionService(partitionId), leaderDeletionService)
+          .dependency(
+              ExporterServiceNames.EXPORTER_MANAGER,
+              leaderDeletionService.getExporterManagerInjector())
+          .install();
+      deletionService = leaderDeletionService;
+      snapshotController.setDeletionService(deletionService);
+
       try {
         snapshotController.recover();
         zeebeDb = snapshotController.openDb();
@@ -117,40 +136,6 @@ public class Partition implements Service<Partition> {
                 startedFuture.complete(null);
               }
             });
-  }
-
-  private long getLowestReplicatedExportedPosition() {
-    try {
-      if (snapshotController.getValidSnapshotsCount() > 0) {
-        snapshotController.recover();
-        final ZeebeDb zeebeDb = snapshotController.openDb();
-        final ExportersState exporterState = new ExportersState(zeebeDb, zeebeDb.createContext());
-
-        final long lowestPosition = exporterState.getLowestPosition();
-
-        LOG.debug(
-            "The lowest exported position at follower {} is {}.",
-            brokerCfg.getCluster().getNodeId(),
-            lowestPosition);
-        return lowestPosition;
-      } else {
-        LOG.info(
-            "Follower {} has no exporter snapshot so it can't delete data.",
-            brokerCfg.getCluster().getNodeId());
-      }
-    } catch (Exception e) {
-      LOG.error(
-          "Unexpected error occurred while obtaining the lowest exported position at a follower.",
-          e);
-    } finally {
-      try {
-        snapshotController.close();
-      } catch (Exception e) {
-        LOG.error("Unexpected error occurred while closing the DB.", e);
-      }
-    }
-
-    return -1;
   }
 
   public StorageConfiguration getConfiguration() {

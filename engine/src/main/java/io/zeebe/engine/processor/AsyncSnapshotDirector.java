@@ -37,8 +37,6 @@ public class AsyncSnapshotDirector extends Actor {
       "Unexpected error in resolving last processed position.";
   private static final String ERROR_MSG_ON_RESOLVE_WRITTEN_POS =
       "Unexpected error in resolving last written position.";
-  private static final String ERROR_MSG_ENSURING_MAX_SNAPSHOT_COUNT =
-      "Unexpected exception occurred on ensuring maximum snapshot count.";
   private static final String ERROR_MSG_MOVE_SNAPSHOT =
       "Unexpected exception occurred on moving valid snapshot.";
   private static final String LOG_MSG_ENFORCE_SNAPSHOT =
@@ -55,7 +53,6 @@ public class AsyncSnapshotDirector extends Actor {
   private final Duration snapshotRate;
   private final SnapshotMetrics metrics;
   private final String processorName;
-  private final int maxSnapshots;
   private final StreamProcessor streamProcessor;
 
   private ActorCondition commitCondition;
@@ -69,7 +66,6 @@ public class AsyncSnapshotDirector extends Actor {
       SnapshotController snapshotController,
       LogStream logStream,
       Duration snapshotRate,
-      int maxSnapshots,
       SnapshotMetrics metrics) {
     this.streamProcessor = streamProcessor;
     this.snapshotController = snapshotController;
@@ -77,7 +73,6 @@ public class AsyncSnapshotDirector extends Actor {
     this.processorName = streamProcessor.getName();
     this.name = processorName + "-snapshot-director";
     this.snapshotRate = snapshotRate;
-    this.maxSnapshots = Math.max(maxSnapshots, 1);
     this.metrics = metrics;
   }
 
@@ -171,17 +166,6 @@ public class AsyncSnapshotDirector extends Actor {
 
         lastValidSnapshotPosition = lowerBoundSnapshotPosition;
         snapshotController.moveValidSnapshot(lowerBoundSnapshotPosition);
-
-        try {
-          snapshotController.ensureMaxSnapshotCount(maxSnapshots);
-          if (snapshotController.getValidSnapshotsCount() == maxSnapshots) {
-            logStream.delete(snapshotController.getPositionToDelete(maxSnapshots));
-          }
-
-        } catch (Exception ex) {
-          LOG.error(ERROR_MSG_ENSURING_MAX_SNAPSHOT_COUNT, ex);
-        }
-
         snapshotController.replicateLatestSnapshot(actor::submit);
 
       } catch (Exception ex) {

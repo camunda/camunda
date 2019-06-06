@@ -27,7 +27,7 @@ import io.zeebe.engine.state.message.Message;
 import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.engine.state.message.MessageSubscription;
 import io.zeebe.engine.state.message.MessageSubscriptionState;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -91,8 +91,8 @@ public class RejectMessageCorrelationProcessor
     }
 
     subscriptionState.visitSubscriptions(
-        subscriptionRecord.getMessageName(),
-        subscriptionRecord.getCorrelationKey(),
+        subscriptionRecord.getMessageNameBuffer(),
+        subscriptionRecord.getCorrelationKeyBuffer(),
         subscription -> {
           if (subscription.getWorkflowInstanceKey() == workflowInstanceKey
               && !subscription.isCorrelating()) {

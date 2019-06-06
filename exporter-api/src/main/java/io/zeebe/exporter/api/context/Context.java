@@ -15,8 +15,8 @@
  */
 package io.zeebe.exporter.api.context;
 
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.ValueType;
 import org.slf4j.Logger;
 
 /** Encapsulates context associated with the exporter on open. */

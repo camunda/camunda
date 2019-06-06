@@ -148,6 +148,7 @@ public class FsLogStorage implements LogStorage {
       }
       final int diff = segmentId - firstSegmentId;
       LOG.info("Deleted {} segments from log storage ({} to {}).", diff, firstSegmentId, segmentId);
+      dirtySegmentId = Math.max(dirtySegmentId, segmentId);
       logSegments.removeSegmentsUntil(segmentId);
     }
   }
@@ -222,6 +223,7 @@ public class FsLogStorage implements LogStorage {
   }
 
   private void initLogSegments(final File logDir) {
+    final int initialSegmentId;
     final List<FsLogSegment> readableLogSegments = new ArrayList<>();
 
     final List<File> logFiles =
@@ -252,8 +254,9 @@ public class FsLogStorage implements LogStorage {
 
     if (existingSegments > 0) {
       currentSegment = readableLogSegments.get(existingSegments - 1);
+      initialSegmentId = readableLogSegments.get(0).getSegmentId();
     } else {
-      final int initialSegmentId = config.getInitialSegmentId();
+      initialSegmentId = config.getInitialSegmentId();
       final String initialSegmentName = config.fileName(initialSegmentId);
       final int segmentSize = config.getSegmentSize();
 
@@ -273,7 +276,7 @@ public class FsLogStorage implements LogStorage {
         readableLogSegments.toArray(new FsLogSegment[readableLogSegments.size()]);
 
     final FsLogSegments logSegments = new FsLogSegments();
-    logSegments.init(config.getInitialSegmentId(), segmentsArray);
+    logSegments.init(initialSegmentId, segmentsArray);
     segmentCountMetric.setOrdered(logSegments.getSegmentCount());
 
     this.logSegments = logSegments;
@@ -323,7 +326,12 @@ public class FsLogStorage implements LogStorage {
 
     if (dirtySegmentId >= 0) {
       for (int id = dirtySegmentId; id <= currentSegment.getSegmentId(); id++) {
-        logSegments.getSegment(id).flush();
+        final FsLogSegment segment = logSegments.getSegment(id);
+        if (segment != null) {
+          segment.flush();
+        } else {
+          LOG.warn("Ignoring segment {} on flush as it does not exist", id);
+        }
       }
 
       dirtySegmentId = -1;

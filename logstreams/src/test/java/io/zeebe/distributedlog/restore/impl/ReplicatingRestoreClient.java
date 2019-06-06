@@ -30,7 +30,7 @@ public class ReplicatingRestoreClient implements RestoreClient {
 
   private final StateSnapshotController replicatorSnapshotController;
   private final LogStream serverLogstream;
-  private RestoreInfoResponse restoreInfoResponse;
+  private CompletableFuture<RestoreInfoResponse> restoreInfoResponse = new CompletableFuture<>();
 
   public ReplicatingRestoreClient(
       StateSnapshotController serverSnapshotController, LogStream serverLogstream) {
@@ -38,8 +38,12 @@ public class ReplicatingRestoreClient implements RestoreClient {
     this.serverLogstream = serverLogstream;
   }
 
-  public void setRestoreInfoResponse(RestoreInfoResponse restoreInfoResponse) {
-    this.restoreInfoResponse = restoreInfoResponse;
+  public void completeRestoreInfoResponse(RestoreInfoResponse restoreInfoResponse) {
+    this.restoreInfoResponse.complete(restoreInfoResponse);
+  }
+
+  public void completeExceptionallyRestoreInfoResponse(Exception e) {
+    this.restoreInfoResponse.completeExceptionally(e);
   }
 
   @Override
@@ -62,6 +66,6 @@ public class ReplicatingRestoreClient implements RestoreClient {
   @Override
   public CompletableFuture<RestoreInfoResponse> requestRestoreInfo(
       MemberId server, RestoreInfoRequest request) {
-    return CompletableFuture.completedFuture(restoreInfoResponse);
+    return restoreInfoResponse;
   }
 }
