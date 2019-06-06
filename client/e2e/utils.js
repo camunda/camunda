@@ -28,7 +28,7 @@ export async function selectDefinition(t, name, version) {
     .click(Selector('.Typeahead.name .DropdownOption').withText(name))
     .click('.version.Dropdown')
     .click(Selector('.version.Dropdown .DropdownOption').withText(version))
-    .click('.processDefinitionPopover');
+    .click('.Popover.DefinitionSelection');
 }
 
 const selectControlPanelOption = type => async (t, name, subname) => {
