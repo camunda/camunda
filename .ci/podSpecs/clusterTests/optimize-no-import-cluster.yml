@@ -2,7 +2,7 @@ apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   name: cluster-optimize-no-import-camunda-cloud
-  namespace: cluster-optimize
+  namespace: ${NAMESPACE}
 spec:
   selector:
     matchLabels:

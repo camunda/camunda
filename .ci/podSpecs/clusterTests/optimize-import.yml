@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cluster-optimize-import-camunda-cloud
-  namespace: cluster-optimize
+  namespace: ${NAMESPACE}
 spec:
   progressDeadlineSeconds: 1800
   replicas: 1

@@ -3,7 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: cluster-optimize-no-import-camunda-cloud
-  namespace: cluster-optimize
+  namespace: ${NAMESPACE}
   labels:
     app: optimize
 data:
@@ -33,11 +33,11 @@ data:
     engines:
       'camunda-bpm':
         name: default
-        rest: 'http://cambpm.cluster-optimize:8080/engine-rest'
+        rest: 'http://cambpm:8080/engine-rest'
         authentication:
           enabled: false
         webapps:
-          endpoint: 'http://cambpm.cluster-optimize:8080/camunda'
+          endpoint: 'http://cambpm:8080/camunda'
           enabled: true
         # this instance is NOT importing
         importEnabled: false
@@ -45,7 +45,7 @@ data:
     es:
       connection:
         nodes:
-        - host: 'elasticsearch.cluster-optimize'
+        - host: 'elasticsearch'
           httpPort: 9200
 
 ---
@@ -53,7 +53,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: optimize-no-import
-  namespace: cluster-optimize
+  namespace: ${NAMESPACE}
 spec:
   selector:
     app: optimize-no-import

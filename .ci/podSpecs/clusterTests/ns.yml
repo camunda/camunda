@@ -1,6 +1,6 @@
 kind: Namespace
 apiVersion: v1
 metadata:
-  name: cluster-optimize
+  name: ${NAMESPACE}
   labels:
-    name: cluster-optimize
+    name: ${NAMESPACE}

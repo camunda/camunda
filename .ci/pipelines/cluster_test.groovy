@@ -82,6 +82,7 @@ pipeline {
 
   environment {
     NEXUS = credentials("camunda-nexus")
+    NAMESPACE = "cluster-test-${env.BUILD_ID}"
   }
 
   options {
@@ -100,57 +101,11 @@ pipeline {
                   poll: false
           sh ("""
                 # install jq
-                apk add --no-cache jq
+                apk add --no-cache jq gettext
                 # kubectl
                 gcloud components install kubectl --quiet
 
-                kubectl apply -f .ci/podSpecs/clusterTests/ns.yml
-
-                #Spawning elasticsearch
-                kubectl apply -f .ci/podSpecs/clusterTests/elasticsearch-cfg.yml
-                kubectl apply -f .ci/podSpecs/clusterTests/elasticsearch.yml
-                # The following command does not work due to https://github.com/kubernetes/kubernetes/issues/52653
-                # Can be removed when we migrate to kubernetes version > 1.12.0
-                #kubectl rollout status -f .ci/podSpecs/clusterTests/elasticsearch.yml --watch=true
-                while ! nc -z -w 3 elasticsearch.cluster-optimize 9200; do
-                  sleep 15
-                done
-
-                #Spawning cambpm
-                kubectl apply -f .ci/podSpecs/clusterTests/cambpm-cfg.yml
-                kubectl apply -f .ci/podSpecs/clusterTests/cambpm.yml
-                kubectl rollout status -f .ci/podSpecs/clusterTests/cambpm.yml --watch=true
-
-                #Spawning optimize-no-import-cluster (No import cluster with >1 replicas)
-                kubectl apply -f .ci/podSpecs/clusterTests/optimize-no-import-cluster-cfg.yml
-                kubectl apply -f .ci/podSpecs/clusterTests/optimize-no-import-cluster.yml
-                # The following command does not work due to https://github.com/kubernetes/kubernetes/issues/52653
-                # Can be removed when we migrate to kubernetes version > 1.12.0
-                #kubectl rollout status -f .ci/podSpecs/clusterTests/optimize-no-import-cluster.yml --watch=true
-                while ! nc -z -w 3 optimize-no-import.cluster-optimize 8090; do
-                  sleep 15
-                done
-
-                #Monitoring Import of optimize-no-import-cluster (Should be false immediately and no data imported)
-                curl 'http://optimize-no-import.cluster-optimize:8090/api/status'
-                curl 'http://elasticsearch.cluster-optimize:9200/_cat/indices?v'
-                until [ \$(curl 'http://optimize-no-import.cluster-optimize:8090/api/status' | jq '.isImporting."camunda-bpm"') = "false" ]; do
-                    curl 'http://optimize-no-import.cluster-optimize:8090/api/status'
-                    curl 'http://elasticsearch.cluster-optimize:9200/_cat/indices?v'
-                    sleep 10
-                done
-
-                #Spawning optimize-import (Will import data from engine, only one instance)
-                kubectl apply -f .ci/podSpecs/clusterTests/optimize-import-cfg.yml
-                kubectl apply -f .ci/podSpecs/clusterTests/optimize-import.yml
-                kubectl rollout status -f .ci/podSpecs/clusterTests/optimize-import.yml --watch=true
-
-                #Monitoring Import of optimize-import (Should be true till data got imported)
-                until [ \$(curl 'http://optimize-import.cluster-optimize:8090/api/status' | jq '.isImporting."camunda-bpm"') = "false" ]; do
-                    curl 'http://optimize-import.cluster-optimize:8090/api/status'
-                    curl 'http://elasticsearch.cluster-optimize:9200/_cat/indices?v'
-                    sleep 10
-                done
+                bash .ci/podSpecs/clusterTests/deploy.sh "${NAMESPACE}"
             """)
         }
         container('maven') {
@@ -163,8 +118,8 @@ pipeline {
         container('maven') {
           sh ("""
                 mvn -B -Pclustering-tests verify -pl qa/clustering-tests -s settings.xml \
-                  -Doptimize.importing.host=optimize-import.cluster-optimize -Doptimize.importing.port=8090 \
-                  -Doptimize.notImporting.host=optimize-no-import.cluster-optimize -Doptimize.notImporting.port=8090 \
+                  -Doptimize.importing.host=optimize-import.${NAMESPACE} -Doptimize.importing.port=8090 \
+                  -Doptimize.notImporting.host=optimize-no-import.${NAMESPACE} -Doptimize.notImporting.port=8090 \
                   -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn 
             """)
         }
@@ -178,7 +133,7 @@ pipeline {
     }
     always {
       container('gcloud') {
-        sh ("kubectl delete -f .ci/podSpecs/clusterTests/ns.yml")
+        sh ("bash .ci/podSpecs/clusterTests/kill.sh \"${NAMESPACE}\"")
       }
     }
   }

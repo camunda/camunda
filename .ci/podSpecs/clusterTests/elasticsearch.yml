@@ -3,7 +3,7 @@ apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   name: elasticsearch
-  namespace: cluster-optimize
+  namespace: ${NAMESPACE}
   labels:
     app: elasticsearch
 spec:
