@@ -212,11 +212,6 @@ public class EngineRule extends ExternalResource {
         .getFirst();
   }
 
-  public long failJob(long jobKey) {
-    final JobRecord jobRecord = new JobRecord();
-    return environmentRule.writeCommand(jobKey, JobIntent.FAIL, jobRecord);
-  }
-
   public JobActivationClient jobs() {
     return new JobActivationClient(environmentRule);
   }

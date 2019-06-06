@@ -55,10 +55,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class ActivateJobsTest {
-
-  public static final String JSON_VARIABLES = "{\"foo\":\"bar\"}";
-  public static final byte[] VARIABLES_MSG_PACK = MsgPackUtil.asMsgPackReturnArray(JSON_VARIABLES);
-  public static final String LONG_CUSTOM_HEADER_VALUE = RandomString.make(128);
+  private static final String JSON_VARIABLES = "{\"foo\":\"bar\"}";
+  private static final byte[] VARIABLES_MSG_PACK = MsgPackUtil.asMsgPackReturnArray(JSON_VARIABLES);
+  private static final String LONG_CUSTOM_HEADER_VALUE = RandomString.make(128);
 
   private static final String PROCESS_ID = "process";
   private static final String TASK_TYPE = "type";

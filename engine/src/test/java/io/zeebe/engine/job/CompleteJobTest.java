@@ -30,8 +30,8 @@ import io.zeebe.exporter.api.record.value.JobBatchRecordValue;
 import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.msgpack.spec.MsgPackHelper;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.RecordType;
+import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.MsgPackUtil;
@@ -42,10 +42,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class CompleteJobTest {
-  public static final String JSON_VARIABLES = "{\"foo\":\"bar\"}";
-  public static final byte[] VARIABLES_MSG_PACK = MsgPackUtil.asMsgPackReturnArray(JSON_VARIABLES);
+  private static final String JSON_VARIABLES = "{\"foo\":\"bar\"}";
+  private static final byte[] VARIABLES_MSG_PACK = MsgPackUtil.asMsgPackReturnArray(JSON_VARIABLES);
   private static final String JOB_TYPE = "foo";
-  public static final String PROCESS_ID = "process";
+  private static final String PROCESS_ID = "process";
 
   @Rule public EngineRule engineRule = new EngineRule();
 
@@ -232,7 +232,7 @@ public class CompleteJobTest {
     final Record<JobBatchRecordValue> batchRecord =
         engineRule.jobs().withType(JOB_TYPE).activateAndWait();
     final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    engineRule.failJob(jobKey);
+    engineRule.job().fail(jobKey);
 
     engineRule.completeJob(
         jobKey, MsgPackUtil.asMsgPack(batchRecord.getValue().getJobs().get(0).getVariables()));
@@ -253,11 +253,7 @@ public class CompleteJobTest {
             .endEvent("end")
             .done());
 
-    final long instanceKey =
-        engineRule
-            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID))
-            .getValue()
-            .getInstanceKey();
+    final long instanceKey = engineRule.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     return jobRecords(JobIntent.CREATED)
         .withType(type)

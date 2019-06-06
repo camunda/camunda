@@ -37,7 +37,6 @@ public class JobClient {
 
   public JobClient(StreamProcessorRule environmentRule) {
     this.environmentRule = environmentRule;
-
     this.jobRecord = new JobRecord();
   }
 
@@ -61,6 +60,16 @@ public class JobClient {
     return this;
   }
 
+  public JobClient withRetries(int retries) {
+    jobRecord.setRetries(retries);
+    return this;
+  }
+
+  public JobClient withErrorMessage(String message) {
+    jobRecord.setErrorMessage(message);
+    return this;
+  }
+
   public Record<JobRecordValue> complete() {
     final boolean hasSpecificType = !jobRecord.getType().isEmpty();
 
@@ -81,7 +90,7 @@ public class JobClient {
         .getFirst();
   }
 
-  public Record<JobRecordValue> fail() {
+  public Record<JobRecordValue> failAndWait() {
     final Record<JobRecordValue> createdJob =
         RecordingExporter.jobRecords()
             .withType(jobRecord.getType())
@@ -89,13 +98,19 @@ public class JobClient {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
-    final long jobKey = createdJob.getKey();
-    final long position = environmentRule.writeCommand(jobKey, JobIntent.FAIL, jobRecord);
+    return failAndWait(createdJob.getKey());
+  }
 
-    return RecordingExporter.jobRecords()
-        .withIntent(FAILED)
+  public Record<JobRecordValue> failAndWait(long jobKey) {
+    final long position = fail(jobKey);
+
+    return RecordingExporter.jobRecords(FAILED)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .withSourceRecordPosition(position)
         .getFirst();
+  }
+
+  public long fail(long jobKey) {
+    return environmentRule.writeCommand(jobKey, JobIntent.FAIL, jobRecord);
   }
 }

@@ -101,6 +101,11 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-msgpack-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
       <artifactId>zeebe-exporter-api</artifactId>
     </dependency>
 
