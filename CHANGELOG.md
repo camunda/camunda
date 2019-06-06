@@ -1,3 +1,40 @@
+<a name="0.18.0"></a>
+## 0.18.0 (2019-06-06)
+
+
+#### Bug Fixes
+
+* **broker:**
+  *  rename port configuration ([02e3c472](https://github.com/zeebe-io/zeebe/commit/02e3c4720800c8067055efdd4b76d06786dcb007), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+  *  rename defaultLogSegmentSize to logSegmentSize in configuration ([915fd5e5](https://github.com/zeebe-io/zeebe/commit/915fd5e571b41bcf76dad801c448acf5d24ce544), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+  *  fix lost messages on rejected correlation ([cdcddd86](https://github.com/zeebe-io/zeebe/commit/cdcddd863b1d3f591839319840f9f5ca8c3bc076))
+  *  fix intermediate catch event XML order dependency ([5c25ecd1](https://github.com/zeebe-io/zeebe/commit/5c25ecd17aa55f8cc223868df59530b412f9cfca))
+  *  fix XOR gateway being dependent on element position in XML ([bdd88dc1](https://github.com/zeebe-io/zeebe/commit/bdd88dc1465d522eebb3032976eb10a85cfa9c24))
+  *  do not skip partition on job activation ([80307830](https://github.com/zeebe-io/zeebe/commit/80307830bd9e750e5a7ec82829032a9f1cbafa05))
+* **broker-core:**  close replication subscription when closing partition ([a5c6add0](https://github.com/zeebe-io/zeebe/commit/a5c6add05c35b591dad79ce9695cae3215f7090b))
+* **engine:**  fix invalid state when cancelling with job ([f990274a](https://github.com/zeebe-io/zeebe/commit/f990274af2647a6b51f52d448a3b5829824bb898))
+* **exporter-api:**  move Exporter interface to upper api package ([faac031f](https://github.com/zeebe-io/zeebe/commit/faac031f3b84557793778b504dd02699477bdf0a), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **gateway:**  fix topology response ([ea92e981](https://github.com/zeebe-io/zeebe/commit/ea92e98102e1acb1bbefce822aaa796918504e54))
+* **msgpack-core:**  fix reading empty string token ([638e0631](https://github.com/zeebe-io/zeebe/commit/638e0631514160bdc74b280f61ac3c2cf44aca75))
+* **protocol:**  move protocol class to upper level package ([8f580c51](https://github.com/zeebe-io/zeebe/commit/8f580c51c3f70efb16f39c08fdff6ee8792e3bbf), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **qa:**  fix flaky test ([bb138bed](https://github.com/zeebe-io/zeebe/commit/bb138bedac2f5960062e42b175052e8d811b8a6c))
+
+#### Features
+
+* **broker:**  add workflow key to incident record ([73477e87](https://github.com/zeebe-io/zeebe/commit/73477e875a8575c0e9f278df92858595b4ae821f))
+* **clients/java:**  send stack trace of unhandled worker exception to Operate ([7ceea4ce](https://github.com/zeebe-io/zeebe/commit/7ceea4ce104d1421eff1965f8b36fa499c9b2305))
+* **exporter-api:**  allow exporters to throw checked exceptions in configure method ([df52c92b](https://github.com/zeebe-io/zeebe/commit/df52c92b3edeb655462e2f5bcb1253526a8d8181))
+
+#### Breaking Changes
+
+* **broker:**
+  *  rename port configuration ([02e3c472](https://github.com/zeebe-io/zeebe/commit/02e3c4720800c8067055efdd4b76d06786dcb007), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+  *  rename defaultLogSegmentSize to logSegmentSize in configuration ([915fd5e5](https://github.com/zeebe-io/zeebe/commit/915fd5e571b41bcf76dad801c448acf5d24ce544), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **exporter-api:**  move Exporter interface to upper api package ([faac031f](https://github.com/zeebe-io/zeebe/commit/faac031f3b84557793778b504dd02699477bdf0a), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **protocol:**  move protocol class to upper level package ([8f580c51](https://github.com/zeebe-io/zeebe/commit/8f580c51c3f70efb16f39c08fdff6ee8792e3bbf), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+
+
+
 <a name="0.17.0"></a>
 ## 0.17.0 (2019-04-02)
 
