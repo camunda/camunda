@@ -6,9 +6,9 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-import EmptyIncidents from './EmptyIncidents';
+import EmptyIncidents from './EmptyPanel';
 
-describe('EmptyIncidents', () => {
+describe('EmptyPanel', () => {
   it('should display a warning message', () => {
     const node = shallow(<EmptyIncidents label="someLabel" type="warning" />);
     expect(node).toMatchSnapshot();

@@ -9,21 +9,18 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 import {ReactComponent as Check} from 'modules/components/Icon/check.svg';
 import {ReactComponent as Warning} from 'modules/components/Icon/warning-message-icon.svg';
 
-export const EmptyIncidents = themed(styled.div`
-  margin-left: -4px;
-  margin-top: -4px;
-  position: absolute;
-  height: 100%;
-  width: 100%;
+export const EmptyPanel = themed(styled.div`
   display: flex;
   justify-content: center;
+  height: 100%;
+  width: 100%;
+
   border-width: 1px;
   border-style: solid;
   border-color: ${themeStyle({
     dark: Colors.uiDark04,
     light: Colors.uiLight05
   })};
-  padding-top: 210px;
 `);
 
 const errorStyle = css`

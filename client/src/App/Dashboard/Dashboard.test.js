@@ -23,8 +23,9 @@ import Dashboard from './Dashboard';
 import Header from '../Header';
 import MetricPanel from './MetricPanel';
 import InstancesByWorkflow from './InstancesByWorkflow';
-import EmptyIncidents from './EmptyIncidents';
+import EmptyPanel from 'modules/components/EmptyPanel';
 import IncidentsByError from './IncidentsByError';
+import * as Styled from './styled';
 
 const mockInstancesByWorkflow = {
   data: createInstancesByWorkflow()
@@ -110,12 +111,12 @@ describe('Dashboard', () => {
       await mockApi({InstancesByWorkflow: {data: [], error: 'fetchError'}});
       const node = await shallowRenderDashboard();
 
-      const EmptyIncidentsNode = node
+      const EmptyPanelNode = node
         .find('[data-test="instances-byWorkflow"]')
-        .find(EmptyIncidents);
+        .find(Styled.EmptyIncidentsPanel);
 
-      expect(EmptyIncidentsNode).toExist();
-      expect(EmptyIncidentsNode.dive().text()).toContain(
+      expect(EmptyPanelNode).toExist();
+      expect(EmptyPanelNode.props().label).toBe(
         'Instances by Workflow could not be fetched.'
       );
     });
@@ -124,12 +125,12 @@ describe('Dashboard', () => {
       await mockApi({InstancesByWorkflow: {data: [], error: null}});
       const node = await shallowRenderDashboard();
 
-      const EmptyIncidentsNode = node
+      const EmptyPanelNode = node
         .find('[data-test="instances-byWorkflow"]')
-        .find(EmptyIncidents);
+        .find(Styled.EmptyIncidentsPanel);
 
-      expect(EmptyIncidentsNode).toExist();
-      expect(EmptyIncidentsNode.dive().text()).toBe('There are no Workflows.');
+      expect(EmptyPanelNode).toExist();
+      expect(EmptyPanelNode.props().label).toBe('There are no Workflows.');
     });
   });
 
@@ -146,12 +147,12 @@ describe('Dashboard', () => {
       await mockApi({incidentsByError: {data: [], error: 'fetchError'}});
       const node = await shallowRenderDashboard();
 
-      const EmptyIncidentsNode = node
+      const EmptyPanelNode = node
         .find('[data-test="incidents-byError"]')
-        .find(EmptyIncidents);
+        .find(Styled.EmptyIncidentsPanel);
 
-      expect(EmptyIncidentsNode).toExist();
-      expect(EmptyIncidentsNode.dive().text()).toContain(
+      expect(EmptyPanelNode).toExist();
+      expect(EmptyPanelNode.dive().props().label).toBe(
         'Incidents by Error Message could not be fetched.'
       );
     });
@@ -160,12 +161,12 @@ describe('Dashboard', () => {
       await mockApi({incidentsByError: {data: [], error: null}});
       const node = await shallowRenderDashboard();
 
-      const EmptyIncidentsNode = node
+      const EmptyPanelNode = node
         .find('[data-test="incidents-byError"]')
-        .find(EmptyIncidents);
+        .find(Styled.EmptyIncidentsPanel);
 
-      expect(EmptyIncidentsNode).toExist();
-      expect(EmptyIncidentsNode.dive().text()).toBe(
+      expect(EmptyPanelNode).toExist();
+      expect(EmptyPanelNode.dive().props().label).toBe(
         'There are no Instances with Incident.'
       );
     });

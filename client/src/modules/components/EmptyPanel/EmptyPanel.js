@@ -8,18 +8,18 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import * as Styled from './styled';
 
-function EmptyIncidents({type, label}) {
+function EmptyPanel({type, label, ...props}) {
   return (
-    <Styled.EmptyIncidents>
+    <Styled.EmptyPanel {...props}>
       {type === 'warning' && <Styled.WarningIcon />}
       <Styled.Label type={type}>{label}</Styled.Label>
-    </Styled.EmptyIncidents>
+    </Styled.EmptyPanel>
   );
 }
 
-EmptyIncidents.propTypes = {
+EmptyPanel.propTypes = {
   label: PropTypes.string,
   type: PropTypes.oneOf(['info', 'warning'])
 };
 
-export default EmptyIncidents;
+export default EmptyPanel;

@@ -5,33 +5,15 @@
  */
 
 import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
 import BaseInstancesBar from 'modules/components/InstancesBar';
 import {Link} from 'react-router-dom';
 
-export const Panel = themed(styled.div`
+export const Panel = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 16px 104px 41px 104px;
-
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.9)',
-    light: Colors.uiLight06
-  })};
-
-  border-radius: 3px;
-  border: solid 1px
-    ${themeStyle({dark: Colors.uiDark04, light: Colors.uiLight05})};
-  background-color: ${themeStyle({
-    dark: Colors.uiDark02,
-    light: Colors.uiLight04
-  })};
-  box-shadow: ${themeStyle({
-    dark: '0 3px 6px 0 #000000',
-    light: '0 2px 3px 0 rgba(0, 0, 0, 0.1)'
-  })};
-`);
+`;
 
 export const InstancesBar = styled(BaseInstancesBar)`
   align-self: stretch;

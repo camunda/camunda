@@ -12,7 +12,6 @@ import Header from '../Header';
 import MetricPanel from './MetricPanel';
 import InstancesByWorkflow from './InstancesByWorkflow';
 import IncidentsByError from './IncidentsByError';
-import EmptyIncidents from './EmptyIncidents';
 import {fetchWorkflowCoreStatistics} from 'modules/api/instances';
 import {
   fetchInstancesByWorkflow,
@@ -45,6 +44,7 @@ class Dashboard extends Component {
     document.title = PAGE_TITLE.DASHBOARD;
     const counts = await fetchWorkflowCoreStatistics();
     const incidents = await this.fetchIncidents();
+
     this.setState({counts, incidents, isDataLoaded: true});
   };
 
@@ -67,11 +67,11 @@ class Dashboard extends Component {
         : 'There are no Instances with Incident.';
 
     if (incidentsState.error) {
-      return <EmptyIncidents type="warning" label={errorMessage} />;
+      return <Styled.EmptyIncidentsPanel type="warning" label={errorMessage} />;
     }
 
     if (incidentsState.data && incidentsState.data.length === 0) {
-      return <EmptyIncidents type="info" label={emptyMessage} />;
+      return <Styled.EmptyIncidentsPanel type="info" label={emptyMessage} />;
     }
   };
 
@@ -87,7 +87,8 @@ class Dashboard extends Component {
     const {
       incidents: {byWorkflow, byError},
       counts: {
-        data: {active, running, withIncidents}
+        data: {active, running, withIncidents},
+        error: countsError
       }
     } = this.state;
 
@@ -95,17 +96,28 @@ class Dashboard extends Component {
       <Fragment>
         <Header
           active="dashboard"
-          runningInstancesCount={running}
-          activeInstancesCount={active}
-          incidentsCount={withIncidents}
+          runningInstancesCount={running || 0}
+          activeInstancesCount={active || 0}
+          incidentsCount={withIncidents || 0}
         />
         <Styled.Dashboard>
           <VisuallyHiddenH1>Camunda Operate Dashboard</VisuallyHiddenH1>
-          <MetricPanel
-            runningInstancesCount={running}
-            activeInstancesCount={active}
-            incidentsCount={withIncidents}
-          />
+          <Styled.MetricPanelWrapper>
+            {countsError ? (
+              <Styled.EmptyMetricPanelWrapper>
+                <Styled.EmptyMetricPanel
+                  label="Workflow statistics could not be fetched."
+                  type="warning"
+                />
+              </Styled.EmptyMetricPanelWrapper>
+            ) : (
+              <MetricPanel
+                runningInstancesCount={running}
+                activeInstancesCount={active}
+                incidentsCount={withIncidents}
+              />
+            )}
+          </Styled.MetricPanelWrapper>
           <Styled.TitleWrapper>
             <Styled.Tile data-test="instances-byWorkflow">
               <Styled.TileTitle>Instances by Workflow</Styled.TileTitle>

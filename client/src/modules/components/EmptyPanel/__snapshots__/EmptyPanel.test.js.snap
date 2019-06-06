@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`EmptyIncidents should display a success message 1`] = `
+exports[`EmptyPanel should display a success message 1`] = `
 <Themed(styled.div)>
   <Themed(styled.span)
     type="info"
@@ -10,7 +10,7 @@ exports[`EmptyIncidents should display a success message 1`] = `
 </Themed(styled.div)>
 `;
 
-exports[`EmptyIncidents should display a warning message 1`] = `
+exports[`EmptyPanel should display a warning message 1`] = `
 <Themed(styled.div)>
   <Styled(ReactComponent) />
   <Themed(styled.span)
