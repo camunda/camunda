@@ -55,6 +55,14 @@ a img {
   top: 2px;
 }
 
+.alert a {
+  color: #00a8ff;
+}
+
+.alert a:hover {
+  text-decoration: underline;
+}
+
 .site-wrap {
   padding: 36px 20px 0px 20px;
   flex-grow: 1;
