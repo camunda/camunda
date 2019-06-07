@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,19 +15,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.engine;
+package io.zeebe.engine.processor.workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
-import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
-import io.zeebe.test.broker.protocol.commandapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -38,10 +36,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -49,19 +45,9 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class BpmnElementTypeTest {
 
-  public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public static CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
+  @ClassRule public static final EngineRule ENGINE = new EngineRule();
 
-  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
-
-  private static PartitionTestClient testClient;
-
-  @BeforeClass
-  public static void init() {
-    testClient = apiRule.partitionClient();
-  }
-
-  private static List<BpmnElementTypeScenario> scenarios =
+  private static final List<BpmnElementTypeScenario> SCENARIOS =
       Arrays.asList(
           new BpmnElementTypeScenario("Process", BpmnElementType.PROCESS) {
             @Override
@@ -102,13 +88,13 @@ public class BpmnElementTypeTest {
             }
 
             @Override
-            public void executeInstance() {
+            public void test() {
               // wait for message subscription for the start event to be opened
               RecordingExporter.messageStartEventSubscriptionRecords(
                       MessageStartEventSubscriptionIntent.OPENED)
                   .getFirst();
 
-              testClient.publishMessage(messageName(), "");
+              ENGINE.message().withName(messageName()).withCorrelationKey("").publish();
             }
           },
           new BpmnElementTypeScenario("Timer Start Event", BpmnElementType.START_EVENT) {
@@ -121,8 +107,8 @@ public class BpmnElementTypeTest {
             }
 
             @Override
-            void executeInstance() {
-              brokerRule.getClock().addTime(Duration.ofMinutes(1));
+            void test() {
+              ENGINE.increaseTime(Duration.ofMinutes(1));
             }
           },
           new BpmnElementTypeScenario(
@@ -137,9 +123,9 @@ public class BpmnElementTypeTest {
             }
 
             @Override
-            void executeInstance() {
+            void test() {
               super.executeInstance(Collections.singletonMap("id", "test"));
-              testClient.publishMessage(messageName(), "test");
+              ENGINE.message().withName(messageName()).withCorrelationKey("test").publish();
             }
           },
           new BpmnElementTypeScenario(
@@ -184,9 +170,9 @@ public class BpmnElementTypeTest {
             }
 
             @Override
-            void executeInstance() {
+            void test() {
               super.executeInstance(Collections.singletonMap("id", "test"));
-              testClient.publishMessage(messageName(), "test");
+              ENGINE.message().withName(messageName()).withCorrelationKey("test").publish();
             }
           },
           new BpmnElementTypeScenario("Timer Boundary Event", BpmnElementType.BOUNDARY_EVENT) {
@@ -220,9 +206,9 @@ public class BpmnElementTypeTest {
             }
 
             @Override
-            void executeInstance() {
-              super.executeInstance();
-              testClient.completeJobOfType(taskType());
+            void test() {
+              final long workflowInstanceKey = super.executeInstance();
+              ENGINE.job().ofInstance(workflowInstanceKey).withType(taskType()).complete();
             }
           },
           new BpmnElementTypeScenario("Receive Task", BpmnElementType.RECEIVE_TASK) {
@@ -236,9 +222,9 @@ public class BpmnElementTypeTest {
             }
 
             @Override
-            void executeInstance() {
+            void test() {
               executeInstance(Collections.singletonMap("id", "test"));
-              testClient.publishMessage(messageName(), "test");
+              ENGINE.message().withName(messageName()).withCorrelationKey("test").publish();
             }
           },
           new BpmnElementTypeScenario("Exclusive Gateway", BpmnElementType.EXCLUSIVE_GATEWAY) {
@@ -283,9 +269,9 @@ public class BpmnElementTypeTest {
             }
 
             @Override
-            void executeInstance() {
+            void test() {
               executeInstance(Collections.singletonMap("id", "test"));
-              testClient.publishMessage(messageName(), "test");
+              ENGINE.message().withName(messageName()).withCorrelationKey("test").publish();
             }
           },
           new BpmnElementTypeScenario("Parallel Gateway", BpmnElementType.PARALLEL_GATEWAY) {
@@ -311,7 +297,7 @@ public class BpmnElementTypeTest {
 
   @Parameters(name = "{0}")
   public static Collection<Object[]> scenarios() {
-    return scenarios.stream().map(s -> new Object[] {s}).collect(Collectors.toList());
+    return SCENARIOS.stream().map(s -> new Object[] {s}).collect(Collectors.toList());
   }
 
   private final BpmnElementTypeScenario scenario;
@@ -323,10 +309,10 @@ public class BpmnElementTypeTest {
   @Test
   public void test() {
     // given
-    testClient.deploy(scenario.modelInstance());
+    ENGINE.deploy(scenario.modelInstance());
 
     // when
-    scenario.executeInstance();
+    scenario.test();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> records =
@@ -382,18 +368,22 @@ public class BpmnElementTypeTest {
       return elementType;
     }
 
-    void executeInstance() {
-      testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId()));
+    void test() {
+      executeInstance();
     }
 
-    void executeInstance(Map<String, String> variables) {
+    long executeInstance() {
+      return ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId(processId()));
+    }
+
+    long executeInstance(Map<String, String> variables) {
       final String json =
           "{ "
               + variables.entrySet().stream()
                   .map(e -> String.format("\"%s\":\"%s\"", e.getKey(), e.getValue()))
                   .collect(Collectors.joining(","))
               + " }";
-      testClient.createWorkflowInstance(
+      return ENGINE.createWorkflowInstance(
           r -> r.setBpmnProcessId(processId()).setVariables(MsgPackUtil.asMsgPack(json)));
     }
 

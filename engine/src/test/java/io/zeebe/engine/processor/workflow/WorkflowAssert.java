@@ -39,7 +39,7 @@ public class WorkflowAssert {
       String elementId,
       Record<WorkflowInstanceRecordValue> workflowInstanceCanceledEvent) {
     Assertions.assertThat(workflowInstanceCanceledEvent.getValue())
-        .hasBpmnProcessId(PROCESS_ID)
+        .hasBpmnProcessId(elementId)
         .hasVersion(1)
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId(elementId);
