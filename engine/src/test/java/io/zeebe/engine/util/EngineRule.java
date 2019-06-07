@@ -18,7 +18,6 @@
 package io.zeebe.engine.util;
 
 import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,12 +33,10 @@ import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -139,34 +136,12 @@ public class EngineRule extends ExternalResource {
     environmentRule.getClock().addTime(duration);
   }
 
+  public DeploymentClient deployment() {
+    return new DeploymentClient(environmentRule, this::forEachPartition);
+  }
+
   public Record<DeploymentRecordValue> deploy(final BpmnModelInstance modelInstance) {
-    final DeploymentRecord deploymentRecord = new DeploymentRecord();
-    deploymentRecord
-        .resources()
-        .add()
-        .setResourceName(wrapString("process.bpmn"))
-        .setResource(wrapString(Bpmn.convertToString(modelInstance)))
-        .setResourceType(ResourceType.BPMN_XML);
-
-    final long position = environmentRule.writeCommand(DeploymentIntent.CREATE, deploymentRecord);
-
-    final Record<DeploymentRecordValue> deploymentOnPartitionOne =
-        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
-            .withSourceRecordPosition(position)
-            .withPartitionId(PARTITION_ID)
-            .getFirst();
-
-    forEachPartition(
-        partitionId ->
-            RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
-                .withPartitionId(partitionId)
-                .withRecordKey(deploymentOnPartitionOne.getKey())
-                .getFirst());
-
-    return RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
-        .withPartitionId(PARTITION_ID)
-        .withRecordKey(deploymentOnPartitionOne.getKey())
-        .getFirst();
+    return deployment().withXmlResource(modelInstance).deploy();
   }
 
   public long createWorkflowInstance(
@@ -190,17 +165,25 @@ public class EngineRule extends ExternalResource {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
-    environmentRule.writeCommandOnPartition(
-        instanceRecord.getMetadata().getPartitionId(),
-        workflowInstanceKey,
-        WorkflowInstanceIntent.CANCEL,
-        new WorkflowInstanceRecord().setWorkflowInstanceKey(workflowInstanceKey));
+    writeCancelCommand(instanceRecord.getMetadata().getPartitionId(), workflowInstanceKey);
 
     return RecordingExporter.workflowInstanceRecords()
         .withRecordKey(workflowInstanceKey)
         .withIntent(WorkflowInstanceIntent.ELEMENT_TERMINATED)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .getFirst();
+  }
+
+  public void writeCancelCommand(int partition, long workflowInstanceKey) {
+    environmentRule.writeCommandOnPartition(
+        partition,
+        workflowInstanceKey,
+        WorkflowInstanceIntent.CANCEL,
+        new WorkflowInstanceRecord().setWorkflowInstanceKey(workflowInstanceKey));
+  }
+
+  public WorkflowInstanceClient workflowInstance() {
+    return new WorkflowInstanceClient(environmentRule);
   }
 
   public PublishMessageClient message() {
@@ -223,6 +206,10 @@ public class EngineRule extends ExternalResource {
 
   public JobClient job() {
     return new JobClient(environmentRule);
+  }
+
+  public IncidentClient incident() {
+    return new IncidentClient(environmentRule);
   }
 
   private class DeploymentDistributionImpl implements DeploymentDistributor {
