@@ -17,11 +17,9 @@
  */
 package io.zeebe.engine.processor.workflow.message;
 
-import static io.zeebe.engine.processor.workflow.WorkflowAssert.assertMessageSubscription;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.engine.processor.workflow.WorkflowAssert;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
@@ -188,8 +186,11 @@ public class MessageCatchElementTest {
         .isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
     assertThat(messageSubscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
 
-    assertMessageSubscription(
-        workflowInstanceKey, correlationKey, catchEventEntered, messageSubscription);
+    Assertions.assertThat(messageSubscription.getValue())
+        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasElementInstanceKey(catchEventEntered.getKey())
+        .hasMessageName("order canceled")
+        .hasCorrelationKey(correlationKey);
   }
 
   @Test
@@ -205,8 +206,12 @@ public class MessageCatchElementTest {
     assertThat(workflowInstanceSubscription.getMetadata().getRecordType())
         .isEqualTo(RecordType.EVENT);
 
-    WorkflowAssert.assertWorkflowSubscription(
-        workflowInstanceKey, catchEventEntered, workflowInstanceSubscription);
+    Assertions.assertThat(workflowInstanceSubscription.getValue())
+        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasElementInstanceKey(catchEventEntered.getKey())
+        .hasMessageName("order canceled");
+
+    assertThat(workflowInstanceSubscription.getValue().getVariables()).isEqualTo("{}");
   }
 
   @Test
@@ -231,8 +236,12 @@ public class MessageCatchElementTest {
         .isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
     assertThat(subscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
 
-    WorkflowAssert.assertWorkflowSubscription(
-        workflowInstanceKey, "{\"foo\":\"bar\"}", catchEventEntered, subscription);
+    Assertions.assertThat(subscription.getValue())
+        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasElementInstanceKey(catchEventEntered.getKey())
+        .hasMessageName("order canceled");
+
+    assertThat(subscription.getValue().getVariables()).isEqualTo("{\"foo\":\"bar\"}");
   }
 
   @Test
@@ -256,7 +265,11 @@ public class MessageCatchElementTest {
     assertThat(subscription.getMetadata().getValueType()).isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
     assertThat(subscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
 
-    assertMessageSubscription(workflowInstanceKey, catchEventEntered, subscription);
+    Assertions.assertThat(subscription.getValue())
+        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasElementInstanceKey(catchEventEntered.getKey())
+        .hasMessageName("order canceled")
+        .hasCorrelationKey("");
   }
 
   @Test
