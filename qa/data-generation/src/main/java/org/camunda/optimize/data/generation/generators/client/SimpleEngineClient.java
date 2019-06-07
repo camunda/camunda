@@ -63,6 +63,7 @@ public class SimpleEngineClient {
   private static final String ENGINE_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
   // @formatter:on
   private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(ENGINE_DATE_FORMAT);
+  private static final int MAX_CONNECTIONS = 100;
 
   private CloseableHttpClient client;
   private String engineRestEndpoint;
@@ -71,7 +72,10 @@ public class SimpleEngineClient {
 
   public SimpleEngineClient(String engineRestEndpoint) {
     this.engineRestEndpoint = engineRestEndpoint;
-    client = HttpClientBuilder.create().build();
+    client = HttpClientBuilder.create()
+      .setMaxConnPerRoute(MAX_CONNECTIONS)
+      .setMaxConnTotal(MAX_CONNECTIONS)
+      .build();
     objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     SimpleDateFormat df = new SimpleDateFormat(ENGINE_DATE_FORMAT);
     objectMapper.setDateFormat(df);
