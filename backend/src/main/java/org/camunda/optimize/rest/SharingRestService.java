@@ -117,7 +117,7 @@ public class SharingRestService {
   @GET
   @Path("/report/{shareId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
-  public EvaluationResultDto<?, ?> evaluateReport(@PathParam("shareId") String reportShareId) {
+  public EvaluationResultDto evaluateReport(@PathParam("shareId") String reportShareId) {
     return ReportEvaluationResultMapper.mapToEvaluationResultDto(
       sharingService.evaluateReportShare(reportShareId)
     );
@@ -126,7 +126,7 @@ public class SharingRestService {
   @GET
   @Path("/dashboard/{shareId}/report/{reportId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
-  public EvaluationResultDto<?, ?> evaluateReport(
+  public EvaluationResultDto evaluateReport(
     @PathParam("shareId") String dashboardShareId,
     @PathParam("reportId") String reportId
   ) {

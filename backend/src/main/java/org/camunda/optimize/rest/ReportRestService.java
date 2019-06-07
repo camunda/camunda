@@ -207,10 +207,10 @@ public class ReportRestService {
   @Path("/{id}/evaluate")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public EvaluationResultDto<?, ?> evaluateReportById(@Context ContainerRequestContext requestContext,
-                                                      @PathParam("id") String reportId) {
+  public EvaluationResultDto evaluateReportById(@Context ContainerRequestContext requestContext,
+                                                @PathParam("id") String reportId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final ReportEvaluationResult<?, ?> reportEvaluationResult = reportService.evaluateSavedReport(userId, reportId);
+    final ReportEvaluationResult reportEvaluationResult = reportService.evaluateSavedReport(userId, reportId);
     return ReportEvaluationResultMapper.mapToEvaluationResultDto(reportEvaluationResult);
   }
 
@@ -223,11 +223,11 @@ public class ReportRestService {
   @Path("/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public EvaluationResultDto<?, ?> evaluateProvidedReport(@Context ContainerRequestContext requestContext,
-                                                          @NotNull ReportDefinitionDto reportDefinitionDto) {
+  public EvaluationResultDto evaluateProvidedReport(@Context ContainerRequestContext requestContext,
+                                                    @NotNull ReportDefinitionDto reportDefinitionDto) {
 
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final ReportEvaluationResult<?, ?> reportEvaluationResult = reportService.evaluateReport(
+    final ReportEvaluationResult reportEvaluationResult = reportService.evaluateReport(
       userId,
       reportDefinitionDto
     );
