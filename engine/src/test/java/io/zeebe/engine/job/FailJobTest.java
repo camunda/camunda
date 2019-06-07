@@ -243,7 +243,10 @@ public class FailJobTest {
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
-    engineRule.completeJob(jobKey, MsgPackUtil.asMsgPack(job.getVariables()));
+    engineRule
+        .job()
+        .withVariables(MsgPackUtil.asMsgPack(job.getVariables()))
+        .completeAndWait(jobKey);
 
     // when
     final long position = engineRule.job().withRetries(3).fail(jobKey);

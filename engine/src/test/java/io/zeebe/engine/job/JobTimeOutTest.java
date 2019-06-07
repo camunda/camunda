@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,58 +15,50 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.engine.job;
+package io.zeebe.engine.job;
 
 import static io.zeebe.protocol.intent.JobIntent.ACTIVATED;
 import static io.zeebe.protocol.intent.JobIntent.COMPLETED;
 import static io.zeebe.protocol.intent.JobIntent.FAILED;
 import static io.zeebe.protocol.intent.JobIntent.TIME_OUT;
+import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.engine.processor.workflow.job.JobTimeoutTrigger;
+import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.RecordMetadata;
+import io.zeebe.exporter.api.record.value.JobBatchRecordValue;
 import io.zeebe.exporter.api.record.value.JobRecordValue;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
-import io.zeebe.test.broker.protocol.commandapi.PartitionTestClient;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 public class JobTimeOutTest {
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
+  private static final String PROCESS_ID = "process";
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
-  private PartitionTestClient client;
-
-  @Before
-  public void setup() {
-    client = apiRule.partitionClient();
-  }
+  @Rule public EngineRule engineRule = new EngineRule();
 
   @Test
   public void shouldNotTimeOutIfDeadlineNotExceeded() {
     // given
-    brokerRule.getClock().pinCurrentTime();
+    engineRule.getClock().pinCurrentTime();
     final Duration timeout = Duration.ofSeconds(60);
     final String jobType = "jobType";
 
     createJob(jobType);
 
-    apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout.toMillis()).await();
-    client.receiveFirstJobEvent(ACTIVATED);
+    engineRule.jobs().withType(jobType).withTimeout(timeout.toMillis()).activate();
+    jobRecords(ACTIVATED).getFirst();
 
     // when
-    brokerRule.getClock().addTime(timeout.minus(Duration.ofSeconds(1)));
+    engineRule.getClock().addTime(timeout.minus(Duration.ofSeconds(1)));
 
     // then
     assertNoMoreJobsReceived(ACTIVATED);
@@ -75,18 +67,18 @@ public class JobTimeOutTest {
   @Test
   public void shouldNotTimeOutIfJobCompleted() {
     // given
-    brokerRule.getClock().pinCurrentTime();
+    engineRule.getClock().pinCurrentTime();
     final Duration timeout = Duration.ofSeconds(60);
     final String jobType = "jobType";
 
     createJob(jobType);
 
-    apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout.toMillis()).await();
-    final Record activatedJob = client.receiveFirstJobEvent(ACTIVATED);
-    client.completeJob(activatedJob.getKey(), "{}");
+    final Record<JobBatchRecordValue> batchRecord =
+        engineRule.jobs().withType(jobType).withTimeout(timeout.toMillis()).activateAndWait();
+    engineRule.job().withVariables("{}").complete(batchRecord.getValue().getJobKeys().get(0));
 
     // when
-    brokerRule.getClock().addTime(timeout.plus(Duration.ofSeconds(1)));
+    engineRule.getClock().addTime(timeout.plus(Duration.ofSeconds(1)));
 
     // then
     assertNoMoreJobsReceived(COMPLETED);
@@ -95,18 +87,20 @@ public class JobTimeOutTest {
   @Test
   public void shouldNotTimeOutIfJobFailed() {
     // given
-    brokerRule.getClock().pinCurrentTime();
+    engineRule.getClock().pinCurrentTime();
     final Duration timeout = Duration.ofSeconds(60);
     final String jobType = "jobType";
 
     createJob(jobType);
 
-    apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout.toMillis()).await();
-    final Record activatedJob = client.receiveFirstJobEvent(ACTIVATED);
-    client.failJob(activatedJob.getKey(), 0);
+    final Record<JobBatchRecordValue> batchRecord =
+        engineRule.jobs().withType(jobType).withTimeout(timeout.toMillis()).activateAndWait();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    engineRule.job().withRetries(0).fail(jobKey);
 
     // when
-    brokerRule.getClock().addTime(timeout.plus(Duration.ofSeconds(1)));
+    engineRule.getClock().addTime(timeout.plus(Duration.ofSeconds(1)));
 
     // then
     assertNoMoreJobsReceived(FAILED);
@@ -119,19 +113,18 @@ public class JobTimeOutTest {
     final long jobKey1 = createJob(jobType);
     final long timeout = 10L;
 
-    apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout);
-    client.receiveFirstJobEvent(ACTIVATED);
-    brokerRule.getClock().addTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    engineRule.jobs().withType(jobType).withTimeout(timeout).activateAndWait();
+    engineRule.getClock().addTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
 
     // when expired
-    client.receiveFirstJobEvent(TIME_OUT);
-    apiRule.activateJobs(jobType);
+    RecordingExporter.jobRecords(TIME_OUT).getFirst();
+    engineRule.jobs().withType(jobType).activateAndWait();
 
     // then activated again
     final List<Record<JobRecordValue>> jobEvents =
-        client.receiveJobs().limit(6).collect(Collectors.toList());
+        RecordingExporter.jobRecords().limit(6).collect(Collectors.toList());
 
-    assertThat(jobEvents).extracting(e -> e.getKey()).contains(jobKey1);
+    assertThat(jobEvents).extracting(Record::getKey).contains(jobKey1);
     assertThat(jobEvents)
         .extracting(Record::getMetadata)
         .extracting(RecordMetadata::getIntent)
@@ -150,31 +143,27 @@ public class JobTimeOutTest {
     final String jobType = "foo";
     createJob(jobType);
     final long timeout = 10L;
-    apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout);
-    client.receiveFirstJobEvent(ACTIVATED);
-    brokerRule.getClock().addTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    engineRule.jobs().withType(jobType).withTimeout(timeout).activateAndWait();
+    engineRule.getClock().addTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
 
     // when expired
-    client.receiveFirstJobEvent(TIME_OUT);
-    apiRule.activateJobs(jobType);
+    RecordingExporter.jobRecords(TIME_OUT).getFirst();
+    engineRule.jobs().withType(jobType).activateAndWait();
 
     // then activated again
     final Record jobActivated =
-        client
-            .receiveJobs()
+        RecordingExporter.jobRecords()
             .skipUntil(j -> j.getMetadata().getIntent() == TIME_OUT)
             .withIntent(ACTIVATED)
             .getFirst();
 
     final Record firstActivateCommand =
-        client.receiveFirstJobBatchCommands().withIntent(JobBatchIntent.ACTIVATE).getFirst();
+        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATE).getFirst();
     assertThat(jobActivated.getSourceRecordPosition())
         .isNotEqualTo(firstActivateCommand.getPosition());
 
     final Record secondActivateCommand =
-        client
-            .receiveFirstJobBatchCommands()
-            .withIntent(JobBatchIntent.ACTIVATE)
+        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATE)
             .skipUntil(s -> s.getPosition() > firstActivateCommand.getPosition())
             .findFirst()
             .get();
@@ -191,47 +180,55 @@ public class JobTimeOutTest {
     final long jobKey2 = createJob(jobType);
     final long timeout = 10L;
 
-    apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout);
+    engineRule.jobs().withType(jobType).withTimeout(timeout).activateAndWait();
 
     // when
-    client.receiveJobs().withIntent(ACTIVATED).limit(2).count();
-    brokerRule.getClock().addTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
-    client.receiveFirstJobEvent(JobIntent.TIMED_OUT);
-    apiRule.activateJobs(jobType);
+    RecordingExporter.jobRecords(ACTIVATED).limit(2).count();
+    engineRule.getClock().addTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    RecordingExporter.jobRecords(JobIntent.TIMED_OUT).getFirst();
+    engineRule.jobs().withType(jobType).activateAndWait();
 
     // then
-    final List<Record<JobRecordValue>> activiatedEvents =
-        client
-            .receiveJobs()
-            .filter(e -> e.getMetadata().getIntent() == JobIntent.ACTIVATED)
-            .limit(4)
-            .collect(Collectors.toList());
+    final List<Record<JobRecordValue>> activatedEvents =
+        RecordingExporter.jobRecords(ACTIVATED).limit(4).collect(Collectors.toList());
 
-    assertThat(activiatedEvents)
+    assertThat(activatedEvents)
         .hasSize(4)
-        .extracting(e -> e.getKey())
+        .extracting(Record::getKey)
         .containsExactlyInAnyOrder(jobKey1, jobKey2, jobKey1, jobKey2);
 
     final List<Record<JobRecordValue>> expiredEvents =
-        client
-            .receiveJobs()
-            .filter(e -> e.getMetadata().getIntent() == JobIntent.TIMED_OUT)
-            .limit(2)
-            .collect(Collectors.toList());
+        RecordingExporter.jobRecords(JobIntent.TIMED_OUT).limit(2).collect(Collectors.toList());
 
     assertThat(expiredEvents)
-        .extracting(e -> e.getKey())
+        .extracting(Record::getKey)
         .containsExactlyInAnyOrder(jobKey1, jobKey2);
   }
 
+  //  private long createJob(final String type) {
+  //    return apiRule.partitionClient().createJob(type);
+  //  }
+
   private long createJob(final String type) {
-    return apiRule.partitionClient().createJob(type);
+    engineRule.deploy(
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent("start")
+            .serviceTask("task", b -> b.zeebeTaskType(type).done())
+            .endEvent("end")
+            .done());
+
+    final long instanceKey = engineRule.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+
+    return jobRecords(JobIntent.CREATED)
+        .withType(type)
+        .filter(r -> r.getValue().getHeaders().getWorkflowInstanceKey() == instanceKey)
+        .getFirst()
+        .getKey();
   }
 
-  private void assertNoMoreJobsReceived(Intent lastIntent) {
+  private void assertNoMoreJobsReceived(JobIntent lastIntent) {
     final long eventCount =
-        client.receiveJobs().limit(j -> j.getMetadata().getIntent() == lastIntent).count();
-
-    assertThat(client.receiveJobs().skip(eventCount).exists()).isFalse();
+        jobRecords().limit(r -> r.getMetadata().getIntent() == lastIntent).count();
+    assertThat(RecordingExporter.jobRecords().skip(eventCount).exists()).isFalse();
   }
 }

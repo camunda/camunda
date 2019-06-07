@@ -394,7 +394,10 @@ public class ActivateJobsTest {
   }
 
   private Record<JobRecordValue> completeJob(long jobKey) {
-    return engineRule.completeJobAndWait(jobKey, new UnsafeBuffer(VARIABLES_MSG_PACK));
+    return engineRule
+        .job()
+        .withVariables(new UnsafeBuffer(VARIABLES_MSG_PACK))
+        .completeAndWait(jobKey);
   }
 
   private Long activateJob(String type) {

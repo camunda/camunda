@@ -59,8 +59,10 @@ public class CompleteJobTest {
 
     // when
     final Record<JobRecordValue> jobCompletedRecord =
-        engineRule.completeJobAndWait(
-            batchRecord.getValue().getJobKeys().get(0), MsgPackConstants.MSGPACK_VARIABLES);
+        engineRule
+            .job()
+            .withVariables(MsgPackConstants.MSGPACK_VARIABLES)
+            .completeAndWait(batchRecord.getValue().getJobKeys().get(0));
 
     // then
     final RecordMetadata metadata = jobCompletedRecord.getMetadata();
@@ -82,7 +84,7 @@ public class CompleteJobTest {
     final int key = 123;
 
     // when
-    engineRule.completeJob(key, MsgPackConstants.MSGPACK_VARIABLES);
+    engineRule.job().withVariables(MsgPackConstants.MSGPACK_VARIABLES).complete(key);
     final Record<JobRecordValue> rejection =
         RecordingExporter.jobRecords(JobIntent.COMPLETE)
             .withRecordType(RecordType.COMMAND_REJECTION)
@@ -102,8 +104,10 @@ public class CompleteJobTest {
 
     // when
     final Record<JobRecordValue> completedRecord =
-        engineRule.completeJobAndWait(
-            batchRecord.getValue().getJobKeys().get(0), MsgPackConstants.MSGPACK_VARIABLES);
+        engineRule
+            .job()
+            .withVariables(MsgPackConstants.MSGPACK_VARIABLES)
+            .completeAndWait(batchRecord.getValue().getJobKeys().get(0));
 
     // then
     Assertions.assertThat(completedRecord.getMetadata())
@@ -122,8 +126,10 @@ public class CompleteJobTest {
 
     // when
     final Record<JobRecordValue> completedRecord =
-        engineRule.completeJobAndWait(
-            batchRecord.getValue().getJobKeys().get(0), new UnsafeBuffer(MsgPackHelper.NIL));
+        engineRule
+            .job()
+            .withVariables(new UnsafeBuffer(MsgPackHelper.NIL))
+            .completeAndWait(batchRecord.getValue().getJobKeys().get(0));
 
     // then
     Assertions.assertThat(completedRecord.getMetadata())
@@ -142,8 +148,10 @@ public class CompleteJobTest {
 
     // when
     final Record<JobRecordValue> completedRecord =
-        engineRule.completeJobAndWait(
-            batchRecord.getValue().getJobKeys().get(0), new UnsafeBuffer(new byte[0]));
+        engineRule
+            .job()
+            .withVariables(new UnsafeBuffer(new byte[0]))
+            .completeAndWait(batchRecord.getValue().getJobKeys().get(0));
 
     // then
     Assertions.assertThat(completedRecord.getMetadata())
@@ -164,7 +172,7 @@ public class CompleteJobTest {
     // when
     final DirectBuffer variables = MsgPackUtil.asMsgPack(activated.getValue().getVariables());
     final Record<JobRecordValue> completedRecord =
-        engineRule.completeJobAndWait(activated.getKey(), variables);
+        engineRule.job().withVariables(variables).completeAndWait(activated.getKey());
 
     // then
     Assertions.assertThat(completedRecord.getMetadata())
@@ -187,9 +195,10 @@ public class CompleteJobTest {
     final Throwable throwable =
         catchThrowable(
             () ->
-                engineRule.completeJob(
-                    batchRecord.getValue().getJobKeys().get(0),
-                    new UnsafeBuffer(invalidVariables)));
+                engineRule
+                    .job()
+                    .withVariables(new UnsafeBuffer(invalidVariables))
+                    .complete(batchRecord.getValue().getJobKeys().get(0)));
 
     // then
     assertThat(throwable).isInstanceOf(RuntimeException.class);
@@ -208,10 +217,10 @@ public class CompleteJobTest {
     final DirectBuffer variables =
         MsgPackUtil.asMsgPack(batchRecord.getValue().getJobs().get(0).getVariables());
     final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    engineRule.completeJob(jobKey, variables);
+    engineRule.job().withVariables(variables).complete(jobKey);
 
     // when
-    engineRule.completeJob(jobKey, variables);
+    engineRule.job().withVariables(variables).complete(jobKey);
     final Record<JobRecordValue> rejection =
         RecordingExporter.jobRecords(JobIntent.COMPLETE)
             .withRecordType(RecordType.COMMAND_REJECTION)
@@ -234,8 +243,11 @@ public class CompleteJobTest {
     final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
     engineRule.job().fail(jobKey);
 
-    engineRule.completeJob(
-        jobKey, MsgPackUtil.asMsgPack(batchRecord.getValue().getJobs().get(0).getVariables()));
+    engineRule
+        .job()
+        .withVariables(
+            MsgPackUtil.asMsgPack(batchRecord.getValue().getJobs().get(0).getVariables()))
+        .complete(jobKey);
     final Record<JobRecordValue> rejection =
         jobRecords(JobIntent.COMPLETE).withRecordType(RecordType.COMMAND_REJECTION).getFirst();
 

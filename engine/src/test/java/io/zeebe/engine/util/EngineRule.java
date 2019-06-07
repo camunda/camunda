@@ -33,7 +33,6 @@ import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSen
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -45,9 +44,7 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.ReflectUtil;
@@ -191,25 +188,6 @@ public class EngineRule extends ExternalResource {
 
   public VariableClient variables() {
     return new VariableClient(environmentRule);
-  }
-
-  public long completeJob(long jobKey) {
-    final JobRecord jobRecord = new JobRecord();
-    return environmentRule.writeCommand(jobKey, JobIntent.COMPLETE, jobRecord);
-  }
-
-  public long completeJob(long jobKey, DirectBuffer variables) {
-    final JobRecord jobRecord = new JobRecord().setVariables(variables);
-    return environmentRule.writeCommand(jobKey, JobIntent.COMPLETE, jobRecord);
-  }
-
-  public Record<JobRecordValue> completeJobAndWait(long jobKey, DirectBuffer variables) {
-    final long position = completeJob(jobKey, variables);
-    return RecordingExporter.jobRecords()
-        .filter(r -> r.getPosition() > position)
-        .withRecordKey(jobKey)
-        .withIntent(JobIntent.COMPLETED)
-        .getFirst();
   }
 
   public JobActivationClient jobs() {

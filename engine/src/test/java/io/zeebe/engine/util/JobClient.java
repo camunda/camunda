@@ -80,14 +80,19 @@ public class JobClient {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
-    final long jobKey = createdJob.getKey();
-    final long position = environmentRule.writeCommand(jobKey, JobIntent.COMPLETE, jobRecord);
+    return completeAndWait(createdJob.getKey());
+  }
 
+  public Record<JobRecordValue> completeAndWait(long jobKey) {
+    final long position = complete(jobKey);
     return RecordingExporter.jobRecords()
         .withIntent(COMPLETED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
         .withSourceRecordPosition(position)
         .getFirst();
+  }
+
+  public long complete(long jobKey) {
+    return environmentRule.writeCommand(jobKey, JobIntent.COMPLETE, jobRecord);
   }
 
   public Record<JobRecordValue> failAndWait() {
