@@ -10,16 +10,12 @@ package org.camunda.optimize.service;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
-import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -83,11 +79,6 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
     return definitionsResult;
   }
 
-  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey(final String userId) {
-    Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = getKeyToProcessDefinitionMap(userId);
-    return new ArrayList<>(resultMap.values());
-  }
-
   public List<DefinitionAvailableVersionsWithTenants> getProcessDefinitionVersionsWithTenants(final String userId) {
     final List<ProcessDefinitionOptimizeDto> definitions = getFullyImportedProcessDefinitions(userId, false);
     return createDefinitionsWithAvailableVersionsAndTenants(userId, definitions);
@@ -108,28 +99,6 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
     return definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
       userId, processDefinition.getKey(), processDefinition.getTenantId(), processDefinition.getEngine()
     );
-  }
-
-  private Map<String, ProcessDefinitionGroupOptimizeDto> getKeyToProcessDefinitionMap(final String userId) {
-    final Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = new HashMap<>();
-    final List<ProcessDefinitionOptimizeDto> allDefinitions = getFullyImportedProcessDefinitions(
-      userId, false
-    );
-    for (ProcessDefinitionOptimizeDto process : allDefinitions) {
-      String key = process.getKey();
-      if (!resultMap.containsKey(key)) {
-        resultMap.put(key, constructGroup(process));
-      }
-      resultMap.get(key).getVersions().add(process);
-    }
-    resultMap.values().forEach(ProcessDefinitionGroupOptimizeDto::sort);
-    return resultMap;
-  }
-
-  private ProcessDefinitionGroupOptimizeDto constructGroup(final ProcessDefinitionOptimizeDto process) {
-    final ProcessDefinitionGroupOptimizeDto result = new ProcessDefinitionGroupOptimizeDto();
-    result.setKey(process.getKey());
-    return result;
   }
 
 }

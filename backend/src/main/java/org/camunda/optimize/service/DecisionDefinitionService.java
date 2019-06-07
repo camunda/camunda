@@ -9,17 +9,13 @@ package org.camunda.optimize.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.definition.DecisionDefinitionGroupOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -73,11 +69,6 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
     return definitionsResult;
   }
 
-  public List<DecisionDefinitionGroupOptimizeDto> getDecisionDefinitionsGroupedByKey(final String userId) {
-    Map<String, DecisionDefinitionGroupOptimizeDto> resultMap = getKeyToDecisionDefinitionMap(userId);
-    return new ArrayList<>(resultMap.values());
-  }
-
   public List<DefinitionAvailableVersionsWithTenants> getDecisionDefinitionVersionsWithTenants(final String userId) {
     final List<DecisionDefinitionOptimizeDto> definitions = getFullyImportedDecisionDefinitions(userId, false);
     return createDefinitionsWithAvailableVersionsAndTenants(userId, definitions);
@@ -98,28 +89,5 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
       userId, decisionDefinition.getKey(), decisionDefinition.getTenantId(), decisionDefinition.getEngine()
     );
   }
-
-  private Map<String, DecisionDefinitionGroupOptimizeDto> getKeyToDecisionDefinitionMap(final String userId) {
-    final Map<String, DecisionDefinitionGroupOptimizeDto> resultMap = new HashMap<>();
-    final List<DecisionDefinitionOptimizeDto> allDefinitions = getFullyImportedDecisionDefinitions(
-      userId, false
-    );
-    for (DecisionDefinitionOptimizeDto process : allDefinitions) {
-      String key = process.getKey();
-      if (!resultMap.containsKey(key)) {
-        resultMap.put(key, constructGroup(process));
-      }
-      resultMap.get(key).getVersions().add(process);
-    }
-    resultMap.values().forEach(DecisionDefinitionGroupOptimizeDto::sort);
-    return resultMap;
-  }
-
-  private DecisionDefinitionGroupOptimizeDto constructGroup(final DecisionDefinitionOptimizeDto decision) {
-    final DecisionDefinitionGroupOptimizeDto result = new DecisionDefinitionGroupOptimizeDto();
-    result.setKey(decision.getKey());
-    return result;
-  }
-
 
 }

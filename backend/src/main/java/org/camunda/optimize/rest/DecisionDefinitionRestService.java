@@ -8,7 +8,6 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.definition.DecisionDefinitionGroupOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.camunda.optimize.rest.mapper.DefinitionVersionsWithTenantsMapper;
 import org.camunda.optimize.rest.providers.CacheRequest;
@@ -50,19 +49,6 @@ public class DecisionDefinitionRestService {
                                                                           @QueryParam("includeXml") boolean includeXml) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return decisionDefinitionService.getFullyImportedDecisionDefinitions(userId, includeXml);
-  }
-
-  /**
-   * Retrieves all decision definition stored in Optimize and groups them by key.
-   *
-   * @return A collection of grouped decision definitions.
-   */
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  @Path("/groupedByKey")
-  public List<DecisionDefinitionGroupOptimizeDto> getDecisionDefinitionsGroupedByKey(@Context ContainerRequestContext requestContext) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return decisionDefinitionService.getDecisionDefinitionsGroupedByKey(userId);
   }
 
   @GET

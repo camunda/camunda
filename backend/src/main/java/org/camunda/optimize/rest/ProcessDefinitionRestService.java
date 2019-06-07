@@ -8,7 +8,6 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.camunda.optimize.rest.mapper.DefinitionVersionsWithTenantsMapper;
 import org.camunda.optimize.rest.providers.CacheRequest;
@@ -53,20 +52,6 @@ public class ProcessDefinitionRestService {
 
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return processDefinitionService.getFullyImportedProcessDefinitions(userId, includeXml);
-  }
-
-  /**
-   * Retrieves all process definition stored in Optimize and groups them by key.
-   *
-   * @return A collection of process definitions.
-   */
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  @Path("/groupedByKey")
-  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey(
-    @Context ContainerRequestContext requestContext) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return processDefinitionService.getProcessDefinitionsGroupedByKey(userId);
   }
 
   @GET

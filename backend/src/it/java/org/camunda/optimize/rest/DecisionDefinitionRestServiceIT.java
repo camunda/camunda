@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
-import org.camunda.optimize.dto.optimize.query.definition.DecisionDefinitionGroupOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsRestDto;
@@ -23,7 +22,6 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -277,41 +275,6 @@ public class DecisionDefinitionRestServiceIT {
 
     // then
     assertThat(message, containsString("Could not find xml for decision definition with key"));
-  }
-
-  @Test
-  public void testGetDecisionDefinitionsGroupedByKey() {
-    // given
-    final String key1 = "key1";
-    final String key2 = "key2";
-    createDecisionDefinitionsForKey(key1, 11);
-    createDecisionDefinitionsForKey(key2, 2);
-
-    // when
-    List<DecisionDefinitionGroupOptimizeDto> actual = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildGetDecisionDefinitionsGroupedByKeyRequest()
-      .executeAndReturnList(DecisionDefinitionGroupOptimizeDto.class, 200);
-
-    // then
-    assertThat(actual, is(notNullValue()));
-    assertThat(actual.size(), is(2));
-    // assert that key1 comes first in list
-    actual.sort(Comparator.comparing(
-      DecisionDefinitionGroupOptimizeDto::getVersions,
-      Comparator.comparing(v -> v.get(0).getKey())
-    ));
-    DecisionDefinitionGroupOptimizeDto decisionGroup1 = actual.get(0);
-    assertThat(decisionGroup1.getKey(), is(key1));
-    assertThat(decisionGroup1.getVersions().size(), is(11));
-    assertThat(decisionGroup1.getVersions().get(0).getVersion(), is("10"));
-    assertThat(decisionGroup1.getVersions().get(1).getVersion(), is("9"));
-    assertThat(decisionGroup1.getVersions().get(2).getVersion(), is("8"));
-    DecisionDefinitionGroupOptimizeDto decisionGroup2 = actual.get(1);
-    assertThat(decisionGroup2.getKey(), is(key2));
-    assertThat(decisionGroup2.getVersions().size(), is(2));
-    assertThat(decisionGroup2.getVersions().get(0).getVersion(), is("1"));
-    assertThat(decisionGroup2.getVersions().get(1).getVersion(), is("0"));
   }
 
   @Test

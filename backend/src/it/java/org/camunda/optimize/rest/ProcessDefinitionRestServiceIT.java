@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsRestDto;
@@ -35,7 +34,6 @@ import java.io.InputStreamReader;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -358,39 +356,6 @@ public class ProcessDefinitionRestServiceIT {
       response.readEntity(BranchAnalysisDto.class);
     assertThat(actual, is(notNullValue()));
     assertThat(actual.getTotal(), is(2L));
-  }
-
-  @Test
-  public void testGetProcessDefinitionsGroupedByKey() {
-    //given
-    createProcessDefinitionsForKey("procDefKey1", 11);
-    createProcessDefinitionsForKey("procDefKey2", 2);
-
-    // when
-    List<ProcessDefinitionGroupOptimizeDto> actual = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildGetProcessDefinitionsGroupedByKeyRequest()
-      .executeAndReturnList(ProcessDefinitionGroupOptimizeDto.class, 200);
-
-    // then
-    assertThat(actual, is(notNullValue()));
-    assertThat(actual.size(), is(2));
-    // assert that procDefKey1 comes first in list
-    actual.sort(Comparator.comparing(
-      ProcessDefinitionGroupOptimizeDto::getVersions,
-      Comparator.comparing(v -> v.get(0).getKey())
-    ));
-    ProcessDefinitionGroupOptimizeDto procDefs1 = actual.get(0);
-    assertThat(procDefs1.getKey(), is("procDefKey1"));
-    assertThat(procDefs1.getVersions().size(), is(11));
-    assertThat(procDefs1.getVersions().get(0).getVersion(), is("10"));
-    assertThat(procDefs1.getVersions().get(1).getVersion(), is("9"));
-    assertThat(procDefs1.getVersions().get(2).getVersion(), is("8"));
-    ProcessDefinitionGroupOptimizeDto procDefs2 = actual.get(1);
-    assertThat(procDefs2.getKey(), is("procDefKey2"));
-    assertThat(procDefs2.getVersions().size(), is(2));
-    assertThat(procDefs2.getVersions().get(0).getVersion(), is("1"));
-    assertThat(procDefs2.getVersions().get(1).getVersion(), is("0"));
   }
 
   @Test
