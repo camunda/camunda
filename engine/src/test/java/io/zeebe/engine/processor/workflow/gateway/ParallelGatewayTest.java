@@ -69,7 +69,7 @@ public class ParallelGatewayTest {
     engine.deploy(FORK_PROCESS);
 
     // when
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> taskEvents =
@@ -90,8 +90,7 @@ public class ParallelGatewayTest {
   public void shouldCompleteScopeWhenAllPathsCompleted() {
     // given
     engine.deploy(FORK_PROCESS);
-    final long workflowInstanceKey =
-        engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    final long workflowInstanceKey = engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
     engine.job().ofInstance(workflowInstanceKey).withType("type1").complete();
 
     // when
@@ -131,7 +130,7 @@ public class ParallelGatewayTest {
     engine.deploy(process);
 
     // when
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
@@ -162,7 +161,7 @@ public class ParallelGatewayTest {
     engine.deploy(process);
 
     // when
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
@@ -199,7 +198,7 @@ public class ParallelGatewayTest {
     engine.deploy(process);
 
     // when
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
@@ -220,7 +219,7 @@ public class ParallelGatewayTest {
     engine.deploy(FORK_JOIN_PROCESS);
 
     // when
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> events =
@@ -260,8 +259,7 @@ public class ParallelGatewayTest {
 
     engine.deploy(process);
 
-    final long workflowInstanceKey =
-        engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    final long workflowInstanceKey = engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // waiting until we have signalled the first incoming sequence flow twice
     // => this should not trigger the gateway yet
@@ -311,7 +309,7 @@ public class ParallelGatewayTest {
     engine.deploy(process);
 
     // when
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> elementInstances =
@@ -342,7 +340,7 @@ public class ParallelGatewayTest {
     engine.deploy(process);
 
     // when
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> taskEvents =

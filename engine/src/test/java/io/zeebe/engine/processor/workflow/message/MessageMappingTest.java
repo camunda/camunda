@@ -127,13 +127,14 @@ public class MessageMappingTest {
   @Test
   public void shouldMergeMessageVariablesByDefault() {
     // given
-    final long workflowKey = deployWorkflowWithMapping(e -> {});
+    deployWorkflowWithMapping(e -> {});
 
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(
-            r ->
-                r.setKey(workflowKey)
-                    .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(CORRELATION_VARIABLE, correlationKey)
+            .create();
 
     // when
     ENGINE_RULE
@@ -158,13 +159,14 @@ public class MessageMappingTest {
   @Test
   public void shouldMergeMessageVariables() {
     // given
-    final long workflowKey = deployWorkflowWithMapping(e -> {});
+    deployWorkflowWithMapping(e -> {});
 
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(
-            r ->
-                r.setKey(workflowKey)
-                    .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(CORRELATION_VARIABLE, correlationKey)
+            .create();
 
     // when
     ENGINE_RULE
@@ -189,12 +191,13 @@ public class MessageMappingTest {
   @Test
   public void shouldMapMessageVariablesIntoInstanceVariables() {
     // given
-    final long workflowKey = deployWorkflowWithMapping(e -> e.zeebeOutput("foo", MESSAGE_NAME));
+    deployWorkflowWithMapping(e -> e.zeebeOutput("foo", MESSAGE_NAME));
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(
-            r ->
-                r.setKey(workflowKey)
-                    .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(CORRELATION_VARIABLE, correlationKey)
+            .create();
 
     // when
 

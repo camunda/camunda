@@ -32,7 +32,6 @@ import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSen
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
@@ -42,11 +41,7 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.ReflectUtil;
@@ -60,7 +55,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
@@ -142,44 +136,6 @@ public class EngineRule extends ExternalResource {
 
   public Record<DeploymentRecordValue> deploy(final BpmnModelInstance modelInstance) {
     return deployment().withXmlResource(modelInstance).deploy();
-  }
-
-  public long createWorkflowInstance(
-      Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> transformer) {
-    final long position =
-        environmentRule.writeCommand(
-            WorkflowInstanceCreationIntent.CREATE,
-            transformer.apply(new WorkflowInstanceCreationRecord()));
-
-    return RecordingExporter.workflowInstanceCreationRecords()
-        .withIntent(WorkflowInstanceCreationIntent.CREATED)
-        .withSourceRecordPosition(position)
-        .getFirst()
-        .getValue()
-        .getInstanceKey();
-  }
-
-  public Record<WorkflowInstanceRecordValue> cancelWorkflowInstance(long workflowInstanceKey) {
-    final Record<WorkflowInstanceRecordValue> instanceRecord =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .getFirst();
-
-    writeCancelCommand(instanceRecord.getMetadata().getPartitionId(), workflowInstanceKey);
-
-    return RecordingExporter.workflowInstanceRecords()
-        .withRecordKey(workflowInstanceKey)
-        .withIntent(WorkflowInstanceIntent.ELEMENT_TERMINATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
-        .getFirst();
-  }
-
-  public void writeCancelCommand(int partition, long workflowInstanceKey) {
-    environmentRule.writeCommandOnPartition(
-        partition,
-        workflowInstanceKey,
-        WorkflowInstanceIntent.CANCEL,
-        new WorkflowInstanceRecord().setWorkflowInstanceKey(workflowInstanceKey));
   }
 
   public WorkflowInstanceClient workflowInstance() {

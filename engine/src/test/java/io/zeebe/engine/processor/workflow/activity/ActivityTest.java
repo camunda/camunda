@@ -32,7 +32,6 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.WorkflowInstances;
 import java.util.List;
@@ -67,17 +66,18 @@ public class ActivityTest {
           .endEvent("taskEnd")
           .done();
 
-  @ClassRule public static EngineRule engine = new EngineRule();
+  @ClassRule public static final EngineRule ENGINE = new EngineRule();
 
   @Test
   public void shouldApplyInputMappingOnReady() {
     // given
-    engine.deploy(WITHOUT_BOUNDARY_EVENTS);
+    ENGINE.deploy(WITHOUT_BOUNDARY_EVENTS);
     final long workflowInstanceKey =
-        engine.createWorkflowInstance(
-            r ->
-                r.setBpmnProcessId(PROCESS_ID)
-                    .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"boo\": 2 }")));
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{ \"foo\": 1, \"boo\": 2 }")
+            .create();
 
     // when
     final Record<WorkflowInstanceRecordValue> record =
@@ -96,15 +96,16 @@ public class ActivityTest {
   @Test
   public void shouldApplyOutputMappingOnCompleting() {
     // given
-    engine.deploy(WITHOUT_BOUNDARY_EVENTS);
+    ENGINE.deploy(WITHOUT_BOUNDARY_EVENTS);
     final long workflowInstanceKey =
-        engine.createWorkflowInstance(
-            r ->
-                r.setBpmnProcessId(PROCESS_ID)
-                    .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"boo\": 2 }")));
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{ \"foo\": 1, \"boo\": 2 }")
+            .create();
 
     // when
-    engine.job().ofInstance(workflowInstanceKey).complete();
+    ENGINE.job().ofInstance(workflowInstanceKey).complete();
 
     // then
     final Record<WorkflowInstanceRecordValue> record =
@@ -121,10 +122,10 @@ public class ActivityTest {
   @Test
   public void shouldSubscribeToBoundaryEventTriggersOnReady() {
     // given
-    engine.deploy(WITH_BOUNDARY_EVENTS);
+    ENGINE.deploy(WITH_BOUNDARY_EVENTS);
 
     // when
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<RecordValue>> records =
@@ -150,12 +151,11 @@ public class ActivityTest {
   @Test
   public void shouldUnsubscribeFromBoundaryEventTriggersOnCompleting() {
     // given
-    engine.deploy(WITH_BOUNDARY_EVENTS);
-    final long workflowInstanceKey =
-        engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    ENGINE.deploy(WITH_BOUNDARY_EVENTS);
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    engine.job().ofInstance(workflowInstanceKey).complete();
+    ENGINE.job().ofInstance(workflowInstanceKey).complete();
 
     // then
     shouldUnsubscribeFromBoundaryEventTrigger(
@@ -167,9 +167,8 @@ public class ActivityTest {
   @Test
   public void shouldUnsubscribeFromBoundaryEventTriggersOnTerminating() {
     // given
-    engine.deploy(WITH_BOUNDARY_EVENTS);
-    final long workflowInstanceKey =
-        engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    ENGINE.deploy(WITH_BOUNDARY_EVENTS);
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     RecordingExporter.workflowInstanceRecords()
@@ -177,7 +176,7 @@ public class ActivityTest {
         .withIntent(ELEMENT_ACTIVATED)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .getFirst();
-    engine.cancelWorkflowInstance(workflowInstanceKey);
+    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
 
     // then
     shouldUnsubscribeFromBoundaryEventTrigger(
@@ -213,13 +212,12 @@ public class ActivityTest {
             .done();
 
     // when
-    engine.deploy(model);
-    final long workflowInstanceKey =
-        engine.createWorkflowInstance(r -> r.setBpmnProcessId("process"));
+    ENGINE.deploy(model);
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    engine.job().ofInstance(workflowInstanceKey).withType("type1").complete();
-    engine.job().ofInstance(workflowInstanceKey).withType("type2").complete();
+    ENGINE.job().ofInstance(workflowInstanceKey).withType("type1").complete();
+    ENGINE.job().ofInstance(workflowInstanceKey).withType("type2").complete();
 
     final JobRecordValue thirdJob =
         RecordingExporter.jobRecords().withType("type3").getFirst().getValue();

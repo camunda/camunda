@@ -31,7 +31,6 @@ import io.zeebe.protocol.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.intent.VariableDocumentIntent;
 import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordStream;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -57,8 +56,11 @@ public class UpdateVariableDocumentTest {
     // when
     ENGINE_RULE.deploy(process);
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(
-            r -> r.setBpmnProcessId(processId).setVariables(MsgPackUtil.asMsgPack("{'x': 1}")));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables("{'x': 1}")
+            .create();
     final Record<WorkflowInstanceRecordValue> activatedEvent = waitForActivityActivatedEvent();
     ENGINE_RULE
         .variables()

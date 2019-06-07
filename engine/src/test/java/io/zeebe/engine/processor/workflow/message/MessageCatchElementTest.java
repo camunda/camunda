@@ -169,10 +169,11 @@ public class MessageCatchElementTest {
   public void init() {
     correlationKey = UUID.randomUUID().toString();
     workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(
-            r ->
-                r.setBpmnProcessId(bpmnProcessId)
-                    .setVariables(asMsgPack("orderId", correlationKey)));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId(bpmnProcessId)
+            .withVariable("orderId", correlationKey)
+            .create();
   }
 
   @Test
@@ -269,7 +270,7 @@ public class MessageCatchElementTest {
         .await();
 
     // when
-    ENGINE_RULE.cancelWorkflowInstance(workflowInstanceKey);
+    ENGINE_RULE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
 
     // then
     final Record<MessageSubscriptionRecordValue> messageSubscription =
@@ -291,7 +292,7 @@ public class MessageCatchElementTest {
         getFirstElementRecord(enteredState);
 
     // when
-    ENGINE_RULE.cancelWorkflowInstance(workflowInstanceKey);
+    ENGINE_RULE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
 
     // then
     final Record<WorkflowInstanceSubscriptionRecordValue> subscription =

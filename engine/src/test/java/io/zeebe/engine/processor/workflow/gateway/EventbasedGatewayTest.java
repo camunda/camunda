@@ -17,7 +17,6 @@
  */
 package io.zeebe.engine.processor.workflow.gateway;
 
-import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -118,10 +117,11 @@ public class EventbasedGatewayTest {
   public void testLifecycle() {
     // given
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r1 ->
-                r1.setBpmnProcessId("WORKFLOW_WITH_TIMERS")
-                    .setVariables(asMsgPack("key", "testLifecycle")));
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId("WORKFLOW_WITH_TIMERS")
+            .withVariable("key", "testLifecycle")
+            .create();
 
     // when
     assertThat(
@@ -167,7 +167,7 @@ public class EventbasedGatewayTest {
 
     // when
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("WORKFLOW_WITH_TIMERS"));
+        ENGINE.workflowInstance().ofBpmnProcessId("WORKFLOW_WITH_TIMERS").create();
 
     // then
     final Record<WorkflowInstanceRecordValue> gatewayEvent =
@@ -195,10 +195,11 @@ public class EventbasedGatewayTest {
 
     // when
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r1 ->
-                r1.setBpmnProcessId("WORKFLOW_WITH_MESSAGES")
-                    .setVariables(asMsgPack("key", "shouldOpenWorkflowInstanceSubscriptions")));
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId("WORKFLOW_WITH_MESSAGES")
+            .withVariable("key", "shouldOpenWorkflowInstanceSubscriptions")
+            .create();
 
     // then
     final Record<WorkflowInstanceRecordValue> gatewayEvent =
@@ -224,10 +225,11 @@ public class EventbasedGatewayTest {
   public void shouldContinueWhenTimerIsTriggered() {
     // given
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r ->
-                r.setBpmnProcessId("WORKFLOW_WITH_TIMERS")
-                    .setVariables(asMsgPack("key", "shouldContinueWhenTimerIsTriggered")));
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId("WORKFLOW_WITH_TIMERS")
+            .withVariable("key", "shouldContinueWhenTimerIsTriggered")
+            .create();
 
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
@@ -258,7 +260,7 @@ public class EventbasedGatewayTest {
   public void shouldOnlyExecuteOneBranchWithEqualTimers() {
     // given
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("WORKFLOW_WITH_EQUAL_TIMERS"));
+        ENGINE.workflowInstance().ofBpmnProcessId("WORKFLOW_WITH_EQUAL_TIMERS").create();
 
     // when
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).count()).isEqualTo(2);
@@ -294,10 +296,11 @@ public class EventbasedGatewayTest {
   public void shouldContinueWhenMessageIsCorrelated() {
     // given
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r ->
-                r.setBpmnProcessId("WORKFLOW_WITH_MESSAGES")
-                    .setVariables(asMsgPack("key", "shouldContinueWhenMessageIsCorrelated")));
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId("WORKFLOW_WITH_MESSAGES")
+            .withVariable("key", "shouldContinueWhenMessageIsCorrelated")
+            .create();
 
     // when
     ENGINE
@@ -325,10 +328,11 @@ public class EventbasedGatewayTest {
   public void shouldCancelTimer() {
     // given
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r1 ->
-                r1.setBpmnProcessId("WORKFLOW_WITH_TIMERS")
-                    .setVariables(asMsgPack("key", "shouldCancelTimer")));
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId("WORKFLOW_WITH_TIMERS")
+            .withVariable("key", "shouldCancelTimer")
+            .create();
 
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
@@ -353,10 +357,11 @@ public class EventbasedGatewayTest {
   public void shouldCloseWorkflowInstanceSubscription() {
     // given
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r1 ->
-                r1.setBpmnProcessId("WORKFLOW_WITH_MESSAGES")
-                    .setVariables(asMsgPack("key", "shouldCloseWorkflowInstanceSubscription")));
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId("WORKFLOW_WITH_MESSAGES")
+            .withVariable("key", "shouldCloseWorkflowInstanceSubscription")
+            .create();
 
     // when
     ENGINE
@@ -379,11 +384,11 @@ public class EventbasedGatewayTest {
   public void shouldCancelSubscriptionsWhenScopeIsTerminated() {
     // given
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r1 ->
-                r1.setBpmnProcessId("WORKFLOW_WITH_TIMER_AND_MESSAGE")
-                    .setVariables(
-                        asMsgPack("key", "shouldCancelSubscriptionsWhenScopeIsTerminated")));
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId("WORKFLOW_WITH_TIMER_AND_MESSAGE")
+            .withVariable("key", "shouldCancelSubscriptionsWhenScopeIsTerminated")
+            .create();
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).exists()).isTrue();
     assertThat(
             RecordingExporter.workflowInstanceSubscriptionRecords(
@@ -392,7 +397,7 @@ public class EventbasedGatewayTest {
         .isTrue();
 
     // when
-    ENGINE.cancelWorkflowInstance(workflowInstanceKey);
+    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
 
     // then
     assertThat(
@@ -426,11 +431,11 @@ public class EventbasedGatewayTest {
         .withName("msg-2")
         .publish();
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r ->
-                r.setBpmnProcessId("WORKFLOW_WITH_MESSAGES")
-                    .setVariables(
-                        asMsgPack("key", "shouldOnlyExecuteOneBranchWithSimultaneousMessages")));
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId("WORKFLOW_WITH_MESSAGES")
+            .withVariable("key", "shouldOnlyExecuteOneBranchWithSimultaneousMessages")
+            .create();
 
     final List<String> messageNames =
         RecordingExporter.workflowInstanceSubscriptionRecords(

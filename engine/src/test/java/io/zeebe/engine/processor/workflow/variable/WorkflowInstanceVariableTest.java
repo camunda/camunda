@@ -28,7 +28,6 @@ import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.VariableIntent;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.BeforeClass;
@@ -61,8 +60,11 @@ public class WorkflowInstanceVariableTest {
 
     // when
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(MsgPackUtil.asMsgPack("{'x':1}")));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{'x':1}")
+            .create();
 
     // then
     final Record<VariableRecordValue> variableRecord =
@@ -80,7 +82,7 @@ public class WorkflowInstanceVariableTest {
   public void shouldCreateVariableByJobCompletion() {
     // given
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+        ENGINE_RULE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     ENGINE_RULE
@@ -118,7 +120,11 @@ public class WorkflowInstanceVariableTest {
             .get(0)
             .getWorkflowKey();
 
-    final long workflowInstanceKey = ENGINE_RULE.createWorkflowInstance(r -> r.setKey(workflowKey));
+    final long workflowInstanceKey =
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId("shouldCreateVariableByOutputMapping")
+            .create();
 
     // when
     ENGINE_RULE
@@ -145,7 +151,7 @@ public class WorkflowInstanceVariableTest {
   public void shouldCreateVariableByUpdateVariables() {
     // given
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+        ENGINE_RULE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     ENGINE_RULE
@@ -172,10 +178,11 @@ public class WorkflowInstanceVariableTest {
 
     // when
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(
-            r ->
-                r.setBpmnProcessId(PROCESS_ID)
-                    .setVariables(MsgPackUtil.asMsgPack("{'x':1, 'y':2}")));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{'x':1, 'y':2}")
+            .create();
 
     // then
     assertThat(
@@ -192,8 +199,11 @@ public class WorkflowInstanceVariableTest {
   public void shouldUpdateVariableByJobCompletion() {
     // given
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(MsgPackUtil.asMsgPack("{'x':1}")));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{'x':1}")
+            .create();
 
     // when
     ENGINE_RULE
@@ -232,8 +242,11 @@ public class WorkflowInstanceVariableTest {
             .getWorkflowKey();
 
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(
-            r -> r.setKey(workflowKey).setVariables(MsgPackUtil.asMsgPack("{'y':1}")));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId("shouldUpdateVariableByOutputMapping")
+            .withVariables("{'y':1}")
+            .create();
 
     // when
     ENGINE_RULE
@@ -259,8 +272,11 @@ public class WorkflowInstanceVariableTest {
   public void shouldUpdateVariableByUpdateVariables() {
     // given
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(MsgPackUtil.asMsgPack("{'x':1}")));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{'x':1}")
+            .create();
 
     // when
     ENGINE_RULE
@@ -285,10 +301,11 @@ public class WorkflowInstanceVariableTest {
   public void shouldUpdateMultipleVariables() {
     // given
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(
-            r ->
-                r.setBpmnProcessId(PROCESS_ID)
-                    .setVariables(MsgPackUtil.asMsgPack("{'x':1, 'y':2, 'z':3}")));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{'x':1, 'y':2, 'z':3}")
+            .create();
 
     // when
     ENGINE_RULE
@@ -313,8 +330,11 @@ public class WorkflowInstanceVariableTest {
   public void shouldCreateAndUpdateVariables() {
     // given
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(MsgPackUtil.asMsgPack("{'x':1}")));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{'x':1}")
+            .create();
 
     final Record<VariableRecordValue> variableCreated =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
@@ -350,8 +370,11 @@ public class WorkflowInstanceVariableTest {
   public void shouldHaveSameKeyOnVariableUpdate() {
     // given
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(MsgPackUtil.asMsgPack("{'x':1}")));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{'x':1}")
+            .create();
 
     final Record<VariableRecordValue> variableCreated =
         RecordingExporter.variableRecords(VariableIntent.CREATED)

@@ -26,7 +26,6 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
@@ -373,7 +372,7 @@ public class BpmnElementTypeTest {
     }
 
     long executeInstance() {
-      return ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId(processId()));
+      return ENGINE.workflowInstance().ofBpmnProcessId(processId()).create();
     }
 
     long executeInstance(Map<String, String> variables) {
@@ -383,8 +382,7 @@ public class BpmnElementTypeTest {
                   .map(e -> String.format("\"%s\":\"%s\"", e.getKey(), e.getValue()))
                   .collect(Collectors.joining(","))
               + " }";
-      return ENGINE.createWorkflowInstance(
-          r -> r.setBpmnProcessId(processId()).setVariables(MsgPackUtil.asMsgPack(json)));
+      return ENGINE.workflowInstance().ofBpmnProcessId(processId()).withVariables(json).create();
     }
 
     @Override

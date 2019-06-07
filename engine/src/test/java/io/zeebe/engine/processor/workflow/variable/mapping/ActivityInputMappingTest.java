@@ -26,12 +26,10 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
 import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -80,29 +78,31 @@ public class ActivityInputMappingTest {
   @Test
   public void shouldApplyInputMappings() {
     // given
-    final long workflowKey =
-        ENGINE_RULE
-            .deploy(
-                Bpmn.createExecutableProcess(PROCESS_ID)
-                    .startEvent()
-                    .subProcess(
-                        "sub",
-                        b -> {
-                          b.embeddedSubProcess().startEvent().endEvent();
+    ENGINE_RULE
+        .deploy(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "sub",
+                    b -> {
+                      b.embeddedSubProcess().startEvent().endEvent();
 
-                          mappings.accept(b);
-                        })
-                    .endEvent()
-                    .done())
-            .getValue()
-            .getDeployedWorkflows()
-            .get(0)
-            .getWorkflowKey();
+                      mappings.accept(b);
+                    })
+                .endEvent()
+                .done())
+        .getValue()
+        .getDeployedWorkflows()
+        .get(0)
+        .getWorkflowKey();
 
     // when
-    final DirectBuffer variables = MsgPackUtil.asMsgPack(initialVariables);
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(r -> r.setKey(workflowKey).setVariables(variables));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(initialVariables)
+            .create();
 
     // then
     final long flowScopeKey =

@@ -36,7 +36,6 @@ import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.WorkflowInstances;
 import java.util.List;
@@ -99,8 +98,11 @@ public class MessageCorrelationTest {
     final String messageId = UUID.randomUUID().toString();
     engine.deploy(SINGLE_MESSAGE_WORKFLOW);
     final long workflowInstanceKey =
-        engine.createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")));
+        engine
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", "order-123")
+            .create();
 
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED).exists())
@@ -141,8 +143,11 @@ public class MessageCorrelationTest {
 
     // when
     final long workflowInstanceKey =
-        engine.createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")));
+        engine
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", "order-123")
+            .create();
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
@@ -169,8 +174,7 @@ public class MessageCorrelationTest {
 
     // when
     final long workflowInstanceKey =
-        engine.createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", 123)));
+        engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", 123).create();
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
@@ -196,8 +200,11 @@ public class MessageCorrelationTest {
 
     // when
     final long workflowInstanceKey =
-        engine.createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")));
+        engine
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", "order-123")
+            .create();
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
@@ -216,8 +223,11 @@ public class MessageCorrelationTest {
     engine.deploy(SINGLE_MESSAGE_WORKFLOW);
 
     final long workflowInstanceKey =
-        engine.createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")));
+        engine
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", "order-123")
+            .create();
 
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED).exists())
@@ -255,8 +265,11 @@ public class MessageCorrelationTest {
 
     // when
     final long workflowInstanceKey =
-        engine.createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")));
+        engine
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", "order-123")
+            .create();
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
@@ -275,11 +288,17 @@ public class MessageCorrelationTest {
     engine.deploy(SINGLE_MESSAGE_WORKFLOW);
 
     final long workflowInstanceKey1 =
-        engine.createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")));
+        engine
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", "order-123")
+            .create();
     final long workflowInstanceKey2 =
-        engine.createWorkflowInstance(
-            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-456")));
+        engine
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", "order-456")
+            .create();
 
     // when
     engine
@@ -326,11 +345,17 @@ public class MessageCorrelationTest {
     engine.deploy(SINGLE_MESSAGE_WORKFLOW);
 
     final long workflowInstanceKey1 =
-        engine.createWorkflowInstance(
-            r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")));
+        engine
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", "order-123")
+            .create();
     final long workflowInstanceKey2 =
-        engine.createWorkflowInstance(
-            r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")));
+        engine
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", "order-123")
+            .create();
 
     // when
     engine.message().withName("message").withCorrelationKey("order-123").publish();
@@ -360,8 +385,7 @@ public class MessageCorrelationTest {
     messageClient.withVariables(asMsgPack("nr", 2)).publish();
 
     // when
-    engine.createWorkflowInstance(
-        r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // then
     final List<Object> correlatedValues =
@@ -384,8 +408,7 @@ public class MessageCorrelationTest {
     // given
     engine.deploy(TWO_MESSAGES_WORKFLOW);
 
-    engine.createWorkflowInstance(
-        r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // when
     assertThat(
@@ -438,8 +461,7 @@ public class MessageCorrelationTest {
             .message(m -> m.name("ping").zeebeCorrelationKey("key"))
             .done());
 
-    engine.createWorkflowInstance(
-        r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // when
     assertThat(
@@ -473,8 +495,7 @@ public class MessageCorrelationTest {
     // given
     engine.deploy(TWO_MESSAGES_WORKFLOW);
 
-    engine.createWorkflowInstance(
-        r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     assertThat(
             RecordingExporter.workflowInstanceSubscriptionRecords(
@@ -509,8 +530,7 @@ public class MessageCorrelationTest {
   public void shouldCorrelateCorrectBoundaryEvent() {
     // given
     engine.deploy(BOUNDARY_EVENTS_WORKFLOW);
-    engine.createWorkflowInstance(
-        r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // when
     awaitSubscriptionsOpened(3);
@@ -535,8 +555,7 @@ public class MessageCorrelationTest {
   public void shouldNotTriggerBoundaryEventIfReceiveTaskTriggeredFirst() {
     // given
     engine.deploy(BOUNDARY_EVENTS_WORKFLOW);
-    engine.createWorkflowInstance(
-        r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // when
     awaitSubscriptionsOpened(3);
@@ -561,8 +580,7 @@ public class MessageCorrelationTest {
   public void shouldNotTriggerReceiveTaskIfBoundaryEventTriggeredFirst() {
     // given
     engine.deploy(BOUNDARY_EVENTS_WORKFLOW);
-    engine.createWorkflowInstance(
-        r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // when
     awaitSubscriptionsOpened(3); // await both subscriptions opened
@@ -590,8 +608,7 @@ public class MessageCorrelationTest {
 
     engine.message().withName("message").withCorrelationKey("order-123").publish();
 
-    engine.createWorkflowInstance(
-        r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "order-123").create();
 
     final List<Record<WorkflowInstanceRecordValue>> events =
         RecordingExporter.workflowInstanceRecords()
@@ -615,8 +632,7 @@ public class MessageCorrelationTest {
     // given
     engine.deploy(RECEIVE_TASK_WORKFLOW);
     engine.message().withName("message").withCorrelationKey("order-123").publish();
-    engine.createWorkflowInstance(
-        r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "order-123").create();
 
     final List<Record<WorkflowInstanceRecordValue>> events =
         RecordingExporter.workflowInstanceRecords()
@@ -641,8 +657,7 @@ public class MessageCorrelationTest {
     engine.deploy(BOUNDARY_EVENTS_WORKFLOW);
     engine.message().withName("msg1").withCorrelationKey("order-123").publish();
 
-    engine.createWorkflowInstance(
-        r1 -> r1.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "order-123")));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "order-123").create();
 
     final List<Record<WorkflowInstanceRecordValue>> events =
         RecordingExporter.workflowInstanceRecords()
@@ -678,8 +693,7 @@ public class MessageCorrelationTest {
             .endEvent("taskEnd")
             .done();
     engine.deploy(workflow);
-    engine.createWorkflowInstance(
-        r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // when
     final PublishMessageClient messageClient =
@@ -733,8 +747,7 @@ public class MessageCorrelationTest {
         engine.deploy(twoMessages).getValue().getDeployedWorkflows().get(0);
 
     // when
-    engine.createWorkflowInstance(
-        c -> c.setKey(workflow.getWorkflowKey()).setVariables(MsgPackUtil.asMsgPack("key", "123")));
+    engine.workflowInstance().ofBpmnProcessId("process").withVariable("key", "123").create();
 
     // then
     assertThat(
