@@ -40,7 +40,7 @@ public class MessageStartEventSubscriptionMultiplePartitionsTest {
   @Test
   public void shouldOpenMessageStartEventSubscriptionOnAllPartitions() {
     // when
-    engine.deploy(createWorkflowWithOneMessageStartEvent());
+    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
 
     // then
     final List<Record<MessageStartEventSubscriptionRecordValue>> subscriptions =
@@ -62,13 +62,10 @@ public class MessageStartEventSubscriptionMultiplePartitionsTest {
   }
 
   private static BpmnModelInstance createWorkflowWithOneMessageStartEvent() {
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess("processId")
-            .startEvent(EVENT_ID1)
-            .message(m -> m.name(MESSAGE_NAME1).id("startmsgId"))
-            .endEvent()
-            .done();
-
-    return modelInstance;
+    return Bpmn.createExecutableProcess("processId")
+        .startEvent(EVENT_ID1)
+        .message(m -> m.name(MESSAGE_NAME1).id("startmsgId"))
+        .endEvent()
+        .done();
   }
 }

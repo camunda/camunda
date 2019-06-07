@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.data.MapEntry.entry;
 
 import io.zeebe.engine.util.EngineRule;
+import io.zeebe.engine.util.WorkflowInstanceClient.WorkflowInstanceCreationClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.SubscriptionUtil;
@@ -69,7 +70,7 @@ public class MessageCorrelationMultiplePartitionsTest {
     assertThat(getPartitionId(CORRELATION_KEYS.get(START_PARTITION_ID + 2)))
         .isEqualTo(START_PARTITION_ID + 2);
 
-    engine.deploy(WORKFLOW);
+    engine.deployment().withXmlResource(WORKFLOW).deploy();
   }
 
   @Test
@@ -78,21 +79,17 @@ public class MessageCorrelationMultiplePartitionsTest {
     IntStream.range(0, 10)
         .forEach(
             i -> {
-              engine.createWorkflowInstance(
-                  r ->
-                      r.setBpmnProcessId(PROCESS_ID)
-                          .setVariables(
-                              asMsgPack("key", CORRELATION_KEYS.get(START_PARTITION_ID))));
-              engine.createWorkflowInstance(
-                  r ->
-                      r.setBpmnProcessId(PROCESS_ID)
-                          .setVariables(
-                              asMsgPack("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))));
-              engine.createWorkflowInstance(
-                  r ->
-                      r.setBpmnProcessId(PROCESS_ID)
-                          .setVariables(
-                              asMsgPack("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))));
+              final WorkflowInstanceCreationClient workflowInstanceCreationClient =
+                  engine.workflowInstance().ofBpmnProcessId(PROCESS_ID);
+              workflowInstanceCreationClient
+                  .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID))
+                  .create();
+              workflowInstanceCreationClient
+                  .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))
+                  .create();
+              workflowInstanceCreationClient
+                  .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))
+                  .create();
             });
 
     // then
@@ -120,21 +117,20 @@ public class MessageCorrelationMultiplePartitionsTest {
                 .publish());
 
     // when
+    final WorkflowInstanceCreationClient workflowInstanceCreationClient =
+        engine.workflowInstance().ofBpmnProcessId(PROCESS_ID);
     final long wfiKey1 =
-        engine.createWorkflowInstance(
-            r3 ->
-                r3.setBpmnProcessId(PROCESS_ID)
-                    .setVariables(asMsgPack("key", CORRELATION_KEYS.get(START_PARTITION_ID))));
+        workflowInstanceCreationClient
+            .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID))
+            .create();
     final long wfiKey2 =
-        engine.createWorkflowInstance(
-            r2 ->
-                r2.setBpmnProcessId(PROCESS_ID)
-                    .setVariables(asMsgPack("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))));
+        workflowInstanceCreationClient
+            .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))
+            .create();
     final long wfiKey3 =
-        engine.createWorkflowInstance(
-            r1 ->
-                r1.setBpmnProcessId(PROCESS_ID)
-                    .setVariables(asMsgPack("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))));
+        workflowInstanceCreationClient
+            .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))
+            .create();
 
     // then
     final List<String> correlatedValues =

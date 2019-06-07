@@ -155,28 +155,28 @@ public class JobOutputMappingTest {
   @Test
   public void shouldApplyOutputMappings() {
     // given
-    final long workflowKey =
-        ENGINE_RULE
-            .deploy(
-                Bpmn.createExecutableProcess(PROCESS_ID)
-                    .startEvent()
-                    .serviceTask(
-                        "task",
-                        builder -> {
-                          builder.zeebeTaskType(jobType);
-                          mappings.accept(builder);
-                        })
-                    .endEvent()
-                    .done())
-            .getValue()
-            .getDeployedWorkflows()
-            .get(0)
-            .getWorkflowKey();
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    builder -> {
+                      builder.zeebeTaskType(jobType);
+                      mappings.accept(builder);
+                    })
+                .endEvent()
+                .done())
+        .deploy()
+        .getValue()
+        .getDeployedWorkflows()
+        .get(0)
+        .getWorkflowKey();
 
     // when
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(
-            r -> r.setKey(workflowKey).setVariables(MsgPackUtil.asMsgPack("i", 0)));
+        ENGINE_RULE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("i", 0).create();
 
     ENGINE_RULE
         .job()

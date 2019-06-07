@@ -66,10 +66,10 @@ public class ParallelGatewayTest {
   @Test
   public void shouldActivateTasksOnParallelBranches() {
     // given
-    engine.deploy(FORK_PROCESS);
+    engine.deployment().withXmlResource(FORK_PROCESS).deploy();
 
     // when
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> taskEvents =
@@ -89,9 +89,8 @@ public class ParallelGatewayTest {
   @Test
   public void shouldCompleteScopeWhenAllPathsCompleted() {
     // given
-    engine.deploy(FORK_PROCESS);
-    final long workflowInstanceKey =
-        engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.deployment().withXmlResource(FORK_PROCESS).deploy();
+    final long workflowInstanceKey = engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
     engine.job().ofInstance(workflowInstanceKey).withType("type1").complete();
 
     // when
@@ -128,10 +127,10 @@ public class ParallelGatewayTest {
             .connectTo("join")
             .done();
 
-    engine.deploy(process);
+    engine.deployment().withXmlResource(process).deploy();
 
     // when
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
@@ -159,10 +158,10 @@ public class ParallelGatewayTest {
             .endEvent("end")
             .done();
 
-    engine.deploy(process);
+    engine.deployment().withXmlResource(process).deploy();
 
     // when
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
@@ -196,10 +195,10 @@ public class ParallelGatewayTest {
             .parallelGateway("fork")
             .done();
 
-    engine.deploy(process);
+    engine.deployment().withXmlResource(process).deploy();
 
     // when
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
@@ -217,10 +216,10 @@ public class ParallelGatewayTest {
   @Test
   public void shouldMergeParallelBranches() {
     // given
-    engine.deploy(FORK_JOIN_PROCESS);
+    engine.deployment().withXmlResource(FORK_JOIN_PROCESS).deploy();
 
     // when
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> events =
@@ -258,10 +257,9 @@ public class ParallelGatewayTest {
             .endEvent()
             .done();
 
-    engine.deploy(process);
+    engine.deployment().withXmlResource(process).deploy();
 
-    final long workflowInstanceKey =
-        engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    final long workflowInstanceKey = engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // waiting until we have signalled the first incoming sequence flow twice
     // => this should not trigger the gateway yet
@@ -308,10 +306,10 @@ public class ParallelGatewayTest {
             .serviceTask("task2", b -> b.zeebeTaskType("type2"))
             .done();
 
-    engine.deploy(process);
+    engine.deployment().withXmlResource(process).deploy();
 
     // when
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> elementInstances =
@@ -339,10 +337,10 @@ public class ParallelGatewayTest {
             .serviceTask("task2", b -> b.zeebeTaskType("type2"))
             .done();
 
-    engine.deploy(process);
+    engine.deployment().withXmlResource(process).deploy();
 
     // when
-    engine.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> taskEvents =

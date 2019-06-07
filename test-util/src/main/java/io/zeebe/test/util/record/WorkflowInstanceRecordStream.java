@@ -65,6 +65,13 @@ public class WorkflowInstanceRecordStream
                 && r.getKey() == r.getValue().getWorkflowInstanceKey());
   }
 
+  public WorkflowInstanceRecordStream limitToWorkflowInstanceTerminated() {
+    return limit(
+        r ->
+            r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATED
+                && r.getKey() == r.getValue().getWorkflowInstanceKey());
+  }
+
   public WorkflowInstanceRecordStream withElementType(BpmnElementType elementType) {
     return valueFilter(v -> v.getBpmnElementType() == elementType);
   }

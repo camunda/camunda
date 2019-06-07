@@ -27,13 +27,11 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
 import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -87,32 +85,36 @@ public class ActivityOutputMappingTest {
     // given
     final String jobType = UUID.randomUUID().toString();
 
-    final long workflowKey =
-        ENGINE_RULE
-            .deploy(
-                Bpmn.createExecutableProcess(PROCESS_ID)
-                    .startEvent()
-                    .subProcess(
-                        "sub",
-                        b -> {
-                          b.embeddedSubProcess()
-                              .startEvent()
-                              .serviceTask("task", t -> t.zeebeTaskType(jobType))
-                              .endEvent();
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "sub",
+                    b -> {
+                      b.embeddedSubProcess()
+                          .startEvent()
+                          .serviceTask("task", t -> t.zeebeTaskType(jobType))
+                          .endEvent();
 
-                          mappings.accept(b);
-                        })
-                    .endEvent()
-                    .done())
-            .getValue()
-            .getDeployedWorkflows()
-            .get(0)
-            .getWorkflowKey();
+                      mappings.accept(b);
+                    })
+                .endEvent()
+                .done())
+        .deploy()
+        .getValue()
+        .getDeployedWorkflows()
+        .get(0)
+        .getWorkflowKey();
 
     // when
-    final DirectBuffer variables = MsgPackUtil.asMsgPack(initialVariables);
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(r -> r.setKey(workflowKey).setVariables(variables));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(initialVariables)
+            .create();
 
     ENGINE_RULE.job().ofInstance(workflowInstanceKey).withType(jobType).complete();
 

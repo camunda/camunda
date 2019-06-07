@@ -17,7 +17,6 @@
  */
 package io.zeebe.engine.processor.workflow.gateway;
 
-import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -61,18 +60,15 @@ public class ExclusiveGatewayTest {
             .sequenceFlowId("s3")
             .endEvent("c")
             .done();
-    ENGINE.deploy(workflowDefinition);
+    ENGINE.deployment().withXmlResource(workflowDefinition).deploy();
 
     // when
     final long workflowInstance1 =
-        ENGINE.createWorkflowInstance(
-            r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 4)));
+        ENGINE.workflowInstance().ofBpmnProcessId(processId).withVariable("foo", 4).create();
     final long workflowInstance2 =
-        ENGINE.createWorkflowInstance(
-            r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 8)));
+        ENGINE.workflowInstance().ofBpmnProcessId(processId).withVariable("foo", 8).create();
     final long workflowInstance3 =
-        ENGINE.createWorkflowInstance(
-            r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 12)));
+        ENGINE.workflowInstance().ofBpmnProcessId(processId).withVariable("foo", 12).create();
 
     final List<Long> workflowInstanceKeys =
         Arrays.asList(workflowInstance1, workflowInstance2, workflowInstance3);
@@ -109,15 +105,13 @@ public class ExclusiveGatewayTest {
             .endEvent("end")
             .done();
 
-    ENGINE.deploy(workflowDefinition);
+    ENGINE.deployment().withXmlResource(workflowDefinition).deploy();
 
     // when
     final long workflowInstance1 =
-        ENGINE.createWorkflowInstance(
-            r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 4)));
+        ENGINE.workflowInstance().ofBpmnProcessId(processId).withVariable("foo", 4).create();
     final long workflowInstance2 =
-        ENGINE.createWorkflowInstance(
-            r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 8)));
+        ENGINE.workflowInstance().ofBpmnProcessId(processId).withVariable("foo", 8).create();
 
     // then
 
@@ -158,12 +152,11 @@ public class ExclusiveGatewayTest {
             .endEvent("end")
             .done();
 
-    ENGINE.deploy(workflowDefinition);
+    ENGINE.deployment().withXmlResource(workflowDefinition).deploy();
 
     // when
     final long workflowInstance1 =
-        ENGINE.createWorkflowInstance(
-            r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 4)));
+        ENGINE.workflowInstance().ofBpmnProcessId(processId).withVariable("foo", 4).create();
     // then
     List<Record<WorkflowInstanceRecordValue>> sequenceFlows =
         RecordingExporter.workflowInstanceRecords()
@@ -188,8 +181,7 @@ public class ExclusiveGatewayTest {
 
     // when
     final long workflowInstance2 =
-        ENGINE.createWorkflowInstance(
-            r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 8)));
+        ENGINE.workflowInstance().ofBpmnProcessId(processId).withVariable("foo", 8).create();
     // then
     sequenceFlows =
         RecordingExporter.workflowInstanceRecords()
@@ -230,12 +222,11 @@ public class ExclusiveGatewayTest {
             .endEvent("b")
             .done();
 
-    ENGINE.deploy(workflowDefinition);
+    ENGINE.deployment().withXmlResource(workflowDefinition).deploy();
 
     // when
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r -> r.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 4)));
+        ENGINE.workflowInstance().ofBpmnProcessId(processId).withVariable("foo", 4).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowEvents =
@@ -277,12 +268,11 @@ public class ExclusiveGatewayTest {
             .endEvent("b")
             .done();
 
-    ENGINE.deploy(workflowDefinition);
+    ENGINE.deployment().withXmlResource(workflowDefinition).deploy();
 
     // when
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r1 -> r1.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 10)));
+        ENGINE.workflowInstance().ofBpmnProcessId(processId).withVariable("foo", 10).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> completedEvents =
@@ -303,12 +293,11 @@ public class ExclusiveGatewayTest {
     final BpmnModelInstance workflowDefinition =
         Bpmn.createExecutableProcess(processId).startEvent().exclusiveGateway("xor").done();
 
-    ENGINE.deploy(workflowDefinition);
+    ENGINE.deployment().withXmlResource(workflowDefinition).deploy();
 
     // when
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r1 -> r1.setBpmnProcessId(processId).setVariables(asMsgPack("foo", 10)));
+        ENGINE.workflowInstance().ofBpmnProcessId(processId).withVariable("foo", 10).create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> completedEvents =

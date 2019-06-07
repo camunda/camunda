@@ -134,25 +134,26 @@ public class MessageOutputMappingTest {
   @Test
   public void shouldApplyOutputMappings() {
     // given
-    final long workflowKey =
-        ENGINE_RULE
-            .deploy(
-                Bpmn.createExecutableProcess(PROCESS_ID)
-                    .startEvent()
-                    .intermediateCatchEvent(
-                        "catch-event",
-                        b -> {
-                          b.message(
-                              m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE));
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .intermediateCatchEvent(
+                    "catch-event",
+                    b -> {
+                      b.message(
+                          m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE));
 
-                          mappings.accept(b);
-                        })
-                    .endEvent()
-                    .done())
-            .getValue()
-            .getDeployedWorkflows()
-            .get(0)
-            .getWorkflowKey();
+                      mappings.accept(b);
+                    })
+                .endEvent()
+                .done())
+        .deploy()
+        .getValue()
+        .getDeployedWorkflows()
+        .get(0)
+        .getWorkflowKey();
 
     final Map<String, Object> variables = new HashMap<>();
     variables.put("i", 0);
@@ -160,8 +161,11 @@ public class MessageOutputMappingTest {
 
     // when
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(
-            r -> r.setKey(workflowKey).setVariables(MsgPackUtil.asMsgPack(variables)));
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{'i':0,'key':'" + correlationKey + "'}")
+            .create();
     ENGINE_RULE
         .message()
         .withName(MESSAGE_NAME)

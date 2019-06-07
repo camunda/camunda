@@ -40,7 +40,6 @@ import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.WorkflowInstances;
 import java.time.Duration;
@@ -81,9 +80,8 @@ public class BoundaryEventTest {
   @Test
   public void shouldTakeAllOutgoingSequenceFlowsIfTriggered() {
     // given
-    ENGINE.deploy(MULTIPLE_SEQUENCE_FLOWS);
-    final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    ENGINE.deployment().withXmlResource(MULTIPLE_SEQUENCE_FLOWS).deploy();
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     RecordingExporter.timerRecords()
@@ -107,9 +105,8 @@ public class BoundaryEventTest {
   @Test
   public void shouldActivateBoundaryEventWhenEventTriggered() {
     // given
-    ENGINE.deploy(MULTIPLE_SEQUENCE_FLOWS);
-    final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    ENGINE.deployment().withXmlResource(MULTIPLE_SEQUENCE_FLOWS).deploy();
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     RecordingExporter.timerRecords()
@@ -142,7 +139,7 @@ public class BoundaryEventTest {
             tuple(ValueType.JOB, JobIntent.CANCELED),
             tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_ACTIVATING));
   }
-  //
+
   @Test
   public void shouldApplyOutputMappingOnTriggering() {
     // given
@@ -157,9 +154,9 @@ public class BoundaryEventTest {
             .moveToActivity("task")
             .endEvent()
             .done();
-    ENGINE.deploy(workflow);
-    ENGINE.createWorkflowInstance(
-        r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")));
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+    final long workflowInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     // when
     ENGINE
@@ -171,7 +168,10 @@ public class BoundaryEventTest {
 
     // then
     final Record<VariableRecordValue> variableEvent =
-        RecordingExporter.variableRecords().withName("bar").getFirst();
+        RecordingExporter.variableRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withName("bar")
+            .getFirst();
     Assertions.assertThat(variableEvent.getValue()).hasValue("3");
   }
 
@@ -189,12 +189,13 @@ public class BoundaryEventTest {
             .moveToActivity("task")
             .endEvent()
             .done();
-    ENGINE.deploy(workflow);
+    ENGINE.deployment().withXmlResource(workflow).deploy();
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r ->
-                r.setBpmnProcessId(PROCESS_ID)
-                    .setVariables(asMsgPack("{ \"foo\": 1, \"oof\": 2 }")));
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{ \"foo\": 1, \"oof\": 2 }")
+            .create();
 
     // when
     RecordingExporter.timerRecords()
@@ -235,8 +236,8 @@ public class BoundaryEventTest {
             .moveToActivity("sub")
             .endEvent()
             .done();
-    ENGINE.deploy(workflow);
-    ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+    ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     RecordingExporter.jobRecords().withIntent(JobIntent.CREATED).getFirst();
@@ -272,9 +273,8 @@ public class BoundaryEventTest {
   @Test
   public void shouldNotTerminateActivityForNonInterruptingBoundaryEvents() {
     // given
-    ENGINE.deploy(NON_INTERRUPTING_WORKFLOW);
-    final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
+    ENGINE.deployment().withXmlResource(NON_INTERRUPTING_WORKFLOW).deploy();
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     RecordingExporter.jobRecords()
@@ -327,14 +327,15 @@ public class BoundaryEventTest {
             .moveToActivity("task")
             .endEvent()
             .done();
-    ENGINE.deploy(workflow);
+    ENGINE.deployment().withXmlResource(workflow).deploy();
 
     // when
-    ENGINE.createWorkflowInstance(
-        r ->
-            r.setBpmnProcessId(processId)
-                .setVariables(MsgPackUtil.asMsgPack(m -> m.put("foo", 1).put("bar", 2))));
-
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables("{'foo':1,'bar':2}")
+            .create();
     ENGINE.message().withName("message").withCorrelationKey("1").publish();
 
     // then
@@ -343,6 +344,7 @@ public class BoundaryEventTest {
     assertThat(
             RecordingExporter.workflowInstanceRecords()
                 .withElementId("task")
+                .withWorkflowInstanceKey(workflowInstanceKey)
                 .withIntent(WorkflowInstanceIntent.EVENT_OCCURRED)
                 .getFirst())
         .isNotNull();
@@ -362,13 +364,11 @@ public class BoundaryEventTest {
             .moveToActivity("task")
             .endEvent()
             .done();
-    ENGINE.deploy(workflow);
+    ENGINE.deployment().withXmlResource(workflow).deploy();
 
     // when
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r ->
-                r.setBpmnProcessId(processId).setVariables(MsgPackUtil.asMsgPack("orderId", true)));
+        ENGINE.workflowInstance().ofBpmnProcessId(processId).withVariable("orderId", true).create();
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withWorkflowInstanceKey(workflowInstanceKey)

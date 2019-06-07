@@ -38,7 +38,6 @@ import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.agrona.DirectBuffer;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -65,18 +64,20 @@ public class EmbeddedSubProcessTest {
 
   @BeforeClass
   public static void init() {
-    ENGINE.deploy(ONE_TASK_SUBPROCESS);
+    ENGINE.deployment().withXmlResource(ONE_TASK_SUBPROCESS).deploy();
   }
 
   @Test
   public void shouldCreateJobForServiceTaskInEmbeddedSubprocess() {
     // given
-    final DirectBuffer variables = MsgPackUtil.asMsgPack("key", "val");
 
     // when
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r -> r.setBpmnProcessId("ONE_TASK_SUBPROCESS").setVariables(variables));
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId("ONE_TASK_SUBPROCESS")
+            .withVariable("key", "val")
+            .create();
 
     // then
     final Record<JobRecordValue> jobCreatedEvent =
@@ -94,12 +95,14 @@ public class EmbeddedSubProcessTest {
   @Test
   public void shouldGenerateEventStream() {
     // given
-    final DirectBuffer variables = MsgPackUtil.asMsgPack("key", "val");
 
     // when
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r -> r.setBpmnProcessId("ONE_TASK_SUBPROCESS").setVariables(variables));
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId("ONE_TASK_SUBPROCESS")
+            .withVariable("key", "val")
+            .create();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
@@ -153,7 +156,7 @@ public class EmbeddedSubProcessTest {
   public void shouldCompleteEmbeddedSubProcess() {
     // given
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("ONE_TASK_SUBPROCESS"));
+        ENGINE.workflowInstance().ofBpmnProcessId("ONE_TASK_SUBPROCESS").create();
 
     // when
     ENGINE.job().ofInstance(workflowInstanceKey).withType("type").complete();
@@ -217,12 +220,14 @@ public class EmbeddedSubProcessTest {
             .endEvent()
             .done();
 
-    ENGINE.deploy(model);
+    ENGINE.deployment().withXmlResource(model).deploy();
 
     // when
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r -> r.setBpmnProcessId("shouldRunServiceTaskAfterEmbeddedSubProcess"));
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId("shouldRunServiceTaskAfterEmbeddedSubProcess")
+            .create();
 
     // then
     final Record<JobRecordValue> jobCreatedEvent =
@@ -254,9 +259,9 @@ public class EmbeddedSubProcessTest {
             .subProcessDone()
             .endEvent()
             .done();
-    ENGINE.deploy(model);
+    ENGINE.deployment().withXmlResource(model).deploy();
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(r -> r.setBpmnProcessId("shouldCompleteNestedSubProcess"));
+        ENGINE.workflowInstance().ofBpmnProcessId("shouldCompleteNestedSubProcess").create();
 
     // when
     ENGINE.job().ofInstance(workflowInstanceKey).withType("type").complete();
@@ -312,12 +317,13 @@ public class EmbeddedSubProcessTest {
             .moveToActivity("outerSubProcess")
             .endEvent()
             .done();
-    ENGINE.deploy(model);
+    ENGINE.deployment().withXmlResource(model).deploy();
     final long workflowInstanceKey =
-        ENGINE.createWorkflowInstance(
-            r ->
-                r.setBpmnProcessId("shouldTerminateBeforeTriggeringBoundaryEvent")
-                    .setVariables(MsgPackUtil.asMsgPack("key", "123")));
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId("shouldTerminateBeforeTriggeringBoundaryEvent")
+            .withVariable("key", "123")
+            .create();
 
     // when
     assertThat(
