@@ -288,17 +288,17 @@ public class MessageStreamProcessorTest {
         .correlateWorkflowInstanceSubscription(
             eq(subscription.getWorkflowInstanceKey()),
             eq(subscription.getElementInstanceKey()),
-            eq(subscription.getMessageNameBuffer()),
+            any(),
             eq(firstMessageKey),
-            eq(message.getVariablesBuffer()));
+            any());
 
     verify(mockSubscriptionCommandSender, timeout(5_000))
         .correlateWorkflowInstanceSubscription(
             eq(subscription.getWorkflowInstanceKey()),
             eq(subscription.getElementInstanceKey()),
-            eq(subscription.getMessageNameBuffer()),
+            any(),
             eq(lastMessageKey),
-            eq(message.getVariablesBuffer()));
+            any());
   }
 
   @Test
