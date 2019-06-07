@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import moment from 'moment';
+
 import {formatters} from 'services';
 import {sortColumns, cockpitLink, noData} from './service';
 
@@ -41,6 +43,9 @@ export default function processRawData(
     const row = instanceProps.map(entry => {
       if (entry === 'processInstanceId') {
         return cockpitLink(endpoints, instance, 'process');
+      }
+      if ((entry === 'startDate' || entry === 'endDate') && instance[entry]) {
+        return moment.parseZone(instance[entry]).format('YYYY-MM-DD HH:mm:ss [UTC]Z');
       }
       return instance[entry];
     });

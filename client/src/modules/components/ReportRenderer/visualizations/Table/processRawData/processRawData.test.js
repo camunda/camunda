@@ -79,6 +79,26 @@ it('should make the processInstanceId a link', () => {
   expect(cell.props.href).toBe('http://camunda.com/app/cockpit/a/#/process-instance/123');
 });
 
+it('should format start and end dates', () => {
+  const cells = processRawData({
+    report: {
+      result: {
+        data: [
+          {
+            startDate: '2019-06-07T10:33:19.192+0700',
+            endDate: '2019-06-09T16:12:49.875+0500',
+            variables: {}
+          }
+        ]
+      },
+      data
+    }
+  }).body[0];
+
+  expect(cells[0]).toBe('2019-06-07 10:33:19 UTC+07:00');
+  expect(cells[1]).toBe('2019-06-09 16:12:49 UTC+05:00');
+});
+
 it('should not make the processInstanceId a link if no endpoint is specified', () => {
   const cell = processRawData({
     report: {
