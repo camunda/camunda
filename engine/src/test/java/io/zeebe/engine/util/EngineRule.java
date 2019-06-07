@@ -18,7 +18,7 @@
 package io.zeebe.engine.util;
 
 import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -32,19 +32,18 @@ import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMes
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
+import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.ReflectUtil;
@@ -144,36 +143,6 @@ public class EngineRule extends ExternalResource {
     return environmentRule.getClock();
   }
 
-  public Record<DeploymentRecordValue> deploy(final BpmnModelInstance modelInstance) {
-    final DeploymentRecord deploymentRecord = new DeploymentRecord();
-    deploymentRecord
-        .resources()
-        .add()
-        .setResourceName(wrapString("process.bpmn"))
-        .setResource(wrapString(Bpmn.convertToString(modelInstance)))
-        .setResourceType(ResourceType.BPMN_XML);
-
-    final long position = environmentRule.writeCommand(DeploymentIntent.CREATE, deploymentRecord);
-
-    final Record<DeploymentRecordValue> deploymentOnPartitionOne =
-        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
-            .withSourceRecordPosition(position)
-            .withPartitionId(PARTITION_ID)
-            .getFirst();
-
-    forEachPartition(
-        partitionId ->
-            RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
-                .withPartitionId(partitionId)
-                .withRecordKey(deploymentOnPartitionOne.getKey())
-                .getFirst());
-
-    return RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
-        .withPartitionId(PARTITION_ID)
-        .withRecordKey(deploymentOnPartitionOne.getKey())
-        .getFirst();
-  }
-
   public DeploymentClient deployment() {
     return new DeploymentClient(environmentRule, this::forEachPartition);
   }
@@ -200,6 +169,25 @@ public class EngineRule extends ExternalResource {
 
   public IncidentClient incident() {
     return new IncidentClient(environmentRule);
+  }
+
+  public Record<JobRecordValue> createJob(final String type, final String processId) {
+    deployment()
+        .withXmlResource(
+            processId,
+            Bpmn.createExecutableProcess(processId)
+                .startEvent("start")
+                .serviceTask("task", b -> b.zeebeTaskType(type).done())
+                .endEvent("end")
+                .done())
+        .deploy();
+
+    final long instanceKey = workflowInstance().ofBpmnProcessId(processId).create();
+
+    return jobRecords(JobIntent.CREATED)
+        .withType(type)
+        .filter(r -> r.getValue().getHeaders().getWorkflowInstanceKey() == instanceKey)
+        .getFirst();
   }
 
   private class DeploymentDistributionImpl implements DeploymentDistributor {

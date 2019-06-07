@@ -334,7 +334,7 @@ public class ExporterRecordMapper {
         objectMapper,
         asString(record.getTypeBuffer()),
         asString(record.getWorkerBuffer()),
-        Duration.ofMillis(record.getTimeout()),
+        Duration.ofMillis(record.getTimeoutLong()),
         record.getMaxJobsToActivate(),
         jobKeys,
         jobs,

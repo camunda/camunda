@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.engine.job;
+package io.zeebe.engine.processor.workflow.job;
 
 import static io.zeebe.exporter.api.record.Assertions.assertThat;
 import static io.zeebe.test.util.TestUtil.waitUntil;
@@ -30,13 +30,12 @@ import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.JobBatchRecordValue;
 import io.zeebe.exporter.api.record.value.JobRecordValue;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.api.record.value.job.Headers;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.RejectionType;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -46,12 +45,15 @@ import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.internal.bytebuddy.utility.RandomString;
-import org.junit.Rule;
+import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 public class ActivateJobsTest {
@@ -60,79 +62,93 @@ public class ActivateJobsTest {
   private static final String LONG_CUSTOM_HEADER_VALUE = RandomString.make(128);
 
   private static final String PROCESS_ID = "process";
-  private static final String TASK_TYPE = "type";
+  private static final Function<String, BpmnModelInstance> MODEL_SUPPLIER =
+      (type) ->
+          Bpmn.createExecutableProcess(PROCESS_ID)
+              .startEvent("start")
+              .serviceTask("task", b -> b.zeebeTaskType(type).done())
+              .endEvent("end")
+              .done();
 
-  private static final BpmnModelInstance MODEL =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent("start")
-          .serviceTask("task", b -> b.zeebeTaskType(TASK_TYPE).done())
-          .endEvent("end")
-          .done();
+  private String taskType;
 
-  @Rule public EngineRule engineRule = new EngineRule();
+  @ClassRule public static EngineRule engineRule = new EngineRule();
+
+  @Before
+  public void setup() {
+    taskType = Strings.newRandomValidBpmnId();
+  }
 
   @Test
   public void shouldRejectInvalidAmount() {
     // when
-    engineRule.jobs().withType(TASK_TYPE).withMaxJobsToActivate(0).activate();
-    final Record<JobBatchRecordValue> rejection =
-        jobBatchRecords().withRecordType(RecordType.COMMAND_REJECTION).getFirst();
+    final Record<JobBatchRecordValue> batchRecord =
+        engineRule.jobs().withType(taskType).withMaxJobsToActivate(0).expectRejection().activate();
 
     // then
-    assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getMetadata().getRejectionReason())
-        .isEqualTo(
+    Assertions.assertThat(batchRecord.getMetadata())
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
             "Expected to activate job batch with max jobs to activate to be greater than zero, but it was '0'");
   }
 
   @Test
   public void shouldRejectInvalidTimeout() {
     // when
-    engineRule.jobs().withType(TASK_TYPE).withTimeout(Duration.ofSeconds(0).toMillis()).activate();
-    final Record<JobBatchRecordValue> rejection =
-        jobBatchRecords().withRecordType(RecordType.COMMAND_REJECTION).getFirst();
+    final Record<JobBatchRecordValue> batchRecord =
+        engineRule
+            .jobs()
+            .withType(taskType)
+            .withTimeout(Duration.ofSeconds(0).toMillis())
+            .expectRejection()
+            .activate();
 
     // then
-    assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getMetadata().getRejectionReason())
-        .isEqualTo(
+    Assertions.assertThat(batchRecord.getMetadata())
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
             "Expected to activate job batch with timeout to be greater than zero, but it was '0'");
   }
 
   @Test
   public void shouldRejectInvalidType() {
     // when
-    engineRule.jobs().withType("").activate();
-    final Record<JobBatchRecordValue> rejection =
-        jobBatchRecords().withRecordType(RecordType.COMMAND_REJECTION).getFirst();
+    final Record<JobBatchRecordValue> batchRecord =
+        engineRule.jobs().withType("").expectRejection().activate();
 
     // then
-    assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getMetadata().getRejectionReason())
-        .isEqualTo("Expected to activate job batch with type to be present, but it was blank");
+    Assertions.assertThat(batchRecord.getMetadata())
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to activate job batch with type to be present, but it was blank");
   }
 
   @Test
   public void shouldRejectInvalidWorker() {
     // when
-    engineRule.jobs().withType(TASK_TYPE).byWorker("").activate();
-    final Record<JobBatchRecordValue> rejection =
-        jobBatchRecords().withRecordType(RecordType.COMMAND_REJECTION).getFirst();
+    final Record<JobBatchRecordValue> batchRecord =
+        engineRule.jobs().withType(taskType).byWorker("").expectRejection().activate();
 
     // then
-    assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getMetadata().getRejectionReason())
-        .isEqualTo("Expected to activate job batch with worker to be present, but it was blank");
+    Assertions.assertThat(batchRecord.getMetadata())
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to activate job batch with worker to be present, but it was blank");
   }
 
   @Test
   public void shouldActivateSingleJob() {
     // given
-    final Long expectedJobKey = deployAndCreateJobs(TASK_TYPE, 3).get(0);
+    engineRule.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
+    final long firstInstanceKey = createWorkflowInstances(3, VARIABLES_MSG_PACK).get(0);
+
+    final long expectedJobKey =
+        jobRecords(JobIntent.CREATED)
+            .withType(taskType)
+            .filter(r -> r.getValue().getHeaders().getWorkflowInstanceKey() == firstInstanceKey)
+            .getFirst()
+            .getKey();
+
     final String worker = "myTestWorker";
     final Duration timeout = Duration.ofMinutes(12);
 
@@ -140,11 +156,11 @@ public class ActivateJobsTest {
     final Record<JobBatchRecordValue> batchRecord =
         engineRule
             .jobs()
-            .withType(TASK_TYPE)
+            .withType(taskType)
             .byWorker(worker)
             .withTimeout(timeout.toMillis())
             .withMaxJobsToActivate(1)
-            .activateAndWait();
+            .activate();
 
     final List<JobRecordValue> jobs = batchRecord.getValue().getJobs();
     final List<Long> jobKeys = batchRecord.getValue().getJobKeys();
@@ -155,28 +171,23 @@ public class ActivateJobsTest {
     assertThat(jobKeys).hasSize(1);
     assertThat(jobs).hasSize(1);
     assertThat(jobKeys.get(0)).isEqualTo(expectedJobKey);
-    assertThat(jobs.get(0)).hasRetries(3).hasWorker(worker).hasType(TASK_TYPE);
+    assertThat(jobs.get(0)).hasRetries(3).hasWorker(worker).hasType(taskType);
 
     assertThat(jobs.get(0).getVariables()).isEqualTo(JSON_VARIABLES);
 
     final Record<JobRecordValue> jobRecord =
-        jobRecords(JobIntent.ACTIVATED).withType(TASK_TYPE).getFirst();
+        jobRecords(JobIntent.ACTIVATED)
+            .withWorkflowInstanceKey(firstInstanceKey)
+            .withType(taskType)
+            .getFirst();
     assertThat(jobRecord).hasKey(expectedJobKey);
     assertThat(jobRecord.getValue()).hasRetries(3).hasWorker(worker);
-
-    final Record<JobBatchRecordValue> jobBatchActivateRecord =
-        jobBatchRecords(JobBatchIntent.ACTIVATE).withType(TASK_TYPE).getFirst();
-    final Record<JobBatchRecordValue> jobBatchActivatedRecord =
-        jobBatchRecords(JobBatchIntent.ACTIVATED).withType(TASK_TYPE).getFirst();
-    Assertions.assertThat(jobBatchActivatedRecord)
-        .hasKey(batchRecord.getKey())
-        .hasSourceRecordPosition(jobBatchActivateRecord.getPosition());
   }
 
   @Test
   public void shouldActivateJobBatch() {
     // given
-    final List<Long> expectedJobKeys = deployAndCreateJobs(5).subList(0, 3);
+    final List<Long> expectedJobKeys = deployAndCreateJobs(taskType, 5).subList(0, 3);
 
     // when
     final List<Long> jobKeys = activateJobs(3);
@@ -188,7 +199,7 @@ public class ActivateJobsTest {
   @Test
   public void shouldActivateJobBatches() {
     // given
-    final List<Long> jobKeys = deployAndCreateJobs(12);
+    final List<Long> jobKeys = deployAndCreateJobs(taskType, 12);
     final List<Long> expectedFirstJobKeys = jobKeys.subList(0, 3);
     final List<Long> expectedSecondJobKeys = jobKeys.subList(3, 7);
     final List<Long> expectedThirdJobKeys = jobKeys.subList(7, 10);
@@ -207,7 +218,7 @@ public class ActivateJobsTest {
   @Test
   public void shouldReturnEmptyBatchIfNoJobsAvailable() {
     // when
-    final List<Long> jobEvents = activateJobs(3);
+    final List<Long> jobEvents = activateJobs(RandomString.make(5), 3);
 
     // then
     assertThat(jobEvents).isEmpty();
@@ -217,11 +228,11 @@ public class ActivateJobsTest {
   public void shouldCompleteActivatedJobs() {
     // given
     final int jobAmount = 5;
-    final List<Long> jobKeys = deployAndCreateJobs(jobAmount);
-    final List<Long> activateJobKeys = activateJobs(jobAmount);
+    final List<Long> jobKeys = deployAndCreateJobs(taskType, jobAmount);
+    final List<Long> activateJobKeys = activateJobs(taskType, jobAmount);
 
     // when
-    activateJobKeys.forEach(k -> this.completeJob(k));
+    activateJobKeys.forEach(this::completeJob);
 
     // then
     final List<Record<JobRecordValue>> records =
@@ -233,65 +244,62 @@ public class ActivateJobsTest {
   @Test
   public void shouldOnlyReturnJobsOfCorrectType() {
     // given
-    final String type = "someType";
-    final List<Long> jobKeys = deployAndCreateJobs(type, 3);
-    deployAndCreateJobs("different" + type, 5);
-    jobKeys.addAll(deployAndCreateJobs(type, 4));
+    final List<Long> jobKeys = deployAndCreateJobs(taskType, 3);
+    deployAndCreateJobs("different" + taskType, 5);
+    jobKeys.addAll(deployAndCreateJobs(taskType, 4));
 
     // when
-    final List<Long> jobs = activateJobs(type, 7);
+    final List<Long> jobs = activateJobs(taskType, 7);
 
     // then
     assertThat(jobs).containsOnlyElementsOf(jobKeys);
 
     final List<Record<JobRecordValue>> records =
         jobRecords(JobIntent.ACTIVATED)
-            .withType(type)
+            .withType(taskType)
             .limit(jobKeys.size())
             .collect(Collectors.toList());
 
     assertThat(records).extracting(Record::getKey).containsOnlyElementsOf(jobKeys);
-    assertThat(records).extracting("value.type").containsOnly(type);
+    assertThat(records).extracting("value.type").containsOnly(taskType);
   }
 
   @Test
   public void shouldActivateJobsFromWorkflow() {
     // given
     final int jobAmount = 10;
-    final String jobType = TASK_TYPE;
+    final String jobType = taskType;
     final String jobType2 = Strings.newRandomValidBpmnId();
     final String jobType3 = Strings.newRandomValidBpmnId();
 
-    deployWorkflow(jobType, jobType2, jobType3);
+    AbstractFlowNodeBuilder<?, ?> builder =
+        Bpmn.createExecutableProcess(PROCESS_ID).startEvent("start");
+
+    for (final String type : Arrays.asList(jobType, jobType2, jobType3)) {
+      builder = builder.serviceTask(type, b -> b.zeebeTaskType(type));
+    }
+    engineRule.deployment().withXmlResource(PROCESS_ID, builder.done()).deploy();
+
     final List<Long> workflowInstanceKeys = createWorkflowInstances(jobAmount, VARIABLES_MSG_PACK);
 
     // when activating and completing all jobs
-    waitUntil(
-        () ->
-            jobRecords(JobIntent.CREATED).withType(jobType).limit(jobAmount).count() == jobAmount);
+    waitForJobs(jobType, jobAmount, workflowInstanceKeys);
     activateJobs(jobType, jobAmount).forEach(this::completeJob);
 
-    waitUntil(
-        () ->
-            jobRecords(JobIntent.CREATED).withType(jobType2).limit(jobAmount).count() == jobAmount);
+    waitForJobs(jobType2, jobAmount, workflowInstanceKeys);
     activateJobs(jobType2, jobAmount).forEach(this::completeJob);
 
-    waitUntil(
-        () ->
-            jobRecords(JobIntent.CREATED).withType(jobType3).limit(jobAmount).count() == jobAmount);
+    waitForJobs(jobType3, jobAmount, workflowInstanceKeys);
     activateJobs(jobType3, jobAmount).forEach(this::completeJob);
 
     // then all workflow instances are completed
-    final List<Record<WorkflowInstanceRecordValue>> records =
+    assertThat(
         workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withBpmnProcessId(PROCESS_ID)
-            .filter(r -> r.getKey() == r.getValue().getWorkflowInstanceKey())
-            .limit(jobAmount)
-            .collect(Collectors.toList());
-
-    assertThat(records)
-        .extracting(r -> r.getValue().getWorkflowInstanceKey())
-        .containsOnlyElementsOf(workflowInstanceKeys);
+                .withBpmnProcessId(PROCESS_ID)
+                .filter(r -> workflowInstanceKeys.contains(r.getKey()))
+                .limit(jobAmount)
+                .count()
+            == workflowInstanceKeys.size());
   }
 
   @Test
@@ -302,21 +310,27 @@ public class ActivateJobsTest {
             .startEvent()
             .serviceTask(
                 "task",
-                b -> b.zeebeTaskType(TASK_TYPE).zeebeTaskHeader("foo", LONG_CUSTOM_HEADER_VALUE))
+                b -> b.zeebeTaskType(taskType).zeebeTaskHeader("foo", LONG_CUSTOM_HEADER_VALUE))
             .endEvent()
             .done();
 
-    engineRule.deploy(modelInstance);
-    final long workflowInstanceKey = createWorkflowInstance();
-    RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+    engineRule.deployment().withXmlResource(PROCESS_ID, modelInstance).deploy();
+    final long workflowInstanceKey = createWorkflowInstances(1, VARIABLES_MSG_PACK).get(0);
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .getFirst();
 
     // when
-    activateJob(TASK_TYPE);
-    engineRule.job().ofInstance(workflowInstanceKey).withType(TASK_TYPE).complete();
+    activateJob(taskType);
+    engineRule.job().ofInstance(workflowInstanceKey).withType(taskType).complete();
 
     // then
     final JobRecordValue jobRecord =
-        RecordingExporter.jobRecords(JobIntent.ACTIVATED).withType(TASK_TYPE).getFirst().getValue();
+        RecordingExporter.jobRecords(JobIntent.ACTIVATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withType(taskType)
+            .getFirst()
+            .getValue();
     assertThat(jobRecord.getCustomHeaders().get("foo")).isEqualTo(LONG_CUSTOM_HEADER_VALUE);
   }
 
@@ -328,23 +342,22 @@ public class ActivateJobsTest {
 
     final String worker = "testWorker";
     final Duration timeout = Duration.ofMinutes(4);
+    final Instant deadline = clock.getCurrentTime().plus(timeout);
 
-    final Instant deadline = clock.getCurrentTime().plusMillis(timeout.toMillis());
-
-    deployWorkflow(TASK_TYPE);
+    engineRule.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
     createWorkflowInstances(1, VARIABLES_MSG_PACK);
     final Record<JobRecordValue> jobRecord =
-        jobRecords(JobIntent.CREATED).withType(TASK_TYPE).getFirst();
+        jobRecords(JobIntent.CREATED).withType(taskType).getFirst();
 
     // when
     final long jobKey =
         engineRule
             .jobs()
-            .withType(TASK_TYPE)
+            .withType(taskType)
             .byWorker(worker)
             .withTimeout(timeout.toMillis())
             .withMaxJobsToActivate(1)
-            .activateAndWait()
+            .activate()
             .getKey();
 
     final JobRecordValue job =
@@ -357,7 +370,7 @@ public class ActivateJobsTest {
 
     // then
     Assertions.assertThat(job)
-        .hasType(TASK_TYPE)
+        .hasType(taskType)
         .hasWorker(worker)
         .hasRetries(3)
         .hasDeadline(deadline);
@@ -384,8 +397,8 @@ public class ActivateJobsTest {
         MsgPackUtil.asMsgPackReturnArray("{\"key\": \"" + RandomString.make(variablesSize) + "\"}");
 
     // when
-    deployAndCreateJobs(TASK_TYPE, 3, variables);
-    final List<Long> jobKeys = activateJobs(TASK_TYPE, 3);
+    deployAndCreateJobs(taskType, 3, variables);
+    final List<Long> jobKeys = activateJobs(taskType, 3);
 
     // then
     assertThat(jobKeys).hasSize(2);
@@ -394,10 +407,7 @@ public class ActivateJobsTest {
   }
 
   private Record<JobRecordValue> completeJob(long jobKey) {
-    return engineRule
-        .job()
-        .withVariables(new UnsafeBuffer(VARIABLES_MSG_PACK))
-        .completeAndWait(jobKey);
+    return engineRule.job().withVariables(new UnsafeBuffer(VARIABLES_MSG_PACK)).complete(jobKey);
   }
 
   private Long activateJob(String type) {
@@ -409,21 +419,13 @@ public class ActivateJobsTest {
         .jobs()
         .withType(type)
         .withMaxJobsToActivate(amount)
-        .activateAndWait()
+        .activate()
         .getValue()
         .getJobKeys();
   }
 
   private List<Long> activateJobs(int amount) {
-    return activateJobs(TASK_TYPE, amount);
-  }
-
-  private long createWorkflowInstance() {
-    return createWorkflowInstances(1, VARIABLES_MSG_PACK).get(0);
-  }
-
-  private List<Long> createWorkflowInstances(int amount) {
-    return createWorkflowInstances(amount, VARIABLES_MSG_PACK);
+    return activateJobs(taskType, amount);
   }
 
   private List<Long> createWorkflowInstances(int amount, byte[] variables) {
@@ -431,14 +433,17 @@ public class ActivateJobsTest {
         .boxed()
         .map(
             i ->
-                engineRule.createWorkflowInstance(
-                    r -> r.setBpmnProcessId(PROCESS_ID).setVariables(new UnsafeBuffer(variables))))
+                engineRule
+                    .workflowInstance()
+                    .ofBpmnProcessId(PROCESS_ID)
+                    .withVariables(MsgPackConverter.convertToJson(variables))
+                    .create())
         .collect(Collectors.toList());
   }
 
   private List<Long> deployAndCreateJobs(
       final String type, final int amount, final byte[] variables) {
-    deployWorkflow(type);
+    engineRule.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(type)).deploy();
     final List<Long> instanceKeys = createWorkflowInstances(amount, variables);
 
     return jobRecords(JobIntent.CREATED)
@@ -449,31 +454,22 @@ public class ActivateJobsTest {
         .collect(Collectors.toList());
   }
 
-  private List<Long> deployAndCreateJobs(int amount) {
-    return deployAndCreateJobs(TASK_TYPE, amount);
-  }
-
   private List<Long> deployAndCreateJobs(String type, int amount) {
     return deployAndCreateJobs(type, amount, VARIABLES_MSG_PACK);
   }
 
-  private void deployWorkflow(String type) {
-    engineRule.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent("start")
-            .serviceTask("task", b -> b.zeebeTaskType(type).done())
-            .endEvent("end")
-            .done());
-  }
-
-  private void deployWorkflow(String... types) {
-    AbstractFlowNodeBuilder<?, ?> builder =
-        Bpmn.createExecutableProcess(PROCESS_ID).startEvent("start");
-
-    for (final String type : types) {
-      builder = builder.serviceTask(type, b -> b.zeebeTaskType(type));
-    }
-
-    engineRule.deploy(builder.done());
+  private void waitForJobs(
+      final String jobType, final int jobAmount, final List<Long> workflowInstanceKeys) {
+    waitUntil(
+        () ->
+            jobRecords(JobIntent.CREATED)
+                    .filter(
+                        r ->
+                            workflowInstanceKeys.contains(
+                                r.getValue().getHeaders().getWorkflowInstanceKey()))
+                    .withType(jobType)
+                    .limit(jobAmount)
+                    .count()
+                == jobAmount);
   }
 }

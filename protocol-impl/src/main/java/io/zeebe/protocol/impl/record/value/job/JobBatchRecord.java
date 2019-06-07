@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecordValue {
 
@@ -96,7 +97,7 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
     return this;
   }
 
-  public long getTimeout() {
+  public long getTimeoutLong() {
     return timeoutProp.getValue();
   }
 
@@ -142,7 +143,7 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
   }
 
   @Override
-  public Duration getTimeoutDuration() {
+  public Duration getTimeout() {
     return Duration.ofMillis(timeoutProp.getValue());
   }
 
@@ -159,7 +160,19 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
 
   @Override
   public List<JobRecordValue> getJobs() {
-    return StreamSupport.stream(jobsProp.spliterator(), false).collect(Collectors.toList());
+    return StreamSupport.stream(jobsProp.spliterator(), false)
+        .map(
+            jobRecord -> {
+              final byte[] bytes = new byte[jobRecord.getLength()];
+              final UnsafeBuffer copyRecord = new UnsafeBuffer(bytes);
+              final JobRecord copiedRecord = new JobRecord();
+
+              jobRecord.write(copyRecord, 0);
+              copiedRecord.wrap(copyRecord);
+
+              return copiedRecord;
+            })
+        .collect(Collectors.toList());
   }
 
   @Override

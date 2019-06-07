@@ -64,7 +64,7 @@ public class JobBatchRecordValueImpl extends RecordValueImpl implements JobBatch
   }
 
   @Override
-  public Duration getTimeoutDuration() {
+  public Duration getTimeout() {
     return timeout;
   }
 
