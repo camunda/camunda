@@ -87,6 +87,13 @@ export default class DefinitionSelection extends React.Component {
     return [];
   };
 
+  hasTenants = () => {
+    const definition = this.findSelectedKeyGroup(this.props.definitionKey);
+    if (definition) {
+      return definition.versions.find(({tenants}) => tenants.length >= 2);
+    }
+  };
+
   getSelectedTenants = () => this.props.tenants;
 
   changeTenants = tenantSelection => {
@@ -137,13 +144,12 @@ export default class DefinitionSelection extends React.Component {
       );
     }
 
-    const availableTenants = this.getAvailableTenants();
-
     return (
       <Popover className="DefinitionSelection" title={this.createTitle()}>
         <div
           className={classnames('container', {
-            large: this.canRenderDiagram()
+            large: this.canRenderDiagram(),
+            withTenants: this.hasTenants()
           })}
         >
           <div className="selectionPanel">
@@ -170,11 +176,7 @@ export default class DefinitionSelection extends React.Component {
                   {this.renderAllVersions(selectedKey)}
                 </Dropdown>
               </div>
-              <div
-                className={classnames('entry', {
-                  hidden: !selectedKey || availableTenants.length < 2
-                })}
-              >
+              <div className="tenant entry">
                 <span className="label">Tenant</span>
                 <TenantPopover
                   tenants={this.getAvailableTenants()}

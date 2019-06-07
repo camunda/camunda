@@ -210,10 +210,10 @@ it('should construct a popover title', async () => {
   expect(node.find('Popover')).toHaveProp('title', 'Definition : 1');
 });
 
-it('should hide the tenant selection if there is only one tenant', async () => {
+it('should hide the tenant selection by default', async () => {
   const node = await shallow(<DefinitionSelection {...props} />);
 
-  expect(node.find('.dropdowns .entry').last()).toHaveClassName('hidden');
+  expect(node.find('.container')).not.toHaveClassName('withTenants');
 });
 
 describe('tenants', () => {
@@ -281,7 +281,6 @@ describe('tenants', () => {
       <DefinitionSelection {...props} definitionKey="foo" definitionVersion="1" />
     );
 
-    expect(node.find('.dropdowns .entry').last()).not.toHaveClassName('hidden');
-    expect(node.find('TenantPopover')).toExist();
+    expect(node.find('.container')).toHaveClassName('withTenants');
   });
 });

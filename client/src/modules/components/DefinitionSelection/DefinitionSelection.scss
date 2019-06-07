@@ -16,7 +16,15 @@
     display: flex;
     flex-grow: 1;
     flex-direction: column;
-    width: 588px;
+    width: 463px;
+
+    &.withTenants {
+      width: 602px;
+
+      .selectionPanel .dropdowns .tenant.entry {
+        display: inline-block;
+      }
+    }
 
     &.large {
       height: 400px;
@@ -44,16 +52,17 @@
           display: inline-block;
           position: relative;
           margin-bottom: 25px;
-          margin-right: 25px;
-          width: 110px;
-
-          &.hidden {
-            visibility: hidden;
-          }
+          margin-left: 25px;
+          width: 108px;
 
           &:first-child {
-            margin-right: 25px;
-            width: 250px;
+            margin-left: 0;
+            width: 275px;
+          }
+
+          &.tenant {
+            display: none;
+            width: 124px;
           }
 
           .Dropdown,

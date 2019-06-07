@@ -60,4 +60,9 @@ it('should construct the label based on the selected tenants', () => {
   node.setProps({selected: ['a', 'b', 'c', null]});
 
   expect(node.find('Popover').prop('title')).toBe('All');
+
+  node.setProps({tenants: [{id: null, name: 'Not defined'}], selected: [null]});
+
+  expect(node.find('Popover').prop('title')).toBe('--');
+  expect(node.find('Popover')).toBeDisabled();
 });
