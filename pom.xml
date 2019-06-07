@@ -81,7 +81,7 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
-        <camunda.engine.version>7.11.0-alpha4</camunda.engine.version>
+        <camunda.engine.version>7.11.0</camunda.engine.version>
         <engine.profile.id>engine-latest</engine.profile.id>
       </properties>
     </profile>

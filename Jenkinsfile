@@ -18,7 +18,7 @@ def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 
 def static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
-CAMBPM_VERSION_LATEST = "7.11.0-alpha4"
+CAMBPM_VERSION_LATEST = "7.11.0"
 
 
 String getCamBpmDockerImage(String camBpmVersion) {
