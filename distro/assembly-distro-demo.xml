@@ -17,6 +17,8 @@
       <includes>
         <include>org.elasticsearch.distribution.zip:elasticsearch:zip</include>
       </includes>
+      <useProjectArtifact>false</useProjectArtifact>
+      <useProjectAttachments>false</useProjectAttachments>
       <unpackOptions>
         <excludes>
           <exclude>**/config/jvm.options</exclude>
@@ -40,7 +42,7 @@
     <fileSet>
       <!--create empty plugin directory-->
       <directory>src/</directory>
-      <outputDirectory>/plugin</outputDirectory>
+      <outputDirectory>plugin</outputDirectory>
       <excludes>
         <exclude>*/**</exclude>
       </excludes>
@@ -48,7 +50,7 @@
 
     <fileSet>
       <directory>src/upgrade</directory>
-      <outputDirectory>/upgrade</outputDirectory>
+      <outputDirectory>upgrade</outputDirectory>
       <!-- these files will be included in files section -->
       <excludes>
         <exclude>upgrade.bat</exclude>
