@@ -160,11 +160,8 @@ public class MessageOutputMappingTest {
 
     // when
     final long workflowInstanceKey =
-        ENGINE_RULE
-            .createWorkflowInstance(
-                r -> r.setKey(workflowKey).setVariables(MsgPackUtil.asMsgPack(variables)))
-            .getValue()
-            .getInstanceKey();
+        ENGINE_RULE.createWorkflowInstance(
+            r -> r.setKey(workflowKey).setVariables(MsgPackUtil.asMsgPack(variables)));
     ENGINE_RULE
         .message()
         .withName(MESSAGE_NAME)

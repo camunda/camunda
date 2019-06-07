@@ -102,10 +102,7 @@ public class ActivityInputMappingTest {
     // when
     final DirectBuffer variables = MsgPackUtil.asMsgPack(initialVariables);
     final long workflowInstanceKey =
-        ENGINE_RULE
-            .createWorkflowInstance(r -> r.setKey(workflowKey).setVariables(variables))
-            .getValue()
-            .getInstanceKey();
+        ENGINE_RULE.createWorkflowInstance(r -> r.setKey(workflowKey).setVariables(variables));
 
     // then
     final long flowScopeKey =

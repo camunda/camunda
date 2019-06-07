@@ -130,13 +130,10 @@ public class MessageMappingTest {
     final long workflowKey = deployWorkflowWithMapping(e -> {});
 
     final long workflowInstanceKey =
-        ENGINE_RULE
-            .createWorkflowInstance(
-                r ->
-                    r.setKey(workflowKey)
-                        .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)))
-            .getValue()
-            .getInstanceKey();
+        ENGINE_RULE.createWorkflowInstance(
+            r ->
+                r.setKey(workflowKey)
+                    .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)));
 
     // when
     ENGINE_RULE
@@ -164,13 +161,10 @@ public class MessageMappingTest {
     final long workflowKey = deployWorkflowWithMapping(e -> {});
 
     final long workflowInstanceKey =
-        ENGINE_RULE
-            .createWorkflowInstance(
-                r ->
-                    r.setKey(workflowKey)
-                        .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)))
-            .getValue()
-            .getInstanceKey();
+        ENGINE_RULE.createWorkflowInstance(
+            r ->
+                r.setKey(workflowKey)
+                    .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)));
 
     // when
     ENGINE_RULE
@@ -197,13 +191,10 @@ public class MessageMappingTest {
     // given
     final long workflowKey = deployWorkflowWithMapping(e -> e.zeebeOutput("foo", MESSAGE_NAME));
     final long workflowInstanceKey =
-        ENGINE_RULE
-            .createWorkflowInstance(
-                r ->
-                    r.setKey(workflowKey)
-                        .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)))
-            .getValue()
-            .getInstanceKey();
+        ENGINE_RULE.createWorkflowInstance(
+            r ->
+                r.setKey(workflowKey)
+                    .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)));
 
     // when
 

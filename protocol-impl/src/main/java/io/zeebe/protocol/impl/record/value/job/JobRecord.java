@@ -182,7 +182,7 @@ public class JobRecord extends UnifiedRecordValue
 
   @Override
   public Map<String, Object> getCustomHeaders() {
-    throw new UnsupportedOperationException("not yet implemented");
+    return MsgPackConverter.convertToMap(customHeadersProp.getValue());
   }
 
   @Override

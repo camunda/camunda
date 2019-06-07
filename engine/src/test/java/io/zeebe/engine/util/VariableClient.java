@@ -32,10 +32,14 @@ public class VariableClient {
   private final VariableDocumentRecord variableDocumentRecord;
   private final StreamProcessorRule environmentRule;
 
-  public VariableClient(StreamProcessorRule environmentRule, long scopeKey) {
+  public VariableClient(StreamProcessorRule environmentRule) {
     this.environmentRule = environmentRule;
     variableDocumentRecord = new VariableDocumentRecord();
+  }
+
+  public VariableClient ofScope(long scopeKey) {
     variableDocumentRecord.setScopeKey(scopeKey);
+    return this;
   }
 
   public VariableClient withDocument(Map<String, Object> variables) {

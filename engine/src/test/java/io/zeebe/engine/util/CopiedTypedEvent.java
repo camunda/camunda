@@ -23,11 +23,13 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.util.ReflectUtil;
+import java.time.Instant;
 
 public class CopiedTypedEvent extends TypedEventImpl {
   private final long key;
   private final long position;
   private final long sourcePosition;
+  private final long timestamp;
 
   public CopiedTypedEvent(LoggedEvent event, UnifiedRecordValue object) {
     this.value = object;
@@ -35,6 +37,7 @@ public class CopiedTypedEvent extends TypedEventImpl {
     this.position = event.getPosition();
     this.sourcePosition = event.getSourceEventPosition();
     this.metadata = new RecordMetadata();
+    this.timestamp = event.getTimestamp();
     event.readMetadata(metadata);
     event.readValue(object);
   }
@@ -44,12 +47,14 @@ public class CopiedTypedEvent extends TypedEventImpl {
       RecordMetadata recordMetadata,
       long key,
       long position,
-      long sourcePosition) {
+      long sourcePosition,
+      long timestamp) {
     this.metadata = recordMetadata;
     this.value = object;
     this.key = key;
     this.position = position;
     this.sourcePosition = sourcePosition;
+    this.timestamp = timestamp;
   }
 
   @Override
@@ -65,6 +70,11 @@ public class CopiedTypedEvent extends TypedEventImpl {
   @Override
   public long getKey() {
     return key;
+  }
+
+  @Override
+  public Instant getTimestamp() {
+    return Instant.ofEpochMilli(timestamp);
   }
 
   @Override

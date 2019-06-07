@@ -116,7 +116,7 @@ public class ElementActivatingHandlerTest extends ElementHandlerTestCase<Executa
     final IncidentRecord raisedIncident = getRaisedIncident();
     assertThat(handled).isFalse();
     assertThat(raisedIncident)
-        .extracting(IncidentRecord::getErrorType, IncidentRecord::getErrorMessage)
+        .extracting(IncidentRecord::getErrorTypeEnum, IncidentRecord::getErrorMessageBuffer)
         .containsExactly(ErrorType.IO_MAPPING_ERROR, BufferUtil.wrapString("fail"));
   }
 }

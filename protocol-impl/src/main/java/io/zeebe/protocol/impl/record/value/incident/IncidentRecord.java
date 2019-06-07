@@ -15,6 +15,7 @@
  */
 package io.zeebe.protocol.impl.record.value.incident;
 
+import io.zeebe.exporter.api.record.value.IncidentRecordValue;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
@@ -22,9 +23,11 @@ import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.WorkflowInstanceRelated;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class IncidentRecord extends UnifiedRecordValue implements WorkflowInstanceRelated {
+public class IncidentRecord extends UnifiedRecordValue
+    implements WorkflowInstanceRelated, IncidentRecordValue {
   private final EnumProperty<ErrorType> errorTypeProp =
       new EnumProperty<>("errorType", ErrorType.class, ErrorType.UNKNOWN);
   private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");
@@ -49,7 +52,7 @@ public class IncidentRecord extends UnifiedRecordValue implements WorkflowInstan
         .declareProperty(variableScopeKeyProp);
   }
 
-  public ErrorType getErrorType() {
+  public ErrorType getErrorTypeEnum() {
     return errorTypeProp.getValue();
   }
 
@@ -58,7 +61,7 @@ public class IncidentRecord extends UnifiedRecordValue implements WorkflowInstan
     return this;
   }
 
-  public DirectBuffer getErrorMessage() {
+  public DirectBuffer getErrorMessageBuffer() {
     return errorMessageProp.getValue();
   }
 
@@ -72,7 +75,7 @@ public class IncidentRecord extends UnifiedRecordValue implements WorkflowInstan
     return this;
   }
 
-  public DirectBuffer getBpmnProcessId() {
+  public DirectBuffer getBpmnProcessIdBuffer() {
     return bpmnProcessIdProp.getValue();
   }
 
@@ -81,7 +84,7 @@ public class IncidentRecord extends UnifiedRecordValue implements WorkflowInstan
     return this;
   }
 
-  public DirectBuffer getElementId() {
+  public DirectBuffer getElementIdBuffer() {
     return elementIdProp.getValue();
   }
 
@@ -146,5 +149,25 @@ public class IncidentRecord extends UnifiedRecordValue implements WorkflowInstan
     setVariableScopeKey(key);
 
     return this;
+  }
+
+  @Override
+  public String getErrorType() {
+    return errorTypeProp.getValue().name();
+  }
+
+  @Override
+  public String getErrorMessage() {
+    return BufferUtil.bufferAsString(errorMessageProp.getValue());
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  @Override
+  public String getElementId() {
+    return BufferUtil.bufferAsString(elementIdProp.getValue());
   }
 }

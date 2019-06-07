@@ -240,7 +240,7 @@ public class RecordingExporter implements Exporter {
           final long waitTime = endTime - now;
           try {
             IS_EMPTY.await(waitTime, TimeUnit.MILLISECONDS);
-          } catch (final InterruptedException e) {
+          } catch (final InterruptedException ignored) {
           }
           now = System.currentTimeMillis();
         }
