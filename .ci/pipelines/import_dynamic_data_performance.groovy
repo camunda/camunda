@@ -7,7 +7,7 @@ def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { return "postgres:${po
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "camunda/camunda-bpm-platform:${cambpmVersion}" }
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) { return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}" }
 
-static String mavenElasticsearchAgent(env, postgresVersion='9.6-alpine', esVersion = '6.2.0', cambpmVersion = '7.10.0') {
+static String mavenElasticsearchAgent(env, postgresVersion='9.6-alpine', esVersion = '6.2.0', cambpmVersion = '7.11.0') {
   return """
 apiVersion: v1
 kind: Pod

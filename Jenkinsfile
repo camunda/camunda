@@ -298,7 +298,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec("7.10.0")
+              yaml integrationTestPodSpec("7.10.6")
             }
           }
           steps {
@@ -355,7 +355,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-7.9_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec('7.9.7')
+              yaml integrationTestPodSpec('7.9.12')
             }
           }
           steps {
@@ -376,7 +376,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-7.10_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec('7.10.5')
+              yaml integrationTestPodSpec('7.10.6')
             }
           }
           steps {

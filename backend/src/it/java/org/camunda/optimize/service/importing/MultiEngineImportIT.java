@@ -194,7 +194,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     // then
     SearchResponse searchResponse = performProcessDefinitionSearchRequest(TIMESTAMP_BASED_IMPORT_INDEX_TYPE);
 
-    assertThat(searchResponse.getHits().getTotalHits(), is(16L));
+    assertThat(searchResponse.getHits().getTotalHits(), is(18L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
       String typeName = searchHit.getSourceAsMap().get(ES_TYPE_INDEX_REFERS_TO).toString();
       String timestampOfLastEntity = searchHit.getSourceAsMap().get(TIMESTAMP_OF_LAST_ENTITY).toString();

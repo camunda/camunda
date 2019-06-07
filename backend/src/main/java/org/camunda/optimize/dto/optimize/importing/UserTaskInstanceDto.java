@@ -10,9 +10,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
+import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
+import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @NoArgsConstructor
@@ -37,6 +41,11 @@ public class UserTaskInstanceDto implements OptimizeDto {
 
   private String deleteReason;
 
+  private String assignee;
+  private List<String> candidateGroups = new ArrayList<>();
+  private List<AssigneeOperationDto> assigneeOperations = new ArrayList<>();
+  private List<CandidateGroupOperationDto> candidateGroupOperations = new ArrayList<>();
+
   private Long totalDurationInMs;
   private Long idleDurationInMs;
   private Long workDurationInMs;
@@ -49,6 +58,19 @@ public class UserTaskInstanceDto implements OptimizeDto {
     this.processInstanceId = processInstanceId;
     this.engine = engine;
     this.userOperations = userOperations;
+  }
+
+  public UserTaskInstanceDto(final String id, final String processInstanceId, final String engine,
+                             final String assignee, final List<String> candidateGroups,
+                             final List<AssigneeOperationDto> assigneeOperations,
+                             final List<CandidateGroupOperationDto> candidateGroupOperations) {
+    this.id = id;
+    this.processInstanceId = processInstanceId;
+    this.engine = engine;
+    this.assignee = assignee;
+    this.candidateGroups = candidateGroups;
+    this.assigneeOperations = assigneeOperations;
+    this.candidateGroupOperations = candidateGroupOperations;
   }
 
   public UserTaskInstanceDto(final String id, final String processInstanceId, final String engine,

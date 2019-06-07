@@ -32,6 +32,7 @@ public class EngineConstantsUtil {
   public static final String COMPLETED_USER_TASK_INSTANCE_ENDPOINT = "/optimize/task-instance/completed";
   public static final String RUNNING_USER_TASK_INSTANCE_ENDPOINT = "/optimize/task-instance/running";
   public static final String USER_OPERATIONS_LOG_ENDPOINT = "/optimize/user-operation";
+  public static final String IDENTITY_LINK_LOG_ENDPOINT = "/optimize/identity-link-log";
   public static final String TENANT_ENDPOINT = "/tenant";
 
   public static final String DECISION_INSTANCE_ENDPOINT = "/optimize/decision-instance";
@@ -60,5 +61,11 @@ public class EngineConstantsUtil {
 
   public static final String OPTIMIZE_APPLICATION_RESOURCE_ID = "optimize";
   public static final String ALL_RESOURCES_RESOURCE_ID = "*";
+
+  public static final String IDENTITY_LINK_OPERATION_ADD = "add";
+  public static final String IDENTITY_LINK_OPERATION_DELETE = "delete";
+
+  public static final String IDENTITY_LINK_TYPE_ASSIGNEE = "assignee";
+  public static final String IDENTITY_LINK_TYPE_CANDIDATE = "candidate";
 
 }

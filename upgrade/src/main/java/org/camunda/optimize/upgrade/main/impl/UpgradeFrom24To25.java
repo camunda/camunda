@@ -43,6 +43,10 @@ import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.USER_TASK_NAMES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_OPERATIONS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ASSIGNEE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ASSIGNEE_OPERATIONS;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CANDIDATE_GROUPS;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CANDIDATE_GROUP_OPERATIONS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CLAIM_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
@@ -106,8 +110,9 @@ public class UpgradeFrom24To25 implements Upgrade {
     // @formatter:off
     String script = substitutor.replace(
       "if (params.${definitionIdToUserTaskNamesParam}.containsKey(ctx._source.${definitionIdField})) {\n" +
-        "ctx._source.${userTaskNamesField} = params.${definitionIdToUserTaskNamesParam}.get(ctx._source.${definitionIdField});" +
-        "}\n"
+        "ctx._source.${userTaskNamesField} = " +
+          "params.${definitionIdToUserTaskNamesParam}.get(ctx._source.${definitionIdField});" +
+      "}\n"
     );
     // @formatter:on
 
@@ -197,6 +202,10 @@ public class UpgradeFrom24To25 implements Upgrade {
         .put("claimDateField", USER_TASK_CLAIM_DATE)
         .put("claimTypeValue", "Claim")
         .put("dateFormatPattern", OPTIMIZE_DATE_FORMAT)
+        .put("assigneeField", USER_TASK_ASSIGNEE)
+        .put("assigneeOperationsField", USER_TASK_ASSIGNEE_OPERATIONS)
+        .put("candidateGroupsField", USER_TASK_CANDIDATE_GROUPS)
+        .put("candidateGroupOperationsField", USER_TASK_CANDIDATE_GROUP_OPERATIONS)
         .build()
     );
 
@@ -204,6 +213,12 @@ public class UpgradeFrom24To25 implements Upgrade {
     String script = substitutor.replace(
       "if (ctx._source.${userTasksField} != null) {\n" +
           "for (def currentTask : ctx._source.${userTasksField}) {\n" +
+            // initialize new assignee and candidate group fields
+            "currentTask.${assigneeField} = null;\n" +
+            "currentTask.${assigneeOperationsField} = new ArrayList();\n" +
+            "currentTask.${candidateGroupsField} = new ArrayList();\n" +
+            "currentTask.${candidateGroupOperationsField} = new ArrayList();\n" +
+            // calculate claim date
             "if (currentTask.${userOperationsField} != null) {\n" +
               "def dateFormatter = new SimpleDateFormat(\"${dateFormatPattern}\");\n" +
               "currentTask.${claimDateField} = null;\n" +

@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.importing;
+package org.camunda.optimize.service.importing.user_task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Collections2;

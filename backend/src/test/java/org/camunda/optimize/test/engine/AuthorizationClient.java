@@ -35,7 +35,7 @@ public class AuthorizationClient {
   }
 
   public void createKermitGroupAndAddKermitToThatGroup() {
-    engineRule.createGroup(GROUP_ID, "Group", "foo");
+    engineRule.createGroup(GROUP_ID);
     engineRule.addUserToGroup(KERMIT_USER, GROUP_ID);
   }
 

@@ -126,6 +126,7 @@ public class ConfigurationService {
   private Integer engineImportActivityInstanceMaxPageSize;
   private Integer engineImportUserTaskInstanceMaxPageSize;
   private Integer engineImportUserOperationLogEntryMaxPageSize;
+  private Integer engineImportIdentityLinkLogsMaxPageSize;
   private Integer engineImportDecisionDefinitionXmlMaxPageSize;
   private Integer engineImportDecisionInstanceMaxPageSize;
   private Integer importIndexAutoStorageIntervalInSec;
@@ -700,6 +701,16 @@ public class ConfigurationService {
     }
     ensureGreaterThanZero(engineImportUserOperationLogEntryMaxPageSize);
     return engineImportUserOperationLogEntryMaxPageSize;
+  }
+
+  public int getEngineImportIdentityLinkLogsMaxPageSize() {
+    if (engineImportIdentityLinkLogsMaxPageSize == null) {
+      engineImportIdentityLinkLogsMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_IDENTITY_LING_LOG_MAX_PAGE_SIZE, Integer.class
+      );
+    }
+    ensureGreaterThanZero(engineImportIdentityLinkLogsMaxPageSize);
+    return engineImportIdentityLinkLogsMaxPageSize;
   }
 
   public List<String> getVariableImportPluginBasePackages() {

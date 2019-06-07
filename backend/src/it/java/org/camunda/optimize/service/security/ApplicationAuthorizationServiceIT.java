@@ -59,7 +59,7 @@ public class ApplicationAuthorizationServiceIT {
   public void grantAccessForGroupForAllResources() {
     // given
     engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup", "foo", "foo");
+    engineRule.createGroup("kermitGroup");
     engineRule.addUserToGroup("kermit", "kermitGroup");
 
     // when
@@ -79,7 +79,7 @@ public class ApplicationAuthorizationServiceIT {
   public void grantAccessForGroupForOptimizeResource() {
     // given
     engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup", "foo", "foo");
+    engineRule.createGroup("kermitGroup");
     engineRule.addUserToGroup("kermit", "kermitGroup");
 
     // when
@@ -135,7 +135,7 @@ public class ApplicationAuthorizationServiceIT {
   public void revokeAccessForGroupForAllResources() {
     // given
     engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup", "foo", "foo");
+    engineRule.createGroup("kermitGroup");
     engineRule.addUserToGroup("kermit", "kermitGroup");
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
@@ -160,7 +160,7 @@ public class ApplicationAuthorizationServiceIT {
   public void revokeAccessForGroupForOptimizeResource() {
     // given
     engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup", "foo", "foo");
+    engineRule.createGroup("kermitGroup");
     engineRule.addUserToGroup("kermit", "kermitGroup");
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
@@ -186,7 +186,7 @@ public class ApplicationAuthorizationServiceIT {
   public void revokeAccessForUserForAllResources() {
     // given
     engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup", "foo", "foo");
+    engineRule.createGroup("kermitGroup");
     engineRule.addUserToGroup("kermit", "kermitGroup");
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
@@ -211,7 +211,7 @@ public class ApplicationAuthorizationServiceIT {
   public void revokeAccessForUserForOptimizeResource() {
     // given
     engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup", "foo", "foo");
+    engineRule.createGroup("kermitGroup");
     engineRule.addUserToGroup("kermit", "kermitGroup");
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
@@ -237,7 +237,7 @@ public class ApplicationAuthorizationServiceIT {
   public void grantRevokeGrantRevokeAccess() {
     // given
     engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup", "foo", "foo");
+    engineRule.createGroup("kermitGroup");
     engineRule.addUserToGroup("kermit", "kermitGroup");
 
     // when
@@ -318,7 +318,7 @@ public class ApplicationAuthorizationServiceIT {
   public void addGroupAccessAndRevokeAccessForGroupForOptimizeResource() {
     // given
     engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup", "foo", "foo");
+    engineRule.createGroup("kermitGroup");
     engineRule.addUserToGroup("kermit", "kermitGroup");
 
     // when

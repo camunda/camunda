@@ -12,6 +12,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.impl.Complete
 import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionDefinitionImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionInstanceImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.IdentityLinkLogImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningActivityInstanceImportIndexHandler;
@@ -68,6 +69,7 @@ public class EngineImportIndexHandlerProvider {
     timestampBasedHandlers.add(getRunningActivityImportIndexHandler());
     timestampBasedHandlers.add(getCompletedUserTaskInstanceImportIndexHandler());
     timestampBasedHandlers.add(getUserOperationLogImportIndexHandler());
+    timestampBasedHandlers.add(getIdentityLinkLogImportIndexHandler());
 
     allEntitiesBasedHandlers.add(getTenantImportIndexHandler());
     allEntitiesBasedHandlers.add(getProcessDefinitionImportIndexHandler());
@@ -105,9 +107,8 @@ public class EngineImportIndexHandlerProvider {
    * @param requiredType  - type of index handler
    * @param <R>           - Index handler instance
    * @param <C>           - Class signature of required index handler
-   * @return
    */
-  protected <R, C extends Class<R>> R getImportIndexHandlerInstance(EngineContext engineContext, C requiredType) {
+  private <R, C extends Class<R>> R getImportIndexHandlerInstance(EngineContext engineContext, C requiredType) {
     R result;
     if (isInstantiated(requiredType)) {
       result = requiredType.cast(
@@ -119,7 +120,7 @@ public class EngineImportIndexHandlerProvider {
     return result;
   }
 
-  protected boolean isInstantiated(Class handlerClass) {
+  private boolean isInstantiated(Class handlerClass) {
     return allHandlers.get(handlerClass.getSimpleName()) != null;
   }
 
@@ -161,6 +162,10 @@ public class EngineImportIndexHandlerProvider {
 
   public UserOperationLogInstanceImportIndexHandler getUserOperationLogImportIndexHandler() {
     return getImportIndexHandlerInstance(engineContext, UserOperationLogInstanceImportIndexHandler.class);
+  }
+
+  public IdentityLinkLogImportIndexHandler getIdentityLinkLogImportIndexHandler() {
+    return getImportIndexHandlerInstance(engineContext, IdentityLinkLogImportIndexHandler.class);
   }
 
   public DecisionDefinitionImportIndexHandler getDecisionDefinitionImportIndexHandler() {

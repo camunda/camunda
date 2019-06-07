@@ -117,6 +117,24 @@ public class UpgradeProcessInstanceDataIT extends AbstractUpgradeIT {
     assertThat(processInstNoUserTasks.getVersion(), is(1L));
   }
 
+  @Test
+  public void assigneeAndCandidateGroupFieldsAreInitialized() throws Exception {
+    //given
+    UpgradePlan upgradePlan = new UpgradeFrom24To25().buildUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+    final ProcessInstanceDto processInstanceDto = getProcessInstanceDataById(PROC_INST_MULTIPLECLAIMS_VERSION_24_ID);
+
+    // then
+    processInstanceDto.getUserTasks().forEach(task -> {
+      assertThat(task.getAssignee(), nullValue());
+      assertThat(task.getAssigneeOperations().size(), is(0));
+      assertThat(task.getCandidateGroups().size(), is(0));
+      assertThat(task.getCandidateGroupOperations().size(), is(0));
+    });
+  }
+
   private String getProcessInstanceIndexAlias() {
     return getOptimizeIndexAliasForType(PROCESS_INSTANCE_TYPE.getType());
   }

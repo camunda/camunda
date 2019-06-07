@@ -493,7 +493,7 @@ public class DefinitionAuthorizationIT {
     authorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
     engineRule.addUser(genzoUser, genzoUser);
     engineRule.grantUserOptimizeAccess(genzoUser);
-    engineRule.createGroup("genzoGroup", "Group", "foo");
+    engineRule.createGroup("genzoGroup");
     engineRule.addUserToGroup(genzoUser, "genzoGroup");
 
     deployAndImportDefinition(definitionResourceType);

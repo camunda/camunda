@@ -194,6 +194,74 @@ public class EngineIntegrationRule extends TestWatcher {
     return taskId;
   }
 
+  public void addCandidateGroupForAllRunningUserTasks(final String groupId) {
+    final BasicCredentialsProvider credentialsProvider =
+      getBasicCredentialsProvider(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    try (final CloseableHttpClient httpClient = HttpClientBuilder.create()
+      .setDefaultCredentialsProvider(credentialsProvider).build()
+    ) {
+      final List<TaskDto> tasks = getUserTasks(httpClient, null);
+      for (TaskDto task : tasks) {
+        addCandidateGroupToUserTask(httpClient, task.getId(), groupId);
+      }
+    } catch (IOException e) {
+      logger.error("Error while trying to create http client auth authentication!", e);
+    }
+  }
+
+  private void addCandidateGroupToUserTask(final CloseableHttpClient httpClient, final String taskId,
+                                          final String groupId) throws IOException {
+    HttpPost addCandidateGroupPost = new HttpPost(getAddIdentityLinkUrl(taskId));
+    String bodyAsString = String.format("{\"groupId\": \"%s\", \"type\": \"candidate\"}", groupId);
+    addCandidateGroupPost.setEntity(new StringEntity(bodyAsString));
+    addCandidateGroupPost.addHeader("Content-Type", "application/json");
+    try (CloseableHttpResponse response = httpClient.execute(addCandidateGroupPost)) {
+      if (response.getStatusLine().getStatusCode() != 204) {
+        throw new RuntimeException(
+          "Could not add candidate group! Status-code: " + response.getStatusLine().getStatusCode()
+        );
+      }
+    }
+  }
+
+  private String getAddIdentityLinkUrl(final String taskId) {
+    return getEngineUrl() + "/task/" + taskId + "/identity-links";
+  }
+
+  public void deleteCandidateGroupForAllRunningUserTasks(final String groupId) {
+    final BasicCredentialsProvider credentialsProvider =
+      getBasicCredentialsProvider(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    try (final CloseableHttpClient httpClient = HttpClientBuilder.create()
+      .setDefaultCredentialsProvider(credentialsProvider).build()
+    ) {
+      final List<TaskDto> tasks = getUserTasks(httpClient, null);
+      for (TaskDto task : tasks) {
+        deleteCandidateGroupToUserTask(httpClient, task.getId(), groupId);
+      }
+    } catch (IOException e) {
+      logger.error("Error while trying to create http client auth authentication!", e);
+    }
+  }
+
+  private void deleteCandidateGroupToUserTask(final CloseableHttpClient httpClient, final String taskId,
+                                          final String groupId) throws IOException {
+    HttpPost addCandidateGroupPost = new HttpPost(getDeleteIdentityLinkUrl(taskId));
+    String bodyAsString = String.format("{\"groupId\": \"%s\", \"type\": \"candidate\"}", groupId);
+    addCandidateGroupPost.setEntity(new StringEntity(bodyAsString));
+    addCandidateGroupPost.addHeader("Content-Type", "application/json");
+    try (CloseableHttpResponse response = httpClient.execute(addCandidateGroupPost)) {
+      if (response.getStatusLine().getStatusCode() != 204) {
+        throw new RuntimeException(
+          "Could not add candidate group! Status-code: " + response.getStatusLine().getStatusCode()
+        );
+      }
+    }
+  }
+
+  private String getDeleteIdentityLinkUrl(final String taskId) {
+    return getEngineUrl() + "/task/" + taskId + "/identity-links/delete";
+  }
+
   public void finishAllRunningUserTasks() {
     finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
@@ -213,11 +281,15 @@ public class EngineIntegrationRule extends TestWatcher {
     ) {
       final List<TaskDto> tasks = getUserTasks(httpClient, processInstanceId);
       for (TaskDto task : tasks) {
-        claimAndCompleteUserTask(httpClient, task);
+        claimAndCompleteUserTask(httpClient, user, task);
       }
     } catch (IOException e) {
       logger.error("Error while trying to create http client auth authentication!", e);
     }
+  }
+
+  public void claimAllRunningUserTasks() {
+    claimAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, null);
   }
 
   public void claimAllRunningUserTasks(final String processInstanceId) {
@@ -238,11 +310,43 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
+  public void unclaimAllRunningUserTasks() {
+    unclaimAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, null);
+  }
+
+  private void unclaimAllRunningUserTasks(final String user, final String password, final String processInstanceId) {
+    final BasicCredentialsProvider credentialsProvider = getBasicCredentialsProvider(user, password);
+    try (final CloseableHttpClient httpClient = HttpClientBuilder.create()
+      .setDefaultCredentialsProvider(credentialsProvider).build()
+    ) {
+      final List<TaskDto> tasks = getUserTasks(httpClient, processInstanceId);
+      for (TaskDto task : tasks) {
+        unclaimUserTask(httpClient, user, task);
+      }
+    } catch (IOException e) {
+      logger.error("Error while trying to create http client auth authentication!", e);
+    }
+  }
+
+  private void unclaimUserTask(final CloseableHttpClient authenticatingClient, final String userId, final TaskDto task)
+    throws IOException {
+    HttpPost claimPost = new HttpPost(getSecuredUnclaimTaskUri(task.getId()));
+    claimPost.setEntity(new StringEntity("{ \"userId\" : \"" + userId + "\" }"));
+    claimPost.addHeader("Content-Type", "application/json");
+    try (CloseableHttpResponse response = authenticatingClient.execute(claimPost)) {
+      if (response.getStatusLine().getStatusCode() != 204) {
+        throw new RuntimeException(
+          "Could not unclaim user task! Status-code: " + response.getStatusLine().getStatusCode()
+        );
+      }
+    }
+  }
+
   public void completeUserTaskWithoutClaim(final String processInstanceId) {
     completeUserTaskWithoutClaim(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
   }
 
-  public void completeUserTaskWithoutClaim(final String user, final String password, final String processInstanceId) {
+  private void completeUserTaskWithoutClaim(final String user, final String password, final String processInstanceId) {
     final BasicCredentialsProvider credentialsProvider = getBasicCredentialsProvider(user, password);
     try (final CloseableHttpClient httpClient = HttpClientBuilder.create()
       .setDefaultCredentialsProvider(credentialsProvider).build()
@@ -289,15 +393,17 @@ public class EngineIntegrationRule extends TestWatcher {
     return getEngineUrl() + "/task";
   }
 
-  private void claimAndCompleteUserTask(final CloseableHttpClient authenticatingClient, final TaskDto task)
+  private void claimAndCompleteUserTask(final CloseableHttpClient authenticatingClient, final String userId,
+                                        final TaskDto task)
     throws IOException {
-    claimUserTaskAsDefaultUser(authenticatingClient, task);
+    claimUserTaskAsDefaultUser(authenticatingClient, userId, task);
     completeUserTask(authenticatingClient, task);
   }
 
-  private void claimUserTaskAsDefaultUser(final CloseableHttpClient authenticatingClient, final TaskDto task)
+  private void claimUserTaskAsDefaultUser(final CloseableHttpClient authenticatingClient, final String userId,
+                                          final TaskDto task)
     throws IOException {
-    claimUserTask(authenticatingClient, DEFAULT_USERNAME, task);
+    claimUserTask(authenticatingClient, userId, task);
   }
 
   private void claimUserTask(final CloseableHttpClient authenticatingClient, final String userId, final TaskDto task)
@@ -326,6 +432,10 @@ public class EngineIntegrationRule extends TestWatcher {
         );
       }
     }
+  }
+
+  private String getSecuredUnclaimTaskUri(final String taskId) {
+    return getSecuredEngineUrl() + "/task/" + taskId + "/unclaim";
   }
 
   private String getSecuredClaimTaskUri(final String taskId) {
@@ -1042,11 +1152,11 @@ public class EngineIntegrationRule extends TestWatcher {
     return userDto;
   }
 
-  public void createGroup(String id, String name, String type) {
+  public void createGroup(String id) {
     GroupDto groupDto = new GroupDto();
     groupDto.setId(id);
-    groupDto.setName(name);
-    groupDto.setType(type);
+    groupDto.setName("anyGroupName");
+    groupDto.setType("anyGroupType");
 
     try {
       CloseableHttpClient client = getHttpClient();

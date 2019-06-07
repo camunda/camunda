@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.schema.type;
 
+import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
+import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -69,6 +71,11 @@ public class ProcessInstanceType extends StrictTypeMappingCreator implements Def
   public static final String USER_TASK_DUE_DATE = "dueDate";
   public static final String USER_TASK_CLAIM_DATE = "claimDate";
 
+  public static final String USER_TASK_ASSIGNEE = "assignee";
+  public static final String USER_TASK_CANDIDATE_GROUPS = "candidateGroups";
+  public static final String USER_TASK_ASSIGNEE_OPERATIONS = "assigneeOperations";
+  public static final String USER_TASK_CANDIDATE_GROUP_OPERATIONS = "candidateGroupOperations";
+
   public static final String USER_TASK_DELETE_REASON = "deleteReason";
 
   public static final String USER_OPERATIONS = "userOperations";
@@ -82,6 +89,16 @@ public class ProcessInstanceType extends StrictTypeMappingCreator implements Def
 
   public static final String ENGINE = "engine";
   public static final String TENANT_ID = "tenantId";
+
+  public static final String ASSIGNEE_OPERATION_ID = AssigneeOperationDto.Fields.id.name();
+  public static final String ASSIGNEE_OPERATION_USER_ID = AssigneeOperationDto.Fields.userId.name();
+  public static final String ASSIGNEE_OPERATION_TYPE = AssigneeOperationDto.Fields.operationType.name();
+  public static final String ASSIGNEE_OPERATION_TIMESTAMP = AssigneeOperationDto.Fields.timestamp.name();
+
+  public static final String CANDIDATE_GROUP_OPERATION_ID = CandidateGroupOperationDto.Fields.id.name();
+  public static final String CANDIDATE_GROUP_OPERATION_GROUP_ID = CandidateGroupOperationDto.Fields.groupId.name();
+  public static final String CANDIDATE_GROUP_OPERATION_TYPE = CandidateGroupOperationDto.Fields.operationType.name();
+  public static final String CANDIDATE_GROUP_OPERATION_TIMESTAMP = CandidateGroupOperationDto.Fields.timestamp.name();
 
   @Override
   public String getType() {
@@ -326,6 +343,26 @@ public class ProcessInstanceType extends StrictTypeMappingCreator implements Def
           addNestedUserOperationsField(builder)
         .endObject()
       .endObject()
+      .startObject(USER_TASK_ASSIGNEE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(USER_TASK_CANDIDATE_GROUPS)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(USER_TASK_ASSIGNEE_OPERATIONS)
+        .field("type", "nested")
+        .field("include_in_all", false)
+        .startObject("properties");
+          addNestedAssigneeOperations(builder)
+        .endObject()
+      .endObject()
+      .startObject(USER_TASK_CANDIDATE_GROUP_OPERATIONS)
+        .field("type", "nested")
+        .field("include_in_all", false)
+        .startObject("properties");
+          addNestedCandidateGroupOperations(builder)
+        .endObject()
+      .endObject()
       ;
     // @formatter:on
     return builder;
@@ -356,6 +393,48 @@ public class ProcessInstanceType extends StrictTypeMappingCreator implements Def
       .endObject()
       .startObject(USER_OPERATION_NEW_VALUE)
         .field("type", "keyword")
+      .endObject()
+      ;
+    return builder;
+    // @formatter:on
+  }
+
+  private XContentBuilder addNestedAssigneeOperations(final XContentBuilder builder) throws IOException {
+    // @formatter:off
+    builder
+      .startObject(ASSIGNEE_OPERATION_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ASSIGNEE_OPERATION_USER_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ASSIGNEE_OPERATION_TYPE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ASSIGNEE_OPERATION_TIMESTAMP)
+        .field("type", "date")
+        .field("format", OPTIMIZE_DATE_FORMAT)
+      .endObject()
+      ;
+    return builder;
+    // @formatter:on
+  }
+
+  private XContentBuilder addNestedCandidateGroupOperations(final XContentBuilder builder) throws IOException {
+    // @formatter:off
+    builder
+      .startObject(CANDIDATE_GROUP_OPERATION_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(CANDIDATE_GROUP_OPERATION_GROUP_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(CANDIDATE_GROUP_OPERATION_TYPE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(CANDIDATE_GROUP_OPERATION_TIMESTAMP)
+        .field("type", "date")
+        .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       ;
     return builder;

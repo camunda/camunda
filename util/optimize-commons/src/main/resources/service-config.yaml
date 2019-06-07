@@ -127,6 +127,9 @@ import:
     user-operation-log-entry:
       # Determines the page size for historic user operation log entry fetching.
       maxPageSize: 10000
+    identity-link-log:
+      # Determines the page size for identity link log fetching.
+      maxPageSize: 10000
     decision-definition-xml:
       # Determines the page size for decision definition xml model
       # fetching. Should be a low value, as large models will lead to

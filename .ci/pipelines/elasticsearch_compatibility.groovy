@@ -13,7 +13,7 @@ def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
   return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}"
 }
 
-static String mavenElasticsearchIntegrationTestAgent(esVersion = "6.2.0", cambpmVersion = "7.10.0") {
+static String mavenElasticsearchIntegrationTestAgent(esVersion = "6.2.0", cambpmVersion = "7.11.0") {
   return """
 apiVersion: v1
 kind: Pod
@@ -110,7 +110,7 @@ spec:
 """
 }
 
-static String mavenElasticsearchAWSIntegrationTestAgent(cambpmVersion = "7.10.0") {
+static String mavenElasticsearchAWSIntegrationTestAgent(cambpmVersion = "7.11.0") {
   return """
 apiVersion: v1
 kind: Pod

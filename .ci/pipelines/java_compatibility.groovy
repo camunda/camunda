@@ -6,7 +6,7 @@ def static MAVEN_DOCKER_IMAGE(String javaVersion) { return "maven:3.6.1-jdk-${ja
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "registry.camunda.cloud/camunda-bpm-platform-ee:${cambpmVersion}" }
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) { return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}" }
 
-static String mavenIntegrationTestAgent(javaVersion = "8", esVersion = "6.2.0", cambpmVersion = "7.10.0") {
+static String mavenIntegrationTestAgent(javaVersion = "8", esVersion = "6.2.0", cambpmVersion = "7.11.0") {
   return """
 apiVersion: v1
 kind: Pod
