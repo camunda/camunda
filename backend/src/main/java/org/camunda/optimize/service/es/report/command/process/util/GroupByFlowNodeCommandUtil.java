@@ -54,12 +54,13 @@ public class GroupByFlowNodeCommandUtil {
   public static <MAP extends ProcessReportMapResult<V>, V extends Comparable> void enrichResultData(
     final CommandContext<SingleProcessReportDefinitionDto> commandContext,
     final ReportEvaluationResult<MAP, SingleProcessReportDefinitionDto> evaluationResult,
-    Supplier<V> createNewEmptyResult) {
+    final Supplier<V> createNewEmptyResult,
+    final Function<ProcessDefinitionOptimizeDto, Map<String, String>> flowNodeNameExtractor) {
 
     final ProcessReportDataDto reportData = commandContext.getReportDefinition().getData();
     getProcessDefinitionIfAvailable(commandContext, reportData)
       .ifPresent(processDefinition -> {
-        final Map<String, String> flowNodeNames = processDefinition.getFlowNodeNames();
+        final Map<String, String> flowNodeNames = flowNodeNameExtractor.apply(processDefinition);
 
         Set<String> flowNodeKeysWithResult = new HashSet<>();
         evaluationResult.getResultAsDto().getData().forEach(entry -> {

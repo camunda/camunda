@@ -7,9 +7,7 @@ package org.camunda.optimize.service.engine.importing.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -18,11 +16,12 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ProcessDefinitionXmlElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
 
-import java.io.ByteArrayInputStream;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
+
+import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.extractFlowNodeNames;
+import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.extractUserTaskNames;
+import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.parseBpmnModel;
 
 @Slf4j
 @AllArgsConstructor
@@ -71,22 +70,16 @@ public class ProcessDefinitionXmlImportService implements ImportService<ProcessD
   }
 
   private ProcessDefinitionOptimizeDto mapEngineEntityToOptimizeEntity(ProcessDefinitionXmlEngineDto engineEntity) {
+    final BpmnModelInstance bpmnModelInstance = parseBpmnModel(engineEntity.getBpmn20Xml());
     final ProcessDefinitionOptimizeDto optimizeDto = new ProcessDefinitionOptimizeDto(
       engineEntity.getId(),
       engineContext.getEngineAlias(),
       engineEntity.getBpmn20Xml(),
-      constructFlowNodeNames(engineEntity.getBpmn20Xml())
+      extractFlowNodeNames(bpmnModelInstance),
+      extractUserTaskNames(bpmnModelInstance)
     );
     return optimizeDto;
   }
 
-  private Map<String, String> constructFlowNodeNames(String bpmn20Xml) {
-    Map<String, String> result = new HashMap<>();
-    BpmnModelInstance model = Bpmn.readModelFromStream(new ByteArrayInputStream(bpmn20Xml.getBytes()));
-    for (FlowNode node : model.getModelElementsByType(FlowNode.class)) {
-      result.put(node.getId(), node.getName());
-    }
-    return result;
-  }
 
 }

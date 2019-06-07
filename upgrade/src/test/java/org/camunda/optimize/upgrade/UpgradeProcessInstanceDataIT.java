@@ -9,9 +9,11 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.UserTaskInstanceDto;
 import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
+import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.report.SingleDecisionReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleProcessReportType;
+import org.camunda.optimize.upgrade.main.impl.UpgradeFrom24To25;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -25,7 +27,6 @@ import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
-import static org.camunda.optimize.upgrade.main.impl.UpgradeFrom24To25.buildUpgradePlan;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
@@ -50,6 +51,7 @@ public class UpgradeProcessInstanceDataIT extends AbstractUpgradeIT {
       METADATA_TYPE,
       PROCESS_INSTANCE_TYPE,
       new SingleDecisionReportType(),
+      new ProcessDefinitionType(),
       new SingleProcessReportType(),
       new DecisionDefinitionType()
     ));
@@ -62,7 +64,7 @@ public class UpgradeProcessInstanceDataIT extends AbstractUpgradeIT {
   @Test
   public void userTasksHaveNewClaimDateField() throws Exception {
     //given
-    UpgradePlan upgradePlan = buildUpgradePlan();
+    UpgradePlan upgradePlan = new UpgradeFrom24To25().buildUpgradePlan();
 
     // when
     upgradePlan.execute();
@@ -82,7 +84,7 @@ public class UpgradeProcessInstanceDataIT extends AbstractUpgradeIT {
   @Test
   public void userTaskHasCorrectClaimDateAddedOnMultipleClaims() throws Exception {
     //given
-    UpgradePlan upgradePlan = buildUpgradePlan();
+    UpgradePlan upgradePlan = new UpgradeFrom24To25().buildUpgradePlan();
 
     // when
     upgradePlan.execute();
@@ -102,7 +104,7 @@ public class UpgradeProcessInstanceDataIT extends AbstractUpgradeIT {
   @Test
   public void onlyProcessInstancesWithUserTasksAreUpgraded() throws Exception {
     //given
-    UpgradePlan upgradePlan = buildUpgradePlan();
+    UpgradePlan upgradePlan = new UpgradeFrom24To25().buildUpgradePlan();
 
     // when
     upgradePlan.execute();

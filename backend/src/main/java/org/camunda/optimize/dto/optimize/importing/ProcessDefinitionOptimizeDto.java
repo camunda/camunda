@@ -27,9 +27,14 @@ public class ProcessDefinitionOptimizeDto implements DefinitionOptimizeDto {
   private String tenantId;
   private String bpmn20Xml;
   private Map<String, String> flowNodeNames = new HashMap<>();
+  private Map<String, String> userTaskNames = new HashMap<>();
 
-  public ProcessDefinitionOptimizeDto(final String id, final String key, final String version, final String name,
-                                      final String engine, final String tenantId) {
+  public ProcessDefinitionOptimizeDto(final String id,
+                                      final String key,
+                                      final String version,
+                                      final String name,
+                                      final String engine,
+                                      final String tenantId) {
     this.id = id;
     this.key = key;
     this.version = version;
@@ -38,11 +43,15 @@ public class ProcessDefinitionOptimizeDto implements DefinitionOptimizeDto {
     this.tenantId = tenantId;
   }
 
-  public ProcessDefinitionOptimizeDto(final String id, final String engine,
-                                      final String bpmn20Xml, final Map<String, String> flowNodeNames) {
+  public ProcessDefinitionOptimizeDto(final String id,
+                                      final String engine,
+                                      final String bpmn20Xml,
+                                      final Map<String, String> flowNodeNames,
+                                      final Map<String, String> userTaskNames) {
     this.id = id;
     this.engine = engine;
     this.bpmn20Xml = bpmn20Xml;
     this.flowNodeNames = flowNodeNames;
+    this.userTaskNames = userTaskNames;
   }
 }

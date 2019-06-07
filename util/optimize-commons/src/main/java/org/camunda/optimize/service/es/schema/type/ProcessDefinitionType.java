@@ -23,6 +23,7 @@ public class ProcessDefinitionType extends StrictTypeMappingCreator {
   public static final String PROCESS_DEFINITION_NAME = "name";
   public static final String PROCESS_DEFINITION_XML = "bpmn20Xml";
   public static final String FLOW_NODE_NAMES = "flowNodeNames";
+  public static final String USER_TASK_NAMES = "userTaskNames";
   public static final String ENGINE = "engine";
   public static final String TENANT_ID = "tenantId";
 
@@ -38,6 +39,7 @@ public class ProcessDefinitionType extends StrictTypeMappingCreator {
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+    // @formatter:off
     return xContentBuilder
       .startObject(PROCESS_DEFINITION_ID)
         .field("type", "keyword")
@@ -61,10 +63,15 @@ public class ProcessDefinitionType extends StrictTypeMappingCreator {
         .field("type", "object")
         .field("enabled", "false")
       .endObject()
+      .startObject(USER_TASK_NAMES)
+        .field("type", "object")
+        .field("enabled", "false")
+      .endObject()
       .startObject(PROCESS_DEFINITION_XML)
         .field("type", "text")
         .field("index", true)
       .endObject();
+    // @formatter:on
   }
 
 }

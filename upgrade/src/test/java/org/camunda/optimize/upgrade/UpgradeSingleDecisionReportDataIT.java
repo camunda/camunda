@@ -9,10 +9,12 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty;
 import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
+import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.report.AbstractReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleDecisionReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleProcessReportType;
+import org.camunda.optimize.upgrade.main.impl.UpgradeFrom24To25;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -23,7 +25,6 @@ import org.junit.Test;
 import java.io.IOException;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.upgrade.main.impl.UpgradeFrom24To25.buildUpgradePlan;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
@@ -47,6 +48,7 @@ public class UpgradeSingleDecisionReportDataIT extends AbstractUpgradeIT {
       METADATA_TYPE,
       DECISION_DEFINITION_TYPE,
       new SingleDecisionReportType(),
+      new ProcessDefinitionType(),
       new SingleProcessReportType(),
       new ProcessInstanceType()
     ));
@@ -60,7 +62,7 @@ public class UpgradeSingleDecisionReportDataIT extends AbstractUpgradeIT {
   @Test
   public void rawDataViewOperationFieldHasBeenMovedToViewPropertyField() throws Exception {
     //given
-    UpgradePlan upgradePlan = buildUpgradePlan();
+    UpgradePlan upgradePlan = new UpgradeFrom24To25().buildUpgradePlan();
 
     // when
     upgradePlan.execute();
@@ -74,7 +76,7 @@ public class UpgradeSingleDecisionReportDataIT extends AbstractUpgradeIT {
   @Test
   public void reportConfigurationHasHiddenNodesField() throws Exception {
     //given
-    UpgradePlan upgradePlan = buildUpgradePlan();
+    UpgradePlan upgradePlan = new UpgradeFrom24To25().buildUpgradePlan();
 
     // when
     upgradePlan.execute();
@@ -88,7 +90,7 @@ public class UpgradeSingleDecisionReportDataIT extends AbstractUpgradeIT {
   @Test
   public void reportConfigurationHasExecutionStateField() throws Exception {
     //given
-    UpgradePlan upgradePlan = buildUpgradePlan();
+    UpgradePlan upgradePlan = new UpgradeFrom24To25().buildUpgradePlan();
 
     // when
     upgradePlan.execute();

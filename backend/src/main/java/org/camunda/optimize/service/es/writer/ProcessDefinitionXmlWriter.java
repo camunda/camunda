@@ -27,6 +27,7 @@ import java.util.Set;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.FLOW_NODE_NAMES;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.USER_TASK_NAMES;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 
@@ -35,7 +36,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TY
 @Slf4j
 public class ProcessDefinitionXmlWriter {
   private static final Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(
-    FLOW_NODE_NAMES, PROCESS_DEFINITION_XML
+    FLOW_NODE_NAMES, USER_TASK_NAMES, PROCESS_DEFINITION_XML
   );
 
   private RestHighLevelClient esClient;

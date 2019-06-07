@@ -6,6 +6,14 @@
 package org.camunda.optimize.service.es.report.command.process;
 
 
-public abstract class UserTaskGroupingCommand extends FlowNodeDurationGroupingCommand {
+import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 
+import java.util.Map;
+import java.util.function.Function;
+
+public abstract class UserTaskGroupingCommand extends FlowNodeDurationGroupingCommand {
+  @Override
+  protected Function<ProcessDefinitionOptimizeDto, Map<String, String>> getGetFlowNodeNameExtractor() {
+    return ProcessDefinitionOptimizeDto::getUserTaskNames;
+  }
 }

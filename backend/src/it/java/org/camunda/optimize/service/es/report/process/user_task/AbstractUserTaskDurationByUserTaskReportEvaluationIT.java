@@ -96,7 +96,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(4));
+    assertThat(result.getData().size(), is(2));
     assertThat(getExecutedFlowNodeCount(result), is(2L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
@@ -132,7 +132,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(4));
+    assertThat(result.getData().size(), is(2));
     assertThat(getExecutedFlowNodeCount(result), is(2L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
@@ -197,7 +197,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
     // then
     assertThat(result.getIsComplete(), is(true));
-    assertThat(result.getData().size(), is(4));
+    assertThat(result.getData().size(), is(2));
     assertThat(getExecutedFlowNodeCount(result), is(2L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
@@ -268,7 +268,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     // then
     assertThat(resultDto.getProcessInstanceCount(), is(2L));
     assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData().size(), is(4));
+    assertThat(resultDto.getData().size(), is(2));
     assertThat(getExecutedFlowNodeCount(resultDto), is(1L));
     assertThat(resultDto.getIsComplete(), is(false));
   }
@@ -301,7 +301,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
       // then
       final List<MapResultEntryDto<Long>> resultData = result.getData();
-      assertThat(resultData.size(), is(4));
+      assertThat(resultData.size(), is(2));
       assertThat(getExecutedFlowNodeCount(result), is(2L));
       final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
       assertThat(
@@ -337,7 +337,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
-    assertThat(resultData.size(), is(4));
+    assertThat(resultData.size(), is(2));
     assertThat(getExecutedFlowNodeCount(result), is(2L));
     final List<String> resultLabels = resultData.stream()
       .map(MapResultEntryDto::getLabel)
@@ -376,7 +376,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
       final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
       // then
-      assertThat(result.getData().size(), is(4));
+      assertThat(result.getData().size(), is(2));
       assertThat(getExecutedFlowNodeCount(result), is(2L));
       assertCorrectValueOrdering(result);
     });
@@ -405,7 +405,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     //then
-    assertThat(result.getData().size(), is(4));
+    assertThat(result.getData().size(), is(2));
     assertThat(getExecutedFlowNodeCount(result), is(2L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
@@ -441,7 +441,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     //then
-    assertThat(result.getData().size(), is(3));
+    assertThat(result.getData().size(), is(1));
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
@@ -471,7 +471,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     //then
-    assertThat(result.getData().size(), is(3));
+    assertThat(result.getData().size(), is(1));
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
@@ -508,14 +508,14 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     final ProcessDurationReportMapResultDto result2 = evaluateDurationMapReport(reportData2).getResult();
 
     // then
-    assertThat(result1.getData().size(), is(3));
+    assertThat(result1.getData().size(), is(1));
     assertThat(getExecutedFlowNodeCount(result1), is(1L));
     assertThat(
       result1.getDataEntryForKey(USER_TASK_1).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(40L))
     );
 
-    assertThat(result2.getData().size(), is(3));
+    assertThat(result2.getData().size(), is(1));
     assertThat(getExecutedFlowNodeCount(result2), is(1L));
     assertThat(
       result2.getDataEntryForKey(USER_TASK_1).get().getValue(),
@@ -700,7 +700,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(3));
+    assertThat(result.getData().size(), is(1));
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
@@ -727,7 +727,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(3));
+    assertThat(result.getData().size(), is(1));
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
@@ -756,7 +756,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
     // then
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(3));
+    assertThat(result.getData().size(), is(1));
     assertThat(getExecutedFlowNodeCount(result), is(0L));
 
     // when
@@ -766,7 +766,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
     // then
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(3));
+    assertThat(result.getData().size(), is(1));
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),

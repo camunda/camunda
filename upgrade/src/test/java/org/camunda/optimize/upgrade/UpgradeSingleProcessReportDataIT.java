@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.report.AbstractReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleDecisionReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleProcessReportType;
+import org.camunda.optimize.upgrade.main.impl.UpgradeFrom24To25;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -22,7 +23,6 @@ import org.junit.Test;
 import java.io.IOException;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.upgrade.main.impl.UpgradeFrom24To25.buildUpgradePlan;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
@@ -30,7 +30,6 @@ public class UpgradeSingleProcessReportDataIT extends AbstractUpgradeIT {
   private static final String FROM_VERSION = "2.4.0";
   private static final String TO_VERSION = "2.5.0";
 
-  private static final ProcessDefinitionType PROCESS_DEFINITION_TYPE = new ProcessDefinitionType();
   private static final AbstractReportType SINGLE_PROCESS_REPORT_TYPE = new SingleProcessReportType();
 
   private static final String REPORT_VERSION_24_ID = "1aedc93f-7b8d-45a6-8a3c-cd14f4847152";
@@ -44,6 +43,7 @@ public class UpgradeSingleProcessReportDataIT extends AbstractUpgradeIT {
     initSchema(Lists.newArrayList(
       METADATA_TYPE,
       new SingleDecisionReportType(),
+      new ProcessDefinitionType(),
       new SingleProcessReportType(),
       new ProcessInstanceType()
     ));
@@ -57,7 +57,7 @@ public class UpgradeSingleProcessReportDataIT extends AbstractUpgradeIT {
   @Test
   public void reportConfigurationHasHiddenNodesField() throws Exception {
     //given
-    UpgradePlan upgradePlan = buildUpgradePlan();
+    UpgradePlan upgradePlan = new UpgradeFrom24To25().buildUpgradePlan();
 
     // when
     upgradePlan.execute();
@@ -71,7 +71,7 @@ public class UpgradeSingleProcessReportDataIT extends AbstractUpgradeIT {
   @Test
   public void reportConfigurationHasExecutionStateField() throws Exception {
     //given
-    UpgradePlan upgradePlan = buildUpgradePlan();
+    UpgradePlan upgradePlan = new UpgradeFrom24To25().buildUpgradePlan();
 
     // when
     upgradePlan.execute();

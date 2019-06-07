@@ -291,11 +291,11 @@ public class CombinedReportHandlingIT {
     List<MapResultEntryDto<Long>> userTaskCount1 = resultMap.get(totalDurationReportId)
       .getResult()
       .getData();
-    assertThat(userTaskCount1.size(), is(3));
+    assertThat(userTaskCount1.size(), is(1));
     List<MapResultEntryDto<Long>> userTaskCount2 = resultMap.get(idleDurationReportId)
       .getResult()
       .getData();
-    assertThat(userTaskCount2.size(), is(3));
+    assertThat(userTaskCount2.size(), is(1));
   }
 
   @Test
@@ -320,7 +320,7 @@ public class CombinedReportHandlingIT {
     List<MapResultEntryDto<Long>> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId)
       .getResult()
       .getData();
-    assertThat(userTaskCount1.size(), is(3));
+    assertThat(userTaskCount1.size(), is(1));
     List<MapResultEntryDto<Long>> userTaskCount2 = resultMap.get(flowNodeDurationReportId)
       .getResult()
       .getData();
