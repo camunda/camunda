@@ -23,6 +23,7 @@ import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class DeploymentRecord extends UnifiedRecordValue implements DeploymentRecordValue {
 
@@ -61,11 +62,20 @@ public class DeploymentRecord extends UnifiedRecordValue implements DeploymentRe
 
   @Override
   public List<DeployedWorkflow> getDeployedWorkflows() {
-
     final List<DeployedWorkflow> workflows = new ArrayList<>();
 
     final Iterator<Workflow> iterator = workflowsProp.iterator();
-    iterator.forEachRemaining(workflows::add);
+    while (iterator.hasNext()) {
+      final Workflow workflow = iterator.next();
+
+      final byte[] bytes = new byte[workflow.getLength()];
+      final UnsafeBuffer copyBuffer = new UnsafeBuffer(bytes);
+      workflow.write(copyBuffer, 0);
+
+      final Workflow copiedWorkflow = new Workflow();
+      copiedWorkflow.wrap(copyBuffer);
+      workflows.add(copiedWorkflow);
+    }
 
     return workflows;
   }
